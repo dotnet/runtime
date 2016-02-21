@@ -1,202 +1,32 @@
 # .NET Core Libraries (CoreFX)
 
-<table>
-  <tr>
-    <th width="9%" />
-    <th width="14%">Debian 8.2</th> 
-    <th width="14%">Ubuntu 14.04</th>
-    <th width="14%">CentOS 7.1</th>
-    <th width="14%">openSUSE 13.2</th>
-    <th width="21%">Windows 10, 8, 7</th>
-    <th width="14%">OS X 10.10</th>
-  </tr>
-  <tr>
-    <td><b>Debug</b></td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_debian8.2_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_debian8.2_debug.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_debug_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_debug_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_debug_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_debug_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_ubuntu_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_ubuntu_debug.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_debug_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_debug_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_debug_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_debug_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_centos7.1_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_centos7.1_debug.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_debug_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_debug_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_debug_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_debug_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_opensuse13.2_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_opensuse13.2_debug.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_debug_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_debug_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_debug_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_debug_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/windows_nt_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/windows_nt_debug.svg?label=build+%26+test" alt="Build status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win10_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win10_debug.svg?label=win10+outer+test" alt="Outerloop Win10 status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_windows_nt_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_windows_nt_debug.svg?label=win8+outer+test" alt="Outerloop Win8 status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win7_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win7_debug.svg?label=win7+outer+test" alt="Outerloop Win7 status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/code_coverage_windows/Code_Coverage_Report">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/code_coverage_windows.svg?label=coverage" alt="Code coverage" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_osx_debug">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_osx_debug.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_debug_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_debug_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_debug_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_debug_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td><b>Release</b></td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_debian8.2_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_debian8.2_release.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_release_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_release_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_release_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_release_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_ubuntu_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_ubuntu_release.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_release_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_release_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_release_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_release_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_centos7.1_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_centos7.1_release.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_release_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_release_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_release_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_release_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_opensuse13.2_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_opensuse13.2_release.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_release_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_release_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_release_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_release_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/windows_nt_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/windows_nt_release.svg?label=build+%26+test" alt="Build status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win10_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win10_release.svg?label=win10+outer+test" alt="Outerloop Win10 status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_windows_nt_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_windows_nt_release.svg?label=win8+outer+test" alt="Outerloop Win8 status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win7_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win7_release.svg?label=win7+outer+test" alt="Outerloop Win7 status" />
-      </a>
-    </td>
-    <td>
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/nativecomp_osx_release">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/nativecomp_osx_release.svg?label=native" alt="Native status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_release_bld">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_release_bld.svg?label=build" alt="Managed status" />
-      </a>
-      <br />
-      <a href="http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_release_tst">
-        <img src="https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_release_tst.svg?label=test" alt="Test status" />
-      </a>
-    </td>
-  </tr>
-</table>
-
-The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other [components](#net-core-library-components). You can see more information in [Documentation](Documentation/README.md). 
+The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other components. You can see more information in [Documentation](Documentation/README.md). 
 
 .NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts. The [.NET Core Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md) describes where the team is headed.
 
-The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the  runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components.
+The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components.
 
-Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime. These characteristics were the primary motivation for the 2-repo structure.
+Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime.
 
 [.NET Core oss]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
 [Introducing .NET Core]: http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx
 [mscorlib]: https://github.com/dotnet/coreclr/tree/master/src/mscorlib
+
+## Build Status
+
+|   | Debug | Release |
+|---|:-----:|:-------:|
+|**CentOS 7.1**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_release)|
+|**Debian 8.2**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_release)|
+|**openSUSE 13.2**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_release)|
+|**OS X 10.11**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/osx_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/osx_release)|
+|**Red Hat 7.2**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/rhel7.2_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/rhel7.2_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/rhel7.2_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/rhel7.2_release)|
+|**Ubuntu 14.04**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu_release)|
+|**Ubuntu 15.10**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu15.10_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu15.10_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/ubuntu15.10_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/ubuntu15.10_release)|
+|**Windows 7**|[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win7_debug.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win7_debug)|[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win7_release.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win7_release)|
+|**Windows 8**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/windows_nt_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/windows_nt_debug)<br/>[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_windows_nt_debug.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_windows_nt_debug)<br/>[![coverage](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/code_coverage_windows.svg?label=coverage)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/code_coverage_windows/Code_Coverage_Report)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/windows_nt_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/windows_nt_release)<br/>[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_windows_nt_release.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_windows_nt_release)|
+|**Windows 10**|[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win10_debug.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win10_debug)|[![outerloop build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/outerloop_win10_release.svg?label=outerloop+build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/outerloop_win10_release)|
+
 
 ## How to Engage, Contribute and Provide Feedback
 
