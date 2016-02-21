@@ -123,7 +123,7 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\n"
             // Write out the set itself to the script file`
-            stepScript += "${k}=${v}\n"
+            stepScript += "export ${k}=${v}\n"
         }
     }
     return stepScript
