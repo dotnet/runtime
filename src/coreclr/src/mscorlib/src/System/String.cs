@@ -2851,12 +2851,17 @@ namespace System {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == this.Length + value.Length);
             Contract.EndContractBlock();
+            
             int oldLength = Length;
             int insertLength = value.Length;
+            
+            if (oldLength == 0)
+                return value;
+            if (insertLength == 0)
+                return this;
+            
             // In case this computation overflows, newLength will be negative and FastAllocateString throws OutOfMemoryException
             int newLength = oldLength + insertLength;
-            if (newLength == 0)
-                return String.Empty;
             String result = FastAllocateString(newLength);
             unsafe
             {
@@ -2937,9 +2942,13 @@ namespace System {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == this.Length - count);
             Contract.EndContractBlock();
+            
+            if (count == 0)
+                return this;
             int newLength = Length - count;
             if (newLength == 0)
                 return String.Empty;
+            
             String result = FastAllocateString(newLength);
             unsafe
             {
