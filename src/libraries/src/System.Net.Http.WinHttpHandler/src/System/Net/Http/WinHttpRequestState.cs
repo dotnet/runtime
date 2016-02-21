@@ -99,6 +99,8 @@ namespace System.Net.Http
         public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
         public TaskCompletionSource<int> TcsQueryDataAvailable { get; set; }
         public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
+        public long? ExpectedBytesToRead { get; set; }
+        public long CurrentBytesRead { get; set; }
 
         #region IDisposable Members
         private void Dispose(bool disposing)

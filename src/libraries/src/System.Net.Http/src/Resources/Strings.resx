@@ -255,6 +255,9 @@
   <data name="net_http_io_read" xml:space="preserve">
     <value>The read operation failed, see inner exception.</value>
   </data>
+  <data name="net_http_io_read_incomplete" xml:space="preserve">
+    <value>Unable to read data from the transport connection. The connection was closed before all data could be read. Expected {0} bytes, read {1} bytes.</value>
+  </data>
   <data name="net_http_io_write" xml:space="preserve">
     <value>The write operation failed, see inner exception.</value>
   </data>
