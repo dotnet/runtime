@@ -49,12 +49,12 @@ namespace System.Dynamic
         /// <returns>The new CallInfo</returns>
         public CallInfo(int argCount, IEnumerable<string> argNames)
         {
-            ContractUtils.RequiresNotNull(argNames, "argNames");
+            ContractUtils.RequiresNotNull(argNames, nameof(argNames));
 
             var argNameCol = argNames.ToReadOnly();
 
             if (argCount < argNameCol.Count) throw Error.ArgCntMustBeGreaterThanNameCnt();
-            ContractUtils.RequiresNotNullItems(argNameCol, "argNames");
+            ContractUtils.RequiresNotNullItems(argNameCol, nameof(argNames));
 
             _argCount = argCount;
             _argNames = argNameCol;
