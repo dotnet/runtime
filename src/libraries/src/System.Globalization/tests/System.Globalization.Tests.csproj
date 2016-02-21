@@ -91,16 +91,7 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoSortableDateTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStyleAllowInnerWhite.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAdjustToUniversal.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAllowLeadingWhite.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAllowTrailingWhite.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAllowWhiteSpaces.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAssumeLocal.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesAssumeUniversal.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesNoCurrentDateDefault.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesNone.cs" />
-    <Compile Include="DateTimeStyles\DateTimeStylesRoundTripKind.cs" />
+    <Compile Include="DateTimeStyles\DateTimeStylesTests.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoClone.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCtor.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
