@@ -58,6 +58,13 @@ public class VersionTests
     [Theory]
     [InlineData(0, 0, 0, 0)]
     [InlineData(2, 3, 4, 7)]
+    [InlineData(2, 3, 4, 32767)]
+    [InlineData(2, 3, 4, 32768)]
+    [InlineData(2, 3, 4, 65535)]
+    [InlineData(2, 3, 4, 65536)]
+    [InlineData(2, 3, 4, 2147483647)]
+    [InlineData(2, 3, 4, 2147450879)]
+    [InlineData(2, 3, 4, 2147418112)]
     [InlineData(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
     public static void TestCtor_Int_Int_Int_Int(int major, int minor, int build, int revision)
     {
@@ -77,6 +84,8 @@ public class VersionTests
     {
         yield return new object[] { new Version(1, 2), null, 1 };
         yield return new object[] { new Version(1, 2), new Version(1, 2), 0 };
+        yield return new object[] { new Version(1, 2), new Version(1, 3), -1 };
+        yield return new object[] { new Version(1, 2), new Version(1, 1), 1 };
         yield return new object[] { new Version(1, 2), new Version(2, 0), -1 };
         yield return new object[] { new Version(1, 2), new Version(1, 2, 1), -1 };
         yield return new object[] { new Version(1, 2), new Version(1, 2, 0, 1), -1 };
@@ -89,30 +98,31 @@ public class VersionTests
         yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 3), 1 };
     }
 
-    [Theory, MemberData(nameof(CompareToTestData))]
-    public static void TestCompareTo(Version version1, Version obj, int expected)
+    [Theory]
+    [MemberData(nameof(CompareToTestData))]
+    public static void TestCompareTo(Version version1, Version obj, int expectedSign)
     {
         Version version2 = obj as Version;
 
-        Assert.Equal(expected, Math.Sign(version1.CompareTo(version2)));
+        Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
         if (version1 != null && version2 != null)
         {
-            if (expected >= 0)
+            if (expectedSign >= 0)
             {
                 Assert.True(version1 >= version2);
                 Assert.False(version1 < version2);
             }
-            if (expected > 0)
+            if (expectedSign > 0)
             {
                 Assert.True(version1 > version2);
                 Assert.False(version1 <= version2);
             }
-            if (expected <= 0)
+            if (expectedSign <= 0)
             {
                 Assert.True(version1 <= version2);
                 Assert.False(version1 > version2);
             }
-            if (expected < 0)
+            if (expectedSign < 0)
             {
                 Assert.True(version1 < version2);
                 Assert.False(version1 >= version2);
@@ -120,7 +130,7 @@ public class VersionTests
         }
 
         IComparable comparable = version1;
-        Assert.Equal(expected, Math.Sign(comparable.CompareTo(obj)));
+        Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(obj)));
     }
 
     [Fact]
