@@ -451,7 +451,17 @@ namespace System.Net.Sockets
             int sockAddrLen = socketAddressLen;
             fixed (byte* rawSocketAddress = socketAddress)
             {
-                errno = Interop.Sys.Accept(socket, rawSocketAddress, &sockAddrLen, &fd);
+                try
+                {
+                    errno = Interop.Sys.Accept(socket, rawSocketAddress, &sockAddrLen, &fd);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The socket was closed, or is closing.
+                    errorCode = SocketError.OperationAborted;
+                    acceptedFd = -1;
+                    return true;
+                }
             }
 
             if (errno == Interop.Error.SUCCESS)
@@ -506,7 +516,18 @@ namespace System.Net.Sockets
         public static unsafe bool TryCompleteConnect(SafeCloseSocket socket, int socketAddressLen, out SocketError errorCode)
         {
             Interop.Error socketError;
-            Interop.Error err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+            Interop.Error err;
+            try
+            {
+                err = Interop.Sys.GetSocketErrorOption(socket, &socketError);
+            }
+            catch (ObjectDisposedException)
+            {
+                // The socket was closed, or is closing.
+                errorCode = SocketError.OperationAborted;
+                return true;
+            }
+
             if (err != Interop.Error.SUCCESS)
             {
                 Debug.Assert(err == Interop.Error.EBADF);
@@ -541,87 +562,110 @@ namespace System.Net.Sockets
 
         public static unsafe bool TryCompleteReceiveFrom(SafeCloseSocket socket, byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
         {
-            int available;
-            Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-            if (errno != Interop.Error.SUCCESS)
+            try
             {
+                int available;
+                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
+                if (errno != Interop.Error.SUCCESS)
+                {
+                    bytesReceived = 0;
+                    receivedFlags = 0;
+                    errorCode = GetSocketErrorForErrorCode(errno);
+                    return true;
+                }
+                if (available == 0)
+                {
+                    // Always request at least one byte.
+                    available = 1;
+                }
+
+                int received;
+                if (buffer != null)
+                {
+                    received = Receive(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                }
+                else
+                {
+                    received = Receive(socket, flags, available, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                }
+
+                if (received != -1)
+                {
+                    bytesReceived = received;
+                    errorCode = SocketError.Success;
+                    return true;
+                }
+
+                bytesReceived = 0;
+
+                if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                {
+                    errorCode = GetSocketErrorForErrorCode(errno);
+                    return true;
+                }
+
+                errorCode = SocketError.Success;
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                // The socket was closed, or is closing.
                 bytesReceived = 0;
                 receivedFlags = 0;
-                errorCode = GetSocketErrorForErrorCode(errno);
+                errorCode = SocketError.OperationAborted;
                 return true;
             }
-            if (available == 0)
-            {
-                // Always request at least one byte.
-                available = 1;
-            }
-
-            int received;
-            if (buffer != null)
-            {
-                received = Receive(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
-            }
-            else
-            {
-                received = Receive(socket, flags, available, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
-            }
-
-            if (received != -1)
-            {
-                bytesReceived = received;
-                errorCode = SocketError.Success;
-                return true;
-            }
-
-            bytesReceived = 0;
-
-            if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
-            {
-                errorCode = GetSocketErrorForErrorCode(errno);
-                return true;
-            }
-
-            errorCode = SocketError.Success;
-            return false;
         }
 
         public static unsafe bool TryCompleteReceiveMessageFrom(SafeCloseSocket socket, byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
-            int available;
-            Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-            if (errno != Interop.Error.SUCCESS)
+            try
             {
+                int available;
+                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
+                if (errno != Interop.Error.SUCCESS)
+                {
+                    bytesReceived = 0;
+                    receivedFlags = 0;
+                    ipPacketInformation = default(IPPacketInformation);
+                    errorCode = GetSocketErrorForErrorCode(errno);
+                    return true;
+                }
+                if (available == 0)
+                {
+                    // Always request at least one byte.
+                    available = 1;
+                }
+
+                int received = ReceiveMessageFrom(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+
+                if (received != -1)
+                {
+                    bytesReceived = received;
+                    errorCode = SocketError.Success;
+                    return true;
+                }
+
+                bytesReceived = 0;
+
+                if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
+                {
+                    errorCode = GetSocketErrorForErrorCode(errno);
+                    return true;
+                }
+
+                errorCode = SocketError.Success;
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                // The socket was closed, or is closing.
                 bytesReceived = 0;
                 receivedFlags = 0;
                 ipPacketInformation = default(IPPacketInformation);
-                errorCode = GetSocketErrorForErrorCode(errno);
+                errorCode = SocketError.OperationAborted;
                 return true;
             }
-            if (available == 0)
-            {
-                // Always request at least one byte.
-                available = 1;
-            }
-
-            int received = ReceiveMessageFrom(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
-
-            if (received != -1)
-            {
-                bytesReceived = received;
-                errorCode = SocketError.Success;
-                return true;
-            }
-
-            bytesReceived = 0;
-
-            if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
-            {
-                errorCode = GetSocketErrorForErrorCode(errno);
-                return true;
-            }
-
-            errorCode = SocketError.Success;
-            return false;
         }
 
         public static bool TryCompleteSendTo(SafeCloseSocket socket, byte[] buffer, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
@@ -642,13 +686,22 @@ namespace System.Net.Sockets
             {
                 int sent;
                 Interop.Error errno;
-                if (buffer != null)
+                try
                 {
-                    sent = Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                    if (buffer != null)
+                    {
+                        sent = Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
+                    }
+                    else
+                    {
+                        sent = Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno);
+                    }
                 }
-                else
+                catch (ObjectDisposedException)
                 {
-                    sent = Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno);
+                    // The socket was closed, or is closing.
+                    errorCode = SocketError.OperationAborted;
+                    return true;
                 }
 
                 if (sent == -1)

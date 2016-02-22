@@ -112,13 +112,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            //
-            // @TODO: work out a better way to handle this.  For now, just do the "dangerous" thing; this is called
-            // from SafeCloseSocket.ReleaseHandle, so it can't access the file descriptor in the normal way.
-            // 
-            int fd = (int)socket.DangerousGetHandle();
-
-            error = Interop.Sys.DangerousTryChangeSocketEventRegistration(_port, fd, current, events, (IntPtr)handle);
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, current, events, (IntPtr)handle);
             return error == Interop.Error.SUCCESS;
         }
     }
