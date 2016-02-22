@@ -2,49 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoCompareInfo
     {
-        [Fact]
-        public void TestEsES()
+        [Theory]
+        [InlineData("es-ES", "llegar", "lugar", -1)]
+        public void CompareInfo_Compare(string name, string string1, string string2, int expected)
         {
-            CultureInfo myCIintl = new CultureInfo("es-ES");
-            string compareString1 = "llegar";
-            string compareString2 = "lugar";
-            Assert.True(myCIintl.CompareInfo.Compare(compareString1, compareString2) < 0);
+            CultureInfo culture = new CultureInfo(name);
+            Assert.Equal(expected, Math.Sign(culture.CompareInfo.Compare(string1, string2)));
         }
 
         [Fact]
         [ActiveIssue(5463, PlatformID.AnyUnix)]
-        public void TestEsESTraditional()
+        public void CompareInfo_EsESTraditional()
         {
-            CultureInfo myCItrad = new CultureInfo("es-ES_tradnl");
-            string compareString1 = "llegar";
-            string compareString2 = "lugar";
-            Assert.True(myCItrad.CompareInfo.Compare(compareString1, compareString2) > 0);
+            // TOOD: Once #5463 is fixed, combine this into the InlineData for CompareInfo_Compare
+            CompareInfo_Compare("es-ES_tradnl", "llegar", "lugar", 1);
         }
 
-        [Fact]
-        public void TestCompareInfoName()
+        [Theory]
+        [InlineData("")]
+        [InlineData("en-US")]
+        public void CompareInfo_Name(string name)
         {
-            string expectedName = "en-US";
-            CultureInfo myCultureInfo = new CultureInfo(expectedName);
-            CompareInfo myCompareInfo = myCultureInfo.CompareInfo;
-            Assert.True(myCompareInfo.Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        [Fact]
-        public void TestCompareInfoNameWithInvariant()
-        {
-            string expectedName = "";
-            CultureInfo myCultureInfo = new CultureInfo(expectedName);
-            CompareInfo myCompareInfo = myCultureInfo.CompareInfo;
-            Assert.True(myCompareInfo.Name.Equals(expectedName, StringComparison.OrdinalIgnoreCase));
+            CultureInfo culture = new CultureInfo(name);
+            Assert.Equal(name, culture.CompareInfo.Name);
         }
     }
 }

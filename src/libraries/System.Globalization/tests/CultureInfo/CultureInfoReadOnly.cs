@@ -2,39 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoReadOnly
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> ReadOnly_TestData()
         {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            Assert.False(myCultureInfo.IsReadOnly);
-            myCultureInfo = CultureInfo.ReadOnly(myCultureInfo);
-            Assert.True(myCultureInfo.IsReadOnly);
+            yield return new object[] { CultureInfo.InvariantCulture, true };
+            yield return new object[] { new CultureInfo("en"), false };
+            yield return new object[] { new CultureInfo("fr"), false };
+            yield return new object[] { new CultureInfo("en-US"), false };
         }
 
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(ReadOnly_TestData))]
+        public void ReadOnly(CultureInfo culture, bool expected)
         {
-            CultureInfo myCultureInfo = new CultureInfo("en");
-            Assert.False(myCultureInfo.IsReadOnly);
-            myCultureInfo = CultureInfo.ReadOnly(myCultureInfo);
-            Assert.True(myCultureInfo.IsReadOnly);
-        }
+            Assert.Equal(expected, culture.IsReadOnly);
 
-        [Fact]
-        public void PosTest3()
-        {
-            CultureInfo myCultureInfo = CultureInfo.InvariantCulture;
-            Assert.True(myCultureInfo.IsReadOnly);
-            myCultureInfo = CultureInfo.ReadOnly(myCultureInfo);
-            Assert.True(myCultureInfo.IsReadOnly);
+            CultureInfo readOnlyCulture = CultureInfo.ReadOnly(culture);
+            Assert.True(readOnlyCulture.IsReadOnly);
         }
     }
 }
