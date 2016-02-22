@@ -1278,6 +1278,22 @@ static int32_t GetIPv6PacketInformation(cmsghdr* controlMessage, IPPacketInforma
     return 1;
 }
 
+cmsghdr* GET_CMSG_NXTHDR(msghdr* mhdr, cmsghdr* cmsg)
+{
+#ifndef __GLIBC__
+// Tracking issue: #6312
+// In musl-libc, CMSG_NXTHDR typecasts char* to cmsghdr* which causes
+// clang to throw cast-align warning. This is to suppress the warning
+// inline.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-align"
+#endif
+    return CMSG_NXTHDR(mhdr, cmsg);
+#ifndef __GLIBC__
+#pragma clang diagnostic pop
+#endif
+}
+
 extern "C" int32_t
 SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
 {
@@ -1293,7 +1309,7 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     if (isIPv4 != 0)
     {
         for (; controlMessage != nullptr && controlMessage->cmsg_len > 0;
-             controlMessage = CMSG_NXTHDR(&header, controlMessage))
+             controlMessage = GET_CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
             {
@@ -1304,7 +1320,7 @@ SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isI
     else
     {
         for (; controlMessage != nullptr && controlMessage->cmsg_len > 0;
-             controlMessage = CMSG_NXTHDR(&header, controlMessage))
+             controlMessage = GET_CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IPV6 && controlMessage->cmsg_type == IPV6_PKTINFO)
             {
