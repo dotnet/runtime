@@ -8,26 +8,23 @@
   </ItemGroup>
 
   <PropertyGroup>
-      <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\XunitRunner\</TestAssemblyDir>
+      <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\</TestAssemblyDir>
       <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
       <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
   </PropertyGroup>
   <Target Name="FindTestDirectories">
     <ItemGroup>
-      <AllTestAssemblies Include="$(TestAssemblyDir)*.XUnitWrapper.dll" />
-      <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity).XUnitWrapper.dll')" />
+      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\*\*.XUnitWrapper.dll" />
+      <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
     
-    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir) before they can be run, Do a clean Test Run"
+    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
             Condition="'@(AllTestAssemblies)' == ''" />
     
     <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
     <Message Text= "TestAssemblies= @(TestAssemblies)"/>
-    <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity).XUnitWrapper.dll')"/>
+    <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
-   <PropertyGroup>
-      <ThisTestWorkingDir>$(TestAssemblyDir)\</ThisTestWorkingDir>
-  </PropertyGroup>
 
   <UsingTask
     AssemblyFile="$(SourceDir)\packages\xunit.runner.msbuild\2.1.0\build\portable-net45+win8+wp8+wpa81\xunit.runner.msbuild.dll"
@@ -35,8 +32,6 @@
 
    <Target Name="RunTests"
           DependsOnTargets="FindTestDirectories"
-          Inputs="@(TestAssemblies)"
-          Outputs="$(ThisTestWorkingDir)\*.*"
           Condition="'$(SkipTests)' != 'True'">
 
 
@@ -49,7 +44,6 @@
     </ItemGroup>
 
     <xunit Assemblies="@(TestAssemblies)"
-      WorkingFolder="$(ThisTestWorkingDir)"
       ParallelizeAssemblies="True"
       ParallelizeTestCollections="True"
       Html="$(__TestRunHtmlLog)"
