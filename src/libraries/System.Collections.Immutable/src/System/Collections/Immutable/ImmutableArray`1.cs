@@ -1629,12 +1629,6 @@ namespace System.Collections.Immutable
             // so touching it, and potentially causing a cache miss, is not going to be an
             // extra expense.
             var unused = this.array.Length;
-
-            // This line is a workaround for a bug in C# compiler
-            // The code in this line will not be emitted, but it will prevent incorrect
-            // optimizing away of "Length" call above in Release builds.
-            // TODO: remove the workaround when building with Roslyn which does not have this bug.
-            var unused2 = unused;
         }
 
         /// <summary>
