@@ -382,6 +382,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [OuterLoop]
         public static void ReleaseReadersWhenWaitingWriterTimesOut()
         {
             using (var rwls = new ReaderWriterLockSlim())
@@ -446,6 +447,69 @@ namespace System.Threading.Tests
                 // Typical order of execution: 7
 
                 writeWaiterThread.Join();
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void DontReleaseWaitingReadersWhenThereAreWaitingWriters()
+        {
+            using(var rwls = new ReaderWriterLockSlim())
+            {
+                rwls.EnterUpgradeableReadLock();
+                rwls.EnterWriteLock();
+                // Typical order of execution: 0
+
+                // Add a waiting writer
+                var threads = new Thread[2];
+                using(var beforeEnterWriteLock = new ManualResetEvent(false))
+                {
+                    var thread =
+                        new Thread(() =>
+                        {
+                            beforeEnterWriteLock.Set();
+                            rwls.EnterWriteLock();
+                            // Typical order of execution: 3
+                            rwls.ExitWriteLock();
+                        });
+                    thread.IsBackground = true;
+                    thread.Start();
+                    threads[0] = thread;
+                    beforeEnterWriteLock.WaitOne();
+                }
+
+                // Add a waiting reader
+                using(var beforeEnterReadLock = new ManualResetEvent(false))
+                {
+                    var thread =
+                        new Thread(() =>
+                        {
+                            beforeEnterReadLock.Set();
+                            rwls.EnterReadLock();
+                            // Typical order of execution: 4
+                            rwls.ExitReadLock();
+                        });
+                    thread.IsBackground = true;
+                    thread.Start();
+                    threads[1] = thread;
+                    beforeEnterReadLock.WaitOne();
+                }
+
+                // Wait for the background threads to block waiting for their locks
+                Thread.Sleep(1000);
+
+                // Typical order of execution: 1
+                rwls.ExitWriteLock();
+                // At this point there is still one reader and one waiting writer, so the reader-writer lock should not try to
+                // release any of the threads waiting for a lock
+
+                // Typical order of execution: 2
+                rwls.ExitUpgradeableReadLock();
+                // At this point, the waiting writer should be released, and the waiting reader should not
+
+                foreach(var thread in threads)
+                    thread.Join();
+                // Typical order of execution: 5
             }
         }
     }
