@@ -10,6 +10,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <unistd.h>
+
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
 #endif
@@ -19,6 +21,33 @@
 #elif !defined(__APPLE__)
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
+
+pal::string_t pal::to_string(int value) { return std::to_string(value); }
+
+pal::string_t pal::to_lower(const pal::string_t& in)
+{
+    pal::string_t ret = in;
+    std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+    return ret;
+}
+
+bool pal::getcwd(pal::string_t* recv)
+{
+    recv->clear();
+    pal::char_t* buf = ::getcwd(nullptr, PATH_MAX + 1);
+    if (buf == nullptr)
+    {
+        if (errno == ENOENT)
+        {
+            return false;
+        }
+        perror("getcwd()");
+        return false;
+    }
+    recv->assign(buf);
+    ::free(buf);
+    return true;
+}
 
 bool pal::find_coreclr(pal::string_t* recv)
 {
@@ -133,8 +162,7 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 
 bool pal::realpath(pal::string_t* path)
 {
-    pal::char_t buf[PATH_MAX];
-    auto resolved = ::realpath(path->c_str(), buf);
+    auto resolved = ::realpath(path->c_str(), nullptr);
     if (resolved == nullptr)
     {
         if (errno == ENOENT)
@@ -145,6 +173,7 @@ bool pal::realpath(pal::string_t* path)
         return false;
     }
     path->assign(resolved);
+    ::free(resolved);
     return true;
 }
 
