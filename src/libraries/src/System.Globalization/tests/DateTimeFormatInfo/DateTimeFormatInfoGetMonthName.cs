@@ -2,145 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetMonthName
     {
-        private const int c_MIN_MONTH_VALUE = 1;
-        private const int c_MAX_MONTH_VALUE = 13;
+        private const int MinMonth = 1;
+        private const int MaxMonth = 13;
 
-        // PosTest1: Call GetMonthName on default invariant DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMonthName_TestData()
         {
-            DateTimeFormatInfo info = CultureInfo.InvariantCulture.DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-                "",
-            };
+            string[] englishMonthNames = new string[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, englishMonthNames };
+            yield return new object[] { new DateTimeFormatInfo(), englishMonthNames };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, englishMonthNames };
 
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest2: Call GetMonthName on en-us culture DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest2()
-        {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest3: Call GetMonthName on fr-FR culture DateTimeFormatInfo instance
-        // When dotnet/corefx#2103 is addressed, we should remove the conditional fact attribute and select the right data for fr-FR
-        [ConditionalFact("IsNotUbuntu1510")]
-        public void PosTest3()
-        {
-            DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "janvier",
-                "f\u00E9vrier",
-                "mars",
-                "avril",
-                "mai",
-                "juin",
-                "juillet",
-                "ao\u00FBt",
-                "septembre",
-                "octobre",
-                "novembre",
-                "d\u00E9cembre",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest4: Call GetMonthName on DateTimeFormatInfo instance created from ctor
-        [Fact]
-        public void PosTest4()
-        {
-            DateTimeFormatInfo info = new DateTimeFormatInfo();
-            string[] expected = new string[] {
-                "",
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // NegTest1: ArgumentOutOfRangeException should be thrown when dayofweek is not a valid System.DayOfWeek value
-        [Fact]
-        public void TestInvalidDayOfWeek()
-        {
-            DateTimeFormatInfo info1 = new DateTimeFormatInfo();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            // ActiveIssue(2103)
+            if (!PlatformDetection.IsUbuntu1510)
             {
-                info1.GetMonthName(c_MIN_MONTH_VALUE - 1);
-            });
-
-            DateTimeFormatInfo info2 = new DateTimeFormatInfo();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               info2.GetMonthName(c_MAX_MONTH_VALUE + 1);
-           });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string[] expected)
-        {
-            for (int i = c_MIN_MONTH_VALUE; i <= c_MAX_MONTH_VALUE; ++i)
-            {
-                string actual = info.GetMonthName(i);
-                Assert.Equal(expected[i], actual);
+                yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "", "janvier", "f\u00E9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\u00FBt", "septembre", "octobre", "novembre", "d\u00E9cembre", "" } };
             }
         }
 
-        public static bool IsNotUbuntu1510()
+        [Theory]
+        [MemberData(nameof(GetMonthName_TestData))]
+        public void GetMonthName(DateTimeFormatInfo format, string[] expected)
         {
-            return !PlatformDetection.IsUbuntu1510;
+            for (int i = MinMonth; i <= MaxMonth; ++i)
+            {
+                Assert.Equal(expected[i], format.GetMonthName(i));
+            }
+        }
+
+        [Fact]
+        public void GetMonthName_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetMonthName(MinMonth - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetMonthName(MaxMonth + 1));
         }
     }
 }

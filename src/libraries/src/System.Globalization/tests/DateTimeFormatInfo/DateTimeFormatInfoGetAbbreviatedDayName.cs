@@ -9,93 +9,45 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetAbbreviatedDayName
     {
-        // PosTest1: Call GetAbbreviatedDayName on default invariant DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetAbbreviatedDayName_TestData()
         {
-            DateTimeFormatInfo info = CultureInfo.InvariantCulture.DateTimeFormat;
-            string[] expected = new string[] {
-                "Sun",
-                "Mon",
-                "Tue",
-                "Wed",
-                "Thu",
-                "Fri",
-                "Sat"
-            };
-            VerificationHelper(info, expected);
-        }
+            string[] englishAbbreviatedDayNames = new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, englishAbbreviatedDayNames };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, englishAbbreviatedDayNames };
+            yield return new object[] { new DateTimeFormatInfo(), englishAbbreviatedDayNames };
 
-        // Call GetAbbreviatedDayName on en-us culture DateTimeFormatInfo instance
-        // Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
-        [Theory]
-        [MemberData("LocalesToCheck")]
-        public void PosTest2(string localeName)
-        {
-            CultureInfo culture = new CultureInfo(localeName);
-            string[] expected = DateTimeFormatInfoData.GetAbbreviatedDayNames(culture);
-
-            DateTimeFormatInfo info = culture.DateTimeFormat;
-            VerificationHelper(info, expected);
-        }
-
-        public static IEnumerable<object[]> LocalesToCheck()
-        {
-            yield return new object[] { "en-US" };
-
-            // When dotnet/corefx#2103 is addressed, we should also check fr-FR (and we can move back to InlineData)
+            // ActiveIssue(2103)
             if (!PlatformDetection.IsUbuntu1510)
             {
-                yield return new object[] { "fr-FR" };
+                yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, DateTimeFormatInfoData.FrFRAbbreviatedDayNames() };
             }
         }
 
-        // PosTest4: Call GetAbbreviatedDayName on DateTimeFormatInfo instance created from ctor
-        [Fact]
-        public void PosTest4()
+        [Theory]
+        [MemberData(nameof(GetAbbreviatedDayName_TestData))]
+        public void GetAbbreviatedDayName(DateTimeFormatInfo info, string[] expected)
         {
-            DateTimeFormatInfo info = new DateTimeFormatInfo();
-            string[] expected = new string[] {
-                "Sun",
-                "Mon",
-                "Tue",
-                "Wed",
-                "Thu",
-                "Fri",
-                "Sat"
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // NegTest1: ArgumentOutOfRangeException should be thrown when dayofweek is not a valid System.DayOfWeek value
-        [Fact]
-        public void NegTest1()
-        {
-            DateTimeFormatInfo info = new DateTimeFormatInfo();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            DayOfWeek[] values = new DayOfWeek[]
             {
-                info.GetAbbreviatedDayName((DayOfWeek)(-1));
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string[] expected)
-        {
-            DayOfWeek[] values = new DayOfWeek[] {
-            DayOfWeek.Sunday,
-            DayOfWeek.Monday,
-            DayOfWeek.Tuesday,
-            DayOfWeek.Wednesday,
-            DayOfWeek.Thursday,
-            DayOfWeek.Friday,
-            DayOfWeek.Saturday
+                DayOfWeek.Sunday,
+                DayOfWeek.Monday,
+                DayOfWeek.Tuesday,
+                DayOfWeek.Wednesday,
+                DayOfWeek.Thursday,
+                DayOfWeek.Friday,
+                DayOfWeek.Saturday
             };
 
             for (int i = 0; i < values.Length; ++i)
             {
-                string actual = info.GetAbbreviatedDayName(values[i]);
-                Assert.Equal(expected[i], actual);
+                Assert.Equal(expected[i], info.GetAbbreviatedDayName(values[i]));
             }
+        }
+
+        [Fact]
+        public void GetAbbreviatedDayName_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedDayName((DayOfWeek)(-1))); // DayOfWeek is invalid
         }
     }
 }

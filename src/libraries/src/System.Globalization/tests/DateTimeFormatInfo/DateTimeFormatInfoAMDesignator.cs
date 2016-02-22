@@ -10,54 +10,26 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoAMDesignator
     {
-        // PosTest1: Call AMDesignator getter method should return correct value for InvariantInfo
         [Fact]
-        public void TestGetter()
+        public void AMDesignator_InvariantInfo()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo,
-                    "AM",
-                    false);
+            Assert.Equal("AM", DateTimeFormatInfo.InvariantInfo.AMDesignator);
         }
 
-        // PosTest2: Call AMDesignator setter method should return correct value
         [Fact]
-        public void TestSetter()
+        public void AMDesignator_Set()
         {
-            VerificationHelper(new DateTimeFormatInfo(),
-                    "AA",
-                    true);
+            string newAMDesignator = "AA";
+            var format = new DateTimeFormatInfo();
+            format.AMDesignator = newAMDesignator;
+            Assert.Equal(newAMDesignator, format.AMDesignator);
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
         [Fact]
-        public void TestNull()
+        public void AMDesignator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().AMDesignator = null;
-            });
-        }
-
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and 
-        // the DateTimeFormatInfo is read-only
-        [Fact]
-        public void TestReadOnly()
-        {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.AMDesignator = "1";
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
-        {
-            if (setter)
-            {
-                info.AMDesignator = expected;
-            }
-
-            string actual = info.AMDesignator;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().AMDesignator = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }

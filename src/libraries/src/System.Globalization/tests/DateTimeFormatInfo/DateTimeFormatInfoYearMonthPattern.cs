@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,55 +11,43 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoYearMonthPattern
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Call YearMonthPattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void TestGetter()
+        public static IEnumerable<object[]> YearMonthPattern_TestData()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "yyyy MMMM", false);
-            VerificationHelper(new CultureInfo("fr-fr").DateTimeFormat, "MMMM yyyy", false);
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "yyyy MMMM" };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "MMMM yyyy" };
         }
 
-        // PosTest2: Call YearMonthPattern setter method should return correct value
-        [Fact]
-        public void TestSetter()
+        [Theory]
+        [MemberData(nameof(YearMonthPattern_TestData))]
+        public void YearMonthPattern(DateTimeFormatInfo format, string expected)
         {
-            VerificationHelper(new DateTimeFormatInfo(), "yyyy MMMM", true);
-            VerificationHelper(new DateTimeFormatInfo(), "y", true);
-            VerificationHelper(new DateTimeFormatInfo(), "Y", true);
-            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
+            Assert.Equal(expected, format.YearMonthPattern);
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
-        [Fact]
-        public void TestNull()
+        public static IEnumerable<object[]> YearMonthPattern_Set_TestData()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().YearMonthPattern = null;
-            });
+            yield return new object[] { "yyyy MMMM" };
+            yield return new object[] { "y" };
+            yield return new object[] { "Y" };
+            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
         }
 
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and the DateTimeFormatInfo is read-only
-        [Fact]
-        public void TestReadOnly()
+        [Theory]
+        [MemberData(nameof(YearMonthPattern_Set_TestData))]
+        public void YearMonthPattern_Set(string newYearMonthPattern)
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.YearMonthPattern = "yyyy MMMM";
-            });
+            var format = new DateTimeFormatInfo();
+            format.YearMonthPattern = newYearMonthPattern;
+            Assert.Equal(newYearMonthPattern, format.YearMonthPattern);
         }
 
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
+        [Fact]
+        public void YearMonthPattern_Set_Invalid()
         {
-            if (setter)
-            {
-                info.YearMonthPattern = expected;
-            }
-
-            string actual = info.YearMonthPattern;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().YearMonthPattern = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.YearMonthPattern = "yyyy MMMM"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }
