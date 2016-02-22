@@ -447,6 +447,7 @@ MONO_API mono_bool          mono_metadata_signature_equal (MonoMethodSignature *
 
 MONO_API unsigned int             mono_signature_hash (MonoMethodSignature *sig);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoMethodHeader *mono_metadata_parse_mh (MonoImage *m, const char *ptr);
 MONO_API void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 

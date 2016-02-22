@@ -3793,8 +3793,7 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
 	MonoError error;
 	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, &error);
-	if (!header)
-		mono_loader_set_error_from_mono_error (&error);
+	mono_error_cleanup (&error);
 	return header;
 }
 
