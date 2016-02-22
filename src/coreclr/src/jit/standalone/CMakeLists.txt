@@ -2,7 +2,6 @@ project(ryujit)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 add_definitions(-DFEATURE_READYTORUN_COMPILER)
-add_definitions(-DFEATURE_REF_ZERO_OFFSET_ALLOWED)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 add_library_clr(ryujit
