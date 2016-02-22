@@ -419,30 +419,50 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
             GenTree* hiOp1 = op1->gtGetOp2();
             GenTree* loOp2 = op2->gtGetOp1();
             GenTree* hiOp2 = op2->gtGetOp2();
+
             // Now, remove op1 and op2 from the node list.
             comp->fgSnipNode(curStmt, op1);
             comp->fgSnipNode(curStmt, op2);
+
             // We will reuse "tree" for the loResult, which will now be of TYP_INT, and its operands
             // will be the lo halves of op1 from above.
             loResult = tree;
             loResult->gtType = TYP_INT;
             loResult->gtOp.gtOp1 = loOp1;
             loResult->gtOp.gtOp2 = loOp2;
+
             // The various halves will be correctly threaded internally. We simply need to
             // relink them into the proper order, i.e. loOp1 is followed by loOp2, and then
             // the loResult node.
             // (This rethreading, and that below, are where we need to address the reverse ops case).
-            loOp1->gtNext = loOp2;
-            loOp2->gtPrev = loOp1;
-            loOp2->gtNext = loResult;
-            loResult->gtPrev = loOp2;
+            // The current order is (after snipping op1 and op2):
+            // ... loOp1-> ... hiOp1->loOp2First ... loOp2->hiOp2First ... hiOp2
+            // The order we want is:
+            // ... loOp1->loOp2First ... loOp2->loResult
+            // ... hiOp1->hiOp2First ... hiOp2->hiResult
+            // i.e. we swap hiOp1 and loOp2, and create (for now) separate loResult and hiResult trees
+            GenTree* loOp2First = hiOp1->gtNext;
+            GenTree* hiOp2First = loOp2->gtNext;
 
-            // We will now create a new tree for the hiResult, and then thread these nodes as above.
+            // First, we will NYI if both hiOp1 and loOp2 have side effects.
+            NYI_IF(((loOp2->gtFlags & GTF_ALL_EFFECT) != 0) && ((hiOp1->gtFlags & GTF_ALL_EFFECT) != 0),
+                   "Binary long operator with non-reorderable sub expressions");
+
+            // Now, we reorder the loOps and the loResult.
+            loOp1->gtNext      = loOp2First;
+            loOp2First->gtPrev = loOp1;
+            loOp2->gtNext      = loResult;
+            loResult->gtPrev   = loOp2;
+
+            // Next, reorder the hiOps and the hiResult.
             hiResult = new (comp, oper) GenTreeOp(getHiOper(oper), TYP_INT, hiOp1, hiOp2);
-            hiOp1->gtNext = hiOp2;
-            hiOp2->gtPrev = hiOp1;
-            hiOp2->gtNext = hiResult;
-            hiResult->gtPrev = hiOp2;
+            hiOp1->gtNext      = hiOp2First;
+            hiOp2First->gtPrev = hiOp1;
+            hiOp2->gtNext      = hiResult;
+            hiResult->gtPrev   = hiOp2;
+
+            // Below, we'll put the loResult and hiResult trees together, using the more
+            // general fgInsertTreeInListAfter() method.
         }
         break;
     case GT_SUB:
