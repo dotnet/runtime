@@ -663,6 +663,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 static void
 dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *container)
 {
+	MonoError error;
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
 	const char *loc;
@@ -678,7 +679,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh_full (m, container, ptr);
+	mh = mono_metadata_parse_mh_full (m, container, ptr, &error);
 	entry_point = mono_image_get_entry_point (m);
 	if (entry_point && mono_metadata_token_index (entry_point) && mono_metadata_token_table (entry_point) == MONO_TABLE_METHOD) {
 		loc = mono_metadata_locate_token (m, entry_point);
@@ -698,6 +699,8 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
   hex_dump (mh->code + mh->code_size, 0, 64);
 */
 		mono_metadata_free_mh (mh);
+	} else {
+		mono_error_cleanup (&error);
 	}
 }
 

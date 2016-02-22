@@ -732,7 +732,8 @@ mono_metadata_parse_method_signature_full   (MonoImage             *image,
 MONO_API MonoMethodHeader *
 mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *container,
-					     const char            *ptr);
+					     const char            *ptr,
+						 MonoError *error);
 
 gboolean
 mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary);

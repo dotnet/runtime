@@ -3498,12 +3498,14 @@ hex_dump (const char *buffer, int base, int count)
  * @ptr: Points to the beginning of the Section Data (25.3)
  */
 static MonoExceptionClause*
-parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
+parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr, MonoError *error)
 {
 	unsigned char sect_data_flags;
 	int is_fat;
 	guint32 sect_data_len;
 	MonoExceptionClause* clauses = NULL;
+
+	mono_error_init (error);
 	
 	while (1) {
 		/* align on 32-bit boundary */
@@ -3551,10 +3553,8 @@ parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
 				} else if (ec->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 					ec->data.catch_class = NULL;
 					if (tof_value) {
-						MonoError error;
-						ec->data.catch_class = mono_class_get_checked (m, tof_value, &error);
-						if (!mono_error_ok (&error)) {
-							mono_error_cleanup (&error); /* FIXME don't swallow the error */
+						ec->data.catch_class = mono_class_get_checked (m, tof_value, error);
+						if (!is_ok (error)) {
 							g_free (clauses);
 							return NULL;
 						}
@@ -3660,7 +3660,7 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
  * Returns: a transient MonoMethodHeader allocated from the heap.
  */
 MonoMethodHeader *
-mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr)
+mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr, MonoError *error)
 {
 	MonoMethodHeader *mh = NULL;
 	unsigned char flags = *(const unsigned char *) ptr;
@@ -3673,7 +3673,12 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
 	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 
-	g_return_val_if_fail (ptr != NULL, NULL);
+	mono_error_init (error);
+
+	if (!ptr) {
+		mono_error_set_bad_image (error, m, "Method header with null pointer");
+		return NULL;
+	}
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
@@ -3711,20 +3716,28 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		ptr = (char*)code + code_size;
 		break;
 	default:
+		mono_error_set_bad_image (error, m, "Invalid method header format %d", format);
 		return NULL;
 	}
 
 	if (local_var_sig_tok) {
 		int idx = (local_var_sig_tok & 0xffffff)-1;
-		if (idx >= t->rows || idx < 0)
+		if (idx >= t->rows || idx < 0) {
+			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
 			goto fail;
+		}
 		mono_metadata_decode_row (t, idx, cols, 1);
 
-		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], NULL))
+		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], NULL)) {
+			mono_error_set_bad_image (error, m, "Method header locals signature 0x%8x verification failed", idx);
+			goto fail;
+		}
+	}
+	if (fat_flags & METHOD_HEADER_MORE_SECTS) {
+		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr, error);
+		if (!is_ok (error))
 			goto fail;
 	}
-	if (fat_flags & METHOD_HEADER_MORE_SECTS)
-		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr);
 	if (local_var_sig_tok) {
 		const char *locals_ptr;
 		int len=0, i;
@@ -3738,14 +3751,8 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh = (MonoMethodHeader *)g_malloc0 (MONO_SIZEOF_METHOD_HEADER + len * sizeof (MonoType*) + num_clauses * sizeof (MonoExceptionClause));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
-			MonoError error;
-			mh->locals [i] = mono_metadata_parse_type_internal (m, container, 0, TRUE, locals_ptr, &locals_ptr, &error);
-			if (!mono_error_ok (&error)) {
-				mono_loader_set_error_from_mono_error (&error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-			}
-
-			if (!mh->locals [i])
+			mh->locals [i] = mono_metadata_parse_type_internal (m, container, 0, TRUE, locals_ptr, &locals_ptr, error);
+			if (!is_ok (error))
 				goto fail;
 		}
 	} else {
@@ -3784,7 +3791,11 @@ fail:
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
-	return mono_metadata_parse_mh_full (m, NULL, ptr);
+	MonoError error;
+	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, &error);
+	if (!header)
+		mono_loader_set_error_from_mono_error (&error);
+	return header;
 }
 
 /*

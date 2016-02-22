@@ -2786,6 +2786,7 @@ mono_method_get_token (MonoMethod *method)
 MonoMethodHeader*
 mono_method_get_header (MonoMethod *method)
 {
+	MonoError error;
 	int idx;
 	guint32 rva;
 	MonoImage* img;
@@ -2853,7 +2854,9 @@ mono_method_get_header (MonoMethod *method)
 	container = mono_method_get_generic_container (method);
 	if (!container)
 		container = method->klass->generic_container;
-	header = mono_metadata_parse_mh_full (img, container, (const char *)loc);
+	header = mono_metadata_parse_mh_full (img, container, (const char *)loc, &error);
+	if (!header)
+		mono_loader_set_error_from_mono_error (&error);
 
 	return header;
 }
