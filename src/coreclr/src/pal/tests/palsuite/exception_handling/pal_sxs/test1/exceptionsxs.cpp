@@ -20,7 +20,7 @@ extern "C" int DllTest2();
 
 int main(int argc, char *argv[])
 {
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__NetBSD__)
     if (0 != InitializeDllTest1())
     {
         return 1;
