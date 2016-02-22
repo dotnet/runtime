@@ -5,184 +5,109 @@
 using System;
 using System.Reflection;
 
-using ActivatorTestsTestData;
 using Xunit;
 
 public static class ActivatorTests
 {
     [Fact]
-    public static void TestActivatorCreateInstanceBinding()
+    public static void TestCreateInstance()
     {
-        Type t;
-        object[] args;
-        Choice1 c1;
+        // Passing null args is equivilent to an empty array of args.
+        Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), null));
+        Assert.Equal(1, c.I);
 
-        // Root the constructors
-        if (string.Empty.Length > 0)
-        {
-            new Choice1();
-            new Choice1(123);
-            new Choice1("Hey");
-            new Choice1(5.1);
-            new Choice1(new VarArgs());
-            new Choice1(new VarStringArgs());
-            new Choice1(new VarIntArgs());
-        }
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { }));
+        Assert.Equal(1, c.I);
 
-        t = null;
-        args = new object[1];
-        Assert.Throws<ArgumentNullException>(() => Activator.CreateInstance(t, args));
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { 42 }));
+        Assert.Equal(2, c.I);
 
-        t = typeof(Choice1);
-        args = null;   // Passing a null args is equivalent to passing an empty array of args.
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 1);
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { "Hello" }));
+        Assert.Equal(3, c.I);
 
-        t = typeof(Choice1);
-        args = new object[] { };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 1);
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { 5.1, "Hello" }));
+        Assert.Equal(4, c.I);
 
-        t = typeof(Choice1);
-        args = new object[] { 42 };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 2);
+        Activator.CreateInstance(typeof(StructTypeWithoutReflectionMetadata));
+    }
 
-        // Primitive widening is allowed by the binder.
-        // but not by Dynamic.DelegateInvoke()... 
-        {
-            t = typeof(Choice1);
-            args = new object[] { (short)(-2) };
-            c1 = (Choice1)(Activator.CreateInstance(t, args));
-            Assert.Equal(c1.I, 2);
-        }
+    [Fact]
+    public static void TestCreateInstance_ConstructorWithPrimitive_PerformsPrimitiveWidening()
+    {
+        // Primitive widening is allowed by the binder, but not by Dynamic.DelegateInvoke().
+        Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { (short)-2 }));
+        Assert.Equal(2, c.I);
+    }
 
-        t = typeof(Choice1);
-        args = new object[] { "Hello" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 3);
+    [Fact]
+    public static void TestCreateInstance_ConstructorWithParamsParameter()
+    {
+        // C# params arguments are honored by Activator.CreateInstance()
+        Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarArgs() }));
+        Assert.Equal(5, c.I);
 
-        t = typeof(Choice1);
-        args = new object[] { null };
-        Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(t, args));
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarArgs(), "P1" }));
+        Assert.Equal(5, c.I);
 
-        // "optional" parameters are not optional as far as Activator.CreateInstance() is concerned.
-        t = typeof(Choice1);
-        args = new object[] { 5.1 };
-        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarArgs(), "P1", "P2" }));
+        Assert.Equal(5, c.I);
 
-        t = typeof(Choice1);
-        args = new object[] { 5.1, Type.Missing };
-        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarStringArgs() }));
+        Assert.Equal(6, c.I);
 
-        t = typeof(Choice1);
-        args = new object[] { 5.1, "Yes" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 4);
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarStringArgs(), "P1" }));
+        Assert.Equal(6, c.I);
 
-        //
-        // "params" arguments are honored by Activator.CreateInstance()
-        //
-        VarArgs varArgs = new VarArgs();
-        t = typeof(Choice1);
-        args = new object[] { varArgs };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 5);
+        c = (Choice1)(Activator.CreateInstance(typeof(Choice1), new object[] { new VarStringArgs(), "P1", "P2" }));
+        Assert.Equal(6, c.I);
+    }
 
-        t = typeof(Choice1);
-        args = new object[] { varArgs, "P1" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 5);
+    [Fact]
+    public static void TestCreateInstance_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null)); // Type is null
+        Assert.Throws<ArgumentNullException>("type", () => Activator.CreateInstance(null, new object[0])); // Type is null
 
-        t = typeof(Choice1);
-        args = new object[] { varArgs, "P1", "P2" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 5);
+        Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));
 
-        VarStringArgs varStringArgs = new VarStringArgs();
-        t = typeof(Choice1);
-        args = new object[] { varStringArgs };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 6);
+        // C# designated optional parameters are not optional as far as Activator.CreateInstance() is concerned.
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { 5.1 }));
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { 5.1, Type.Missing }));
 
-        t = typeof(Choice1);
-        args = new object[] { varStringArgs, "P1" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 6);
+        // Invalid params args
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { new VarStringArgs(), 5, 6 }));
 
-        t = typeof(Choice1);
-        args = new object[] { varStringArgs, "P1", "P2" };
-        c1 = (Choice1)(Activator.CreateInstance(t, args));
-        Assert.Equal(c1.I, 6);
-
-        t = typeof(Choice1);
-        args = new object[] { varStringArgs, 5, 6 };
-        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
-
-        //
         // Primitive widening not supported for "params" arguments.
         //
         // (This is probably an accidental behavior on the desktop as the default binder specifically checks to see if the params arguments are widenable to the
         // params array element type and gives it the go-ahead if it is. Unfortunately, the binder then bollixes itself by using Array.Copy() to copy
         // the params arguments. Since Array.Copy() doesn't tolerate this sort of type mismatch, it throws an InvalidCastException which bubbles out
         // out of Activator.CreateInstance. Accidental or not, we'll inherit that behavior on .NET Native.)
-        //
-        VarIntArgs varIntArgs = new VarIntArgs();
-        t = typeof(Choice1);
-        args = new object[] { varIntArgs, 1, (short)2 };
-        Assert.Throws<InvalidCastException>(() => Activator.CreateInstance(t, args));
+        Assert.Throws<InvalidCastException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { new VarIntArgs(), 1, (short)2 }));
 
-        return;
-    }
-
-    public class TypeWithoutDefaultCtor
-    {
-        private TypeWithoutDefaultCtor(int x) { }
-    }
-
-    private class CustomException : Exception
-    {
-    }
-
-    private struct StructTypeWithoutReflectionMetadata
-    {
-    }
-
-    public class TypeWithDefaultCtorThatThrows
-    {
-        public TypeWithDefaultCtorThatThrows() { throw new CustomException(); }
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
+        Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor throws an exception
     }
 
     [Fact]
-    public static void TestActivatorOnNonActivatableTypes()
+    public static void TestCreateInstance_Generic()
     {
-        int x = 0;
-        Assert.ThrowsAny<MissingMemberException>(() => { ++x; Activator.CreateInstance<TypeWithoutDefaultCtor>(); });
-        Assert.Throws<TargetInvocationException>(() => { ++x; Activator.CreateInstance<TypeWithDefaultCtorThatThrows>(); });
+        Choice1 c = Activator.CreateInstance<Choice1>();
+        Assert.Equal(1, c.I);
+
+        Activator.CreateInstance<DateTime>();
+        Activator.CreateInstance<StructTypeWithoutReflectionMetadata>();
     }
 
     [Fact]
-    public static void TestActivatorWithDelegates()
+    public static void TestCreateInstance_Generic_Invalid()
     {
-        Func<object> activate1 = Activator.CreateInstance<Choice1>;
-        Assert.True(activate1() is Choice1);
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<int[]>()); // Cannot create array type
 
-        Func<DateTime> activateDateTime = Activator.CreateInstance<DateTime>;
-        activateDateTime();
-
-        Func<StructTypeWithoutReflectionMetadata> activateStruct = Activator.CreateInstance<StructTypeWithoutReflectionMetadata>;
-        activateStruct();
-
-        Func<object> activate2 = Activator.CreateInstance<TypeWithoutDefaultCtor>;
-        Assert.ThrowsAny<MissingMemberException>(() => activate2());
-
-        Func<object> activate3 = Activator.CreateInstance<TypeWithDefaultCtorThatThrows>;
-        Assert.Throws<TargetInvocationException>(() => activate3());
+        Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
+        Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor that throws
     }
-}
 
-namespace ActivatorTestsTestData
-{
     public class Choice1 : Attribute
     {
         public Choice1()
@@ -233,5 +158,19 @@ namespace ActivatorTestsTestData
 
     public class VarIntArgs
     {
+    }
+
+    public struct StructTypeWithoutReflectionMetadata
+    {
+    }
+
+    public class TypeWithoutDefaultCtor
+    {
+        private TypeWithoutDefaultCtor(int x) { }
+    }
+
+    public class TypeWithDefaultCtorThatThrows
+    {
+        public TypeWithDefaultCtorThatThrows() { throw new Exception(); }
     }
 }
