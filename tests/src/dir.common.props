@@ -35,16 +35,20 @@
 
 <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPathWithConfig>$(ProjectDir)\..\bin\tests\$(BuildOS).$(Platform).$(Configuration)\</BaseOutputPathWithConfig>
-    <BaseOutputPathWithConfig Condition="'$(__TestBinDir)' != ''">$(__TestBinDir)\</BaseOutputPathWithConfig>
+    <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
+    <BaseOutputPath>$(ProjectDir)\..\bin\tests</BaseOutputPath>
+    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)\</BaseOutputPath>
+    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-    <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\$(BuildOS).$(Platform).$(Configuration)\Managed</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\$(OSPlatformConfig)\Managed</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
     <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\obj\$(BuildOS).$(Platform).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)</IntermediateOutputPath>
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
+    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BaseOutputPath)\testStagingDir\</TestWorkingDir>
+    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)/</TestPath>
   </PropertyGroup>
 
   <!-- Default priority building values. -->
