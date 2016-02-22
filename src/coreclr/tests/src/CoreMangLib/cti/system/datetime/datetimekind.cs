@@ -182,6 +182,12 @@ public class DateTimeKind
 
         try
         {
+            if (TimeZoneInfo.Local.BaseUtcOffset == TimeSpan.Zero) // any TZ has same alignment with UTC
+            {
+                // if we are on UTC zone, then the following test wil not make sense because all date conversion will produce the same original date value
+                return retVal;
+            }
+
             TestLibrary.Utilities.CurrentCulture = new CultureInfo("");
             DateTime myDateTime = new DateTime(1978, 08, 29, 03, 00, 00, System.DateTimeKind.Unspecified);
 
@@ -190,12 +196,14 @@ public class DateTimeKind
 
             if (myDateTime == toLocal)
             {
-                TestLibrary.TestFramework.LogError("011", "The Unspecified myDateTime is regard as local by default!");
+                string errorMessage = String.Format("The Unspecified myDateTime is regard as local by default!\nTZ: '{0}'\nmyDateTime: '{1}'\ntoLocal: '{2}'", TimeZoneInfo.Local.DisplayName, myDateTime, toLocal);
+                TestLibrary.TestFramework.LogError("011", errorMessage);
                 retVal = false;
             }
             else if (myDateTime == toUniversal)
             {
-                TestLibrary.TestFramework.LogError("012", "Unexpected exception occurs!");
+                string errorMessage = String.Format("Unexpected exception occurs!\nTZ: '{0}'\nmyDateTime: '{1}'\ntoUniversal: '{2}'", TimeZoneInfo.Local.DisplayName, myDateTime, toUniversal);
+                TestLibrary.TestFramework.LogError("012", errorMessage);
                 retVal = false;
             }
         }

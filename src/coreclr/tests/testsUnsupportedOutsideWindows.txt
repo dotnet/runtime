@@ -1,6 +1,5 @@
 CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
 CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
-CoreMangLib/cti/system/datetime/DateTimeKind/DateTimeKind.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact2/DateTimeParseExact2.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact3/DateTimeParseExact3.sh
