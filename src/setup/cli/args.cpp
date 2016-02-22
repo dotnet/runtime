@@ -4,6 +4,7 @@
 #include "args.h"
 #include "utils.h"
 #include "coreclr.h"
+#include "libhost.h"
 
 arguments_t::arguments_t() :
     managed_application(_X("")),
@@ -11,11 +12,8 @@ arguments_t::arguments_t() :
     app_dir(_X("")),
     app_argc(0),
     app_argv(nullptr),
-    nuget_packages(_X("")),
     dotnet_packages_cache(_X("")),
     dotnet_servicing(_X("")),
-    dotnet_runtime_servicing(_X("")),
-    dotnet_home(_X("")),
     deps_path(_X(""))
 {
 }
@@ -26,12 +24,13 @@ void display_help()
         _X("Usage: " HOST_EXE_NAME " [ASSEMBLY] [ARGUMENTS]\n")
         _X("Execute the specified managed assembly with the passed in arguments\n\n")
         _X("The Host's behavior can be altered using the following environment variables:\n")
-        _X(" DOTNET_HOME            Set the dotnet home directory. The CLR is expected to be in the runtime subdirectory of this directory. Overrides all other values for CLR search paths\n")
         _X(" COREHOST_TRACE          Set to affect trace levels (0 = Errors only (default), 1 = Warnings, 2 = Info, 3 = Verbose)\n");
 }
 
-bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args)
+bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_dir, host_mode_t mode,
+    const int argc, const pal::char_t* argv[], arguments_t* arg_out)
 {
+    arguments_t& args = *arg_out;
     // Get the full name of the application
     if (!pal::get_own_executable_path(&args.own_path) || !pal::realpath(&args.own_path))
     {
@@ -41,8 +40,8 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
 
     auto own_name = get_filename(args.own_path);
     auto own_dir = get_directory(args.own_path);
-
-    if (own_name.compare(HOST_EXE_NAME) == 0)
+    
+    if (mode != host_mode_t::standalone)
     {
         // corerun mode. First argument is managed app
         if (argc < 2)
@@ -78,23 +77,26 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         args.app_argc = argc - 1;
     }
 
-    if (args.app_argc > 0)
+    std::unordered_map<pal::string_t, pal::string_t> opts;
+    std::vector<pal::string_t> known_opts = { _X("--depsfile"), _X("--additionalprobingpath") };
+    int num_args = 0;
+    if (!parse_known_args(args.app_argc, args.app_argv, known_opts, &opts, &num_args))
     {
-        auto depsfile_candidate = pal::string_t(args.app_argv[0]);
-        
-        if (starts_with(depsfile_candidate, s_deps_arg_prefix, false))
-        {
-            args.deps_path = depsfile_candidate.substr(s_deps_arg_prefix.length());
-            if (!pal::realpath(&args.deps_path))
-            {
-                trace::error(_X("Failed to locate deps file: %s"), args.deps_path.c_str());
-                return false;
-            }      
-            args.app_dir = get_directory(args.deps_path);      
-            args.app_argc = args.app_argc - 1;
-            args.app_argv = &args.app_argv[1];
-        }
+        return false;
     }
+
+    args.app_argc -= num_args;
+    args.app_argv += num_args;
+    pal::string_t deps_file = opts.count(_X("--depsfile")) ? opts[_X("--depsfile")] : deps_path;
+    pal::string_t probe_path = opts.count(_X("--additionalprobingpath")) ? opts[_X("--additionalprobingpath")] : probe_dir;
+
+    if (!deps_file.empty())
+    {
+        args.deps_path = deps_file;
+        args.app_dir = get_directory(args.deps_path);
+    }
+
+    args.probe_dir = probe_path;
     
     if (args.deps_path.empty())
     {
@@ -105,13 +107,10 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         args.deps_path.append(app_base);
         args.deps_path.push_back(DIR_SEPARATOR);
         args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
-        args.deps_path.append(_X(".deps"));
+        args.deps_path.append(_X(".deps.json"));
     }
 
-    pal::getenv(_X("NUGET_PACKAGES"), &args.nuget_packages);
     pal::getenv(_X("DOTNET_PACKAGES_CACHE"), &args.dotnet_packages_cache);
     pal::getenv(_X("DOTNET_SERVICING"), &args.dotnet_servicing);
-    pal::getenv(_X("DOTNET_RUNTIME_SERVICING"), &args.dotnet_runtime_servicing);
-    pal::getenv(_X("DOTNET_HOME"), &args.dotnet_home);
     return true;
 }

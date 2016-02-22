@@ -7,8 +7,7 @@
 #include "utils.h"
 #include "pal.h"
 #include "trace.h"
-
-static const pal::string_t s_deps_arg_prefix = _X("--depsfile:");
+#include "libhost.h"
 
 struct arguments_t
 {
@@ -18,7 +17,7 @@ struct arguments_t
     pal::string_t dotnet_servicing;
     pal::string_t dotnet_runtime_servicing;
     pal::string_t dotnet_home;
-    pal::string_t nuget_packages;
+    pal::string_t probe_dir;
     pal::string_t dotnet_packages_cache;
     pal::string_t managed_application;
 
@@ -28,6 +27,6 @@ struct arguments_t
     arguments_t();
 };
 
-bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args);
+bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_dir, host_mode_t mode, const int argc, const pal::char_t* argv[], arguments_t* args);
 
 #endif // ARGS_H

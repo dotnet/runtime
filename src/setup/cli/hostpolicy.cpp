@@ -5,25 +5,21 @@
 #include "args.h"
 #include "trace.h"
 #include "deps_resolver.h"
+#include "fx_muxer.h"
 #include "utils.h"
 #include "coreclr.h"
+#include "cpprest/json.h"
+#include "libhost.h"
+#include "error_codes.h"
 
-enum StatusCode
-{
-    // 0x80 prefix to distinguish from corehost main's error codes.
-    InvalidArgFailure      = 0x81,
-    CoreClrResolveFailure  = 0x82,
-    CoreClrBindFailure     = 0x83,
-    CoreClrInitFailure     = 0x84,
-    CoreClrExeFailure      = 0x85,
-    ResolverInitFailure    = 0x86,
-    ResolverResolveFailure = 0x87,
-};
 
-int run(const arguments_t& args)
+corehost_init_t* g_init = nullptr;
+
+int run(const corehost_init_t* init, const runtime_config_t& config, const arguments_t& args)
 {
     // Load the deps resolver
-    deps_resolver_t resolver(args);
+    deps_resolver_t resolver(init->fx_dir(), &config, args);
+
     if (!resolver.valid())
     {
         trace::error(_X("Invalid .deps file"));
@@ -31,8 +27,8 @@ int run(const arguments_t& args)
     }
 
     // Add packages directory
-    pal::string_t packages_dir = args.nuget_packages;
-    if (!pal::directory_exists(packages_dir))
+    pal::string_t packages_dir = init->probe_dir();
+    if (packages_dir.empty() || !pal::directory_exists(packages_dir))
     {
         (void)pal::get_default_packages_directory(&packages_dir);
     }
@@ -55,6 +51,8 @@ int run(const arguments_t& args)
         return StatusCode::ResolverResolveFailure;
     }
 
+    // TODO: config.get_runtime_properties();
+
     // Build CoreCLR properties
     const char* property_keys[] = {
         "TRUSTED_PLATFORM_ASSEMBLIES",
@@ -63,20 +61,22 @@ int run(const arguments_t& args)
         "NATIVE_DLL_SEARCH_DIRECTORIES",
         "PLATFORM_RESOURCE_ROOTS",
         "AppDomainCompatSwitch",
-        // TODO: pipe this from corehost.json
         "SERVER_GC",
         // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
         "APP_CONTEXT_BASE_DIRECTORY",
+        "APP_CONTEXT_DEPS_FILES"
     };
 
     auto tpa_paths_cstr = pal::to_stdstring(probe_paths.tpa);
     auto app_base_cstr = pal::to_stdstring(args.app_dir);
     auto native_dirs_cstr = pal::to_stdstring(probe_paths.native);
-    auto culture_dirs_cstr = pal::to_stdstring(probe_paths.culture);
+    auto resources_dirs_cstr = pal::to_stdstring(probe_paths.resources);
 
     // Workaround for dotnet/cli Issue #488 and #652
     pal::string_t server_gc;
     std::string server_gc_cstr = (pal::getenv(_X("COREHOST_SERVER_GC"), &server_gc) && !server_gc.empty()) ? pal::to_stdstring(server_gc) : "0";
+    
+    std::string deps = pal::to_stdstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file());
 
     const char* property_values[] = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -88,13 +88,15 @@ int run(const arguments_t& args)
         // NATIVE_DLL_SEARCH_DIRECTORIES
         native_dirs_cstr.c_str(),
         // PLATFORM_RESOURCE_ROOTS
-        culture_dirs_cstr.c_str(),
+        resources_dirs_cstr.c_str(),
         // AppDomainCompatSwitch
         "UseLatestBehaviorWhenTFMNotSpecified",
         // SERVER_GC
         server_gc_cstr.c_str(),
         // APP_CONTEXT_BASE_DIRECTORY
-        app_base_cstr.c_str()
+        app_base_cstr.c_str(),
+        // APP_CONTEXT_DEPS_FILES,
+        deps.c_str(),
     };
 
     size_t property_size = sizeof(property_keys) / sizeof(property_keys[0]);
@@ -188,16 +190,43 @@ int run(const arguments_t& args)
     return exit_code;
 }
 
+SHARED_API int corehost_load(corehost_init_t* init)
+{
+    g_init = init;
+    return 0;
+}
+
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
 
+    assert(g_init);
+
     // Take care of arguments
     arguments_t args;
-    if (!parse_arguments(argc, argv, args))
+    if (!parse_arguments(g_init->deps_file(), g_init->probe_dir(), g_init->host_mode(), argc, argv, &args))
     {
-        return StatusCode::InvalidArgFailure;
+        return StatusCode::LibHostInvalidArgs;
     }
 
-    return run(args);
+    if (g_init->runtime_config())
+    {
+        return run(g_init, *g_init->runtime_config(), args);
+    }
+    else
+    {
+        runtime_config_t config(get_runtime_config_json(args.managed_application));
+        if (!config.is_valid())
+        {
+            trace::error(_X("Invalid runtimeconfig.json [%s]"), config.get_path().c_str());
+            return StatusCode::InvalidConfigFile;
+        }
+        return run(g_init, config, args);
+    }
+}
+
+SHARED_API int corehost_unload()
+{
+    g_init = nullptr;
+    return 0;
 }
