@@ -151,6 +151,8 @@ namespace System.Security.Cryptography
     {
         private int _keySpec;
         private bool _fPublicOnly;
+        private SafeProvHandle _parent;
+
         private SafeKeyHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
@@ -182,6 +184,23 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal void SetParent(SafeProvHandle parent)
+        {
+            if (IsInvalid || IsClosed)
+            {
+                return;
+            }
+
+            Debug.Assert(_parent == null);
+            Debug.Assert(!parent.IsClosed);
+            Debug.Assert(!parent.IsInvalid);
+
+            _parent = parent;
+
+            bool ignored = false;
+            _parent.DangerousAddRef(ref ignored);
+        }
+
         internal static SafeKeyHandle InvalidHandle
         {
             get { return new SafeKeyHandle(); }
@@ -192,6 +211,11 @@ namespace System.Security.Cryptography
         {
             bool successfullyFreed = CapiHelper.CryptDestroyKey(handle);
             Debug.Assert(successfullyFreed);
+
+            SafeProvHandle parent = _parent;
+            _parent = null;
+            parent?.DangerousRelease();
+
             return successfullyFreed;
         }
     }
@@ -202,9 +226,28 @@ namespace System.Security.Cryptography
     [SecurityCritical]
     internal sealed class SafeHashHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private SafeProvHandle _parent;
+
         private SafeHashHandle() : base(true)
         {
             SetHandle(IntPtr.Zero);
+        }
+
+        internal void SetParent(SafeProvHandle parent)
+        {
+            if (IsInvalid || IsClosed)
+            {
+                return;
+            }
+
+            Debug.Assert(_parent == null);
+            Debug.Assert(!parent.IsClosed);
+            Debug.Assert(!parent.IsInvalid);
+
+            _parent = parent;
+
+            bool ignored = false;
+            _parent.DangerousAddRef(ref ignored);
         }
 
         internal static SafeHashHandle InvalidHandle
@@ -217,6 +260,11 @@ namespace System.Security.Cryptography
         {
             bool successfullyFreed = CapiHelper.CryptDestroyHash(handle);
             Debug.Assert(successfullyFreed);
+
+            SafeProvHandle parent = _parent;
+            _parent = null;
+            parent?.DangerousRelease();
+
             return successfullyFreed;
         }
     }

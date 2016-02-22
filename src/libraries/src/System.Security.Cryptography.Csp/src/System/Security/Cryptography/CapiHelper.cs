@@ -1411,17 +1411,17 @@ namespace Internal.NativeCrypto
             public static extern bool CryptGetProvParam(SafeProvHandle safeProvHandle, int dwParam, byte[] pbData,
                                                         ref int dwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGetUserKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, ref SafeKeyHandle safeKeyHandle);
+            private static extern bool _CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, ref SafeKeyHandle safeKeyHandle);
 
             [DllImport(AdvapiDll, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetKeyParam(SafeKeyHandle safeKeyHandle, int dwParam, byte[] pbData,
                                                         ref int pdwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
-            public static extern bool CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, ref SafeKeyHandle safeKeyHandle);
+            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGenKey")]
+            private static extern bool _CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, ref SafeKeyHandle safeKeyHandle);
 
             [DllImport(AdvapiDll, SetLastError = true)]
             public static extern bool CryptReleaseContext(IntPtr safeProvHandle, int dwFlags);
@@ -1441,13 +1441,13 @@ namespace Internal.NativeCrypto
             public static extern bool CryptExportKey(SafeKeyHandle hKey, SafeKeyHandle hExpKey, int dwBlobType,
                                                     int dwFlags, [In, Out] byte[] pbData, ref int dwDataLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptImportKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptImportKey(SafeProvHandle hProv, byte[] pbData, int dwDataLen, SafeKeyHandle hPubKey, int dwFlags, out SafeKeyHandle phKey);
+            private static extern bool _CryptImportKey(SafeProvHandle hProv, byte[] pbData, int dwDataLen, SafeKeyHandle hPubKey, int dwFlags, out SafeKeyHandle phKey);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptCreateHash")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
+            private static extern bool _CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
 
             [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
@@ -1472,6 +1472,60 @@ namespace Internal.NativeCrypto
             [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptDestroyHash(IntPtr hHash);
+
+            public static bool CryptGetUserKey(
+                SafeProvHandle safeProvHandle,
+                int dwKeySpec,
+                ref SafeKeyHandle safeKeyHandle)
+            {
+                bool response = _CryptGetUserKey(safeProvHandle, dwKeySpec, ref safeKeyHandle);
+
+                safeKeyHandle.SetParent(safeProvHandle);
+
+                return response;
+            }
+
+            public static bool CryptGenKey(
+                SafeProvHandle safeProvHandle,
+                int algId,
+                int dwFlags,
+                ref SafeKeyHandle safeKeyHandle)
+            {
+                bool response = _CryptGenKey(safeProvHandle, algId, dwFlags, ref safeKeyHandle);
+
+                safeKeyHandle.SetParent(safeProvHandle);
+
+                return response;
+            }
+
+            public static bool CryptImportKey(
+                SafeProvHandle hProv,
+                byte[] pbData,
+                int dwDataLen,
+                SafeKeyHandle hPubKey,
+                int dwFlags,
+                out SafeKeyHandle phKey)
+            {
+                bool response = _CryptImportKey(hProv, pbData, dwDataLen, hPubKey, dwFlags, out phKey);
+
+                phKey.SetParent(hProv);
+
+                return response;
+            }
+
+            public static bool CryptCreateHash(
+                SafeProvHandle hProv,
+                int algId,
+                SafeKeyHandle hKey,
+                CryptCreateHashFlags dwFlags,
+                out SafeHashHandle phHash)
+            {
+                bool response = _CryptCreateHash(hProv, algId, hKey, dwFlags, out phHash);
+
+                phHash.SetParent(hProv);
+
+                return response;
+            }
         }
     } //End CapiHelper : Pinvokes
 
