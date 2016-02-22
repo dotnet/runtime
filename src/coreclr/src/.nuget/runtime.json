@@ -2,17 +2,17 @@
   "runtimes": {
     "win7-x64": {
       "Microsoft.DotNet.RyuJit": {
-        "toolchain.win7-x64.Microsoft.DotNet.RyuJit": "1.0.4-prerelease-00001"
+        "toolchain.win7-x64.Microsoft.DotNet.RyuJit": "1.0.5-prerelease-00001"
       }
     },
     "ubuntu.14.04-x64": {
       "Microsoft.DotNet.RyuJit": {
-        "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit": "1.0.4-prerelease-00001"
+        "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit": "1.0.5-prerelease-00001"
       }
     },
     "osx.10.10-x64": {
       "Microsoft.DotNet.RyuJit": {
-        "toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit": "1.0.4-prerelease-00001"
+        "toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit": "1.0.5-prerelease-00001"
       }
     }
   }
