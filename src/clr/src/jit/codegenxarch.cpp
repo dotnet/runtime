@@ -4988,6 +4988,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
     if (op1->gtRegNum != dstReg)
     {
         // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area for tail calls) in RDI.
+        // Destination is always local (on the stack) - use EA_PTRSIZE.
         getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, baseVarNum, putArgNode->getArgOffset());
     }
     
@@ -5000,12 +5001,14 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
             GenTreeLclVarCommon* lclNode = src->AsLclVarCommon();
 
             // Generate LEA instruction to load the LclVar address in RSI.
-            getEmitter()->emitIns_R_S(INS_lea, emitTypeSize(src), srcReg, lclNode->gtLclNum, 0);
+            // Source is known to be on the stack. Use EA_PTRSIZE.
+            getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, 0);
         }
         else
         {
             assert(src->gtRegNum != REG_NA);
-            getEmitter()->emitIns_R_R(INS_mov, emitTypeSize(src), srcReg, src->gtRegNum);
+            // Source is not known to be on the stack. Use EA_BYREF.
+            getEmitter()->emitIns_R_R(INS_mov, EA_BYREF, srcReg, src->gtRegNum);
         }
     }
 
@@ -8125,8 +8128,6 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
         assert(src->OperGet() == GT_LDOBJ);
         GenTreePtr   srcAddr = src->gtGetOp1();
 
-        gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddr->TypeGet());
-
         unsigned slots = putArgStk->gtNumSlots;
 
         // We are always on the stack we don't need to use the write barrier. 
@@ -8179,15 +8180,35 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
                     // but the logic for emitting a GC info record is not available (it is internal for the emitter only.)
                     // See emitGCVarLiveUpd function. If we could call it separately, we could do instGen(INS_movsq); and emission of gc info.
 
-                    getEmitter()->emitIns_R_AR(ins_Load(srcAddr->TypeGet()), emitTypeSize(srcAddr), REG_RCX, REG_RSI, 0);
-                    getEmitter()->emitIns_S_R(ins_Store(srcAddr->TypeGet()),
-                                                        emitTypeSize(srcAddr),
-                                                        REG_RCX,
-                                                        baseVarNum,
-                                                        ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE));
+                    var_types memType;
+                    if (gcPtrs[i] == TYPE_GC_REF)
+                    {
+                        memType = TYP_REF;
+                    }
+                    else
+                    {
+                        assert(gcPtrs[i] == TYPE_GC_BYREF);
+                        memType = TYP_BYREF;
+                    }
 
-                    getEmitter()->emitIns_R_I(INS_add, emitTypeSize(srcAddr), REG_RSI, TARGET_POINTER_SIZE);
-                    getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RDI, TARGET_POINTER_SIZE);
+                    getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
+                    getEmitter()->emitIns_S_R(ins_Store(memType),
+                                              emitTypeSize(memType),
+                                              REG_RCX,
+                                              baseVarNum,
+                                              ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE));
+
+                    // Source for the copy operation.
+                    // If a LocalAddr, use EA_PTRSIZE - copy from stack.
+                    // If not a LocalAddr, use EA_BYREF - the source location is not on the stack.
+                    getEmitter()->emitIns_R_I(INS_add,
+                                              ((src->OperIsLocalAddr()) ? EA_PTRSIZE : EA_BYREF),
+                                              REG_RSI,
+                                              TARGET_POINTER_SIZE);
+
+                    // Always copying to the stack - outgoing arg area
+                    // (or the outgoing arg area of the caller for a tail call) - use EA_PTRSIZE.
+                    getEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_RDI, TARGET_POINTER_SIZE);
                     copiedSlots++;
                     gcPtrCount--;
                     i++;
@@ -8201,7 +8222,6 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
         }
 
         assert(gcPtrCount == 0);
-        gcInfo.gcMarkRegSetNpt(RBM_RSI);
     }
 }
 #endif //defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
