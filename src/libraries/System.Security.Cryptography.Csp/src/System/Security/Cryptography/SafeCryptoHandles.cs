@@ -109,7 +109,15 @@ namespace System.Security.Cryptography
 
         internal static SafeProvHandle InvalidHandle
         {
-            get { return new SafeProvHandle(); }
+            get { return SafeHandleCache<SafeProvHandle>.GetInvalidHandle(() => new SafeProvHandle()); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<SafeProvHandle>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
         }
 
         protected override bool ReleaseHandle()
@@ -203,7 +211,15 @@ namespace System.Security.Cryptography
 
         internal static SafeKeyHandle InvalidHandle
         {
-            get { return new SafeKeyHandle(); }
+            get { return SafeHandleCache<SafeKeyHandle>.GetInvalidHandle(() => new SafeKeyHandle()); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<SafeKeyHandle>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
         }
 
         [SecurityCritical]
@@ -252,7 +268,15 @@ namespace System.Security.Cryptography
 
         internal static SafeHashHandle InvalidHandle
         {
-            get { return new SafeHashHandle(); }
+            get { return SafeHandleCache<SafeHashHandle>.GetInvalidHandle(() => new SafeHashHandle()); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<SafeHashHandle>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
         }
 
         [SecurityCritical]
