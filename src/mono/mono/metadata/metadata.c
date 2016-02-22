@@ -1741,22 +1741,6 @@ mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
 	return mono_metadata_parse_type_internal (m, container, opt_attrs, transient, ptr, rptr, error);
 }
 
-
-MonoType*
-mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container,
-							   short opt_attrs, const char *ptr, const char **rptr)
-{
-	MonoError error;
-	MonoType * type = mono_metadata_parse_type_internal (m, container, opt_attrs, FALSE, ptr, rptr, &error);
-	mono_loader_assert_no_error ();
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-	}
-
-	return type;
-}
-
 /*
  * LOCKING: Acquires the loader lock.
  */
@@ -1764,7 +1748,10 @@ MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			  const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_type_full (m, NULL, opt_attrs, ptr, rptr);
+	MonoError error;
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, opt_attrs, FALSE, ptr, rptr, &error);
+	mono_error_cleanup (&error);
+	return type;
 }
 
 gboolean
@@ -3176,7 +3163,7 @@ get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar)
 /*
  * mono_metadata_parse_generic_param:
  * @generic_container: Our MonoClass's or MonoMethod's MonoGenericContainer;
- *                     see mono_metadata_parse_type_full() for details.
+ *                     see mono_metadata_parse_type_checked() for details.
  * Internal routine to parse a generic type parameter.
  * LOCKING: Acquires the loader lock
  */
