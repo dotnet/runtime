@@ -6604,23 +6604,16 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	static MonoClassField *f_os_handle;
-	static MonoClassField *f_safe_handle;
+	static MonoClassField *f_safe_handle = NULL;
+	MonoSafeHandle *sh;
 
-	if (!f_os_handle && !f_safe_handle) {
-		f_os_handle = mono_class_get_field_from_name (mono_defaults.manualresetevent_class, "os_handle");
-		f_safe_handle = mono_class_get_field_from_name (mono_defaults.manualresetevent_class, "safe_wait_handle");
+	if (!f_safe_handle) {
+		f_safe_handle = mono_class_get_field_from_name (mono_defaults.manualresetevent_class, "safeWaitHandle");
+		g_assert (f_safe_handle);
 	}
 
-	if (f_os_handle) {
-		HANDLE retval;
-		mono_field_get_value ((MonoObject*)handle, f_os_handle, &retval);
-		return retval;
-	} else {
-		MonoSafeHandle *sh;
-		mono_field_get_value ((MonoObject*)handle, f_safe_handle, &sh);
-		return sh->handle;
-	}
+	mono_field_get_value ((MonoObject*)handle, f_safe_handle, &sh);
+	return sh->handle;
 }
 
 

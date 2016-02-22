@@ -1583,7 +1583,7 @@ mono_wait_uninterrupted (MonoInternalThread *thread, gboolean multiple, guint32 
 }
 
 /* FIXME: exitContext isnt documented */
-gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
+gint32 ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
 	HANDLE *handles;
 	guint32 numhandles;
@@ -1616,15 +1616,7 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 
 	g_free(handles);
 
-	if(ret==WAIT_FAILED) {
-		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, mono_native_thread_id_get ()));
-		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT) {
-		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, mono_native_thread_id_get ()));
-		return(FALSE);
-	}
-	
-	return(TRUE);
+	return ret;
 }
 
 /* FIXME: exitContext isnt documented */
@@ -1676,7 +1668,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 }
 
 /* FIXME: exitContext isnt documented */
-gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this_obj, HANDLE handle, gint32 ms, gboolean exitContext)
+gint32 ves_icall_System_Threading_WaitHandle_WaitOne_internal(HANDLE handle, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -1695,18 +1687,10 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
-	if(ret==WAIT_FAILED) {
-		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait failed", __func__, mono_native_thread_id_get ()));
-		return(FALSE);
-	} else if(ret==WAIT_TIMEOUT) {
-		THREAD_WAIT_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Wait timed out", __func__, mono_native_thread_id_get ()));
-		return(FALSE);
-	}
-	
-	return(TRUE);
+	return ret;
 }
 
-gboolean
+gint32
 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, HANDLE toWait, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
@@ -1725,7 +1709,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, H
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-	return  (!(ret == WAIT_TIMEOUT || ret == WAIT_IO_COMPLETION || ret == WAIT_FAILED));
+	return ret;
 }
 
 HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created)
