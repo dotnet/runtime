@@ -2,74 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoEquals
     {
-        [Fact]
-        public void TestClone()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            CultureInfo myCultureInfo = new CultureInfo("fr-FR");
-            CultureInfo myClone = myCultureInfo.Clone() as CultureInfo;
-            Assert.True(myClone.Equals(myCultureInfo));
+            CultureInfo frFRCulture = new CultureInfo("fr-FR");
+            yield return new object[] { frFRCulture, frFRCulture.Clone(), true };
+            yield return new object[] { frFRCulture, frFRCulture, true };
+            yield return new object[] { new CultureInfo("en"), new CultureInfo("en"), true };
+            yield return new object[] { new CultureInfo("en-US"), new CultureInfo("en-US"), true };
+            yield return new object[] { CultureInfo.InvariantCulture, CultureInfo.InvariantCulture, true };
+            yield return new object[] { CultureInfo.InvariantCulture, new CultureInfo(""), true };
+
+            yield return new object[] { new CultureInfo("en"), new CultureInfo("en-US"), false };
+            yield return new object[] { new CultureInfo("en-US"), new CultureInfo("fr-FR"), false };
+            yield return new object[] { new CultureInfo("en-US"), null, false };
         }
 
-        [Fact]
-        public void TestEqualCultureName()
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals(CultureInfo culture, object value, bool expected)
         {
-            CultureInfo myCultureInfo = new CultureInfo("en");
-            CultureInfo myCultureInfo1 = new CultureInfo("en");
-            Assert.True(myCultureInfo1.Equals(myCultureInfo));
-        }
-
-        [Fact]
-        public void TestInvariantCulture()
-        {
-            CultureInfo myCultureInfo = CultureInfo.InvariantCulture;
-            CultureInfo myCultureInfo1 = CultureInfo.InvariantCulture;
-            Assert.True(myCultureInfo.Equals(myCultureInfo1));
-        }
-
-        [Fact]
-        public void TestEqualNameAndCultureIdentifier()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("en");
-            CultureInfo myCultureInfo1 = new CultureInfo("en-US");
-            Assert.False(myCultureInfo1.Equals(myCultureInfo));
-        }
-
-        [Fact]
-        public void TestSameCultureInfo()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            Assert.True(myCultureInfo.Equals(myCultureInfo));
-        }
-
-        [Fact]
-        public void TestNull()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            Assert.False(myCultureInfo.Equals(null));
-        }
-
-        [Fact]
-        public void TestEqualCultureIdentifier()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            CultureInfo myCultureInfo1 = new CultureInfo("en-US");
-            Assert.True(myCultureInfo1.Equals(myCultureInfo));
-        }
-
-        [Fact]
-        public void TestUnequal()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            CultureInfo myCultureInfo1 = new CultureInfo("fr-FR");
-            Assert.False(myCultureInfo1.Equals(myCultureInfo));
+            Assert.Equal(expected, culture.Equals(value));
         }
     }
 }
