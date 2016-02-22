@@ -59,7 +59,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
-            // Searches for the ligature Æ;
+            // Searches for the ligature Ã†;
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, 24 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.None, 9 };
@@ -227,11 +227,6 @@ namespace System.Globalization.Tests
                 }
             }
             return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
-        }
-
-        private static int NormalizeCompare(int result)
-        {
-            return Math.Sign(result);
         }
     }
 }
