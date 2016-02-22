@@ -113,7 +113,8 @@ INLINE_OBSERVATION(IMPLICIT_REC_TAIL_CALL,    bool,   "implicit recursive tail c
 INLINE_OBSERVATION(IS_CALL_TO_HELPER,         bool,   "target is helper",              FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_NOT_DIRECT,             bool,   "target not direct",             FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_NOT_DIRECT_MANAGED,     bool,   "target not direct managed",     FATAL,       CALLSITE)
-INLINE_OBSERVATION(IS_RECURSIVE_OR_DEEP,      bool,   "recursive or too deep",         FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_RECURSIVE,              bool,   "recursive",                     FATAL,       CALLSITE)
+INLINE_OBSERVATION(IS_TOO_DEEP,               bool,   "too deep",                      FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_VIRTUAL,                bool,   "virtual",                       FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_VM_NOINLINE,            bool,   "noinline per VM",               FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_WITHIN_CATCH,           bool,   "within catch region",           FATAL,       CALLSITE)
@@ -134,6 +135,7 @@ INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",        
 
 INLINE_OBSERVATION(ARGS_OK,                   bool,   "arguments suitable",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(BENEFIT_MULTIPLIER,        double, "benefit multiplier",            INFORMATION, CALLSITE)
+INLINE_OBSERVATION(DEPTH,                     int,    "depth"             ,            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(LOCALS_OK,                 bool,   "locals suitable",               INFORMATION, CALLSITE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLSITE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE_OK,   bool,   "native size estimate ok",       INFORMATION, CALLSITE)
