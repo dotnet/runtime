@@ -821,7 +821,16 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.CreateNew))
             {
-                Assert.Throws<IOException>(() => MemoryMappedFile.CreateFromFile(fs, null, long.MaxValue, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
+                try
+                {
+                    long length = long.MaxValue;
+                    MemoryMappedFile.CreateFromFile(fs, null, length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true).Dispose();
+                    Assert.Equal(length, fs.Length); // if it didn't fail to create the file, the length should be what was requested.
+                }
+                catch (IOException)
+                {
+                    // Expected exception for too large a capacity
+                }
             }
         }
 
