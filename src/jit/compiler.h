@@ -7416,9 +7416,8 @@ public :
         inline bool         IsJit64Compat()
         {
 #if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
-            // JIT64 interop not required for ReadyToRun since it can simply fall-back
-            return !IsReadyToRun();
-#else // defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+            return true;
+#else
             return false;
 #endif
         }
