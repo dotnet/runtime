@@ -149,8 +149,6 @@ namespace System.Net.Http
             Debug.Assert(state.TcsReadFromResponseStream != null, "TcsReadFromResponseStream is null");
             Debug.Assert(!state.TcsReadFromResponseStream.Task.IsCompleted, "TcsReadFromResponseStream.Task is completed");
             
-            state.CurrentBytesRead += (long)bytesRead;
-
             // If we read to the end of the stream and we're using 'Content-Length' semantics on the response body,
             // then verify we read at least the number of bytes required.
             if (bytesRead == 0
@@ -165,6 +163,7 @@ namespace System.Net.Http
             }
             else
             {
+                state.CurrentBytesRead += (long)bytesRead;
                 state.TcsReadFromResponseStream.TrySetResult((int)bytesRead);
             }
         }
