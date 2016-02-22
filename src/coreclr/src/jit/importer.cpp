@@ -5616,7 +5616,9 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
     // the time being that the callee might be compiled by the other JIT and thus the return
     // value will need to be widened by us (or not widened at all...)
 
-    bool            checkForSmallType = opts.IsJit64Compat();
+    // ReadyToRun code sticks with default calling convention that does not widen small return types.
+
+    bool            checkForSmallType = opts.IsJit64Compat() || opts.IsReadyToRun();
     bool            bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
