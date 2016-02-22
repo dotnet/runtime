@@ -35,7 +35,7 @@ namespace System.Net.Sockets
                     throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[i].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
-                int fd = socket._handle.FileDescriptor;
+                int fd = (int)socket._handle.DangerousGetHandle();
                 Interop.Sys.FD_SET(fd, fdset);
 
                 if (fd > maxFd)
@@ -61,7 +61,7 @@ namespace System.Net.Sockets
                 for (int i = socketList.Count - 1; i >= 0; i--)
                 {
                     var socket = (Socket)socketList[i];
-                    if (!Interop.Sys.FD_ISSET(socket._handle.FileDescriptor, fdset))
+                    if (!Interop.Sys.FD_ISSET((int)socket._handle.DangerousGetHandle(), fdset))
                     {
                         socketList.RemoveAt(i);
                     }

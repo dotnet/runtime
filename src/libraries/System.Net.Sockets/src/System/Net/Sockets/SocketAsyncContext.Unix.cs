@@ -107,9 +107,9 @@ namespace System.Net.Sockets
                 return TryCompleteOrAbortAsync(context, abort: false);
             }
 
-            public void AbortAsync(SocketAsyncContext context)
+            public void AbortAsync()
             {
-                bool completed = TryCompleteOrAbortAsync(context, abort: true);
+                bool completed = TryCompleteOrAbortAsync(null, abort: true);
                 Debug.Assert(completed);
             }
 
@@ -227,7 +227,7 @@ namespace System.Net.Sockets
         {
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteSendTo(context._fileDescriptor, Buffer, Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, Buffer, Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
         }
 
@@ -235,7 +235,7 @@ namespace System.Net.Sockets
         {
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteReceiveFrom(context._fileDescriptor, Buffer, Buffers, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer, Buffers, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
             }
         }
 
@@ -253,7 +253,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteReceiveMessageFrom(context._fileDescriptor, Buffer, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                return SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
             }
 
             protected override void InvokeCallback()
@@ -283,7 +283,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool completed = SocketPal.TryCompleteAccept(context._fileDescriptor, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
+                bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
                 Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == -1);
                 return completed;
             }
@@ -306,7 +306,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool result = SocketPal.TryCompleteConnect(context._fileDescriptor, SocketAddressLen, out ErrorCode);
+                bool result = SocketPal.TryCompleteConnect(context._socket, SocketAddressLen, out ErrorCode);
                 context.RegisterConnectResult(ErrorCode);
                 return result;
             }
@@ -389,24 +389,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SocketAsyncContext s_closedAsyncContext;
-        public static SocketAsyncContext ClosedAsyncContext
-        {
-            get
-            {
-                if (Volatile.Read(ref s_closedAsyncContext) == null)
-                {
-                    var ctx = new SocketAsyncContext(-1, null);
-                    ctx.Close();
-
-                    Volatile.Write(ref s_closedAsyncContext, ctx);
-                }
-
-                return s_closedAsyncContext;
-            }
-        }
-
-        private int _fileDescriptor;
+        private SafeCloseSocket _socket;
         private GCHandle _handle;
         private OperationQueue<TransferOperation> _receiveQueue;
         private OperationQueue<SendOperation> _sendQueue;
@@ -418,9 +401,9 @@ namespace System.Net.Sockets
 
         private object _queueLock = new object();
 
-        public SocketAsyncContext(int fileDescriptor, SocketAsyncEngine engine)
+        public SocketAsyncContext(SafeCloseSocket socket, SocketAsyncEngine engine)
         {
-            _fileDescriptor = fileDescriptor;
+            _socket = socket;
             _engine = engine;
         }
 
@@ -439,7 +422,7 @@ namespace System.Net.Sockets
             events |= _registeredEvents;
 
             Interop.Error errorCode;
-            if (!_engine.TryRegister(_fileDescriptor, _registeredEvents, events, _handle, out errorCode))
+            if (!_engine.TryRegister(_socket, _registeredEvents, events, _handle, out errorCode))
             {
                 if (_registeredEvents == Interop.Sys.SocketEvents.None)
                 {
@@ -466,7 +449,7 @@ namespace System.Net.Sockets
             else
             {
                 Interop.Error errorCode;
-                bool unregistered = _engine.TryRegister(_fileDescriptor, _registeredEvents, events, _handle, out errorCode);
+                bool unregistered = _engine.TryRegister(_socket, _registeredEvents, events, _handle, out errorCode);
                 if (unregistered)
                 {
                     _registeredEvents = events;
@@ -489,7 +472,7 @@ namespace System.Net.Sockets
             }
 
             Interop.Error errorCode;
-            bool unregistered = _engine.TryRegister(_fileDescriptor, _registeredEvents, Interop.Sys.SocketEvents.None, _handle, out errorCode);
+            bool unregistered = _engine.TryRegister(_socket, _registeredEvents, Interop.Sys.SocketEvents.None, _handle, out errorCode);
             _registeredEvents = (Interop.Sys.SocketEvents)(-1);
             if (unregistered)
             {
@@ -528,7 +511,7 @@ namespace System.Net.Sockets
             while (!acceptOrConnectQueue.IsEmpty)
             {
                 AcceptOrConnectOperation op = acceptOrConnectQueue.Head;
-                op.AbortAsync(this);
+                op.AbortAsync();
                 acceptOrConnectQueue.Dequeue();
             }
 
@@ -536,7 +519,7 @@ namespace System.Net.Sockets
             while (!sendQueue.IsEmpty)
             {
                 SendReceiveOperation op = sendQueue.Head;
-                op.AbortAsync(this);
+                op.AbortAsync();
                 sendQueue.Dequeue();
             }
 
@@ -544,7 +527,7 @@ namespace System.Net.Sockets
             while (!receiveQueue.IsEmpty)
             {
                 TransferOperation op = receiveQueue.Head;
-                op.AbortAsync(this);
+                op.AbortAsync();
                 receiveQueue.Dequeue();
             }
         }
@@ -570,7 +553,7 @@ namespace System.Net.Sockets
             //
             if (!_nonBlockingSet)
             {
-                if (Interop.Sys.Fcntl.SetIsNonBlocking((IntPtr)_fileDescriptor, 1) != 0)
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 1) != 0)
                 {
                     throw new SocketException((int)SocketPal.GetSocketErrorForErrorCode(Interop.Sys.GetLastError()));
                 }
@@ -633,7 +616,7 @@ namespace System.Net.Sockets
             Debug.Assert(timeout == -1 || timeout > 0);
 
             SocketError errorCode;
-            if (SocketPal.TryCompleteAccept(_fileDescriptor, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
+            if (SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1);
                 return errorCode;
@@ -686,7 +669,7 @@ namespace System.Net.Sockets
 
             int acceptedFd;
             SocketError errorCode;
-            if (SocketPal.TryCompleteAccept(_fileDescriptor, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
+            if (SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1);
 
@@ -733,7 +716,7 @@ namespace System.Net.Sockets
             CheckForPriorConnectFailure();
 
             SocketError errorCode;
-            if (SocketPal.TryStartConnect(_fileDescriptor, socketAddress, socketAddressLen, out errorCode))
+            if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
                 RegisterConnectResult(errorCode);
                 return errorCode;
@@ -776,7 +759,7 @@ namespace System.Net.Sockets
             SetNonBlocking();
 
             SocketError errorCode;
-            if (SocketPal.TryStartConnect(_fileDescriptor, socketAddress, socketAddressLen, out errorCode))
+            if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
                 RegisterConnectResult(errorCode);
 
@@ -828,7 +811,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            if (SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 flags = receivedFlags;
                 return errorCode;
@@ -882,7 +865,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            if (SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 if (errorCode == SocketError.Success)
                 {
@@ -940,7 +923,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            if (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 flags = receivedFlags;
                 return errorCode;
@@ -992,7 +975,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            if (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 if (errorCode == SocketError.Success)
                 {
@@ -1038,7 +1021,7 @@ namespace System.Net.Sockets
 
             SocketFlags receivedFlags;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveMessageFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+            if (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
                 flags = receivedFlags;
                 return errorCode;
@@ -1100,7 +1083,7 @@ namespace System.Net.Sockets
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
             SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveMessageFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+            if (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
                 if (errorCode == SocketError.Success)
                 {
@@ -1161,7 +1144,7 @@ namespace System.Net.Sockets
 
             bytesSent = 0;
             SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_fileDescriptor, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            if (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -1207,7 +1190,7 @@ namespace System.Net.Sockets
 
             int bytesSent = 0;
             SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_fileDescriptor, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            if (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 if (errorCode == SocketError.Success)
                 {
@@ -1266,7 +1249,7 @@ namespace System.Net.Sockets
             int bufferIndex = 0;
             int offset = 0;
             SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_fileDescriptor, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            if (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -1314,7 +1297,7 @@ namespace System.Net.Sockets
             int offset = 0;
             int bytesSent = 0;
             SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_fileDescriptor, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            if (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
             {
                 if (errorCode == SocketError.Success)
                 {
@@ -1376,13 +1359,6 @@ namespace System.Net.Sockets
                     // Set the Read and Write flags as well; the processing for these events
                     // will pick up the error.
                     events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
-                }
-
-                if ((events & Interop.Sys.SocketEvents.Close) != 0)
-                {
-                    // Drain queues and unregister this fd, then return.
-                    CloseInner();
-                    return;
                 }
 
                 if ((events & Interop.Sys.SocketEvents.ReadClose) != 0)
