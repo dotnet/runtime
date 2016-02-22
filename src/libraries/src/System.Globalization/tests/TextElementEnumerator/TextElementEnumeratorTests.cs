@@ -8,28 +8,54 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class TextElementEnumeratorMoveNext
+    public class TextElementEnumeratorTests
     {
         [Fact]
         public void Enumerate()
         {
+            // Creates and initializes a string containing the following:
+            //   - a surrogate pair (high surrogate U+D800 and low surrogate U+DC00)
+            //   - a combining character sequence (the Latin small letter "a" followed by the combining grave accent)
+            //   - a base character (the ligature "")
             string[] expectedElements = new string[] { "\uD800\uDC00", "\uD800\uDC00", "\u0061\u0300", "\u0061\u0300", "\u00C6" };
             int[] expectedElementIndices = new int[] { 0, 2, 4 };
             TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator("\uD800\uDC00\u0061\u0300\u00C6");
 
-            for (int i = 0; i < 2; i++)
+            int counter = 0;
+            while (enumerator.MoveNext())
             {
-                int counter = 0;
-                while (enumerator.MoveNext())
-                {
-                    Assert.Equal(expectedElements[enumerator.ElementIndex], enumerator.GetTextElement());
-                    Assert.Equal(enumerator.GetTextElement(), enumerator.Current);
+                string currentTextElement = enumerator.GetTextElement();
+                Assert.Equal(expectedElements[enumerator.ElementIndex], currentTextElement);
+                Assert.Equal(currentTextElement, enumerator.Current);
 
-                    Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
-                    counter++;
-                }
-                enumerator.Reset();
+                Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
+                counter++;
             }
+            Assert.Equal(expectedElementIndices.Length, counter);
+
+            enumerator.Reset();
+            counter = 0;
+            while (enumerator.MoveNext())
+            {
+                string currentTextElement = enumerator.GetTextElement();
+                Assert.Equal(expectedElements[enumerator.ElementIndex], currentTextElement);
+                Assert.Equal(currentTextElement, enumerator.Current);
+
+                Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
+                counter++;
+            }
+            Assert.Equal(expectedElementIndices.Length, counter);
+        }
+
+        [Fact]
+        public void AccessingMembersBeforeEnumeration_ThrowsInvalidOperationException()
+        {
+            TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator("abc");
+
+            // Cannot access Current, ElementIndex or GetTextElement() before the enumerator has started
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => enumerator.ElementIndex);
+            Assert.Throws<InvalidOperationException>(() => enumerator.GetTextElement());
         }
 
         [Fact]
