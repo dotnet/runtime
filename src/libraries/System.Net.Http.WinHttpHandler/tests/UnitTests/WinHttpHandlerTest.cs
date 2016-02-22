@@ -501,14 +501,14 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             var handler = new WinHttpHandler();
             var client = new HttpClient(handler);
-            TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
 
-            HttpResponseMessage response = await client.GetAsync(TestServer.FakeServerEndpoint);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            response = await client.GetAsync(TestServer.FakeServerEndpoint);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            response = await client.GetAsync(TestServer.FakeServerEndpoint);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            for (int i = 0; i < 3; i++)
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                HttpResponseMessage response = await client.GetAsync(TestServer.FakeServerEndpoint);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+
             client.Dispose();
         }
 

@@ -91,6 +91,11 @@ namespace System.Net.Http
             // Parse raw response headers and place them into response message.
             ParseResponseHeaders(requestHandle, response, buffer, stripEncodingHeaders);
 
+            if (response.RequestMessage.Method != HttpMethod.Head)
+            {
+                state.ExpectedBytesToRead = response.Content.Headers.ContentLength;
+            }
+
             return response;
         }
 

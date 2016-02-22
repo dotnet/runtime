@@ -91,7 +91,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(6231, PlatformID.Windows)]
         [Theory]
         [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.ContentLengthTooLarge)]
         [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.MissingChunkTerminator)]
