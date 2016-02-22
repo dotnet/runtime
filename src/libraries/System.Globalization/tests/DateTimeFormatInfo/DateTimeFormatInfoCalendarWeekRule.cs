@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -11,64 +12,35 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoCalendarWeekRule
     {
-        // TestGetter: Call CalendarWeekRule getter method should return correct value for InvariantInfo
-        [Fact]
-        public void TestGetter()
+        public static IEnumerable<object[]> CalendarWeekRule_TestData()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo,
-                    CalendarWeekRule.FirstDay,
-                    false);
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, CalendarWeekRule.FirstDay };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, CalendarWeekRule.FirstDay };
+            yield return new object[] { new CultureInfo("br-FR").DateTimeFormat, DateTimeFormatInfoData.BrFRCalendarWeekRule() };
         }
 
-        // TestSetter: Call CalendarWeekRule setter method should return correct value
-        [Fact]
-        public void TestSetter()
-        {
-            VerificationHelper(new DateTimeFormatInfo(),
-                CalendarWeekRule.FirstDay,
-                true);
-            VerificationHelper(new DateTimeFormatInfo(),
-                CalendarWeekRule.FirstFourDayWeek,
-                true);
-            VerificationHelper(new DateTimeFormatInfo(),
-                CalendarWeekRule.FirstFullWeek,
-                true);
-        }
-
-        // TestInvalidValue: ArgumentOutOfRangeException should be thrown when The property is being set to a value that is 
-        // not a valid CalendarWeekRule value
-        [Fact]
-        public void TestInvalidValue()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                new DateTimeFormatInfo().CalendarWeekRule = (CalendarWeekRule)(-1);
-            });
-        }
-
-        // Verify value of property CalendarWeekRule for specific locales
         [Theory]
-        [InlineData("en-US")]
-        [InlineData("br-FR")]
-        public void TestLocale(string localeName)
+        [MemberData(nameof(CalendarWeekRule_TestData))]
+        public void CalendarWeekRuleTest(DateTimeFormatInfo format, CalendarWeekRule expected)
         {
-            CultureInfo myTestCulture = new CultureInfo(localeName);
-            DateTimeFormatInfo dti = myTestCulture.DateTimeFormat;
-            CalendarWeekRule actual = dti.CalendarWeekRule;
-
-            CalendarWeekRule expected = DateTimeFormatInfoData.GetCalendarWeekRule(myTestCulture);
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.CalendarWeekRule);
         }
 
-        private void VerificationHelper(DateTimeFormatInfo info, CalendarWeekRule expected, bool setter)
+        [Theory]
+        [InlineData(CalendarWeekRule.FirstDay)]
+        [InlineData(CalendarWeekRule.FirstFourDayWeek)]
+        [InlineData(CalendarWeekRule.FirstFullWeek)]
+        public void CalendarWeekRule_Set(CalendarWeekRule newCalendarWeekRule)
         {
-            if (setter)
-            {
-                info.CalendarWeekRule = expected;
-            }
+            var format = new DateTimeFormatInfo();
+            format.CalendarWeekRule = newCalendarWeekRule;
+            Assert.Equal(newCalendarWeekRule, format.CalendarWeekRule);
+        }
 
-            CalendarWeekRule actual = info.CalendarWeekRule;
-            Assert.Equal(expected, actual);
+        [Fact]
+        public void CalendarWeekRule_Set_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().CalendarWeekRule = (CalendarWeekRule)(-1)); // Value is invalid
         }
     }
 }

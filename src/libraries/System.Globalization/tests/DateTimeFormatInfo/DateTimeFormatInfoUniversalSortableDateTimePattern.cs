@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,20 +11,19 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoUniversalSortableDateTimePattern
     {
-        // PosTest1: Call UniversalSortableDateTimePattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void TestGetter()
+        public static IEnumerable<object[]> UniversalSortableDateTimePattern_TestData()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "yyyy'-'MM'-'dd HH':'mm':'ss'Z'");
-            VerificationHelper(new CultureInfo("en-us").DateTimeFormat, "yyyy'-'MM'-'dd HH':'mm':'ss'Z'");
-            VerificationHelper(new CultureInfo("ja-jp").DateTimeFormat, "yyyy'-'MM'-'dd HH':'mm':'ss'Z'");
-            VerificationHelper(new CultureInfo("fr-fr").DateTimeFormat, "yyyy'-'MM'-'dd HH':'mm':'ss'Z'");
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat };
+            yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat };
         }
 
-        private void VerificationHelper(DateTimeFormatInfo info, string expected)
+        [Theory]
+        [MemberData(nameof(UniversalSortableDateTimePattern_TestData))]
+        public void UniversalSortableDateTimePattern(DateTimeFormatInfo format)
         {
-            string actual = info.UniversalSortableDateTimePattern;
-            Assert.Equal(expected, actual);
+            Assert.Equal("yyyy'-'MM'-'dd HH':'mm':'ss'Z'", format.UniversalSortableDateTimePattern);
         }
     }
 }

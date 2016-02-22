@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,44 +11,31 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetEraName
     {
-        // PosTest1: Call GetEra when DateTimeFormatInfo instance's calendar is Gregorian calendar
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetEraName_TestData()
         {
-            DateTimeFormatInfo info = CultureInfo.InvariantCulture.DateTimeFormat;
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, 1, "A.D." };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, 0, "A.D." };
 
-            VerificationHelper(info, 1, "A.D.");
-            VerificationHelper(info, 0, "A.D.");
+            var enUSFormat = new CultureInfo("en-US").DateTimeFormat;
+            yield return new object[] { enUSFormat, 1, DateTimeFormatInfoData.EnUSEraName() };
+            yield return new object[] { enUSFormat, 0, DateTimeFormatInfoData.EnUSEraName() };
+
+            var frRFormat = new CultureInfo("fr-FR").DateTimeFormat;
+            yield return new object[] { frRFormat, 1, "ap. J.-C." };
+            yield return new object[] { frRFormat, 0, "ap. J.-C." };
         }
 
-        // PosTest2: Call GetEra when DateTimeFormatInfo from en-us and fr-FR cultures
         [Theory]
-        [InlineData("en-us")]
-        [InlineData("fr-FR")]
-        public void PosTest2(string localeName)
+        [MemberData(nameof(GetEraName_TestData))]
+        public void GetEraName(DateTimeFormatInfo format, int era, string expected)
         {
-            CultureInfo cultureInfo = new CultureInfo(localeName);
-            DateTimeFormatInfo info = cultureInfo.DateTimeFormat;
-            string eraName = DateTimeFormatInfoData.GetEraName(cultureInfo);
-
-            VerificationHelper(info, 1, eraName);
-            VerificationHelper(info, 0, eraName);
+            Assert.Equal(expected, format.GetEraName(era));
         }
 
-        // NegTest1: ArgumentOutOfRangeException should be thrown when era does not represent a valid era in the calendar specified in the Calendar property
         [Fact]
-        public void TestInvalidEra()
+        public void GetEraName_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                new DateTimeFormatInfo().GetEraName(-1);
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, int era, string expected)
-        {
-            string actual = info.GetEraName(era);
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
         }
     }
 }

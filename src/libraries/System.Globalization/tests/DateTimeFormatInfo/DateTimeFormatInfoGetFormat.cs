@@ -10,26 +10,19 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetFormat
     {
-        // PosTest1: Call GetFormat to to get an valid DateTimeFormatInfo instance
         [Fact]
-        public void PosTest1()
+        public void GetFormat()
         {
             DateTimeFormatInfo expected = new DateTimeFormatInfo();
-            object obj = expected.GetFormat(typeof(DateTimeFormatInfo));
-
-            Assert.True(obj is DateTimeFormatInfo);
-
-            DateTimeFormatInfo actual = obj as DateTimeFormatInfo;
-            Assert.Equal(expected, actual);
+            DateTimeFormatInfo format = (DateTimeFormatInfo)expected.GetFormat(typeof(DateTimeFormatInfo));
+            Assert.Same(expected, format);
         }
 
-        // PosTest2: If the format type is not supported, null reference should be return
         [Fact]
-        public void TestUnsupportedFormatType()
+        public void GetFormat_UnsupportedFormatType_ReturnsNull()
         {
             DateTimeFormatInfo info = new DateTimeFormatInfo();
-
-            Assert.Null(info.GetFormat(typeof(Object)));
+            Assert.Null(info.GetFormat(typeof(object)));
         }
     }
 }

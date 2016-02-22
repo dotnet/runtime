@@ -2,145 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoGetAbbreviatedMonthName
     {
-        private const int c_MIN_MONTH_VALUE = 1;
-        private const int c_MAX_MONTH_VALUE = 13;
+        private const int MinMonth = 1;
+        private const int MaxMonth = 13;
 
-        // PosTest1: Call GetAbbreviatedMonthName on default invariant DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetAbbreviatedMonthName_TestData()
         {
-            DateTimeFormatInfo info = CultureInfo.InvariantCulture.DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-                "",
-            };
+            string[] englishAbbreviatedMonthNames = new string[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, englishAbbreviatedMonthNames };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, englishAbbreviatedMonthNames };
+            yield return new object[] { new DateTimeFormatInfo(), englishAbbreviatedMonthNames };
 
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest2: Call GetAbbreviatedMonthName on en-us culture DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest2()
-        {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest3: Call GetAbbreviatedMonthName on fr-FR culture DateTimeFormatInfo instance
-        // When dotnet/corefx#2103 is addressed, we should remove the conditional fact attribute and select the right data for fr-FR
-        [ConditionalFact("IsNotUbuntu1510")]
-        public void PosTest3()
-        {
-            DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
-            string[] expected = new string[] {
-                "",
-                "janv.",
-                "f\u00E9vr.",
-                "mars",
-                "avr.",
-                "mai",
-                "juin",
-                "juil.",
-                "ao\u00FBt",
-                "sept.",
-                "oct.",
-                "nov.",
-                "d\u00E9c.",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest4: Call GetAbbreviatedMonthName on DateTimeFormatInfo instance created from ctor
-        [Fact]
-        public void PosTest4()
-        {
-            DateTimeFormatInfo info = new DateTimeFormatInfo();
-            string[] expected = new string[] {
-                "",
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-                "Oct",
-                "Nov",
-                "Dec",
-                "",
-            };
-
-            VerificationHelper(info, expected);
-        }
-
-        // NegTest1: ArgumentOutOfRangeException should be thrown when dayofweek is not a valid System.DayOfWeek value
-        [Fact]
-        public void TestInvalidDayOfWeek()
-        {
-            DateTimeFormatInfo info1 = new DateTimeFormatInfo();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            // ActiveIssue(2103)
+            if (!PlatformDetection.IsUbuntu1510)
             {
-                info1.GetAbbreviatedMonthName(c_MIN_MONTH_VALUE - 1);
-            });
-
-            DateTimeFormatInfo info2 = new DateTimeFormatInfo();
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                info2.GetAbbreviatedMonthName(c_MAX_MONTH_VALUE + 1);
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string[] expected)
-        {
-            for (int i = c_MIN_MONTH_VALUE; i <= c_MAX_MONTH_VALUE; ++i)
-            {
-                string actual = info.GetAbbreviatedMonthName(i);
-                Assert.Equal(expected[i], actual);
+                yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "", "janv.", "f\u00E9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\u00FBt", "sept.", "oct.", "nov.", "d\u00E9c.", "" } };
             }
         }
 
-        public static bool IsNotUbuntu1510()
+        [Theory]
+        [MemberData(nameof(GetAbbreviatedMonthName_TestData))]
+        public void GetAbbreviatedMonthName(DateTimeFormatInfo info, string[] expected)
         {
-            return !PlatformDetection.IsUbuntu1510;
+            for (int i = MinMonth; i <= MaxMonth; ++i)
+            {
+                Assert.Equal(expected[i], info.GetAbbreviatedMonthName(i));
+            }
+        }
+
+        [Fact]
+        public void GetAbbreviatedMonthName_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedMonthName(MinMonth - 1)); // DayOfWeek is invalid
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedMonthName(MaxMonth + 1)); // DayOfWeek is invalid
         }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,19 +11,18 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoRFC1123Pattern
     {
-        // PosTest1: Call RFC1123Pattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void TestGetter()
+        public static IEnumerable<object[]> RFC1123Pattern_TestData()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'");
-            VerificationHelper(new CultureInfo("en-us").DateTimeFormat, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'");
-            VerificationHelper(new CultureInfo("ja-jp").DateTimeFormat, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'");
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'" };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'" };
+            yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'" };
         }
 
-        private void VerificationHelper(DateTimeFormatInfo info, string expected)
+        [Theory]
+        [MemberData(nameof(RFC1123Pattern_TestData))]
+        public void RFC1123Pattern(DateTimeFormatInfo format, string expected)
         {
-            string actual = info.RFC1123Pattern;
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.RFC1123Pattern);
         }
     }
 }
