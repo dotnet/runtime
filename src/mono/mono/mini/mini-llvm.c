@@ -5035,7 +5035,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				 * they can't fail, allowing them to be hoisted out of loops.
 				 */
 				set_invariant_load_flag (values [ins->dreg]);
+#if LLVM_API_VERSION < 100
 				set_metadata_flag (values [ins->dreg], "mono.nofail.load");
+#endif
 			}
 
 			if (sext)
