@@ -8,57 +8,42 @@ using Xunit;
 
 public static class UIntPtrTests
 {
-    private static unsafe bool s_is32Bits = sizeof(void*) == 4; // Skip UIntPtr tests on 32-bit platforms
+    private static unsafe bool Is64Bit => sizeof(void*) == 8;
 
     [Fact]
     public static void TestZero()
     {
-        if (s_is32Bits)
-            return;
-
         VerifyPointer(UIntPtr.Zero, 0);
     }
 
     [Fact]
     public static void TestCtor_UInt()
     {
-        if (s_is32Bits)
-            return;
-
         uint i = 42;
         VerifyPointer(new UIntPtr(i), i);
         VerifyPointer((UIntPtr)i, i);
     }
 
-    [Fact]
+    [ConditionalFact(nameof(Is64Bit))]
     public static void TestCtor_ULong()
     {
-        if (s_is32Bits)
-            return;
-
         ulong l = 0x0fffffffffffffff;
         VerifyPointer(new UIntPtr(l), l);
         VerifyPointer((UIntPtr)l, l);
     }
 
-    [Fact]
+    [ConditionalFact(nameof(Is64Bit))]
     public static unsafe void TestCtor_VoidPointer_ToPointer()
     {
-        if (s_is32Bits)
-            return;
-
         void* pv = new UIntPtr(42).ToPointer();
 
         VerifyPointer(new UIntPtr(pv), 42);
         VerifyPointer((UIntPtr)pv, 42);
     }
 
-    [Fact]
+    [ConditionalFact(nameof(Is64Bit))]
     public static unsafe void TestSize()
     {
-        if (s_is32Bits)
-            return;
-
         Assert.Equal(sizeof(void*), UIntPtr.Size);
     }
 
@@ -71,13 +56,10 @@ public static class UIntPtrTests
         yield return new object[] { new UIntPtr(0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
     }
 
-    [Theory]
+    [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Add_TestData))]
     public static void TestAdd(UIntPtr ptr, int offset, ulong expected)
     {
-        if (s_is32Bits)
-            return;
-
         UIntPtr p1 = UIntPtr.Add(ptr, offset);
         VerifyPointer(p1, expected);
 
@@ -96,13 +78,10 @@ public static class UIntPtrTests
         yield return new object[] { new UIntPtr(38), -2, (ulong)40 };
     }
 
-    [Theory]
+    [ConditionalTheory(nameof(Is64Bit))]
     [MemberData(nameof(Subtract_TestData))]
     public static void TestSubtract(UIntPtr ptr, int offset, ulong expected)
     {
-        if (s_is32Bits)
-            return;
-
         UIntPtr p1 = UIntPtr.Subtract(ptr, offset);
         VerifyPointer(p1, expected);
 
@@ -126,9 +105,6 @@ public static class UIntPtrTests
     [MemberData(nameof(Equals_TestData))]
     public static void TestEquals(UIntPtr ptr1, object obj, bool expected)
     {
-        if (s_is32Bits)
-            return;
-
         if (obj is UIntPtr)
         {
             UIntPtr ptr2 = (UIntPtr)obj;
@@ -140,12 +116,9 @@ public static class UIntPtrTests
         Assert.Equal(ptr1.GetHashCode(), ptr1.GetHashCode());
     }
 
-    [Fact]
+    [ConditionalFact(nameof(Is64Bit))]
     public static unsafe void TestImplicitCast()
     {
-        if (s_is32Bits)
-            return;
-
         var ptr = new UIntPtr(42);
 
         uint i = (uint)ptr;
