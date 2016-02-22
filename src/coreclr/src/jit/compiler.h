@@ -4638,13 +4638,10 @@ private:
 
     unsigned            fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    static bool         fgIsUnboundedInlineRecursion(InlineContext* context,
-                                                     BYTE*          ilCode,
-                                                     DWORD*         depth);
-
-    void                fgInvokeInlineeCompiler(GenTreeCall*   call, InlineResult* result);
-    void                fgInsertInlineeBlocks (InlineInfo * pInlineInfo);
-    GenTreePtr          fgInlinePrependStatements(InlineInfo * inlineInfo);
+    unsigned            fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+    void                fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result);
+    void                fgInsertInlineeBlocks (InlineInfo* pInlineInfo);
+    GenTreePtr          fgInlinePrependStatements(InlineInfo* inlineInfo);
 
 #if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     GenTreePtr          fgGetStructAsStructPtr(GenTreePtr tree);
