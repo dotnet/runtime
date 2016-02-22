@@ -3932,7 +3932,10 @@ mono_method_header_get_clauses (MonoMethodHeader *header, MonoMethod *method, gp
 MonoType *
 mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_type (m, MONO_PARSE_FIELD, field_flags, ptr, rptr);
+	MonoError error;
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, field_flags, FALSE, ptr, rptr, &error);
+	mono_error_cleanup (&error);
+	return type;
 }
 
 /**
@@ -3948,7 +3951,10 @@ mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr
 MonoType *
 mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, rptr);
+	MonoError error;
+	MonoType * type = mono_metadata_parse_type_internal (m, NULL, 0, FALSE, ptr, rptr, &error);
+	mono_error_cleanup (&error);
+	return type;
 }
 
 /*

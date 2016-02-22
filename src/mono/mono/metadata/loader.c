@@ -506,13 +506,17 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	/* FIXME: This needs a cache, especially for generic instances, since
-	 * mono_metadata_parse_type () allocates everything from a mempool.
+	 * we ask mono_metadata_parse_type_checked () to allocates everything from a mempool.
+	 * FIXME part2, mono_metadata_parse_type_checked actually allows for a transient type instead.
+	 * FIXME part3, transient types are not 100% transient, so we need to take care of that first.
 	 */
 	sig_type = (MonoType *)find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
-		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		MonoError inner_error;
+		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, &inner_error);
 		if (sig_type == NULL) {
-			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x", fname, token);
+			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x due to: %s", fname, token, mono_error_get_message (&inner_error));
+			mono_error_cleanup (&inner_error);
 			return NULL;
 		}
 		sig_type = (MonoType *)cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);

@@ -1527,13 +1527,19 @@ dis_data (MonoImage *m)
 	MonoType *type;
 
 	for (i = 0; i < t->rows; i++) {
+		MonoError error;
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_RVA_SIZE);
 		rva = mono_image_rva_map (m, cols [MONO_FIELD_RVA_RVA]);
 		sig = mono_metadata_blob_heap (m, mono_metadata_decode_row_col (ft, cols [MONO_FIELD_RVA_FIELD] -1, MONO_FIELD_SIGNATURE));
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		type = mono_metadata_parse_field_type (m, 0, sig + 1, &sig);
+		type = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, sig + 1, &sig, &error);
+		if (!type) {
+			fprintf (output, "// invalid field %d due to %s\n", i, mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+			continue;
+		}
 		mono_class_init (mono_class_from_mono_type (type));
 		size = mono_type_size (type, &align);
 

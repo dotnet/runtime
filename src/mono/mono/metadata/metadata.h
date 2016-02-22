@@ -395,17 +395,20 @@ MONO_API MonoArrayType *mono_metadata_parse_array       (MonoImage      *m,
 						const char      *ptr,
 						const char     **rptr);
 MONO_API void           mono_metadata_free_array        (MonoArrayType     *array);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType      *mono_metadata_parse_type        (MonoImage      *m,
 						MonoParseTypeMode  mode,
 						short              opt_attrs,
 						const char        *ptr,
 						const char       **rptr);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType      *mono_metadata_parse_param       (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
 MONO_API MonoType      *mono_metadata_parse_ret_type    (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
 		                                short            field_flags,
 						const char      *ptr,
