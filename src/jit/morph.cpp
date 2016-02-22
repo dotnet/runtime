@@ -16133,11 +16133,7 @@ bool Compiler::fgFitsInOrNotLoc(GenTreePtr tree, unsigned width)
 
 void Compiler::fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq)
 {
-#ifdef FEATURE_REF_ZERO_OFFSET_ALLOWED
     assert(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL || op1->TypeGet() == TYP_REF);
-#else
-    assert(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL);
-#endif
 
     switch (op1->OperGet())
     {
