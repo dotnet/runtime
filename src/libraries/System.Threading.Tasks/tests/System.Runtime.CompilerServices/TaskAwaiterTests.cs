@@ -2,427 +2,323 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
     public class TaskAwaiterTests
     {
-        // awaiting tasks
-        [Fact]
-        [OuterLoop]
-        public static void RunAsyncTaskAwaiterTests()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(false, null)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(true, null)]
+        public static void OnCompleted_CompletesInAnotherSynchronizationContext(bool generic, bool? continueOnCapturedContext)
         {
-            var completed = new TaskCompletionSource<string>();
-            Task task = completed.Task;
-            Task<string> taskOfString = completed.Task;
-            completed.SetResult("42");
-
+            SynchronizationContext origCtx = SynchronizationContext.Current;
+            try
             {
-                // IsCompleted/OnCompleted on a non-completed Task with SyncContext and completes the task in another context
-                var vccsc = new ValidateCorrectContextSynchronizationContext();
-                SynchronizationContext.SetSynchronizationContext(vccsc);
-                ManualResetEventSlim mres = new ManualResetEventSlim();
+                // Create a context that tracks operations, and set it as current
+                var validateCtx = new ValidateCorrectContextSynchronizationContext();
+                Assert.Equal(0, validateCtx.PostCount);
+                SynchronizationContext.SetSynchronizationContext(validateCtx);
+
+                // Create a not-completed task and get an awaiter for it
+                var mres = new ManualResetEventSlim();
                 var tcs = new TaskCompletionSource<object>();
-                int result = 1;
-                var awaiter = ((Task)tcs.Task).GetAwaiter();
-                Assert.False(awaiter.IsCompleted, "     > FAILURE. Awaiter on non-completed task should not be IsCompleted");
-                awaiter.OnCompleted(() =>
-                {
-                    Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext, "     > FAILURE. Continuation should be running in captured sync context.");
-                    result = 2;
-                    mres.Set();
-                });
-                Assert.True(result == 1, "     > FAILURE. Await continuation should not run until task completes.");
-                Task.Run(delegate { tcs.SetResult(null); });
-                mres.Wait();
-                awaiter.GetResult();
-                Assert.True(result == 2, "     > FAILURE. Await continuation should have completed.");
-                Assert.True(vccsc.PostCount == 1, "     > FAILURE. Await continuation should have posted to the target context.");
-                SynchronizationContext.SetSynchronizationContext(null);
-            }
 
+                // Hook up a callback
+                bool postedInContext = false;
+                Action callback = () =>
+                {
+                    postedInContext = ValidateCorrectContextSynchronizationContext.IsPostedInContext;
+                    mres.Set();
+                };
+                if (generic)
+                {
+                    if (continueOnCapturedContext.HasValue) tcs.Task.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(callback);
+                    else tcs.Task.GetAwaiter().OnCompleted(callback);
+                }
+                else
+                {
+                    if (continueOnCapturedContext.HasValue) ((Task)tcs.Task).ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(callback);
+                    else ((Task)tcs.Task).GetAwaiter().OnCompleted(callback);
+                }
+                Assert.False(mres.IsSet, "Callback should not yet have run.");
+
+                // Complete the task in another context and wait for the callback to run
+                Task.Run(() => tcs.SetResult(null));
+                mres.Wait();
+
+                // Validate the callback ran and in the correct context
+                bool shouldHavePosted = !continueOnCapturedContext.HasValue || continueOnCapturedContext.Value;
+                Assert.Equal(shouldHavePosted ? 1 : 0, validateCtx.PostCount);
+                Assert.Equal(shouldHavePosted, postedInContext);
+            }
+            finally
             {
-                // IsCompleted/OnCompleted on a non-completed Task with TaskScheduler and completes the task in another context
+                // Reset back to the original context
+                SynchronizationContext.SetSynchronizationContext(origCtx);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(false, null)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(true, null)]
+        public static void OnCompleted_CompletesInAnotherTaskScheduler(bool generic, bool? continueOnCapturedContext)
+        {
+            Task.Run(() => // get off current sync ctx so that it's not picked up by await
+            {
                 var quwi = new QUWITaskScheduler();
                 RunWithSchedulerAsCurrent(quwi, delegate
                 {
-                    ManualResetEventSlim mres = new ManualResetEventSlim();
+                    Assert.True(TaskScheduler.Current == quwi, "Expected to be on target scheduler");
+
+                    // Create the not completed task and get its awaiter
+                    var mres = new ManualResetEventSlim();
                     var tcs = new TaskCompletionSource<object>();
-                    int result = 1;
-                    var awaiter = ((Task)tcs.Task).GetAwaiter();
-                    Assert.False(awaiter.IsCompleted, "     > FAILURE. Awaiter on non-completed task should not be IsCompleted");
-                    awaiter.OnCompleted(() =>
+
+                    // Hook up the callback
+                    bool ranOnScheduler = false;
+                    Action callback = () =>
                     {
-                        Assert.True(TaskScheduler.Current == quwi, "     > FAILURE. Continuation should be running in task scheduler.");
-                        result = 2;
+                        ranOnScheduler = (TaskScheduler.Current == quwi);
                         mres.Set();
-                    });
-                    Assert.True(result == 1, "     > FAILURE. Await continuation should not run until task completes.");
+                    };
+                    if (generic)
+                    {
+                        if (continueOnCapturedContext.HasValue) tcs.Task.ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(callback);
+                        else tcs.Task.GetAwaiter().OnCompleted(callback);
+                    }
+                    else
+                    {
+                        if (continueOnCapturedContext.HasValue) ((Task)tcs.Task).ConfigureAwait(continueOnCapturedContext.Value).GetAwaiter().OnCompleted(callback);
+                        else ((Task)tcs.Task).GetAwaiter().OnCompleted(callback);
+                    }
+                    Assert.False(mres.IsSet, "Callback should not yet have run.");
+
+                    // Complete the task in another scheduler and wait for the callback to run
                     Task.Run(delegate { tcs.SetResult(null); });
                     mres.Wait();
-                    awaiter.GetResult();
-                    Assert.True(result == 2, "     > FAILURE. Await continuation should have completed.");
+
+                    // Validate the callback ran on the right scheduler
+                    bool shouldHaveRunOnScheduler = !continueOnCapturedContext.HasValue || continueOnCapturedContext.Value;
+                    Assert.Equal(shouldHaveRunOnScheduler, ranOnScheduler);
                 });
-            }
-
-            {
-                // Configured IsCompleted/OnCompleted on a non-completed Task with SyncContext
-                for (int iter = 0; iter < 2; iter++)
-                {
-                    Task.Factory.StartNew(() =>
-                    {
-                        bool continueOnCapturedContext = iter == 0;
-                        SynchronizationContext.SetSynchronizationContext(new ValidateCorrectContextSynchronizationContext());
-                        ManualResetEventSlim mres = new ManualResetEventSlim();
-                        var tcs = new TaskCompletionSource<object>();
-                        int result = 1;
-                        var awaiter = ((Task)tcs.Task).ConfigureAwait(continueOnCapturedContext).GetAwaiter();
-                        Assert.False(awaiter.IsCompleted, "     > FAILURE. Configured awaiter on non-completed task should not be IsCompleted");
-                        awaiter.OnCompleted(() =>
-                        {
-                            Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext == continueOnCapturedContext,
-                            "     > FAILURE. Continuation should have been posted to context iff continueOnCapturedContext == true.");
-                            //
-                            //    Assert.True(Environment.StackTrace.Contains("SetResult") != continueOnCapturedContext,
-                            //    "     > FAILURE. Continuation should have been executed synchronously iff continueOnCapturedContext == false.");
-                            result = 2;
-                            mres.Set();
-                        });
-                        Assert.True(result == 1, "     > FAILURE. Await continuation should not have run before task completed.");
-                        Task.Factory.StartNew(() => tcs.SetResult(null));
-                        mres.Wait();
-                        awaiter.GetResult();
-                        Assert.True(result == 2, "     > FAILURE. Await continuation should now have completed.");
-                        SynchronizationContext.SetSynchronizationContext(null);
-                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Wait();
-                }
-            }
-
-            {
-                // IsCompleted/OnCompleted on a non-completed Task<TResult> with SyncContext and completes the task in another context
-                var vccsc = new ValidateCorrectContextSynchronizationContext();
-                SynchronizationContext.SetSynchronizationContext(vccsc);
-                var mres = new ManualResetEventSlim();
-                var tcs = new TaskCompletionSource<object>();
-                int result = 1;
-                var awaiter = ((Task<object>)tcs.Task).GetAwaiter();
-                Assert.False(awaiter.IsCompleted, "     > FAILURE. Awaiter on non-completed Task<TResult> should not be IsCompleted");
-                awaiter.OnCompleted(() =>
-                {
-                    Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext, "     > FAILURE. Await continuation should have posted to target context");
-                    result = 2;
-                    mres.Set();
-                });
-                Assert.True(result == 1, "     > FAILURE. Await continuation should not have run before task completed.");
-                Task.Run(delegate { tcs.SetResult(null); });
-                mres.Wait();
-                awaiter.GetResult();
-                Assert.True(result == 2, "     > FAILURE. Await continuation should now have completed.");
-                Assert.True(vccsc.PostCount == 1, "     > FAILURE. Await continuation should have posted to the target context");
-                SynchronizationContext.SetSynchronizationContext(null);
-            }
-
-            {
-                // Configured IsCompleted/OnCompleted on a non-completed Task<TResult> with SyncContext
-                for (int iter = 0; iter < 2; iter++)
-                {
-                    Task.Factory.StartNew(() =>
-                    {
-                        bool continueOnCapturedContext = iter == 0;
-                        SynchronizationContext.SetSynchronizationContext(new ValidateCorrectContextSynchronizationContext());
-                        var mres = new ManualResetEventSlim();
-                        var tcs = new TaskCompletionSource<object>();
-                        int result = 1;
-                        var awaiter = tcs.Task.ConfigureAwait(continueOnCapturedContext).GetAwaiter();
-                        Assert.False(awaiter.IsCompleted, "     > FAILURE. Configured awaiter on non-completed Task<TResult> should not be IsCompleted");
-                        awaiter.OnCompleted(() =>
-                        {
-                            Assert.True(
-                               ValidateCorrectContextSynchronizationContext.IsPostedInContext == continueOnCapturedContext,
-                               "     > FAILURE. Await continuation should have posted to target context iff continueOnCapturedContext == true");
-                            // Assert.True(
-                            //    Environment.StackTrace.Contains("SetResult") != continueOnCapturedContext,
-                            //    "     > FAILURE. Await continuation should have executed inline iff continueOnCapturedContext == false");
-                            result = 2;
-                            mres.Set();
-                        });
-                        Assert.True(result == 1, "     > FAILURE. Await continuation should not have run before task completed.");
-                        Task.Factory.StartNew(() => tcs.SetResult(null));
-                        mres.Wait();
-                        awaiter.GetResult();
-                        Assert.True(result == 2, "     > FAILURE. Await continuation should now have completed.");
-                        SynchronizationContext.SetSynchronizationContext(null);
-                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Wait();
-                }
-            }
-
-            {
-                // Validate successful GetResult
-                task.GetAwaiter().GetResult();
-                task.ConfigureAwait(false).GetAwaiter().GetResult();
-                task.ConfigureAwait(true).GetAwaiter().GetResult();
-
-                Assert.Equal(taskOfString.GetAwaiter().GetResult(), "42");
-                Assert.Equal(taskOfString.ConfigureAwait(false).GetAwaiter().GetResult(), "42");
-                Assert.Equal(taskOfString.ConfigureAwait(true).GetAwaiter().GetResult(), "42");
-            }
-
-            {
-                // Validate GetResult blocks until completion
-                var tcs = new TaskCompletionSource<bool>();
-
-                // Kick off tasks that should all block
-                var t1 = Task.Factory.StartNew(() => tcs.Task.GetAwaiter().GetResult());
-                var t2 = Task.Factory.StartNew(() => ((Task)tcs.Task).GetAwaiter().GetResult());
-                var t3 = Task.Factory.StartNew(() => tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult());
-                var t4 = Task.Factory.StartNew(() => ((Task)tcs.Task).ConfigureAwait(false).GetAwaiter().GetResult());
-                var allTasks = new Task[] { t1, t2, t3, t4 };
-
-                // Wait with timeout should return false
-                bool waitCompleted;
-                try
-                {
-                    waitCompleted = Task.WaitAll(allTasks, 4000);
-                    Assert.False(waitCompleted, "     > Expected tasks to not be completed");
-                }
-                catch (Exception exc)
-                {
-                    Assert.True(false, string.Format("     > Did not expect an exception: " + exc));
-                }
-
-                // Now complete the tasks
-                tcs.SetResult(true);
-
-                // All tasks should complete successfully
-                waitCompleted = Task.WaitAll(allTasks, 4000);
-                Assert.True(waitCompleted,
-                    "After completion, excepted all GetResult calls to completed successfully");
-                foreach (var taskToCheck in allTasks)
-                {
-                    Assert.True(taskToCheck.Status == TaskStatus.RanToCompletion, "Task was not run to completion. Excepted all GetResult calls to completed successfully");
-                }
-            }
+            }).GetAwaiter().GetResult();
         }
 
         [Fact]
-        public static void RunAsyncTaskAwaiterTests_Exceptions()
+        public static void GetResult_Completed_Success()
+        {
+            Task task = Task.CompletedTask;
+            task.GetAwaiter().GetResult();
+            task.ConfigureAwait(false).GetAwaiter().GetResult();
+            task.ConfigureAwait(true).GetAwaiter().GetResult();
+
+            const string expectedResult = "42";
+            Task<string> taskOfString = Task.FromResult(expectedResult);
+            Assert.Equal(expectedResult, taskOfString.GetAwaiter().GetResult());
+            Assert.Equal(expectedResult, taskOfString.ConfigureAwait(false).GetAwaiter().GetResult());
+            Assert.Equal(expectedResult, taskOfString.ConfigureAwait(true).GetAwaiter().GetResult());
+        }
+
+        [OuterLoop]
+        [Fact]
+        public static void GetResult_NotCompleted_BlocksUntilCompletion()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            // Kick off tasks that should all block
+            var tasks = new[] {
+                Task.Run(() => tcs.Task.GetAwaiter().GetResult()),
+                Task.Run(() => ((Task)tcs.Task).GetAwaiter().GetResult()),
+                Task.Run(() => tcs.Task.ConfigureAwait(false).GetAwaiter().GetResult()),
+                Task.Run(() => ((Task)tcs.Task).ConfigureAwait(false).GetAwaiter().GetResult())
+            };
+            Assert.False(Task.WaitAll(tasks, 4000), "Tasks should not have completed");
+
+            // Now complete the tasks, after which all the tasks should complete successfully.
+            tcs.SetResult(true);
+            Task.WaitAll(tasks);
+        }
+
+        [Fact]
+        public static void GetResult_CanceledTask_ThrowsCancellationException()
         {
             // Validate cancellation
-            var canceled = new TaskCompletionSource<string>();
-            canceled.SetCanceled();
+            Task<string> canceled = Task.FromCanceled<string>(new CancellationToken(true));
 
             // Task.GetAwaiter and Task<T>.GetAwaiter
-            Assert.Throws<TaskCanceledException>(() => { ((Task)canceled.Task).GetAwaiter().GetResult(); });
-            Assert.Throws<TaskCanceledException>(() => { ((Task<string>)canceled.Task).GetAwaiter().GetResult(); });
+            Assert.Throws<TaskCanceledException>(() => ((Task)canceled).GetAwaiter().GetResult());
+            Assert.Throws<TaskCanceledException>(() => canceled.GetAwaiter().GetResult());
 
             // w/ ConfigureAwait false and true
-            Assert.Throws<TaskCanceledException>(() => { ((Task)canceled.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-            Assert.Throws<TaskCanceledException>(() => { ((Task)canceled.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
-            Assert.Throws<TaskCanceledException>(() => { ((Task<string>)canceled.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-            Assert.Throws<TaskCanceledException>(() => { ((Task<string>)canceled.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
+            Assert.Throws<TaskCanceledException>(() => ((Task)canceled).ConfigureAwait(false).GetAwaiter().GetResult());
+            Assert.Throws<TaskCanceledException>(() => ((Task)canceled).ConfigureAwait(true).GetAwaiter().GetResult());
+            Assert.Throws<TaskCanceledException>(() => canceled.ConfigureAwait(false).GetAwaiter().GetResult());
+            Assert.Throws<TaskCanceledException>(() => canceled.ConfigureAwait(true).GetAwaiter().GetResult());
         }
 
         [Fact]
-        public static void AsyncTaskAwaiterTests_EqualityTests()
+        public static void GetResult_FaultedTask_OneException_ThrowsOriginalException()
+        {
+            var exception = new ArgumentException("uh oh");
+            Task<string> task = Task.FromException<string>(exception);
+
+            // Task.GetAwaiter and Task<T>.GetAwaiter
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.GetAwaiter().GetResult()));
+
+            // w/ ConfigureAwait false and true
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).ConfigureAwait(false).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).ConfigureAwait(true).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.ConfigureAwait(false).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.ConfigureAwait(true).GetAwaiter().GetResult()));
+        }
+
+        [Fact]
+        public static void GetResult_FaultedTask_MultipleExceptions_ThrowsFirstException()
+        {
+            var exception = new ArgumentException("uh oh");
+            var tcs = new TaskCompletionSource<string>();
+            tcs.SetException(new Exception[] { exception, new InvalidOperationException("uh oh") });
+            Task<string> task = tcs.Task;
+
+            // Task.GetAwaiter and Task<T>.GetAwaiter
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.GetAwaiter().GetResult()));
+
+            // w/ ConfigureAwait false and true
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).ConfigureAwait(false).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => ((Task)task).ConfigureAwait(true).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.ConfigureAwait(false).GetAwaiter().GetResult()));
+            Assert.Same(exception, Assert.Throws<ArgumentException>(() => task.ConfigureAwait(true).GetAwaiter().GetResult()));
+        }
+
+        [Fact]
+        public static void AwaiterAndAwaitableEquality()
         {
             var completed = new TaskCompletionSource<string>();
             Task task = completed.Task;
 
-            // Validate awaiter and awaitable equality
-
             // TaskAwaiter
             task.GetAwaiter().Equals(task.GetAwaiter());
+
             // ConfiguredTaskAwaitable
-            Assert.Equal(((Task)task).ConfigureAwait(false), ((Task)task).ConfigureAwait(false));
-            Assert.NotEqual(((Task)task).ConfigureAwait(false), ((Task)task).ConfigureAwait(true));
-            Assert.NotEqual(((Task)task).ConfigureAwait(true), ((Task)task).ConfigureAwait(false));
+            Assert.Equal(task.ConfigureAwait(false), task.ConfigureAwait(false));
+            Assert.NotEqual(task.ConfigureAwait(false), task.ConfigureAwait(true));
+            Assert.NotEqual(task.ConfigureAwait(true), task.ConfigureAwait(false));
 
             // ConfiguredTaskAwaitable<T>
-            Assert.Equal(task.ConfigureAwait(false), ((Task)task).ConfigureAwait(false));
-            Assert.NotEqual(task.ConfigureAwait(false), ((Task)task).ConfigureAwait(true));
-            Assert.NotEqual(task.ConfigureAwait(true), ((Task)task).ConfigureAwait(false));
+            Assert.Equal(task.ConfigureAwait(false), task.ConfigureAwait(false));
+            Assert.NotEqual(task.ConfigureAwait(false), task.ConfigureAwait(true));
+            Assert.NotEqual(task.ConfigureAwait(true), task.ConfigureAwait(false));
 
             // ConfiguredTaskAwaitable.ConfiguredTaskAwaiter
-            Assert.Equal(((Task)task).ConfigureAwait(false).GetAwaiter(), ((Task)task).ConfigureAwait(false).GetAwaiter());
-            Assert.NotEqual(((Task)task).ConfigureAwait(false).GetAwaiter(), ((Task)task).ConfigureAwait(true).GetAwaiter());
-            Assert.NotEqual(((Task)task).ConfigureAwait(true).GetAwaiter(), ((Task)task).ConfigureAwait(false).GetAwaiter());
+            Assert.Equal(task.ConfigureAwait(false).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
+            Assert.NotEqual(task.ConfigureAwait(false).GetAwaiter(), task.ConfigureAwait(true).GetAwaiter());
+            Assert.NotEqual(task.ConfigureAwait(true).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
 
             // ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter
-            Assert.Equal(task.ConfigureAwait(false).GetAwaiter(), ((Task)task).ConfigureAwait(false).GetAwaiter());
-            Assert.NotEqual(task.ConfigureAwait(false).GetAwaiter(), ((Task)task).ConfigureAwait(true).GetAwaiter());
-            Assert.NotEqual(task.ConfigureAwait(true).GetAwaiter(), ((Task)task).ConfigureAwait(false).GetAwaiter());
+            Assert.Equal(task.ConfigureAwait(false).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
+            Assert.NotEqual(task.ConfigureAwait(false).GetAwaiter(), task.ConfigureAwait(true).GetAwaiter());
+            Assert.NotEqual(task.ConfigureAwait(true).GetAwaiter(), task.ConfigureAwait(false).GetAwaiter());
         }
 
         [Fact]
-        public static void AsyncTaskAwaiterTests_NegativeTests()
+        public static void BaseSynchronizationContext_SameAsNoSynchronizationContext()
         {
+            var quwi = new QUWITaskScheduler();
+            SynchronizationContext origCtx = SynchronizationContext.Current;
+            try
             {
-                // Validate GetResult on a single exception
-                var oneException = new TaskCompletionSource<string>();
-                oneException.SetException(new ArgumentException("uh oh"));
-
-                // Task.GetAwaiter and Task<T>.GetAwaiter
-                Assert.Throws<ArgumentException>(() => { ((Task)oneException.Task).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)oneException.Task).GetAwaiter().GetResult(); });
-
-                // w/ ConfigureAwait false and true
-                Assert.Throws<ArgumentException>(() => { ((Task)oneException.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task)oneException.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)oneException.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)oneException.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
-            }
-
-            {
-                // Validate GetResult on multiple exceptions
-                var multiException = new TaskCompletionSource<string>();
-                multiException.SetException(new Exception[] { new ArgumentException("uh oh"), new InvalidOperationException("uh oh") });
-
-                // Task.GetAwaiter and Task<T>.GetAwaiter
-                Assert.Throws<ArgumentException>(() => { ((Task)multiException.Task).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)multiException.Task).GetAwaiter().GetResult(); });
-
-                // w/ ConfigureAwait false and true
-                Assert.Throws<ArgumentException>(() => { ((Task)multiException.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task)multiException.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)multiException.Task).ConfigureAwait(false).GetAwaiter().GetResult(); });
-                Assert.Throws<ArgumentException>(() => { ((Task<string>)multiException.Task).ConfigureAwait(true).GetAwaiter().GetResult(); });
-            }
-        }
-
-        [Fact]
-        public static void RunAsyncTaskAwaiterAdditionalBehaviorsTests()
-        {
-            // Test that base SynchronizationContext is treated the same as no SynchronizationContext for awaits
-            {
-                var quwi = new QUWITaskScheduler();
                 SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
                 RunWithSchedulerAsCurrent(quwi, delegate
                 {
                     ManualResetEventSlim mres = new ManualResetEventSlim();
                     var tcs = new TaskCompletionSource<object>();
-                    int result = 1;
                     var awaiter = ((Task)tcs.Task).GetAwaiter();
-                    Assert.False(awaiter.IsCompleted, "     > FAILURE. Awaiter on non-completed task should not be IsCompleted");
-                    Assert.True(SynchronizationContext.Current != null, "     > FAILURE. Expected a current SyncCtx but found null");
+
+                    bool ranOnScheduler = false;
+                    bool ranWithoutSyncCtx = false;
                     awaiter.OnCompleted(() =>
                     {
-                        Assert.True(TaskScheduler.Current == quwi, "     > FAILURE. Continuation should be running in task scheduler.");
-                        Assert.True(SynchronizationContext.Current == null, "     > FAILURE. Expected no current SyncCtx but found " + SynchronizationContext.Current);
-                        result = 2;
+                        ranOnScheduler = (TaskScheduler.Current == quwi);
+                        ranWithoutSyncCtx = SynchronizationContext.Current == null;
                         mres.Set();
                     });
-                    Assert.True(result == 1, "     > FAILURE. Await continuation should not run until task completes.");
+                    Assert.False(mres.IsSet, "Callback should not yet have run.");
+
                     Task.Run(delegate { tcs.SetResult(null); });
                     mres.Wait();
-                    awaiter.GetResult();
-                    Assert.True(result == 2, "     > FAILURE. Await continuation should have completed.");
+
+                    Assert.True(ranOnScheduler, "Should have run on scheduler");
+                    Assert.True(ranWithoutSyncCtx, "Should have run with a null sync ctx");
                 });
-                SynchronizationContext.SetSynchronizationContext(null);
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(origCtx);
             }
         }
 
-        [Fact]
-        public static void AsyncTaskAwaiterTests_CTandOCE()
+        [Theory]
+        [MemberData(nameof(CanceledTasksAndExpectedCancellationExceptions))]
+        public static void OperationCanceledException_PropagatesThroughCanceledTask(int lineNumber, Task task, OperationCanceledException expected)
         {
-            // Test that CancellationToken is correctly flowed through await
-            {
-                var amb = AsyncTaskMethodBuilder.Create();
-                var cts = new CancellationTokenSource();
-                var oce = new OperationCanceledException(cts.Token);
-                amb.SetException(oce);
-                try
-                {
-                    amb.Task.GetAwaiter().GetResult();
-                    Assert.True(false, string.Format("     > FAILURE. Faulted task's GetResult should have thrown."));
-                }
-                catch (OperationCanceledException oceToCheck)
-                {
-                    Assert.True(oceToCheck.CancellationToken == cts.Token, "     > FAILURE. The tasks token should have equaled the provided token.");
-                }
-                catch (Exception exc)
-                {
-                    Assert.True(false, string.Format("     > FAILURE. Exception an OCE rather than a " + exc.GetType()));
-                }
-            }
-
-            // Test that original OCE is propagated through await
-            {
-                var tasks = new List<Task>();
-
-                var cts = new CancellationTokenSource();
-                var oce = new OperationCanceledException(cts.Token);
-
-                // A Task that throws an exception to cancel
-                var b = new Barrier(2);
-                Task<int> t2 = Task<int>.Factory.StartNew(() =>
-                {
-                    b.SignalAndWait();
-                    b.SignalAndWait();
-                    throw oce;
-                }, cts.Token);
-                Task t1 = t2;
-                b.SignalAndWait(); // make sure task is started before we cancel
-                cts.Cancel();
-                b.SignalAndWait(); // release task to complete
-                tasks.Add(t2);
-
-                // A WhenAll Task
-                tasks.Add(Task.WhenAll(t1));
-                tasks.Add(Task.WhenAll(t1, Task.FromResult(42)));
-                tasks.Add(Task.WhenAll(Task.FromResult(42), t1));
-                tasks.Add(Task.WhenAll(t1, t1, t1));
-
-                // A WhenAll Task<int[]>
-                tasks.Add(Task.WhenAll(t2));
-                tasks.Add(Task.WhenAll(t2, Task.FromResult(42)));
-                tasks.Add(Task.WhenAll(Task.FromResult(42), t2));
-                tasks.Add(Task.WhenAll(t2, t2, t2));
-
-                // A Task.Run Task and Task<int>
-                tasks.Add(Task.Run(() => t1));
-                tasks.Add(Task.Run(() => t2));
-
-                // A FromAsync Task and Task<int>
-                tasks.Add(Task.Factory.FromAsync(t1, new Action<IAsyncResult>(ar => { throw oce; })));
-                tasks.Add(Task<int>.Factory.FromAsync(t2, new Func<IAsyncResult, int>(ar => { throw oce; })));
-
-                // Test each kind of task
-                foreach (var task in tasks)
-                {
-                    ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
-                    try
-                    {
-                        if (task is Task<int>)
-                        {
-                            ((Task<int>)task).GetAwaiter().GetResult();
-                        }
-                        else if (task is Task<int[]>)
-                        {
-                            ((Task<int[]>)task).GetAwaiter().GetResult();
-                        }
-                        else
-                        {
-                            task.GetAwaiter().GetResult();
-                        }
-                        Assert.True(false, "     > FAILURE. Expected an OCE to be thrown.");
-                    }
-                    catch (Exception exc)
-                    {
-                        Assert.True(
-                           Object.ReferenceEquals(oce, exc),
-                           "     > FAILURE. The thrown exception was not the original instance.");
-                    }
-                }
-            }
+            var caught = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+            Assert.Same(expected, caught);
         }
 
-        #region Helper Methods / Classes
+        public static IEnumerable<object[]> CanceledTasksAndExpectedCancellationExceptions()
+        {
+            var cts = new CancellationTokenSource();
+            var oce = new OperationCanceledException(cts.Token);
+
+            // Scheduled Task
+            Task<int> generic = Task.Run<int>(new Func<int>(() =>
+            {
+                cts.Cancel();
+                throw oce;
+            }), cts.Token);
+            yield return new object[] { LineNumber(), generic, oce };
+
+            Task nonGeneric = generic;
+
+            // WhenAll Task and Task<int>
+            yield return new object[] { LineNumber(), Task.WhenAll(generic), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(generic, Task.FromResult(42)), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(Task.FromResult(42), generic), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(generic, generic, generic), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(nonGeneric), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(nonGeneric, Task.FromResult(42)), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(Task.FromResult(42), nonGeneric), oce };
+            yield return new object[] { LineNumber(), Task.WhenAll(nonGeneric, nonGeneric, nonGeneric), oce };
+
+            // Task.Run Task and Task<int> with unwrapping
+            yield return new object[] { LineNumber(), Task.Run(() => generic), oce };
+            yield return new object[] { LineNumber(), Task.Run(() => nonGeneric), oce };
+
+            // A FromAsync Task and Task<int>
+            yield return new object[] { LineNumber(), Task.Factory.FromAsync(generic, new Action<IAsyncResult>(ar => { throw oce; })), oce };
+            yield return new object[] { LineNumber(), Task<int>.Factory.FromAsync(nonGeneric, new Func<IAsyncResult, int>(ar => { throw oce; })), oce };
+
+            // AsyncTaskMethodBuilder
+            var atmb = new AsyncTaskMethodBuilder();
+            atmb.SetException(oce);
+            yield return new object[] { LineNumber(), atmb.Task, oce };
+        }
+
+        private static int LineNumber([CallerLineNumber]int lineNumber = 0) => lineNumber;
 
         private class ValidateCorrectContextSynchronizationContext : SynchronizationContext
         {
@@ -437,9 +333,15 @@ namespace System.Threading.Tasks.Tests
                 Interlocked.Increment(ref PostCount);
                 Task.Run(() =>
                 {
-                    IsPostedInContext = true;
-                    d(state);
-                    IsPostedInContext = false;
+                    try
+                    {
+                        IsPostedInContext = true;
+                        d(state);
+                    }
+                    finally
+                    {
+                        IsPostedInContext = false;
+                    }
                 });
             }
 
@@ -479,9 +381,7 @@ namespace System.Threading.Tasks.Tests
         {
             var t = new Task(action);
             t.RunSynchronously(scheduler);
-            t.Wait();
+            t.GetAwaiter().GetResult();
         }
-
-        #endregion
     }
 }
