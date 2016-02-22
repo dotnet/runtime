@@ -54,7 +54,7 @@ bool inlIsValidObservation(InlineObservation obs)
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// inlGetDescriptionString: get a string describing this inline observation
+// inlGetObservationString: get a string describing this inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -62,7 +62,7 @@ bool inlIsValidObservation(InlineObservation obs)
 // Return Value:
 //    string describing the observation
 
-const char* inlGetDescriptionString(InlineObservation obs)
+const char* inlGetObservationString(InlineObservation obs)
 {
     assert(inlIsValidObservation(obs));
     return InlineDescriptions[static_cast<int>(obs)];
@@ -92,7 +92,7 @@ InlineTarget inlGetTarget(InlineObservation obs)
 // Return Value:
 //    string describing the target
 
-const char* inlGetTargetstring(InlineObservation obs)
+const char* inlGetTargetString(InlineObservation obs)
 {
     InlineTarget t = inlGetTarget(obs);
     switch (t)
@@ -149,6 +149,172 @@ const char* inlGetImpactString(InlineObservation obs)
         return "information";
     default:
         return "unexpected impact";
+    }
+}
+
+//------------------------------------------------------------------------
+// inlGetDecisionForRuntime: translate decision into a CorInfoInline
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    CorInfoInline value representing the decision
+
+CorInfoInline inlGetDecisionForRuntime(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::SUCCESS:
+        return INLINE_PASS;
+    case InlineDecision::FAILURE:
+        return INLINE_FAIL;
+    case InlineDecision::NEVER:
+        return INLINE_NEVER;
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inlGetDecisionString: get a string representing this decision
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    string representing the decision
+
+const char* inlGetDecisionString(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::SUCCESS:
+        return "success";
+    case InlineDecision::FAILURE:
+        return "failed this call site";
+    case InlineDecision::NEVER:
+        return "failed this callee";
+    case InlineDecision::CANDIDATE:
+        return "candidate";
+    case InlineDecision::UNDECIDED:
+        return "undecided";
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inlDecisionIsFailure: check if this decision describes a failing inline
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    true if the inline is definitely a failure
+
+bool inlDecisionIsFailure(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::SUCCESS:
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        return false;
+    case InlineDecision::FAILURE:
+    case InlineDecision::NEVER:
+        return true;
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inlDecisionIsFailure: check if this decision describes a sucessful inline
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    true if the inline is definitely a success
+
+bool inlDecisionIsSuccess(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::SUCCESS:
+        return true;
+    case InlineDecision::FAILURE:
+    case InlineDecision::NEVER:
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        return false;
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inlDecisionIsFailure: check if this decision describes a never inline
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    true if the inline is a never inline case
+
+bool inlDecisionIsNever(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::NEVER:
+        return true;
+    case InlineDecision::FAILURE:
+    case InlineDecision::SUCCESS:
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        return false;
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inlDecisionIsFailure: check if this decision describes a viable candidate
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    true if this inline still might happen
+
+bool inlDecisionIsCandidate(InlineDecision d)
+{
+    return !inlDecisionIsFailure(d);
+}
+
+//------------------------------------------------------------------------
+// inlDecisionIsFailure: check if this decision has been made
+//
+// Arguments:
+//    d - the decision in question
+//
+// Return Value:
+//    true if this inline has been decided one way or another
+
+bool inlDecisionIsDecided(InlineDecision d)
+{
+    switch (d) {
+    case InlineDecision::NEVER:
+    case InlineDecision::FAILURE:
+    case InlineDecision::SUCCESS:
+        return true;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        return false;
+    default:
+        assert(!"Unexpected InlineDecision");
+        unreached();
     }
 }
 
@@ -329,7 +495,7 @@ void InlineContext::Dump(Compiler* compiler, int indent)
     else
     {
         // Inline attempt.
-        const char* inlineReason = inlGetDescriptionString(inlObservation);
+        const char* inlineReason = inlGetObservationString(inlObservation);
         const char* inlineResult = inlSuccess ? "" : "FAILED: ";
 
         for (int i = 0; i < indent; i++)
@@ -370,14 +536,16 @@ InlineResult::InlineResult(Compiler*    compiler,
                            GenTreeCall* call,
                            const char*  context)
     : inlCompiler(compiler)
-    , inlDecision(InlineDecision::UNDECIDED)
-    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    , inlPolicy(nullptr)
     , inlCall(call)
     , inlCaller(nullptr)
     , inlCallee(nullptr)
     , inlContext(context)
     , inlReported(false)
 {
+    // Set the policy
+    inlPolicy = InlinePolicy::getPolicy(compiler);
+
     // Get method handle for caller
     inlCaller = inlCompiler->info.compMethodHnd;
 
@@ -408,15 +576,15 @@ InlineResult::InlineResult(Compiler*              compiler,
                            CORINFO_METHOD_HANDLE  method,
                            const char*            context)
     : inlCompiler(compiler)
-    , inlDecision(InlineDecision::UNDECIDED)
-    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    , inlPolicy(nullptr)
     , inlCall(nullptr)
     , inlCaller(nullptr)
     , inlCallee(method)
     , inlContext(context)
     , inlReported(false)
 {
-    // Empty
+    // Set the policy
+    inlPolicy = InlinePolicy::getPolicy(compiler);
 }
 
 //------------------------------------------------------------------------
@@ -461,7 +629,7 @@ void InlineResult::report()
         // compiler should have revoked candidacy on the call by now
         assert((inlCall->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
 
-        inlCall->gtInlineObservation = inlObservation;
+        inlCall->gtInlineObservation = inlPolicy->getObservation();
     }
 
 #endif // DEBUG
@@ -473,4 +641,180 @@ void InlineResult::report()
         COMP_HANDLE comp = inlCompiler->info.compCompHnd;
         comp->reportInliningDecision(inlCaller, inlCallee, result(), reasonString());
     }
+}
+
+//------------------------------------------------------------------------
+// getPolicy: Factory method for getting an InlinePolicy
+//
+// Arguments:
+//    compiler - the compiler instance that will evaluate inlines
+//
+// Return Value:
+//    InlinePolicy to use in evaluationg the inlines
+//
+// Notes:
+//    Determines which of the various policies should apply,
+//    and creates (or reuses) a policy instance to use.
+
+InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler)
+{
+    // For now, always create a Legacy policy.
+    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy;
+
+    return policy;
+}
+
+//------------------------------------------------------------------------
+// noteCandidate: handle passing a set of inlining checks successfully
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegacyPolicy::noteCandidate(InlineObservation obs)
+{
+    assert(!inlDecisionIsDecided(inlDecision));
+
+    // Check the impact, it should be INFORMATION
+    InlineImpact impact = inlGetImpact(obs);
+    assert(impact == InlineImpact::INFORMATION);
+
+    // Update the status
+    setCommon(InlineDecision::CANDIDATE, obs);
+}
+
+//------------------------------------------------------------------------
+// noteSuccess: handle finishing all the inlining checks successfully
+
+void LegacyPolicy::noteSuccess()
+{
+    assert(inlDecisionIsCandidate(inlDecision));
+    inlDecision = InlineDecision::SUCCESS;
+}
+
+//------------------------------------------------------------------------
+// note: handle an observation with non-fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegacyPolicy::note(InlineObservation obs)
+{
+    // Check the impact
+    InlineImpact impact = inlGetImpact(obs);
+
+    // As a safeguard, all fatal impact must be
+    // reported via noteFatal.
+    assert(impact != InlineImpact::FATAL);
+    noteInternal(obs, impact);
+}
+
+//------------------------------------------------------------------------
+// noteFatal: handle an observation with fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegacyPolicy::noteFatal(InlineObservation obs)
+{
+    // Check the impact
+    InlineImpact impact = inlGetImpact(obs);
+
+    // As a safeguard, all fatal impact must be
+    // reported via noteFatal.
+    assert(impact == InlineImpact::FATAL);
+    noteInternal(obs, impact);
+    assert(inlDecisionIsFailure(inlDecision));
+}
+
+//------------------------------------------------------------------------
+// noteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void LegacyPolicy::noteInt(InlineObservation obs, int value)
+{
+    (void) value;
+    note(obs);
+}
+
+//------------------------------------------------------------------------
+// noteDouble: handle an observed double value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void LegacyPolicy::noteDouble(InlineObservation obs, double value)
+{
+    (void) value;
+    note(obs);
+}
+
+//------------------------------------------------------------------------
+// setNever: helper for handling an observation
+//
+// Arguments:
+//    obs      - the current obsevation
+//    impact   - impact of the current observation
+
+void LegacyPolicy::noteInternal(InlineObservation obs, InlineImpact impact)
+{
+    // Ignore INFORMATION for now, since policy
+    // is still embedded at the observation sites.
+    if (impact == InlineImpact::INFORMATION)
+    {
+        return;
+    }
+
+    InlineTarget target = inlGetTarget(obs);
+
+    if (target == InlineTarget::CALLEE)
+    {
+        this->setNever(obs);
+    }
+    else
+    {
+        this->setFailure(obs);
+    }
+}
+
+//------------------------------------------------------------------------
+// setNever: helper for setting a failling decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegacyPolicy::setFailure(InlineObservation obs)
+{
+    assert(!inlDecisionIsSuccess(inlDecision));
+    setCommon(InlineDecision::FAILURE, obs);
+}
+
+//------------------------------------------------------------------------
+// setNever: helper for setting a never decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegacyPolicy::setNever(InlineObservation obs)
+{
+    assert(!inlDecisionIsSuccess(inlDecision));
+    setCommon(InlineDecision::NEVER, obs);
+}
+
+//------------------------------------------------------------------------
+// setCommon: helper for updating decision and observation
+//
+// Arguments:
+//    decision - the updated decision
+//    obs      - the current obsevation
+
+void LegacyPolicy::setCommon(InlineDecision decision, InlineObservation obs)
+{
+    assert(inlIsValidObservation(obs));
+    assert(decision != InlineDecision::UNDECIDED);
+    inlDecision = decision;
+    inlObservation = obs;
 }
