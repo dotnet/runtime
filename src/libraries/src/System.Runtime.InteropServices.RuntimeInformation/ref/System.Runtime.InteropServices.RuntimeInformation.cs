@@ -27,7 +27,8 @@ namespace System.Runtime.InteropServices
     {
         X86,
         X64,
-        Arm
+        Arm,
+        Arm64
     }
 
     public static partial class RuntimeInformation
