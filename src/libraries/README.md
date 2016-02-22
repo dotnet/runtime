@@ -7,7 +7,7 @@ The corefx repo contains the library implementation (called "CoreFX") for [.NET 
 ## Build Status
 
 |   | Debug | Release |
-|---|:-----:|:-------:|
+|---|------:|--------:|
 |**CentOS 7.1**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/centos7.1_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/centos7.1_release)|
 |**Debian 8.2**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/debian8.2_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/debian8.2_release)|
 |**openSUSE 13.2**|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_debug.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_debug)|[![build & test](https://img.shields.io/jenkins/s/http/dotnet-ci.cloudapp.net/job/dotnet_corefx/opensuse13.2_release.svg?label=build+%26+test)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx/job/opensuse13.2_release)|
