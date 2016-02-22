@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Security.Cryptography.Cng.csproj" />
-    <Project Include="facade\System.Security.Cryptography.Cng.csproj">
+    <Project Include="System.Security.Cryptography.Cng.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

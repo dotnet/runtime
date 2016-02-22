@@ -7,7 +7,7 @@
       <SupportedFramework>net46;dnxcore50</SupportedFramework>
     </ProjectReference>
     
-    <ProjectReference Include="..\src\facade\System.IO.FileSystem.Watcher.csproj">
+    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.csproj">
       <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.IO.FileSystem.Watcher.pkgproj" />

@@ -11,7 +11,7 @@
     <Project Include="System.Net.WebSockets.Client.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Net.WebSockets.Client.csproj">
+    <Project Include="System.Net.WebSockets.Client.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Net.WebSockets.Client.csproj">

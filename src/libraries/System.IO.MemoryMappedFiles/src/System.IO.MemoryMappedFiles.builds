@@ -11,7 +11,7 @@
     <Project Include="System.IO.MemoryMappedFiles.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.IO.MemoryMappedFiles.csproj">
+    <Project Include="System.IO.MemoryMappedFiles.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

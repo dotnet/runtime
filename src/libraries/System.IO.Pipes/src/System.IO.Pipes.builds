@@ -11,7 +11,7 @@
     <Project Include="System.IO.Pipes.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.IO.Pipes.csproj">
+    <Project Include="System.IO.Pipes.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

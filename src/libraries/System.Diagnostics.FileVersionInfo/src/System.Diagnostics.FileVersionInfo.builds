@@ -11,7 +11,7 @@
     <Project Include="System.Diagnostics.FileVersionInfo.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Diagnostics.FileVersionInfo.csproj">
+    <Project Include="System.Diagnostics.FileVersionInfo.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

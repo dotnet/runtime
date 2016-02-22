@@ -11,7 +11,7 @@
     <Project Include="System.Security.Cryptography.Encoding.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.Security.Cryptography.Encoding.csproj">
+    <Project Include="System.Security.Cryptography.Encoding.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>
