@@ -21415,15 +21415,25 @@ void                Compiler::fgInline()
             // See if we can expand the inline candidate
             if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
             {
+                GenTreeCall* call = expr->AsCall();
+                InlineResult inlineResult(this, call, "fgInline");
+
                 fgMorphStmt = stmt;
 
-                fgMorphCallInline(expr);
+                fgMorphCallInline(call, &inlineResult);
 
                 if (stmt->gtStmtExpr->IsNothingNode())
                 {
                     fgRemoveStmt(block, stmt);
                     continue;
                 }
+            }
+            else
+            {
+#ifdef DEBUG
+                // Look for non-candidates.
+                fgWalkTreePre(&stmt->gtStmtExpr, fgFindNonInlineCandidate, stmt);
+#endif
             }
 
             // See if we need to replace the return value place holder.
@@ -21485,6 +21495,91 @@ void                Compiler::fgInline()
 
 #endif // DEBUG
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgFindNonInlineCandidate: tree walk helper to ensure that a tree node
+// that is not an inline candidate is noted as a failed inline.
+//
+// Arguments:
+//    pTree - pointer to pointer tree node being walked
+//    data  - contextual data for the walk
+//
+// Return Value:
+//    walk result
+//
+// Note:
+//    Invokes fgNoteNonInlineCandidate on the nodes it finds.
+
+Compiler::fgWalkResult      Compiler::fgFindNonInlineCandidate(GenTreePtr* pTree,
+                                                               fgWalkData* data)
+{
+    GenTreePtr tree = *pTree;
+    if (tree->gtOper == GT_CALL)
+    {
+        Compiler*    compiler = data->compiler;
+        GenTreePtr   stmt     = (GenTreePtr) data->pCallbackData;
+        GenTreeCall* call     = tree->AsCall();
+
+        compiler->fgNoteNonInlineCandidate(stmt, call);
+    }
+    return WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// fgNoteNonInlineCandidate: account for inlining failures in calls
+// not marked as inline candidates.
+//
+// Arguments:
+//    tree  - statement containing the call
+//    call  - the call itself
+//
+// Notes:
+//    Used in debug only to try and place descriptions of inline failures
+//    into the proper context in the inline tree.
+
+void Compiler::fgNoteNonInlineCandidate(GenTreePtr   tree,
+                                        GenTreeCall* call)
+{
+    InlineResult inlineResult(this, call, "fgNotInlineCandidate");
+    InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
+
+    // Try and recover the reason left behind when the jit decided
+    // this call was not a candidate.
+    InlineObservation priorObservation = call->gtInlineObservation;
+
+    if (inlIsValidObservation(priorObservation))
+    {
+        currentObservation = priorObservation;
+    }
+
+    // Would like to just call noteFatal here, since this
+    // observation blocked candidacy, but policy comes into play
+    // here too.  Also note there's no need to re-report these
+    // failures, since we reported them during the initial
+    // candidate scan.
+    InlineImpact impact = inlGetImpact(currentObservation);
+
+    if (impact == InlineImpact::FATAL)
+    {
+        inlineResult.noteFatal(currentObservation);
+    }
+    else
+    {
+        inlineResult.note(currentObservation);
+    }
+
+    inlineResult.setReported();
+
+    if (call->gtCallType == CT_USER_FUNC)
+    {
+        // Create InlineContext for the failure
+        InlineContext::newFailure(this, tree, &inlineResult);
+    }
+}
+
+#endif
 
 #if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
