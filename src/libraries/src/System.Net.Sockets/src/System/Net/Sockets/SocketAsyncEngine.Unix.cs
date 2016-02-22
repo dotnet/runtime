@@ -104,7 +104,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public bool TryRegister(int fileDescriptor, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, GCHandle handle, out Interop.Error error)
+        public bool TryRegister(SafeCloseSocket socket, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, GCHandle handle, out Interop.Error error)
         {
             if (current == events)
             {
@@ -112,7 +112,13 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            error = Interop.Sys.TryChangeSocketEventRegistration(_port, fileDescriptor, current, events, (IntPtr)handle);
+            //
+            // @TODO: work out a better way to handle this.  For now, just do the "dangerous" thing; this is called
+            // from SafeCloseSocket.ReleaseHandle, so it can't access the file descriptor in the normal way.
+            // 
+            int fd = (int)socket.DangerousGetHandle();
+
+            error = Interop.Sys.DangerousTryChangeSocketEventRegistration(_port, fd, current, events, (IntPtr)handle);
             return error == Interop.Error.SUCCESS;
         }
     }

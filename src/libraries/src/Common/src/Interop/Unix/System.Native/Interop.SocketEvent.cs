@@ -41,7 +41,24 @@ internal static partial class Interop
         internal static extern unsafe Error FreeSocketEventBuffer(SocketEvent* buffer);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryChangeSocketEventRegistration")]
-        internal static extern Error TryChangeSocketEventRegistration(int port, int socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
+        internal static extern Error DangerousTryChangeSocketEventRegistration(int port, int socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data);
+
+        internal static Error TryChangeSocketEventRegistration(int port, SafeHandle socket, SocketEvents currentEvents, SocketEvents newEvents, IntPtr data)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousTryChangeSocketEventRegistration(port, (int)socket.DangerousGetHandle(), currentEvents, newEvents, data);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitForSocketEvents")]
         internal static extern unsafe Error WaitForSocketEvents(int port, SocketEvent* buffer, int* count);
