@@ -1605,8 +1605,9 @@ typedef struct {
 	/* Points to a MonoGSharedVtMethodRuntimeInfo at runtime */
 	MonoInst *gsharedvt_info_var;
 
-	/* For native-to-managed wrappers, the saved old domain */
-	MonoInst *orig_domain_var;
+	/* For native-to-managed wrappers, CEE_MONO_JIT_(AT|DE)TACH opcodes */
+	MonoInst *attach_cookie;
+	MonoInst *attach_dummy;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -2369,8 +2370,8 @@ MonoLMF * mono_get_lmf                      (void);
 MonoLMF** mono_get_lmf_addr                 (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
 MonoJitTlsData* mono_get_jit_tls            (void);
-MONO_API MonoDomain *mono_jit_thread_attach          (MonoDomain *domain);
-MONO_API void      mono_jit_set_domain               (MonoDomain *domain);
+MONO_API gpointer  mono_jit_thread_attach            (MonoDomain *domain, gpointer *dummy);
+MONO_API void      mono_jit_thread_detach            (gpointer cookie, gpointer *dummy);
 gint32    mono_get_jit_tls_offset           (void);
 gint32    mono_get_lmf_tls_offset           (void);
 gint32    mono_get_lmf_addr_tls_offset      (void);

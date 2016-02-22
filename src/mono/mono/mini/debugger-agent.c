@@ -9630,12 +9630,13 @@ debugger_thread (void *arg)
 	ErrorCode err;
 	gboolean no_reply;
 	gboolean attach_failed = FALSE;
+	gpointer attach_cookie, attach_dummy;
 
 	DEBUG_PRINTF (1, "[dbg] Agent thread started, pid=%p\n", (gpointer) (gsize) mono_native_thread_id_get ());
 
 	debugger_thread_id = mono_native_thread_id_get ();
 
-	mono_jit_thread_attach (mono_get_root_domain ());
+	attach_cookie = mono_jit_thread_attach (mono_get_root_domain (), &attach_dummy);
 
 	mono_thread_internal_current ()->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 
@@ -9788,7 +9789,9 @@ debugger_thread (void *arg)
 		DEBUG_PRINTF (2, "[dbg] Detached - restarting clean debugger thread.\n");
 		start_debugger_thread ();
 	}
-	
+
+	mono_jit_thread_detach (attach_cookie, &attach_dummy);
+
 	return 0;
 }
 
