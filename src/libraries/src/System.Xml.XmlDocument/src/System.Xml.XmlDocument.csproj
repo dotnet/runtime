@@ -6,18 +6,17 @@
     <AssemblyName>System.Xml.XmlDocument</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <RootNamespace>System.Xml.XmlDocument</RootNamespace>
-    <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -61,7 +60,7 @@
       <Link>Common\System\Xml\XmlNameHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Xml\Dom\DomNameTable.cs" />
     <Compile Include="System\Xml\Dom\XmlAttribute.cs" />
     <Compile Include="System\Xml\Dom\XmlAttributeCollection.cs" />
@@ -97,6 +96,10 @@
     <Compile Include="System\Xml\Dom\XmlWhitespace.cs" />
     <Compile Include="System\Xml\EmptyEnumerator.cs" />
     <Compile Include="System\Xml\XmlTextEncoder.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -5,16 +5,14 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.Diagnostics.TraceSource</RootNamespace>
     <AssemblyName>System.Diagnostics.TraceSource</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <ProjectGuid>{5380420C-EB1D-4C53-9CFC-916578C18334}</ProjectGuid>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
@@ -23,8 +21,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
@@ -45,7 +44,7 @@
     <Compile Include="System\Diagnostics\TraceSource.cs" />
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Diagnostics\TraceEventCache.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -54,7 +53,7 @@
       <Link>Common\Interop\Windows\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -62,6 +61,10 @@
       <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
     <Compile Include="System\Diagnostics\TraceEventCache.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

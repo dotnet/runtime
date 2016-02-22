@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Xml.XDocument.csproj" />
     <!-- Net46 facade is currently inbox for 4.0 
-    <Project Include="facade\System.Xml.XDocument.csproj">
+    <Project Include="System.Xml.XDocument.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
   </ItemGroup>

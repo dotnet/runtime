@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Xml.XmlSerializer.csproj" />
-    <Project Include="facade\System.Xml.XmlSerializer.csproj">
+    <Project Include="System.Xml.XmlSerializer.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Xml.XmlSerializer.csproj">

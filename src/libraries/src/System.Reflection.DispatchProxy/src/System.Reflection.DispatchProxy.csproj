@@ -6,16 +6,22 @@
     <AssemblyName>System.Reflection.DispatchProxy</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcore50aot'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'netcore50aot'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib" />
+    <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

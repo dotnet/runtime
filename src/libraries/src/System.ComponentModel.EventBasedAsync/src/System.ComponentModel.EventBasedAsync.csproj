@@ -6,14 +6,15 @@
     <RootNamespace>System.ComponentModel.EventBasedAsync</RootNamespace>
     <AssemblyName>System.ComponentModel.EventBasedAsync</AssemblyName>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\ComponentModel\AsyncCompletedEvent.cs" />
     <Compile Include="System\ComponentModel\AsyncOperation.cs" />
     <Compile Include="System\ComponentModel\AsyncOperationManager.cs" />
@@ -21,6 +22,10 @@
     <Compile Include="System\ComponentModel\BackgroundWorker.cs" />
     <Compile Include="System\ComponentModel\DoWorkEvent.cs" />
     <Compile Include="System\ComponentModel\RunWorkerCompletedEvent.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

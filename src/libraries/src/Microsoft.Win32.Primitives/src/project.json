@@ -1,10 +1,16 @@
 {
-  "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
-    "System.Runtime": "4.0.20",
-    "System.Runtime.InteropServices": "4.0.20"
-  },
-  "frameworks": {
-    "dnxcore50": {}
-  }
+    "frameworks": {
+        "net46": {
+            "dependencies": {
+                "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+            }
+        },
+        "dnxcore50": {
+            "dependencies": {
+                "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+                "System.Runtime": "4.0.20",
+                "System.Runtime.InteropServices": "4.0.20"
+            }
+        }
+    }
 }

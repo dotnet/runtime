@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.IO.FileSystem.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\facade\System.IO.FileSystem.csproj">
+    <ProjectReference Include="..\src\System.IO.FileSystem.csproj">
       <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="win\System.IO.FileSystem.pkgproj" />

@@ -6,7 +6,7 @@
     <ProjectReference Include="..\ref\System.Console.csproj">
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\facade\System.Console.csproj">
+    <ProjectReference Include="..\src\System.Console.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
 

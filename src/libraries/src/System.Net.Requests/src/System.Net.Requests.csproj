@@ -5,14 +5,13 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <RootNamespace>System.Net.Requests</RootNamespace>
     <AssemblyName>System.Net.Requests</AssemblyName>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
@@ -25,7 +24,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HttpWebRequest.cs" />
     <Compile Include="System\Net\HttpWebResponse.cs" />
@@ -55,7 +56,7 @@
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' ">
     <Compile Include="$(CommonPath)\Interop\Windows\wininet\Interop.wininet_errors.cs">
       <Link>Common\Interop\Windows\wininet\Interop.wininet_errors.cs</Link>
     </Compile>
@@ -66,6 +67,10 @@
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

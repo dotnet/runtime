@@ -5,7 +5,7 @@
     <Project Include="Microsoft.Win32.Registry.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\Microsoft.Win32.Registry.csproj">
+    <Project Include="Microsoft.Win32.Registry.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

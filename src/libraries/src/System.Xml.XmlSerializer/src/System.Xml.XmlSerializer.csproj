@@ -9,16 +9,19 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcore50'">$(DefineConstants);NET_NATIVE</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System.Xml.XmlSerializer.Forwards.cs" />
     <Compile Include="System\Xml\XmlReservedNs.cs" />
     <Compile Include="System\Xml\BinHexEncoder.cs" />
@@ -81,8 +84,12 @@
     <Compile Include="System\Xml\Serialization\XmlSchema.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
-  <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
-</ItemGroup>
+    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Xml" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

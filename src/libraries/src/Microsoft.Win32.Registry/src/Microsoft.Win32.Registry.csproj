@@ -5,20 +5,20 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.Win32.Registry</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -81,6 +81,9 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'" >
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Linq.Expressions.csproj" />
-    <Project Include="Facade\System.Linq.Expressions.csproj">
+    <Project Include="System.Linq.Expressions.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
     <Project Include="System.Linq.Expressions.csproj">

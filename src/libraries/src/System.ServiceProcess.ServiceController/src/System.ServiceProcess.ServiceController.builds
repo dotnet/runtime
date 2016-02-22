@@ -5,7 +5,7 @@
     <Project Include="System.ServiceProcess.ServiceController.csproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
-    <Project Include="facade\System.ServiceProcess.ServiceController.csproj">
+    <Project Include="System.ServiceProcess.ServiceController.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project>
   </ItemGroup>

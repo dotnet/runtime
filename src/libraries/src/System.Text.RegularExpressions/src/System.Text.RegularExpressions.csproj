@@ -5,14 +5,16 @@
     <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <AssemblyVersion>4.0.12.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCapture.cs" />
@@ -33,9 +35,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
-  </ItemGroup>
-  <!-- Common or Common-branched source files -->
-  <ItemGroup>
+    <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
@@ -43,7 +43,10 @@
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Resource files -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

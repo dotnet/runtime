@@ -5,13 +5,13 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
-    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
-    <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
@@ -20,7 +20,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -145,13 +147,13 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
     <Compile Include="System\Data\Locale\Locale.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net45' ">
     <Compile Include="Interop\LocaleMapper.Windows.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(TargetGroup)' != 'net45' ">
     <Compile Include="System\Data\Locale\LocaleMapper.Unix.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
@@ -169,9 +171,13 @@
     <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
+    <TargetingPackReference Include="mscorlib" />
+    <TargetingPackReference Include="System.Data" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Import Project=".\GenerateThisAssemblyCs.targets" />
+  <Import Project=".\GenerateThisAssemblyCs.targets" Condition="'$(TargetGroup)' != 'net45'" />
 </Project>

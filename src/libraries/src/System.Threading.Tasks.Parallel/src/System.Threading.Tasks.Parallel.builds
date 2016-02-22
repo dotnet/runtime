@@ -4,7 +4,7 @@
   <ItemGroup>
     <Project Include="System.Threading.Tasks.Parallel.csproj" />
     <!-- Net46 facade is currently inbox for 4.0 
-    <Project Include="facade\System.Threading.Tasks.Parallel.csproj">
+    <Project Include="System.Threading.Tasks.Parallel.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
   </ItemGroup>
