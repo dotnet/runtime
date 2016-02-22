@@ -221,6 +221,7 @@ namespace System.Net.Http
                 if (_cachedReceivePinnedBuffer.IsAllocated)
                 {
                     _cachedReceivePinnedBuffer.Free();
+                    _cachedReceivePinnedBuffer = default(GCHandle);
                 }
 
                 if (disposing)
