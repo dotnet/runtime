@@ -2757,6 +2757,11 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	if (!mp) {
 		pid_t res;
 
+		if (pid == mono_process_current_pid ()) {
+			MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s (%p, %u): waiting on current process", __func__, handle, timeout);
+			return WAIT_TIMEOUT;
+		}
+
 		/* This path is used when calling Process.HasExited, so
 		 * it is only used to poll the state of the process, not
 		 * to actually wait on it to exit */
