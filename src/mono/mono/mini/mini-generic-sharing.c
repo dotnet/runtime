@@ -479,7 +479,7 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 
 	if (!m) {
 		mono_class_setup_methods (klass);
-		if (klass->exception_type)
+		if (mono_class_has_failure (klass))
 			return NULL;
 		for (i = 0; i < klass->method.count; ++i) {
 			m = klass->methods [i];
