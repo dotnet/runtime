@@ -94,7 +94,7 @@ INT __cdecl main( INT argc, CHAR **argv )
     /* Defining thread priority for SCHED_OTHER is implementation defined.
        Some platforms like NetBSD cannot reassign it as they are dynamic.
     */
-    printf("paltest_getcurrentthread_test1 has been disabled on this platform\n");
+    printf("paltest_getcurrentthread_test2 has been disabled on this platform\n");
 #else
     /* Create multiple threads. */
     hThread = CreateThread(    NULL,         /* no security attributes    */
