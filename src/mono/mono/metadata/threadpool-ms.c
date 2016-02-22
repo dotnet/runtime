@@ -227,11 +227,11 @@ rand_create (void)
 static guint32
 rand_next (gpointer *handle, guint32 min, guint32 max)
 {
+	MonoError error;
 	guint32 val;
-	if (!mono_rand_try_get_uint32 (handle, &val, min, max)) {
-		// FIXME handle error
-		g_assert_not_reached ();
-	}
+	mono_rand_try_get_uint32 (handle, &val, min, max, &error);
+	// FIXME handle error
+	mono_error_assert_ok (&error);
 	return val;
 }
 
