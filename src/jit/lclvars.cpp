@@ -991,6 +991,14 @@ void                Compiler::lvaInitGenericsCtxt(InitVarDscInfo *  varDscInfo)
             }
 #endif
         }
+#ifndef LEGACY_BACKEND
+        else
+        {
+            // For the RyuJIT backend, we need to mark these as being on the stack,
+            // as this is not done elsewhere in the case that canEnreg returns false.
+            varDsc->lvOnFrame = true;
+        }
+#endif // !LEGACY_BACKEND
 
         compArgSize += TARGET_POINTER_SIZE;
 
