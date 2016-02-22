@@ -75,8 +75,11 @@ namespace System.Threading.Tasks.Tests
         [InlineData(true, null)]
         public static void OnCompleted_CompletesInAnotherTaskScheduler(bool generic, bool? continueOnCapturedContext)
         {
-            Task.Run(() => // get off current sync ctx so that it's not picked up by await
+            SynchronizationContext origCtx = SynchronizationContext.Current;
+            try
             {
+                SynchronizationContext.SetSynchronizationContext(null); // get off xunit's SynchronizationContext to avoid interactions with await
+
                 var quwi = new QUWITaskScheduler();
                 RunWithSchedulerAsCurrent(quwi, delegate
                 {
@@ -113,7 +116,11 @@ namespace System.Threading.Tasks.Tests
                     bool shouldHaveRunOnScheduler = !continueOnCapturedContext.HasValue || continueOnCapturedContext.Value;
                     Assert.Equal(shouldHaveRunOnScheduler, ranOnScheduler);
                 });
-            }).GetAwaiter().GetResult();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(origCtx);
+            }
         }
 
         [Fact]
