@@ -50,6 +50,10 @@ namespace System.Runtime.InteropServices
                             case Interop.Sys.ProcessorArchitecture.x86:
                                 s_osArch = Architecture.X86;
                                 break;
+
+                            case Interop.Sys.ProcessorArchitecture.ARM64:
+                                s_osArch = Architecture.Arm64;
+                                break;
                         }
                     }
                 }
@@ -67,7 +71,11 @@ namespace System.Runtime.InteropServices
                 {
                     if (null == s_processArch)
                     {
-                        if (Architecture.Arm == OSArchitecture)
+                        if (Architecture.Arm64 == OSArchitecture)
+                        {
+                            s_processArch = s_is64BitProcess ? Architecture.Arm64 : Architecture.Arm;
+                        }
+                        else if (Architecture.Arm == OSArchitecture)
                         {
                             s_processArch = Architecture.Arm;
                         }

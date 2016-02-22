@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices
     {
         X86,
         X64,
-        Arm
+        Arm,
+        Arm64
     }
 }

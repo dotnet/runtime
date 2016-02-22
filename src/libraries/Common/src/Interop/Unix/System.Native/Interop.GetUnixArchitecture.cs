@@ -16,7 +16,8 @@ internal static partial class Interop
         {
             x86,
             x64,
-            ARM
+            ARM,
+            ARM64
         }
     }
 }
