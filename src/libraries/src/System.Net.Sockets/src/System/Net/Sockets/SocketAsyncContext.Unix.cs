@@ -493,13 +493,21 @@ namespace System.Net.Sockets
             OperationQueue<SendOperation> sendQueue;
             OperationQueue<TransferOperation> receiveQueue;
 
-            // Drain queues and unregister events
+            // Drain queues
 
             acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
             sendQueue = _sendQueue.Stop();
             receiveQueue = _receiveQueue.Stop();
 
-            Unregister();
+            // By the time we reach this point, the socket file descriptor has already been closed, and thus
+            // has been unregistered from the native event port.  We just need to free the GC handle.
+            if (_registeredEvents != Interop.Sys.SocketEvents.None)
+            {
+                _registeredEvents = Interop.Sys.SocketEvents.None;
+
+                Debug.Assert(_handle.IsAllocated);
+                _handle.Free();
+            }
 
             // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
