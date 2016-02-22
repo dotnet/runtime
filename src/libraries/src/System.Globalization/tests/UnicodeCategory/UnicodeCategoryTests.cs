@@ -9,184 +9,40 @@ namespace System.Globalization.Tests
 {
     public class UnicodeCategoryTests
     {
-        [Fact]
-        public void UppercaseLetter()
+        [Theory]
+        [InlineData(UnicodeCategory.UppercaseLetter, 0)]
+        [InlineData(UnicodeCategory.LowercaseLetter, 1)]
+        [InlineData(UnicodeCategory.TitlecaseLetter, 2)]
+        [InlineData(UnicodeCategory.ModifierLetter, 3)]
+        [InlineData(UnicodeCategory.OtherLetter, 4)]
+        [InlineData(UnicodeCategory.NonSpacingMark, 5)]
+        [InlineData(UnicodeCategory.SpacingCombiningMark, 6)]
+        [InlineData(UnicodeCategory.EnclosingMark, 7)]
+        [InlineData(UnicodeCategory.DecimalDigitNumber, 8)]
+        [InlineData(UnicodeCategory.LetterNumber, 9)]
+        [InlineData(UnicodeCategory.OtherNumber, 10)]
+        [InlineData(UnicodeCategory.SpaceSeparator, 11)]
+        [InlineData(UnicodeCategory.LineSeparator, 12)]
+        [InlineData(UnicodeCategory.ParagraphSeparator, 13)]
+        [InlineData(UnicodeCategory.Control, 14)]
+        [InlineData(UnicodeCategory.Format, 15)]
+        [InlineData(UnicodeCategory.Surrogate, 16)]
+        [InlineData(UnicodeCategory.PrivateUse, 17)]
+        [InlineData(UnicodeCategory.ConnectorPunctuation, 18)]
+        [InlineData(UnicodeCategory.DashPunctuation, 19)]
+        [InlineData(UnicodeCategory.OpenPunctuation, 20)]
+        [InlineData(UnicodeCategory.ClosePunctuation, 21)]
+        [InlineData(UnicodeCategory.InitialQuotePunctuation, 22)]
+        [InlineData(UnicodeCategory.FinalQuotePunctuation, 23)]
+        [InlineData(UnicodeCategory.OtherPunctuation, 24)]
+        [InlineData(UnicodeCategory.MathSymbol, 25)]
+        [InlineData(UnicodeCategory.CurrencySymbol, 26)]
+        [InlineData(UnicodeCategory.ModifierSymbol, 27)]
+        [InlineData(UnicodeCategory.OtherSymbol, 28)]
+        [InlineData(UnicodeCategory.OtherNotAssigned, 29)]
+        public void Cases(UnicodeCategory category, int expected)
         {
-            Assert.Equal(0, (int)UnicodeCategory.UppercaseLetter);
-        }
-
-        [Fact]
-        public void LowercaseLetter()
-        {
-            Assert.Equal(1, (int)UnicodeCategory.LowercaseLetter);
-        }
-
-        [Fact]
-        public void TitlecaseLetter()
-        {
-            Assert.Equal(2, (int)UnicodeCategory.TitlecaseLetter);
-        }
-
-        [Fact]
-        public void ModifierLetter()
-        {
-            Assert.Equal(3, (int)UnicodeCategory.ModifierLetter);
-        }
-
-        [Fact]
-        public void OtherLetter()
-        {
-            Assert.Equal(4, (int)UnicodeCategory.OtherLetter);
-        }
-
-        [Fact]
-        public void NonSpacingMark()
-        {
-            Assert.Equal(5, (int)UnicodeCategory.NonSpacingMark);
-        }
-
-        [Fact]
-        public void SpacingCombiningMark()
-        {
-            Assert.Equal(6, (int)UnicodeCategory.SpacingCombiningMark);
-        }
-
-        [Fact]
-        public void EnclosingMark()
-        {
-            Assert.Equal(7, (int)UnicodeCategory.EnclosingMark);
-        }
-
-        [Fact]
-        public void DecimalDigitNumber()
-        {
-            Assert.Equal(8, (int)UnicodeCategory.DecimalDigitNumber);
-        }
-
-        [Fact]
-        public void LetterNumber()
-        {
-            Assert.Equal(9, (int)UnicodeCategory.LetterNumber);
-        }
-
-        [Fact]
-        public void OtherNumber()
-        {
-            Assert.Equal(10, (int)UnicodeCategory.OtherNumber);
-        }
-
-        [Fact]
-        public void SpaceSeparator()
-        {
-            Assert.Equal(11, (int)UnicodeCategory.SpaceSeparator);
-        }
-
-        [Fact]
-        public void LineSeparator()
-        {
-            Assert.Equal(12, (int)UnicodeCategory.LineSeparator);
-        }
-
-        [Fact]
-        public void ParagraphSeparator()
-        {
-            Assert.Equal(13, (int)UnicodeCategory.ParagraphSeparator);
-        }
-
-        [Fact]
-        public void Control()
-        {
-            Assert.Equal(14, (int)UnicodeCategory.Control);
-        }
-
-        [Fact]
-        public void Format()
-        {
-            Assert.Equal(15, (int)UnicodeCategory.Format);
-        }
-
-        [Fact]
-        public void Surrogate()
-        {
-            Assert.Equal(16, (int)UnicodeCategory.Surrogate);
-        }
-
-        [Fact]
-        public void PrivateUse()
-        {
-            Assert.Equal(17, (int)UnicodeCategory.PrivateUse);
-        }
-
-        [Fact]
-        public void ConnectorPunctuation()
-        {
-            Assert.Equal(18, (int)UnicodeCategory.ConnectorPunctuation);
-        }
-
-        [Fact]
-        public void DashPunctuation()
-        {
-            Assert.Equal(19, (int)UnicodeCategory.DashPunctuation);
-        }
-
-        [Fact]
-        public void OpenPunctuation()
-        {
-            Assert.Equal(20, (int)UnicodeCategory.OpenPunctuation);
-        }
-
-        [Fact]
-        public void ClosePunctuation()
-        {
-            Assert.Equal(21, (int)UnicodeCategory.ClosePunctuation);
-        }
-
-        [Fact]
-        public void InitialQuotePunctuation()
-        {
-            Assert.Equal(22, (int)UnicodeCategory.InitialQuotePunctuation);
-        }
-
-        [Fact]
-        public void FinalQuotePunctuation()
-        {
-            Assert.Equal(23, (int)UnicodeCategory.FinalQuotePunctuation);
-        }
-
-        [Fact]
-        public void OtherPunctuation()
-        {
-            Assert.Equal(24, (int)UnicodeCategory.OtherPunctuation);
-        }
-
-        [Fact]
-        public void MathSymbol()
-        {
-            Assert.Equal(25, (int)UnicodeCategory.MathSymbol);
-        }
-
-        [Fact]
-        public void CurrencySymbol()
-        {
-            Assert.Equal(26, (int)UnicodeCategory.CurrencySymbol);
-        }
-
-        [Fact]
-        public void ModifierSymbol()
-        {
-            Assert.Equal(27, (int)UnicodeCategory.ModifierSymbol);
-        }
-
-        [Fact]
-        public void OtherSymbol()
-        {
-            Assert.Equal(28, (int)UnicodeCategory.OtherSymbol);
-        }
-
-        [Fact]
-        public void OtherNotAssigned()
-        {
-            Assert.Equal(29, (int)UnicodeCategory.OtherNotAssigned);
+            Assert.Equal(expected, (int)category);
         }
     }
 }
