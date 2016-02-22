@@ -452,7 +452,7 @@ CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId,
 //    type             the type of value to be moved
 //    targetReg        the target reg
 //    srcReg           the src reg
-//    zeroInit         true if the upper bits of targetReg should be zero'd
+//    moveType         action to be performed on target upper bits
 //
 // Return Value:
 //    None
@@ -461,43 +461,71 @@ CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId,
 //    This is currently only supported for floating point types.
 //
 void
-CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg, bool zeroInit)
+CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg, SIMDScalarMoveType moveType)
 {
     var_types targetType = compiler->getSIMDVectorType();
     assert(varTypeIsFloating(type));
 #ifdef FEATURE_AVX_SUPPORT
     if (compiler->getSIMDInstructionSet() == InstructionSet_AVX)
     {
-        if (zeroInit)
+        switch (moveType)
         {
-            // insertps is a 128-bit only instruction, and clears the upper 128 bits, which is what we want.
-            // The insertpsImm selects which fields are copied and zero'd of the lower 128 bits, so we choose
-            // to zero all but the lower bits.
-            unsigned int insertpsImm = (INSERTPS_TARGET_SELECT(0)|INSERTPS_ZERO(1)|INSERTPS_ZERO(2)|INSERTPS_ZERO(3));
-            inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, insertpsImm);
-        }
-        else if (srcReg != targetReg)
-        {
-            instruction ins = ins_Store(type);
-            if (getEmitter()->IsThreeOperandMoveAVXInstruction(ins))
+        case SMT_PreserveUpper:
+            if (srcReg != targetReg)
             {
-                // In general, when we use a three-operands move instruction, we want to merge the src with itself.
-                // This is an exception in that we actually want the "merge" behavior, so we must specify it with
-                // all 3 operands.
-                inst_RV_RV_RV(ins, targetReg, targetReg, srcReg, emitTypeSize(targetType));
+                instruction ins = ins_Store(type);
+                if (getEmitter()->IsThreeOperandMoveAVXInstruction(ins))
+                {
+                    // In general, when we use a three-operands move instruction, we want to merge the src with itself.
+                    // This is an exception in that we actually want the "merge" behavior, so we must specify it with
+                    // all 3 operands.
+                    inst_RV_RV_RV(ins, targetReg, targetReg, srcReg, emitTypeSize(targetType));
+                }
+                else
+                {
+                    inst_RV_RV(ins, targetReg, srcReg, targetType, emitTypeSize(targetType));
+                }
             }
-            else
+            break;
+
+        case SMT_ZeroInitUpper:
             {
+                // insertps is a 128-bit only instruction, and clears the upper 128 bits, which is what we want.
+                // The insertpsImm selects which fields are copied and zero'd of the lower 128 bits, so we choose
+                // to zero all but the lower bits.
+                unsigned int insertpsImm = (INSERTPS_TARGET_SELECT(0) | INSERTPS_ZERO(1) | INSERTPS_ZERO(2) | INSERTPS_ZERO(3));
+                inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, insertpsImm);
+                break;
+            }
+
+        case SMT_ZeroInitUpper_SrcHasUpperZeros:
+            if (srcReg != targetReg)
+            {
+                instruction ins = ins_Copy(type);
+                assert(!getEmitter()->IsThreeOperandMoveAVXInstruction(ins));
                 inst_RV_RV(ins, targetReg, srcReg, targetType, emitTypeSize(targetType));
             }
+            break;
+
+        default:
+            unreached();
         }
     }
     else
 #endif // FEATURE_AVX_SUPPORT
     {
         // SSE
-        if (zeroInit)
+
+        switch (moveType)
         {
+        case SMT_PreserveUpper:
+            if (srcReg != targetReg)
+            {
+                inst_RV_RV(ins_Store(type), targetReg, srcReg, targetType, emitTypeSize(targetType));
+            }
+            break;
+
+        case SMT_ZeroInitUpper:
             if (srcReg == targetReg)
             {
                 // There is no guarantee that upper bits of op1Reg are zero.
@@ -513,10 +541,17 @@ CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg
                 inst_RV_RV(ins, targetReg, targetReg, targetType, emitTypeSize(targetType));
                 inst_RV_RV(ins_Store(type), targetReg, srcReg);
             }
-        }
-        else if (srcReg != targetReg)
-        {
-            inst_RV_RV(ins_Store(type), targetReg, srcReg, targetType, emitTypeSize(targetType));
+            break;
+
+        case SMT_ZeroInitUpper_SrcHasUpperZeros:
+            if (srcReg != targetReg)
+            {
+                inst_RV_RV(ins_Copy(type), targetReg, srcReg, targetType, emitTypeSize(targetType));
+            }
+            break;
+
+        default:
+            unreached();
         }
     }
 }
@@ -619,9 +654,13 @@ CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             // data section using movss/sd.  Similarly if op1 is a memory op we
             // would have loaded it using movss/sd.  Movss/sd when loading a xmm reg
             // from memory would zero-out upper bits. In these cases we can
-            // avoid explicitly zero'ing out targetReg.
-            bool zeroInitRequired = !(op1->IsCnsFltOrDbl() || op1->isMemoryOp());
-            genSIMDScalarMove(TYP_FLOAT, targetReg, op1Reg, zeroInitRequired);
+            // avoid explicitly zero'ing out targetReg if targetReg and op1Reg are the same or do it more efficiently
+            // if they are not the same.
+            SIMDScalarMoveType moveType = op1->IsCnsFltOrDbl() || op1->isMemoryOp()
+                ? SMT_ZeroInitUpper_SrcHasUpperZeros
+                : SMT_ZeroInitUpper;
+
+            genSIMDScalarMove(TYP_FLOAT, targetReg, op1Reg, moveType);
 
             if (size == 8)
             {
@@ -726,7 +765,7 @@ CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         // This allows us to efficiently stitch together a vector as follows:
         // vectorReg = (vectorReg << offset)
         // VectorReg[0] = listItemReg
-        // Use genSIMDScalarMove with zeroInit of false in order to ensure that the upper
+        // Use genSIMDScalarMove with SMT_PreserveUpper in order to ensure that the upper
         // bits of vectorReg are not modified.
 
         regNumber operandReg = operandRegs[initCount - i - 1];
@@ -734,7 +773,7 @@ CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         {                         
             getEmitter()->emitIns_R_I(insLeftShift, EA_16BYTE, vectorReg, baseTypeSize);
         }
-        genSIMDScalarMove(baseType, vectorReg, operandReg, false /* do not zeroInit */);
+        genSIMDScalarMove(baseType, vectorReg, operandReg, SMT_PreserveUpper);
 
         offset += baseTypeSize;
     }
