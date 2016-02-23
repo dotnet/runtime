@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Linq
 {
-    internal class Set<TElement>
+    internal sealed class Set<TElement>
     {
         private readonly IEqualityComparer<TElement> _comparer;
         private int[] _buckets;
@@ -19,12 +19,7 @@ namespace System.Linq
 
         public Set(IEqualityComparer<TElement> comparer)
         {
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TElement>.Default;
-            }
-
-            _comparer = comparer;
+            _comparer = comparer ?? EqualityComparer<TElement>.Default;
             _buckets = new int[7];
             _slots = new Slot[7];
         }

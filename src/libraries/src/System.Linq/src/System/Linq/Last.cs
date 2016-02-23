@@ -48,6 +48,7 @@ namespace System.Linq
                                 result = e.Current;
                             }
                             while (e.MoveNext());
+
                             return result;
                         }
                     }
@@ -149,6 +150,7 @@ namespace System.Linq
                             result = e.Current;
                         }
                         while (e.MoveNext());
+
                         return result;
                     }
                 }

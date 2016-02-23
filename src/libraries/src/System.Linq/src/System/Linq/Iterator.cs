@@ -11,11 +11,11 @@ namespace System.Linq
     {
         internal abstract class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
-            private int _threadId;
+            private readonly int _threadId;
             internal int _state;
             internal TSource _current;
 
-            public Iterator()
+            protected Iterator()
             {
                 _threadId = Environment.CurrentManagedThreadId;
             }

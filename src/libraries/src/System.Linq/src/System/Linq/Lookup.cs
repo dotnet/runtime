@@ -77,6 +77,7 @@ namespace System.Linq
             Debug.Assert(source != null);
             Debug.Assert(keySelector != null);
             Debug.Assert(elementSelector != null);
+
             Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
             foreach (TSource item in source)
             {
@@ -90,6 +91,7 @@ namespace System.Linq
         {
             Debug.Assert(source != null);
             Debug.Assert(keySelector != null);
+
             Lookup<TKey, TElement> lookup = new Lookup<TKey, TElement>(comparer);
             foreach (TElement item in source)
             {
@@ -116,12 +118,7 @@ namespace System.Linq
 
         private Lookup(IEqualityComparer<TKey> comparer)
         {
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TKey>.Default;
-            }
-
-            _comparer = comparer;
+            _comparer = comparer ?? EqualityComparer<TKey>.Default;
             _groupings = new Grouping<TKey, TElement>[7];
         }
 
@@ -326,6 +323,7 @@ namespace System.Linq
                 newGroupings[index] = g;
             }
             while (g != _lastGrouping);
+
             _groupings = newGroupings;
         }
     }
