@@ -18,9 +18,15 @@
   </PropertyGroup>
   
   <Target Name="BatchRestorePackages">
-    <Message Importance="High" Text="Restoring all packages..." />
-    <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
-    <Exec Command="$(DnuRestoreCommand) $(DnuRestoreDirs)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+    
+    <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems -->
+    <Exec Command="$(DnuRestoreCommand) $(DnuRestoreDirs)"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="^Unable to locate .*"
+          ContinueOnError="WarnAndContinue" />
+          
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
