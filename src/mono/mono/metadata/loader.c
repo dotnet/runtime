@@ -919,7 +919,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 {
 	MonoError error;
 	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, context, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_cleanup (&error);
 	return res;
 }
 
