@@ -486,34 +486,25 @@ namespace System.Net.Sockets
             }
         }
 
-        private void CloseInner()
-        {
-            Debug.Assert(Monitor.IsEntered(_queueLock));
-
-            // Drain queues
-
-            _acceptOrConnectQueue.StopAndAbort();
-            _sendQueue.StopAndAbort();
-            _receiveQueue.StopAndAbort();
-
-            // Freeing the token will prevent any future event delivery.  This socket will be unregistered
-            // from the event port automatically by the OS when it's closed.
-            _asyncEngineToken.Free();
-
-            // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
-
-            // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
-
-            // TODO: the error codes on these operations may need to be changed to account for
-            //       the close. I think Winsock returns OperationAborted in the case that
-            //       the socket for an outstanding operation is closed.
-        }
-
         public void Close()
         {
             lock (_queueLock)
             {
-                CloseInner();
+                // Drain queues
+
+                _acceptOrConnectQueue.StopAndAbort();
+                _sendQueue.StopAndAbort();
+                _receiveQueue.StopAndAbort();
+
+                // Freeing the token will prevent any future event delivery.  This socket will be unregistered
+                // from the event port automatically by the OS when it's closed.
+                _asyncEngineToken.Free();
+
+                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
+
+                // TODO: the error codes on these operations may need to be changed to account for
+                //       the close. I think Winsock returns OperationAborted in the case that
+                //       the socket for an outstanding operation is closed.
             }
         }
 
