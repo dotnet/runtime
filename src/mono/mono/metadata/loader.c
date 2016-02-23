@@ -2883,9 +2883,7 @@ mono_method_get_header (MonoMethod *method)
 {
 	MonoError error;
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
-	mono_loader_assert_no_error ();
-	if (!header)
-		mono_loader_set_error_from_mono_error (&error);
+	mono_error_cleanup (&error);
 	return header;
 }
 

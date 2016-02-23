@@ -902,8 +902,5 @@ mono_image_set_description (MonoImageSet *);
 MonoImageSet *
 mono_find_image_set_owner (void *ptr);
 
-MonoMethodHeader*
-mono_method_get_header_checked (MonoMethod *method, MonoError *error);
-
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
