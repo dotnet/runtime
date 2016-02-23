@@ -1617,8 +1617,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			/* Done by the generated code */
 			;
 		else {
-			if (run_cctors)
-				mono_runtime_class_init (vtable);
+			if (run_cctors) {
+				if (!mono_runtime_class_init_full (vtable, error)) {
+					return NULL;
+				}
+			}
 		}
 		target = (char*)mono_vtable_get_static_field_data (vtable) + patch_info->data.field->offset;
 		break;
@@ -1988,16 +1991,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			MonoVTable *vtable;
-			MonoException *tmpEx;
 
 			mono_jit_stats.methods_lookups++;
 			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
-			tmpEx = mono_runtime_class_init_full (vtable, FALSE);
-			if (tmpEx) {
-				mono_error_set_exception_instance (error, tmpEx);
+			if (!mono_runtime_class_init_full (vtable, error))
 				return NULL;
-			}
 			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
@@ -2019,7 +2018,8 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 			if (!mono_llvm_only) {
 				vtable = mono_class_vtable (domain, method->klass);
 				g_assert (vtable);
-				mono_runtime_class_init (vtable);
+				if (!mono_runtime_class_init_full (vtable, error))
+					return NULL;
 			}
 		}
 	}
@@ -2296,7 +2296,9 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	info->sig = mono_method_signature (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-	info->vtable = mono_class_vtable_full (domain, method->klass, TRUE);
+	info->vtable = mono_class_vtable_full (domain, method->klass, error);
+	if (!mono_error_ok (error))
+		return NULL;
 	g_assert (info->vtable);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
@@ -2598,15 +2600,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	 * We need this here because mono_marshal_get_runtime_invoke can place
 	 * the helper method in System.Object and not the target class.
 	 */
-	if (exc)
-	{
-		*exc = (MonoObject*)mono_runtime_class_init_full (info->vtable, FALSE);
-		if (*exc) {
-			mono_error_set_exception_instance (error, (MonoException*) *exc);
-			return NULL;
-		}
-	} else {
-		mono_runtime_class_init (info->vtable);
+	if (!mono_runtime_class_init_full (info->vtable, error)) {
+		if (exc)
+			*exc = (MonoObject*) mono_error_convert_to_exception (error);
+		return NULL;
 	}
 
 	/* If coop is enabled, and the caller didn't ask for the exception to be caught separately,
@@ -4026,7 +4023,7 @@ register_icalls (void)
 	register_icall (ves_icall_object_new_specific, "ves_icall_object_new_specific", "object ptr", FALSE);
 	register_icall (mono_array_new, "mono_array_new", "object ptr ptr int32", FALSE);
 	register_icall (ves_icall_array_new_specific, "ves_icall_array_new_specific", "object ptr int32", FALSE);
-	register_icall (mono_runtime_class_init, "mono_runtime_class_init", "void ptr", FALSE);
+	register_icall (ves_icall_runtime_class_init, "ves_icall_runtime_class_init", "void ptr", FALSE);
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (mono_ldvirtfn_gshared, "mono_ldvirtfn_gshared", "ptr object ptr", FALSE);

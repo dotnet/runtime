@@ -221,6 +221,7 @@ static void
 do_console_cancel_event (void)
 {
 	static MonoClassField *cancel_handler_field;
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *klass;
 	MonoDelegate *load_value;
@@ -240,9 +241,11 @@ do_console_cancel_event (void)
 		g_assert (cancel_handler_field);
 	}
 
-	vtable = mono_class_vtable_full (domain, klass, FALSE);
-	if (vtable == NULL)
+	vtable = mono_class_vtable_full (domain, klass, &error);
+	if (vtable == NULL || !is_ok (&error)) {
+		mono_error_cleanup (&error);
 		return;
+	}
 	mono_field_static_get_value (vtable, cancel_handler_field, &load_value);
 	if (load_value == NULL)
 		return;

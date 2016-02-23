@@ -262,6 +262,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	return ex;
 }
+
 /*
  * mono_runtime_class_init:
  * @vtable: vtable that needs to be initialized
@@ -272,24 +273,25 @@ void
 mono_runtime_class_init (MonoVTable *vtable)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	MonoError error;
 
-	mono_runtime_class_init_full (vtable, TRUE);
+	mono_runtime_class_init_full (vtable, &error);
+	mono_error_assert_ok (&error);
 }
 
-/*
+/**
  * mono_runtime_class_init_full:
  * @vtable that neeeds to be initialized
- * @raise_exception is TRUE, exceptions are raised intead of returned 
+ * @error set on error
+ *
+ * returns TRUE if class constructor .cctor has been initialized successfully, or FALSE otherwise and sets @error.
  * 
  */
-MonoException *
-mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
+gboolean
+mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
-	MonoException *exc;
-	MonoException *exc_to_throw;
 	MonoMethod *method = NULL;
 	MonoClass *klass;
 	gchar *full_name;
@@ -299,39 +301,35 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	int do_initialization = 0;
 	MonoDomain *last_domain = NULL;
 
-	if (vtable->initialized)
-		return NULL;
+	mono_error_init (error);
 
-	exc = NULL;
+	if (vtable->initialized)
+		return TRUE;
+
 	klass = vtable->klass;
 
 	if (!klass->image->checked_module_cctor) {
 		mono_image_check_for_module_cctor (klass->image);
 		if (klass->image->has_module_cctor) {
-			MonoError error;
 			MonoClass *module_klass;
 			MonoVTable *module_vtable;
 
-			module_klass = mono_class_get_checked (klass->image, MONO_TOKEN_TYPE_DEF | 1, &error);
+			module_klass = mono_class_get_checked (klass->image, MONO_TOKEN_TYPE_DEF | 1, error);
 			if (!module_klass) {
-				exc = mono_error_convert_to_exception (&error);
-				if (raise_exception)
-					mono_raise_exception (exc);
-				return exc; 
+				return FALSE;
 			}
 				
-			module_vtable = mono_class_vtable_full (vtable->domain, module_klass, raise_exception);
+			module_vtable = mono_class_vtable_full (vtable->domain, module_klass, error);
 			if (!module_vtable)
-				return NULL;
-			exc = mono_runtime_class_init_full (module_vtable, raise_exception);
-			if (exc)
-				return exc;
+				return FALSE;
+			if (!mono_runtime_class_init_full (module_vtable, error))
+				return FALSE;
 		}
 	}
 	method = mono_class_get_cctor (klass);
 	if (!method) {
 		vtable->initialized = 1;
-		return NULL;
+		return TRUE;
 	}
 
 	tid = mono_native_thread_id_get ();
@@ -340,15 +338,14 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	/* double check... */
 	if (vtable->initialized) {
 		mono_type_initialization_unlock ();
-		return NULL;
+		return TRUE;
 	}
 	if (vtable->init_failed) {
 		mono_type_initialization_unlock ();
 
 		/* The type initialization already failed once, rethrow the same exception */
-		if (raise_exception)
-			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
-		return get_type_init_exception_for_vtable (vtable);
+		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
+		return FALSE;
 	}
 	lock = (TypeInitializationLock *)g_hash_table_lookup (type_initialization_hash, vtable);
 	if (lock == NULL) {
@@ -359,9 +356,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			if (!mono_domain_set (domain, FALSE)) {
 				vtable->initialized = 1;
 				mono_type_initialization_unlock ();
-				if (raise_exception)
-					mono_raise_exception (mono_get_exception_appdomain_unloaded ());
-				return mono_get_exception_appdomain_unloaded ();
+				mono_error_set_exception_instance (error, mono_get_exception_appdomain_unloaded ());
+				return FALSE;
 			}
 		}
 		lock = (TypeInitializationLock *)g_malloc (sizeof (TypeInitializationLock));
@@ -380,7 +376,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 
 		if (mono_native_thread_id_equals (lock->initializing_tid, tid) || lock->done) {
 			mono_type_initialization_unlock ();
-			return NULL;
+			return TRUE;
 		}
 		/* see if the thread doing the initialization is already blocked on this thread */
 		blocked = GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (lock->initializing_tid));
@@ -388,7 +384,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			if (mono_native_thread_id_equals (pending_lock->initializing_tid, tid)) {
 				if (!pending_lock->done) {
 					mono_type_initialization_unlock ();
-					return NULL;
+					return TRUE;
 				} else {
 					/* the thread doing the initialization is blocked on this thread,
 					   but on a lock that has already been freed. It just hasn't got
@@ -405,15 +401,15 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	mono_type_initialization_unlock ();
 
 	if (do_initialization) {
-		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, &error);
-		if (exc == NULL && !mono_error_ok (&error))
-			exc = mono_error_convert_to_exception (&error);
-		else
-			mono_error_cleanup (&error);
+		MonoException *exc = NULL;
+		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
+		if (exc != NULL && mono_error_ok (error)) {
+			mono_error_set_exception_instance (error, exc);
+		}
 
 		/* If the initialization failed, mark the class as unusable. */
 		/* Avoid infinite loops */
-		if (!(exc == NULL ||
+		if (!(mono_error_ok(error) ||
 			  (klass->image == mono_defaults.corlib &&
 			   !strcmp (klass->name_space, "System") &&
 			   !strcmp (klass->name, "TypeInitializationException")))) {
@@ -423,9 +419,13 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 				full_name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
 			else
 				full_name = g_strdup (klass->name);
-			exc_to_throw = mono_get_exception_type_initialization (full_name, exc);
+			mono_error_set_exception_instance (error, mono_get_exception_type_initialization (full_name, exc));
 			g_free (full_name);
 
+			MonoException *exc_to_store = mono_error_convert_to_exception (error);
+			/* What we really want to do here is clone the error object and store one copy in the
+			 * domain's exception hash and use the other one to error out here. */
+			mono_error_set_exception_instance (error, exc_to_store);
 			/*
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
@@ -433,7 +433,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			mono_domain_lock (domain);
 			if (!domain->type_init_exception_hash)
 				domain->type_init_exception_hash = mono_g_hash_table_new_type (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "type initialization exceptions table");
-			mono_g_hash_table_insert (domain->type_init_exception_hash, klass, exc_to_throw);
+			mono_g_hash_table_insert (domain->type_init_exception_hash, klass, exc_to_store);
 			mono_domain_unlock (domain);
 		}
 
@@ -463,11 +463,10 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 
 	if (vtable->init_failed) {
 		/* Either we were the initializing thread or we waited for the initialization */
-		if (raise_exception)
-			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
-		return get_type_init_exception_for_vtable (vtable);
+		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
+		return FALSE;
 	}
-	return NULL;
+	return TRUE;
 }
 
 static
@@ -1837,7 +1836,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	mono_domain_unlock (domain);
 }
 
-static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error);
+static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 /**
  * mono_class_vtable:
@@ -1851,30 +1850,34 @@ static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoCla
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *klass)
 {
-	return mono_class_vtable_full (domain, klass, FALSE);
+	MonoError error;
+	MonoVTable* vtable = mono_class_vtable_full (domain, klass, &error);
+	mono_error_cleanup (&error);
+	return vtable;
 }
 
 /**
  * mono_class_vtable_full:
  * @domain: the application domain
  * @class: the class to initialize
- * @raise_on_error if an exception should be raised on failure or not
+ * @error set on failure.
  *
  * VTables are domain specific because we create domain specific code, and 
  * they contain the domain specific static class data.
  */
 MonoVTable *
-mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error)
+mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClassRuntimeInfo *runtime_info;
 
+	mono_error_init (error);
+
 	g_assert (klass);
 
 	if (mono_class_has_failure (klass)) {
-		if (raise_on_error)
-			mono_raise_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
@@ -1882,7 +1885,7 @@ mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, gboolean raise_on_
 	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
-	return mono_class_create_runtime_vtable (domain, klass, raise_on_error);
+	return mono_class_create_runtime_vtable (domain, klass, error);
 }
 
 /**
@@ -1932,11 +1935,10 @@ alloc_vtable (MonoDomain *domain, size_t vtable_size, size_t imt_table_bytes)
 }
 
 static MonoVTable *
-mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error)
+mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info, *old_info;
 	MonoClassField *field;
@@ -1947,6 +1949,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	guint32 vtable_size, class_size;
 	gpointer iter;
 	gpointer *interface_offsets;
+
+	mono_error_init (error);
 
 	mono_loader_lock (); /*FIXME mono_class_init acquires it*/
 	mono_domain_lock (domain);
@@ -1960,8 +1964,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 		if (!mono_class_init (klass) || mono_class_has_failure (klass)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
-			if (raise_on_error)
-				mono_raise_exception (mono_class_get_exception_for_failure (klass));
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
 			return NULL;
 		}
 	}
@@ -1982,8 +1985,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
-			if (raise_on_error)
-				mono_raise_exception (mono_class_get_exception_for_failure (klass));
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
 			return NULL;
 		}
 	}
@@ -2004,8 +2006,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	if (mono_class_has_failure (klass)) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		if (raise_on_error)
-			mono_raise_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
@@ -2182,9 +2183,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
 	if (klass != mono_defaults.monotype_class) {
-		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, error);
+		if (!is_ok (error)) {
+			mono_domain_unlock (domain);
+			mono_loader_unlock ();
+			return NULL;
+		}
 
 		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
@@ -2238,9 +2242,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	}
 
 	if (klass == mono_defaults.monotype_class) {
-		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, error);
+		if (!is_ok (error)) {
+			mono_domain_unlock (domain);
+			mono_loader_unlock ();
+			return NULL;
+		}
 
 		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
@@ -2255,7 +2262,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 	/* make sure the parent is initialized */
 	/*FIXME shouldn't this fail the current type?*/
 	if (klass->parent)
-		mono_class_vtable_full (domain, klass->parent, raise_on_error);
+		mono_class_vtable_full (domain, klass->parent, error);
 
 	return vt;
 }
@@ -3354,7 +3361,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	MonoType *type = mono_field_get_type_checked (field, &error);
 
 	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error);
+		mono_error_raise_exception (&error);  /* FIXME don't raise here */
 
 	switch (type->type) {
 	case MONO_TYPE_STRING:
@@ -3400,9 +3407,13 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable_full (domain, field->parent, TRUE);
-			if (!vtable->initialized)
-				mono_runtime_class_init (vtable);
+			vtable = mono_class_vtable_full (domain, field->parent, &error);
+			mono_error_raise_exception (&error);  /* FIXME don't raise here */
+
+			if (!vtable->initialized) {
+				mono_runtime_class_init_full (vtable, &error);
+				mono_error_raise_exception (&error);  /* FIXME don't raise here */
+			}
 		}
 	} else {
 		g_assert (obj);
@@ -5354,7 +5365,9 @@ mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
 	 */
-	vtable = mono_class_vtable_full (domain, array_class, TRUE);
+	vtable = mono_class_vtable_full (domain, array_class, error);
+	return_val_if_nok (error, NULL);
+
 	if (bounds_size)
 		o = (MonoObject *)mono_gc_alloc_array (vtable, byte_len, len, bounds_size);
 	else
@@ -5400,7 +5413,10 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
-	arr = mono_array_new_specific_checked (mono_class_vtable_full (domain, ac, TRUE), n, &error);
+	MonoVTable *vtable = mono_class_vtable_full (domain, ac, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	arr = mono_array_new_specific_checked (vtable, n, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return arr;

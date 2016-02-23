@@ -4513,11 +4513,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 	}
 
-	ex = mono_runtime_class_init_full (vtable, FALSE);
-	if (ex) {
-		mono_error_set_exception_instance (error, ex);
+	if (!mono_runtime_class_init_full (vtable, error))
 		return NULL;
-	}
 	return code;
 }
 

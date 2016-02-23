@@ -4156,10 +4156,13 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
 		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
+	gboolean inited_ok = TRUE;
 	if (init_class)
-		mono_runtime_class_init (mono_class_vtable (domain, init_class));
+		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), &error);
 	else if (from_plt && klass && !klass->generic_container)
-		mono_runtime_class_init (mono_class_vtable (domain, klass));
+		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass), &error);
+	if (!inited_ok)
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return TRUE;
 

@@ -108,6 +108,7 @@ static gboolean suspend_finalizers = FALSE;
 void
 mono_gc_run_finalize (void *obj, void *data)
 {
+	MonoError error;
 	MonoObject *exc = NULL;
 	MonoObject *o;
 #ifndef HAVE_SGEN_GC
@@ -243,7 +244,8 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
 
-	mono_runtime_class_init (o->vtable);
+	mono_runtime_class_init_full (o->vtable, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
 		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size (o),
