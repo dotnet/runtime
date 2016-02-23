@@ -8,11 +8,14 @@
 
 extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
-extern "C" int32_t SystemNative_GetUnixArchitecture();
+extern "C" int32_t SystemNative_GetOSArchitecture();
+
+extern "C" int32_t SystemNative_GetProcessArchitecture();
 
 enum 
 {
     ARCH_X86,
     ARCH_X64,
-    ARCH_ARM
+    ARCH_ARM,
+    ARCH_ARM64
 };

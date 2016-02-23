@@ -31,6 +31,7 @@ internal partial class Interop
             Processor_Architecture_ARM = 5,
             Processor_Architecture_IA64 = 6,
             Processor_Architecture_AMD64 = 9,
+            Processor_Architecture_ARM64 = 12,
             Processor_Architecture_UNKNOWN = 0xFFFF
         }
     }
