@@ -872,7 +872,7 @@ mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *co
 }
 
 static MonoMethodHeader*
-inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
+inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethodHeader *res;
 	int i;
@@ -884,18 +884,29 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 	res->init_locals = header->init_locals;
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
-	for (i = 0; i < header->num_locals; ++i)
-		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], context);
+
+	mono_error_init (error);
+
+	for (i = 0; i < header->num_locals; ++i) {
+		res->locals [i] = mono_class_inflate_generic_type_checked (header->locals [i], context, error);
+		if (!is_ok (error))
+			goto fail;
+	}
 	if (res->num_clauses) {
 		res->clauses = (MonoExceptionClause *)g_memdup (header->clauses, sizeof (MonoExceptionClause) * res->num_clauses);
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &res->clauses [i];
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;
-			clause->data.catch_class = mono_class_inflate_generic_class (clause->data.catch_class, context);
+			clause->data.catch_class = mono_class_inflate_generic_class_checked (clause->data.catch_class, context, error);
+			if (!is_ok (error))
+				goto fail;
 		}
 	}
 	return res;
+fail:
+	g_free (res);
+	return NULL;
 }
 
 /*
@@ -930,8 +941,10 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 
 	if (table == MONO_TABLE_METHODSPEC) {
 		/* the verifier (do_invoke_method) will turn the NULL into a verifier error */
-		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated)
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated) {
+			mono_error_set_bad_image (error, image, "Method is a pinvoke or open generic");
 			return NULL;
+		}
 
 		return mono_method_signature_checked (method, error);
 	}
@@ -2807,8 +2820,12 @@ mono_method_get_header (MonoMethod *method)
 		if (!header)
 			return NULL;
 
-		iheader = inflate_generic_header (header, mono_method_get_context (method));
+		iheader = inflate_generic_header (header, mono_method_get_context (method), &error);
 		mono_metadata_free_mh (header);
+		if (!iheader) {
+			mono_loader_set_error_from_mono_error (&error);
+			return NULL;
+		}
 
 		mono_image_lock (img);
 
