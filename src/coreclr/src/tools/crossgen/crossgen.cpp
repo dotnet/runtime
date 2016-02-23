@@ -766,8 +766,11 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv++;
             argc--;
 
-            // Clear the /fulltrust flag - /CreatePDB does not work with any other flags.
+            // Clear the /fulltrust flag - /CreatePerfMap does not work with any other flags.
             dwFlags = dwFlags & ~NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
+
+            // Clear the /ready to run flag - /CreatePerfmap does not work with any other flags.
+            dwFlags = dwFlags & ~NGENWORKER_FLAGS_READYTORUN;
 
             // Parse: <directory to store PDB>
             if (wcscpy_s(
