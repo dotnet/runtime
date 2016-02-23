@@ -50,6 +50,10 @@ Abstract:
 #include <debugmacrosext.h>
 #include <semaphore.h>
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(PROCESS);
@@ -1375,9 +1379,6 @@ PAL_SetShutdownCallback(
     g_shutdownCallback = callback;
 }
 
-#define RuntimeStartupSemaphoreName "/RuntimeStartupEvent%08x"
-#define RuntimeContinueSemaphoreName "/RuntimeContinueEvent%08x"
-
 static bool IsCoreClrModule(const char* pModulePath)
 {
     // Strip off everything up to and including the last slash in the path to get name
@@ -1391,15 +1392,27 @@ static bool IsCoreClrModule(const char* pModulePath)
     return _stricmp(pModuleName, MAKEDLLNAME_A("coreclr")) == 0;
 }
 
+// Build the semaphore names using the PID and a value that can be used for distinguishing
+// between processes with the same PID (which ran at different times). This is to avoid
+// cases where a prior process with the same PID exited abnormally without having a chance
+// to clean up its semaphore. 
+static const char* RuntimeStartupSemaphoreName = "/RuntimeStartupEvent%08x-%llu";
+static const char* RuntimeContinueSemaphoreName = "/RuntimeContinueEvent%08x-%llu";
+
 class PAL_RuntimeStartupHelper
 {
     LONG m_ref;
     bool m_canceled;
-    DWORD m_processId;
     PPAL_STARTUP_CALLBACK m_callback;
     PVOID m_parameter;
     DWORD m_threadId;
     HANDLE m_threadHandle;
+
+    DWORD m_processId;
+
+    // A value that, used in conjunction with the process ID, uniquely identifies a process.
+    // See the format we use for debugger semaphore names for why this is necessary.
+    UINT64 m_processIdDisambiguationKey;
 
     // Debugger waits on this semaphore and the runtime signals it on startup.
     sem_t *m_startupSem;
@@ -1411,11 +1424,11 @@ public:
     PAL_RuntimeStartupHelper(DWORD dwProcessId, PPAL_STARTUP_CALLBACK pfnCallback, PVOID parameter) :
         m_ref(1),
         m_canceled(false),
-        m_processId(dwProcessId),
         m_callback(pfnCallback),
         m_parameter(parameter),
         m_threadId(0),
         m_threadHandle(NULL),
+        m_processId(dwProcessId),
         m_startupSem(SEM_FAILED),
         m_continueSem(SEM_FAILED)
     {
@@ -1426,19 +1439,29 @@ public:
         if (m_startupSem != SEM_FAILED)
         {
             char startupSemName[NAME_MAX - 4];
-            sprintf_s(startupSemName, sizeof(startupSemName), RuntimeStartupSemaphoreName, m_processId);
+            sprintf_s(startupSemName,
+                      sizeof(startupSemName),
+                      RuntimeStartupSemaphoreName,
+                      m_processId,
+                      m_processIdDisambiguationKey);
 
             sem_close(m_startupSem);
             sem_unlink(startupSemName);
         }
+
         if (m_continueSem != SEM_FAILED)
         {
             char continueSemName[NAME_MAX - 4];
-            sprintf_s(continueSemName, sizeof(continueSemName), RuntimeContinueSemaphoreName, m_processId);
+            sprintf_s(continueSemName,
+                      sizeof(continueSemName),
+                      RuntimeContinueSemaphoreName,
+                      m_processId,
+                      m_processIdDisambiguationKey);
 
             sem_close(m_continueSem);
             sem_unlink(continueSemName);
         }
+
         if (m_threadHandle != NULL)
         {
             CloseHandle(m_threadHandle);
@@ -1447,7 +1470,7 @@ public:
 
     LONG AddRef()
     {
-        LONG ref = InterlockedIncrement(&m_ref);    
+        LONG ref = InterlockedIncrement(&m_ref);
         return ref;
     }
 
@@ -1468,8 +1491,23 @@ public:
         char continueSemName[NAME_MAX - 4];
         PAL_ERROR pe = NO_ERROR;
 
-        sprintf_s(startupSemName, sizeof(startupSemName), RuntimeStartupSemaphoreName, m_processId);
-        sprintf_s(continueSemName, sizeof(continueSemName), RuntimeContinueSemaphoreName, m_processId);
+        // See semaphore name format for details about this value. We store it so that
+        // it can be used by the cleanup code that removes the semaphore with sem_unlink.
+        INDEBUG(BOOL disambiguationKeyRet = )
+        GetProcessIdDisambiguationKey(m_processId, &m_processIdDisambiguationKey);
+        _ASSERTE(disambiguationKeyRet == TRUE || m_processIdDisambiguationKey == 0);
+
+        sprintf_s(startupSemName,
+                  sizeof(startupSemName),
+                  RuntimeStartupSemaphoreName,
+                  m_processId,
+                  m_processIdDisambiguationKey);
+
+        sprintf_s(continueSemName,
+                  sizeof(continueSemName),
+                  RuntimeContinueSemaphoreName,
+                  m_processId,
+                  m_processIdDisambiguationKey);
 
         TRACE("PAL_RuntimeStartupHelper.Register startup '%s' continue '%s'\n", startupSemName, continueSemName);
 
@@ -1747,8 +1785,11 @@ PAL_NotifyRuntimeStarted()
     sem_t *continueSem = SEM_FAILED;
     BOOL result = TRUE;
 
-    sprintf_s(szStartupSemName, sizeof(szStartupSemName), RuntimeStartupSemaphoreName, gPID);
-    sprintf_s(szContinueSemName, sizeof(szContinueSemName), RuntimeContinueSemaphoreName, gPID);
+    UINT64 processIdDisambiguationKey = 0;
+    GetProcessIdDisambiguationKey(gPID, &processIdDisambiguationKey);
+
+    sprintf_s(szStartupSemName, sizeof(szStartupSemName), RuntimeStartupSemaphoreName, gPID, processIdDisambiguationKey);
+    sprintf_s(szContinueSemName, sizeof(szContinueSemName), RuntimeContinueSemaphoreName, gPID, processIdDisambiguationKey);
 
     TRACE("PAL_NotifyRuntimeStarted opening startup '%s' continue '%s'\n", szStartupSemName, szContinueSemName);
 
@@ -1797,6 +1838,102 @@ exit:
         sem_close(continueSem);
     }
     return result;
+}
+
+/*++
+ Function:
+  GetProcessIdDisambiguationKey
+
+  Get a numeric value that can be used to disambiguate between processes with the same PID,
+  provided that one of them is still running. The numeric value can mean different things
+  on different platforms, so it should not be used for any other purpose. Under the hood,
+  it is implemented based on the creation time of the process.
+--*/
+BOOL
+GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
+{
+    if (disambiguationKey == nullptr)
+    {
+        _ASSERTE(!"disambiguationKey argument cannot be null!");
+        return FALSE;
+    }
+
+    *disambiguationKey = 0;
+
+#if defined(__APPLE__)
+
+    // On OS X, we return the process start time expressed in Unix time (the number of seconds
+    // since the start of the Unix epoch).
+    struct kinfo_proc info = {};
+    size_t size = sizeof(info);
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
+
+    if (ret == 0)
+    {
+        timeval procStartTime = info.kp_proc.p_starttime;
+        long secondsSinceEpoch = procStartTime.tv_sec;
+
+        *disambiguationKey = secondsSinceEpoch;
+        return TRUE;
+    }
+    else
+    {
+        _ASSERTE(!"Failed to get start time of a process.");
+        return FALSE;
+    }
+
+#elif defined(HAVE_PROCFS_CTL)
+
+    // Here we read /proc/<pid>/stat file to get the start time for the process.
+    // We return this value (which is expressed in jiffies since boot time).
+
+    // Making something like: /proc/123/stat
+    char statFileName[64];
+
+    INDEBUG(int chars = )
+    snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
+    _ASSERTE(chars > 0 && chars <= sizeof(statFileName));
+
+    FILE *statFile = fopen(statFileName, "r");
+    if (statFile == nullptr) 
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
+    }
+
+    char *line = nullptr;
+    size_t lineLen = 0;
+    if (getline(&line, &lineLen, statFile) == -1)
+    {
+        _ASSERTE(!"Failed to getline from the stat file for a process.");
+        return FALSE;
+    }
+
+    unsigned long long starttime;
+
+    // scanf format specifiers for the fields in the stat file are provided by 'man proc'.
+    int sscanfRet = sscanf(line, 
+        "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+         &starttime);
+
+    if (sscanfRet != 1)
+    {
+        _ASSERTE(!"Failed to parse stat file contents with sscanf.");
+        return FALSE;
+    }
+
+    free(line);
+    fclose(statFile);
+
+    *disambiguationKey = starttime;
+    return TRUE;
+
+#else
+    // If this is not OS X and we don't have /proc, we just return FALSE.
+    WARN(!"GetProcessIdDisambiguationKey was called but is not implemented on this platform!");
+    return FALSE;
+#endif
 }
 
 /*++
@@ -2344,7 +2481,7 @@ CreateProcessModules(
 
 #if defined(__APPLE__)
 
-    // For OSx, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
+    // For OS X, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
     // command and read the relevant lines:
     //
     // ...
