@@ -61,6 +61,7 @@ set(UTILCODE_COMMON_SOURCES
   pedecoder.cpp
   winfix.cpp
   longfilepathwrappers.cpp 
+  jithost.cpp
 )
 
 # These source file do not yet compile on Linux.
