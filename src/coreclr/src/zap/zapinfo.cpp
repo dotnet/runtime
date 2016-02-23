@@ -3838,34 +3838,3 @@ BOOL ZapInfo::CurrentMethodHasProfileData()
     ICorJitInfo::ProfileBuffer * profileBuffer;
     return SUCCEEDED(getBBProfileData(m_currentMethodHandle, &size, &profileBuffer, NULL));
 }
-
-int ZapInfo::getIntConfigValue(const wchar_t *name, int defaultValue)
-{
-    int ret;
-
-    // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigDWORDInfo info{name, defaultValue, CLRConfig::REGUTIL_default};
-
-    // Perform a CLRConfig look up on behalf of the JIT.
-    ret = CLRConfig::GetConfigValue(info);
-
-    return ret;
-}
-
-wchar_t *ZapInfo::getStringConfigValue(const wchar_t *name)
-{
-    wchar_t *returnStr = nullptr;
-
-    // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigStringInfo info { name, CLRConfig::REGUTIL_default };
-
-    // Perform a CLRConfig look up on behalf of the JIT.
-    returnStr = CLRConfig::GetConfigValue(info);
-
-    return returnStr;
-}
-
-void ZapInfo::freeStringConfigValue(wchar_t *value)
-{
-    CLRConfig::FreeConfigString(value);
-}
