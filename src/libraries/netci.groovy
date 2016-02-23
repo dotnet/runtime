@@ -27,6 +27,7 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'RHEL7.2': 'rhel.7-x64']
 
 def branchList = ['master', 'rc2', 'pr']
+def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu14.04' : 'ubuntu14.04', 'OSX' : 'osx', 'Windows Nano' : 'winnano']
 
 def static getFullBranchName(def branch) {
     def branchMap = ['master':'*/master',
@@ -104,10 +105,91 @@ branchList.each { branchName ->
 }
 
 // **************************
+// Define outerloop windows Nano testing.  Run locally on each machine.
+// **************************
+branchList.each { branchName ->
+    ['Windows Nano'].each { os ->
+        ['Debug', 'Release'].each { configurationGroup ->
+
+            def isPR = (branchName == 'pr')  
+            def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
+            
+			def newBuildJobName = "${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
+
+			def newBuildJob = job(getJobName(Utilities.getFullJobName(project, newBuildJobName, isPR), branchName)) {
+        		steps {
+            		batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd /p:ConfigurationGroup=${configurationGroup} /p:SkipTests=true")
+            		// Package up the results.
+            		batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
+        		}
+			}
+
+            // Set the affinity.  All of these run on Windows currently.
+            Utilities.setMachineAffinity(newBuildJob, 'Windows_NT', 'latest-or-auto')
+            // Set up standard options.
+            Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
+            
+            def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
+            def newTestJobName =  "${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
+            def newTestJob = job(getJobName(Utilities.getFullJobName(project, newTestJobName, isPR), branchName)) {
+            	steps {
+            		// The tests/corefx components
+	                copyArtifacts(fullCoreFXBuildJobName) {
+	                    includePatterns('bin/build.pack')
+	                    buildSelector {
+	                        buildNumber('\${COREFX_BUILD}')
+	                    }
+	                }
+
+	                // Unpack the build data
+	                batchFile("C:\\Packer\\UnPacker.exe .\\bin\\build.pack .\\bin")
+	                // Run the tests
+	                batchFile("runtest.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
+            	}
+
+            	parameters {
+            		stringParam('COREFX_BUILD', '', 'Build number to use for copying binaries for nano server bld.')
+            	}
+            }
+
+            // Set the affinity.  All of these run on Windows Nano currently.
+            Utilities.setMachineAffinity(newTestJob, os)
+            // Set up standard options.
+            Utilities.standardJobSetup(newTestJob, project, isPR, getFullBranchName(branchName))
+
+            def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
+            def newJob = buildFlowJob(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
+                buildFlow("""
+                    b = build(params, '${fullCoreFXBuildJobName}')
+                    build(params +
+                    [COREFX_BUILD: b.build.number], '${fullCoreFXTestJobName}')
+                    """)
+            }
+
+            // Set the machine affinity.
+            Utilities.setMachineAffinity(newJob, os)
+            // Set up standard options.
+            Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
+            // Add the unit test results
+            Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
+
+            // Set up appropriate triggers.  PR on demand, otherwise nightly
+            if (isPR) {
+                // Set PR trigger.
+                // TODO: More elaborate regex trigger?
+                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}.*")
+            }
+            else {
+                // Set a periodic trigger
+                Utilities.addPeriodicTrigger(newJob, '@daily')
+            }
+        }
+    }
+}
+
+// **************************
 // Define outerloop windows testing.  Run locally on each machine.
 // **************************
-
-def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu14.04' : 'ubuntu14.04', 'OSX' : 'osx']
 branchList.each { branchName ->
     ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'OSX'].each { os ->
         ['Debug', 'Release'].each { configurationGroup ->
