@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,45 +10,61 @@ namespace System.Linq
     {
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false);
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, false, null);
         }
 
         public static IOrderedEnumerable<TSource> OrderBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false);
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, false, null);
         }
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true);
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, null, true, null);
         }
 
         public static IOrderedEnumerable<TSource> OrderByDescending<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            return new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true);
+            return new OrderedEnumerable<TSource, TKey>(source, keySelector, comparer, true, null);
         }
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             return source.CreateOrderedEnumerable(keySelector, null, false);
         }
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             return source.CreateOrderedEnumerable(keySelector, comparer, false);
         }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             return source.CreateOrderedEnumerable(keySelector, null, true);
         }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             return source.CreateOrderedEnumerable(keySelector, comparer, true);
         }
     }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,10 +10,18 @@ namespace System.Linq
     {
         public static double Average(this IEnumerable<int> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<int> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 long sum = e.Current;
                 long count = 1;
                 checked
@@ -25,13 +32,18 @@ namespace System.Linq
                         ++count;
                     }
                 }
+
                 return (double)sum / count;
             }
         }
 
         public static double? Average(this IEnumerable<int?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<int?> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -53,19 +65,29 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (double)sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static double Average(this IEnumerable<long> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<long> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 long sum = e.Current;
                 long count = 1;
                 checked
@@ -76,13 +98,18 @@ namespace System.Linq
                         ++count;
                     }
                 }
+
                 return (double)sum / count;
             }
         }
 
         public static double? Average(this IEnumerable<long?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<long?> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -104,19 +131,29 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (double)sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static float Average(this IEnumerable<float> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<float> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 double sum = e.Current;
                 long count = 1;
                 while (e.MoveNext())
@@ -124,13 +161,18 @@ namespace System.Linq
                     sum += e.Current;
                     ++count;
                 }
+
                 return (float)(sum / count);
             }
         }
 
         public static float? Average(this IEnumerable<float?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<float?> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -152,19 +194,29 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (float)(sum / count);
                     }
                 }
             }
+
             return null;
         }
 
         public static double Average(this IEnumerable<double> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<double> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 double sum = e.Current;
                 long count = 1;
                 while (e.MoveNext())
@@ -175,13 +227,18 @@ namespace System.Linq
                     sum += e.Current;
                     ++count;
                 }
+
                 return sum / count;
             }
         }
 
         public static double? Average(this IEnumerable<double?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<double?> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -203,19 +260,29 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static decimal Average(this IEnumerable<decimal> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<decimal> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 decimal sum = e.Current;
                 long count = 1;
                 while (e.MoveNext())
@@ -223,13 +290,18 @@ namespace System.Linq
                     sum += e.Current;
                     ++count;
                 }
+
                 return sum / count;
             }
         }
 
         public static decimal? Average(this IEnumerable<decimal?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             using (IEnumerator<decimal?> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -248,20 +320,34 @@ namespace System.Linq
                                 ++count;
                             }
                         }
+
                         return sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static double Average<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 long sum = selector(e.Current);
                 long count = 1;
                 checked
@@ -272,14 +358,23 @@ namespace System.Linq
                         ++count;
                     }
                 }
+
                 return (double)sum / count;
             }
         }
 
         public static double? Average<TSource>(this IEnumerable<TSource> source, Func<TSource, int?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -301,20 +396,34 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (double)sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static double Average<TSource>(this IEnumerable<TSource> source, Func<TSource, long> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 long sum = selector(e.Current);
                 long count = 1;
                 checked
@@ -325,14 +434,23 @@ namespace System.Linq
                         ++count;
                     }
                 }
+
                 return (double)sum / count;
             }
         }
 
         public static double? Average<TSource>(this IEnumerable<TSource> source, Func<TSource, long?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -354,20 +472,34 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (double)sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static float Average<TSource>(this IEnumerable<TSource> source, Func<TSource, float> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 double sum = selector(e.Current);
                 long count = 1;
                 while (e.MoveNext())
@@ -375,14 +507,23 @@ namespace System.Linq
                     sum += selector(e.Current);
                     ++count;
                 }
+
                 return (float)(sum / count);
             }
         }
 
         public static float? Average<TSource>(this IEnumerable<TSource> source, Func<TSource, float?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -404,20 +545,34 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return (float)(sum / count);
                     }
                 }
             }
+
             return null;
         }
 
         public static double Average<TSource>(this IEnumerable<TSource> source, Func<TSource, double> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 double sum = selector(e.Current);
                 long count = 1;
                 while (e.MoveNext())
@@ -428,14 +583,23 @@ namespace System.Linq
                     sum += selector(e.Current);
                     ++count;
                 }
+
                 return sum / count;
             }
         }
 
         public static double? Average<TSource>(this IEnumerable<TSource> source, Func<TSource, double?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -457,20 +621,34 @@ namespace System.Linq
                                 }
                             }
                         }
+
                         return sum / count;
                     }
                 }
             }
+
             return null;
         }
 
         public static decimal Average<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (!e.MoveNext()) throw Error.NoElements();
+                if (!e.MoveNext())
+                {
+                    throw Error.NoElements();
+                }
+
                 decimal sum = selector(e.Current);
                 long count = 1;
                 while (e.MoveNext())
@@ -478,14 +656,23 @@ namespace System.Linq
                     sum += selector(e.Current);
                     ++count;
                 }
+
                 return sum / count;
             }
         }
 
         public static decimal? Average<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -504,10 +691,12 @@ namespace System.Linq
                                 ++count;
                             }
                         }
+
                         return sum / count;
                     }
                 }
             }
+
             return null;
         }
     }

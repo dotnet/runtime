@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -12,32 +11,32 @@ namespace System.Linq
     {
         internal abstract class Iterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>
         {
-            private int _threadId;
-            internal int state;
-            internal TSource current;
+            private readonly int _threadId;
+            internal int _state;
+            internal TSource _current;
 
-            public Iterator()
+            protected Iterator()
             {
                 _threadId = Environment.CurrentManagedThreadId;
             }
 
             public TSource Current
             {
-                get { return current; }
+                get { return _current; }
             }
 
             public abstract Iterator<TSource> Clone();
 
             public virtual void Dispose()
             {
-                current = default(TSource);
-                state = -1;
+                _current = default(TSource);
+                _state = -1;
             }
 
             public IEnumerator<TSource> GetEnumerator()
             {
-                Iterator<TSource> enumerator = state == 0 && _threadId == Environment.CurrentManagedThreadId ? this : Clone();
-                enumerator.state = 1;
+                Iterator<TSource> enumerator = _state == 0 && _threadId == Environment.CurrentManagedThreadId ? this : Clone();
+                enumerator._state = 1;
                 return enumerator;
             }
 

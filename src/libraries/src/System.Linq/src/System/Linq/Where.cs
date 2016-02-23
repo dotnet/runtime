@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,21 +11,49 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Where<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull(nameof(predicate));
+            }
+
             Iterator<TSource> iterator = source as Iterator<TSource>;
-            if (iterator != null) return iterator.Where(predicate);
+            if (iterator != null)
+            {
+                return iterator.Where(predicate);
+            }
+
             TSource[] array = source as TSource[];
-            if (array != null) return new WhereArrayIterator<TSource>(array, predicate);
+            if (array != null)
+            {
+                return new WhereArrayIterator<TSource>(array, predicate);
+            }
+
             List<TSource> list = source as List<TSource>;
-            if (list != null) return new WhereListIterator<TSource>(list, predicate);
+            if (list != null)
+            {
+                return new WhereListIterator<TSource>(list, predicate);
+            }
+
             return new WhereEnumerableIterator<TSource>(source, predicate);
         }
 
         public static IEnumerable<TSource> Where<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull(nameof(predicate));
+            }
+
             return WhereIterator(source, predicate);
         }
 
@@ -35,8 +62,15 @@ namespace System.Linq
             int index = -1;
             foreach (TSource element in source)
             {
-                checked { index++; }
-                if (predicate(element, index)) yield return element;
+                checked
+                {
+                    index++;
+                }
+
+                if (predicate(element, index))
+                {
+                    yield return element;
+                }
             }
         }
 
@@ -45,7 +79,7 @@ namespace System.Linq
             return x => predicate1(x) && predicate2(x);
         }
 
-        internal class WhereEnumerableIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereEnumerableIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -71,16 +105,17 @@ namespace System.Linq
                     _enumerator.Dispose();
                     _enumerator = null;
                 }
+
                 base.Dispose();
             }
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         while (_enumerator.MoveNext())
@@ -88,13 +123,15 @@ namespace System.Linq
                             TSource item = _enumerator.Current;
                             if (_predicate(item))
                             {
-                                current = item;
+                                _current = item;
                                 return true;
                             }
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -109,7 +146,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereArrayIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereArrayIterator<TSource> : Iterator<TSource>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -130,7 +167,7 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (state == 1)
+                if (_state == 1)
                 {
                     while (_index < _source.Length)
                     {
@@ -138,12 +175,14 @@ namespace System.Linq
                         _index++;
                         if (_predicate(item))
                         {
-                            current = item;
+                            _current = item;
                             return true;
                         }
                     }
+
                     Dispose();
                 }
+
                 return false;
             }
 
@@ -158,7 +197,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereListIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereListIterator<TSource> : Iterator<TSource>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -179,11 +218,11 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         while (_enumerator.MoveNext())
@@ -191,13 +230,15 @@ namespace System.Linq
                             TSource item = _enumerator.Current;
                             if (_predicate(item))
                             {
-                                current = item;
+                                _current = item;
                                 return true;
                             }
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -212,7 +253,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -236,7 +277,7 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (state == 1)
+                if (_state == 1)
                 {
                     while (_index < _source.Length)
                     {
@@ -244,12 +285,14 @@ namespace System.Linq
                         _index++;
                         if (_predicate(item))
                         {
-                            current = _selector(item);
+                            _current = _selector(item);
                             return true;
                         }
                     }
+
                     Dispose();
                 }
+
                 return false;
             }
 
@@ -259,7 +302,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -283,11 +326,11 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         while (_enumerator.MoveNext())
@@ -295,13 +338,15 @@ namespace System.Linq
                             TSource item = _enumerator.Current;
                             if (_predicate(item))
                             {
-                                current = _selector(item);
+                                _current = _selector(item);
                                 return true;
                             }
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -311,7 +356,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -340,16 +385,17 @@ namespace System.Linq
                     _enumerator.Dispose();
                     _enumerator = null;
                 }
+
                 base.Dispose();
             }
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         while (_enumerator.MoveNext())
@@ -357,13 +403,15 @@ namespace System.Linq
                             TSource item = _enumerator.Current;
                             if (_predicate(item))
                             {
-                                current = _selector(item);
+                                _current = _selector(item);
                                 return true;
                             }
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 

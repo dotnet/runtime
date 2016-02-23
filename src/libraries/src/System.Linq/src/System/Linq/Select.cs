@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,28 +11,61 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             Iterator<TSource> iterator = source as Iterator<TSource>;
-            if (iterator != null) return iterator.Select(selector);
+            if (iterator != null)
+            {
+                return iterator.Select(selector);
+            }
+
             IList<TSource> ilist = source as IList<TSource>;
             if (ilist != null)
             {
                 TSource[] array = source as TSource[];
-                if (array != null) return new SelectArrayIterator<TSource, TResult>(array, selector);
+                if (array != null)
+                {
+                    return new SelectArrayIterator<TSource, TResult>(array, selector);
+                }
+
                 List<TSource> list = source as List<TSource>;
-                if (list != null) return new SelectListIterator<TSource, TResult>(list, selector);
+                if (list != null)
+                {
+                    return new SelectListIterator<TSource, TResult>(list, selector);
+                }
+
                 return new SelectIListIterator<TSource, TResult>(ilist, selector);
             }
+
             IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null) return new SelectIPartitionIterator<TSource, TResult>(partition, selector);
+            if (partition != null)
+            {
+                return new SelectIPartitionIterator<TSource, TResult>(partition, selector);
+            }
+
             return new SelectEnumerableIterator<TSource, TResult>(source, selector);
         }
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull(nameof(selector));
+            }
+
             return SelectIterator(source, selector);
         }
 
@@ -42,7 +74,11 @@ namespace System.Linq
             int index = -1;
             foreach (TSource element in source)
             {
-                checked { index++; }
+                checked
+                {
+                    index++;
+                }
+
                 yield return selector(element, index);
             }
         }
@@ -78,26 +114,29 @@ namespace System.Linq
                     _enumerator.Dispose();
                     _enumerator = null;
                 }
+
                 base.Dispose();
             }
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         if (_enumerator.MoveNext())
                         {
-                            current = _selector(_enumerator.Current);
+                            _current = _selector(_enumerator.Current);
                             return true;
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -128,11 +167,12 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if (state == 1 && _index < _source.Length)
+                if (_state == 1 && _index < _source.Length)
                 {
-                    current = _selector(_source[_index++]);
+                    _current = _selector(_source[_index++]);
                     return true;
                 }
+
                 Dispose();
                 return false;
             }
@@ -154,6 +194,7 @@ namespace System.Linq
                 {
                     results[i] = _selector(_source[i]);
                 }
+
                 return results;
             }
 
@@ -165,6 +206,7 @@ namespace System.Linq
                 {
                     results.Add(_selector(source[i]));
                 }
+
                 return results;
             }
 
@@ -175,8 +217,16 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                if (count == 0) return (IPartition<TResult>)Clone();
-                if (count >= _source.Length) return EmptyPartition<TResult>.Instance;
+                if (count == 0)
+                {
+                    return (IPartition<TResult>)Clone();
+                }
+
+                if (count >= _source.Length)
+                {
+                    return EmptyPartition<TResult>.Instance;
+                }
+
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
@@ -244,21 +294,23 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         if (_enumerator.MoveNext())
                         {
-                            current = _selector(_enumerator.Current);
+                            _current = _selector(_enumerator.Current);
                             return true;
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -280,6 +332,7 @@ namespace System.Linq
                 {
                     results[i] = _selector(_source[i]);
                 }
+
                 return results;
             }
 
@@ -291,6 +344,7 @@ namespace System.Linq
                 {
                     results.Add(_selector(_source[i]));
                 }
+
                 return results;
             }
 
@@ -368,21 +422,23 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         if (_enumerator.MoveNext())
                         {
-                            current = _selector(_enumerator.Current);
+                            _current = _selector(_enumerator.Current);
                             return true;
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -393,6 +449,7 @@ namespace System.Linq
                     _enumerator.Dispose();
                     _enumerator = null;
                 }
+
                 base.Dispose();
             }
 
@@ -414,6 +471,7 @@ namespace System.Linq
                 {
                     results[i] = _selector(_source[i]);
                 }
+
                 return results;
             }
 
@@ -425,6 +483,7 @@ namespace System.Linq
                 {
                     results.Add(_selector(_source[i]));
                 }
+
                 return results;
             }
 
@@ -502,21 +561,23 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
-                        state = 2;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         if (_enumerator.MoveNext())
                         {
-                            current = _selector(_enumerator.Current);
+                            _current = _selector(_enumerator.Current);
                             return true;
                         }
+
                         Dispose();
                         break;
                 }
+
                 return false;
             }
 
@@ -527,6 +588,7 @@ namespace System.Linq
                     _enumerator.Dispose();
                     _enumerator = null;
                 }
+
                 base.Dispose();
             }
 
@@ -581,11 +643,12 @@ namespace System.Linq
                     default:
                         TResult[] array = new TResult[count];
                         int index = 0;
-                        foreach(TSource input in _source)
+                        foreach (TSource input in _source)
                         {
                             array[index] = _selector(input);
                             ++index;
                         }
+
                         return array;
                 }
             }
@@ -605,8 +668,11 @@ namespace System.Linq
                         list = new List<TResult>(count);
                         break;
                 }
+
                 foreach (TSource input in _source)
+                {
                     list.Add(_selector(input));
+                }
 
                 return list;
             }
@@ -645,12 +711,13 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if ((state == 1 & _index <= _maxIndex) && _index < _source.Count)
+                if ((_state == 1 & _index <= _maxIndex) && _index < _source.Count)
                 {
-                    current = _selector(_source[_index]);
+                    _current = _selector(_source[_index]);
                     ++_index;
                     return true;
                 }
+
                 Dispose();
                 return false;
             }
@@ -714,7 +781,11 @@ namespace System.Linq
                 get
                 {
                     int count = _source.Count;
-                    if (count <= _minIndex) return 0;
+                    if (count <= _minIndex)
+                    {
+                        return 0;
+                    }
+
                     return Math.Min(count - 1, _maxIndex) - _minIndex + 1;
                 }
             }
@@ -722,21 +793,35 @@ namespace System.Linq
             public TResult[] ToArray()
             {
                 int count = Count;
-                if (count == 0) return Array.Empty<TResult>();
+                if (count == 0)
+                {
+                    return Array.Empty<TResult>();
+                }
+
                 TResult[] array = new TResult[count];
                 for (int i = 0, curIdx = _minIndex; i != array.Length; ++i, ++curIdx)
+                {
                     array[i] = _selector(_source[curIdx]);
+                }
+
                 return array;
             }
 
             public List<TResult> ToList()
             {
                 int count = Count;
-                if (count == 0) return new List<TResult>();
+                if (count == 0)
+                {
+                    return new List<TResult>();
+                }
+
                 List<TResult> list = new List<TResult>(count);
                 int end = _minIndex + count;
                 for (int i = _minIndex; i != end; ++i)
+                {
                     list.Add(_selector(_source[i]));
+                }
+
                 return list;
             }
 
