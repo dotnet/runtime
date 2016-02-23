@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <CoreRootFiles Include="$(CORE_ROOT)\*.*" />
+    <CoreRootFiles Include="$(PackagesDir)Microsoft.DotNet.xunit.performance\1.0.0-alpha-build0027\lib\dotnet\xunit.performance.core.dll" />
+    <CoreRootFiles Include="$(PackagesDir)xunit.extensibility.core\2.1.0\lib\dotnet\xunit.core.dll" />
   </ItemGroup>
 
   <Target Name="ReplaceProjectLockJson"
