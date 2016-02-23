@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -170,7 +169,11 @@ namespace System.Linq
         public IPartition<TElement> Take(int count)
         {
             int maxIndex = _minIndex + count - 1;
-            if ((uint)maxIndex >= (uint)_maxIndex) maxIndex = _maxIndex;
+            if ((uint)maxIndex >= (uint)_maxIndex)
+            {
+                maxIndex = _maxIndex;
+            }
+
             return new OrderedPartition<TElement>(_source, _minIndex, maxIndex);
         }
 
@@ -238,12 +241,13 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                if ((state == 1 & _index <= _maxIndex) && _index < _source.Count)
+                if ((_state == 1 & _index <= _maxIndex) && _index < _source.Count)
                 {
-                    current = _source[_index];
+                    _current = _source[_index];
                     ++_index;
                     return true;
                 }
+
                 Dispose();
                 return false;
             }
@@ -307,7 +311,11 @@ namespace System.Linq
                 get
                 {
                     int count = _source.Count;
-                    if (count <= _minIndex) return 0;
+                    if (count <= _minIndex)
+                    {
+                        return 0;
+                    }
+
                     return Math.Min(count - 1, _maxIndex) - _minIndex + 1;
                 }
             }
@@ -315,21 +323,35 @@ namespace System.Linq
             public TSource[] ToArray()
             {
                 int count = Count;
-                if (count == 0) return Array.Empty<TSource>();
+                if (count == 0)
+                {
+                    return Array.Empty<TSource>();
+                }
+
                 TSource[] array = new TSource[count];
                 for (int i = 0, curIdx = _minIndex; i != array.Length; ++i, ++curIdx)
+                {
                     array[i] = _source[curIdx];
+                }
+
                 return array;
             }
 
             public List<TSource> ToList()
             {
                 int count = Count;
-                if (count == 0) return new List<TSource>();
+                if (count == 0)
+                {
+                    return new List<TSource>();
+                }
+
                 List<TSource> list = new List<TSource>(count);
                 int end = _minIndex + count;
                 for (int i = _minIndex; i != end; ++i)
+                {
                     list.Add(_source[i]);
+                }
+
                 return list;
             }
 

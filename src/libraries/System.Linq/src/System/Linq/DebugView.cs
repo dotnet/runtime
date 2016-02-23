@@ -10,7 +10,7 @@ namespace System.Linq
 {
     // NOTE: DO NOT DELETE THE FOLLOWING DEBUG VIEW TYPES.
     // Although it might be tempting due to them not be referenced anywhere in this library,
-    // Visual Studio (and potentially other debuggers) currently depends on their existence to 
+    // Visual Studio (and potentially other debuggers) currently depends on their existence to
     // enable the "Results" view in watch windows.  Specifically:
     // - It creates the debug view by name (the view then has the same requirements as other views).
     // - It looks for the empty exception by name.
@@ -42,6 +42,7 @@ namespace System.Linq
                 {
                     throw new SystemCore_EnumerableDebugViewEmptyException();
                 }
+
                 return array;
             }
         }
@@ -80,12 +81,15 @@ namespace System.Linq
             {
                 List<object> tempList = new List<object>();
                 foreach (object item in _enumerable)
+                {
                     tempList.Add(item);
+                }
 
                 if (tempList.Count == 0)
                 {
                     throw new SystemCore_EnumerableDebugViewEmptyException();
                 }
+
                 return tempList.ToArray();
             }
         }

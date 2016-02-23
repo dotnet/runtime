@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,9 +10,21 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> Zip<TFirst, TSecond, TResult>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second, Func<TFirst, TSecond, TResult> resultSelector)
         {
-            if (first == null) throw Error.ArgumentNull("first");
-            if (second == null) throw Error.ArgumentNull("second");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (first == null)
+            {
+                throw Error.ArgumentNull("first");
+            }
+
+            if (second == null)
+            {
+                throw Error.ArgumentNull("second");
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull("resultSelector");
+            }
+
             return ZipIterator(first, second, resultSelector);
         }
 
@@ -21,8 +32,12 @@ namespace System.Linq
         {
             using (IEnumerator<TFirst> e1 = first.GetEnumerator())
             using (IEnumerator<TSecond> e2 = second.GetEnumerator())
+            {
                 while (e1.MoveNext() && e2.MoveNext())
+                {
                     yield return resultSelector(e1.Current, e2.Current);
+                }
+            }
         }
     }
 }

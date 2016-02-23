@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +17,11 @@ namespace System.Linq
 
         public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             return new DefaultIfEmptyIterator<TSource>(source, defaultValue);
         }
 
@@ -42,27 +45,29 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         _enumerator = _source.GetEnumerator();
                         if (_enumerator.MoveNext())
                         {
-                            current = _enumerator.Current;
-                            state = 2;
+                            _current = _enumerator.Current;
+                            _state = 2;
                         }
                         else
                         {
-                            current = _default;
-                            state = -1;
+                            _current = _default;
+                            _state = -1;
                         }
+
                         return true;
                     case 2:
                         if (_enumerator.MoveNext())
                         {
-                            current = _enumerator.Current;
+                            _current = _enumerator.Current;
                             return true;
                         }
+
                         break;
                 }
 
@@ -91,7 +96,10 @@ namespace System.Linq
             {
                 List<TSource> list = _source.ToList();
                 if (list.Count == 0)
+                {
                     list.Add(_default);
+                }
+
                 return list;
             }
 
@@ -107,6 +115,7 @@ namespace System.Linq
                     IIListProvider<TSource> listProv = _source as IIListProvider<TSource>;
                     count = listProv == null ? -1 : listProv.GetCount(onlyIfCheap: true);
                 }
+
                 return count == 0 ? 1 : count;
             }
         }

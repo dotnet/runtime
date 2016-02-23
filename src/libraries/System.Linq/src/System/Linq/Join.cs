@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,21 +10,61 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector)
         {
-            if (outer == null) throw Error.ArgumentNull("outer");
-            if (inner == null) throw Error.ArgumentNull("inner");
-            if (outerKeySelector == null) throw Error.ArgumentNull("outerKeySelector");
-            if (innerKeySelector == null) throw Error.ArgumentNull("innerKeySelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (outer == null)
+            {
+                throw Error.ArgumentNull("outer");
+            }
+
+            if (inner == null)
+            {
+                throw Error.ArgumentNull("inner");
+            }
+
+            if (outerKeySelector == null)
+            {
+                throw Error.ArgumentNull("outerKeySelector");
+            }
+
+            if (innerKeySelector == null)
+            {
+                throw Error.ArgumentNull("innerKeySelector");
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull("resultSelector");
+            }
+
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
         }
 
         public static IEnumerable<TResult> Join<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, TInner, TResult> resultSelector, IEqualityComparer<TKey> comparer)
         {
-            if (outer == null) throw Error.ArgumentNull("outer");
-            if (inner == null) throw Error.ArgumentNull("inner");
-            if (outerKeySelector == null) throw Error.ArgumentNull("outerKeySelector");
-            if (innerKeySelector == null) throw Error.ArgumentNull("innerKeySelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (outer == null)
+            {
+                throw Error.ArgumentNull("outer");
+            }
+
+            if (inner == null)
+            {
+                throw Error.ArgumentNull("inner");
+            }
+
+            if (outerKeySelector == null)
+            {
+                throw Error.ArgumentNull("outerKeySelector");
+            }
+
+            if (innerKeySelector == null)
+            {
+                throw Error.ArgumentNull("innerKeySelector");
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull("resultSelector");
+            }
+
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);
         }
 
@@ -44,14 +83,15 @@ namespace System.Linq
                             Grouping<TKey, TInner> g = lookup.GetGrouping(outerKeySelector(item), create: false);
                             if (g != null)
                             {
-                                int count = g.count;
-                                TInner[] elements = g.elements;
+                                int count = g._count;
+                                TInner[] elements = g._elements;
                                 for (int i = 0; i != count; ++i)
                                 {
                                     yield return resultSelector(item, elements[i]);
                                 }
                             }
-                        } while (e.MoveNext());
+                        }
+                        while (e.MoveNext());
                     }
                 }
             }
