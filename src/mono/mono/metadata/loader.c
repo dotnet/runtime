@@ -2797,33 +2797,33 @@ mono_method_get_token (MonoMethod *method)
 }
 
 MonoMethodHeader*
-mono_method_get_header (MonoMethod *method)
+mono_method_get_header_checked (MonoMethod *method, MonoError *error)
 {
-	MonoError error;
 	int idx;
 	guint32 rva;
 	MonoImage* img;
 	gpointer loc;
-	MonoMethodHeader *header;
 	MonoGenericContainer *container;
 
-	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		return NULL;
-
+	mono_error_init (error);
 	img = method->klass->image;
+
+	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+		mono_error_set_bad_image (error, img, "Method has no body");
+		return NULL;
+	}
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		MonoMethodHeader *header, *iheader;
 
-		header = mono_method_get_header (imethod->declaring);
+		header = mono_method_get_header_checked (imethod->declaring, error);
 		if (!header)
 			return NULL;
 
-		iheader = inflate_generic_header (header, mono_method_get_context (method), &error);
+		iheader = inflate_generic_header (header, mono_method_get_context (method), error);
 		mono_metadata_free_mh (header);
 		if (!iheader) {
-			mono_loader_set_error_from_mono_error (&error);
 			return NULL;
 		}
 
@@ -2857,12 +2857,16 @@ mono_method_get_header (MonoMethod *method)
 	idx = mono_metadata_token_index (method->token);
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
-	if (!mono_verifier_verify_method_header (img, rva, NULL))
+	if (!mono_verifier_verify_method_header (img, rva, NULL)) {
+		mono_error_set_bad_image (error, img, "Invalid method header, failed verification");
 		return NULL;
+	}
 
 	loc = mono_image_rva_map (img, rva);
-	if (!loc)
+	if (!loc) {
+		mono_error_set_bad_image (error, img, "Method has zero rva");
 		return NULL;
+	}
 
 	/*
 	 * When parsing the types of local variables, we must pass any container available
@@ -2871,12 +2875,20 @@ mono_method_get_header (MonoMethod *method)
 	container = mono_method_get_generic_container (method);
 	if (!container)
 		container = method->klass->generic_container;
-	header = mono_metadata_parse_mh_full (img, container, (const char *)loc, &error);
+	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
+}
+
+MonoMethodHeader*
+mono_method_get_header (MonoMethod *method)
+{
+	MonoError error;
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	mono_loader_assert_no_error ();
 	if (!header)
 		mono_loader_set_error_from_mono_error (&error);
-
 	return header;
 }
+
 
 guint32
 mono_method_get_flags (MonoMethod *method, guint32 *iflags)
