@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,8 +10,16 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TResult>> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             return SelectManyIterator(source, selector);
         }
 
@@ -29,8 +36,16 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TResult>> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             return SelectManyIterator(source, selector);
         }
 
@@ -39,7 +54,11 @@ namespace System.Linq
             int index = -1;
             foreach (TSource element in source)
             {
-                checked { index++; }
+                checked
+                {
+                    index++;
+                }
+
                 foreach (TResult subElement in selector(element, index))
                 {
                     yield return subElement;
@@ -49,9 +68,21 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(this IEnumerable<TSource> source, Func<TSource, int, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (collectionSelector == null) throw Error.ArgumentNull("collectionSelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (collectionSelector == null)
+            {
+                throw Error.ArgumentNull("collectionSelector");
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull("resultSelector");
+            }
+
             return SelectManyIterator(source, collectionSelector, resultSelector);
         }
 
@@ -60,7 +91,11 @@ namespace System.Linq
             int index = -1;
             foreach (TSource element in source)
             {
-                checked { index++; }
+                checked
+                {
+                    index++;
+                }
+
                 foreach (TCollection subElement in collectionSelector(element, index))
                 {
                     yield return resultSelector(element, subElement);
@@ -70,9 +105,21 @@ namespace System.Linq
 
         public static IEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(this IEnumerable<TSource> source, Func<TSource, IEnumerable<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (collectionSelector == null) throw Error.ArgumentNull("collectionSelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (collectionSelector == null)
+            {
+                throw Error.ArgumentNull("collectionSelector");
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull("resultSelector");
+            }
+
             return SelectManyIterator(source, collectionSelector, resultSelector);
         }
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,13 +10,20 @@ namespace System.Linq
     {
         public static TSource Last<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             IPartition<TSource> partition = source as IPartition<TSource>;
             if (partition != null)
             {
                 bool found;
                 TSource last = partition.TryGetLast(out found);
-                if (found) return last;
+                if (found)
+                {
+                    return last;
+                }
             }
             else
             {
@@ -25,7 +31,10 @@ namespace System.Linq
                 if (list != null)
                 {
                     int count = list.Count;
-                    if (count > 0) return list[count - 1];
+                    if (count > 0)
+                    {
+                        return list[count - 1];
+                    }
                 }
                 else
                 {
@@ -37,28 +46,45 @@ namespace System.Linq
                             do
                             {
                                 result = e.Current;
-                            } while (e.MoveNext());
+                            }
+                            while (e.MoveNext());
                             return result;
                         }
                     }
                 }
             }
+
             throw Error.NoElements();
         }
 
         public static TSource Last<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull("predicate");
+            }
+
             OrderedEnumerable<TSource> ordered = source as OrderedEnumerable<TSource>;
-            if (ordered != null) return ordered.Last(predicate);
+            if (ordered != null)
+            {
+                return ordered.Last(predicate);
+            }
+
             IList<TSource> list = source as IList<TSource>;
             if (list != null)
             {
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     TSource result = list[i];
-                    if (predicate(result)) return result;
+                    if (predicate(result))
+                    {
+                        return result;
+                    }
                 }
             }
             else
@@ -73,19 +99,28 @@ namespace System.Linq
                             while (e.MoveNext())
                             {
                                 TSource element = e.Current;
-                                if (predicate(element)) result = element;
+                                if (predicate(element))
+                                {
+                                    result = element;
+                                }
                             }
+
                             return result;
                         }
                     }
                 }
             }
+
             throw Error.NoMatch();
         }
 
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             IPartition<TSource> partition = source as IPartition<TSource>;
             if (partition != null)
             {
@@ -97,7 +132,10 @@ namespace System.Linq
             if (list != null)
             {
                 int count = list.Count;
-                if (count > 0) return list[count - 1];
+                if (count > 0)
+                {
+                    return list[count - 1];
+                }
             }
             else
             {
@@ -109,28 +147,46 @@ namespace System.Linq
                         do
                         {
                             result = e.Current;
-                        } while (e.MoveNext());
+                        }
+                        while (e.MoveNext());
                         return result;
                     }
                 }
             }
+
             return default(TSource);
         }
 
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull("predicate");
+            }
+
             OrderedEnumerable<TSource> ordered = source as OrderedEnumerable<TSource>;
-            if (ordered != null) return ordered.LastOrDefault(predicate);
+            if (ordered != null)
+            {
+                return ordered.LastOrDefault(predicate);
+            }
+
             IList<TSource> list = source as IList<TSource>;
             if (list != null)
             {
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     TSource element = list[i];
-                    if (predicate(element)) return element;
+                    if (predicate(element))
+                    {
+                        return element;
+                    }
                 }
+
                 return default(TSource);
             }
             else
@@ -143,6 +199,7 @@ namespace System.Linq
                         result = element;
                     }
                 }
+
                 return result;
             }
         }

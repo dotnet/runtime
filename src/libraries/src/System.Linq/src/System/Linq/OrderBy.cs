@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -31,25 +30,41 @@ namespace System.Linq
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             return source.CreateOrderedEnumerable(keySelector, null, false);
         }
 
         public static IOrderedEnumerable<TSource> ThenBy<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             return source.CreateOrderedEnumerable(keySelector, comparer, false);
         }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             return source.CreateOrderedEnumerable(keySelector, null, true);
         }
 
         public static IOrderedEnumerable<TSource> ThenByDescending<TSource, TKey>(this IOrderedEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             return source.CreateOrderedEnumerable(keySelector, comparer, true);
         }
     }

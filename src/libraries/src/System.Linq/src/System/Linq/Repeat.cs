@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,8 +11,16 @@ namespace System.Linq
     {
         public static IEnumerable<TResult> Repeat<TResult>(TResult element, int count)
         {
-            if (count < 0) throw Error.ArgumentOutOfRange("count");
-            if (count == 0) return EmptyPartition<TResult>.Instance;
+            if (count < 0)
+            {
+                throw Error.ArgumentOutOfRange("count");
+            }
+
+            if (count == 0)
+            {
+                return EmptyPartition<TResult>.Instance;
+            }
+
             return new RepeatIterator<TResult>(element, count);
         }
 
@@ -25,29 +32,30 @@ namespace System.Linq
             public RepeatIterator(TResult element, int count)
             {
                 Debug.Assert(count > 0);
-                current = element;
+                _current = element;
                 _count = count;
             }
 
             public override Iterator<TResult> Clone()
             {
-                return new RepeatIterator<TResult>(current, _count);
+                return new RepeatIterator<TResult>(_current, _count);
             }
 
             public override void Dispose()
             {
                 // Don't let base Dispose wipe current.
-                state = -1;
+                _state = -1;
             }
 
             public override bool MoveNext()
             {
-                if (state == 1 & _sent != _count)
+                if (_state == 1 & _sent != _count)
                 {
                     ++_sent;
                     return true;
                 }
-                state = -1;
+
+                _state = -1;
                 return false;
             }
 
@@ -59,9 +67,12 @@ namespace System.Linq
             public TResult[] ToArray()
             {
                 TResult[] array = new TResult[_count];
-                if (current != null)
+                if (_current != null)
                 {
-                    for (int i = 0; i != array.Length; ++i) array[i] = current;
+                    for (int i = 0; i != array.Length; ++i)
+                    {
+                        array[i] = _current;
+                    }
                 }
 
                 return array;
@@ -70,7 +81,10 @@ namespace System.Linq
             public List<TResult> ToList()
             {
                 List<TResult> list = new List<TResult>(_count);
-                for (int i = 0; i != _count; ++i) list.Add(current);
+                for (int i = 0; i != _count; ++i)
+                {
+                    list.Add(_current);
+                }
 
                 return list;
             }
@@ -82,14 +96,22 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                if (count >= _count) return EmptyPartition<TResult>.Instance;
-                return new RepeatIterator<TResult>(current, _count - count);
+                if (count >= _count)
+                {
+                    return EmptyPartition<TResult>.Instance;
+                }
+
+                return new RepeatIterator<TResult>(_current, _count - count);
             }
 
             public IPartition<TResult> Take(int count)
             {
-                if (count > _count) count = _count;
-                return new RepeatIterator<TResult>(current, count);
+                if (count > _count)
+                {
+                    count = _count;
+                }
+
+                return new RepeatIterator<TResult>(_current, count);
             }
 
             public TResult TryGetElementAt(int index, out bool found)
@@ -97,7 +119,7 @@ namespace System.Linq
                 if ((uint)index < (uint)_count)
                 {
                     found = true;
-                    return current;
+                    return _current;
                 }
 
                 found = false;
@@ -107,13 +129,13 @@ namespace System.Linq
             public TResult TryGetFirst(out bool found)
             {
                 found = true;
-                return current;
+                return _current;
             }
 
             public TResult TryGetLast(out bool found)
             {
                 found = true;
-                return current;
+                return _current;
             }
         }
     }

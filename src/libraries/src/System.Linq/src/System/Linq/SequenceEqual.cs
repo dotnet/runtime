@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -16,15 +15,29 @@ namespace System.Linq
 
         public static bool SequenceEqual<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
         {
-            if (comparer == null) comparer = EqualityComparer<TSource>.Default;
-            if (first == null) throw Error.ArgumentNull("first");
-            if (second == null) throw Error.ArgumentNull("second");
+            if (comparer == null)
+            {
+                comparer = EqualityComparer<TSource>.Default;
+            }
+
+            if (first == null)
+            {
+                throw Error.ArgumentNull("first");
+            }
+
+            if (second == null)
+            {
+                throw Error.ArgumentNull("second");
+            }
 
             ICollection<TSource> firstCol = first as ICollection<TSource>;
             if (firstCol != null)
             {
                 ICollection<TSource> secondCol = second as ICollection<TSource>;
-                if (secondCol != null && firstCol.Count != secondCol.Count) return false;
+                if (secondCol != null && firstCol.Count != secondCol.Count)
+                {
+                    return false;
+                }
             }
 
             using (IEnumerator<TSource> e1 = first.GetEnumerator())
@@ -32,8 +45,12 @@ namespace System.Linq
             {
                 while (e1.MoveNext())
                 {
-                    if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current))) return false;
+                    if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))
+                    {
+                        return false;
+                    }
                 }
+
                 return !e2.MoveNext();
             }
         }

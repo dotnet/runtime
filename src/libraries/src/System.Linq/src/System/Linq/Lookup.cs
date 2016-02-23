@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,8 +17,16 @@ namespace System.Linq
 
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull("keySelector");
+            }
+
             return Lookup<TKey, TSource>.Create(source, keySelector, comparer);
         }
 
@@ -30,9 +37,21 @@ namespace System.Linq
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
-            if (elementSelector == null) throw Error.ArgumentNull("elementSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull("keySelector");
+            }
+
+            if (elementSelector == null)
+            {
+                throw Error.ArgumentNull("elementSelector");
+            }
+
             return Lookup<TKey, TElement>.Create(source, keySelector, elementSelector, comparer);
         }
     }
@@ -40,7 +59,9 @@ namespace System.Linq
     public interface ILookup<TKey, TElement> : IEnumerable<IGrouping<TKey, TElement>>
     {
         int Count { get; }
+
         IEnumerable<TElement> this[TKey key] { get; }
+
         bool Contains(TKey key);
     }
 
@@ -61,6 +82,7 @@ namespace System.Linq
             {
                 lookup.GetGrouping(keySelector(item), create: true).Add(elementSelector(item));
             }
+
             return lookup;
         }
 
@@ -73,6 +95,7 @@ namespace System.Linq
             {
                 lookup.GetGrouping(keySelector(item), create: true).Add(item);
             }
+
             return lookup;
         }
 
@@ -82,14 +105,22 @@ namespace System.Linq
             foreach (TElement item in source)
             {
                 TKey key = keySelector(item);
-                if (key != null) lookup.GetGrouping(key, create: true).Add(item);
+                if (key != null)
+                {
+                    lookup.GetGrouping(key, create: true).Add(item);
+                }
             }
+
             return lookup;
         }
 
         private Lookup(IEqualityComparer<TKey> comparer)
         {
-            if (comparer == null) comparer = EqualityComparer<TKey>.Default;
+            if (comparer == null)
+            {
+                comparer = EqualityComparer<TKey>.Default;
+            }
+
             _comparer = comparer;
             _groupings = new Grouping<TKey, TElement>[7];
         }
@@ -104,7 +135,11 @@ namespace System.Linq
             get
             {
                 Grouping<TKey, TElement> grouping = GetGrouping(key, create: false);
-                if (grouping != null) return grouping;
+                if (grouping != null)
+                {
+                    return grouping;
+                }
+
                 return Array.Empty<TElement>();
             }
         }
@@ -121,9 +156,10 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
+                    g = g._next;
                     yield return g;
-                } while (g != _lastGrouping);
+                }
+                while (g != _lastGrouping);
             }
         }
 
@@ -136,11 +172,13 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
+                    g = g._next;
                     array[index] = g;
                     ++index;
-                } while (g != _lastGrouping);
+                }
+                while (g != _lastGrouping);
             }
+
             return array;
         }
 
@@ -153,11 +191,13 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
-                    array[index] = resultSelector(g.key, g.elements);
+                    g = g._next;
+                    array[index] = resultSelector(g._key, g._elements);
                     ++index;
-                } while (g != _lastGrouping);
+                }
+                while (g != _lastGrouping);
             }
+
             return array;
         }
 
@@ -169,10 +209,12 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
+                    g = g._next;
                     list.Add(g);
-                } while (g != _lastGrouping);
+                }
+                while (g != _lastGrouping);
             }
+
             return list;
         }
 
@@ -184,10 +226,12 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
-                    list.Add(resultSelector(g.key, g.elements));
-                } while (g != _lastGrouping);
+                    g = g._next;
+                    list.Add(resultSelector(g._key, g._elements));
+                }
+                while (g != _lastGrouping);
             }
+
             return list;
         }
 
@@ -203,10 +247,15 @@ namespace System.Linq
             {
                 do
                 {
-                    g = g.next;
-                    if (g.count != g.elements.Length) { Array.Resize(ref g.elements, g.count); }
-                    yield return resultSelector(g.key, g.elements);
-                } while (g != _lastGrouping);
+                    g = g._next;
+                    if (g._count != g._elements.Length)
+                    {
+                        Array.Resize(ref g._elements, g._count);
+                    }
+
+                    yield return resultSelector(g._key, g._elements);
+                }
+                while (g != _lastGrouping);
             }
         }
 
@@ -224,46 +273,59 @@ namespace System.Linq
         internal Grouping<TKey, TElement> GetGrouping(TKey key, bool create)
         {
             int hashCode = InternalGetHashCode(key);
-            for (Grouping<TKey, TElement> g = _groupings[hashCode % _groupings.Length]; g != null; g = g.hashNext)
-                if (g.hashCode == hashCode && _comparer.Equals(g.key, key)) return g;
+            for (Grouping<TKey, TElement> g = _groupings[hashCode % _groupings.Length]; g != null; g = g._hashNext)
+            {
+                if (g._hashCode == hashCode && _comparer.Equals(g._key, key))
+                {
+                    return g;
+                }
+            }
+
             if (create)
             {
-                if (_count == _groupings.Length) Resize();
+                if (_count == _groupings.Length)
+                {
+                    Resize();
+                }
+
                 int index = hashCode % _groupings.Length;
                 Grouping<TKey, TElement> g = new Grouping<TKey, TElement>();
-                g.key = key;
-                g.hashCode = hashCode;
-                g.elements = new TElement[1];
-                g.hashNext = _groupings[index];
+                g._key = key;
+                g._hashCode = hashCode;
+                g._elements = new TElement[1];
+                g._hashNext = _groupings[index];
                 _groupings[index] = g;
                 if (_lastGrouping == null)
                 {
-                    g.next = g;
+                    g._next = g;
                 }
                 else
                 {
-                    g.next = _lastGrouping.next;
-                    _lastGrouping.next = g;
+                    g._next = _lastGrouping._next;
+                    _lastGrouping._next = g;
                 }
+
                 _lastGrouping = g;
                 _count++;
                 return g;
             }
+
             return null;
         }
 
         private void Resize()
         {
-            int newSize = checked(_count * 2 + 1);
+            int newSize = checked((_count * 2) + 1);
             Grouping<TKey, TElement>[] newGroupings = new Grouping<TKey, TElement>[newSize];
             Grouping<TKey, TElement> g = _lastGrouping;
             do
             {
-                g = g.next;
-                int index = g.hashCode % newSize;
-                g.hashNext = newGroupings[index];
+                g = g._next;
+                int index = g._hashCode % newSize;
+                g._hashNext = newGroupings[index];
                 newGroupings[index] = g;
-            } while (g != _lastGrouping);
+            }
+            while (g != _lastGrouping);
             _groupings = newGroupings;
         }
     }

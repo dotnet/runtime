@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,230 +10,430 @@ namespace System.Linq
     {
         public static int Sum(this IEnumerable<int> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             int sum = 0;
             checked
             {
-                foreach (int v in source) sum += v;
+                foreach (int v in source)
+                {
+                    sum += v;
+                }
             }
+
             return sum;
         }
 
         public static int? Sum(this IEnumerable<int?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             int sum = 0;
             checked
             {
                 foreach (int? v in source)
                 {
-                    if (v != null) sum += v.GetValueOrDefault();
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
+
             return sum;
         }
 
         public static long Sum(this IEnumerable<long> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             long sum = 0;
             checked
             {
-                foreach (long v in source) sum += v;
+                foreach (long v in source)
+                {
+                    sum += v;
+                }
             }
+
             return sum;
         }
 
         public static long? Sum(this IEnumerable<long?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             long sum = 0;
             checked
             {
                 foreach (long? v in source)
                 {
-                    if (v != null) sum += v.GetValueOrDefault();
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
+
             return sum;
         }
 
         public static float Sum(this IEnumerable<float> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             double sum = 0;
-            foreach (float v in source) sum += v;
+            foreach (float v in source)
+            {
+                sum += v;
+            }
+
             return (float)sum;
         }
 
         public static float? Sum(this IEnumerable<float?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             double sum = 0;
             foreach (float? v in source)
             {
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return (float)sum;
         }
 
         public static double Sum(this IEnumerable<double> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             double sum = 0;
-            foreach (double v in source) sum += v;
+            foreach (double v in source)
+            {
+                sum += v;
+            }
+
             return sum;
         }
 
         public static double? Sum(this IEnumerable<double?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             double sum = 0;
             foreach (double? v in source)
             {
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return sum;
         }
 
         public static decimal Sum(this IEnumerable<decimal> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             decimal sum = 0;
-            foreach (decimal v in source) sum += v;
+            foreach (decimal v in source)
+            {
+                sum += v;
+            }
+
             return sum;
         }
 
         public static decimal? Sum(this IEnumerable<decimal?> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             decimal sum = 0;
             foreach (decimal? v in source)
             {
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return sum;
         }
 
         public static int Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             int sum = 0;
             checked
             {
-                foreach (TSource item in source) sum += selector(item);
+                foreach (TSource item in source)
+                {
+                    sum += selector(item);
+                }
             }
+
             return sum;
         }
 
         public static int? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, int?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             int sum = 0;
             checked
             {
                 foreach (TSource item in source)
                 {
                     int? v = selector(item);
-                    if (v != null) sum += v.GetValueOrDefault();
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
+
             return sum;
         }
 
         public static long Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, long> selector)
         {
-            if (selector == null) throw Error.ArgumentNull("selector");
-            if (source == null) throw Error.ArgumentNull("source");
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
             long sum = 0;
             checked
             {
-                foreach (TSource item in source) sum += selector(item);
+                foreach (TSource item in source)
+                {
+                    sum += selector(item);
+                }
             }
+
             return sum;
         }
 
         public static long? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, long?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             long sum = 0;
             checked
             {
                 foreach (TSource item in source)
                 {
                     long? v = selector(item);
-                    if (v != null) sum += v.GetValueOrDefault();
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
+
             return sum;
         }
 
         public static float Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, float> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             double sum = 0;
-            foreach (TSource item in source) sum += selector(item);
+            foreach (TSource item in source)
+            {
+                sum += selector(item);
+            }
+
             return (float)sum;
         }
 
         public static float? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, float?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             double sum = 0;
             foreach (TSource item in source)
             {
                 float? v = selector(item);
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return (float)sum;
         }
 
         public static double Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, double> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             double sum = 0;
-            foreach (TSource item in source) sum += selector(item);
+            foreach (TSource item in source)
+            {
+                sum += selector(item);
+            }
+
             return sum;
         }
 
         public static double? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, double?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             double sum = 0;
             foreach (TSource item in source)
             {
                 double? v = selector(item);
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return sum;
         }
 
         public static decimal Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             decimal sum = 0;
-            foreach (TSource item in source) sum += selector(item);
+            foreach (TSource item in source)
+            {
+                sum += selector(item);
+            }
+
             return sum;
         }
 
         public static decimal? Sum<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal?> selector)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (selector == null) throw Error.ArgumentNull("selector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull("source");
+            }
+
+            if (selector == null)
+            {
+                throw Error.ArgumentNull("selector");
+            }
+
             decimal sum = 0;
             foreach (TSource item in source)
             {
                 decimal? v = selector(item);
-                if (v != null) sum += v.GetValueOrDefault();
+                if (v != null)
+                {
+                    sum += v.GetValueOrDefault();
+                }
             }
+
             return sum;
         }
     }
