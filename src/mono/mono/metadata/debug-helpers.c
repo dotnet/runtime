@@ -568,13 +568,21 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 static const unsigned char*
 dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip, const unsigned char *end)
 {
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoError error;
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 	const MonoOpcode *opcode;
 	guint32 label, token;
 	gint32 sval;
 	int i;
 	char *tmp;
-	const unsigned char* il_code = mono_method_header_get_code (header, NULL, NULL);
+	const unsigned char* il_code;
+
+	if (!header) {
+		g_string_append_printf (str, "could not disassemble, bad header due to %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		return end;
+	}
+	il_code = mono_method_header_get_code (header, NULL, NULL);
 
 	label = ip - il_code;
 	if (dh->indenter) {
@@ -1120,10 +1128,12 @@ mono_class_describe_statics (MonoClass* klass)
 void
 mono_method_print_code (MonoMethod *method)
 {
+	MonoError error;
 	char *code;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 	if (!header) {
-		printf ("METHOD HEADER NOT FOUND\n");
+		printf ("METHOD HEADER NOT FOUND DUE TO: %s\n", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
 		return;
 	}
 	code = mono_disasm_code (0, method, header->code, header->code + header->code_size);
