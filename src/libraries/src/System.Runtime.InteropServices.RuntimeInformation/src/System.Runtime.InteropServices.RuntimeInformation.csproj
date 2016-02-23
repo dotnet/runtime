@@ -48,8 +48,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixArchitecture.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixArchitecture.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetOSArchitecture.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetProcessArchitecture.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ProcessorArchitecture.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

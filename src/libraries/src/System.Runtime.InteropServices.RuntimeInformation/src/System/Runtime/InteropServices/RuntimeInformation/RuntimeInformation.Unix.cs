@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (null == s_osArch)
                     {
-                        Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetUnixArchitecture();
+                        Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetOSArchitecture();
                         switch (arch)
                         {
                             case Interop.Sys.ProcessorArchitecture.ARM:
@@ -71,21 +71,24 @@ namespace System.Runtime.InteropServices
                 {
                     if (null == s_processArch)
                     {
-                        if (Architecture.Arm64 == OSArchitecture)
+                        Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetProcessArchitecture();
+                        switch (arch)
                         {
-                            s_processArch = s_is64BitProcess ? Architecture.Arm64 : Architecture.Arm;
-                        }
-                        else if (Architecture.Arm == OSArchitecture)
-                        {
-                            s_processArch = Architecture.Arm;
-                        }
-                        else if (s_is64BitProcess)
-                        {
-                            s_processArch = Architecture.X64;
-                        }
-                        else
-                        {
-                            s_processArch = Architecture.X86;
+                            case Interop.Sys.ProcessorArchitecture.ARM:
+                                s_processArch = Architecture.Arm;
+                                break;
+
+                            case Interop.Sys.ProcessorArchitecture.x64:
+                                s_processArch = Architecture.X64;
+                                break;
+
+                            case Interop.Sys.ProcessorArchitecture.x86:
+                                s_processArch = Architecture.X86;
+                                break;
+
+                            case Interop.Sys.ProcessorArchitecture.ARM64:
+                                s_processArch = Architecture.Arm64;
+                                break;
                         }
                     }
                 }
