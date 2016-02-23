@@ -3407,16 +3407,20 @@ namespace CoreXml.Test.XLinq
                 public void WriteCDataWithTwoClosingBrackets_5()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = doc.CreateWriter();
-                    w.WriteStartElement("Root");
-                    w.WriteCData("test ]]> test");
-                    w.WriteEndElement();
-                    w.Dispose();
+                    using (XmlWriter w = doc.CreateWriter())
+                    {
+                        w.WriteStartElement("Root");
+                        w.WriteCData("test ]]> test");
+                        w.WriteEndElement();
+                    }
+
+                    string expectedXml = "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>";
+
                     try
                     {
-                        if (CompareReader(doc, "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>"))
+                        using (XmlReader reader = doc.CreateReader())
                         {
-                            throw new TestException(TestResult.Failed, "");
+                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
                         }
                     }
                     catch (ArgumentException) { return; }
@@ -3599,17 +3603,21 @@ namespace CoreXml.Test.XLinq
                 public void WriteCommentWithDoubleHyphensInValue()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = doc.CreateWriter();
-                    w.WriteStartElement("Root");
-                    w.WriteComment("test --");
-                    w.WriteEndElement();
-                    w.Dispose();
+                    using (XmlWriter w = doc.CreateWriter())
+                    {
+                        w.WriteStartElement("Root");
+                        w.WriteComment("test --");
+                        w.WriteEndElement();
+                    }
+
                     try
                     {
-                        if (CompareReader(doc, "<Root><!--test - - --></Root>"))
+                        string expectedXml = "<Root><!--test - - --></Root>";
+
+                        using (XmlReader reader = doc.CreateReader())
                         {
-                            throw new TestException(TestResult.Failed, "");
-                        } //by design
+                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                        }
                     }
                     catch (ArgumentException) { return; }
                 }
@@ -4200,16 +4208,20 @@ namespace CoreXml.Test.XLinq
                 public void IncludePIEndTagAsPartOfTextValue()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = CreateWriter(doc);
-                    w.WriteStartElement("Root");
-                    w.WriteProcessingInstruction("badpi", "text ?>");
-                    w.WriteEndElement();
-                    w.Dispose();
+                    using (XmlWriter w = CreateWriter(doc))
+                    {
+                        w.WriteStartElement("Root");
+                        w.WriteProcessingInstruction("badpi", "text ?>");
+                        w.WriteEndElement();
+                    }
+
                     try
                     {
-                        if (CompareReader(doc, "<Root><?badpi text ? >?></Root>"))
+                        string expectedXml = "<Root><?badpi text ? >?></Root>";
+
+                        using (XmlReader reader = doc.CreateReader())
                         {
-                            throw new TestException(TestResult.Failed, "");
+                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
                         }
                     }
                     catch (ArgumentException) { return; }
@@ -6548,6 +6560,16 @@ namespace CoreXml.Test.XLinq
                         }
                     }
                 }
+            }
+
+            // Helper method
+            protected static XmlReader MoveToFirstElement(XmlReader reader)
+            {
+                while (reader.Read() && reader.NodeType != XmlNodeType.Element)
+                {
+                    // nop
+                }
+                return reader;
             }
         }
     }
