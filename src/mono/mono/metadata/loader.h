@@ -26,7 +26,7 @@ MONO_API MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, uint32_t token,
 				MonoGenericContext *context);
 
-MONO_API MonoMethodSignature* 
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodSignature* 
 mono_method_get_signature  (MonoMethod *method, MonoImage *image, uint32_t token);
 
 MONO_API MonoMethodSignature* 

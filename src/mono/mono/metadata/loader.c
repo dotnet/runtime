@@ -1020,7 +1020,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 {
 	MonoError error;
 	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, NULL, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_cleanup (&error);
 	return res;
 }
 
