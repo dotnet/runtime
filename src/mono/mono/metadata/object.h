@@ -209,6 +209,7 @@ mono_monitor_exit            (MonoObject *obj);
 MONO_API void
 mono_raise_exception	    (MonoException *ex);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_runtime_object_init    (MonoObject *this_obj);
 
