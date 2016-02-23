@@ -108,8 +108,8 @@ namespace System.Net.Sockets
 
             private bool TryCompleteOrAbortAsync(SocketAsyncContext context, bool abort)
             {
-                int state = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                if (state == (int)State.Cancelled)
+                State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
+                if (oldState == State.Cancelled)
                 {
                     // This operation has been cancelled. The canceller is responsible for
                     // correctly updating any state that would have been handled by
@@ -117,7 +117,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                Debug.Assert(state != (int)State.Complete && state != (int)State.Running);
+                Debug.Assert(oldState != State.Complete && oldState != State.Running);
 
                 bool completed;
                 if (abort)
@@ -326,23 +326,6 @@ namespace System.Net.Sockets
             public bool IsStopped { get { return State == QueueState.Stopped; } }
             public bool IsEmpty { get { return _tail == null; } }
 
-            public TOperation Head
-            {
-                get
-                {
-                    Debug.Assert(!IsStopped);
-                    return (TOperation)_tail.Next;
-                }
-            }
-
-            public TOperation Tail
-            {
-                get
-                {
-                    return (TOperation)_tail;
-                }
-            }
-
             public void Enqueue(TOperation operation)
             {
                 Debug.Assert(!IsStopped);
@@ -357,10 +340,13 @@ namespace System.Net.Sockets
                 _tail = operation;
             }
 
-            public void Dequeue()
+            private bool TryDequeue(out TOperation operation)
             {
-                Debug.Assert(!IsStopped);
-                Debug.Assert(!IsEmpty);
+                if (_tail == null)
+                {
+                    operation = null;
+                    return false;
+                }
 
                 AsyncOperation head = _tail.Next;
                 if (head == _tail)
@@ -371,6 +357,19 @@ namespace System.Net.Sockets
                 {
                     _tail.Next = head.Next;
                 }
+
+                head.Next = null;
+                operation = (TOperation)head;
+                return true;
+            }
+
+            private void Requeue(TOperation operation)
+            {
+                // Insert at the head of the queue
+                Debug.Assert(!IsStopped);
+
+                operation.Next = (_tail == null) ? operation : _tail.Next;
+                _tail = operation;
             }
 
             public OperationQueue<TOperation> Stop()
@@ -379,6 +378,54 @@ namespace System.Net.Sockets
                 _tail = null;
                 State = QueueState.Stopped;
                 return result;
+            }
+
+            public void Complete(SocketAsyncContext context)
+            {
+                if (IsStopped)
+                    return;
+
+                State = QueueState.Set;
+
+                TOperation op;
+                while (TryDequeue(out op))
+                {
+                    if (!op.TryCompleteAsync(context))
+                    {
+                        Requeue(op);
+                        return;
+                    }
+                }
+            }
+
+            public void StopAndAbort()
+            {
+                OperationQueue<TOperation> queue = Stop();
+
+                TOperation op;
+                while (queue.TryDequeue(out op))
+                {
+                    op.AbortAsync();
+                }
+            }
+
+            public bool AllOfType<TCandidate>() where TCandidate : TOperation
+            {
+                bool tailIsCandidateType = _tail is TCandidate;
+#if DEBUG
+                // We assume that all items are of the specified type, or all are not.  Check this invariant.
+                if (_tail != null)
+                {
+                    AsyncOperation op = _tail;
+                    do
+                    {
+                        Debug.Assert((op is TCandidate) == tailIsCandidateType);
+                        op = op.Next;
+                    }
+                    while (op != _tail);
+                }
+#endif
+                return tailIsCandidateType;
             }
         }
 
@@ -443,51 +490,23 @@ namespace System.Net.Sockets
         {
             Debug.Assert(Monitor.IsEntered(_queueLock));
 
-            OperationQueue<AcceptOrConnectOperation> acceptOrConnectQueue;
-            OperationQueue<SendOperation> sendQueue;
-            OperationQueue<TransferOperation> receiveQueue;
-
             // Drain queues
 
-                acceptOrConnectQueue = _acceptOrConnectQueue.Stop();
-                sendQueue = _sendQueue.Stop();
-                receiveQueue = _receiveQueue.Stop();
+            _acceptOrConnectQueue.StopAndAbort();
+            _sendQueue.StopAndAbort();
+            _receiveQueue.StopAndAbort();
 
-                // Freeing the token will prevent any future event delivery.  This socket will be unregistered
-                // from the event port automatically by the OS when it's closed.
-                _asyncEngineToken.Free();
+            // Freeing the token will prevent any future event delivery.  This socket will be unregistered
+            // from the event port automatically by the OS when it's closed.
+            _asyncEngineToken.Free();
 
-                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
+            // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
             // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
 
             // TODO: the error codes on these operations may need to be changed to account for
             //       the close. I think Winsock returns OperationAborted in the case that
             //       the socket for an outstanding operation is closed.
-
-            Debug.Assert(!acceptOrConnectQueue.IsStopped || acceptOrConnectQueue.IsEmpty);
-            while (!acceptOrConnectQueue.IsEmpty)
-            {
-                AcceptOrConnectOperation op = acceptOrConnectQueue.Head;
-                op.AbortAsync();
-                acceptOrConnectQueue.Dequeue();
-            }
-
-            Debug.Assert(!sendQueue.IsStopped || sendQueue.IsEmpty);
-            while (!sendQueue.IsEmpty)
-            {
-                SendReceiveOperation op = sendQueue.Head;
-                op.AbortAsync();
-                sendQueue.Dequeue();
-            }
-
-            Debug.Assert(!receiveQueue.IsStopped || receiveQueue.IsEmpty);
-            while (!receiveQueue.IsEmpty)
-            {
-                TransferOperation op = receiveQueue.Head;
-                op.AbortAsync();
-                receiveQueue.Dequeue();
-            }
         }
 
         public void Close()
@@ -1300,21 +1319,6 @@ namespace System.Net.Sockets
         {
             lock (_queueLock)
             {
-                if (_registeredEvents == (Interop.Sys.SocketEvents)(-1))
-                {
-                    // This can happen if a previous attempt at unregistration did not succeed.
-                    // Retry the unregistration.
-                    lock (_queueLock)
-                    {
-                        Debug.Assert(_acceptOrConnectQueue.IsStopped, "{Accept,Connect} queue should be stopped before retrying unregistration");
-                        Debug.Assert(_sendQueue.IsStopped, "Send queue should be stopped before retrying unregistration");
-                        Debug.Assert(_receiveQueue.IsStopped, "Receive queue should be stopped before retrying unregistration");
-
-                        Unregister();
-                        return;
-                    }
-                }
-
                 if ((events & Interop.Sys.SocketEvents.Error) != 0)
                 {
                     // Set the Read and Write flags as well; the processing for these events
@@ -1327,17 +1331,9 @@ namespace System.Net.Sockets
                     // Drain read queue and unregister read operations
                     Debug.Assert(_acceptOrConnectQueue.IsEmpty, "{Accept,Connect} queue should be empty before ReadClose");
 
-                    OperationQueue<TransferOperation> receiveQueue = _receiveQueue.Stop();
+                    _receiveQueue.StopAndAbort();
 
-                    while (!receiveQueue.IsEmpty)
-                    {
-                        TransferOperation op = receiveQueue.Head;
-                        bool completed = op.TryCompleteAsync(this);
-                        Debug.Assert(completed);
-                        receiveQueue.Dequeue();
-                    }
-
-                        UnregisterRead();
+                    UnregisterRead();
 
                     // Any data left in the socket has been received above; skip further processing.
                     events &= ~Interop.Sys.SocketEvents.Read;
@@ -1349,76 +1345,22 @@ namespace System.Net.Sockets
 
                 if ((events & Interop.Sys.SocketEvents.Read) != 0)
                 {
-                    AcceptOrConnectOperation acceptTail = _acceptOrConnectQueue.Tail as AcceptOperation;
-                        _acceptOrConnectQueue.State = QueueState.Set;
-
-                    TransferOperation receiveTail = _receiveQueue.Tail;
-                        _receiveQueue.State = QueueState.Set;
-
-                    if (acceptTail != null)
+                    if (_acceptOrConnectQueue.AllOfType<AcceptOperation>())
                     {
-                        AcceptOrConnectOperation op;
-                        do
-                        {
-                            op = _acceptOrConnectQueue.Head;
-                            if (!op.TryCompleteAsync(this))
-                            {
-                                break;
-                            }
-                            _acceptOrConnectQueue.Dequeue();
-                        } while (op != acceptTail);
+                        _acceptOrConnectQueue.Complete(this);
                     }
 
-                    if (receiveTail != null)
-                    {
-                        TransferOperation op;
-                        do
-                        {
-                            op = _receiveQueue.Head;
-                            if (!op.TryCompleteAsync(this))
-                            {
-                                break;
-                            }
-                            _receiveQueue.Dequeue();
-                        } while (op != receiveTail);
-                    }
+                    _receiveQueue.Complete(this);
                 }
 
                 if ((events & Interop.Sys.SocketEvents.Write) != 0)
                 {
-                    AcceptOrConnectOperation connectTail = _acceptOrConnectQueue.Tail as ConnectOperation;
-                        _acceptOrConnectQueue.State = QueueState.Set;
-
-                    SendOperation sendTail = _sendQueue.Tail;
-                        _sendQueue.State = QueueState.Set;
-
-                    if (connectTail != null)
+                    if (_acceptOrConnectQueue.AllOfType<ConnectOperation>())
                     {
-                        AcceptOrConnectOperation op;
-                        do
-                        {
-                            op = _acceptOrConnectQueue.Head;
-                            if (!op.TryCompleteAsync(this))
-                            {
-                                break;
-                            }
-                            _acceptOrConnectQueue.Dequeue();
-                        } while (op != connectTail);
+                        _acceptOrConnectQueue.Complete(this);
                     }
 
-                    if (sendTail != null)
-                    {
-                        SendOperation op;
-                        do
-                        {
-                            op = _sendQueue.Head;
-                            if (!op.TryCompleteAsync(this))
-                            {
-                                break;
-                            }
-                            _sendQueue.Dequeue();
-                        } while (op != sendTail);
-                    }
+                    _sendQueue.Complete(this);
                 }
             }
         }
