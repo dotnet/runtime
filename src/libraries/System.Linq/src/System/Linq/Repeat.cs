@@ -106,9 +106,9 @@ namespace System.Linq
 
             public IPartition<TResult> Take(int count)
             {
-                if (count > _count)
+                if (count >= _count)
                 {
-                    count = _count;
+                    return this;
                 }
 
                 return new RepeatIterator<TResult>(_current, count);
