@@ -1077,6 +1077,7 @@ get_wrapper_shared_type (MonoType *t)
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_GENERICINST: {
+		MonoError error;
 		MonoClass *klass;
 		MonoGenericContext ctx;
 		MonoGenericContext *orig_ctx;
@@ -1106,7 +1107,8 @@ get_wrapper_shared_type (MonoType *t)
 				args [i] = get_wrapper_shared_type (inst->type_argv [i]);
 			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
-		klass = mono_class_inflate_generic_class (klass->generic_class->container_class, &ctx);
+		klass = mono_class_inflate_generic_class_checked (klass->generic_class->container_class, &ctx, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		return &klass->byval_arg;
 	}
 #if SIZEOF_VOID_P == 8
@@ -3312,6 +3314,7 @@ get_shared_type (MonoType *t, MonoType *type)
 	MonoTypeEnum ttype;
 
 	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+		MonoError error;
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericContext context;
 		MonoClass *k;
@@ -3322,7 +3325,8 @@ get_shared_type (MonoType *t, MonoType *type)
 		if (gclass->context.method_inst)
 			context.method_inst = get_shared_inst (gclass->context.method_inst, gclass->container_class->generic_container->context.method_inst, NULL, FALSE, FALSE, TRUE);
 
-		k = mono_class_inflate_generic_class (gclass->container_class, &context);
+		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 		return mini_get_shared_gparam (t, &k->byval_arg);
 	} else if (MONO_TYPE_ISSTRUCT (type)) {
