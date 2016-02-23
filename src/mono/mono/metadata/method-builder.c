@@ -68,6 +68,7 @@ mono_mb_new_base (MonoClass *klass, MonoWrapperType type)
 #ifndef DISABLE_JIT
 	mb->code_size = 40;
 	mb->code = (unsigned char *)g_malloc (mb->code_size);
+	mb->init_locals = TRUE;
 #endif
 	/* placeholder for the wrapper always at index 1 */
 	mono_mb_add_data (mb, NULL);
@@ -189,7 +190,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
-	header->init_locals = TRUE;
+	header->init_locals = mb->init_locals;
 
 	header->num_clauses = mb->num_clauses;
 	header->clauses = mb->clauses;
