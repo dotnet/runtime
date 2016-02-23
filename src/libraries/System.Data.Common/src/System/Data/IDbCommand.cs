@@ -46,7 +46,7 @@ namespace System.Data{
 
         void Cancel();
 
-        IDbDataParameter CreateParameter(); // MDAC 68310
+        IDbDataParameter CreateParameter();
 
         int ExecuteNonQuery();
 

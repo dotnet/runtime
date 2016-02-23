@@ -6,7 +6,7 @@
 namespace System.Data {
     using System;
 
-    public interface IDbDataParameter : IDataParameter { // MDAC 68205
+    public interface IDbDataParameter : IDataParameter {
 
         byte Precision {
             get;
