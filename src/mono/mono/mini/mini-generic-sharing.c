@@ -551,7 +551,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: {
 		MonoMethod *method = (MonoMethod *)data;
 		MonoMethod *inflated_method;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&method->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 
 		mono_metadata_free_type (inflated_type);
@@ -602,7 +604,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		MonoJumpInfoGSharedVtCall *info = (MonoJumpInfoGSharedVtCall *)data;
 		MonoMethod *method = info->method;
 		MonoMethod *inflated_method;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&method->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		MonoJumpInfoGSharedVtCall *res;
 		MonoDomain *domain = mono_domain_get ();
@@ -635,8 +639,11 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
+		MonoError error;
 		MonoClassField *field = (MonoClassField *)data;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&field->parent->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		int i = field - field->parent->fields;
 		gpointer dummy = NULL;
@@ -668,7 +675,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		// FIXME: Temporary
 		res = (MonoJumpInfoVirtMethod *)mono_domain_alloc0 (domain, sizeof (MonoJumpInfoVirtMethod));
-		t = mono_class_inflate_generic_type (&info->klass->byval_arg, context);
+		t = mono_class_inflate_generic_type_checked (&info->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		res->klass = mono_class_from_mono_type (t);
 		mono_metadata_free_type (t);
 
