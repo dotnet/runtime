@@ -29,7 +29,7 @@ namespace System.Xml.Tests
         {
             int ret = base.Init(objParam);
 
-            _TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader\");
+            _TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader");
 
             // Create global usage test files
             string strFile = String.Empty;

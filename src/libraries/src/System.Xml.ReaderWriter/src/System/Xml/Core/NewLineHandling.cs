@@ -5,7 +5,7 @@
 namespace System.Xml
 {
     // NewLineHandling speficies what will XmlWriter do with new line characters. The options are:
-    //  Replace  = Replaces all new line characters with XmlWriterSettings.NewLineChars so all new lines are the same; by default NewLineChars are "\r\n"
+    //  Replace  = Replaces all new line characters with XmlWriterSettings.NewLineChars so all new lines are the same; by default NewLineChars == Environment.NewLine
     //  Entitize = Replaces all new line characters that would be normalized away by a normalizing XmlReader with character entities
     //  None     = Does not change the new line characters in input
     //

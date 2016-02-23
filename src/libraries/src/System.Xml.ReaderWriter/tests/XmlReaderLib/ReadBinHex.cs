@@ -442,7 +442,7 @@ namespace System.Xml.Tests
         [Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes")]
         public int TestTextReadBinHex_24()
         {
-            string filename = TestData + "Common/Bug99148.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug99148.xml");
             ReloadSource(filename);
 
             DataReader.MoveToContent();
@@ -866,7 +866,7 @@ namespace System.Xml.Tests
         [Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes")]
         public int TestTextReadBinHex_24()
         {
-            string filename = TestData + "Common/Bug99148.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug99148.xml");
             ReloadSource(filename);
 
             DataReader.MoveToContent();
