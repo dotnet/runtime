@@ -1388,11 +1388,12 @@ create_allocator (int atype, gboolean slowpath)
 	info->d.alloc.gc_name = "sgen";
 	info->d.alloc.alloc_type = atype;
 
+#ifndef DISABLE_JIT
+	mb->init_locals = FALSE;
+#endif
+
 	res = mono_mb_create (mb, csig, 8, info);
 	mono_mb_free (mb);
-#ifndef DISABLE_JIT
-	mono_method_get_header (res)->init_locals = FALSE;
-#endif
 
 
 	return res;
