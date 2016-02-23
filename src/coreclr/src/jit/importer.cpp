@@ -16965,11 +16965,6 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
         ++Compiler::jitCheckCanInlineFailureCount;    // This is actually the number of methods that starts the inline attempt.
 #endif         
 
-        if (inlineResult.isNever())
-        {
-            info.compCompHnd->setMethodAttribs(fncHandle, CORINFO_FLG_BAD_INLINEE);
-        }
-
         return;
     }
 
