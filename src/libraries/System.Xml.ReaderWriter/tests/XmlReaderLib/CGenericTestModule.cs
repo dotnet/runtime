@@ -57,7 +57,7 @@ namespace System.Xml.Tests
 
         public override int Init(object objParam)
         {
-            _TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader\");
+            _TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader");
 
             _TestData = _TestData.ToLowerInvariant();
 

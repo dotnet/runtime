@@ -149,7 +149,7 @@ namespace System.Xml.Tests
             int param = (int)CurVariation.Param;
             XmlReaderSettings rs = new XmlReaderSettings();
             XmlReader r = ReaderHelper.Create(new StringReader("<a/>"));
-            string uri = TestData + @"Common/file_23.xml";
+            string uri = Path.Combine(TestData, "Common", "file_23.xml");
             try
             {
                 switch (param)

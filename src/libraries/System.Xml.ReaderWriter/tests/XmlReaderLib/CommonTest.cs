@@ -206,7 +206,7 @@ namespace System.Xml.Tests
         [Variation("Read with invalid characters")]
         public int Read4()
         {
-            string filename = TestData + "Common/bad.xml";
+            string filename = Path.Combine(TestData, "Common", "bad.xml");
             try
             {
                 ReloadSource(filename);
@@ -263,7 +263,7 @@ namespace System.Xml.Tests
         [Variation("Read invalid text declaration")]
         public int Read8()
         {
-            string filename = TestData + "Common/bug_65660a.xml";
+            string filename = Path.Combine(TestData, "Common", "bug_65660a.xml");
             try
             {
                 ReloadSource(filename);
@@ -360,7 +360,7 @@ namespace System.Xml.Tests
         [Variation("Read with invalid entity value")]
         public int Read16()
         {
-            string filename = TestData + "Common/bug_62766.xml";
+            string filename = Path.Combine(TestData, "Common", "bug_62766.xml");
             try
             {
                 ReloadSource(filename);
@@ -383,7 +383,7 @@ namespace System.Xml.Tests
         public int Read17()
         {
             if (IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/invalid-ucs4.xml";
+            string filename = Path.Combine(TestData, "Common", "invalid-ucs4.xml");
             bool bPassed = TestInvalidXmlFile(filename, 35, 10, "Xml_InvalidCharInThisEncoding");
 
             return BoolToLTMResult(bPassed);
@@ -393,7 +393,7 @@ namespace System.Xml.Tests
         public int Read18()
         {
             if (IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/invalid-ucs4_1234.xml";
+            string filename = Path.Combine(TestData, "Common", "invalid-ucs4_1234.xml");
             bool bPassed = TestInvalidXmlFile(filename, 35, 10, "Xml_InvalidCharInThisEncoding");
 
             return BoolToLTMResult(bPassed);
@@ -403,7 +403,7 @@ namespace System.Xml.Tests
         public int Read19()
         {
             if (IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/invalid-ucs4_2143.xml";
+            string filename = Path.Combine(TestData, "Common", "invalid-ucs4_2143.xml");
             bool bPassed = TestInvalidXmlFile(filename, 35, 10, "Xml_InvalidCharInThisEncoding");
 
             return BoolToLTMResult(bPassed);
@@ -413,7 +413,7 @@ namespace System.Xml.Tests
         public int Read20()
         {
             if (IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/invalid-ucs4_3412.xml";
+            string filename = Path.Combine(TestData, "Common", "invalid-ucs4_3412.xml");
             bool bPassed = TestInvalidXmlFile(filename, 35, 10, "Xml_InvalidCharInThisEncoding");
 
             return BoolToLTMResult(bPassed);
@@ -461,7 +461,7 @@ namespace System.Xml.Tests
             if (IsCoreReader() || IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader())
                 return TEST_SKIPPED;
 
-            string filename = TestData + "Common/bug_57841.xml";
+            string filename = Path.Combine(TestData, "Common", "bug_57841.xml");
 
             int[][] expPos = new int[][] { new int[] { 9, 7 }, new int[] { 9, 14 }, new int[] { 9, 21 }, new int[] { 9, 28 }, new int[] { 9, 35 } };
 
@@ -812,7 +812,7 @@ namespace System.Xml.Tests
         public int InvalidCommentCharacters()
         {
             if (IsXmlNodeReader() || IsXmlNodeReaderDataDoc() || IsXPathNavigatorReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/Bug92020c.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug92020c.xml");
             bool bPassed = TestInvalidXmlFile(filename, 2, 18, "Xml_InvalidCommentChars");
             return BoolToLTMResult(bPassed);
         }
@@ -821,7 +821,7 @@ namespace System.Xml.Tests
         public int FactoryReaderInvalidCharacter()
         {
             if (!IsFactoryReader()) return TEST_SKIPPED;
-            string filename = TestData + "Common/Bug26771.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug26771.xml");
             bool bPassed = TestInvalidXmlFile(filename, 33, 235, "Xml_InvalidCharacter");
             return BoolToLTMResult(bPassed);
         }
@@ -847,7 +847,7 @@ namespace System.Xml.Tests
         [Variation("Read valid UCS4 file")]
         public int v1()
         {
-            string filename = TestData + "Common/valid-ucs4.xml";
+            string filename = Path.Combine(TestData, "Common", "valid-ucs4.xml");
             TestUCS4Encoding(filename, "ucs-4");
 
             return TEST_PASS;
@@ -872,7 +872,7 @@ namespace System.Xml.Tests
         [Variation("Read stream less than 4K")]
         public int v3()
         {
-            string filename = TestData + "Common/bug_62146.xml";
+            string filename = Path.Combine(TestData, "Common", "bug_62146.xml");
             ReloadSource(filename);
             while (DataReader.Read()) ;
 
@@ -933,7 +933,7 @@ namespace System.Xml.Tests
         [Variation("Read valid UCS4 file 1234")]
         public int v7()
         {
-            string filename = TestData + "Common/valid-ucs4_1234.xml";
+            string filename = Path.Combine(TestData, "Common", "valid-ucs4_1234.xml");
             TestUCS4Encoding(filename, "ucs-4 (Bigendian)");
 
             return TEST_PASS;
@@ -942,7 +942,7 @@ namespace System.Xml.Tests
         [Variation("Read valid UCS4 file 2143")]
         public int v8()
         {
-            string filename = TestData + "Common/valid-ucs4_2143.xml";
+            string filename = Path.Combine(TestData, "Common", "valid-ucs4_2143.xml");
             TestUCS4Encoding(filename, "ucs-4 (order 2143)");
 
             return TEST_PASS;
@@ -951,7 +951,7 @@ namespace System.Xml.Tests
         [Variation("Read valid UCS4 file 3412")]
         public int v9()
         {
-            string filename = TestData + "Common/valid-ucs4_3412.xml";
+            string filename = Path.Combine(TestData, "Common", "valid-ucs4_3412.xml");
             TestUCS4Encoding(filename, "ucs-4 (order 3412)");
 
             return TEST_PASS;
@@ -991,7 +991,7 @@ namespace System.Xml.Tests
         [Variation("Root element 18 chars length")]
         public int v13()
         {
-            string filename = TestData + "Common/Bug_70237.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug_70237.xml");
             ReloadSource(filename);
             string name = "a1234567890abcdefg";
             DataReader.PositionOnElement(name);
@@ -1005,7 +1005,7 @@ namespace System.Xml.Tests
         [Variation("File with external DTD")]
         public int v14()
         {
-            string filename = TestData + "Common/Bug68766.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug68766.xml");
             ReloadSource(filename);
 
             while (DataReader.Read()) ;
@@ -1123,7 +1123,7 @@ namespace System.Xml.Tests
         [Variation("Parsing valid xml with huge attributes")]
         public int Read36()
         {
-            ReloadSource(TestData + @"Common/hugeattributes.xml");
+            ReloadSource(Path.Combine(TestData, "Common", "hugeattributes.xml"));
             while (DataReader.Read())
             {
                 object ob = DataReader.Value;
@@ -1280,7 +1280,7 @@ namespace System.Xml.Tests
         [Variation("Parsing valid xml with 100 attributes with same names and diff.namespaces")]
         public int Read46()
         {
-            ReloadSource(TestData + @"Common/100attr.xml");
+            ReloadSource(Path.Combine(TestData, "Common", "100attr.xml"));
             while (DataReader.Read())
             {
                 object ob = DataReader.Value;
@@ -1336,7 +1336,7 @@ namespace System.Xml.Tests
         [Variation("Parsing valid xml with large number of attributes inside single element")]
         public int Read49()
         {
-            ReloadSource(TestData + @"Common/AttributesLargeNumber.xml");
+            ReloadSource(Path.Combine(TestData, "Common", "AttributesLargeNumber.xml"));
             while (DataReader.Read())
             {
                 object ob = DataReader.Value;
@@ -1490,9 +1490,9 @@ namespace System.Xml.Tests
         //[Variation("Parsing xml with DTD and 200 attributes with ns", Param = 2)]
         public int Read55()
         {
-            string xml = TestData + "Common/Attr200Valid.xml";
+            string xml = Path.Combine(TestData, "Common", "Attr200Valid.xml");
             if ((int)CurVariation.Param == 2)
-                xml = TestData + "Common/Attr200WithNS.xml";
+                xml = Path.Combine(TestData, "Common", "Attr200WithNS.xml");
             ReloadSource(xml);
             while (DataReader.Read())
             {
@@ -1515,7 +1515,7 @@ namespace System.Xml.Tests
         public int Read56()
         {
             int param = (int)CurVariation.Param;
-            string xml = (param == 1) ? TestData + "Common/Attr201Invalid.xml" : TestData + "Common/Attr201WithNS.xml";
+            string xml = Path.Combine(TestData, "Common", (param == 1) ? "Attr201Invalid.xml" : "Attr201WithNS.xml");
             try
             {
                 ReloadSource(xml);
@@ -1595,7 +1595,7 @@ namespace System.Xml.Tests
         [Variation("Parse xml with in ascii encoding")]
         public int Read61()
         {
-            string uri = TestData + "Common/riversrss.xml";
+            string uri = Path.Combine(TestData, "Common", "riversrss.xml");
             ReloadSource(uri);
             while (DataReader.Read()) ;
             return TEST_PASS;
@@ -1639,7 +1639,7 @@ namespace System.Xml.Tests
         public int Read65()
         {
             int param = (int)CurVariation.Param;
-            string xml = (param == 1) ? TestData + "Common/1_GB18030.xml" : TestData + "Common/3_UTF32.xml";
+            string xml = Path.Combine(TestData, "Common", (param == 1) ? "1_GB18030.xml" : "3_UTF32.xml");
             ReloadSource(xml);
             while (DataReader.Read()) CError.WriteLine(DataReader.Value);
             return TEST_PASS;
@@ -1648,7 +1648,7 @@ namespace System.Xml.Tests
         [Variation("Parse input with a character zero 0x00 at root level.")]
         public int Read66()
         {
-            string xml = TestData + "Common/Bug615675.xml";
+            string xml = Path.Combine(TestData, "Common", "Bug615675.xml");
             try
             {
                 ReloadSource(xml);
@@ -1662,7 +1662,7 @@ namespace System.Xml.Tests
         //[Variation("3.Parse input with utf-16 encoding", Param = "charset03.xml")]
         public int Read68()
         {
-            string xml = TestData + "Common/" + (string)CurVariation.Param;
+            string xml = Path.Combine(TestData, "Common", "" + (string)CurVariation.Param);
             ReloadSource(xml);
             while (DataReader.Read()) CError.WriteLine(DataReader.Value);
             return TEST_PASS;
@@ -1671,7 +1671,7 @@ namespace System.Xml.Tests
         [Variation("2.Parse input with utf-16 encoding", Param = "charset02.xml")]
         public int Read68a()
         {
-            string xml = TestData + "Common/" + (string)CurVariation.Param;
+            string xml = Path.Combine(TestData, "Common", "" + (string)CurVariation.Param);
             try
             {
                 ReloadSource(xml);
