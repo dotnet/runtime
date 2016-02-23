@@ -29,6 +29,8 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
   goto :EOF
 )
 
+if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
+
 :: Download Nuget.exe
 if NOT exist "%PACKAGES_DIR%NuGet.exe" (
   if NOT exist "%PACKAGES_DIR%" mkdir "%PACKAGES_DIR%"
