@@ -166,16 +166,18 @@ namespace System.Net.Sockets
             {
                 if (_handleToContextMap.Remove(handle))
                 {
-                _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
-                Debug.Assert(_outstandingHandles.ToInt64() >= 0);
+                    _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
+                    Debug.Assert(_outstandingHandles.ToInt64() >= 0);
 
-                //
-                // If we've allocated all possible handles for this instance, and freed them all, then 
-                // we don't need the event loop any more, and can reclaim resources.
-                //
-                if (IsFull && _outstandingHandles == IntPtr.Zero)
-                    shutdownNeeded = true;
-            }
+                    //
+                    // If we've allocated all possible handles for this instance, and freed them all, then 
+                    // we don't need the event loop any more, and can reclaim resources.
+                    //
+                    if (IsFull && _outstandingHandles == IntPtr.Zero)
+                    {
+                        shutdownNeeded = true;
+                    }
+                }
             }
 
             //
