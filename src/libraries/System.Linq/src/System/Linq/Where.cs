@@ -79,7 +79,7 @@ namespace System.Linq
             return x => predicate1(x) && predicate2(x);
         }
 
-        internal class WhereEnumerableIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereEnumerableIterator<TSource> : Iterator<TSource>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -146,7 +146,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereArrayIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereArrayIterator<TSource> : Iterator<TSource>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -197,7 +197,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereListIterator<TSource> : Iterator<TSource>
+        internal sealed class WhereListIterator<TSource> : Iterator<TSource>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -253,7 +253,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectArrayIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly TSource[] _source;
             private readonly Func<TSource, bool> _predicate;
@@ -302,7 +302,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly List<TSource> _source;
             private readonly Func<TSource, bool> _predicate;
@@ -356,7 +356,7 @@ namespace System.Linq
             }
         }
 
-        internal class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
+        internal sealed class WhereSelectEnumerableIterator<TSource, TResult> : Iterator<TResult>
         {
             private readonly IEnumerable<TSource> _source;
             private readonly Func<TSource, bool> _predicate;

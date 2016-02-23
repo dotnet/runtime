@@ -208,9 +208,7 @@ namespace System.Linq
 
         IOrderedEnumerable<TElement> IOrderedEnumerable<TElement>.CreateOrderedEnumerable<TKey>(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
         {
-            OrderedEnumerable<TElement, TKey> result = new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, descending);
-            result._parent = this;
-            return result;
+            return new OrderedEnumerable<TElement, TKey>(_source, keySelector, comparer, descending, this);
         }
 
         public IPartition<TElement> Skip(int count)
@@ -288,6 +286,7 @@ namespace System.Linq
                     value = e.Current;
                 }
                 while (!predicate(value));
+
                 comparer.SetElement(value);
                 while (e.MoveNext())
                 {
@@ -318,6 +317,7 @@ namespace System.Linq
                     value = e.Current;
                 }
                 while (!predicate(value));
+
                 comparer.SetElement(value);
                 while (e.MoveNext())
                 {
@@ -408,6 +408,7 @@ namespace System.Linq
                     value = e.Current;
                 }
                 while (!predicate(value));
+
                 comparer.SetElement(value);
                 while (e.MoveNext())
                 {
@@ -438,6 +439,7 @@ namespace System.Linq
                     value = e.Current;
                 }
                 while (!predicate(value));
+
                 comparer.SetElement(value);
                 while (e.MoveNext())
                 {
@@ -455,12 +457,12 @@ namespace System.Linq
 
     internal sealed class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
-        internal OrderedEnumerable<TElement> _parent;
-        internal Func<TElement, TKey> _keySelector;
-        internal IComparer<TKey> _comparer;
-        internal bool _descending;
+        internal readonly OrderedEnumerable<TElement> _parent;
+        internal readonly Func<TElement, TKey> _keySelector;
+        internal readonly IComparer<TKey> _comparer;
+        internal readonly bool _descending;
 
-        internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
+        internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, OrderedEnumerable<TElement> parent)
         {
             if (source == null)
             {
@@ -473,7 +475,7 @@ namespace System.Linq
             }
 
             _source = source;
-            _parent = null;
+            _parent = parent;
             _keySelector = keySelector;
             _comparer = comparer ?? Comparer<TKey>.Default;
             _descending = descending;
@@ -653,6 +655,7 @@ namespace System.Linq
                     j--;
                 }
                 while (i <= j);
+
                 if (j - left <= right - i)
                 {
                     if (left < j)
@@ -712,6 +715,7 @@ namespace System.Linq
                     j--;
                 }
                 while (i <= j);
+
                 if (minIdx >= i)
                 {
                     left = i + 1;
@@ -781,6 +785,7 @@ namespace System.Linq
                     j--;
                 }
                 while (i <= j);
+
                 if (i <= idx)
                 {
                     left = i + 1;
@@ -810,16 +815,17 @@ namespace System.Linq
                 }
             }
             while (left < right);
+
             return map[idx];
         }
     }
 
     internal sealed class EnumerableSorter<TElement, TKey> : EnumerableSorter<TElement>
     {
-        internal Func<TElement, TKey> _keySelector;
-        internal IComparer<TKey> _comparer;
-        internal bool _descending;
-        internal EnumerableSorter<TElement> _next;
+        internal readonly Func<TElement, TKey> _keySelector;
+        internal readonly IComparer<TKey> _comparer;
+        internal readonly bool _descending;
+        internal readonly EnumerableSorter<TElement> _next;
         internal TKey[] _keys;
 
         internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement> next)
