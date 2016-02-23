@@ -4870,9 +4870,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                     // This decision better not be context-dependent.
                     assert(trialResult.isNever());
 
-                    // Mark it in the EE.
-                    info.compCompHnd->setMethodAttribs(methodHnd, CORINFO_FLG_BAD_INLINEE);
-
+                    // Don't bother with the second stage of the evaluation for this method.
                     hasBeenMarkedAsBadInlinee = true;
                 }
                 else
@@ -4921,9 +4919,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                 // Bingo! It is a bad inlinee according to impCanInlineNative.
                 // This decision better not be context-dependent.
                 assert(trialResult.isNever());
-                
-                // Mark it in the EE.
-                info.compCompHnd->setMethodAttribs(methodHnd, CORINFO_FLG_BAD_INLINEE);
             }
             else 
             {
