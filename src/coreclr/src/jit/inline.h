@@ -27,7 +27,7 @@
 //
 // Enums are used throughout to provide various descriptions.
 //
-// Classes are used as follows. There are 4 sitations where inline
+// Classes are used as follows. There are 5 sitations where inline
 // candidacy is evaluated.  In each case an InlineResult is allocated
 // on the stack to collect information about the inline candidate.
 //
@@ -40,7 +40,7 @@
 // imported as well as when prospective inlines are being imported.
 // Candidates are marked in the IL and given an InlineCandidateInfo.
 //
-// 2. Inlining Optimization Pass (fgInline/fgMorphCallInline)
+// 2. Inlining Optimization Pass -- candidates (fgInline)
 //
 // Creates / Uses: InlineContext
 // Creates: InlineInfo, InlArgInfo, InlLocalVarInfo
@@ -55,7 +55,14 @@
 // created to remember this inline. In DEBUG builds, failing inlines
 // also create InlineContexts.
 //
-// 3 & 4. Prejit suitability screens (compCompileHelper)
+// 3. Inlining Optimization Pass -- non-candidates (fgNoteNotInlineCandidate)
+//
+// Creates / Uses: InlineContext
+//
+// In DEBUG, the jit also searches for non-candidate calls to try
+// and get a complete picture of the set of failed inlines.
+//
+// 4 & 5. Prejit suitability screens (compCompileHelper)
 //
 // When prejitting, each method is scanned to see if it is a viable
 // inline candidate. The scanning happens in two stages.
