@@ -1062,7 +1062,7 @@ namespace System.Xml.Tests
         [Variation("WS:WireCompat:hex binary fails to send/return data after 1787 bytes")]
         public int TestReadBase64ReadsTheContent()
         {
-            string filename = TestData + "Common/Bug99148.xml";
+            string filename = Path.Combine(TestData, "Common", "Bug99148.xml");
             ReloadSource(filename);
 
             DataReader.MoveToContent();
