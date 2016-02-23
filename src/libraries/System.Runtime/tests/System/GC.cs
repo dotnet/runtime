@@ -3,16 +3,26 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
-public class GCTests
+public static class GCTests
 {
-    [Fact]
-    public static void ValidCollectionGenerations()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(-1));
+    private static bool s_is32Bits = IntPtrTests.TestSize == 4; // Skip IntPtr tests on 32-bit platforms
 
+    [Fact]
+    public static void TestAddMemoryPressure_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure(-1)); // Bytes allocated < 0
+
+        if (s_is32Bits)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.AddMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+        }
+    }
+
+    [Fact]
+    public static void TestCollect_Int()
+    {
         for (int i = 0; i < GC.MaxGeneration + 10; i++)
         {
             GC.Collect(i);
@@ -20,22 +30,19 @@ public class GCTests
     }
 
     [Fact]
-    public static void CollectionCountDefault()
+    public static void TestCollect_Int_Invalid()
     {
-        VerifyCollectionCount(GCCollectionMode.Default);
+        Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1)); // Generation < 0
     }
 
-    [Fact]
-    public static void CollectionCountForced()
-    {
-        VerifyCollectionCount(GCCollectionMode.Forced);
-    }
-
-    private static void VerifyCollectionCount(GCCollectionMode mode)
+    [Theory]
+    [InlineData(GCCollectionMode.Default)]
+    [InlineData(GCCollectionMode.Forced)]
+    public static void TestCollect_Int_GCCollectionMode(GCCollectionMode mode)
     {
         for (int gen = 0; gen <= 2; gen++)
         {
-            byte[] b = new byte[1024 * 1024 * 10];
+            var b = new byte[1024 * 1024 * 10];
             int oldCollectionCount = GC.CollectionCount(gen);
             b = null;
 
@@ -46,14 +53,25 @@ public class GCTests
     }
 
     [Fact]
-    public static void InvalidCollectionModes()
+    public static void TestCollect_Int_GCCollectionMode_Invalid()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, (GCCollectionMode)(GCCollectionMode.Default - 1)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, (GCCollectionMode)(GCCollectionMode.Optimized + 1)));
+        Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default)); // Generation < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Default - 1)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Optimized + 1)); // Invalid collection mode
     }
 
     [Fact]
-    public static void Finalizer()
+    public static void TestCollect_Int_GCCollectionMode_Bool_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false)); // Generation < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Default - 1, false)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Optimized + 1, false)); // Invalid collection mode
+    }
+
+    [Fact]
+    public static void TestCollect_CallsFinalizer()
     {
         FinalizerTest.Run();
     }
@@ -88,7 +106,7 @@ public class GCTests
     {
         KeepAliveTest.Run();
     }
-    
+
     private class KeepAliveTest
     {
         public static void Run()
@@ -129,7 +147,7 @@ public class GCTests
     }
 
     [Fact]
-    public static void KeepAliveNull()
+    public static void KeepAlive_Null()
     {
         KeepAliveNullTest.Run();
     }
@@ -199,7 +217,7 @@ public class GCTests
     }
 
     [Fact]
-    public static void SuppressFinalizer()
+    public static void TestSuppressFinalizer()
     {
         SuppressFinalizerTest.Run();
     }
@@ -230,9 +248,21 @@ public class GCTests
     }
 
     [Fact]
-    public static void ReRegisterForFinalize()
+    public static void TestSuppressFinalizer_Invalid()
+    {
+        Assert.Throws<ArgumentNullException>("obj", () => GC.SuppressFinalize(null)); // Obj is null
+    }
+
+    [Fact]
+    public static void TestReRegisterForFinalize()
     {
         ReRegisterForFinalizeTest.Run();
+    }
+
+    [Fact]
+    public static void TestReRegisterFoFinalize()
+    {
+        Assert.Throws<ArgumentNullException>("obj", () => GC.ReRegisterForFinalize(null)); // Obj is null
     }
 
     private class ReRegisterForFinalizeTest
@@ -273,8 +303,31 @@ public class GCTests
     }
 
     [Fact]
-    public static void GetTotalMemoryTest_ForceCollection()
+    public static void TestCollectionCount_Invalid()
     {
+        Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.CollectionCount(-1)); // Generation < 0
+    }
+
+    [Fact]
+    public static void TestRemoveMemoryPressure_Invalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure(-1)); // Bytes allocated < 0
+
+        if (s_is32Bits)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("bytesAllocated", () => GC.RemoveMemoryPressure((long)int.MaxValue + 1)); // Bytes allocated > int.MaxValue on 32 bit platforms
+        }
+    }
+
+    [Fact]
+    public static void TestGetTotalMemoryTest_ForceCollection()
+    {
+        // We don't test GetTotalMemory(false) at all because a collection
+        // could still occur even if not due to the GetTotalMemory call,
+        // and as such there's no way to validate the behavior.  We also
+        // don't verify a tighter bound for the result of GetTotalMemory
+        // because collections could cause significant fluctuations.
+
         GC.Collect();
 
         int gen0 = GC.CollectionCount(0);
@@ -287,27 +340,23 @@ public class GCTests
         Assert.InRange(GC.CollectionCount(1), gen1 + 1, int.MaxValue);
         Assert.InRange(GC.CollectionCount(2), gen2 + 1, int.MaxValue);
 
-        // We don't test GetTotalMemory(false) at all because a collection
-        // could still occur even if not due to the GetTotalMemory call,
-        // and as such there's no way to validate the behavior.  We also
-        // don't verify a tighter bound for the result of GetTotalMemory
-        // because collections could cause significant fluctuations.
+        Assert.InRange(GC.GetTotalMemory(false), 1, long.MaxValue);
     }
 
     [Fact]
-    public static void GetGenerationTest()
+    public static void TestGetGeneration()
     {
+        // We don't test a tighter bound on GetGeneration as objects
+        // can actually get demoted or stay in the same generation
+        // across collections.
+
         GC.Collect();
-        object obj = new object();
+        var obj = new object();
 
         for (int i = 0; i <= GC.MaxGeneration + 1; i++)
         {
             Assert.InRange(GC.GetGeneration(obj), 0, GC.MaxGeneration);
             GC.Collect();
         }
-
-        // We don't test a tighter bound on GetGeneration as objects
-        // can actually get demoted or stay in the same generation
-        // across collections.
     }
 }
