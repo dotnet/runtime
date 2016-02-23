@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             int sum = 0;
@@ -31,7 +31,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             int sum = 0;
@@ -53,7 +53,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             long sum = 0;
@@ -72,7 +72,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             long sum = 0;
@@ -94,7 +94,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             double sum = 0;
@@ -110,7 +110,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             double sum = 0;
@@ -129,7 +129,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             double sum = 0;
@@ -145,7 +145,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             double sum = 0;
@@ -164,7 +164,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             decimal sum = 0;
@@ -180,7 +180,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             decimal sum = 0;
@@ -199,12 +199,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             int sum = 0;
@@ -223,12 +223,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             int sum = 0;
@@ -251,12 +251,12 @@ namespace System.Linq
         {
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             long sum = 0;
@@ -275,12 +275,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             long sum = 0;
@@ -303,12 +303,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             double sum = 0;
@@ -324,12 +324,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             double sum = 0;
@@ -349,12 +349,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             double sum = 0;
@@ -370,12 +370,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             double sum = 0;
@@ -395,12 +395,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             decimal sum = 0;
@@ -416,12 +416,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             decimal sum = 0;

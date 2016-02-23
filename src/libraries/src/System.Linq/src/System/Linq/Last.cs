@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IPartition<TSource> partition = source as IPartition<TSource>;
@@ -61,12 +61,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             OrderedEnumerable<TSource> ordered = source as OrderedEnumerable<TSource>;
@@ -118,7 +118,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IPartition<TSource> partition = source as IPartition<TSource>;
@@ -161,12 +161,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             OrderedEnumerable<TSource> ordered = source as OrderedEnumerable<TSource>;

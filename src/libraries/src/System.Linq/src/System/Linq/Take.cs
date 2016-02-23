@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (count <= 0)
@@ -51,12 +51,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             return TakeWhileIterator(source, predicate);
@@ -79,12 +79,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             return TakeWhileIterator(source, predicate);

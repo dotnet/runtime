@@ -12,12 +12,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull("first");
+                throw Error.ArgumentNull(nameof(first));
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull("second");
+                throw Error.ArgumentNull(nameof(second));
             }
 
             return IntersectIterator(first, second, null);
@@ -27,12 +27,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull("first");
+                throw Error.ArgumentNull(nameof(first));
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull("second");
+                throw Error.ArgumentNull(nameof(second));
             }
 
             return IntersectIterator(first, second, comparer);

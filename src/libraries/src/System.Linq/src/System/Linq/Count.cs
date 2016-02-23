@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             ICollection<TSource> collectionoft = source as ICollection<TSource>;
@@ -53,12 +53,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             int count = 0;
@@ -80,7 +80,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             long count = 0;
@@ -102,12 +102,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             long count = 0;

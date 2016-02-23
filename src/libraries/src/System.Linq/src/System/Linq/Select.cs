@@ -13,12 +13,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             Iterator<TSource> iterator = source as Iterator<TSource>;
@@ -58,12 +58,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             return SelectIterator(source, selector);

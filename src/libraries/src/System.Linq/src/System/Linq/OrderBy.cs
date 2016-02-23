@@ -32,7 +32,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return source.CreateOrderedEnumerable(keySelector, null, false);
@@ -42,7 +42,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return source.CreateOrderedEnumerable(keySelector, comparer, false);
@@ -52,7 +52,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return source.CreateOrderedEnumerable(keySelector, null, true);
@@ -62,7 +62,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return source.CreateOrderedEnumerable(keySelector, comparer, true);

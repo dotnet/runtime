@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return AppendIterator(source, element);
@@ -33,7 +33,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             return PrependIterator(source, element);
@@ -53,12 +53,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull("first");
+                throw Error.ArgumentNull(nameof(first));
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull("second");
+                throw Error.ArgumentNull(nameof(second));
             }
 
             var concatFirst = first as ConcatIterator<TSource>;

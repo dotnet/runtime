@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<int> e = source.GetEnumerator())
@@ -41,7 +41,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<int?> e = source.GetEnumerator())
@@ -78,7 +78,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<long> e = source.GetEnumerator())
@@ -107,7 +107,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<long?> e = source.GetEnumerator())
@@ -144,7 +144,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<float> e = source.GetEnumerator())
@@ -170,7 +170,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<float?> e = source.GetEnumerator())
@@ -207,7 +207,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<double> e = source.GetEnumerator())
@@ -236,7 +236,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<double?> e = source.GetEnumerator())
@@ -273,7 +273,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<decimal> e = source.GetEnumerator())
@@ -299,7 +299,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             using (IEnumerator<decimal?> e = source.GetEnumerator())
@@ -333,12 +333,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -367,12 +367,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -409,12 +409,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -443,12 +443,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -485,12 +485,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -516,12 +516,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -558,12 +558,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -592,12 +592,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -634,12 +634,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -665,12 +665,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             using (IEnumerator<TSource> e = source.GetEnumerator())

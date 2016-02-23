@@ -13,12 +13,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             Iterator<TSource> iterator = source as Iterator<TSource>;
@@ -46,12 +46,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull("predicate");
+                throw Error.ArgumentNull(nameof(predicate));
             }
 
             return WhereIterator(source, predicate);

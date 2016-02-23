@@ -12,12 +12,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             return SelectManyIterator(source, selector);
@@ -38,12 +38,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull("selector");
+                throw Error.ArgumentNull(nameof(selector));
             }
 
             return SelectManyIterator(source, selector);
@@ -70,17 +70,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (collectionSelector == null)
             {
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             return SelectManyIterator(source, collectionSelector, resultSelector);
@@ -107,17 +107,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (collectionSelector == null)
             {
-                throw Error.ArgumentNull("collectionSelector");
+                throw Error.ArgumentNull(nameof(collectionSelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             return SelectManyIterator(source, collectionSelector, resultSelector);

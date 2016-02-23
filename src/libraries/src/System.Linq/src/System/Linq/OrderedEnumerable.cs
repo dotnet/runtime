@@ -464,12 +464,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             _source = source;

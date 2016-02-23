@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IPartition<TSource> partition = source as IPartition<TSource>;
@@ -50,14 +50,14 @@ namespace System.Linq
                 }
             }
 
-            throw Error.ArgumentOutOfRange("index");
+            throw Error.ArgumentOutOfRange(nameof(index));
         }
 
         public static TSource ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, int index)
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IPartition<TSource> partition = source as IPartition<TSource>;
