@@ -599,6 +599,8 @@ namespace System.Net.Http
                     return 0;
                 }
 
+                Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER);
+
                 EasyRequest easy;
                 if (TryGetEasyRequestFromContext(context, out easy))
                 {

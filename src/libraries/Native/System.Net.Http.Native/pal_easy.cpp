@@ -81,6 +81,8 @@ static_assert(PAL_CURLINFO_DATA_OUT == CURLINFO_DATA_OUT, "");
 static_assert(PAL_CURLINFO_SSL_DATA_IN == CURLINFO_SSL_DATA_IN, "");
 static_assert(PAL_CURLINFO_SSL_DATA_OUT == CURLINFO_SSL_DATA_OUT, "");
 
+static_assert(PAL_CURL_MAX_HTTP_HEADER == CURL_MAX_HTTP_HEADER, "");
+
 extern "C" CURL* HttpNative_EasyCreate()
 {
     return curl_easy_init();

@@ -16,7 +16,6 @@ namespace System.Net.Http
         public CurlResponseHeaderReader(IntPtr buffer, ulong size)
         {
             Debug.Assert(buffer != IntPtr.Zero);
-            // In actuality, size will be <= CURL_MAX_HTTP_HEADER (1024*100) bytes.
             Debug.Assert(size <= int.MaxValue);
 
             _span = new HeaderBufferSpan(buffer, (int)size).Trim();
@@ -147,7 +146,9 @@ namespace System.Net.Http
             public HeaderBufferSpan Trim()
             {
                 if (Length == 0)
+                {
                     return Empty;
+                }
 
                 int index = 0;
                 while (index < Length && IsWhiteSpaceLatin1(_pointer[index]))
@@ -170,7 +171,9 @@ namespace System.Net.Http
             public bool StartsWithHttpPrefix()
             {
                 if (Length < HttpPrefix.Length)
+                {
                     return false;
+                }
 
                 return
                     (_pointer[0] == 'H' || _pointer[0] == 'h') &&
@@ -263,7 +266,7 @@ namespace System.Net.Http
 
             public override string ToString()
             {
-                return Length == 0 ? string.Empty : Marshal.PtrToStringAnsi(Buffer, Length);
+                return Length == 0 ? string.Empty : HttpRuleParser.DefaultHttpEncoding.GetString(_pointer, Length);
             }
 
             private static bool IsWhiteSpaceLatin1(byte c)
