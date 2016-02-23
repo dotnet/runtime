@@ -168,7 +168,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
 FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAFE)
 {
     FCALL_CONTRACT;
@@ -213,7 +212,6 @@ FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAF
     return OBJECTREFToObject(rv);
 }
 FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent)
 {
