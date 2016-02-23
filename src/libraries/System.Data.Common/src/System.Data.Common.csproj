@@ -60,6 +60,7 @@
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Data\Common\DbDataRecord.cs" />
     <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\Data\Common\IDbColumnSchemaGenerator.cs" />
     <Compile Include="System\Data\DataRowVersion.cs" />
