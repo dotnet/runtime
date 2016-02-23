@@ -95,10 +95,12 @@
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>  
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>  
 
-    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand> 
+    <!-- If CORE_ROOT is set on Windows, the dotnet CLI tool tries to use it. This results in DLL resolution errors. Unset CORE_ROOT during restore. -->
+    <DnuRestoreCommand Condition="'$(OsEnvironment)'!='Unix'">(set CORE_ROOT=) &amp;</DnuRestoreCommand>
+    
+    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand> 
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
   
   <!-- Setup Nuget properties -->

@@ -6,6 +6,7 @@
     "System.Runtime": "4.0.20-beta-*",
     "System.Console": "4.0.0-beta-*",
     "System.IO": "4.0.10",
+    "System.ObjectModel": "4.0.10",
     "System.Runtime.Serialization.Json": "4.0.0",
     "System.Runtime.Serialization.Primitives": "4.0.10",
     "System.Runtime.Serialization.Xml": "4.0.10",
