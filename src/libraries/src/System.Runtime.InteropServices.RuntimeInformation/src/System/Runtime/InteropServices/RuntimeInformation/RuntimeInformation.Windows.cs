@@ -49,6 +49,9 @@ namespace System.Runtime.InteropServices
 
                         switch ((Interop.mincore.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
                         {
+                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM64:
+                                s_osArch = Architecture.Arm64;
+                                break;
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM:
                                 s_osArch = Architecture.Arm;
                                 break;
@@ -81,6 +84,9 @@ namespace System.Runtime.InteropServices
 
                         switch((Interop.mincore.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
                         {
+                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM64:
+                                s_osArch = Architecture.Arm64;
+                                break;
                             case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM:
                                 s_processArch = Architecture.Arm;
                                 break;
