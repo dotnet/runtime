@@ -151,14 +151,6 @@ public:
     size_t          nraTotalSizeAlloc();
     size_t          nraTotalSizeUsed ();
 
-    /* The following used to visit all of the allocated pages */
-
-    void    *       nraPageWalkerStart();
-    void    *       nraPageWalkerNext (void *page);
-
-    void    *       nraPageGetData(void *page);
-    size_t          nraPageGetSize(void *page);
-
     IEEMemoryManager * nraGetMemoryManager()
     {
         return nraMemoryManager;
