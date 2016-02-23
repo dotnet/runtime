@@ -171,7 +171,7 @@ namespace System.Linq
             int maxIndex = _minIndex + count - 1;
             if ((uint)maxIndex >= (uint)_maxIndex)
             {
-                maxIndex = _maxIndex;
+                return this;
             }
 
             return new OrderedPartition<TElement>(_source, _minIndex, maxIndex);
@@ -266,7 +266,7 @@ namespace System.Linq
             public IPartition<TSource> Take(int count)
             {
                 int maxIndex = _minIndex + count - 1;
-                return new ListPartition<TSource>(_source, _minIndex, (uint)maxIndex >= (uint)_maxIndex ? _maxIndex : maxIndex);
+                return (uint)maxIndex >= (uint)_maxIndex ? this : new ListPartition<TSource>(_source, _minIndex, maxIndex);
             }
 
             public TSource TryGetElementAt(int index, out bool found)

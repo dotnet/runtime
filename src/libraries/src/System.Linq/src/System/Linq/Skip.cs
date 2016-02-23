@@ -15,15 +15,24 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            if (count < 0)
+            if (count <= 0)
             {
+                // Return source if not actually skipping, but only if it's a type from here, to avoid
+                // issues if collections are used as keys or otherwise must not be aliased.
+                if (source is Iterator<TSource> || source is IPartition<TSource>)
+                {
+                    return source;
+                }
+
                 count = 0;
             }
-
-            IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null)
+            else
             {
-                return partition.Skip(count);
+                IPartition<TSource> partition = source as IPartition<TSource>;
+                if (partition != null)
+                {
+                    return partition.Skip(count);
+                }
             }
 
             IList<TSource> sourceList = source as IList<TSource>;
