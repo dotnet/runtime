@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,54 +11,35 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Call ShortDatePattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void TestGetter()
+        public void ShortDatePattern_InvariantInfo()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "MM/dd/yyyy", false);
+            Assert.Equal("MM/dd/yyyy", DateTimeFormatInfo.InvariantInfo.ShortDatePattern);
         }
 
-        // PosTest2: Call ShortDatePattern setter method should return correct value
-        [Fact]
-        public void TestSetter()
+        public static IEnumerable<object[]> ShortDatePattern_TestData()
         {
-            VerificationHelper(new DateTimeFormatInfo(), "MM/dd/yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), "MM-DD-yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), "d", true);
-            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
+            yield return new object[] { "MM/dd/yyyy" };
+            yield return new object[] { "MM-DD-yyyy" };
+            yield return new object[] { "d" };
+            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
-        [Fact]
-        public void TestNull()
+        [Theory]
+        [MemberData(nameof(ShortDatePattern_TestData))]
+        public void ShortDatePattern_Set(string newShortDatePattern)
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().ShortDatePattern = null;
-            });
+            var format = new DateTimeFormatInfo();
+            format.ShortDatePattern = newShortDatePattern;
+            Assert.Equal(newShortDatePattern, format.ShortDatePattern);
         }
 
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and the DateTimeFormatInfo is read-only
         [Fact]
-        public void TestReadOnly()
+        public void ShortDatePattern_Set_Invalid()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.ShortDatePattern = "MM/dd/yyyy";
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
-        {
-            if (setter)
-            {
-                info.ShortDatePattern = expected;
-            }
-
-            string actual = info.ShortDatePattern;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().ShortDatePattern = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortDatePattern = "MM/dd/yyyy"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }

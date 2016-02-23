@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,82 +11,44 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoClone
     {
-        // PosTest1: Call Clone method on a instance created from Ctor
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> Clone_TestData()
         {
-            DateTimeFormatInfo expected = new DateTimeFormatInfo();
-
-            VerificationHelper(expected, expected.Clone());
+            yield return new object[] { new DateTimeFormatInfo() };
+            yield return new object[] { new CultureInfo("en-us").DateTimeFormat };
+            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo };
         }
 
-        // PosTest2: Call Clone method on a instance created from several cultures
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(Clone_TestData))]
+        public void Clone(DateTimeFormatInfo format)
         {
-            DateTimeFormatInfo expected = new CultureInfo("en-us").DateTimeFormat;
-            VerificationHelper(expected, expected.Clone());
+            DateTimeFormatInfo clone = (DateTimeFormatInfo)format.Clone();
+            Assert.NotSame(format, clone);
 
-            expected = new CultureInfo("fr-FR").DateTimeFormat;
-            VerificationHelper(expected, expected.Clone());
-        }
+            Assert.False(clone.IsReadOnly);
+            Assert.Equal(format.AbbreviatedDayNames, clone.AbbreviatedDayNames);
+            Assert.Equal(format.AbbreviatedMonthGenitiveNames, clone.AbbreviatedMonthGenitiveNames);
+            Assert.Equal(format.AbbreviatedMonthNames, clone.AbbreviatedMonthNames);
+            Assert.Equal(format.DayNames, clone.DayNames);
+            Assert.Equal(format.MonthGenitiveNames, clone.MonthGenitiveNames);
+            Assert.Equal(format.MonthNames, clone.MonthNames);
+            Assert.Equal(format.ShortestDayNames, clone.ShortestDayNames);
 
-        // PosTest3: Call Clone method on a readonly instance created from several cultures
-        [Fact]
-        public void PosTest3()
-        {
-            DateTimeFormatInfo expected = CultureInfo.InvariantCulture.DateTimeFormat;
-            VerificationHelper(expected, expected.Clone());
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo expected, Object obj)
-        {
-            Assert.True(obj is DateTimeFormatInfo);
-            DateTimeFormatInfo actual = obj as DateTimeFormatInfo;
-            Assert.False(actual.IsReadOnly);
-            IsEquals(actual.AbbreviatedDayNames, expected.AbbreviatedDayNames);
-            IsEquals(actual.AbbreviatedMonthGenitiveNames, expected.AbbreviatedMonthGenitiveNames);
-            IsEquals(actual.AbbreviatedMonthNames, expected.AbbreviatedMonthNames);
-            IsEquals(actual.DayNames, expected.DayNames);
-            IsEquals(actual.MonthGenitiveNames, expected.MonthGenitiveNames);
-            IsEquals(actual.MonthNames, expected.MonthNames);
-            IsEquals(actual.ShortestDayNames, expected.ShortestDayNames);
-            IsEquals(actual.AMDesignator, expected.AMDesignator);
-            //DateTimeFormatInfo.DateSeparator property has been removed
-            IsEquals(actual.FullDateTimePattern, expected.FullDateTimePattern);
-            IsEquals(actual.LongDatePattern, expected.LongDatePattern);
-            IsEquals(actual.LongTimePattern, expected.LongTimePattern);
-            IsEquals(actual.MonthDayPattern, expected.MonthDayPattern);
-            IsEquals(actual.PMDesignator, expected.PMDesignator);
-            IsEquals(actual.RFC1123Pattern, expected.RFC1123Pattern);
-            IsEquals(actual.ShortDatePattern, expected.ShortDatePattern);
-            IsEquals(actual.ShortTimePattern, expected.ShortTimePattern);
-            IsEquals(actual.SortableDateTimePattern, expected.SortableDateTimePattern);
-            //DateTimeFormatInfo.TimeSeparator property has been removed
-            IsEquals(actual.UniversalSortableDateTimePattern, expected.UniversalSortableDateTimePattern);
-            IsEquals(actual.YearMonthPattern, expected.YearMonthPattern);
-            IsEquals(actual.CalendarWeekRule, expected.CalendarWeekRule);
-            IsEquals(actual.FirstDayOfWeek, expected.FirstDayOfWeek);
-        }
-
-        private void IsEquals(string str1, string str2)
-        {
-            Assert.Equal(str2, str1);
-        }
-
-        private void IsEquals(DayOfWeek value1, DayOfWeek value2)
-        {
-            Assert.Equal(value2, value1);
-        }
-
-        private void IsEquals(CalendarWeekRule value1, CalendarWeekRule value2)
-        {
-            Assert.Equal(value2, value1);
-        }
-
-        private void IsEquals(string[] array1, string[] array2)
-        {
-            Assert.Equal(array2, array1);
+            Assert.Equal(format.AMDesignator, clone.AMDesignator);
+            Assert.Equal(format.FullDateTimePattern, clone.FullDateTimePattern);
+            Assert.Equal(format.LongDatePattern, clone.LongDatePattern);
+            Assert.Equal(format.LongTimePattern, clone.LongTimePattern);
+            Assert.Equal(format.MonthDayPattern, clone.MonthDayPattern);
+            Assert.Equal(format.PMDesignator, clone.PMDesignator);
+            Assert.Equal(format.RFC1123Pattern, clone.RFC1123Pattern);
+            Assert.Equal(format.ShortDatePattern, clone.ShortDatePattern);
+            Assert.Equal(format.ShortTimePattern, clone.ShortTimePattern);
+            Assert.Equal(format.SortableDateTimePattern, clone.SortableDateTimePattern);
+            Assert.Equal(format.UniversalSortableDateTimePattern, clone.UniversalSortableDateTimePattern);
+            Assert.Equal(format.YearMonthPattern, clone.YearMonthPattern);
+            Assert.Equal(format.CalendarWeekRule, clone.CalendarWeekRule);
+            Assert.Equal(format.FirstDayOfWeek, clone.FirstDayOfWeek);
         }
     }
 }

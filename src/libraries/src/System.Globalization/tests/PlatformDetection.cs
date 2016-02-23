@@ -5,11 +5,27 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.IO;
+using Xunit;
 
 public static class PlatformDetection
 {
-    private static bool? s_isUbuntu1510;
+    public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
+    public static int? s_WindowsVersion;
+    public static int WindowsVersion
+    {
+        get
+        {
+            if (!s_WindowsVersion.HasValue)
+            {
+                s_WindowsVersion = GetWindowsVersion();
+            }
+            return s_WindowsVersion.Value;
+        }
+    }
+
+    private static bool? s_isUbuntu1510;
     public static bool IsUbuntu1510
     {
         get
@@ -72,5 +88,33 @@ public static class PlatformDetection
     {
         public string Id { get; set; }
         public string VersionId { get; set; }
-    }        
+    }
+
+    private static int GetWindowsVersion()
+    {
+        if (IsWindows)
+        {
+            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            Assert.Equal(0, RtlGetVersion(out osvi));
+            return (int)osvi.dwMajorVersion;
+        }
+
+        return -1;
+    }
+
+    [DllImport("ntdll.dll")]
+    private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RTL_OSVERSIONINFOEX
+    {
+        internal uint dwOSVersionInfoSize;
+        internal uint dwMajorVersion;
+        internal uint dwMinorVersion;
+        internal uint dwBuildNumber;
+        internal uint dwPlatformId;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        internal string szCSDVersion;
+    }
 }

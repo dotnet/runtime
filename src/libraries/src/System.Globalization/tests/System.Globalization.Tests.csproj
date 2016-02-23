@@ -75,8 +75,6 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoGetFormat.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoGetInstance.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoGetMonthName.cs" />
-    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoInvariantInfo.cs" />
-    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoIsReadOnly.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoLongDatePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoLongTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoMonthDayPattern.cs" />
