@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,55 +11,37 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoFullDateTimePattern
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_generator = new RandomDataGenerator();
 
-        // PosTest1: Call FullDateTimePattern getter method should return correct value for InvariantInfo
         [Fact]
-        public void TestGetter()
+        public void FullDateTimePattern_InvariantInfo()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "dddd, dd MMMM yyyy HH:mm:ss", false);
+            Assert.Equal("dddd, dd MMMM yyyy HH:mm:ss", DateTimeFormatInfo.InvariantInfo.FullDateTimePattern);
         }
 
-        // PosTest2: Call FullDateTimePattern setter method should return correct value
-        [Fact]
-        public void TestSetter()
+        public static IEnumerable<object[]> FullDFullDateTimePattern_Set_TestData()
         {
-            VerificationHelper(new DateTimeFormatInfo(), "dddd, dd MMMM yyyy HH:mm:ss", true);
-            VerificationHelper(new DateTimeFormatInfo(), "dddd", true);
-            VerificationHelper(new DateTimeFormatInfo(), "F", true);
-            VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss dddd, dd MMMM yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
+            yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
+            yield return new object[] { "dddd" };
+            yield return new object[] { "F" };
+            yield return new object[] { "HH:mm:ss dddd, dd MMMM yyyy" };
+            yield return new object[] { s_generator.GetString(-55, false, 1, 256) };
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
-        [Fact]
-        public void TestNull()
+        [Theory]
+        [MemberData(nameof(FullDFullDateTimePattern_Set_TestData))]
+        public void FullDateTimePattern_Set(string newFullDateTimePattern)
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().FullDateTimePattern = null;
-            });
+            var format = new DateTimeFormatInfo();
+            format.FullDateTimePattern = newFullDateTimePattern;
+            Assert.Equal(newFullDateTimePattern, format.FullDateTimePattern);
         }
 
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and the DateTimeFormatInfo is read-only
         [Fact]
-        public void TestReadOnly()
+        public void FullDateTimePattern_Set_Invalid()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.FullDateTimePattern = "dddd, dd MMMM yyyy HH:mm:ss";
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
-        {
-            if (setter)
-            {
-                info.FullDateTimePattern = expected;
-            }
-
-            string actual = info.FullDateTimePattern;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().FullDateTimePattern = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FullDateTimePattern = "dddd, dd MMMM yyyy HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }

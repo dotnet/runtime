@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,56 +11,37 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoLongTimePattern
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Call LongTimePattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void PosTest1()
+        public void LongTimePattern_InvariantInfo()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "HH:mm:ss", false);
+            Assert.Equal("HH:mm:ss", DateTimeFormatInfo.InvariantInfo.LongTimePattern);
         }
 
-        // PosTest2: Call LongTimePattern setter method should return correct value
-        [Fact]
-        public void PosTest2()
+        public static IEnumerable<object[]> LongTimePattern_TestData()
         {
-            VerificationHelper(new DateTimeFormatInfo(), "dddd, dd MMMM yyyy HH:mm:ss", true);
-            VerificationHelper(new DateTimeFormatInfo(), "HH", true);
-            VerificationHelper(new DateTimeFormatInfo(), "T", true);
-            VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss dddd, dd MMMM yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
-            VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss", true);
+            yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
+            yield return new object[] { "HH" };
+            yield return new object[] { "T" };
+            yield return new object[] { "HH:mm:ss dddd, dd MMMM yyyy" };
+            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
+            yield return new object[] { "HH:mm:ss" };
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
-        [Fact]
-        public void TestNull()
+        [Theory]
+        [MemberData(nameof(LongTimePattern_TestData))]
+        public void LongTimePattern_Set(string newLongTimePattern)
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().LongTimePattern = null;
-            });
+            var format = new DateTimeFormatInfo();
+            format.LongTimePattern = newLongTimePattern;
+            Assert.Equal(newLongTimePattern, format.LongTimePattern);
         }
 
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and the DateTimeFormatInfo is read-only
         [Fact]
-        public void TestInvalid()
+        public void LongTimePattern_Set_Invalid()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss";
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
-        {
-            if (setter)
-            {
-                info.LongTimePattern = expected;
-            }
-
-            string actual = info.LongTimePattern;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().LongTimePattern = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }

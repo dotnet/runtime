@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,34 +11,27 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoReadOnly
     {
-        // PosTest1: Call ReadOnly on a writable DateTimeFormatInfo instance
-        [Fact]
-        public void TestWritable()
+        public static IEnumerable<object[]> ReadOnly_TestData()
         {
-            DateTimeFormatInfo info = new DateTimeFormatInfo();
-            DateTimeFormatInfo actual = DateTimeFormatInfo.ReadOnly(info);
-
-            Assert.True(actual.IsReadOnly);
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, true };
+            yield return new object[] { new DateTimeFormatInfo(), false };
+            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, false };
         }
 
-        // PosTest2: Call ReadOnly on a read only DateTimeFormatInfo instance
-        [Fact]
-        public void TestReadOnly()
+        [Theory]
+        [MemberData(nameof(ReadOnly_TestData))]
+        public void ReadOnly(DateTimeFormatInfo format, bool expected)
         {
-            DateTimeFormatInfo info = DateTimeFormatInfo.InvariantInfo;
-            DateTimeFormatInfo actual = DateTimeFormatInfo.ReadOnly(info);
+            Assert.Equal(expected, format.IsReadOnly);
 
-            Assert.True(actual.IsReadOnly);
+            DateTimeFormatInfo readOnlyFormat = DateTimeFormatInfo.ReadOnly(format);
+            Assert.True(readOnlyFormat.IsReadOnly);
         }
 
-        // NegTest1: ArgumentNullException should be thrown when dtfi is a null reference
         [Fact]
-        public void TestNull()
+        public void ReadOnly_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                DateTimeFormatInfo.ReadOnly(null);
-            });
+            Assert.Throws<ArgumentNullException>(() => DateTimeFormatInfo.ReadOnly(null)); // Dtfi is null
         }
     }
 }

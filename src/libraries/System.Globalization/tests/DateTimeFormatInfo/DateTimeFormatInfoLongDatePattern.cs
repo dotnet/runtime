@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -10,56 +11,37 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoLongDatePattern
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: Call LongDatePattern getter method should return correct value for InvariantInfo
-        [Fact]
-        public void PosTest1()
+        public void LongDatePattern_InvariantInfo()
         {
-            VerificationHelper(DateTimeFormatInfo.InvariantInfo, "dddd, dd MMMM yyyy", false);
+            Assert.Equal("dddd, dd MMMM yyyy", DateTimeFormatInfo.InvariantInfo.LongDatePattern);
         }
 
-        // PosTest2: Call LongDatePattern setter method should return correct value
-        [Fact]
-        public void PosTest2()
+        public static IEnumerable<object[]> LongDatePattern_TestData()
         {
-            VerificationHelper(new DateTimeFormatInfo(), "dddd, dd MMMM yyyy HH:mm:ss", true);
-            VerificationHelper(new DateTimeFormatInfo(), "dddd", true);
-            VerificationHelper(new DateTimeFormatInfo(), "D", true);
-            VerificationHelper(new DateTimeFormatInfo(), "HH:mm:ss dddd, dd MMMM yyyy", true);
-            VerificationHelper(new DateTimeFormatInfo(), _generator.GetString(-55, false, 1, 256), true);
-            VerificationHelper(new DateTimeFormatInfo(), "dddd, dd MMMM yyyy", true);
+            yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
+            yield return new object[] { "dddd" };
+            yield return new object[] { "D" };
+            yield return new object[] { "HH:mm:ss dddd, dd MMMM yyyy" };
+            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
+            yield return new object[] { "dddd, dd MMMM yyyy" };
         }
 
-        // NegTest1: ArgumentNullException should be thrown when The property is being set to a null reference
-        [Fact]
-        public void NegTest1()
+        [Theory]
+        [MemberData(nameof(LongDatePattern_TestData))]
+        public void LongDatePattern_Set(string newLongDatePattern)
         {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                new DateTimeFormatInfo().LongDatePattern = null;
-            });
+            var format = new DateTimeFormatInfo();
+            format.LongDatePattern = newLongDatePattern;
+            Assert.Equal(newLongDatePattern, format.LongDatePattern);
         }
 
-        // NegTest2: InvalidOperationException should be thrown when The property is being set and the DateTimeFormatInfo is read-only
         [Fact]
-        public void NegTest2()
+        public void LongDatePattern_Set_Invalid()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                DateTimeFormatInfo.InvariantInfo.LongDatePattern = "dddd, dd MMMM yyyy";
-            });
-        }
-
-        private void VerificationHelper(DateTimeFormatInfo info, string expected, bool setter)
-        {
-            if (setter)
-            {
-                info.LongDatePattern = expected;
-            }
-
-            string actual = info.LongDatePattern;
-            Assert.Equal(expected, actual);
+            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().LongDatePattern = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongDatePattern = "dddd, dd MMMM yyyy"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }

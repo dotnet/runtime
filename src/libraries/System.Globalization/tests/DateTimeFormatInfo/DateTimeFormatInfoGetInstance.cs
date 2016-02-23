@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -26,44 +27,31 @@ namespace System.Globalization.Tests
 
     public class DateTimeFormatInfoGetInstance
     {
-        // PosTest1: Call GetInstance to get an DateTimeFormatInfo instance when provider is an CultureInfo instance
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetInstance_NotNull_TestData()
         {
-            DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(new CultureInfo("en-us"));
-            Assert.NotNull(info);
+            yield return new object[] { new DateTimeFormatInfo() };
+            yield return new object[] { new CultureInfo("en-US") };
+            yield return new object[] { new TestIFormatProviderClass2() };
         }
 
-        // PosTest2: Call GetInstance to get an DateTimeFormatInfo instance when provider is null reference
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetInstance_NotNull_TestData))]
+        public void GetInstance(IFormatProvider provider)
         {
-            DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(null);
-            Assert.Equal(DateTimeFormatInfo.CurrentInfo, info);
+            Assert.NotNull(DateTimeFormatInfo.GetInstance(provider));
         }
 
-        // PosTest3: Call GetInstance to get an DateTimeFormatInfo instance when provider is a DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest3()
+        public static IEnumerable<object[]> GetInstance_Specific_TestData()
         {
-            DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(new DateTimeFormatInfo());
-            Assert.NotNull(info);
+            yield return new object[] { null, DateTimeFormatInfo.CurrentInfo };
+            yield return new object[] { new TestIFormatProviderClass(), DateTimeFormatInfo.CurrentInfo };
         }
 
-        // PosTest4: Call GetInstance to get an DateTimeFormatInfo instance when provider.GetFormat method supports a DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest4()
+        [Theory]
+        [MemberData(nameof(GetInstance_Specific_TestData))]
+        public void GetInstance(IFormatProvider provider, DateTimeFormatInfo expected)
         {
-            DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass2());
-            Assert.NotNull(info);
-        }
-
-        // PosTest5: Call GetInstance to get an DateTimeFormatInfo instance when provider.GetFormat method does not support a DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest5()
-        {
-            DateTimeFormatInfo info = DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass());
-            Assert.Equal(DateTimeFormatInfo.CurrentInfo, info);
+            Assert.Equal(expected, DateTimeFormatInfo.GetInstance(provider));
         }
     }
 }
