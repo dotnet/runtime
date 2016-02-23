@@ -105,6 +105,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(6331)]
         static public void TCEOFHandling()
         {
             RunTest(() => new TCEOFHandling() { Attribute = new TestCase() { Name = "XmlWriterSettings: NewLineHandling" } });
