@@ -16,6 +16,10 @@
 #include <cstdlib>
 #include <intrin.h>
 
+#if COR_JIT_EE_VERSION <= 460
+#include "corjithost.h"
+#include "jithost.h"
+#endif
 #include "jit.h"
 #include "iallocator.h"
 #include "hashbv.h"
