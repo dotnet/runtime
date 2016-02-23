@@ -1419,8 +1419,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
 //    treeNode - The tree node to evaluate whether is a struct return.
 //
 // Return Value:
-//    For AMD64 *nix: returns true if the 'treeNode" is of type GT_RETURN and the
-//                    return type is a struct or it is an implicit retBuf struct return.
+//    For AMD64 *nix: returns true if the 'treeNode" is a GT_RETURN node, of type struct.
 //                    Otherwise returns false.
 //    For other platforms always returns false.
 //
@@ -1437,8 +1436,7 @@ CodeGen::isStructReturn(GenTreePtr treeNode)
     }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    return varTypeIsStruct(treeNode) ||
-           (treeNode->TypeGet() == TYP_VOID && compiler->info.compRetBuffArg != BAD_VAR_NUM);
+    return varTypeIsStruct(treeNode);
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(!varTypeIsStruct(treeNode));
     return false;
@@ -1462,63 +1460,50 @@ CodeGen::genStructReturn(GenTreePtr treeNode)
     var_types targetType = treeNode->TypeGet();
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (targetType == TYP_VOID)
+    noway_assert((op1->OperGet() == GT_LCL_VAR) ||
+                 (op1->OperGet() == GT_CALL));
+
+    if (op1->OperGet() == GT_LCL_VAR)
     {
-        assert(op1 == nullptr);
-        if (compiler->info.compRetBuffArg != BAD_VAR_NUM)
-        {
-            // System V AMD64 spec requires that when a struct is returned by a hidden
-            // argument the RAX should contain the value of the hidden retbuf arg.
-            getEmitter()->emitIns_R_S(INS_mov, EA_BYREF, REG_RAX, compiler->info.compRetBuffArg, 0);
-        }        
+        assert(op1->isContained());
+
+        GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
+        LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
+        assert(varDsc->lvIsMultiRegArgOrRet);
+
+        CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
+        assert(typeHnd != nullptr);
+
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+        compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+        assert(structDesc.passedInRegisters);
+        assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+        regNumber retReg0 = REG_NA;
+        unsigned __int8 offset0 = 0;
+        regNumber retReg1 = REG_NA;
+        unsigned __int8 offset1 = 0;
+
+        var_types type0 = TYP_UNKNOWN;
+        var_types type1 = TYP_UNKNOWN;
+
+        getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
+        getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
+
+        // Move the values into the return registers.
+        // 
+
+        assert(retReg0 != REG_NA && retReg1 != REG_NA);
+
+        getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
+        getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
     }
-    else
-    {
-        noway_assert((op1->OperGet() == GT_LCL_VAR) ||
-                     (op1->OperGet() == GT_CALL));
 
-        if (op1->OperGet() == GT_LCL_VAR)
-        {
-            assert(op1->isContained());
-
-            GenTreeLclVarCommon* lclVarPtr = op1->AsLclVarCommon();
-            LclVarDsc* varDsc = &(compiler->lvaTable[lclVarPtr->gtLclNum]);
-            assert(varDsc->lvIsMultiRegArgOrRet);
-
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-            assert(typeHnd != nullptr);
-
-            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
-            assert(structDesc.passedInRegisters);
-            assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-            regNumber retReg0 = REG_NA;
-            unsigned __int8 offset0 = 0;
-            regNumber retReg1 = REG_NA;
-            unsigned __int8 offset1 = 0;
-
-            var_types type0 = TYP_UNKNOWN;
-            var_types type1 = TYP_UNKNOWN;
-
-            getStructTypeOffset(structDesc, &type0, &type1, &offset0, &offset1);
-            getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
-
-            // Move the values into the return registers.
-            // 
-
-            assert(retReg0 != REG_NA && retReg1 != REG_NA);
-
-            getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
-            getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
-        }
-
-        // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
-        // registers in the proper return registers. 
-        // This assumes that registers never get spilled. There is an Issue 2966 created to track the need 
-        // for handling the GT_CALL case of two register returns and handle it properly for stress modes 
-        // and potential other changes that may break this assumption.
-    }
+    // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
+    // registers in the proper return registers. 
+    // This assumes that registers never get spilled. There is an Issue 2966 created to track the need 
+    // for handling the GT_CALL case of two register returns and handle it properly for stress modes 
+    // and potential other changes that may break this assumption.
 #else
     assert("!unreached");
 #endif   
@@ -2653,6 +2638,12 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
         getStructReturnRegisters(type0, type1, &retReg0, &retReg1);
 
         assert(retReg0 != REG_NA && retReg1 != REG_NA);
+
+        // Nothing to do if the op1 of the return statement is a GT_CALL. The call already has the return
+        // registers in the proper return registers.
+        // This assumes that registers never get spilled. There is an Issue 2966 created to track the need   
+        // for handling the GT_CALL case of two register returns and handle it properly for stress modes   
+        // and potential other changes that may break this assumption.  
 
         getEmitter()->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), retReg0, lclVarPtr->gtLclNum, offset0);
         getEmitter()->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), retReg1, lclVarPtr->gtLclNum, offset1);
