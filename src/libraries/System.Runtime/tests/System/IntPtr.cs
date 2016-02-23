@@ -3,131 +3,165 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class IntPtrTests
+public static class IntPtrTests
 {
+    private static unsafe bool Is64Bit => sizeof(void*) == 8;
+
     [Fact]
-    public static unsafe void TestBasics()
+    public static void TestZero()
     {
-        if (sizeof(void*) == 4)
-        {
-            // Skip IntPtr tests on 32-bit platforms
-            return;
-        }
-
-        IntPtr p;
-        int i;
-        long l;
-
-        int size = IntPtr.Size;
-        Assert.Equal(size, sizeof(void*));
-
-        TestPointer(IntPtr.Zero, 0);
-
-        i = 42;
-        TestPointer(new IntPtr(i), i);
-        TestPointer((IntPtr)i, i);
-
-        i = 42;
-        TestPointer(new IntPtr(i), i);
-
-        i = -1;
-        TestPointer(new IntPtr(i), i);
-
-        l = 0x0fffffffffffffff;
-        TestPointer(new IntPtr(l), l);
-        TestPointer((IntPtr)l, l);
-
-        void* pv = new IntPtr(42).ToPointer();
-        TestPointer(new IntPtr(pv), 42);
-        TestPointer((IntPtr)pv, 42);
-
-        p = IntPtr.Add(new IntPtr(42), 5);
-        TestPointer(p, 42 + 5);
-
-        // Add is spected NOT to generate an OverflowException
-        p = IntPtr.Add(new IntPtr(0x7fffffffffffffff), 5);
-        unchecked
-        {
-            TestPointer(p, (long)0x8000000000000004);
-        }
-
-        p = IntPtr.Subtract(new IntPtr(42), 5);
-        TestPointer(p, 42 - 5);
-
-        bool b;
-        p = new IntPtr(42);
-        b = p.Equals(null);
-        Assert.False(b);
-        b = p.Equals((object)42);
-        Assert.False(b);
-        b = p.Equals((object)(new IntPtr(42)));
-        Assert.True(b);
-
-        int h = p.GetHashCode();
-        int h2 = p.GetHashCode();
-        Assert.Equal(h, h2);
-
-        p = new IntPtr(42);
-        i = (int)p;
-        Assert.Equal(i, 42);
-        l = (long)p;
-        Assert.Equal(l, 42);
-        IntPtr p2;
-        p2 = (IntPtr)i;
-        Assert.Equal(p, p2);
-        p2 = (IntPtr)l;
-        Assert.Equal(p, p2);
-        p2 = (IntPtr)(p.ToPointer());
-        Assert.Equal(p, p2);
-        p2 = new IntPtr(40) + 2;
-        Assert.Equal(p, p2);
-        p2 = new IntPtr(44) - 2;
-        Assert.Equal(p, p2);
-
-        p = new IntPtr(0x7fffffffffffffff);
-        Assert.Throws<OverflowException>(() => { i = (int)p; });
+        VerifyPointer(IntPtr.Zero, 0);
     }
 
-    private static void TestPointer(IntPtr p, long expected)
+    [Fact]
+    public static void TestCtor_Int()
     {
-        long l = p.ToInt64();
-        Assert.Equal(l, expected);
+        int i = 42;
+        VerifyPointer(new IntPtr(i), i);
+        VerifyPointer((IntPtr)i, i);
+
+        i = -1;
+        VerifyPointer(new IntPtr(i), i);
+        VerifyPointer((IntPtr)i, i);
+    }
+
+    [ConditionalFact(nameof(Is64Bit))]
+    public static void TestCtor_Long()
+    {
+        long l = 0x0fffffffffffffff;
+        VerifyPointer(new IntPtr(l), l);
+        VerifyPointer((IntPtr)l, l);
+    }
+
+    [ConditionalFact(nameof(Is64Bit))]
+    public static unsafe void TestCtor_VoidPointer_ToPointer()
+    {
+        void* pv = new IntPtr(42).ToPointer();
+        VerifyPointer(new IntPtr(pv), 42);
+        VerifyPointer((IntPtr)pv, 42);
+    }
+
+    [ConditionalFact(nameof(Is64Bit))]
+    public static unsafe void TestSize()
+    {
+        Assert.Equal(sizeof(void*), IntPtr.Size);
+    }
+
+    public static IEnumerable<object[]> Add_TestData()
+    {
+        yield return new object[] { new IntPtr(42), 6, (long)48 };
+        yield return new object[] { new IntPtr(40), 0, (long)40 };
+        yield return new object[] { new IntPtr(38), -2, (long)36 };
+
+        yield return new object[] { new IntPtr(0x7fffffffffffffff), 5, unchecked((long)0x8000000000000004) }; /// Add should not throw an OverflowException
+    }
+
+    [ConditionalTheory(nameof(Is64Bit))]
+    [MemberData(nameof(Add_TestData))]
+    public static void TestAdd(IntPtr ptr, int offset, long expected)
+    {
+        IntPtr p1 = IntPtr.Add(ptr, offset);
+        VerifyPointer(p1, expected);
+
+        IntPtr p2 = ptr + offset;
+        VerifyPointer(p2, expected);
+
+        IntPtr p3 = ptr;
+        p3 += offset;
+        VerifyPointer(p3, expected);
+    }
+
+    public static IEnumerable<object[]> Subtract_TestData()
+    {
+        yield return new object[] { new IntPtr(42), 6, (long)36 };
+        yield return new object[] { new IntPtr(40), 0, (long)40 };
+        yield return new object[] { new IntPtr(38), -2, (long)40 };
+    }
+
+    [ConditionalTheory(nameof(Is64Bit))]
+    [MemberData(nameof(Subtract_TestData))]
+    public static void TestSubtract(IntPtr ptr, int offset, long expected)
+    {
+        IntPtr p1 = IntPtr.Subtract(ptr, offset);
+        VerifyPointer(p1, expected);
+
+        IntPtr p2 = ptr - offset;
+        VerifyPointer(p2, expected);
+
+        IntPtr p3 = ptr;
+        p3 -= offset;
+        VerifyPointer(p3, expected);
+    }
+
+    public static IEnumerable<object[]> Equals_TestData()
+    {
+        yield return new object[] { new IntPtr(42), new IntPtr(42), true };
+        yield return new object[] { new IntPtr(42), new IntPtr(43), false };
+        yield return new object[] { new IntPtr(42), 42, false };
+        yield return new object[] { new IntPtr(42), null, false };
+    }
+
+    [Theory]
+    [MemberData(nameof(Equals_TestData))]
+    public static void TestEquals(IntPtr ptr1, object obj, bool expected)
+    {
+        if (obj is IntPtr)
+        {
+            IntPtr ptr2 = (IntPtr)obj;
+            Assert.Equal(expected, ptr1 == ptr2);
+            Assert.Equal(!expected, ptr1 != ptr2);
+            Assert.Equal(expected, ptr1.GetHashCode().Equals(ptr2.GetHashCode()));
+        }
+        Assert.Equal(expected, ptr1.Equals(obj));
+        Assert.Equal(ptr1.GetHashCode(), ptr1.GetHashCode());
+    }
+
+    [ConditionalFact(nameof(Is64Bit))]
+    public static unsafe void TestImplicitCast()
+    {
+        var ptr = new IntPtr(42);
+
+        uint i = (uint)ptr;
+        Assert.Equal(42u, i);
+        Assert.Equal(ptr, (IntPtr)i);
+
+        ulong l = (ulong)ptr;
+        Assert.Equal(42u, l);
+        Assert.Equal(ptr, (IntPtr)l);
+
+        void* v = (void*)ptr;
+        Assert.Equal(ptr, (IntPtr)v);
+
+        ptr = new IntPtr(0x7fffffffffffffff);
+        Assert.Throws<OverflowException>(() => (int)ptr);
+    }
+
+    private static void VerifyPointer(IntPtr ptr, long expected)
+    {
+        Assert.Equal(expected, ptr.ToInt64());
 
         int expected32 = (int)expected;
         if (expected32 != expected)
         {
-            Assert.Throws<OverflowException>(() => { int i = p.ToInt32(); });
+            Assert.Throws<OverflowException>(() => ptr.ToInt32());
             return;
         }
 
-        {
-            int i = p.ToInt32();
-            Assert.Equal(i, expected32);
-        }
+        int i = ptr.ToInt32();
+        Assert.Equal(expected32, ptr.ToInt32());
 
-        string s = p.ToString();
-        string sExpected = expected.ToString();
-        Assert.Equal(s, sExpected);
+        Assert.Equal(expected.ToString(), ptr.ToString());
+        Assert.Equal(expected.ToString("x"), ptr.ToString("x"));
 
-        s = p.ToString("x");
-        sExpected = expected.ToString("x");
-        Assert.Equal(s, sExpected);
+        Assert.Equal(ptr, new IntPtr(expected));
+        Assert.True(ptr == new IntPtr(expected));
+        Assert.False(ptr != new IntPtr(expected));
 
-        bool b;
-
-        b = (p == new IntPtr(expected));
-        Assert.True(b);
-
-        b = (p == new IntPtr(expected + 1));
-        Assert.False(b);
-
-        b = (p != new IntPtr(expected));
-        Assert.False(b);
-
-        b = (p != new IntPtr(expected + 1));
-        Assert.True(b);
+        Assert.NotEqual(ptr, new IntPtr(expected + 1));
+        Assert.False(ptr == new IntPtr(expected + 1));
+        Assert.True(ptr != new IntPtr(expected + 1));
     }
 }
