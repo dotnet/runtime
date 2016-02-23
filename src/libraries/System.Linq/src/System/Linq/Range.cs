@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -13,8 +12,16 @@ namespace System.Linq
         public static IEnumerable<int> Range(int start, int count)
         {
             long max = ((long)start) + count - 1;
-            if (count < 0 || max > Int32.MaxValue) throw Error.ArgumentOutOfRange("count");
-            if (count == 0) return EmptyPartition<int>.Instance;
+            if (count < 0 || max > int.MaxValue)
+            {
+                throw Error.ArgumentOutOfRange(nameof(count));
+            }
+
+            if (count == 0)
+            {
+                return EmptyPartition<int>.Instance;
+            }
+
             return new RangeIterator(start, count);
         }
 
@@ -37,24 +44,29 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         Debug.Assert(_start != _end);
-                        current = _start;
-                        state = 2;
+                        _current = _start;
+                        _state = 2;
                         return true;
                     case 2:
-                        if (++current == _end) break;
+                        if (++_current == _end)
+                        {
+                            break;
+                        }
+
                         return true;
                 }
-                state = -1;
+
+                _state = -1;
                 return false;
             }
 
             public override void Dispose()
             {
-                state = -1; // Don't reset current
+                _state = -1; // Don't reset current
             }
 
             public override IEnumerable<TResult> Select<TResult>(Func<int, TResult> selector)
@@ -93,14 +105,22 @@ namespace System.Linq
 
             public IPartition<int> Skip(int count)
             {
-                if (count >= _end - _start) return EmptyPartition<int>.Instance;
+                if (count >= _end - _start)
+                {
+                    return EmptyPartition<int>.Instance;
+                }
+
                 return new RangeIterator(_start + count, _end - _start - count);
             }
 
             public IPartition<int> Take(int count)
             {
                 int curCount = _end - _start;
-                if (count > curCount) count = curCount;
+                if (count > curCount)
+                {
+                    count = curCount;
+                }
+
                 return new RangeIterator(_start, count);
             }
 

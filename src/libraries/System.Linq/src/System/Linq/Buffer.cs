@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
 {
     internal struct Buffer<TElement>
     {
-        internal TElement[] items;
-        internal int count;
+        internal readonly TElement[] _items;
+        internal readonly int _count;
 
         internal Buffer(IEnumerable<TElement> source)
         {
@@ -18,12 +17,12 @@ namespace System.Linq
             if (iterator != null)
             {
                 TElement[] array = iterator.ToArray();
-                items = array;
-                count = array.Length;
+                _items = array;
+                _count = array.Length;
             }
             else
             {
-                items = EnumerableHelpers.ToArray(source, out count);
+                _items = EnumerableHelpers.ToArray(source, out _count);
             }
         }
     }

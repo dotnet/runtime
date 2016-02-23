@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +12,11 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             return new ReverseIterator<TSource>(source);
         }
 
@@ -36,21 +39,22 @@ namespace System.Linq
 
             public override bool MoveNext()
             {
-                switch (state)
+                switch (_state)
                 {
                     case 1:
                         Buffer<TSource> buffer = new Buffer<TSource>(_source);
-                        _buffer = buffer.items;
-                        _index = buffer.count - 1;
-                        state = 2;
+                        _buffer = buffer._items;
+                        _index = buffer._count - 1;
+                        _state = 2;
                         goto case 2;
                     case 2:
                         if (_index != -1)
                         {
-                            current = _buffer[_index];
+                            _current = _buffer[_index];
                             --_index;
                             return true;
                         }
+
                         break;
                 }
 
@@ -67,6 +71,7 @@ namespace System.Linq
             public TSource[] ToArray()
             {
                 TSource[] array = _source.ToArray();
+
                 // Array.Reverse() involves boxing for non-primitive value types, but
                 // checking that has its own cost, so just use this approach for all types.
                 for (int i = 0, j = array.Length - 1; i < j; ++i, --j)
@@ -75,6 +80,7 @@ namespace System.Linq
                     array[i] = array[j];
                     array[j] = temp;
                 }
+
                 return array;
             }
 
@@ -90,8 +96,15 @@ namespace System.Linq
                 if (onlyIfCheap)
                 {
                     IIListProvider<TSource> listProv = _source as IIListProvider<TSource>;
-                    if (listProv != null) return listProv.GetCount(onlyIfCheap: true);
-                    if (!(_source is ICollection<TSource>) && !(_source is ICollection)) return -1;
+                    if (listProv != null)
+                    {
+                        return listProv.GetCount(onlyIfCheap: true);
+                    }
+
+                    if (!(_source is ICollection<TSource>) && !(_source is ICollection))
+                    {
+                        return -1;
+                    }
                 }
 
                 return _source.Count();

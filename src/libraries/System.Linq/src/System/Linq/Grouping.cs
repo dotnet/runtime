@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -62,15 +61,14 @@ namespace System.Linq
     //
     // To limit the damage, the toolchain makes this type appear in a hidden assembly.
     // (This is also why it is no longer a nested type of Lookup<,>).
-    //
     public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IList<TElement>
     {
-        internal TKey key;
-        internal int hashCode;
-        internal TElement[] elements;
-        internal int count;
-        internal Grouping<TKey, TElement> hashNext;
-        internal Grouping<TKey, TElement> next;
+        internal TKey _key;
+        internal int _hashCode;
+        internal TElement[] _elements;
+        internal int _count;
+        internal Grouping<TKey, TElement> _hashNext;
+        internal Grouping<TKey, TElement> _next;
 
         internal Grouping()
         {
@@ -78,14 +76,21 @@ namespace System.Linq
 
         internal void Add(TElement element)
         {
-            if (elements.Length == count) Array.Resize(ref elements, checked(count * 2));
-            elements[count] = element;
-            count++;
+            if (_elements.Length == _count)
+            {
+                Array.Resize(ref _elements, checked(_count * 2));
+            }
+
+            _elements[_count] = element;
+            _count++;
         }
 
         public IEnumerator<TElement> GetEnumerator()
         {
-            for (int i = 0; i < count; i++) yield return elements[i];
+            for (int i = 0; i < _count; i++)
+            {
+                yield return _elements[i];
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -97,12 +102,12 @@ namespace System.Linq
         // so that WPF binding works on this property.
         public TKey Key
         {
-            get { return key; }
+            get { return _key; }
         }
 
         int ICollection<TElement>.Count
         {
-            get { return count; }
+            get { return _count; }
         }
 
         bool ICollection<TElement>.IsReadOnly
@@ -122,12 +127,12 @@ namespace System.Linq
 
         bool ICollection<TElement>.Contains(TElement item)
         {
-            return Array.IndexOf(elements, item, 0, count) >= 0;
+            return Array.IndexOf(_elements, item, 0, _count) >= 0;
         }
 
         void ICollection<TElement>.CopyTo(TElement[] array, int arrayIndex)
         {
-            Array.Copy(elements, 0, array, arrayIndex, count);
+            Array.Copy(_elements, 0, array, arrayIndex, _count);
         }
 
         bool ICollection<TElement>.Remove(TElement item)
@@ -137,7 +142,7 @@ namespace System.Linq
 
         int IList<TElement>.IndexOf(TElement item)
         {
-            return Array.IndexOf(elements, item, 0, count);
+            return Array.IndexOf(_elements, item, 0, _count);
         }
 
         void IList<TElement>.Insert(int index, TElement item)
@@ -154,9 +159,14 @@ namespace System.Linq
         {
             get
             {
-                if (index < 0 || index >= count) throw Error.ArgumentOutOfRange("index");
-                return elements[index];
+                if (index < 0 || index >= _count)
+                {
+                    throw Error.ArgumentOutOfRange(nameof(index));
+                }
+
+                return _elements[index];
             }
+
             set
             {
                 throw Error.NotSupported();
@@ -174,10 +184,26 @@ namespace System.Linq
 
         public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, Func<TKey, IEnumerable<TElement>, TResult> resultSelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
-            if (elementSelector == null) throw Error.ArgumentNull("elementSelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull(nameof(keySelector));
+            }
+
+            if (elementSelector == null)
+            {
+                throw Error.ArgumentNull(nameof(elementSelector));
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull(nameof(resultSelector));
+            }
+
             _source = source;
             _keySelector = keySelector;
             _elementSelector = elementSelector;
@@ -221,9 +247,21 @@ namespace System.Linq
 
         public GroupedResultEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, IEnumerable<TSource>, TResult> resultSelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
-            if (resultSelector == null) throw Error.ArgumentNull("resultSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull(nameof(keySelector));
+            }
+
+            if (resultSelector == null)
+            {
+                throw Error.ArgumentNull(nameof(resultSelector));
+            }
+
             _source = source;
             _keySelector = keySelector;
             _resultSelector = resultSelector;
@@ -266,9 +304,21 @@ namespace System.Linq
 
         public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
-            if (elementSelector == null) throw Error.ArgumentNull("elementSelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull(nameof(keySelector));
+            }
+
+            if (elementSelector == null)
+            {
+                throw Error.ArgumentNull(nameof(elementSelector));
+            }
+
             _source = source;
             _keySelector = keySelector;
             _elementSelector = elementSelector;
@@ -311,8 +361,16 @@ namespace System.Linq
 
         public GroupedEnumerable(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (keySelector == null) throw Error.ArgumentNull("keySelector");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (keySelector == null)
+            {
+                throw Error.ArgumentNull(nameof(keySelector));
+            }
+
             _source = source;
             _keySelector = keySelector;
             _comparer = comparer;

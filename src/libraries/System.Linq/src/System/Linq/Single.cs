@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -11,7 +10,11 @@ namespace System.Linq
     {
         public static TSource Single<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             IList<TSource> list = source as IList<TSource>;
             if (list != null)
             {
@@ -25,18 +28,34 @@ namespace System.Linq
             {
                 using (IEnumerator<TSource> e = source.GetEnumerator())
                 {
-                    if (!e.MoveNext()) throw Error.NoElements();
+                    if (!e.MoveNext())
+                    {
+                        throw Error.NoElements();
+                    }
+
                     TSource result = e.Current;
-                    if (!e.MoveNext()) return result;
+                    if (!e.MoveNext())
+                    {
+                        return result;
+                    }
                 }
             }
+
             throw Error.MoreThanOneElement();
         }
 
         public static TSource Single<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull(nameof(predicate));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -46,18 +65,27 @@ namespace System.Linq
                     {
                         while (e.MoveNext())
                         {
-                            if (predicate(e.Current)) throw Error.MoreThanOneMatch();
+                            if (predicate(e.Current))
+                            {
+                                throw Error.MoreThanOneMatch();
+                            }
                         }
+
                         return result;
                     }
                 }
             }
+
             throw Error.NoMatch();
         }
 
         public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source)
         {
-            if (source == null) throw Error.ArgumentNull("source");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
             IList<TSource> list = source as IList<TSource>;
             if (list != null)
             {
@@ -71,18 +99,34 @@ namespace System.Linq
             {
                 using (IEnumerator<TSource> e = source.GetEnumerator())
                 {
-                    if (!e.MoveNext()) return default(TSource);
+                    if (!e.MoveNext())
+                    {
+                        return default(TSource);
+                    }
+
                     TSource result = e.Current;
-                    if (!e.MoveNext()) return result;
+                    if (!e.MoveNext())
+                    {
+                        return result;
+                    }
                 }
             }
+
             throw Error.MoreThanOneElement();
         }
 
         public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null) throw Error.ArgumentNull("source");
-            if (predicate == null) throw Error.ArgumentNull("predicate");
+            if (source == null)
+            {
+                throw Error.ArgumentNull(nameof(source));
+            }
+
+            if (predicate == null)
+            {
+                throw Error.ArgumentNull(nameof(predicate));
+            }
+
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 while (e.MoveNext())
@@ -92,12 +136,17 @@ namespace System.Linq
                     {
                         while (e.MoveNext())
                         {
-                            if (predicate(e.Current)) throw Error.MoreThanOneMatch();
+                            if (predicate(e.Current))
+                            {
+                                throw Error.MoreThanOneMatch();
+                            }
                         }
+
                         return result;
                     }
                 }
             }
+
             return default(TSource);
         }
     }

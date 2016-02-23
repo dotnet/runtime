@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -17,17 +16,37 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Union<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
         {
-            if (first == null) throw Error.ArgumentNull("first");
-            if (second == null) throw Error.ArgumentNull("second");
+            if (first == null)
+            {
+                throw Error.ArgumentNull(nameof(first));
+            }
+
+            if (second == null)
+            {
+                throw Error.ArgumentNull(nameof(second));
+            }
+
             UnionIterator<TSource> union = first as UnionIterator<TSource>;
             return union != null && EquivalentEqualityComparers(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
         private static bool EquivalentEqualityComparers<TSource>(IEqualityComparer<TSource> x, IEqualityComparer<TSource> y)
         {
-            if (ReferenceEquals(x, y)) return true;
-            if (x == null) return y.Equals(EqualityComparer<TSource>.Default);
-            if (y == null) return x.Equals(EqualityComparer<TSource>.Default);
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
+
+            if (x == null)
+            {
+                return y.Equals(EqualityComparer<TSource>.Default);
+            }
+
+            if (y == null)
+            {
+                return x.Equals(EqualityComparer<TSource>.Default);
+            }
+
             return x.Equals(y);
         }
 
@@ -61,7 +80,9 @@ namespace System.Linq
             protected void SetEnumerator(IEnumerator<TSource> enumerator)
             {
                 if (_enumerator != null)
+                {
                     _enumerator.Dispose();
+                }
 
                 _enumerator = enumerator;
             }
@@ -71,7 +92,7 @@ namespace System.Linq
                 Set<TSource> set = new Set<TSource>(_comparer);
                 TSource element = _enumerator.Current;
                 set.Add(element);
-                current = element;
+                _current = element;
                 _set = set;
             }
 
@@ -83,7 +104,7 @@ namespace System.Linq
                     TSource element = _enumerator.Current;
                     if (set.Add(element))
                     {
-                        current = element;
+                        _current = element;
                         return true;
                     }
                 }
@@ -93,12 +114,12 @@ namespace System.Linq
 
             public sealed override bool MoveNext()
             {
-                if (state == 1)
+                if (_state == 1)
                 {
-                    for (IEnumerable<TSource> enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(state - 1))
+                    for (IEnumerable<TSource> enumerable = GetEnumerable(0); enumerable != null; enumerable = GetEnumerable(_state - 1))
                     {
                         IEnumerator<TSource> enumerator = enumerable.GetEnumerator();
-                        ++state;
+                        ++_state;
                         if (enumerator.MoveNext())
                         {
                             SetEnumerator(enumerator);
@@ -107,17 +128,23 @@ namespace System.Linq
                         }
                     }
                 }
-                else if (state > 0)
+                else if (_state > 0)
                 {
-                    for (;;)
+                    while (true)
                     {
                         if (GetNext())
+                        {
                             return true;
-                        IEnumerable<TSource> enumerable = GetEnumerable(state - 1);
+                        }
+
+                        IEnumerable<TSource> enumerable = GetEnumerable(_state - 1);
                         if (enumerable == null)
+                        {
                             break;
+                        }
+
                         SetEnumerator(enumerable.GetEnumerator());
-                        ++state;
+                        ++_state;
                     }
                 }
 
@@ -132,10 +159,14 @@ namespace System.Linq
                 {
                     IEnumerable<TSource> enumerable = GetEnumerable(index);
                     if (enumerable == null)
+                    {
                         return set;
+                    }
 
                     foreach (TSource item in enumerable)
+                    {
                         set.Add(item);
+                    }
                 }
             }
 
@@ -218,7 +249,11 @@ namespace System.Linq
 
             internal override IEnumerable<TSource> GetEnumerable(int index)
             {
-                if (index > _nextIndex) return null;
+                if (index > _nextIndex)
+                {
+                    return null;
+                }
+
                 UnionIteratorN<TSource> union = this;
                 while (index < union._nextIndex)
                 {
@@ -231,6 +266,7 @@ namespace System.Linq
                         return previous.GetEnumerable(index);
                     }
                 }
+
                 return union._next;
             }
 
@@ -243,6 +279,7 @@ namespace System.Linq
                     // So we use the naïve approach of just having a left and right sequence.
                     return new UnionIterator2<TSource>(this, next, _comparer);
                 }
+
                 return new UnionIteratorN<TSource>(this, next, _nextIndex + 1);
             }
         }
