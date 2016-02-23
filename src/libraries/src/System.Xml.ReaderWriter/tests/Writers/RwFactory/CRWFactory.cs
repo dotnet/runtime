@@ -27,7 +27,7 @@ namespace System.Xml.Tests
         {
             int ret = base.Init(o);
 
-            _testData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader\");
+            _testData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader");
 
             return ret;
         }

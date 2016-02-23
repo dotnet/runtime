@@ -397,7 +397,7 @@ namespace System.Xml.Tests
             return TEST_FAIL;
         }
 
-        private string _xml = @"<!DOCTYPE r [<!ENTITY e SYSTEM '" + Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader\ent.ent") + @"'>]><r>&e;</r>";
+        private string _xml = @"<!DOCTYPE r [<!ENTITY e SYSTEM '" + Path.Combine(FilePathUtil.GetTestDataPath(), "XmlReader", "ent.ent") + @"'>]><r>&e;</r>";
     }
 }
 

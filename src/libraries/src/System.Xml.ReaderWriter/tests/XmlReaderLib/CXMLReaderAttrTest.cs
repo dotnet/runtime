@@ -1558,7 +1558,7 @@ namespace System.Xml.Tests
         [Variation("XmlReader: Does not count depth for attributes of xml decl. and Doctype")]
         public int MoveToNextAttribute9()
         {
-            ReloadSource(TestData + "Common/Bug424573.xml");
+            ReloadSource(Path.Combine(TestData, "Common", "Bug424573.xml"));
             DataReader.Read();
             if (DataReader.HasAttributes)
             {
