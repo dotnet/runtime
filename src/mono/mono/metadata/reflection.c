@@ -7553,7 +7553,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	image = method->klass->image;
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (!image_is_dynamic (image)) {
 		/* Obtain local vars signature token */

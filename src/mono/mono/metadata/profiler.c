@@ -1063,6 +1063,7 @@ mono_profiler_coverage_free (MonoMethod *method)
 void 
 mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func)
 {
+	MonoError error;
 	MonoProfileCoverageInfo* info = NULL;
 	int i, offset;
 	guint32 code_size;
@@ -1079,7 +1080,8 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	if (!info)
 		return;
 
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_assert_ok (&error);
 	start = mono_method_header_get_code (header, &code_size, NULL);
 	debug_minfo = mono_debug_lookup_method (method);
 
