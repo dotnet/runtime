@@ -18,8 +18,6 @@ namespace System.Data{
 
         void Commit();
 
-        //IDbCommand CreateCommand(); // MDAC 68309
-
         void Rollback();
     }
 }    
