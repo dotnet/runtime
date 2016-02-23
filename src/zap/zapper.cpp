@@ -772,6 +772,13 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     (*sxsJitStartupFn) (cccallbacks);
 #endif
 
+    typedef void (__stdcall* pJitStartup)(ICorJitHost* host);
+    pJitStartup jitStartupFn = (pJitStartup)GetProcAddress(*phJit, "jitStartup");
+    if (jitStartupFn != nullptr)
+    {
+        jitStartupFn(JitHost::getJitHost());
+    }
+
     //get the appropriate compiler interface
     typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
     pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
@@ -882,6 +889,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     //
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
+    jitStartup(JitHost::getJitHost());
     m_pJitCompiler = getJit();
 
     if (m_pJitCompiler == NULL)

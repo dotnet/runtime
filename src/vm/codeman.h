@@ -836,7 +836,7 @@ private:
 
 /*****************************************************************************/
 
-class EEJitManager :public IJitManager
+class EEJitManager : public IJitManager
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
