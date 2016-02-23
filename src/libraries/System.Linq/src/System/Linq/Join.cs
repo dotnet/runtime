@@ -12,27 +12,27 @@ namespace System.Linq
         {
             if (outer == null)
             {
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             }
 
             if (inner == null)
             {
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             }
 
             if (outerKeySelector == null)
             {
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             }
 
             if (innerKeySelector == null)
             {
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, null);
@@ -42,27 +42,27 @@ namespace System.Linq
         {
             if (outer == null)
             {
-                throw Error.ArgumentNull("outer");
+                throw Error.ArgumentNull(nameof(outer));
             }
 
             if (inner == null)
             {
-                throw Error.ArgumentNull("inner");
+                throw Error.ArgumentNull(nameof(inner));
             }
 
             if (outerKeySelector == null)
             {
-                throw Error.ArgumentNull("outerKeySelector");
+                throw Error.ArgumentNull(nameof(outerKeySelector));
             }
 
             if (innerKeySelector == null)
             {
-                throw Error.ArgumentNull("innerKeySelector");
+                throw Error.ArgumentNull(nameof(innerKeySelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             return JoinIterator(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer);

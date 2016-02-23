@@ -12,17 +12,17 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull("first");
+                throw Error.ArgumentNull(nameof(first));
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull("second");
+                throw Error.ArgumentNull(nameof(second));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             return ZipIterator(first, second, resultSelector);

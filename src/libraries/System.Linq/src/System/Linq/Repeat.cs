@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (count < 0)
             {
-                throw Error.ArgumentOutOfRange("count");
+                throw Error.ArgumentOutOfRange(nameof(count));
             }
 
             if (count == 0)

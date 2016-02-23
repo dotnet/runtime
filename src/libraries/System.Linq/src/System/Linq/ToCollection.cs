@@ -12,7 +12,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IIListProvider<TSource> arrayProvider = source as IIListProvider<TSource>;
@@ -23,7 +23,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             IIListProvider<TSource> listProvider = source as IIListProvider<TSource>;
@@ -39,12 +39,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             int capacity = 0;
@@ -110,17 +110,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             if (elementSelector == null)
             {
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             }
 
             int capacity = 0;

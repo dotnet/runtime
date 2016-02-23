@@ -161,7 +161,7 @@ namespace System.Linq
             {
                 if (index < 0 || index >= _count)
                 {
-                    throw Error.ArgumentOutOfRange("index");
+                    throw Error.ArgumentOutOfRange(nameof(index));
                 }
 
                 return _elements[index];
@@ -186,22 +186,22 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             if (elementSelector == null)
             {
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             _source = source;
@@ -249,17 +249,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             if (resultSelector == null)
             {
-                throw Error.ArgumentNull("resultSelector");
+                throw Error.ArgumentNull(nameof(resultSelector));
             }
 
             _source = source;
@@ -306,17 +306,17 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             if (elementSelector == null)
             {
-                throw Error.ArgumentNull("elementSelector");
+                throw Error.ArgumentNull(nameof(elementSelector));
             }
 
             _source = source;
@@ -363,12 +363,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull("source");
+                throw Error.ArgumentNull(nameof(source));
             }
 
             if (keySelector == null)
             {
-                throw Error.ArgumentNull("keySelector");
+                throw Error.ArgumentNull(nameof(keySelector));
             }
 
             _source = source;
