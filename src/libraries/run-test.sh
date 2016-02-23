@@ -339,6 +339,11 @@ fi
 export CORECLR_SERVER_GC="$serverGC"
 export PAL_OUTPUTDEBUGSTRING="1"
 
+if [ "$LANG" == "" ]
+then
+    export LANG="en_US.UTF-8"
+fi
+
 
 create_test_overlay
 
