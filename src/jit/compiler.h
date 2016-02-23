@@ -4533,8 +4533,12 @@ private:
                                                               GenTreePtr tmpAssignmentInsertionPoint, GenTreePtr paramAssignmentInsertionPoint);
     static int          fgEstimateCallStackSize(GenTreeCall* call);
     GenTreePtr          fgMorphCall         (GenTreeCall*   call);
-    bool                fgMorphCallInline   (GenTreePtr     call);
+    void                fgMorphCallInline      (GenTreeCall* call, InlineResult* result);
     void                fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
+#if DEBUG
+    void                fgNoteNonInlineCandidate(GenTreePtr     tree, GenTreeCall* call);
+    static fgWalkPreFn  fgFindNonInlineCandidate;
+#endif
     GenTreePtr          fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_CONTEXT_HANDLE * ExactContextHnd);
     GenTreePtr          fgMorphLeaf         (GenTreePtr     tree);
     void                fgAssignSetVarDef   (GenTreePtr     tree);

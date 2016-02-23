@@ -1104,6 +1104,13 @@ GenTreeCall*        Compiler::gtNewHelperCallNode(unsigned        helper,
                                         type,
                                         args);
     result->gtFlags |= flags;
+
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
     return result;
 }
 
