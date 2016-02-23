@@ -126,6 +126,8 @@ const uint64_t PAL_CURL_READFUNC_ABORT = 0x10000000;
 const uint64_t PAL_CURL_READFUNC_PAUSE = 0x10000001;
 const uint64_t PAL_CURL_WRITEFUNC_PAUSE = 0x10000001;
 
+const uint64_t PAL_CURL_MAX_HTTP_HEADER = 100 * 1024;
+
 /*
 Creates a new CURL instance.
 

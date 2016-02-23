@@ -19,7 +19,7 @@ namespace System.Net
             return TryGetHeaderName(
                 array, startIndex, length,
                 (arr, index) => arr[index],
-                (known, a, start, len) => CharArrayHelpers.EqualsOrdinal(known, a, start, len),
+                (known, arr, start, len) => CharArrayHelpers.EqualsOrdinal(known, arr, start, len),
                 out name);
         }
 
@@ -49,8 +49,8 @@ namespace System.Net
 
         private static bool TryGetHeaderName<T>(
             T key, int startIndex, int length,
-            CharAt<T> charAt,
-            Equals<T> equals,
+            Func<T, int, char> charAt,
+            Func<string, T, int, int, bool> equals,
             out string name)
         {
             Debug.Assert(key != null);
@@ -250,7 +250,7 @@ namespace System.Net
         /// Returns true if <paramref name="known"/> matches the <paramref name="key"/> char[] array segment,
         /// using an ordinal comparison.
         /// </summary>
-        private static bool TryMatch<T>(string known, T key, int startIndex, int length, Equals<T> equals, out string name)
+        private static bool TryMatch<T>(string known, T key, int startIndex, int length, Func<string, T, int, int, bool> equals, out string name)
         {
             Debug.Assert(known != null);
             Debug.Assert(known.Length > 0);
@@ -293,9 +293,5 @@ namespace System.Net
 
             return true;
         }
-
-        private delegate char CharAt<T>(T key, int index);
-
-        private delegate bool Equals<T>(string left, T key, int startIndex, int length);
     }
 }
