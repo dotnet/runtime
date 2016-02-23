@@ -1874,6 +1874,13 @@ GetProcessTimes(
         OUT LPFILETIME lpKernelTime,
         OUT LPFILETIME lpUserTime);
 
+PALIMPORT
+BOOL
+PALAPI
+GetProcessIdDisambiguationKey(
+        IN DWORD processId,
+        OUT UINT64 *disambiguationKey);
+
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
 #define WAIT_ABANDONED   0x00000080
