@@ -6051,15 +6051,16 @@ mono_string_get_pinned (MonoString *str, MonoError *error)
 }
 
 static MonoString*
-mono_string_is_interned_lookup (MonoString *str, int insert)
+mono_string_is_interned_lookup (MonoString *str, int insert, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoGHashTable *ldstr_table;
 	MonoString *s, *res;
 	MonoDomain *domain;
 	
+	mono_error_init (error);
+
 	domain = ((MonoObject *)str)->vtable->domain;
 	ldstr_table = domain->ldstr_table;
 	ldstr_lock ();
@@ -6071,8 +6072,8 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	if (insert) {
 		/* Allocate outside the lock */
 		ldstr_unlock ();
-		s = mono_string_get_pinned (str, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		s = mono_string_get_pinned (str, error);
+		return_val_if_nok (error, NULL);
 		if (s) {
 			ldstr_lock ();
 			res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, str);
@@ -6114,9 +6115,11 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 MonoString*
 mono_string_is_interned (MonoString *o)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return mono_string_is_interned_lookup (o, FALSE);
+	MonoError error;
+	MonoString *result = mono_string_is_interned_lookup (o, FALSE, &error);
+	/* This function does not fail. */
+	mono_error_assert_ok (&error);
+	return result;
 }
 
 /**
@@ -6129,9 +6132,28 @@ mono_string_is_interned (MonoString *o)
 MonoString*
 mono_string_intern (MonoString *str)
 {
+	MonoError error;
+	MonoString *result = mono_string_intern_checked (str, &error);
+	mono_error_assert_ok (&error);
+	return result;
+}
+
+/**
+ * mono_string_intern_checked:
+ * @o: String to intern
+ * @error: set on error.
+ *
+ * Interns the string passed.
+ * Returns: The interned string.  On failure returns NULL and sets @error
+ */
+MonoString*
+mono_string_intern_checked (MonoString *str, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_is_interned_lookup (str, TRUE);
+	mono_error_init (error);
+
+	return mono_string_is_interned_lookup (str, TRUE, error);
 }
 
 /**
