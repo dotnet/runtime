@@ -4527,11 +4527,12 @@ void                Compiler::fgMoveOpsLeft(GenTreePtr tree)
         // vnStore is null before the ValueNumber phase has run
         if (vnStore != nullptr)
         {
-            assert(op1->gtVNPair.GetLiberal() != ValueNumStore::NoVN);
-            assert(ad2->gtVNPair.GetLiberal() != ValueNumStore::NoVN);
-
-            // Since op is commutative, comparing only ad2 and op1 is enough.
-            if (ad2->gtVNPair.GetLiberal() != op1->gtVNPair.GetLiberal())
+            // We can only keep the old value number on new_op1 if both op1 and ad2 
+            // have the same non-NoVN value numbers. Since op is commutative, comparing 
+            // only ad2 and op1 is enough.
+            if ((op1->gtVNPair.GetLiberal() == ValueNumStore::NoVN) ||
+                (ad2->gtVNPair.GetLiberal() == ValueNumStore::NoVN) ||
+                (ad2->gtVNPair.GetLiberal() != op1->gtVNPair.GetLiberal()))
             {
                 new_op1->gtVNPair.SetBoth(vnStore->VNForExpr(new_op1->TypeGet()));
             }
