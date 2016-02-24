@@ -441,6 +441,7 @@ namespace System.Reflection.Emit
             if (m == null) 
                 throw new ArgumentNullException("m");
             Contract.EndContractBlock();
+#if !FEATURE_CORECLR
 
             RuntimeModule rtModule;
             ModuleBuilder mb = m as ModuleBuilder;
@@ -477,6 +478,7 @@ namespace System.Reflection.Emit
                 new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
 #pragma warning restore 618
 #endif //FEATURE_CORECLR
+#endif //!FEATURE_CORECLR
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -484,6 +486,7 @@ namespace System.Reflection.Emit
         {
             if (owner == null)
                 throw new ArgumentNullException("owner");
+#if !FEATURE_CORECLR
 
             RuntimeType rtOwner = owner as RuntimeType;
             if (rtOwner == null)
@@ -519,6 +522,7 @@ namespace System.Reflection.Emit
                 new SecurityPermission(SecurityPermissionFlag.ControlEvidence).Demand();
 #pragma warning restore 618
 #endif //FEATURE_CORECLR
+#endif //!FEATURE_CORECLR
         }
 
         //
