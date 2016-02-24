@@ -3407,19 +3407,19 @@ namespace CoreXml.Test.XLinq
                 public void WriteCDataWithTwoClosingBrackets_5()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = doc.CreateWriter();
-                    w.WriteStartElement("Root");
-                    w.WriteCData("test ]]> test");
-                    w.WriteEndElement();
-                    w.Dispose();
-                    try
+                    using (XmlWriter w = doc.CreateWriter())
                     {
-                        if (CompareReader(doc, "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>"))
-                        {
-                            throw new TestException(TestResult.Failed, "");
-                        }
+                        w.WriteStartElement("Root");
+                        w.WriteCData("test ]]> test");
+                        w.WriteEndElement();
                     }
-                    catch (ArgumentException) { return; }
+
+                    string expectedXml = "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>";
+
+                    using (XmlReader reader = doc.CreateReader())
+                    {
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                    }
                 }
 
                 //[Variation(Id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Priority = 2)]
@@ -3599,19 +3599,19 @@ namespace CoreXml.Test.XLinq
                 public void WriteCommentWithDoubleHyphensInValue()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = doc.CreateWriter();
-                    w.WriteStartElement("Root");
-                    w.WriteComment("test --");
-                    w.WriteEndElement();
-                    w.Dispose();
-                    try
+                    using (XmlWriter w = doc.CreateWriter())
                     {
-                        if (CompareReader(doc, "<Root><!--test - - --></Root>"))
-                        {
-                            throw new TestException(TestResult.Failed, "");
-                        } //by design
+                        w.WriteStartElement("Root");
+                        w.WriteComment("test --");
+                        w.WriteEndElement();
                     }
-                    catch (ArgumentException) { return; }
+
+                    string expectedXml = "<Root><!--test - - --></Root>";
+
+                    using (XmlReader reader = doc.CreateReader())
+                    {
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                    }
                 }
             }
 
@@ -4200,19 +4200,19 @@ namespace CoreXml.Test.XLinq
                 public void IncludePIEndTagAsPartOfTextValue()
                 {
                     XDocument doc = new XDocument();
-                    XmlWriter w = CreateWriter(doc);
-                    w.WriteStartElement("Root");
-                    w.WriteProcessingInstruction("badpi", "text ?>");
-                    w.WriteEndElement();
-                    w.Dispose();
-                    try
+                    using (XmlWriter w = CreateWriter(doc))
                     {
-                        if (CompareReader(doc, "<Root><?badpi text ? >?></Root>"))
-                        {
-                            throw new TestException(TestResult.Failed, "");
-                        }
+                        w.WriteStartElement("Root");
+                        w.WriteProcessingInstruction("badpi", "text ?>");
+                        w.WriteEndElement();
                     }
-                    catch (ArgumentException) { return; }
+
+                    string expectedXml = "<Root><?badpi text ? >?></Root>";
+
+                    using (XmlReader reader = doc.CreateReader())
+                    {
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
+                    }
                 }
 
                 //[Variation(Id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Priority = 1)]
@@ -6548,6 +6548,17 @@ namespace CoreXml.Test.XLinq
                         }
                     }
                 }
+            }
+
+            // Helper method
+            protected static XmlReader MoveToFirstElement(XmlReader reader)
+            {
+                while (reader.Read() && reader.NodeType != XmlNodeType.Element)
+                {
+                    // nop
+                }
+
+                return reader;
             }
         }
     }
