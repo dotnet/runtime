@@ -17,19 +17,20 @@
 //
 // -- CLASSES --
 //
-// InlineResult        - accumulates observations and makes a decision
+// InlineResult        - accumulates observations, consults with policy
 // InlineCandidateInfo - basic information needed for inlining
 // InlArgInfo          - information about a candidate's argument
 // InlLclVarInfo       - information about a candidate's local variable
 // InlineInfo          - detailed information needed for inlining
 // InlineContext       - class, remembers what inlines happened
-// InlinePolicy        - (forthcoming)
+// InlinePolicy        - class, determines policy for inlining
 //
 // Enums are used throughout to provide various descriptions.
 //
 // Classes are used as follows. There are 5 sitations where inline
 // candidacy is evaluated.  In each case an InlineResult is allocated
 // on the stack to collect information about the inline candidate.
+// Each InlineResult refers to an InlinePolicy.
 //
 // 1. Importer Candidate Screen (impMarkInlineCandidate)
 //
@@ -47,7 +48,7 @@
 //
 // During the inlining optimation pass, each candidate is further
 // analyzed. Viable candidates will eventually inspire creation of an
-// InlineInfo and a set of InlArgInfos (for call arguments) and 
+// InlineInfo and a set of InlArgInfos (for call arguments) and
 // InlLocalVarInfos (for callee locals).
 //
 // The analysis will also examine InlineContexts from relevant prior
@@ -72,9 +73,9 @@
 // In the current code base, the inlining policy is distributed across
 // the various parts of the code that drive the inlining process
 // forward. Subsequent refactoring will extract some or all of this
-// policy into a separate InlinePolicy object, to make it feasible to
-// create and experiment with alternative policies, while preserving
-// the existing policy as a baseline and fallback.
+// policy into the LegacyPolicy object, to make it feasible to create
+// and experiment with alternative policies, while preserving the
+// LegacyPolicy as a baseline and fallback.
 
 #ifndef _INLINE_H_
 #define _INLINE_H_
@@ -115,6 +116,34 @@ enum class InlineDecision
     NEVER
 };
 
+// Translate a decision into a CorInfoInline for reporting back to the runtime.
+
+CorInfoInline inlGetDecisionForRuntime(InlineDecision d);
+
+// Get a string describing this InlineDecision
+
+const char* inlGetDecisionString(InlineDecision d);
+
+// True if this InlineDecsion describes a failing inline
+
+bool inlDecisionIsFailure(InlineDecision d);
+
+// True if this decision describes a successful inline
+
+bool inlDecisionIsSuccess(InlineDecision d);
+
+// True if this InlineDecision is a never inline decision
+
+bool inlDecisionIsNever(InlineDecision d);
+
+// True if this InlineDecision describes a viable candidate
+
+bool inlDecisionIsCandidate(InlineDecision d);
+
+// True if this InlineDecsion describes a decision
+
+bool inlDecisionIsDecided(InlineDecision d);
+
 // InlineTarget describes the possible targets of an inline observation.
 
 enum class InlineTarget
@@ -154,7 +183,7 @@ bool inlIsValidObservation(InlineObservation obs);
 
 // Get a string describing this observation
 
-const char* inlGetDescriptionString(InlineObservation obs);
+const char* inlGetObservationString(InlineObservation obs);
 
 // Get a string describing the target of this observation
 
@@ -171,6 +200,93 @@ InlineTarget inlGetTarget(InlineObservation obs);
 // Get the impact of this observation
 
 InlineImpact inlGetImpact(InlineObservation obs);
+
+// InlinePolicy is an abstract base class for a familiy of inline
+// policies.
+
+class InlinePolicy
+{
+public:
+
+    // Factory method for getting policies
+    static InlinePolicy* getPolicy(Compiler* compiler);
+
+    // Obligatory virtual dtor
+    virtual ~InlinePolicy() {}
+
+    // Get the current decision
+    InlineDecision getDecision() const { return inlDecision; }
+
+    // Get the observation responsible for the result
+    InlineObservation getObservation() const { return inlObservation; }
+
+    // Policy observations
+    virtual void noteCandidate(InlineObservation obs) = 0;
+    virtual void noteSuccess() = 0;
+    virtual void note(InlineObservation obs) = 0;
+    virtual void noteFatal(InlineObservation obs) = 0;
+    virtual void noteInt(InlineObservation obs, int value) = 0;
+    virtual void noteDouble(InlineObservation obs, double value) = 0;
+
+#ifdef DEBUG
+    // Name of the policy
+    virtual const char* getName() = 0;
+#endif
+
+protected:
+
+    InlinePolicy()
+        : inlDecision(InlineDecision::UNDECIDED)
+        , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    {
+        // empty
+    }
+
+private:
+
+    // No copying or assignment supported
+    InlinePolicy(const InlinePolicy&) = delete;
+    // InlinePolicy operator=(const InlinePolicy&) = delete;
+
+protected:
+
+    InlineDecision inlDecision;
+    InlineObservation inlObservation;
+};
+
+// LegacyPolicy implements the inlining policy used by the jit in its
+// initial release.
+
+class LegacyPolicy : public InlinePolicy
+{
+public:
+
+    LegacyPolicy()
+        : InlinePolicy()
+    {
+        // empty
+    }
+
+    // Policy observations
+    void noteCandidate(InlineObservation obs) override;
+    void noteSuccess() override;
+    void note(InlineObservation obs) override;
+    void noteFatal(InlineObservation obs) override;
+    void noteInt(InlineObservation obs, int value) override;
+    void noteDouble(InlineObservation obs, double value) override;
+
+#ifdef DEBUG
+    const char* getName() override { return "LegacyPolicy"; }
+#endif
+
+private:
+
+    // Helper methods
+    void noteInternal(InlineObservation obs, InlineImpact impact);
+    void setFailure(InlineObservation obs);
+    void setNever(InlineObservation obs);
+    void setCommon(InlineDecision decision, InlineObservation obs);
+};
 
 // InlineResult summarizes what is known about the viability of a
 // particular inline candiate.
@@ -191,109 +307,35 @@ public:
                  CORINFO_METHOD_HANDLE  method,
                  const char*            context);
 
-    // Translate into CorInfoInline for reporting back to the runtime.
-    //
-    // Before calling this, the Jit must have made a decision.
-    // Interim states are not meaningful to the runtime.
-    CorInfoInline result() const
-    {
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return INLINE_PASS;
-            case InlineDecision::FAILURE:
-                return INLINE_FAIL;
-            case InlineDecision::NEVER:
-                return INLINE_NEVER;
-            default:
-                assert(!"Unexpected: interim inline result");
-                unreached();
-        }
-    }
-
-    // Translate into string for dumping
-    const char* resultString() const
-    {
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return "success";
-            case InlineDecision::FAILURE:
-                return "failed this call site";
-            case InlineDecision::NEVER:
-                return "failed this callee";
-            case InlineDecision::CANDIDATE:
-                return "candidate";
-            case InlineDecision::UNDECIDED:
-                return "undecided";
-            default:
-                assert(!"Unexpected: interim inline result");
-                unreached();
-        }
-    }
-
-    // True if this definitely a failed inline candidate
+    // Has the policy determined this inline should fail?
     bool isFailure() const
     {
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            case InlineDecision::FAILURE:
-            case InlineDecision::NEVER:
-                return true;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
+        return inlDecisionIsFailure(inlPolicy->getDecision());
     }
 
-    // True if this is definitely a successful inline candidate
+    // Has the policy determined this inline will succeed?
     bool isSuccess() const
     {
-        switch (inlDecision) {
-            case InlineDecision::SUCCESS:
-                return true;
-            case InlineDecision::FAILURE:
-            case InlineDecision::NEVER:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
+        return inlDecisionIsSuccess(inlPolicy->getDecision());
     }
 
-    // True if this definitely a never inline candidate
+    // Has the policy determined this inline will fail,
+    // and that the callee should never be inlined?
     bool isNever() const
     {
-        switch (inlDecision) {
-            case InlineDecision::NEVER:
-                return true;
-            case InlineDecision::FAILURE:
-            case InlineDecision::SUCCESS:
-            case InlineDecision::UNDECIDED:
-            case InlineDecision::CANDIDATE:
-                return false;
-            default:
-                assert(!"Invalid inline result");
-                unreached();
-        }
-   }
-
-    // True if this is still a viable inline candidate
-    // at this stage of the evaluation process. This will
-    // change as more checks are run.
-    bool isCandidate() const
-    {
-        return !isFailure();
+        return inlDecisionIsNever(inlPolicy->getDecision());
     }
 
-    // True if all checks have been made and we know whether
-    // or not this inline happened.
+    // Has the policy determined this inline attempt is still viable?
+    bool isCandidate() const
+    {
+        return inlDecisionIsCandidate(inlPolicy->getDecision());
+    }
+
+    // Has the policy made a determination?
     bool isDecided() const
     {
-        return (isSuccess() || isFailure());
+        return inlDecisionIsDecided(inlPolicy->getDecision());
     }
 
     // noteCandidate indicates the prospective inline has passed at least
@@ -311,15 +353,15 @@ public:
         InlineImpact impact = inlGetImpact(obs);
         assert(impact == InlineImpact::INFORMATION);
 
-        // Update the status
-        setCommon(InlineDecision::CANDIDATE, obs);
+        inlPolicy->noteCandidate(obs);
     }
 
-    // noteSuccess means the inline happened.
+    // noteSuccess means the all the various checks have passed and
+    // the inline can happen.
     void noteSuccess()
     {
         assert(isCandidate());
-        inlDecision = InlineDecision::SUCCESS;
+        inlPolicy->noteSuccess();
     }
 
     // Make an observation, and update internal state appropriately.
@@ -328,13 +370,7 @@ public:
     // more observation is desired.
     void note(InlineObservation obs)
     {
-        // Check the impact
-        InlineImpact impact = inlGetImpact(obs);
-
-        // As a safeguard, all fatal impact must be
-        // reported via noteFatal.
-        assert(impact != InlineImpact::FATAL);
-        noteInternal(obs, impact);
+        inlPolicy->note(obs);
     }
 
     // Make an observation where caller knows for certain that this
@@ -343,32 +379,24 @@ public:
     // inline result as a failure.
     void noteFatal(InlineObservation obs)
     {
-        // Check the impact
-        InlineImpact impact = inlGetImpact(obs);
-
-        // As a safeguard, all fatal impact must be
-        // reported via noteFatal.
-        assert(impact == InlineImpact::FATAL);
-        noteInternal(obs, impact);
+        inlPolicy->noteFatal(obs);
         assert(isFailure());
     }
 
-    // Ignore values for now
+    // Make an observation with an int value
     void noteInt(InlineObservation obs, int value)
     {
-        (void) value;
-        note(obs);
+        inlPolicy->noteInt(obs, value);
     }
 
-    // Ignore values for now
+    // Make an observation with a double value
     void noteDouble(InlineObservation obs, double value)
     {
-        (void) value;
-        note(obs);
+        inlPolicy->noteDouble(obs, value);
     }
 
-    // Ensure result is appropriately reported when the result goes
-    // out of scope.
+    // Ensure details of this inlining process are appropriately
+    // reported when the result goes out of scope.
     ~InlineResult()
     {
         report();
@@ -377,7 +405,7 @@ public:
     // The observation leading to this particular result
     InlineObservation getObservation() const
     {
-        return inlObservation;
+        return inlPolicy->getObservation();
     }
 
     // The callee handle for this result
@@ -392,15 +420,27 @@ public:
         return inlCall;
     }
 
-    // The reason for this particular result
+    // Result that can be reported back to the runtime
+    CorInfoInline result() const
+    {
+        return inlGetDecisionForRuntime(inlPolicy->getDecision());
+    }
+
+    // String describing the decision made
+    const char * resultString() const
+    {
+        return inlGetDecisionString(inlPolicy->getDecision());
+    }
+
+    // String describing the reason for the decision
     const char * reasonString() const
     {
-        return inlGetDescriptionString(inlObservation);
+        return inlGetObservationString(inlPolicy->getObservation());
     }
 
     // setReported indicates that this particular result doesn't need
     // to be reported back to the runtime, either because the runtime
-    // already knows, or we weren't actually inlining yet.
+    // already knows, or we aren't actually inlining yet.
     void setReported() { inlReported = true; }
 
 private:
@@ -409,59 +449,11 @@ private:
     InlineResult(const InlineResult&) = delete;
     InlineResult operator=(const InlineResult&) = delete;
 
-    // Handle implications of an inline observation
-    void noteInternal(InlineObservation obs, InlineImpact impact)
-    {
-        // Ignore INFORMATION for now, since policy
-        // is still embedded at the observation sites.
-        if (impact == InlineImpact::INFORMATION)
-        {
-            return;
-        }
-
-        InlineTarget target = inlGetTarget(obs);
-
-        if (target == InlineTarget::CALLEE)
-        {
-            this->setNever(obs);
-        }
-        else
-        {
-            this->setFailure(obs);
-        }
-    }
-
-    // setFailure means this particular instance can't be inlined.
-    // It can override setCandidate, but not setSuccess
-    void setFailure(InlineObservation obs)
-    {
-        assert(!isSuccess());
-        setCommon(InlineDecision::FAILURE, obs);
-    }
-
-    // setNever means this callee can never be inlined anywhere.
-    // It can override setCandidate, but not setSuccess
-    void setNever(InlineObservation obs)
-    {
-        assert(!isSuccess());
-        setCommon(InlineDecision::NEVER, obs);
-    }
-
-    // Helper for setting decision and reason
-    void setCommon(InlineDecision decision, InlineObservation obs)
-    {
-        assert(inlIsValidObservation(obs));
-        assert(decision != InlineDecision::UNDECIDED);
-        inlDecision = decision;
-        inlObservation = obs;
-    }
-
     // Report/log/dump decision as appropriate
     void report();
 
     Compiler*               inlCompiler;
-    InlineDecision          inlDecision;
-    InlineObservation       inlObservation;
+    InlinePolicy*           inlPolicy;
     GenTreeCall*            inlCall;
     CORINFO_METHOD_HANDLE   inlCaller;
     CORINFO_METHOD_HANDLE   inlCallee;
@@ -641,4 +633,3 @@ private:
 };
 
 #endif // _INLINE_H_
-
