@@ -565,7 +565,7 @@ public:
         return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
     }
 
-#ifndef FEATURE_PAL          
+#ifndef FEATURE_PAL
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
 public:

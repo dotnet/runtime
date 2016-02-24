@@ -538,6 +538,8 @@ BOOL DebuggerExState::SetDebuggerInterceptInfo(IJitManager *pJitManager,
 }
 #endif // DEBUGGING_SUPPORTED
 
+#endif // DACCESS_COMPILE
+
 EHClauseInfo* ThreadExceptionState::GetCurrentEHClauseInfo()
 {
 #ifdef WIN64EXCEPTIONS
@@ -564,8 +566,6 @@ EHClauseInfo* ThreadExceptionState::GetCurrentEHClauseInfo()
     return &(m_currentExInfo.m_EHClauseInfo);
 #endif // WIN64EXCEPTIONS
 }
-
-#endif // DACCESS_COMPILE
 
 void ThreadExceptionState::SetThreadExceptionFlag(ThreadExceptionFlag flag)
 {
