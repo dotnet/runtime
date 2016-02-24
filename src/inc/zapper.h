@@ -102,7 +102,7 @@ class Zapper
     CORINFO_ASSEMBLY_HANDLE m_hAssembly;
     IMDInternalImport      *m_pAssemblyImport;
 
-    WCHAR                   m_outputPath[MAX_LONGPATH]; // Temp folder for creating the output file
+    SString                 m_outputPath; // Temp folder for creating the output file
 
     IMetaDataAssemblyEmit  *m_pAssemblyEmit;
     IMetaDataAssemblyEmit  *CreateAssemblyEmitter();
