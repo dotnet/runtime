@@ -1491,7 +1491,7 @@ char *
 make_generic_name_string (MonoImage *image, int num);
 
 MonoClass *
-mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
+mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name) MONO_LLVM_INTERNAL;
 
 MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);

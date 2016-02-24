@@ -43,7 +43,7 @@ typedef struct {
 #define return_val_if_nok(error,val) do { if (!is_ok ((error))) return (val); } while (0)
 
 void
-mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno);
+mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno) MONO_LLVM_INTERNAL;
 
 #define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__);
 
