@@ -601,9 +601,18 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
         if ((*ppTree)->TypeGet() == TYP_SIMD12)
         {
 #ifdef _TARGET_64BIT_
-            // On 64-bit architectures, size of Vector3 local on stack will be
-            // rounded to TARGET_POINTER_SIZE and hence will be 16 bytes. Therefore,
-            // Vector3 locals on stack could be read/written as if they were TYP_SIMD16
+            // Assumption 1:
+            // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
+            // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
+            // reading and writing purposes. 
+            //
+            // Assumption 2:
+            // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
+            // registers or on stack, the upper most 4-bytes will be zero.  
+            //
+            // TODO-64bit: assumptions 1 and 2 hold within RyuJIT generated code. It is not clear whether
+            // these assumptions hold when a Vector3 type arg is passed by native code. Example: PInvoke
+            // returning Vector3 type value or RPInvoke passing Vector3 type args.
             (*ppTree)->gtType = TYP_SIMD16;
 #else
             NYI("Lowering of TYP_SIMD12 locals");
