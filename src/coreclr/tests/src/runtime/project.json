@@ -1,6 +1,7 @@
-﻿{
+{
   "dependencies": {
     "Microsoft.DotNet.CoreCLR.TestDependencies": "1.0.0-prerelease",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "System.Collections": "4.0.10-beta-*",
     "System.Collections.Concurrent": "4.0.10-beta-*",
     "System.Console": "4.0.0-beta-*",
@@ -25,14 +26,13 @@
     "System.Text.Encoding.Extensions": "4.0.10-beta-*",
     "System.Text.RegularExpressions": "4.0.10-beta-*",
     "System.Threading": "4.0.0-beta-*",
+    "System.Threading.Overlapped": "4.0.0-beta-*",
     "System.Threading.Tasks": "4.0.10-beta-*",
-    "System.Xml.ReaderWriter": "4.0.10-beta-*",
-    "System.Xml.XDocument": "4.0.10-beta-*",
     "System.Threading.ThreadPool": "4.0.10-beta-*",
-    "System.Threading.Overlapped": "4.0.0-beta-*"
+    "System.Xml.ReaderWriter": "4.0.10-beta-*",
+    "System.Xml.XDocument": "4.0.10-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}
   }
 }
-
