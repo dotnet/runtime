@@ -4,31 +4,37 @@
 
 
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    public interface IDbConnection : IDisposable {
+    public interface IDbConnection : IDisposable
+    {
 
-        string ConnectionString {
+        string ConnectionString
+        {
             get;
-            set; 
+            set;
         }
 
-        int ConnectionTimeout {
+        int ConnectionTimeout
+        {
             get;
         }
 
-        string Database {
+        string Database
+        {
             get;
         }
 
-        ConnectionState State {
+        ConnectionState State
+        {
             get;
         }
 
         IDbTransaction BeginTransaction();
 
-        IDbTransaction BeginTransaction(IsolationLevel il); 
+        IDbTransaction BeginTransaction(IsolationLevel il);
 
         void Close();
 

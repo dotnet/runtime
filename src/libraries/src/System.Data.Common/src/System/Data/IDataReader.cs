@@ -1,25 +1,26 @@
-//------------------------------------------------------------------------------
-// <copyright file="IDataReader.cs" company="Microsoft">
-//      Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-// <owner current="true" primary="true">markash</owner>
-// <owner current="true" primary="false">laled</owner>
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    public interface IDataReader: IDisposable, IDataRecord {
+    public interface IDataReader : IDisposable, IDataRecord
+    {
 
-        int Depth {
+        int Depth
+        {
             get;
         }
 
-        bool IsClosed {
+        bool IsClosed
+        {
             get;
         }
 
-        int RecordsAffected {
+        int RecordsAffected
+        {
             get;
         }
 

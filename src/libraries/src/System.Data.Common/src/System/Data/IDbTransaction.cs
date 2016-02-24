@@ -3,16 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Data{
+namespace System.Data
+{
     using System;
 
-    public interface IDbTransaction : IDisposable {
+    public interface IDbTransaction : IDisposable
+    {
 
-        IDbConnection Connection {
+        IDbConnection Connection
+        {
             get;
         }
 
-        IsolationLevel IsolationLevel {
+        IsolationLevel IsolationLevel
+        {
             get;
         }
 
@@ -20,5 +24,5 @@ namespace System.Data{
 
         void Rollback();
     }
-}    
+}
 

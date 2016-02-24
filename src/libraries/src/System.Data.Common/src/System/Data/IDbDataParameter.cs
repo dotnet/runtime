@@ -3,22 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    public interface IDbDataParameter : IDataParameter {
+    public interface IDbDataParameter : IDataParameter
+    {
 
-        byte Precision {
+        byte Precision
+        {
             get;
             set;
         }
 
-        byte Scale {
+        byte Scale
+        {
             get;
             set;
         }
 
-        int Size {
+        int Size
+        {
             get;
             set;
         }

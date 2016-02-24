@@ -4,12 +4,15 @@
 
 
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    public interface IDataParameterCollection : System.Collections.IList {
+    public interface IDataParameterCollection : System.Collections.IList
+    {
 
-        object this[string parameterName] {
+        object this[string parameterName]
+        {
             get;
             set;
         }
