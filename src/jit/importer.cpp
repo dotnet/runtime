@@ -2968,13 +2968,6 @@ GenTreePtr      Compiler::impIntrinsic(CORINFO_CLASS_HANDLE     clsHnd,
         {
             switch (sig->numArgs)
             {
-                case 0:
-                    // It seems that all the math intrinsics listed take a single argument, so this
-                    // case will never currently be taken.  
-                    assert(false);
-                    op1 = nullptr;
-                    break;
-
                 case 1:
                     op1 = impPopStack().val;
 
@@ -3208,8 +3201,11 @@ InterlockedBinOpCommon:
         {
             NO_WAY("JIT must expand the intrinsic!");
         }
-        else if (IsIntrinsicImplementedByUserCall(intrinsicID))
+        else if ((retNode->gtFlags & GTF_CALL) != 0)
         {
+            // If we must expand the intrinsic,
+            // retNode (the tree that corresponds to the intrinsic expansion) must be non-null,
+            // and the returned tree must not contain a call.
             NO_WAY("JIT must not implement the intrinsic by a user call!");
         }
     }
