@@ -9,6 +9,9 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <unistd.h>
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
@@ -83,12 +86,22 @@ bool pal::is_path_rooted(const pal::string_t& path)
 bool pal::get_default_packages_directory(pal::string_t* recv)
 {
     recv->clear();
-    if (!pal::getenv("HOME", recv))
+    pal::string_t dir;
+    if (!pal::getenv("HOME", &dir))
+    {
+        struct passwd* pw = getpwuid(getuid());
+        if (pw && pw->pw_dir)
+        {
+            dir.assign(pw->pw_dir);
+        }
+    }
+    if (dir.empty())
     {
         return false;
     }
-    append_path(&*recv, _X(".nuget"));
-    append_path(&*recv, _X("packages"));
+    append_path(&dir, _X(".nuget"));
+    append_path(&dir, _X("packages"));
+    recv->assign(dir);
     return true;
 }
 
