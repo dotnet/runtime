@@ -15748,7 +15748,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     if (calleeNativeSizeEstimate > threshold)
     {
 #ifdef DEBUG
-        char * message = (char *)compAllocator->nraAlloc(128);
+        char * message = (char *)compAllocator->allocateMemory(128);
         sprintf(message, "Native estimate for function size exceeds threshold %g > %g (multiplier = %g).",
                 calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
                 threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier);
