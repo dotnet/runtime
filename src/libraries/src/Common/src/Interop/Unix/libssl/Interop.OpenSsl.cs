@@ -205,7 +205,7 @@ internal static partial class Interop
 
             if (retVal == count)
             {
-                retVal = Ssl.SslRead(context, outBuffer, retVal);
+                retVal = Ssl.SslRead(context, outBuffer, outBuffer.Length);
 
                 if (retVal > 0)
                 {
