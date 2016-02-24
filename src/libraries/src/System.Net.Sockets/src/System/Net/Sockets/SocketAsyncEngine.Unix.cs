@@ -292,7 +292,7 @@ namespace System.Net.Sockets
             }
             catch (Exception e)
             {
-                Environment.FailFast("Exception thrown from SocketAsyncEngine event loop", e);
+                Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
             }
         }
 
