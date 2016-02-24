@@ -783,11 +783,7 @@ typedef enum {
 	LLVMArgFpStruct,
 	LLVMArgVtypeByRef,
 	/* Vtype returned as an int */
-	LLVMArgVtypeAsScalar,
-	/* Scalar returned by ref using an additional argument */
-	LLVMArgScalarRetAddr,
-	/* Scalar passed by ref */
-	LLVMArgScalarByRef
+	LLVMArgVtypeAsScalar
 } LLVMArgStorage;
 
 typedef struct {

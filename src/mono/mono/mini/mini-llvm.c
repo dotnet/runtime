@@ -1292,7 +1292,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		ret_type = LLVMVoidType ();
 		break;
 	case LLVMArgVtypeRetAddr:
-	case LLVMArgScalarRetAddr:
 	case LLVMArgGsharedvtFixed:
 	case LLVMArgGsharedvtFixedVtype:
 	case LLVMArgGsharedvtVariable:
@@ -1393,7 +1392,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			pindex ++;
 			break;
 		case LLVMArgVtypeByRef:
-		case LLVMArgScalarByRef:
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
 				break;
@@ -2929,15 +2927,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 			break;
 		}
-		case LLVMArgScalarByRef: {
-			if (names [i])
-				name = g_strdup_printf ("arg_%s", names [i]);
-			else
-				name = g_strdup_printf ("arg_%d", i);
-			ctx->values [reg] = LLVMBuildLoad (builder, LLVMGetParam (ctx->lmethod, pindex), name);
-			g_free (name);
-			break;
-		}
 		case LLVMArgAsIArgs: {
 			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 			int size;
@@ -3130,7 +3119,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->imt_arg_reg)
 		cinfo->imt_arg = TRUE;
 
-	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef || cinfo->ret.storage == LLVMArgScalarRetAddr || cinfo->ret.storage == LLVMArgGsharedvtFixed || cinfo->ret.storage == LLVMArgGsharedvtVariable || cinfo->ret.storage == LLVMArgGsharedvtFixedVtype);
+	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef || cinfo->ret.storage == LLVMArgGsharedvtFixed || cinfo->ret.storage == LLVMArgGsharedvtVariable || cinfo->ret.storage == LLVMArgGsharedvtFixedVtype);
 
 	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo);
 	if (!ctx_ok (ctx))
@@ -3362,8 +3351,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			g_assert (addresses [reg]);
 			args [pindex] = addresses [reg];
 			break;
-		case LLVMArgVtypeByRef:
-		case LLVMArgScalarByRef: {
+		case LLVMArgVtypeByRef: {
 			g_assert (addresses [reg]);
 			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
 			break;
@@ -3475,10 +3463,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			g_assert (addresses [call->inst.dreg]);
 			values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
 		}
-		break;
-	case LLVMArgScalarRetAddr:
-		/* Normal scalar returned using a vtype return argument */
-		values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
 		break;
 	case LLVMArgGsharedvtVariable:
 		break;
@@ -4267,16 +4251,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			}
 			case LLVMArgVtypeRetAddr: {
-				LLVMBuildRetVoid (builder);
-				break;
-			}
-			case LLVMArgScalarRetAddr: {
-				LLVMTypeRef ret_type = type_to_llvm_type (ctx, sig->ret);
-				LLVMValueRef param = LLVMGetParam (method, linfo->vret_arg_pindex);
-
-				/* sreg1 might not be set */
-				if (lhs)
-					LLVMBuildStore (builder, convert (ctx, lhs, ret_type), convert (ctx, param, LLVMPointerType (ret_type, 0)));
 				LLVMBuildRetVoid (builder);
 				break;
 			}
@@ -5605,16 +5579,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMArgInfo *ainfo = (LLVMArgInfo*)ins->inst_p0;
 			MonoType *t = mini_get_underlying_type (ins->inst_vtype);
 
-			if (ainfo->storage == LLVMArgScalarByRef) {
-				LLVMTypeRef argtype;
-				LLVMValueRef loc, v;
-
-				argtype = type_to_llvm_arg_type (ctx, t);
-				loc = build_alloca_llvm_type (ctx, argtype, 0);
-				v = convert (ctx, values [ins->sreg1], argtype);
-				LLVMBuildStore (ctx->builder, v, loc);
-				addresses [ins->dreg] = loc;
-			} else if (ainfo->storage == LLVMArgGsharedvtVariable) {
+			if (ainfo->storage == LLVMArgGsharedvtVariable) {
 					MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
 
 					if (var && var->opcode == OP_GSHAREDVT_LOCAL) {
@@ -6671,9 +6636,6 @@ emit_method_inner (EmitContext *ctx)
 			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMStructRetAttribute);
 			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMNoAliasAttribute);
 		}
-	} else if (linfo->ret.storage == LLVMArgScalarRetAddr) {
-		LLVMValueRef param = LLVMGetParam (method, linfo->vret_arg_pindex);
-		LLVMSetValueName (param, "vret");
 	}
 
 	if (sig->hasthis) {
@@ -6699,12 +6661,7 @@ emit_method_inner (EmitContext *ctx)
 		}
 
 		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, pindex);
-		if (ainfo->storage == LLVMArgScalarByRef) {
-			if (names [i] && names [i][0] != '\0')
-				name = g_strdup_printf ("p_arg_%s", names [i]);
-			else
-				name = g_strdup_printf ("p_arg_%d", i);
-		} else if (ainfo->storage == LLVMArgGsharedvtFixed || ainfo->storage == LLVMArgGsharedvtFixedVtype) {
+		if (ainfo->storage == LLVMArgGsharedvtFixed || ainfo->storage == LLVMArgGsharedvtFixedVtype) {
 			if (names [i] && names [i][0] != '\0')
 				name = g_strdup_printf ("p_arg_%s", names [i]);
 			else
@@ -7138,7 +7095,6 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
 		case LLVMArgVtypeAsScalar:
-		case LLVMArgScalarByRef:
 		case LLVMArgAsIArgs:
 		case LLVMArgAsFpArgs:
 		case LLVMArgGsharedvtVariable:
