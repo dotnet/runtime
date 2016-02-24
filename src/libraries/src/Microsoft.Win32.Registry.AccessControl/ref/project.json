@@ -6,6 +6,10 @@
     "System.Security.Principal.Windows": "4.0.0-rc3-23818"
   },
   "frameworks": {
-    "dotnet5.4": {}
+    "netstandard1.3": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
   }
 }

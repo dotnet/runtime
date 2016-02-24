@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dotnet5.4": {
+    "netstandard1.3": {
       "dependencies": {
         "System.Collections": "4.0.0.0",
         "System.Diagnostics.Contracts": "4.0.0.0",
@@ -16,7 +16,10 @@
         "System.Security.AccessControl": "4.0.0-rc3-23818",
         "System.Security.Principal": "4.0.0.0",
         "System.Security.Principal.Windows": "4.0.0-rc3-23818"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "net46": {
       "dependencies": {

@@ -5,6 +5,10 @@
     "System.Threading.Tasks": "4.0.0"
   },
   "frameworks": {
-    "dotnet5.5": {}
+    "netstandard1.4": {
+      "imports": [
+        "dotnet5.5"
+      ]
+    }
   }
 }
