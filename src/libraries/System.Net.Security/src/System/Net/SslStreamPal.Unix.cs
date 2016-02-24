@@ -131,13 +131,17 @@ namespace System.Net
             try
             {
                 Interop.Ssl.SslErrorCode errorCode = Interop.Ssl.SslErrorCode.SSL_ERROR_NONE;
-
-
                 SafeSslHandle scHandle = securityContext.SslContext;
 
-                resultSize = encrypt ?
-                    Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, out errorCode) :
-                    Interop.OpenSsl.Decrypt(scHandle, buffer, size, out errorCode);
+                if (encrypt)
+                {
+                    resultSize = Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, out errorCode);
+                }
+                else
+                {
+                    Debug.Assert(offset == 0, "Expected offset 0 when decrypting");
+                    resultSize = Interop.OpenSsl.Decrypt(scHandle, buffer, size, out errorCode);
+                }
 
                 switch (errorCode)
                 {
