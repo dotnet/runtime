@@ -51,23 +51,10 @@
   <Target Name="BatchRestorePackages">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
 
-    <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
-    <GatherDirectoriesToRestore RootDirectories="@(DnuRestoreDir)" Condition="'$(SkipGatherRestoreDirs)' != 'true'">
-      <Output TaskParameter="DirectoriesToRestore"
-              ItemName="ExpandedDnuRestoreDir" />
-    </GatherDirectoriesToRestore>
-
-    <Exec Command="$(DnuRestoreCommand) &quot;%(ExpandedDnuRestoreDir.Identity)&quot;"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
-          ContinueOnError="ErrorAndContinue"
-          Condition="'$(SkipGatherRestoreDirs)' != 'true'" />
-
     <Exec Command="$(DnuRestoreCommand) @(DnuRestoreDir->'&quot;%(Identity)&quot;', ' ')"
           StandardOutputImportance="Low"
           CustomErrorRegularExpression="(^Unable to locate .*)|(^Updating the invalid lock file with .*)"
-          ContinueOnError="ErrorAndContinue"
-          Condition="'$(SkipGatherRestoreDirs)' == 'true'" />
+          ContinueOnError="ErrorAndContinue" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
   </Target>
