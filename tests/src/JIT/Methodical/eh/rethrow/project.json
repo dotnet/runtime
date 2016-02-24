@@ -1,7 +1,8 @@
 {
   "dependencies": {
-    "System.IO": "4.0.10", 
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "System.Console": "4.0.0-beta-*",
+    "System.IO": "4.0.10",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Extensions": "4.0.10-beta-*",
     "System.Runtime.InteropServices": "4.0.10-beta-*"

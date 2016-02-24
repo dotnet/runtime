@@ -1,18 +1,19 @@
 {
   "dependencies": {
-    "System.Console": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Runtime.Extensions": "4.0.10-beta-*",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "System.Collections": "4.0.10-beta-*",
-    "System.Runtime.InteropServices": "4.0.21-beta-*",
+    "System.Console": "4.0.0-beta-*",
+    "System.Diagnostics.Debug": "4.0.11-beta-*",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
+    "System.Diagnostics.Process": "4.1.0-beta-*",
+    "System.Globalization": "4.0.11-beta-*",
     "System.IO": "4.0.11-beta-*",
     "System.IO.FileSystem": "4.0.0-beta-23302",
-    "System.Globalization": "4.0.11-beta-*",
     "System.Reflection": "4.1.0-beta-*",
-    "System.Diagnostics.Process": "4.1.0-beta-*",
-    "System.Diagnostics.Debug": "4.0.11-beta-*",
-    "System.Reflection.TypeExtensions": "4.0.0-beta-*"
+    "System.Reflection.TypeExtensions": "4.0.0-beta-*",
+    "System.Runtime": "4.0.20-beta-*",
+    "System.Runtime.Extensions": "4.0.10-beta-*",
+    "System.Runtime.InteropServices": "4.0.21-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}

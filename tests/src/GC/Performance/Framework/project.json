@@ -1,16 +1,19 @@
-﻿{
+{
   "version": "1.0.0-*",
   "description": "GCPerfTestFramework Class Library",
-  "authors": [ "segilles" ],
-  "tags": [ "" ],
+  "authors": [
+    "segilles"
+  ],
+  "tags": [
+    ""
+  ],
   "projectUrl": "",
   "licenseUrl": "",
-
   "dependencies": {
-    "xunit": "2.1.0",
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027"
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "xunit": "2.1.0"
   },
-
   "frameworks": {
     "dnxcore5": {
       "compilationOptions": {
@@ -43,7 +46,8 @@
         "System.Xml.XmlSerializer": "4.0.11-beta-23302",
         "System.Xml.XmlDocument": "4.0.1-beta-23302",
         "System.Xml.XDocument": "4.0.11-beta-23302"
-      }
+      },
+      "imports": "portable-net45+win8"
     }
   }
 }

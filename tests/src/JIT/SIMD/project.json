@@ -1,13 +1,14 @@
 {
   "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "System.Collections": "4.0.10",
     "System.Console": "4.0.0-beta-*",
-	"System.Linq": "4.0.0",
-	"System.Numerics.Vectors": "4.1.1-beta-23226",
+    "System.Linq": "4.0.0",
+    "System.Numerics.Vectors": "4.1.1-beta-23226",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Extensions": "4.0.10-beta-*",
     "System.Threading": "4.0.0-beta-*",
-    "System.Threading.Thread": "4.0.0-beta-*",
+    "System.Threading.Thread": "4.0.0-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}
