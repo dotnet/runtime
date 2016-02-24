@@ -108,6 +108,8 @@ namespace System.Net.Sockets
 
             private bool TryCompleteOrAbortAsync(SocketAsyncContext context, bool abort)
             {
+                Debug.Assert(context != null || abort);
+
                 State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
                 if (oldState == State.Cancelled)
                 {
@@ -367,6 +369,7 @@ namespace System.Net.Sockets
             {
                 // Insert at the head of the queue
                 Debug.Assert(!IsStopped);
+                Debug.Assert(operation.Next == null, "Operation already in queue");
 
                 operation.Next = (_tail == null) ? operation : _tail.Next;
                 _tail = operation;
@@ -511,12 +514,6 @@ namespace System.Net.Sockets
                 // Freeing the token will prevent any future event delivery.  This socket will be unregistered
                 // from the event port automatically by the OS when it's closed.
                 _asyncEngineToken.Free();
-
-                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
-
-                // TODO: the error codes on these operations may need to be changed to account for
-                //       the close. I think Winsock returns OperationAborted in the case that
-                //       the socket for an outstanding operation is closed.
             }
         }
 

@@ -34,7 +34,9 @@ namespace System.Net.Sockets
             public void Free()
             {
                 if (WasAllocated)
+                {
                     _engine.FreeHandle(_handle);
+                }
             }
 
             public bool TryRegister(SafeCloseSocket socket, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, out Interop.Error error)
@@ -185,7 +187,7 @@ namespace System.Net.Sockets
             //
             if (shutdownNeeded)
             {
-                Shutdown();
+                RequestEventLoopShutdown();
             }
         }
 
@@ -296,7 +298,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void Shutdown()
+        private void RequestEventLoopShutdown()
         {
             //
             // Write to the pipe, which will wake up the event loop and cause it to exit.
