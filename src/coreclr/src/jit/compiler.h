@@ -7904,7 +7904,7 @@ public :
     static void         compStartup     ();     // One-time initialization
     static void         compShutdown    ();     // One-time finalization
 
-    void                compInit        (norls_allocator * pAlloc, InlineInfo * inlineInfo);
+    void                compInit        (ArenaAllocator * pAlloc, InlineInfo * inlineInfo);
     void                compDone        ();
 
     static void         compDisplayStaticSizes(FILE* fout);
@@ -7943,7 +7943,7 @@ public :
                                            CORJIT_FLAGS                   * compileFlags,
                                            CorInfoInstantiationVerification instVerInfo);
 
-    norls_allocator *   compGetAllocator();
+    ArenaAllocator *   compGetAllocator();
 
 #if MEASURE_MEM_ALLOC
     struct MemStats
@@ -8147,7 +8147,7 @@ protected :
     bool skipMethod();
 #endif
 
-    norls_allocator *   compAllocator;
+    ArenaAllocator *   compAllocator;
 
 public:
     // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",
