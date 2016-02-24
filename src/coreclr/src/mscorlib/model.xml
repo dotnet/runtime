@@ -1828,6 +1828,7 @@
       <Member Name="Log(System.Int32,System.String,System.String)" />
       <Member MemberType="Property" Name="IsAttached" />
       <Member Status="ImplRoot" Name="BreakCanThrow" /> <!-- EE -->
+      <Member Name="NotifyOfCrossThreadDependency" />
     </Type>
     <Type Name="System.Diagnostics.DebuggerBrowsableAttribute">
       <Member Name="#ctor(System.Diagnostics.DebuggerBrowsableState)" />
