@@ -3,10 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 
-
-//------------------------------------------------------------------------------
-
-
 namespace System.Data.Common
 {
     public abstract class DbDataRecord : IDataRecord
