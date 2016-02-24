@@ -53,6 +53,9 @@
     <Compile Include="System\IO\FileLoadException.Interop.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
     <Compile Include="System\IO\PathTooLongException.Interop.cs" />
+    <Compile Include="System\Uri\UriTests.CreateString.cs" />
+    <Compile Include="System\Uri\UriTests.CreateUri.cs" />
+    <Compile Include="System\Uri\UriTests.Methods.cs" />
     <Compile Include="System\Lazy.cs" />
     <Compile Include="System\LazyOfTMetadata.cs" />
     <Compile Include="System\MethodAccessException.cs" />
@@ -79,7 +82,6 @@
     <Compile Include="System\UInt32.cs" />
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntPtr.cs" />
-    <Compile Include="System\Uri.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\WeakReference.cs" />
