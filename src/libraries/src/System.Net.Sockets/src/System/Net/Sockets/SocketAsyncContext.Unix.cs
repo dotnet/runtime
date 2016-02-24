@@ -409,6 +409,18 @@ namespace System.Net.Sockets
                 }
             }
 
+            public void StopAndCompleteAll(SocketAsyncContext context)
+            {
+                OperationQueue<TOperation> queue = Stop();
+
+                TOperation op;
+                while (queue.TryDequeue(out op))
+                {
+                    bool completed = op.TryCompleteAsync(context);
+                    Debug.Assert(completed);
+                }
+            }
+
             public bool AllOfType<TCandidate>() where TCandidate : TOperation
             {
                 bool tailIsCandidateType = _tail is TCandidate;
@@ -1322,7 +1334,7 @@ namespace System.Net.Sockets
                     // Drain read queue and unregister read operations
                     Debug.Assert(_acceptOrConnectQueue.IsEmpty, "{Accept,Connect} queue should be empty before ReadClose");
 
-                    _receiveQueue.StopAndAbort();
+                    _receiveQueue.StopAndCompleteAll(this);
 
                     UnregisterRead();
 
