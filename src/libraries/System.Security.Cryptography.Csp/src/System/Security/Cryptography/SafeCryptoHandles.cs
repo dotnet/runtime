@@ -9,8 +9,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    //ToDo: Remove before code review - Copied from SafeCryptoHandels.cs
-
     /// <summary>
     /// Safehandle representing HCRYPTPROV
     /// </summary>
@@ -22,7 +20,6 @@ namespace System.Security.Cryptography
         private int _type;
         private uint _flags;
         private bool _fPersistKeyInCsp;
-        private bool _fReleaseProvider;
 
         private SafeProvHandle() : base(true)
         {
@@ -32,7 +29,6 @@ namespace System.Security.Cryptography
             _type = 0;
             _flags = 0;
             _fPersistKeyInCsp = true;
-            _fReleaseProvider = true;
         }
 
         internal string ContainerName
@@ -95,18 +91,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal bool ReleaseProvider
-        {
-            get
-            {
-                return _fReleaseProvider;
-            }
-            set
-            {
-                _fReleaseProvider = value;
-            }
-        }
-
         internal static SafeProvHandle InvalidHandle
         {
             get { return SafeHandleCache<SafeProvHandle>.GetInvalidHandle(() => new SafeProvHandle()); }
@@ -130,7 +114,7 @@ namespace System.Security.Cryptography
                 uint flags = (_flags & (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | (uint)CapiHelper.CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                 SafeProvHandle hIgnoredProv;
                 bool ignoredSuccess = CapiHelper.CryptAcquireContext(out hIgnoredProv, _containerName, _providerName, _type, flags);
-
+                hIgnoredProv.Dispose();
                 // Ignoring success result code as CryptAcquireContext is being called to delete a key container rather than acquire a context.
                 // If it fails, we can't do anything about it anyway as we're in a dispose method.
             }
@@ -142,7 +126,6 @@ namespace System.Security.Cryptography
             return successfullyFreed;
         }
     }
-
 
     /// <summary>
     ///     Safe handle representing a HCRYPTKEY 
