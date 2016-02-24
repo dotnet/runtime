@@ -5,10 +5,11 @@
 
 namespace System.Data
 {
-    public enum DataRowVersion {
-        Original =  0x0100,
-        Current  =  0x0200,
-        Proposed =  0x0400,
-        Default  = Proposed | Current,
+    public enum DataRowVersion
+    {
+        Original = 0x0100,
+        Current = 0x0200,
+        Proposed = 0x0400,
+        Default = Proposed | Current,
     }
 }

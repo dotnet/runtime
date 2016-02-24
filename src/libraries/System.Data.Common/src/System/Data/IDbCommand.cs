@@ -3,43 +3,52 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Data{
+namespace System.Data
+{
     using System;
 
-    public interface IDbCommand : IDisposable {
+    public interface IDbCommand : IDisposable
+    {
 
-        IDbConnection Connection {
+        IDbConnection Connection
+        {
             get;
             set;
         }
 
-        IDbTransaction Transaction {
+        IDbTransaction Transaction
+        {
             get;
             set;
         }
 
-        string CommandText {
+        string CommandText
+        {
             get;
             set;
         }
 
-        int CommandTimeout {
+        int CommandTimeout
+        {
             get;
             set;
         }
 
-        CommandType CommandType {
+        CommandType CommandType
+        {
             get;
             set;
         }
 
-        IDataParameterCollection Parameters {
+        IDataParameterCollection Parameters
+        {
             get;
         }
 
         void Prepare();
-         
-        UpdateRowSource UpdatedRowSource {
+
+        UpdateRowSource UpdatedRowSource
+        {
             get;
             set;
         }

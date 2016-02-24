@@ -3,41 +3,50 @@
 // See the LICENSE file in the project root for more information.
 
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    public interface IDataParameter {
+    public interface IDataParameter
+    {
 
-        DbType DbType {
+        DbType DbType
+        {
             get;
             set;
         }
 
-        ParameterDirection Direction {
+        ParameterDirection Direction
+        {
             get;
             set;
         }
 
-         Boolean IsNullable {
+        Boolean IsNullable
+        {
             get;
         }
 
-        String ParameterName {
-            get;
-            set;
-        }
-
-        String SourceColumn {
+        String ParameterName
+        {
             get;
             set;
         }
 
-        DataRowVersion SourceVersion {
+        String SourceColumn
+        {
             get;
             set;
         }
 
-        object Value {
+        DataRowVersion SourceVersion
+        {
+            get;
+            set;
+        }
+
+        object Value
+        {
             get;
             set;
         }

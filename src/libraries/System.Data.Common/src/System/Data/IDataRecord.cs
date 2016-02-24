@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Data {
+namespace System.Data
+{
     using System;
 
-    // This interface is already shipped. So no more changes!
-    
-    public interface IDataRecord {
 
-        int FieldCount { get;}
+    public interface IDataRecord
+    {
 
-        object this [ int i ] { get;}
+        int FieldCount { get; }
 
-        object this [ String name ] { get;}
+        object this[int i] { get; }
+
+        object this[String name] { get; }
 
         String GetName(int i);
 
