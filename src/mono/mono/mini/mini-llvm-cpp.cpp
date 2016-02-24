@@ -218,6 +218,8 @@ mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
 	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
 }
 
+#if LLVM_API_VERSION > 100
+
 void*
 mono_llvm_create_di_builder (LLVMModuleRef module)
 {
@@ -272,3 +274,5 @@ mono_llvm_di_builder_finalize (void *di_builder)
 
 	builder->finalize ();
 }
+
+#endif /* #if LLVM_API_VERSION > 100 */
