@@ -1753,36 +1753,40 @@ ProcessFuncletsForGCReporting:
                         // and so we can detect it just from walking the stack.
                         if (!fSkippingFunclet && (pTracker != NULL))
                         {
-                            bool fFoundFuncletParent = false;
+                            // The stack walker is not skipping frames now, which means it didn't find a funclet frame that
+                            // would require skipping the current frame. If we find a tracker with caller of actual handling
+                            // frame matching the current frame, it means that the funclet stack frame was reclaimed.
+                            StackFrame sfFuncletParent;
+                            ExceptionTracker* pCurrTracker = pTracker;
+                            bool hasFuncletStarted = m_crawl.pThread->GetExceptionState()->GetCurrentEHClauseInfo()->IsManagedCodeEntered();
 
-                            // First check if the current frame is a caller of a funclet of a collapsed exception tracker
-                            StackFrame sfFuncletParent = pTracker->GetCallerOfCollapsedActualHandlingFrame();
-                            if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                            while (pCurrTracker != NULL)
                             {
-                                fFoundFuncletParent = true;
-                            }
-                            else
-                            {
-                                ExceptionTracker* pCurrTracker = pTracker;
-
-                                // Scan all previous trackers and see if the current frame is a caller of any of
-                                // the handling frames. 
-                                while ((pCurrTracker = pCurrTracker->GetPreviousExceptionTracker()) != NULL)
+                                if (hasFuncletStarted)
                                 {
                                     sfFuncletParent = pCurrTracker->GetCallerOfActualHandlingFrame();
-                                    if (ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                                    if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
                                     {
-                                        pTracker = pCurrTracker;
-                                        fFoundFuncletParent = true;
-
                                         break;
                                     }
                                 }
+
+                                sfFuncletParent = pCurrTracker->GetCallerOfCollapsedActualHandlingFrame();
+                                if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                                {
+                                    break;
+                                }
+
+                                // Funclets handling exception for trackers older than the current one were always started,
+                                // since the current tracker was created due to an exception in the funclet belonging to 
+                                // the previous tracker.
+                                hasFuncletStarted = true;
+                                pCurrTracker = pCurrTracker->GetPreviousExceptionTracker();
                             }
 
-                            if (fFoundFuncletParent)
+                            if (pCurrTracker != NULL)
                             {
-                                // We have found that the current frame is a caller of a handling frame.
+                                // The current frame is a parent of a funclet that was already unwound and removed from the stack
                                 // Set the members the same way we would set them on Windows when we
                                 // would detect this just from stack walking.
                                 m_sfParent = sfFuncletParent;
