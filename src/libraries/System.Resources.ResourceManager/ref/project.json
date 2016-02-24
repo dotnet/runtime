@@ -5,6 +5,10 @@
     "System.Globalization": "4.0.0"
   },
   "frameworks": {
-    "dotnet5.1": {}
+    "netstandard1.0": {
+      "imports": [
+        "dotnet5.1"
+      ]
+    }
   }
 }

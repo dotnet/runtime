@@ -248,7 +248,7 @@ namespace System.Resources
                    (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\"));
         }
 
-#if dotnet53
+#if netstandard
         /* Returns true if libpath is path to an ni image and if the path contains packagename as a subfolder */
         private static bool LibpathContainsPackagename(String libpath, String packagename)
         {
@@ -280,7 +280,7 @@ namespace System.Resources
                 }
             }
 
-#if dotnet53
+#if netstandard
             /* On phone libpath is usually ni path and not IL path as we do not touch the IL on phone.
                On Phone NI images are no longer under package root. Due to this above logic fails to
                find the package to which the library belongs. We assume that NI paths usually have
@@ -338,7 +338,7 @@ namespace System.Resources
                 {
                     string packageSimpleName = FindPackageSimpleNameForFilename(libpath);
 
-#if dotnet53
+#if netstandard
                     // If we have found a simple package name for the assembly, lets make sure it is not *.resource.dll that
                     // an application may have packaged in its AppX. This is to enforce AppX apps to use PRI resources.
                     if (packageSimpleName != null)
@@ -351,7 +351,7 @@ namespace System.Resources
                             packageSimpleName = null;
                         }
                     }
-#endif //  dotnet53
+#endif //  netstandard
                     if (packageSimpleName != null)
                     {
                         ResourceMap packageResourceMap = null;

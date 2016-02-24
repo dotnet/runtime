@@ -12,7 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

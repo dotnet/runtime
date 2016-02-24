@@ -9,8 +9,8 @@
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
   </PropertyGroup>
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="lib/dotnet5.2">
-      <TargetFramework>dotnet5.2</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.1">
+      <TargetFramework>netstandard1.1</TargetFramework>
     </PackageDestination>
     <!-- Support downlevel targets -->
     <PackageDestination Include="lib/portable-net45+win8+wpa81">

@@ -11,7 +11,7 @@
     <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <DefineConstants Condition="'$(TargetGroup)' != 'net46'">$(DefineConstants);FEATURE_ZLIB</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == ''">win7</PackageTargetRuntime> 

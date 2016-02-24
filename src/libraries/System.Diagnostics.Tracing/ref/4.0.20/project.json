@@ -3,6 +3,10 @@
     "System.Diagnostics.Tracing": "4.0.20"
   },
   "frameworks": {
-    "dotnet5.4": {}
+    "netstandard1.3": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
   }
 }

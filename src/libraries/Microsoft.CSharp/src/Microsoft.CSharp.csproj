@@ -6,7 +6,7 @@
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
     
     <!-- dotnet/corefx#3128 tracks removing this exclusion -->
     <ExcludeLocalizationImport Condition="'$(TargetsWindows)' != 'true'">true</ExcludeLocalizationImport>

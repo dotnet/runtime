@@ -1,17 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.1.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETPlatform,Version=v5.2</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
     <!-- remove when fixing https://github.com/dotnet/corefx/issues/5900 -->
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
-    <PackageDestination Include="ref/dotnet5.2">
-      <TargetFramework>dotnet5.2</TargetFramework>
+    <PackageDestination Include="ref/netstandard1.1">
+      <TargetFramework>netstandard1.1</TargetFramework>
     </PackageDestination>
     <PackageDestination Include="ref/portable-net45+win8">
       <TargetFramework>portable-net45+win8</TargetFramework>

@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dotnet5.1": {
+    "netstandard1.0": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
         "System.Collections": "4.0.0",
@@ -13,7 +13,10 @@
         "System.Runtime.Extensions": "4.0.0",
         "System.Text.RegularExpressions": "4.0.0",
         "System.Threading.Tasks": "4.0.0"
-      }
+      },
+      "imports": [
+        "dotnet5.1"
+      ]
     },
     "net45": {
       "dependencies": {

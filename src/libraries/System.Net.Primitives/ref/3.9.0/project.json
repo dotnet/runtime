@@ -3,6 +3,10 @@
     "System.Net.Primitives": "3.9.0"
   },
   "frameworks": {
-    "dotnet5.1": {}
+    "netstandard1.0": {
+      "imports": [
+        "dotnet5.1"
+      ]
+    }
   }
 }

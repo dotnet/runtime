@@ -14,7 +14,7 @@
     <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">win7</PackageTargetRuntime >
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime >
   </PropertyGroup>

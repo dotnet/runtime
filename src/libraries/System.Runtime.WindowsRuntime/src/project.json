@@ -1,10 +1,13 @@
 {
   "frameworks": {
-    "dotnet5.4": {
+    "netstandard1.3": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23818",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     }
   }
 }

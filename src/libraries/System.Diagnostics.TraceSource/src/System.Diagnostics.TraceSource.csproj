@@ -11,7 +11,7 @@
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <ProjectGuid>{5380420C-EB1D-4C53-9CFC-916578C18334}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->

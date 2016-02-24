@@ -12,7 +12,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
     <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net46'">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' != 'net46'">unix</PackageTargetRuntime>
   </PropertyGroup>

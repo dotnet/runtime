@@ -6,7 +6,7 @@
     <RootNamespace>System.Collections.NonGeneric</RootNamespace>
     <AssemblyName>System.Collections.NonGeneric</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

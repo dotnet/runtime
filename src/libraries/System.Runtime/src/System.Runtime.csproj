@@ -6,7 +6,7 @@
     <AssemblyName>System.Runtime</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

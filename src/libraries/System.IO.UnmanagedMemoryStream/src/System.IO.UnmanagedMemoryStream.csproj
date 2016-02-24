@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

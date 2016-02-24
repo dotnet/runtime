@@ -9,7 +9,7 @@
     <ProjectGuid>{FAF5D1E4-BA43-4663-8429-C069066D75CB}</ProjectGuid>
     <EnableWinRT>true</EnableWinRT>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.6</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework> 
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />

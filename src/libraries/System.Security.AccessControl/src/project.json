@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dotnet5.4": {
+    "netstandard1.3": {
       "dependencies": {
         "System.Collections": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
@@ -16,7 +16,10 @@
         "System.Reflection": "4.0.0",
         "System.Threading": "4.0.10",
         "System.Threading.Thread": "4.0.0-rc3-23818"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "net46": {
       "dependencies": {
