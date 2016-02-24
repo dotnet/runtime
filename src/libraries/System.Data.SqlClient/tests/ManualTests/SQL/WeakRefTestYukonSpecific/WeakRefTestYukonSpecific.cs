@@ -12,15 +12,43 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string COMMAND_TEXT_1 = "SELECT CustomerID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax from Customers";
         private const string COMMAND_TEXT_2 = "SELECT CompanyName from Customers";
         private const string COLUMN_NAME_2 = "CompanyName";
-        private const string DATABASE_NAME = "AdventureWorks";
+        private const string DATABASE_NAME = "pubs";
         private const int CONCURRENT_COMMANDS = 5;
 
         [Fact]
-        public void RunDataTest()
+        public static void TestReaderMars()
         {
-            var connString = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;Max Pool Size=1";
-            TestReaderMars(connString);
-            TestTransactionSingle(connString);
+            string connectionString = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;Max Pool Size=1";
+
+            TestReaderMarsCase("Case 1: ExecuteReader*5 Close, ExecuteReader.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.ExecuteReader);
+            TestReaderMarsCase("Case 2: ExecuteReader*5 Dispose, ExecuteReader.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.ExecuteReader);
+            TestReaderMarsCase("Case 3: ExecuteReader*5 GC, ExecuteReader.", connectionString, ReaderTestType.ReaderGC, ReaderVerificationType.ExecuteReader);
+            TestReaderMarsCase("Case 4: ExecuteReader*5 Connection Close, ExecuteReader.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.ExecuteReader);
+            TestReaderMarsCase("Case 5: ExecuteReader*5 GC, Connection Close, ExecuteReader.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.ExecuteReader);
+
+            TestReaderMarsCase("Case 6: ExecuteReader*5 Close, ChangeDatabase.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.ChangeDatabase);
+            TestReaderMarsCase("Case 7: ExecuteReader*5 Dispose, ChangeDatabase.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.ChangeDatabase);
+            TestReaderMarsCase("Case 8: ExecuteReader*5 GC, ChangeDatabase.", connectionString, ReaderTestType.ReaderGC, ReaderVerificationType.ChangeDatabase);
+            TestReaderMarsCase("Case 9: ExecuteReader*5 Connection Close, ChangeDatabase.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.ChangeDatabase);
+            TestReaderMarsCase("Case 10: ExecuteReader*5 GC, Connection Close, ChangeDatabase.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.ChangeDatabase);
+
+            TestReaderMarsCase("Case 11: ExecuteReader*5 Close, BeginTransaction.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.BeginTransaction);
+            TestReaderMarsCase("Case 12: ExecuteReader*5 Dispose, BeginTransaction.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.BeginTransaction);
+
+            TestReaderMarsCase("Case 13: ExecuteReader*5 Connection Close, BeginTransaction.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.BeginTransaction);
+            TestReaderMarsCase("Case 14: ExecuteReader*5 GC, Connection Close, BeginTransaction.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.BeginTransaction);
+        }
+
+        [Fact]
+        public static void TestTransactionSingle()
+        {
+            string connectionString = DataTestClass.SQL2005_Northwind + ";multipleactiveresultsets=true;Max Pool Size=1";
+
+            TestTransactionSingleCase("Case 1: BeginTransaction, Rollback.", connectionString, TransactionTestType.TransactionRollback);
+            TestTransactionSingleCase("Case 2: BeginTransaction, Dispose.", connectionString, TransactionTestType.TransactionDispose);
+            TestTransactionSingleCase("Case 3: BeginTransaction, GC.", connectionString, TransactionTestType.TransactionGC);
+            TestTransactionSingleCase("Case 4: BeginTransaction, Connection Close.", connectionString, TransactionTestType.ConnectionClose);
+            TestTransactionSingleCase("Case 5: BeginTransaction, GC, Connection Close.", connectionString, TransactionTestType.TransactionGCConnectionClose);
         }
 
         private enum ReaderTestType
@@ -149,29 +177,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return weak;
         }
 
-        private static void TestReaderMars(string connectionString)
-        {
-            TestReaderMarsCase("Case 1: ExecuteReader*5 Close, ExecuteReader.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.ExecuteReader);
-            TestReaderMarsCase("Case 2: ExecuteReader*5 Dispose, ExecuteReader.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.ExecuteReader);
-            TestReaderMarsCase("Case 3: ExecuteReader*5 GC, ExecuteReader.", connectionString, ReaderTestType.ReaderGC, ReaderVerificationType.ExecuteReader);
-            TestReaderMarsCase("Case 4: ExecuteReader*5 Connection Close, ExecuteReader.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.ExecuteReader);
-            TestReaderMarsCase("Case 5: ExecuteReader*5 GC, Connection Close, ExecuteReader.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.ExecuteReader);
-
-            TestReaderMarsCase("Case 6: ExecuteReader*5 Close, ChangeDatabase.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.ChangeDatabase);
-            TestReaderMarsCase("Case 7: ExecuteReader*5 Dispose, ChangeDatabase.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.ChangeDatabase);
-            TestReaderMarsCase("Case 8: ExecuteReader*5 GC, ChangeDatabase.", connectionString, ReaderTestType.ReaderGC, ReaderVerificationType.ChangeDatabase);
-            TestReaderMarsCase("Case 9: ExecuteReader*5 Connection Close, ChangeDatabase.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.ChangeDatabase);
-            TestReaderMarsCase("Case 10: ExecuteReader*5 GC, Connection Close, ChangeDatabase.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.ChangeDatabase);
-
-            TestReaderMarsCase("Case 11: ExecuteReader*5 Close, BeginTransaction.", connectionString, ReaderTestType.ReaderClose, ReaderVerificationType.BeginTransaction);
-            TestReaderMarsCase("Case 12: ExecuteReader*5 Dispose, BeginTransaction.", connectionString, ReaderTestType.ReaderDispose, ReaderVerificationType.BeginTransaction);
-            //Server behavior changing from beta to RTM. A request from a transaction should be only request associated with a connection. In this case, we have opened readers assosicated with the connection. which leads a SqlException.
-            //TestReaderMarsCase ("Case 13: ExecuteReader*5 GC, BeginTransaction.", connectionString, ReaderTestType.ReaderGC, ReaderVerificationType.BeginTransaction);
-            TestReaderMarsCase("Case 14: ExecuteReader*5 Connection Close, BeginTransaction.", connectionString, ReaderTestType.ConnectionClose, ReaderVerificationType.BeginTransaction);
-            TestReaderMarsCase("Case 15: ExecuteReader*5 GC, Connection Close, BeginTransaction.", connectionString, ReaderTestType.ReaderGCConnectionClose, ReaderVerificationType.BeginTransaction);
-        }
-
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void TestTransactionSingleCase(string caseName, string connectionString, TransactionTestType testType)
         {
@@ -233,15 +238,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             WeakReference weak = new WeakReference(transaction);
             transaction = null;
             return weak;
-        }
-
-        private static void TestTransactionSingle(string connectionString)
-        {
-            TestTransactionSingleCase("Case 1: BeginTransaction, Rollback.", connectionString, TransactionTestType.TransactionRollback);
-            TestTransactionSingleCase("Case 2: BeginTransaction, Dispose.", connectionString, TransactionTestType.TransactionDispose);
-            TestTransactionSingleCase("Case 3: BeginTransaction, GC.", connectionString, TransactionTestType.TransactionGC);
-            TestTransactionSingleCase("Case 4: BeginTransaction, Connection Close.", connectionString, TransactionTestType.ConnectionClose);
-            TestTransactionSingleCase("Case 5: BeginTransaction, GC, Connection Close.", connectionString, TransactionTestType.TransactionGCConnectionClose);
         }
     }
 }
