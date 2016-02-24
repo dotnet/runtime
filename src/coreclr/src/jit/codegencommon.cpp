@@ -4012,8 +4012,31 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             for (unsigned slotCounter = 0; slotCounter < structDesc.eightByteCount; slotCounter++)
             {
                 regNumber regNum = varDsc->lvRegNumForSlot(slotCounter);
+                var_types regType;
 
-                var_types regType = compiler->getEightByteType(structDesc, slotCounter);
+#ifdef FEATURE_SIMD
+                // Assumption 1:
+                // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
+                // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
+                // reading and writing purposes.  Hence while homing a Vector3 type arg on stack we should
+                // home entire 16-bytes so that the upper-most 4-bytes will be zeroed when written to stack.
+                //
+                // Assumption 2:
+                // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
+                // registers or on stack, the upper most 4-bytes will be zero.  
+                //
+                // TODO-64bit: assumptions 1 and 2 hold within RyuJIT generated code. It is not clear whether
+                // these assumptions hold when a Vector3 type arg is passed by native code. Example: PInvoke
+                // returning Vector3 type value or RPInvoke passing Vector3 type args.
+                if (varDsc->lvType == TYP_SIMD12)
+                {
+                    regType = TYP_DOUBLE;
+                }
+                else
+#endif
+                {
+                    regType = compiler->getEightByteType(structDesc, slotCounter);
+                }
                 
                 regArgNum = genMapRegNumToRegArgNum(regNum, regType);
                 
