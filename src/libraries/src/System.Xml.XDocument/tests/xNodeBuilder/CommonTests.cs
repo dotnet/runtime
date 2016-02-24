@@ -3416,14 +3416,10 @@ namespace CoreXml.Test.XLinq
 
                     string expectedXml = "<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>";
 
-                    try
+                    using (XmlReader reader = doc.CreateReader())
                     {
-                        using (XmlReader reader = doc.CreateReader())
-                        {
-                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
-                        }
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
                     }
-                    catch (ArgumentException) { return; }
                 }
 
                 //[Variation(Id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Priority = 2)]
@@ -3610,16 +3606,12 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    try
-                    {
-                        string expectedXml = "<Root><!--test - - --></Root>";
+                    string expectedXml = "<Root><!--test - - --></Root>";
 
-                        using (XmlReader reader = doc.CreateReader())
-                        {
-                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
-                        }
+                    using (XmlReader reader = doc.CreateReader())
+                    {
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
                     }
-                    catch (ArgumentException) { return; }
                 }
             }
 
@@ -4215,16 +4207,12 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    try
-                    {
-                        string expectedXml = "<Root><?badpi text ? >?></Root>";
+                    string expectedXml = "<Root><?badpi text ? >?></Root>";
 
-                        using (XmlReader reader = doc.CreateReader())
-                        {
-                            Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
-                        }
+                    using (XmlReader reader = doc.CreateReader())
+                    {
+                        Assert.Equal(expectedXml, MoveToFirstElement(reader).ReadOuterXml());
                     }
-                    catch (ArgumentException) { return; }
                 }
 
                 //[Variation(Id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Priority = 1)]
@@ -6569,6 +6557,7 @@ namespace CoreXml.Test.XLinq
                 {
                     // nop
                 }
+
                 return reader;
             }
         }
