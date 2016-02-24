@@ -130,24 +130,6 @@ var oods = arr.Where(n => n % 2 != 0).ToArray();
 
 Also introduced in .NET Framework 3.5 Parallel LINQ. Parallel LINQ has a subset of the methods the LINQ does but may execute the iterations on different threads in any order. Generally to use Parallel LINQ you would just call the `AsParallel()` method on a collection implementing `IEnumerable`. And if at any point you wanted to return to "normal LINQ you can just call `AsSequential()`.
 
-### ADO.NET
-
-### Managed Extensibility Framework
-
-**Also referred to as**: MEF
-
-### Windows Communication Foundation
-
-**Also referred to as**: WCF, Indigo
-
-### Entity Framework
-
-**Also referred to as**: EF
-
-### Entity Framework Core
-
-**Also referred to as**: EF Core
-
 ### JSON.NET
 
 Released in June 2006, JSON.NET has become the defacto standard for JSON serialization and deserialization in .NET. It is [open source](https://github.com/JamesNK/Newtonsoft.Json) and support almost every platform .NET code can run on (.NET Framework 2.0, 3.0, 3.5, 4.0, and 4.5; Mono; MonoTouch/Xamarin.iOS; MonoDroid/Xamarin.Android; Silverlight 3, 4, and 5; Windows Phone 8, 8, and 8.1; Windows 8 Store; .NET Core).  
@@ -172,25 +154,3 @@ There have been many attempts at OSS and/or cross-platform version of WPF or WPF
 * [WPFLight](https://github.com/ronnycsharp/WPFLight): An OSS project to create WPF on top of XNA/MonoGame.
 * [Perspex](https://github.com/Perspex/Perspex): A cross-platform UI framework based on WPF.
 * [Granular](https://github.com/yuvaltz/Granular): A OSS project to allow WPF applications to run in the browser.
-
-### DirectX
-
-**Also referred to as**: DX
-
-### XNA
-
-**Also referred to as**: XNA Framework
-
-### MonoGame
-
-**Also referred to as**: MG
-
-### ASP.NET
-
-### ASP.NET Core
-
-**Also referred to as**: ASP.NET 5
-
-### ASP.NET MVC
-
-### SignalR
