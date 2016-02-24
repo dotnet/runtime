@@ -677,12 +677,8 @@ void                Compiler::compStartup()
     totalNCsize = 0;
 #endif // DISPLAY_SIZES
 
-    /* Initialize the single instance of the norls_allocator (with a page
-     * preallocated) which we try to reuse for all non-simulataneous
-     * uses (which is always, for the standalone)
-     */
-
-    nraInitTheAllocator();
+    // Initialize the JIT's allocator.
+    ArenaAllocator::startup();
 
     /* Initialize the table of tree node sizes */
 
@@ -720,7 +716,7 @@ void                Compiler::compShutdown()
     }
 #endif // ALT_JIT
 
-    nraTheAllocatorDone();
+    ArenaAllocator::shutdown();
 
     /* Shut down the emitter */
 
@@ -1267,7 +1263,7 @@ void                Compiler::compDisplayStaticSizes(FILE* fout)
  *  Constructor
  */
 
-void                Compiler::compInit(norls_allocator * pAlloc, InlineInfo * inlineInfo)
+void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inlineInfo)
 {
     assert(pAlloc);
     compAllocator = pAlloc;
@@ -1580,7 +1576,7 @@ void  *                 Compiler::compGetMem(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(sz, cmk);
 #endif
 
-    void * ptr = compAllocator->nraAlloc(sz);
+    void * ptr = compAllocator->allocateMemory(sz);
 
     // Verify that the current block is aligned. Only then will the next
     // block allocated be on an aligned boundary.
@@ -4411,8 +4407,8 @@ void Compiler::compCompileFinish()
 
 #if MEASURE_MEM_ALLOC
     ClrEnterCriticalSection(s_memStatsLock.Val());
-    genMemStats.nraTotalSizeAlloc = compGetAllocator()->nraTotalSizeAlloc();
-    genMemStats.nraTotalSizeUsed  = compGetAllocator()->nraTotalSizeUsed ();
+    genMemStats.nraTotalSizeAlloc = compGetAllocator()->getTotalBytesAllocated();
+    genMemStats.nraTotalSizeUsed  = compGetAllocator()->getTotalBytesUsed();
     s_aggMemStats.Add(genMemStats);
     if (genMemStats.allocSz > s_maxCompMemStats.allocSz)
     {
@@ -4440,8 +4436,8 @@ void Compiler::compCompileFinish()
 #endif
 
 #if defined(DEBUG)
-    // Small methods should fit in THE_ALLOCATOR_BASE_SIZE, or else
-    // we should bump up THE_ALLOCATOR_BASE_SIZE
+    // Small methods should fit in ArenaAllocator::getDefaultPageSize(), or else
+    // we should bump up ArenaAllocator::getDefaultPageSize()
 
     if ((info.compILCodeSize <= 32) && // Is it a reasonably small method?
         (info.compNativeCodeSize < 512) && // Some trivial methods generate huge native code. eg. pushing a single huge struct
@@ -4452,12 +4448,12 @@ void Compiler::compCompileFinish()
         (info.compLocalsCount <= 32) &&
         (!opts.MinOpts()) && // We may have too many local variables, etc
         (getJitStressLevel() == 0) && // We need extra memory for stress
-        !compAllocator->nraDirectAlloc() && // THE_ALLOCATOR_BASE_SIZE is artificially low for DirectAlloc
-        (compAllocator->nraTotalSizeAlloc() > (2 * THE_ALLOCATOR_BASE_SIZE)) &&
+        !compAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for DirectAlloc
+        (compAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
                                             // Factor of 2x is because data-structures are bigger under DEBUG
 #ifndef LEGACY_BACKEND
         // RyuJIT backend needs memory tuning! TODO-Cleanup: remove this case when memory tuning is complete.
-        (compAllocator->nraTotalSizeAlloc() > (10 * THE_ALLOCATOR_BASE_SIZE)) &&
+        (compAllocator->getTotalBytesAllocated() > (10 * ArenaAllocator::getDefaultPageSize())) &&
 #endif
         !verbose) // We allocate lots of memory to convert sets to strings for JitDump
     {
@@ -5506,8 +5502,8 @@ int           jitNativeCode ( CORINFO_METHOD_HANDLE     methodHnd,
 START:
     int                 result = CORJIT_INTERNALERROR;
 
-    norls_allocator *   pAlloc = NULL;
-    norls_allocator     alloc;
+    ArenaAllocator *   pAlloc = NULL;
+    ArenaAllocator     alloc;
 
     if (inlineInfo)
     {     
@@ -5519,12 +5515,12 @@ START:
         IEEMemoryManager* pMemoryManager = compHnd->getMemoryManager();
 
         // Try to reuse the pre-inited allocator ?
-        pAlloc = nraGetTheAllocator(pMemoryManager);
+        pAlloc = ArenaAllocator::getPooledAllocator(pMemoryManager);
 
         if (!pAlloc)
         {
-            bool res = alloc.nraInit(pMemoryManager);
-            if  (res) 
+            bool res = alloc.initialize(pMemoryManager, false);
+            if  (!res) 
             {
                 return CORJIT_OUTOFMEM;
             }
@@ -5538,8 +5534,8 @@ START:
 
     struct Param {
         Compiler *pComp;
-        norls_allocator * pAlloc;
-        norls_allocator * alloc;
+        ArenaAllocator * pAlloc;
+        ArenaAllocator * alloc;
         bool jitFallbackCompile;
 
         CORINFO_METHOD_HANDLE     methodHnd;
@@ -5576,7 +5572,7 @@ START:
                 // Lazily create the inlinee compiler object
                 if (pParam->inlineInfo->InlinerCompiler->InlineeCompiler == NULL)
                 {
-                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler = (Compiler *)pParam->pAlloc->nraAlloc(roundUp(sizeof(*pParam->pComp)));
+                    pParam->inlineInfo->InlinerCompiler->InlineeCompiler = (Compiler *)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));
                 }
 
                 // Use the inlinee compiler object
@@ -5588,7 +5584,7 @@ START:
             else
             {   
                 // Allocate create the inliner compiler object
-                pParam->pComp = (Compiler *)pParam->pAlloc->nraAlloc(roundUp(sizeof(*pParam->pComp)));                                
+                pParam->pComp = (Compiler *)pParam->pAlloc->allocateMemory(roundUp(sizeof(*pParam->pComp)));                                
             }
 
             // push this compiler on the stack (TLS)
@@ -5637,11 +5633,11 @@ START:
                 // Now free up whichever allocator we were using
                 if (pParamOuter->pAlloc != pParamOuter->alloc)
                 {
-                    nraFreeTheAllocator();
+                    ArenaAllocator::returnPooledAllocator(pParamOuter->pAlloc);
                 }
                 else
                 {
-                    pParamOuter->alloc->nraFree();
+                    pParamOuter->alloc->destroy();
                 }
             }
         }
@@ -6707,7 +6703,7 @@ void Compiler::MemStats::Print(FILE* f)
 {
     fprintf(f, "count: %10u, size: %10llu, max = %10llu\n",
         allocCnt, allocSz, allocSzMax);
-    fprintf(f, "nraAlloc: %10llu, nraUsed: %10llu\n",
+    fprintf(f, "allocateMemory: %10llu, nraUsed: %10llu\n",
         nraTotalSizeAlloc, nraTotalSizeUsed);
     PrintByKind(f);
 }
@@ -6735,7 +6731,7 @@ void Compiler::AggregateMemStats::Print(FILE* f)
             allocSz, allocSz / nMethods);
     fprintf(f, "  max alloc  : %12llu\n", allocSzMax);
     fprintf(f, "\n");
-    fprintf(f, "  nraAlloc   : %12llu (avg %7llu per method)\n",
+    fprintf(f, "  allocateMemory   : %12llu (avg %7llu per method)\n",
             nraTotalSizeAlloc, nraTotalSizeAlloc / nMethods);
     fprintf(f, "  nraUsed    : %12llu (avg %7llu per method)\n",
             nraTotalSizeUsed, nraTotalSizeUsed / nMethods);
