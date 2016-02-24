@@ -464,7 +464,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzAppNiPaths = nullptr;
     LPCWSTR pwzPlatformAssembliesPaths = nullptr;
     LPCWSTR pwzPlatformWinmdPaths = nullptr;
-    WCHAR wzDirectoryToStorePDB[MAX_LONGPATH] = W("\0");
+    StackSString wzDirectoryToStorePDB;
     bool fCreatePDB = false;
     bool fGeneratePDBLinesInfo = false;
     LPWSTR pwzSearchPathForManagedPDB = NULL;
@@ -696,28 +696,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             dwFlags = dwFlags & ~(NGENWORKER_FLAGS_FULLTRUSTDOMAIN | NGENWORKER_FLAGS_READYTORUN);
 
             // Parse: <directory to store PDB>
-            if (wcscpy_s(
-                wzDirectoryToStorePDB, 
-                _countof(wzDirectoryToStorePDB), 
-                argv[0]) != 0)
-            {
-                Output(W("Unable to parse output directory to store PDB"));
-                exit(FAILURE_RESULT);
-            }
+            wzDirectoryToStorePDB.Set(argv[0]);
             argv++;
             argc--;
 
             // Ensure output dir ends in a backslash, or else diasymreader has issues
-            if (wzDirectoryToStorePDB[wcslen(wzDirectoryToStorePDB)-1] != DIRECTORY_SEPARATOR_CHAR_W)
+            if (wzDirectoryToStorePDB[wzDirectoryToStorePDB.GetCount()-1] != DIRECTORY_SEPARATOR_CHAR_W)
             {
-                if (wcscat_s(
-                        wzDirectoryToStorePDB, 
-                        _countof(wzDirectoryToStorePDB), 
-                        DIRECTORY_SEPARATOR_STR_W) != 0)
-                {
-                    Output(W("Unable to parse output directory to store PDB"));
-                    exit(FAILURE_RESULT);
-                }
+                wzDirectoryToStorePDB.Append(DIRECTORY_SEPARATOR_STR_W);
             }
 
             if (argc == 0)
@@ -773,28 +759,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             dwFlags = dwFlags & ~NGENWORKER_FLAGS_READYTORUN;
 
             // Parse: <directory to store PDB>
-            if (wcscpy_s(
-                wzDirectoryToStorePDB,
-                _countof(wzDirectoryToStorePDB),
-                argv[0]) != 0)
-            {
-                Output(W("Unable to parse output directory to store perfmap"));
-                exit(FAILURE_RESULT);
-            }
+            wzDirectoryToStorePDB.Set(argv[0]);
             argv++;
             argc--;
 
             // Ensure output dir ends in a backslash
             if (wzDirectoryToStorePDB[wcslen(wzDirectoryToStorePDB)-1] != DIRECTORY_SEPARATOR_CHAR_W)
             {
-                if (wcscat_s(
-                        wzDirectoryToStorePDB,
-                        _countof(wzDirectoryToStorePDB),
-                        DIRECTORY_SEPARATOR_STR_W) != 0)
-                {
-                    Output(W("Unable to parse output directory to store perfmap"));
-                    exit(FAILURE_RESULT);
-                }
+                wzDirectoryToStorePDB.Append(DIRECTORY_SEPARATOR_STR_W);
             }
 
             if (argc == 0)

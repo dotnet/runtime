@@ -173,9 +173,18 @@ namespace BINDER_SPACE
                                                           dwCCFullAssemblyPath,
                                                           pwzFullAssemblyPath,
                                                           NULL);
+                if (dwCCFullAssemblyPath > MAX_LONGPATH)
+                {
+                    fullAssemblyPath.CloseBuffer();
+                    pwzFullAssemblyPath = fullAssemblyPath.OpenUnicodeBuffer(dwCCFullAssemblyPath - 1);
+                    dwCCFullAssemblyPath = WszGetFullPathName(assemblyPath.GetUnicode(),
+                                                              dwCCFullAssemblyPath,
+                                                              pwzFullAssemblyPath,
+                                                              NULL);
+                }
                 fullAssemblyPath.CloseBuffer(dwCCFullAssemblyPath);
 
-                if ((dwCCFullAssemblyPath == 0) || (dwCCFullAssemblyPath > (MAX_LONGPATH + 1)))
+                if (dwCCFullAssemblyPath == 0)
                 {
                     hr = HRESULT_FROM_GetLastError();
                 }
