@@ -1251,6 +1251,9 @@ BOOL
 CLiteWeightStgdbRW::IsValidFileNameLength(
     const WCHAR * wszFileName)
 {
+#ifdef FEATURE_CORECLR
+    return TRUE;
+#else
     static const WCHAR const_wszLongPathPrefix[] = W("\\\\?\\");
 
     if (wszFileName == NULL)
@@ -1271,4 +1274,5 @@ CLiteWeightStgdbRW::IsValidFileNameLength(
         return TRUE;
     }
     return FALSE;
+#endif
 } // CLiteWeightStgdbRW::IsValidFileNameLength

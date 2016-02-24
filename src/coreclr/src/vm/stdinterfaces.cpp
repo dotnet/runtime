@@ -776,8 +776,21 @@ HRESULT GetITypeLibForAssembly(Assembly *pAssembly, ITypeLib **ppTLB, int bAutoC
 
     // Add a ".tlb" extension and try again.
     IfFailGo(rName.ReSizeNoThrow((int)(wcslen(szModule) + 5)));
-    SplitPath(szModule, rcDrive, _MAX_DRIVE, rcDir, _MAX_DIR, rcFname, _MAX_FNAME, 0, 0);
-    MakePath(rName.Ptr(), rcDrive, rcDir, rcFname, W(".tlb"));
+    // Check if szModule already has an extension.
+    LPCWSTR ext;
+    size_t extSize;
+    SplitPathInterior(szModule, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &ext, &extSize);
+    if (ext != nullptr)
+    {
+        // szModule already has an extension. Make a copy without the extension.
+        wcsncpy_s(rName.Ptr(), rName.Size(), szModule, ext - szModule);
+    }
+    else
+    {
+        // szModule does not have an extension. Copy the whole string.
+        wcscpy_s(rName.Ptr(), rName.Size(), szModule);
+    }
+    wcscat_s(rName.Ptr(), rName.Size(), W(".tlb"));
     
     hr = LoadTypeLibExWithFlags(rName.Ptr(), flags, &pITLB);
     if(hr == S_OK)
