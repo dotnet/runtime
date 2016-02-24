@@ -39,7 +39,7 @@ class Constants {
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
-    def static jitStressModeScenarios = ['minopts' : ['COMPlus_JitMinOpts' : '1'], 'forcerelocs' : ['COMPlus_ForceRelocs' : '1'],
+    def static jitStressModeScenarios = ['minopts' : ['COMPlus_JITMinOpts' : '1'], 'forcerelocs' : ['COMPlus_ForceRelocs' : '1'],
                'jitstress1' : ['COMPlus_JitStress' : '1'], 'jitstress2' : ['COMPlus_JitStress' : '2'],
                'jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
@@ -52,8 +52,8 @@ class Constants {
                'jitstress2_jitstressregs8'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
                'jitstress2_jitstressregs0x10' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
                'jitstress2_jitstressregs0x80' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
-               'corefx_baseline' : ['' : ''], // corefx baseline
-               'corefx_minopts' : ['COMPlus_JitMinOpts' : '1'],
+               'corefx_baseline' : [ : ], // corefx baseline
+               'corefx_minopts' : ['COMPlus_JITMinOpts' : '1'],
                'corefx_jitstress1' : ['COMPlus_JitStress' : '1'], 
                'corefx_jitstress2' : ['COMPlus_JitStress' : '2'],
                'corefx_jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'corefx_jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
@@ -859,17 +859,11 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                         
                                         // Set environment variable
-                                        def setEnvVar = ''
-                                        def envVars = Constants.jitStressModeScenarios[scenario]
-                                        envVars.each{ VarName, Value   ->
-                                            if (VarName != '') {
-                                                setEnvVar += " ${VarName}=${Value}"
-                                            }
-                                        }
+                                        def setEnvVar = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)                                        
                                                 
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
-                                        buildCommands += "cd fx; HOME=\$WORKSPACE/fx_home ${setEnvVar} ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        buildCommands += "${setEnvVar} cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
