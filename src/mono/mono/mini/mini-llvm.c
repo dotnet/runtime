@@ -91,6 +91,7 @@ typedef struct {
 	GHashTable *method_to_callers;
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
+	void *di_builder, *cu;
 } MonoLLVMModule;
 
 /*
@@ -7024,8 +7025,11 @@ emit_method_inner (EmitContext *ctx)
 		if (cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), ctx->method_name);
 
+#if LLVM_API_VERSION < 100
+		/* VerifyFunction can't handle some of the debug info created by DIBuilder in llvm 3.9 */
 		int err = LLVMVerifyFunction(ctx->lmethod, LLVMPrintMessageAction);
 		g_assert (err == 0);
+#endif
 	} else {
 		//LLVMVerifyFunction(method, 0);
 		mono_llvm_optimize_method (ctx->module->mono_ee, ctx->lmethod);
@@ -7690,8 +7694,30 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		/* clang ignores our debug info because it has an invalid version */
 		module->emit_dwarf = FALSE;
 
+#if LLVM_API_VERSION > 100
+	module->emit_dwarf = FALSE;
+#endif
+
 	add_intrinsics (module->lmodule);
 	add_types (module);
+
+#if LLVM_API_VERSION > 100
+	if (module->emit_dwarf) {
+		char *dir, *build_info, *s, *cu_name;
+
+		module->di_builder = mono_llvm_create_di_builder (module->lmodule);
+
+		// FIXME:
+		dir = g_strdup (".");
+		build_info = mono_get_runtime_build_info ();
+		s = g_strdup_printf ("Mono AOT Compiler %s (LLVM)", build_info);
+		cu_name = g_path_get_basename (assembly->image->name);
+		module->cu = mono_llvm_di_create_compile_unit (module->di_builder, cu_name, dir, s);
+		g_free (dir);
+		g_free (build_info);
+		g_free (s);
+	}
+#endif
 
 	/* Add GOT */
 	/*
@@ -8082,11 +8108,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 
-#if 0
+#if 1
 	{
 		char *verifier_err;
 
-		if (LLVMVerifyModule (module->module, LLVMReturnStatusAction, &verifier_err)) {
+		if (LLVMVerifyModule (module->lmodule, LLVMReturnStatusAction, &verifier_err)) {
 			g_assert_not_reached ();
 		}
 	}
@@ -8108,9 +8134,7 @@ static void
 emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name)
 {
 	LLVMModuleRef lmodule = module->lmodule;
-	LLVMValueRef args [16], cu_args [16], cu, ver;
-	int n_cuargs;
-	char *build_info, *s, *dir;
+	LLVMValueRef args [16], ver;
 
 	/*
 	 * This can only be enabled when LLVM code is emitted into a separate object
@@ -8120,6 +8144,13 @@ emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name
 	 */
 	if (!module->emit_dwarf)
 		return;
+
+#if LLVM_API_VERSION > 100
+	mono_llvm_di_builder_finalize (module->di_builder);
+#else
+	LLVMValueRef cu_args [16], cu;
+	int n_cuargs;
+	char *build_info, *s, *dir;
 
 	/*
 	 * Emit dwarf info in the form of LLVM metadata. There is some
@@ -8175,7 +8206,21 @@ emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name
 	cu_args [n_cuargs ++] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	cu = LLVMMDNode (cu_args, n_cuargs);
 	LLVMAddNamedMetadataOperand (lmodule, "llvm.dbg.cu", cu);
+#endif
 
+#if LLVM_API_VERSION > 100
+	args [0] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+	args [1] = LLVMMDString ("Dwarf Version", strlen ("Dwarf Version"));
+	args [2] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+	ver = LLVMMDNode (args, 3);
+	LLVMAddNamedMetadataOperand (lmodule, "llvm.module.flags", ver);
+
+	args [0] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+	args [1] = LLVMMDString ("Debug Info Version", strlen ("Debug Info Version"));
+	args [2] = LLVMConstInt (LLVMInt64Type (), 3, FALSE);
+	ver = LLVMMDNode (args, 3);
+	LLVMAddNamedMetadataOperand (lmodule, "llvm.module.flags", ver);
+#else
 	args [0] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	args [1] = LLVMMDString ("Dwarf Version", strlen ("Dwarf Version"));
 	args [2] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
@@ -8187,6 +8232,7 @@ emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name
 	args [2] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	ver = LLVMMDNode (args, 3);
 	LLVMAddNamedMetadataOperand (lmodule, "llvm.module.flags", ver);
+#endif
 }
 
 static LLVMValueRef
@@ -8207,6 +8253,10 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 		source_file = g_strdup ("<unknown>");
 	dir = g_path_get_dirname (source_file);
 	filename = g_path_get_basename (source_file);
+
+#if LLVM_API_VERSION > 100
+	return mono_llvm_di_create_function (module->di_builder, module->cu, cfg->method->name, name, dir, filename, n_seq_points ? sym_seq_points [0].line : 1);
+#endif
 
 	ctx_args [0] = LLVMConstInt (LLVMInt32Type (), 0x29, FALSE);
 	args [0] = md_string (filename);
@@ -8292,12 +8342,18 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 
 	if (ctx->minfo && cil_code && cil_code >= cfg->header->code && cil_code < cfg->header->code + cfg->header->code_size) {
 		MonoDebugSourceLocation *loc;
-		LLVMValueRef loc_md, md_args [16];
-		int nmd_args;
+		LLVMValueRef loc_md;
 
 		loc = mono_debug_symfile_lookup_location (ctx->minfo, cil_code - cfg->header->code);
 
 		if (loc) {
+#if LLVM_API_VERSION > 100
+			loc_md = mono_llvm_di_create_location (ctx->module->di_builder, ctx->dbg_md, loc->row, loc->column);
+			mono_llvm_di_set_location (builder, loc_md);
+#else
+			LLVMValueRef md_args [16];
+			int nmd_args;
+
 			nmd_args = 0;
 			md_args [nmd_args ++] = LLVMConstInt (LLVMInt32Type (), loc->row, FALSE);
 			md_args [nmd_args ++] = LLVMConstInt (LLVMInt32Type (), loc->column, FALSE);
@@ -8305,6 +8361,7 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 			md_args [nmd_args ++] = NULL;
 			loc_md = LLVMMDNode (md_args, nmd_args);
 			LLVMSetCurrentDebugLocation (builder, loc_md);
+#endif
 			mono_debug_symfile_free_location (loc);
 		}
 	}
