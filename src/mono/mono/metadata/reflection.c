@@ -9715,6 +9715,14 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
 	MonoError error;
+	MonoCustomAttrInfo * result = mono_custom_attrs_from_event_checked (klass, event, &error);
+	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	return result;
+}
+
+MonoCustomAttrInfo*
+mono_custom_attrs_from_event_checked (MonoClass *klass, MonoEvent *event, MonoError *error)
+{
 	guint32 idx;
 	
 	if (image_is_dynamic (klass->image)) {
@@ -9724,12 +9732,7 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 	idx = find_event_index (klass, event);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_EVENT;
-	MonoCustomAttrInfo * result = mono_custom_attrs_from_index_checked (klass->image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error); /* FIXME don't set loader error here */
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
 }
 
 MonoCustomAttrInfo*
@@ -9940,7 +9943,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
 		MonoReflectionMonoEvent *revent = (MonoReflectionMonoEvent*)obj;
-		cinfo = mono_custom_attrs_from_event (revent->event->parent, revent->event);
+		cinfo = mono_custom_attrs_from_event_checked (revent->event->parent, revent->event, error);
+		return_val_if_nok (error, NULL);
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
 		cinfo = mono_custom_attrs_from_field (rfield->field->parent, rfield->field);
