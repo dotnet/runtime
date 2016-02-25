@@ -15,4 +15,6 @@
 
   <Import Project="$(ToolsDir)/Build.Common.targets" />
 
+  <!-- permit a wrapping build system to contribute targets to this build -->
+  <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
 </Project>
