@@ -1433,7 +1433,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
             if (uBlock >= uCommitLine)
             {
                 // figure out where to commit next
-                LPVOID pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
+                void * pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
 
                 // we should commit one more page of handles
                 uint32_t dwCommit = g_SystemInfo.dwPageSize;
@@ -1843,7 +1843,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
         if (dwHi > dwLo)
         {
             // decommit the memory
-            GCToOSInterface::VirtualDecommit((LPVOID)dwLo, dwHi - dwLo);
+            GCToOSInterface::VirtualDecommit((void *)dwLo, dwHi - dwLo);
 
             // update the commit line
             pSegment->bCommitLine = (uint8_t)((dwLo - (size_t)pSegment->rgValue) / HANDLE_BYTES_PER_BLOCK);

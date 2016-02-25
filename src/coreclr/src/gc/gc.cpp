@@ -397,9 +397,8 @@ void log_va_msg(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, "[%5d]", GCToOSInterface::GetCurrentThreadIdForLogging());
     buffer_start += pid_len;
     memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
@@ -416,9 +415,8 @@ void log_va_msg(const char *fmt, va_list args)
         char index_str[8];
         memset (index_str, '-', 8);
         sprintf_s (index_str, _countof(index_str), "%d", (int)gc_buffer_index);
-        gc_log_buffer[gc_log_buffer_offset] = '\r';
-        gc_log_buffer[gc_log_buffer_offset + 1] = '\n';
-        memcpy (gc_log_buffer + (gc_log_buffer_offset + 2), index_str, 8);
+        gc_log_buffer[gc_log_buffer_offset] = '\n';
+        memcpy (gc_log_buffer + (gc_log_buffer_offset + 1), index_str, 8);
 
         gc_buffer_index++;
         if (gc_buffer_index > max_gc_buffers)
@@ -468,9 +466,8 @@ void log_va_msg_config(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int msg_len = _vsnprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, _TRUNCATE, fmt, args );
     assert (msg_len != -1);
     msg_len += buffer_start;
@@ -1509,6 +1506,18 @@ void WaitLongerNoInstru (int i)
     {
         if (bToggleGC || g_TrapReturningThreads)
         {
+#ifdef _DEBUG
+            // In debug builds, all enter_spin_lock operations go through this code.  If a GC has
+            // started, it is important to block until the GC thread calls set_gc_done (since it is
+            // guaranteed to have cleared g_TrapReturningThreads by this point).  This avoids livelock
+            // conditions which can otherwise occur if threads are allowed to spin in this function
+            // (and therefore starve the GC thread) between the point when the GC thread sets the
+            // WaitForGC event and the point when the GC thread clears g_TrapReturningThreads.
+            if (gc_heap::gc_started)
+            {
+                gc_heap::wait_for_gc_done();
+            }
+#endif // _DEBUG
             GCToEEInterface::DisablePreemptiveGC(pCurThread);
             if (!bToggleGC)
             {
@@ -5672,7 +5681,7 @@ void gc_heap::fix_large_allocation_area (BOOL for_gc_p)
 
 #ifdef _DEBUG
     alloc_context* acontext = 
-#endif // DEBUG    
+#endif // _DEBUG
         generation_alloc_context (large_object_generation);
     assert (acontext->alloc_ptr == 0);
     assert (acontext->alloc_limit == 0); 
@@ -6566,11 +6575,11 @@ uint32_t*& card_table_mark_array (uint32_t* c_table)
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->mark_array;
 }
 
-#if defined (_TARGET_AMD64_)
+#ifdef BIT64
 #define mark_bit_pitch ((size_t)16)
 #else
 #define mark_bit_pitch ((size_t)8)
-#endif //AMD64
+#endif // BIT64
 #define mark_word_width ((size_t)32)
 #define mark_word_size (mark_word_width * mark_bit_pitch)
 
@@ -33342,35 +33351,6 @@ HRESULT GCHeap::Shutdown ()
     return S_OK;
 }
 
-//used by static variable implementation
-void CGCDescGcScan(LPVOID pvCGCDesc, promote_func* fn, ScanContext* sc)
-{
-    CGCDesc* map = (CGCDesc*)pvCGCDesc;
-
-    CGCDescSeries *last = map->GetLowestSeries();
-    CGCDescSeries *cur = map->GetHighestSeries();
-
-    assert (cur >= last);
-    do
-    {
-        uint8_t** ppslot = (uint8_t**)((uint8_t*)pvCGCDesc + cur->GetSeriesOffset());
-        uint8_t**ppstop = (uint8_t**)((uint8_t*)ppslot + cur->GetSeriesSize());
-
-        while (ppslot < ppstop)
-        {
-            if (*ppslot)
-            {
-                (fn) ((Object**)ppslot, sc, 0);
-            }
-
-            ppslot++;
-        }
-
-        cur--;
-    }
-    while (cur >= last);
-}
-
 // Wait until a garbage collection is complete
 // returns NOERROR if wait was OK, other error code if failure.
 // WARNING: This will not undo the must complete state. If you are
@@ -36629,7 +36609,7 @@ void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
 #endif //defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 // Go through and touch (read) each page straddled by a memory block.
-void TouchPages(LPVOID pStart, uint32_t cb)
+void TouchPages(void * pStart, size_t cb)
 {
     const uint32_t pagesize = OS_PAGE_SIZE;
     _ASSERTE(0 == (pagesize & (pagesize-1))); // Must be a power of 2.
@@ -36728,7 +36708,7 @@ void initGCShadow()
     }
 }
 
-#define INVALIDGCVALUE (LPVOID)((size_t)0xcccccccd)
+#define INVALIDGCVALUE (void*)((size_t)0xcccccccd)
 
     // test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)
