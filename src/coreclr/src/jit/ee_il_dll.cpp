@@ -19,8 +19,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 #include "emit.h"
 
+
 /*****************************************************************************/
 
+static ICorJitHost* g_jitHost = nullptr;
 static CILJit* ILJitter = 0;        // The one and only JITTER I return
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 HINSTANCE g_hInst = NULL;
@@ -45,8 +47,11 @@ JitOptions jitOpts =
 
 /*****************************************************************************/
 
-void jitStartup()
+extern "C"
+void __stdcall jitStartup(ICorJitHost* jitHost)
 {
+    g_jitHost = jitHost;
+
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
 #endif
@@ -61,13 +66,16 @@ void jitShutdown()
 #endif
 }
 
+
 /*****************************************************************************
  *  jitOnDllProcessAttach() called by DllMain() when jit.dll is loaded
  */
 
 void jitOnDllProcessAttach()
 {
-    jitStartup();
+#if COR_JIT_EE_VERSION <= 460
+    jitStartup(JitHost::getJitHost());
+#endif
 }
 
 /*****************************************************************************
@@ -78,7 +86,6 @@ void jitOnDllProcessDetach()
 {
     jitShutdown();
 }
-
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -139,9 +146,6 @@ ICorJitCompiler* __stdcall getJit()
     if (ILJitter == 0)
     {
         ILJitter = new (CILJitSingleton) CILJit();
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-        jitStartup();
-#endif
     }
     return(ILJitter);
 }
