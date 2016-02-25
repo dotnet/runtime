@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace System.Data.Common
 {
-    public abstract class DbCommand :
+    public abstract class DbCommand : IDbCommand,
         IDisposable
     {
         protected DbCommand() : base()
@@ -103,6 +103,38 @@ namespace System.Data.Common
         {
             get;
             set;
+        }
+
+        IDbConnection IDbCommand.Connection
+        {
+            get
+            {
+                return DbConnection;
+            }
+            set
+            {
+                DbConnection = (DbConnection)value;
+            }
+        }
+
+        IDbTransaction IDbCommand.Transaction
+        {
+            get
+            {
+                return DbTransaction;
+            }
+            set
+            {
+                DbTransaction = (DbTransaction)value;
+            }
+        }
+
+        IDataParameterCollection IDbCommand.Parameters
+        {
+            get
+            {
+                return (DbParameterCollection)DbParameterCollection;
+            }
         }
 
         internal void CancelIgnoreFailure()
@@ -275,6 +307,21 @@ namespace System.Data.Common
 
         protected virtual void Dispose(bool disposing)
         {
+        }
+
+        IDbDataParameter IDbCommand.CreateParameter()
+        {
+            return CreateDbParameter();
+        }
+
+        IDataReader IDbCommand.ExecuteReader()
+        {
+            return (DbDataReader)ExecuteDbDataReader(CommandBehavior.Default);
+        }
+
+        IDataReader IDbCommand.ExecuteReader(CommandBehavior behavior)
+        {
+            return (DbDataReader)ExecuteDbDataReader(behavior);
         }
     }
 }

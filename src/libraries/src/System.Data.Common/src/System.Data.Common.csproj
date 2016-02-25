@@ -54,6 +54,17 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskHelpers.cs">
       <Link>Common\System\Threading\Tasks\TaskHelpers.cs</Link>
     </Compile>
+    <Compile Include="System\Data\Common\DbDataRecord.cs" />
+    <Compile Include="System\Data\DataRowVersion.cs" />
+    <Compile Include="System\Data\DataTable.cs" />
+    <Compile Include="System\Data\IDataParameter.cs" />
+    <Compile Include="System\Data\IDataParameterCollection.cs" />
+    <Compile Include="System\Data\IDataReader.cs" />
+    <Compile Include="System\Data\IDataRecord.cs" />
+    <Compile Include="System\Data\IDbCommand.cs" />
+    <Compile Include="System\Data\IDbConnection.cs" />
+    <Compile Include="System\Data\IDbDataParameter.cs" />
+    <Compile Include="System\Data\IDbTransaction.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <TargetingPackReference Include="mscorlib" />
