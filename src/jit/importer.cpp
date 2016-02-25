@@ -15818,6 +15818,11 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
+    if (forceInline)
+    {
+        inlineResult->noteCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+    }
+
     // Reject if it has too many locals.
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
@@ -15842,36 +15847,21 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
-    if (forceInline) 
-    {
-        // This looks a bit redundant; it's because we haven't yet
-        // extracted policy from observation....
-        inlineResult->note(InlineObservation::CALLEE_HAS_FORCE_INLINE);
-        inlineResult->noteCandidate(InlineObservation::CALLEE_HAS_FORCE_INLINE);
-        return;
-    }       
- 
     // Reject large functions
 
     inlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_IL_BYTES, codeSize);
 
-    if (codeSize > impInlineSize)
+    if (inlineResult->isFailure())
     {
-        inlineResult->note(InlineObservation::CALLEE_TOO_MUCH_IL);
-
-        if (inlineResult->isFailure())
-        {
-            return;
-        }
+        return;
     }
 
     // Make sure maxstack is not too big
 
     inlineResult->noteInt(InlineObservation::CALLEE_MAXSTACK, methInfo->maxStack);
 
-    if (methInfo->maxStack > sizeof(impSmallStack)/sizeof(impSmallStack[0]))
+    if (inlineResult->isFailure())
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
         return;
     }
 
