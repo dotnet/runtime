@@ -402,7 +402,7 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
         pObj = (Object*) hp->find_object(o, hp->gc_low);
     }
 #endif //INTERIOR_POINTERS
-    ScanRootsHelper(&pObj, ppObject, pSC, dwFlags);
+    ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 

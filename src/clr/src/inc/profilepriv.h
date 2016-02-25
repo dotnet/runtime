@@ -149,7 +149,7 @@ GVAL_DECL(ProfControlBlock, g_profControlBlock);
 
 // This is the helper callback that the gc uses when walking the heap.
 BOOL HeapWalkHelper(Object* pBO, void* pv);
-void ScanRootsHelper(Object** ppObj, ScanContext *pSC, uint32_t dwUnused);
+void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext *pSC, uint32_t dwUnused);
 BOOL AllocByClassHelper(Object* pBO, void* pv);
 
 #endif  // _ProfilePriv_h_
