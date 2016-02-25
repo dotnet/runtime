@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
@@ -11,15 +12,24 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void ValidConnStringTest()
         {
+
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestClass.SQL2008_Northwind_NamedPipes);
             builder.ConnectTimeout = 5;
 
-            // Unmodified server string
-            OpenGoodConnection(builder.ConnectionString);
-
-            // Just using server name
+            string plainConnString = builder.ConnectionString;
             builder.DataSource = "np:" + GetHostFromDataSource(builder.DataSource);
-            OpenGoodConnection(builder.ConnectionString);
+            string serverOnlyConnString = builder.ConnectionString;
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                OpenBadConnection<PlatformNotSupportedException>(plainConnString);
+                OpenBadConnection<PlatformNotSupportedException>(serverOnlyConnString);
+            }
+            else
+            {
+                OpenGoodConnection(plainConnString);
+                OpenGoodConnection(serverOnlyConnString);
+            }
         }
 
         [Fact]
@@ -34,42 +44,42 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             // Using forwad slashes
             builder.DataSource = "np://" + host + "/pipe/sql/query";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // Without pipe token
             builder.DataSource = @"np:\\" + host + @"\sql\query";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // Without a pipe name
             builder.DataSource = @"np:\\" + host + @"\pipe";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // Nothing after server
             builder.DataSource = @"np:\\" + host;
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // No leading slashes
             builder.DataSource = @"np:" + host + @"\pipe\sql\query";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // No server name
             builder.DataSource = @"np:\\\pipe\sql\query";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // Nothing but slashes
             builder.DataSource = @"np:\\\\\";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
 
             // Empty string
             builder.DataSource = "np:";
-            OpenBadConnection(builder.ConnectionString, invalidConnStringError);
+            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
         }
 
-        private static void OpenBadConnection(string connectionString, string errorMessage)
+        private static void OpenBadConnection<T>(string connectionString, string errorMessage = null) where T : Exception
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                DataTestClass.AssertThrowsWrapper<SqlException>(() => conn.Open(), errorMessage);
+                DataTestClass.AssertThrowsWrapper<T>(() => conn.Open(), errorMessage);
             }
         }
 
