@@ -130,7 +130,7 @@ namespace System.Net.Sockets.Tests
         {
             const int BytesToSend = 123456;
             const int ListenBacklog = 1;
-            const int LingerTime = 10;
+            const int LingerTime = 60;
             const int TestTimeout = 30000;
 
             var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
