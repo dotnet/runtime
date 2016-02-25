@@ -10077,11 +10077,7 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
-		/* FIXME add MonoError to mono_reflection_get_custom_attrs_info */
-		if (mono_loader_get_last_error ()) {
-			mono_error_set_from_loader_error (error);
-			return NULL;
-		}
+		mono_loader_assert_no_error ();
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 
