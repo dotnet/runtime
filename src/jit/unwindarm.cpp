@@ -1595,8 +1595,7 @@ void            UnwindInfo::Split()
 
 #ifdef DEBUG
     // Consider COMPLUS_JitSplitFunctionSize
-    static ConfigDWORD fJitSplitFunctionSize;
-    unsigned splitFunctionSize = (unsigned) fJitSplitFunctionSize.val(CLRConfig::INTERNAL_JitSplitFunctionSize);
+    unsigned splitFunctionSize = (unsigned) JitConfig.JitSplitFunctionSize();
 
     if (splitFunctionSize != 0)
         if (splitFunctionSize < maxFragmentSize)
