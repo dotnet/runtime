@@ -17,7 +17,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(Future)' != 'true'">1.2.0.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants);SRM</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
