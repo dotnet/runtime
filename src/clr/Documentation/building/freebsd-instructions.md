@@ -268,7 +268,7 @@ llvm37 and llvm-devel include clang and lldb. Since clang is included with llvm 
 
 After you have installed your desired version of LLVM you will need to specify the version to the build.sh script.
 
-For eaxample if you chose to install llvm37 you would add the clangX.X to your build command as follows.
+For example if you chose to install llvm37 you would add the clangX.X to your build command as follows.
 ```sh
 janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh clang3.7
 ```
