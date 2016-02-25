@@ -2953,6 +2953,36 @@ void                emitter::emitDispVarSet()
 
 /*****************************************************************************/
 #endif//DEBUG
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+//------------------------------------------------------------------------  
+// emitSetSecondRetRegGCType: Sets the GC type of the second return register for instrDescCGCA struct.  
+//  
+// Arguments:  
+//    id            - The large call instr descriptor to set the second GC return register type on.  
+//    secondRetSize - The EA_SIZE for second return register type.  
+//  
+// Return Value:  
+//    None  
+//  
+
+void            emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSize)
+{
+    if (EA_IS_GCREF(secondRetSize))
+    {
+        id->idSecondGCref(GCT_GCREF);
+    }
+    else if (EA_IS_BYREF(secondRetSize))
+    {
+        id->idSecondGCref(GCT_BYREF);
+    }
+    else
+    {
+        id->idSecondGCref(GCT_NONE);
+    }
+}
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
 /*****************************************************************************
  *
  *  Allocate an instruction descriptor for an indirect call.
@@ -2964,29 +2994,36 @@ void                emitter::emitDispVarSet()
  *  address mode displacement.
  */
 
-emitter::instrDesc  * emitter::emitNewInstrCallInd(int        argCnt,
-                                                   ssize_t    disp,
-                                                   VARSET_VALARG_TP GCvars,
-                                                   regMaskTP  gcrefRegs,
-                                                   regMaskTP  byrefRegs,
-                                                   emitAttr   retSizeIn)
+emitter::instrDesc  * emitter::emitNewInstrCallInd(int                                                 argCnt,
+                                                   ssize_t                                             disp,
+                                                   VARSET_VALARG_TP                                    GCvars,
+                                                   regMaskTP                                           gcrefRegs,
+                                                   regMaskTP                                           byrefRegs,
+                                                   emitAttr                                            retSizeIn
+                                                   FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRetSize))
 {
-    emitAttr  retSize = retSizeIn ? EA_ATTR(retSizeIn) : EA_PTRSIZE;
+    emitAttr       retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
     bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
-    /*
-        Allocate a larger descriptor if any GC values need to be saved
-        or if we have an absurd number of arguments or a large address
-        mode displacement, or we have some byref registers
-     */
+    
+    // Allocate a larger descriptor if any GC values need to be saved
+    // or if we have an absurd number of arguments or a large address
+    // mode displacement, or we have some byref registers
+    // 
+    // On Amd64 System V OSs a larger descriptor is also needed if the 
+    // call returns a two-register-returned struct and the second 
+    // register (RDX) is a GCRef or ByRef pointer.
 
-    if  (!VarSetOps::IsEmpty(emitComp, GCvars)     ||   // any frame GCvars live
-         (gcRefRegsInScratch)        ||   // any register gc refs live in scratch regs
-         (byrefRegs != 0)            ||   // any register byrefs live
-         (disp < AM_DISP_MIN)        ||   // displacement too negative
-         (disp > AM_DISP_MAX)        ||   // displacement too positive
-         (argCnt > ID_MAX_SMALL_CNS) ||   // too many args
-         (argCnt < 0)                   ) // caller pops arguments
+
+    if  (!VarSetOps::IsEmpty(emitComp, GCvars)      ||  // any frame GCvars live
+         (gcRefRegsInScratch)                       ||  // any register gc refs live in scratch regs
+         (byrefRegs != 0)                           ||  // any register byrefs live
+         (disp < AM_DISP_MIN)                       ||  // displacement too negative
+         (disp > AM_DISP_MAX)                       ||  // displacement too positive
+         (argCnt > ID_MAX_SMALL_CNS)                ||  // too many args
+         (argCnt < 0)                                   // caller pops arguments
+                                                        // There is a second ref/byref return register.  
+         FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(    || EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id;
 
@@ -2999,6 +3036,10 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int        argCnt,
         id->idcByrefRegs      = byrefRegs;
         id->idcArgCnt         = argCnt;
         id->idcDisp           = disp;
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        emitSetSecondRetRegGCType(id, secondRetSize);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING  
 
         return  id;
     }
@@ -3013,7 +3054,7 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int        argCnt,
 
         /* Store the displacement and make sure the value fit */
         id->idAddr()->iiaAddrMode.amDisp  = disp;
- assert(id->idAddr()->iiaAddrMode.amDisp == disp);
+        assert(id->idAddr()->iiaAddrMode.amDisp == disp);
 
         /* Save the the live GC registers in the unused 'idReg/idRg2' fields */
         emitEncodeCallGCregs(gcrefRegs, id);
@@ -3033,26 +3074,32 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int        argCnt,
  *  and an arbitrarily large argument count.
  */
 
-emitter::instrDesc *emitter::emitNewInstrCallDir(int        argCnt,
-                                                 VARSET_VALARG_TP GCvars,
-                                                 regMaskTP  gcrefRegs,
-                                                 regMaskTP  byrefRegs,
-                                                 emitAttr   retSizeIn)
+emitter::instrDesc *emitter::emitNewInstrCallDir(int                                                 argCnt,
+                                                 VARSET_VALARG_TP                                    GCvars,
+                                                 regMaskTP                                           gcrefRegs,
+                                                 regMaskTP                                           byrefRegs,
+                                                 emitAttr                                            retSizeIn
+                                                 FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr secondRetSize))
 {
-    emitAttr       retSize = retSizeIn ? EA_ATTR(retSizeIn) : EA_PTRSIZE;
+    emitAttr       retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
-    /*
-        Allocate a larger descriptor if new GC values need to be saved
-        or if we have an absurd number of arguments or if we need to
-        save the scope.
-     */
+    // Allocate a larger descriptor if new GC values need to be saved
+    // or if we have an absurd number of arguments or if we need to
+    // save the scope.
+    // 
+    // On Amd64 System V OSs a larger descriptor is also needed if the 
+    // call returns a two-register-returned struct and the second 
+    // register (RDX) is a GCRef or ByRef pointer.
+
     bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
 
-    if  (!VarSetOps::IsEmpty(emitComp, GCvars)     ||   // any frame GCvars live
-         gcRefRegsInScratch          ||   // any register gc refs live in scratch regs
-         (byrefRegs != 0)            ||   // any register byrefs live
-         (argCnt > ID_MAX_SMALL_CNS) ||   // too many args
-         (argCnt < 0)                   ) // caller pops arguments
+    if  (!VarSetOps::IsEmpty(emitComp, GCvars)      ||   // any frame GCvars live
+         gcRefRegsInScratch                         ||   // any register gc refs live in scratch regs
+         (byrefRegs != 0)                           ||   // any register byrefs live
+         (argCnt > ID_MAX_SMALL_CNS)                ||   // too many args
+         (argCnt < 0)                                    // caller pops arguments
+                                                         // There is a second ref/byref return register.  
+        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(     || EA_IS_GCREF_OR_BYREF(secondRetSize)))
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3065,6 +3112,10 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int        argCnt,
         id->idcByrefRegs      = byrefRegs;
         id->idcDisp           = 0;  
         id->idcArgCnt         = argCnt;
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        emitSetSecondRetRegGCType(id, secondRetSize);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
         return  id;
     }
