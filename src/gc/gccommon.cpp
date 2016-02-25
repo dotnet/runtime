@@ -55,7 +55,7 @@ int32_t g_bLowMemoryFromHost = 0;
 
 #ifdef WRITE_BARRIER_CHECK
 
-#define INVALIDGCVALUE (LPVOID)((size_t)0xcccccccd)
+#define INVALIDGCVALUE (void *)((size_t)0xcccccccd)
 
     // called by the write barrier to update the shadow heap
 void updateGCShadow(Object** ptr, Object* val)
