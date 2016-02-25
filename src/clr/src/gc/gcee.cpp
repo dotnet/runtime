@@ -402,8 +402,8 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
         pObj = (Object*) hp->find_object(o, hp->gc_low);
     }
 #endif //INTERIOR_POINTERS
-    ScanRootsHelper(&pObj, pSC, dwFlags);
-#endif //  defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 // TODO - at some point we would like to completely decouple profiling
@@ -416,7 +416,8 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
 
 // Returns TRUE if GC profiling is enabled and the profiler
 // should scan dependent handles, FALSE otherwise.
-BOOL ProfilerShouldTrackConditionalWeakTableElements() {
+BOOL ProfilerShouldTrackConditionalWeakTableElements() 
+{
 #if defined(GC_PROFILING)
     return CORProfilerTrackConditionalWeakTableElements();
 #else
@@ -426,17 +427,23 @@ BOOL ProfilerShouldTrackConditionalWeakTableElements() {
 
 // If GC profiling is enabled, informs the profiler that we are done
 // tracing dependent handles.
-void ProfilerEndConditionalWeakTableElementReferences(void* heapId) {
+void ProfilerEndConditionalWeakTableElementReferences(void* heapId)
+{
 #if defined (GC_PROFILING)
     g_profControlBlock.pProfInterface->EndConditionalWeakTableElementReferences(heapId);
+#else
+    UNREFERENCED_PARAMETER(heapId);
 #endif // defined (GC_PROFILING)
 }
 
 // If GC profiling is enabled, informs the profiler that we are done
 // tracing root references.
-void ProfilerEndRootReferences2(void* heapId) {
+void ProfilerEndRootReferences2(void* heapId) 
+{
 #if defined (GC_PROFILING)
     g_profControlBlock.pProfInterface->EndRootReferences2(heapId);
+#else
+    UNREFERENCED_PARAMETER(heapId);
 #endif // defined (GC_PROFILING)
 }
 
@@ -449,6 +456,7 @@ void ProfilerEndRootReferences2(void* heapId) {
 // This can also be called to do a single walk for BOTH a) and b) simultaneously.  Since
 // ETW can ask for roots, but not objects
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+
 void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
 {
     {
@@ -472,7 +480,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 
                 // The finalizer queue is also a source of roots
                 SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
-                hp->finalize_queue->GcScanRoots(&ScanRootsHelper, hn, &SC);
+                hp->finalize_queue->GcScanRoots(&ProfScanRootsHelper, hn, &SC);
             }
 #else
             // Ask the vm to go over all of the roots
@@ -480,7 +488,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 
             // The finalizer queue is also a source of roots
             SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
-            pGenGCHeap->finalize_queue->GcScanRoots(&ScanRootsHelper, 0, &SC);
+            pGenGCHeap->finalize_queue->GcScanRoots(&ProfScanRootsHelper, 0, &SC);
 
 #endif // MULTIPLE_HEAPS
             // Handles are kept independent of wks/svr/concurrent builds
@@ -543,7 +551,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 #endif // FEATURE_EVENT_TRACE
     }
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE) 
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 void GCProfileWalkHeap()
 {
@@ -572,12 +580,12 @@ void GCProfileWalkHeap()
 #if defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     // we need to walk the heap if one of GC_PROFILING or FEATURE_EVENT_TRACE
     // is defined, since both of them make use of the walk heap worker.
-    if (!fWalkedHeapForProfiler && 
+    if (!fWalkedHeapForProfiler &&
         (fShouldWalkHeapRootsForEtw || fShouldWalkHeapObjectsForEtw))
     {
         GCProfileWalkHeapWorker(FALSE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
     }
-#endif // defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 BOOL GCHeap::IsGCInProgressHelper (BOOL bConsiderGCStart)
