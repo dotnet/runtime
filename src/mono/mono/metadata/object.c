@@ -4383,7 +4383,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 		}
 	}
 
-	cinfo = mono_custom_attrs_from_method (method);
+	cinfo = mono_custom_attrs_from_method_checked (method, &error);
+	mono_error_cleanup (&error); /* FIXME warn here? */
 	if (cinfo) {
 		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, mono_class_get_sta_thread_attribute_class ());
 		if (!cinfo->cached)

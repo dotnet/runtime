@@ -2652,6 +2652,7 @@ is_async_state_machine_class (MonoClass *klass)
 static G_GNUC_UNUSED gboolean
 is_async_method (MonoMethod *method)
 {
+	MonoError error;
 	MonoCustomAttrInfo *cattr;
 	MonoMethodSignature *sig;
 	gboolean res = FALSE;
@@ -2667,7 +2668,11 @@ is_async_method (MonoMethod *method)
 				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (sig->ret->data.generic_class->container_class->name, "Task")) ||
 				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (sig->ret->data.generic_class->container_class->name, "Task`1")))) {
 		//printf ("X: %s\n", mono_method_full_name (method, TRUE));
-		cattr = mono_custom_attrs_from_method (method);
+		cattr = mono_custom_attrs_from_method_checked (method, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error? */
+			return FALSE;
+		}
 		if (cattr) {
 			if (mono_custom_attrs_has_attr (cattr, attr_class))
 				res = TRUE;

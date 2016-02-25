@@ -2444,6 +2444,7 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 guint32 lcid, gint32 *rgDispId)
 {
 	static MonoClass *ComDispIdAttribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo = NULL;
 	int i,ret = MONO_S_OK;
 	MonoMethod* method;
@@ -2467,9 +2468,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 
 		method = mono_class_get_method_from_name(klass, methodname, -1);
 		if (method) {
-			cinfo = mono_custom_attrs_from_method (method);
+			cinfo = mono_custom_attrs_from_method_checked (method, &error);
+			mono_error_assert_ok (&error); /* FIXME what's reasonable to do here */
 			if (cinfo) {
-				MonoError error;
 				MonoObject *result = mono_custom_attrs_get_attr_checked (cinfo, ComDispIdAttribute, &error);
 				g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/;
 

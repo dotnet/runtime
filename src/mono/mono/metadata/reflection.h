@@ -78,7 +78,9 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, uint32_t idx);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_assembly (MonoAssembly *assembly);
