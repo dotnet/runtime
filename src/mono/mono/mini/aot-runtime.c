@@ -224,7 +224,7 @@ static void
 compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **code_end);
 
 static gboolean
-init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context);
+init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context, MonoError *error);
 
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
@@ -3842,7 +3842,11 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	}
 
 	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY))) {
-		res = init_llvm_method (amodule, method_index, method, NULL, NULL);
+		MonoError error;
+
+		res = init_llvm_method (amodule, method_index, method, NULL, NULL, &error);
+		if (!mono_error_ok (&error))
+			mono_error_raise_exception (&error); /* FIXME: Don't raise here */
 		if (!res)
 			goto cleanup;
 	}
@@ -4063,7 +4067,7 @@ mono_aot_find_method_index (MonoMethod *method)
 }
 
 static gboolean
-init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
+init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMemPool *mp;
@@ -4072,8 +4076,9 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 	int pindex, n_patches;
 	guint8 *p;
 	MonoJitInfo *jinfo = NULL;
-	MonoError error;
 	guint8 *code, *info;
+
+	mono_error_init (error);
 
 	code = (guint8 *)amodule->methods [method_index];
 	info = &amodule->blob [mono_aot_get_offset (amodule->method_info_offsets, method_index)];
@@ -4136,8 +4141,12 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 					ji->type = MONO_PATCH_INFO_ABS;
 					ji->data.target = jinfo;
 				}
-				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE, &error);
-				mono_error_raise_exception (&error); /* FIXME: don't raise here */
+				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE, error);
+				if (!mono_error_ok (error)) {
+					g_free (got_slots);
+					mono_mempool_destroy (mp);
+					return FALSE;
+				}
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					addr = mono_create_ftnptr (domain, addr);
 				mono_memory_barrier ();
@@ -4175,9 +4184,10 @@ mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
 	gboolean res;
+	MonoError error;
 
-	// FIXME: Handle failure
-	res = init_llvm_method (amodule, method_index, NULL, NULL, NULL);
+	// FIXME: Handle errors
+	res = init_llvm_method (amodule, method_index, NULL, NULL, NULL, &error);
 	g_assert (res);
 }
 
@@ -4189,6 +4199,7 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 	MonoClass *klass;
 	MonoGenericContext *context;
 	MonoMethod *method;
+	MonoError error;
 
 	// FIXME:
 	g_assert (this_obj);
@@ -4202,7 +4213,7 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 	context = mono_method_get_context (method);
 	g_assert (context);
 
-	res = init_llvm_method (amodule, method_index, NULL, klass, context);
+	res = init_llvm_method (amodule, method_index, NULL, klass, context, &error);
 	g_assert (res);
 }
 
@@ -4213,6 +4224,7 @@ mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, 
 	gboolean res;
 	MonoGenericContext context = { NULL, NULL };
 	MonoClass *klass = rgctx->class_vtable->klass;
+	MonoError error;
 
 	if (klass->generic_class)
 		context.class_inst = klass->generic_class->context.class_inst;
@@ -4220,7 +4232,7 @@ mono_aot_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, 
 		context.class_inst = klass->generic_container->context.class_inst;
 	context.method_inst = rgctx->method_inst;
 
-	res = init_llvm_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context);
+	res = init_llvm_method (amodule, method_index, NULL, rgctx->class_vtable->klass, &context, &error);
 	g_assert (res);
 }
 
@@ -4232,6 +4244,7 @@ mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, 
 	MonoClass *klass;
 	MonoGenericContext *context;
 	MonoMethod *method;
+	MonoError error;
 
 	klass = vtable->klass;
 
@@ -4243,7 +4256,7 @@ mono_aot_init_gshared_method_vtable (gpointer aot_module, guint32 method_index, 
 	context = mono_method_get_context (method);
 	g_assert (context);
 
-	res = init_llvm_method (amodule, method_index, NULL, klass, context);
+	res = init_llvm_method (amodule, method_index, NULL, klass, context, &error);
 	g_assert (res);
 }
 
