@@ -132,7 +132,7 @@ Also introduced in .NET Framework 3.5 Parallel LINQ. Parallel LINQ has a subset 
 
 ### JSON.NET
 
-Released in June 2006, JSON.NET has become the defacto standard for JSON serialization and deserialization in .NET. It is [open source](https://github.com/JamesNK/Newtonsoft.Json) and support almost every platform .NET code can run on (.NET Framework 2.0, 3.0, 3.5, 4.0, and 4.5; Mono; MonoTouch/Xamarin.iOS; MonoDroid/Xamarin.Android; Silverlight 3, 4, and 5; Windows Phone 8, 8, and 8.1; Windows 8 Store; .NET Core).  
+Released in June 2006 by [James Newton-King](https://twitter.com/JamesNK), JSON.NET has become the defacto standard for JSON serialization and deserialization in .NET. It is [open source](https://github.com/JamesNK/Newtonsoft.Json) and support almost every platform .NET code can run on (.NET Framework 2.0, 3.0, 3.5, 4.0, and 4.5; Mono; MonoTouch/Xamarin.iOS; MonoDroid/Xamarin.Android; Silverlight 3, 4, and 5; Windows Phone 8, 8, and 8.1; Windows 8 Store; .NET Core).  
 
 ### Windows Forms
 
