@@ -436,6 +436,7 @@
     <ClCompile Include="UTSEM.cpp" />
     <ClCompile Include="winfix.cpp" />
     <ClCompile Include="longfilepathwrappers.cpp" />
+    <ClCompile Include="jithost.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hostimpl.h" />

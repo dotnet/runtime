@@ -67,6 +67,7 @@
       <Member Name="CreateInstance(System.Type)" />
       <Member Name="CreateInstance(System.Type,System.Object[])" />
       <Member Name="CreateInstance&lt;T&gt;" />
+      <Member Name="CreateInstance(System.Type,System.Boolean)"/>
     </Type>
     <Type Name="System.AppDomain">
       <Member Name="get_CurrentDomain" />
@@ -3573,7 +3574,11 @@
 
     <Type Name="System.Reflection.Assembly">
       <Member Name="#ctor" />      
-      <Member Name="CreateInstance(System.String)" />      
+      <Member Name="CreateInstance(System.String)" />
+      <Member Name="CreateInstance(System.String,System.Boolean)" />
+      <Member Name="CreateQualifiedName(System.String,System.String)" />
+      <Member Name="get_EscapedCodeBase" />
+      <Member Name="GetReferencedAssemblies" /> 	  
       <Member Name="get_EntryPoint" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="get_FullName" />
       <Member Name="get_ImageRuntimeVersion" Condition="FEATURE_LEGACYNETCF" />
@@ -3680,7 +3685,7 @@
       <Member MemberType="Property" Name="DeclaredMethods" />      
       <Member MemberType="Property" Name="DeclaredNestedTypes" />      
       <Member MemberType="Property" Name="DeclaredProperties" />      
-      <Member MemberType="Property" Name="ImplementedInterfaces" />      
+      <Member MemberType="Property" Name="ImplementedInterfaces" />
     </Type>
     <Type Name="System.Reflection.AssemblyAlgorithmIdAttribute">
       <Member Name="#ctor(System.Configuration.Assemblies.AssemblyHashAlgorithm)" />
@@ -3881,8 +3886,14 @@
     <Type Name="System.Reflection.CustomAttributeData">
         <Member Name="get_AttributeType" />
         <Member Name="get_ConstructorArguments" />
-        <Member Name="get_NamedArguments" />        
+        <Member Name="get_NamedArguments" />
+        <Member Name="get_Constructor" />
+        <Member Name="GetCustomAttributes(System.Reflection.Assembly)" />
+        <Member Name="GetCustomAttributes(System.Reflection.MemberInfo)" />
+        <Member Name="GetCustomAttributes(System.Reflection.Module)" />
+        <Member Name="GetCustomAttributes(System.Reflection.ParameterInfo)" />		
         <Member MemberType="Property" Name="AttributeType" />
+		<Member MemberType="Property" Name="Constructor" />
         <Member MemberType="Property" Name="ConstructorArguments" />
         <Member MemberType="Property" Name="NamedArguments" />        
     </Type>
@@ -3943,7 +3954,9 @@
     <Type Name="System.Reflection.CustomAttributeNamedArgument">
         <Member Name="get_IsField" />
         <Member Name="get_MemberName" />
-        <Member Name="get_TypedValue" />        
+        <Member Name="get_TypedValue" />
+        <Member Name="op_Equality(System.Reflection.CustomAttributeNamedArgument,System.Reflection.CustomAttributeNamedArgument)" />   
+        <Member Name="op_Inequality(System.Reflection.CustomAttributeNamedArgument,System.Reflection.CustomAttributeNamedArgument)" />           
         <Member MemberType="Property" Name="IsField" />
         <Member MemberType="Property" Name="MemberName" />
         <Member MemberType="Property" Name="TypedValue" />        
@@ -3951,6 +3964,8 @@
     <Type Name="System.Reflection.CustomAttributeTypedArgument">
         <Member Name="get_ArgumentType" />
         <Member Name="get_Value" />
+        <Member Name="op_Equality(System.Reflection.CustomAttributeTypedArgument,System.Reflection.CustomAttributeTypedArgument)" />
+        <Member Name="op_Inequality(System.Reflection.CustomAttributeTypedArgument,System.Reflection.CustomAttributeTypedArgument)" />
         <Member MemberType="Property" Name="ArgumentType" />
         <Member MemberType="Property" Name="Value" />
     </Type>
@@ -5189,6 +5204,8 @@
       <Member Name="GetFieldFromHandle(System.RuntimeFieldHandle)" />
       <Member Name="GetFieldFromHandle(System.RuntimeFieldHandle,System.RuntimeTypeHandle)" />
       <Member Name="GetValue(System.Object)" />
+      <Member Name="GetOptionalCustomModifiers" />
+      <Member Name="GetRequiredCustomModifiers" />
       <Member Name="GetRawConstantValue" />
       <Member Name="Equals(System.Object)" />
       <Member Name="GetHashCode" />      
@@ -5215,6 +5232,11 @@
       <Member Name="GetCustomAttributes(System.Boolean)" />
       <Member Name="GetCustomAttributes(System.Type,System.Boolean)" />
       <Member Name="IsDefined(System.Type,System.Boolean)" />
+    </Type>
+	<Type Name="System.Reflection.InvalidFilterCriteriaException">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
     <Type Name="System.Reflection.InterfaceMapping">
       <Member MemberType="Field" Name="InterfaceMethods" />
@@ -5398,7 +5420,9 @@
       <Member Name="get_MetadataToken" />
       <Member Name="get_ModuleVersionId" />
       <Member Name="get_Name" />
-      <Member Name="GetCustomAttributes(System.Boolean)" />
+      <Member Name="get_ScopeName" />
+      <Member Name="FindTypes(System.Reflection.TypeFilter,System.Object)" />
+	  <Member Name="GetCustomAttributes(System.Boolean)" />
       <Member Name="GetCustomAttributes(System.Type,System.Boolean)" />
       <Member Name="GetField(System.String)" />
       <Member Name="GetField(System.String,System.Reflection.BindingFlags)" />
@@ -5432,6 +5456,9 @@
       <Member MemberType="Property" Name="MetadataToken" />
       <Member MemberType="Property" Name="ModuleVersionId" />
       <Member MemberType="Property" Name="Name" />
+      <Member MemberType="Property" Name="ScopeName" />
+	  <Member MemberType="Field" Name="FilterTypeName" />
+	  <Member MemberType="Field" Name="FilterTypeNameIgnoreCase" />
     </Type>
     <Type Status="ImplRoot" Name="System.Reflection.RuntimeModule">
       <Member Status="ImplRoot" MemberType="Field" Name="m_pData" /> <!-- EE -->
@@ -5469,6 +5496,8 @@
       <Member Name="get_ParameterType" />
       <Member Name="get_Position" />
       <Member Name="get_RawDefaultValue" />
+      <Member Name="GetOptionalCustomModifiers" />
+      <Member Name="GetRequiredCustomModifiers" />
       <Member Name="GetCustomAttributes(System.Boolean)" />
       <Member Name="GetCustomAttributes(System.Type,System.Boolean)" />
       <Member Name="IsDefined(System.Type,System.Boolean)" />
@@ -5520,6 +5549,8 @@
       <Member Name="GetGetMethod" />
       <Member Name="GetGetMethod(System.Boolean)" />
       <Member Name="GetIndexParameters" />
+      <Member Name="GetOptionalCustomModifiers" />
+      <Member Name="GetRequiredCustomModifiers" />
       <Member Name="GetRawConstantValue" />
       <Member Name="GetSetMethod" />
       <Member Name="GetSetMethod(System.Boolean)" />
@@ -5541,7 +5572,11 @@
       <Member MemberType="Property" Name="MemberType" />
       <Member MemberType="Property" Name="PropertyType" />
     </Type>
-    <Type Name="System.Reflection.TargetException" />
+    <Type Name="System.Reflection.TargetException" >
+	  <Member Name="#ctor" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Exception)" />
+	</Type>
     <Type Name="System.Reflection.TargetInvocationException">
       <Member Name="#ctor(System.Exception)" />
       <Member Name="#ctor(System.String)" />
@@ -8493,6 +8528,20 @@
       <Member MemberType="Property" Name="ReflectedType" />
       <Member MemberType="Property" Name="TypeHandle" />
       <Member MemberType="Property" Name="UnderlyingSystemType" />
+	  <Member Name="GetEnumName(System.Object)" />
+      <Member Name="GetEnumNames" />
+      <Member Name="GetEnumUnderlyingType" />
+      <Member Name="GetEnumValues" />
+      <Member Name="GetInterface(System.String)" />
+      <Member Name="GetNestedType(System.String)" />
+      <Member Name="GetNestedTypes" />
+      <Member Name="GetProperty(System.String,System.Type[])" />
+      <Member Name="IsEnumDefined(System.Object)" />
+      <Member Name="get_StructLayoutAttribute" />
+      <Member Name="get_TypeInitializer" />
+      <Member Name="FindInterfaces(System.Reflection.TypeFilter,System.Object)" /> 	  	  
+	  <Member MemberType="Property" Name="TypeInitializer" />
+      <Member MemberType="Property" Name="StructLayoutAttribute" /> 
     </Type>
     <Type Name="System.TypeAccessException">
       <Member Name="#ctor" />
@@ -10097,7 +10146,6 @@
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicResolver+SecurityControlFlags" />
     <Type Status="ImplRoot" Name="System.Reflection.Emit.DynamicScope" />
     <Type Status="ImplRoot" Name="System.Reflection.ExceptionHandlingClause" />
-    <Type Status="ImplRoot" Name="System.Reflection.InvalidFilterCriteriaException" />
 
     
     <Type Status="ApiRoot" Name="System.Reflection.LocalVariableInfo">
@@ -10144,6 +10192,12 @@
       <Member Status="ImplRoot" MemberType="Field" Name="_empty1" />
       <Member Status="ImplRoot" MemberType="Field" Name="_empty2" />
       <Member Status="ImplRoot" MemberType="Field" Name="_empty3" />
+    </Type>
+	<Type Name="System.Reflection.TypeFilter">
+      <Member Name="#ctor(System.Object,System.IntPtr)" />
+      <Member Status="ApiRoot" Name="BeginInvoke(System.Type,System.Object,System.AsyncCallback,System.Object)" />
+      <Member Status="ApiRoot" Name="EndInvoke(System.IAsyncResult)" />
+      <Member Status="ApiRoot" Name="Invoke(System.Type,System.Object)" />
     </Type>
     <Type Status="ImplRoot" Name="System.ReflectionOnlyType" />
     <Type Status="ImplRoot" Name="System.ResId" />

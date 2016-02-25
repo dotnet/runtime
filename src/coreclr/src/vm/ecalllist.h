@@ -497,10 +497,8 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetName", MetaDataImport::GetName) 
     FCFuncElement("_GetUserString", MetaDataImport::GetUserString) 
     FCFuncElement("_GetScopeProps", MetaDataImport::GetScopeProps)  
-#ifndef FEATURE_CORECLR
     FCFuncElement("_GetClassLayout", MetaDataImport::GetClassLayout) 
     FCFuncElement("_GetSignatureFromToken", MetaDataImport::GetSignatureFromToken) 
-#endif // FEATURE_CORECLR
     FCFuncElement("_GetNamespace", MetaDataImport::GetNamespace) 
     FCFuncElement("_GetEventProps", MetaDataImport::GetEventProps)
     FCFuncElement("_GetFieldDefProps", MetaDataImport::GetFieldDefProps)
@@ -1116,8 +1114,8 @@ FCFuncStart(gAssemblyFuncs)
 #endif
     QCFuncElement("GetModules", AssemblyNative::GetModules)
     QCFuncElement("GetModule", AssemblyNative::GetModule)
-#ifndef FEATURE_CORECLR
     FCFuncElement("GetReferencedAssemblies", AssemblyNative::GetReferencedAssemblies)
+#ifndef FEATURE_CORECLR
     QCFuncElement("GetForwardedTypes", AssemblyNative::GetForwardedTypes)
 #endif  // FEATURE_CORECLR
     QCFuncElement("GetExportedTypes", AssemblyNative::GetExportedTypes)
@@ -1186,9 +1184,7 @@ FCFuncStart(gAssemblyNameFuncs)
 #endif // FEATURE_CORECLR
     FCFuncElement("nToString", AssemblyNameNative::ToString)
     FCFuncElement("nGetPublicKeyToken", AssemblyNameNative::GetPublicKeyToken)
-#ifndef FEATURE_CORECLR
     FCFuncElement("EscapeCodeBase", AssemblyNameNative::EscapeCodeBase)
-#endif // !FEATURE_CORECLR
     FCFuncElement("nInit", AssemblyNameNative::Init)
     FCFuncElement("ReferenceMatchesDefinitionInternal", AssemblyNameNative::ReferenceMatchesDefinition)
 FCFuncEnd()

@@ -9,6 +9,7 @@
 #include "common.h"
 #include "jitinterface.h"
 #include "corjit.h"
+#include "jithost.h"
 #include "eetwain.h"
 #include "eeconfig.h"
 #include "excep.h"
@@ -1332,6 +1333,8 @@ enum JIT_LOAD_STATUS
     JIT_LOAD_STATUS_DONE_LOAD,                         // LoadLibrary of the JIT dll succeeded.
     JIT_LOAD_STATUS_DONE_GET_SXSJITSTARTUP,            // GetProcAddress for "sxsJitStartup" succeeded.
     JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP,           // Calling sxsJitStartup() succeeded.
+    JIT_LOAD_STATUS_DONE_GET_JITSTARTUP,               // GetProcAddress for "jitStartup" succeeded.
+    JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP,              // Calling jitStartup() succeeded.
     JIT_LOAD_STATUS_DONE_GET_GETJIT,                   // GetProcAddress for "getJit" succeeded.
     JIT_LOAD_STATUS_DONE_CALL_GETJIT,                  // Calling getJit() succeeded.
     JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER,    // Calling ICorJitCompiler::getVersionIdentifier() succeeded.
@@ -1427,6 +1430,18 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
                 pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP;
 
+                typedef void (__stdcall* pjitStartup)(ICorJitHost*);
+                pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
+
+                if (jitStartupFn)
+                {
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_JITSTARTUP;
+
+                    (*jitStartupFn)(JitHost::getJitHost());
+
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP;
+                }
+
                 typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
                 pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
 
@@ -1490,6 +1505,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 }
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
+EXTERN_C void __stdcall jitStartup(ICorJitHost* host);
 EXTERN_C ICorJitCompiler* __stdcall getJit();
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -1517,11 +1533,11 @@ BOOL EEJitManager::LoadJIT()
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
 
-    typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
-    pGetJitFn getJitFn = (pGetJitFn) getJit;
     EX_TRY
     {
-        newJitCompiler = (*getJitFn)();
+        jitStartup(JitHost::getJitHost());
+
+        newJitCompiler = getJit();
 
         // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
     }
