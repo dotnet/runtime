@@ -21,6 +21,8 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_method_checked   (MonoMethod *method, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
 
 
 char*

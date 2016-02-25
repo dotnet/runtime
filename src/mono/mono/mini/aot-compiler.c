@@ -3746,7 +3746,11 @@ add_wrappers (MonoAotCompile *acfg)
 			if (method)
 				add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
 
-			cattr = mono_custom_attrs_from_class (klass);
+			cattr = mono_custom_attrs_from_class_checked (klass, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
+				continue;
+			}
 
 			if (cattr) {
 				int j;

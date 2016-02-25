@@ -443,6 +443,7 @@ mono_marshal_use_aot_wrappers (gboolean use)
 static void
 parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piinfo)
 {
+	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 	MonoReflectionUnmanagedFunctionPointerAttribute *attr;
 
@@ -452,9 +453,12 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 		 * The pinvoke attributes are stored in a real custom attribute so we have to
 		 * construct it.
 		 */
-		cinfo = mono_custom_attrs_from_class (klass);
+		cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+		if (!mono_error_ok (&error)) {
+			g_warning ("Could not load UnmanagedFunctionPointerAttribute due to %s", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+		}
 		if (cinfo && !mono_runtime_get_no_exec ()) {
-			MonoError error;
 			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_try_get_unmanaged_function_pointer_attribute_class (), &error);
 			if (attr) {
 				piinfo->piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
@@ -8089,6 +8093,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, uint32_t target_handle)
 {
+	MonoError error;
 	MonoMethodSignature *sig, *csig, *invoke_sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res, *invoke;
@@ -8153,7 +8158,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		 * contents of the attribute without constructing it, as that might not be
 		 * possible when running in cross-compiling mode.
 		 */
-		cinfo = mono_custom_attrs_from_class (delegate_klass);
+		cinfo = mono_custom_attrs_from_class_checked (delegate_klass, &error);
+		mono_error_assert_ok (&error);
 		attr = NULL;
 		if (cinfo) {
 			for (i = 0; i < cinfo->num_attrs; ++i) {

@@ -9620,7 +9620,17 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_class (MonoClass *klass)
 {
 	MonoError error;
+	MonoCustomAttrInfo *result = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	return result;
+}
+
+MonoCustomAttrInfo*
+mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
+{
 	guint32 idx;
+
+	mono_error_init (error);
 
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
@@ -9637,12 +9647,7 @@ mono_custom_attrs_from_class (MonoClass *klass)
 		idx <<= MONO_CUSTOM_ATTR_BITS;
 		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
 	}
-	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (klass->image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error); /* FIXME don't set loader error here */
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
 }
 
 MonoCustomAttrInfo*
@@ -9917,7 +9922,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
 		klass = mono_class_from_mono_type (type);
 		/*We cannot mono_class_init the class from which we'll load the custom attributes since this must work with broken types.*/
-		cinfo = mono_custom_attrs_from_class (klass);
+		cinfo = mono_custom_attrs_from_class_checked (klass, error);
+		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
 		cinfo = mono_custom_attrs_from_assembly (rassembly->assembly);

@@ -3350,7 +3350,8 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 		mono_custom_attrs_free (ainfo);
 	}
 
-	ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
+	ainfo = mono_custom_attrs_from_class_checked (jinfo_get_method (ji)->klass, &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error? */
 	if (ainfo) {
 		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
@@ -8032,7 +8033,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		if (err != ERR_NONE)
 			return err;
 
-		cinfo = mono_custom_attrs_from_class (klass);
+		cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
 
 		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
 		if (err != ERR_NONE)
