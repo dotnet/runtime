@@ -25,6 +25,8 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly_checked	(MonoAssembly *assembly, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_property_checked	(MonoClass *klass, MonoProperty *property, MonoError *error);
 
 
 char*
