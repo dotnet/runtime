@@ -168,7 +168,7 @@ static guint32 encode_constant (MonoDynamicImage *assembly, MonoObject *val, gui
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
-static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
+static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t, MonoError *error);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
 static gboolean is_sre_array (MonoClass *klass);
@@ -10021,20 +10021,20 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 }
 
 static MonoReflectionType*
-mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
+mono_reflection_type_get_underlying_system_type (MonoReflectionType* t, MonoError *error)
 {
 	static MonoMethod *method_get_underlying_system_type = NULL;
-	MonoError error;
 	MonoReflectionType *rt;
 	MonoMethod *usertype_method;
+
+	mono_error_init (error);
 
 	if (!method_get_underlying_system_type)
 		method_get_underlying_system_type = mono_class_get_method_from_name (mono_defaults.systemtype_class, "get_UnderlyingSystemType", 0);
 
 	usertype_method = mono_object_get_virtual_method ((MonoObject *) t, method_get_underlying_system_type);
 
-	rt = (MonoReflectionType *) mono_runtime_invoke_checked (usertype_method, t, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	rt = (MonoReflectionType *) mono_runtime_invoke_checked (usertype_method, t, NULL, error);
 
 	return rt;
 }
@@ -10122,6 +10122,7 @@ is_sre_ctor_on_tb_inst (MonoClass *klass)
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
+	MonoError error;
 	MonoClass *klass;
 	if (!ref)
 		return NULL;
@@ -10129,7 +10130,8 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		return ref->type;
 
 	if (is_usertype (ref)) {
-		ref = mono_reflection_type_get_underlying_system_type (ref);
+		ref = mono_reflection_type_get_underlying_system_type (ref, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		if (ref == NULL || is_usertype (ref))
 			return NULL;
 		if (ref->type)
@@ -10401,7 +10403,8 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *er
 		return type;
 
 	if (is_usertype (type)) {
-		type = mono_reflection_type_get_underlying_system_type (type);
+		type = mono_reflection_type_get_underlying_system_type (type, error);
+		return_val_if_nok (error, NULL);
 		if (is_usertype (type)) {
 			mono_error_set_generic_error (error, "System", "NotSupportedException", "User defined subclasses of System.Type are not yet supported22");
 			return NULL;
