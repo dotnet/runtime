@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -35,16 +35,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetsFreeBSD)'=='true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.FreeBSD.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)'=='true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Linux.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.OSX.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixVersion.cs</Link>
     </Compile>
@@ -84,9 +78,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetSystemInfo.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnknownUnix)' == 'true' ">
-    <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

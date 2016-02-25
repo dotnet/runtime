@@ -6,6 +6,8 @@
 
 #include "pal_types.h"
 
+extern "C" const char* SystemNative_GetUnixName();
+
 extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
 extern "C" int32_t SystemNative_GetOSArchitecture();
