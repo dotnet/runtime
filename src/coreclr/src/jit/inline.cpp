@@ -153,7 +153,7 @@ const char* inlGetImpactString(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
-// inlGetDecisionForRuntime: translate decision into a CorInfoInline
+// inlGetCorInfoInlineDecision: translate decision into a CorInfoInline
 //
 // Arguments:
 //    d - the decision in question
@@ -161,7 +161,7 @@ const char* inlGetImpactString(InlineObservation obs)
 // Return Value:
 //    CorInfoInline value representing the decision
 
-CorInfoInline inlGetDecisionForRuntime(InlineDecision d)
+CorInfoInline inlGetCorInfoInlineDecision(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::SUCCESS:
@@ -591,14 +591,16 @@ InlineResult::InlineResult(Compiler*              compiler,
 // report: Dump, log, and report information about an inline decision.
 //
 // Notes:
-//    Called (automatically via the InlineResult dtor) when the inliner
-//    is done evaluating a candidate.
+//    Called (automatically via the InlineResult dtor) when the
+//    inliner is done evaluating a candidate.
 //
-//    Dumps state of the inline candidate, and if a decision was reached
-//    sends it to the log and reports the decision back to the EE.
+//    Dumps state of the inline candidate, and if a decision was
+//    reached, sends it to the log and reports the decision back to the
+//    EE. Optionally update the method attribute to NOINLINE if
+//    observation and policy warrant.
 //
-//    All this can be suppressed if desired by calling setReported() before
-//    the InlineResult goes out of scope.
+//    All this can be suppressed if desired by calling setReported()
+//    before the InlineResult goes out of scope.
 
 void InlineResult::report()
 {
@@ -612,12 +614,15 @@ void InlineResult::report()
 
 #ifdef DEBUG
 
+    const char* callee = nullptr;
+
     // Optionally dump the result
     if (VERBOSE)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
         const char* caller = (inlCaller == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCaller);
-        const char* callee = (inlCallee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCallee);
+
+        callee = (inlCallee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCallee);
 
         JITDUMP(format, inlContext, resultString(), reasonString(), caller, callee);
     }
@@ -634,6 +639,38 @@ void InlineResult::report()
 
 #endif // DEBUG
 
+    // Was the result NEVER? If so we might want to propagate this to
+    // the runtime.
+
+    if (isNever() && inlPolicy->propagateNeverToRuntime())
+    {
+        // If we know the callee, and if the observation that got us
+        // to this Never inline state is something *other* than
+        // IS_NOINLINE, then we've uncovered a reason why this method
+        // can't ever be inlined. Update the callee method attributes
+        // so that future inline attempts for this callee fail faster.
+
+        InlineObservation obs = inlPolicy->getObservation();
+
+        if ((inlCallee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
+        {
+
+#ifdef DEBUG
+
+            if (VERBOSE)
+            {
+                const char* obsString = inlGetObservationString(obs);
+                JITDUMP("INLINER: Marking %s as NOINLINE because of %s", callee, obsString);
+            }
+
+#endif  // DEBUG
+
+            COMP_HANDLE comp = inlCompiler->info.compCompHnd;
+            comp->setMethodAttribs(inlCallee, CORINFO_FLG_BAD_INLINEE);
+        }
+    }
+
+
     if (isDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
@@ -641,180 +678,4 @@ void InlineResult::report()
         COMP_HANDLE comp = inlCompiler->info.compCompHnd;
         comp->reportInliningDecision(inlCaller, inlCallee, result(), reasonString());
     }
-}
-
-//------------------------------------------------------------------------
-// getPolicy: Factory method for getting an InlinePolicy
-//
-// Arguments:
-//    compiler - the compiler instance that will evaluate inlines
-//
-// Return Value:
-//    InlinePolicy to use in evaluationg the inlines
-//
-// Notes:
-//    Determines which of the various policies should apply,
-//    and creates (or reuses) a policy instance to use.
-
-InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler)
-{
-    // For now, always create a Legacy policy.
-    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy;
-
-    return policy;
-}
-
-//------------------------------------------------------------------------
-// noteCandidate: handle passing a set of inlining checks successfully
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::noteCandidate(InlineObservation obs)
-{
-    assert(!inlDecisionIsDecided(inlDecision));
-
-    // Check the impact, it should be INFORMATION
-    InlineImpact impact = inlGetImpact(obs);
-    assert(impact == InlineImpact::INFORMATION);
-
-    // Update the status
-    setCommon(InlineDecision::CANDIDATE, obs);
-}
-
-//------------------------------------------------------------------------
-// noteSuccess: handle finishing all the inlining checks successfully
-
-void LegacyPolicy::noteSuccess()
-{
-    assert(inlDecisionIsCandidate(inlDecision));
-    inlDecision = InlineDecision::SUCCESS;
-}
-
-//------------------------------------------------------------------------
-// note: handle an observation with non-fatal impact
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::note(InlineObservation obs)
-{
-    // Check the impact
-    InlineImpact impact = inlGetImpact(obs);
-
-    // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
-    assert(impact != InlineImpact::FATAL);
-    noteInternal(obs, impact);
-}
-
-//------------------------------------------------------------------------
-// noteFatal: handle an observation with fatal impact
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::noteFatal(InlineObservation obs)
-{
-    // Check the impact
-    InlineImpact impact = inlGetImpact(obs);
-
-    // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
-    assert(impact == InlineImpact::FATAL);
-    noteInternal(obs, impact);
-    assert(inlDecisionIsFailure(inlDecision));
-}
-
-//------------------------------------------------------------------------
-// noteInt: handle an observed integer value
-//
-// Arguments:
-//    obs      - the current obsevation
-//    value    - the value being observed
-
-void LegacyPolicy::noteInt(InlineObservation obs, int value)
-{
-    (void) value;
-    note(obs);
-}
-
-//------------------------------------------------------------------------
-// noteDouble: handle an observed double value
-//
-// Arguments:
-//    obs      - the current obsevation
-//    value    - the value being observed
-
-void LegacyPolicy::noteDouble(InlineObservation obs, double value)
-{
-    (void) value;
-    note(obs);
-}
-
-//------------------------------------------------------------------------
-// setNever: helper for handling an observation
-//
-// Arguments:
-//    obs      - the current obsevation
-//    impact   - impact of the current observation
-
-void LegacyPolicy::noteInternal(InlineObservation obs, InlineImpact impact)
-{
-    // Ignore INFORMATION for now, since policy
-    // is still embedded at the observation sites.
-    if (impact == InlineImpact::INFORMATION)
-    {
-        return;
-    }
-
-    InlineTarget target = inlGetTarget(obs);
-
-    if (target == InlineTarget::CALLEE)
-    {
-        this->setNever(obs);
-    }
-    else
-    {
-        this->setFailure(obs);
-    }
-}
-
-//------------------------------------------------------------------------
-// setNever: helper for setting a failling decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::setFailure(InlineObservation obs)
-{
-    assert(!inlDecisionIsSuccess(inlDecision));
-    setCommon(InlineDecision::FAILURE, obs);
-}
-
-//------------------------------------------------------------------------
-// setNever: helper for setting a never decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::setNever(InlineObservation obs)
-{
-    assert(!inlDecisionIsSuccess(inlDecision));
-    setCommon(InlineDecision::NEVER, obs);
-}
-
-//------------------------------------------------------------------------
-// setCommon: helper for updating decision and observation
-//
-// Arguments:
-//    decision - the updated decision
-//    obs      - the current obsevation
-
-void LegacyPolicy::setCommon(InlineDecision decision, InlineObservation obs)
-{
-    assert(inlIsValidObservation(obs));
-    assert(decision != InlineDecision::UNDECIDED);
-    inlDecision = decision;
-    inlObservation = obs;
 }
