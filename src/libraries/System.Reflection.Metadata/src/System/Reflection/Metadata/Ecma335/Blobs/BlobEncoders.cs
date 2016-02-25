@@ -719,7 +719,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
                 attributes != FunctionPointerAttributes.HasThis &&
                 attributes != FunctionPointerAttributes.HasExplicitThis)
             {
-                throw new ArgumentException(nameof(attributes));
+                throw new ArgumentException(SR.InvalidSignature, nameof(attributes));
             }
 
             Builder.WriteByte((byte)SignatureTypeCode.FunctionPointer);

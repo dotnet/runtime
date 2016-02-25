@@ -38,7 +38,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 if ((options & SqlRandomColumnOptions.Sparse) != 0)
                 {
-                    throw new ArgumentException("options");
+                    throw new ArgumentException("Must not be sparse", nameof(options));
                 }
 
                 if (typeInfo.Type != SqlDbType.Xml)

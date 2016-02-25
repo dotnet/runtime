@@ -439,7 +439,7 @@ namespace System.Threading.Tasks.Tests
 
                 // Allow for exception throwing to test our handling of that.
                 if (maxBytes == -1)
-                    throw new ArgumentException(nameof(maxBytes));
+                    throw new ArgumentException("Value was not valid", nameof(maxBytes));
 
                 Task t = Task.Factory.StartNew(delegate
                 {

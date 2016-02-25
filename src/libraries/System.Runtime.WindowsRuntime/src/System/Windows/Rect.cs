@@ -120,7 +120,7 @@ namespace Windows.Foundation
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("Width");
+                    throw new ArgumentException(nameof(Width));
 
                 _width = (float)value;
             }
@@ -132,7 +132,7 @@ namespace Windows.Foundation
             set
             {
                 if (value < 0)
-                    throw new ArgumentException("Height");
+                    throw new ArgumentException(nameof(Height));
 
                 _height = (float)value;
             }
