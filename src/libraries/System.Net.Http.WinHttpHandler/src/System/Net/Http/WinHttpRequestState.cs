@@ -66,6 +66,7 @@ namespace System.Net.Http
             TcsReceiveResponseHeaders = null;
             RequestMessage = null;
             Handler = null;
+            RequestHandle = null;
             ServerCertificateValidationCallback = null;
             TransportContext = null;
             Proxy = null;

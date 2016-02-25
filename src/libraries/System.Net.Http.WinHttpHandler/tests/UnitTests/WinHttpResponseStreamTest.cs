@@ -376,7 +376,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             handle.Context = state.ToIntPtr();
             state.RequestHandle = handle;
 
-            return new WinHttpResponseStream(state);
+            return new WinHttpResponseStream(handle, state);
         }
     }
 }
