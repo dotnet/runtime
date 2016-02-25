@@ -66,7 +66,16 @@ extern "C" const SSL_METHOD* CryptoNative_TlsV1_2Method()
 
 extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 {
-    return SSL_CTX_new(method);
+    SSL_CTX* ctx = SSL_CTX_new(method);
+
+    if (ctx != nullptr)
+    {
+        // As of OpenSSL 1.1.0, compression is disabled by default. In case an older build
+        // is used, ensure it's disabled.
+        SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
+    }
+
+    return ctx;
 }
 
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
