@@ -9675,9 +9675,8 @@ mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, MonoError *erro
 }
 
 static MonoCustomAttrInfo*
-mono_custom_attrs_from_module (MonoImage *image)
+mono_custom_attrs_from_module (MonoImage *image, MonoError *error)
 {
-	MonoError error;
 	guint32 idx;
 	
 	if (image_is_dynamic (image))
@@ -9685,12 +9684,7 @@ mono_custom_attrs_from_module (MonoImage *image)
 	idx = 1; /* there is only one module */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_MODULE;
-	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error); /* FIXME don't set loader error here */
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (image, idx, error);
 }
 
 MonoCustomAttrInfo*
@@ -9935,7 +9929,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Module", klass->name) == 0 || strcmp ("MonoModule", klass->name) == 0) {
 		MonoReflectionModule *module = (MonoReflectionModule*)obj;
-		cinfo = mono_custom_attrs_from_module (module->image);
+		cinfo = mono_custom_attrs_from_module (module->image, error);
+		return_val_if_nok (error, NULL);
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
 		cinfo = mono_custom_attrs_from_property (rprop->property->parent, rprop->property);
