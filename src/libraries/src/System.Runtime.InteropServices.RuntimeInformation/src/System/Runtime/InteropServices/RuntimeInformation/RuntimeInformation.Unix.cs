@@ -8,12 +8,19 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-        private static string s_osDescription = null;
+        private static readonly object s_osLock = new object();
+        private static readonly object s_processLock = new object();
         private static readonly bool s_is64BitProcess = IntPtr.Size == 8;
-        private static object s_osLock = new object();
-        private static object s_processLock = new object();
-        private static Architecture? s_osArch = null;
-        private static Architecture? s_processArch = null;
+        private static string s_osPlatformName;
+        private static string s_osDescription;
+        private static Architecture? s_osArch;
+        private static Architecture? s_processArch;
+
+        public static bool IsOSPlatform(OSPlatform osPlatform)
+        {
+            string name = s_osPlatformName ?? (s_osPlatformName = Interop.Sys.GetUnixName());
+            return osPlatform.Equals(name);
+        }
 
         public static string OSDescription
         {

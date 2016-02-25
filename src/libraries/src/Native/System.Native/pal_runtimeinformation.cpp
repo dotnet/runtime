@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "pal_config.h"
 #include "pal_runtimeinformation.h"
 #include "pal_types.h"
 #include <stdio.h>
 #include <sys/utsname.h>
+
+extern "C" const char* SystemNative_GetUnixName()
+{
+    return PAL_UNIX_NAME;
+}
 
 extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
 {
