@@ -95,34 +95,17 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 Introduced in .NET Framework 3.5, LINQ's goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
 
-For example to filter an array before LINQ the following would be done:
+A simple example of LINQ is
 
 ```csharp
-var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-var odds = new int[10];
-var j = -1;
-for (int i = 0; i < arr.length; i++)
-   if (arr[i] % 2 != 0)
-      odds[j++] = arr[i];
+var odds = source.Where(obj => obj.Id == 1).ToArray();
 ```
 
-Now with link that can simply be done as:
+####IQueryable&lt;T&gt; and Expressions
 
-```csharp
-void bool IsOdd(int n)
-{
-   return n % 2 !=0;
-}
-var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-var oods = arr.Where(IsOdd).ToArray();
-```
+One of the big advantages of using LINQ over more common data processing patterns is that the function given to the LINQ function can be converted to an expression and then executed in some other form, like SQL or on another machine across the network. An expression is a in-memory representation of some logic to follow.
 
-And if we use Lambda expressions (another new feature for C# 3.0 and VB 9.0):
-
-```csharp
-var arr = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-var oods = arr.Where(n => n % 2 != 0).ToArray();
-```
+For example, in the above sample `source` could actually be a database connection and the function call `Where(obj => obj.Id == 1)` would be conveted to a SQL WHERE clause: `WHERE ID = 1`, and then executed on the SQL server.
 
 ####Parallel LINQ
 
