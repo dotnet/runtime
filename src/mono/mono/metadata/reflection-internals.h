@@ -31,6 +31,8 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_event_checked	(MonoClass *klass, MonoEvent *event, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_field_checked	(MonoClass *klass, MonoClassField *field, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_param_checked	(MonoMethod *method, uint32_t param, MonoError *error);
 
 
 char*

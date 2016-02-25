@@ -9773,11 +9773,31 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 {
 	MonoError error;
+	MonoCustomAttrInfo *result = mono_custom_attrs_from_param_checked (method, param, &error);
+	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	return result;
+}
+
+/**
+ * mono_custom_attrs_from_param_checked:
+ * @method: handle to the method that we want to retrieve custom parameter information from
+ * @param: parameter number, where zero represent the return value, and one is the first parameter in the method
+ * @error: set on error
+ *
+ * The result must be released with mono_custom_attrs_free().
+ *
+ * Returns: the custom attribute object for the specified parameter, or NULL if there are none.  On failure returns NULL and sets @error.
+ */
+MonoCustomAttrInfo*
+mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoError *error)
+{
 	MonoTableInfo *ca;
 	guint32 i, idx, method_index;
 	guint32 param_list, param_last, param_pos, found;
 	MonoImage *image;
 	MonoReflectionMethodAux *aux;
+
+	mono_error_init (error);
 
 	/*
 	 * An instantiated method has the same cattrs as the generic method definition.
@@ -9833,12 +9853,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	idx = i;
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_PARAMDEF;
-	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (image, idx, error);
 }
 
 gboolean
@@ -9967,7 +9982,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		MonoClass *member_class = mono_object_class (param->MemberImpl);
 		if (mono_class_is_reflection_method_or_constructor (member_class)) {
 			MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
-			cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl + 1);
+			cinfo = mono_custom_attrs_from_param_checked (rmethod->method, param->PositionImpl + 1, error);
+			return_val_if_nok (error, NULL);
 		} else if (is_sr_mono_property (member_class)) {
 			MonoReflectionProperty *prop = (MonoReflectionProperty *)param->MemberImpl;
 			MonoMethod *method;
@@ -9975,13 +9991,15 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 				method = prop->property->set;
 			g_assert (method);
 
-			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+			cinfo = mono_custom_attrs_from_param_checked (method, param->PositionImpl + 1, error);
+			return_val_if_nok (error, NULL);
 		} 
 #ifndef DISABLE_REFLECTION_EMIT
 		else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
 			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl, error);
 			return_val_if_nok (error, NULL);
-			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+			cinfo = mono_custom_attrs_from_param_checked (method, param->PositionImpl + 1, error);
+			return_val_if_nok (error, NULL);
 		} else if (is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
 			MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
 			MonoMethod *method = NULL;
@@ -9992,7 +10010,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 			else
 				g_error ("mono_reflection_get_custom_attrs_info:: can't handle a CTBI with base_method of type %s", mono_type_get_full_name (member_class));
 
-			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
+			cinfo = mono_custom_attrs_from_param_checked (method, param->PositionImpl + 1, error);
+			return_val_if_nok (error, NULL);
 		} 
 #endif
 		else {
