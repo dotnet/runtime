@@ -3,14 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
-      <SupportedFramework>net45;dnxcore50</SupportedFramework>
+    <ProjectReference Include="..\ref\4.0.0\System.Data.SqlClient.csproj">
+      <SupportedFramework>net45;</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.SqlClient.csproj">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </ProjectReference>
-
-    <ProjectReference Include="win\System.Data.SqlClient.pkgproj">
+	<ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
+      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+    </ProjectReference>
+    
+	<ProjectReference Include="win\System.Data.SqlClient.pkgproj">
         <PackageAlias>win.System.Data.SqlClient</PackageAlias>
     </ProjectReference>
     <ProjectReference Include="unix\System.Data.SqlClient.pkgproj" />
