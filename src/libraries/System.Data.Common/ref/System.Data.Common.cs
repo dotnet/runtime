@@ -45,6 +45,14 @@ namespace System.Data
         Fetching = 8,
         Open = 1,
     }
+    public enum DataRowVersion
+    {
+        Default = 1536,
+    }
+    public partial class DataTable
+    {
+        internal DataTable() { }
+    }
     public enum DbType
     {
         AnsiString = 0,
@@ -74,6 +82,104 @@ namespace System.Data
         UInt64 = 20,
         VarNumeric = 21,
         Xml = 25,
+    }
+    public partial interface IDataParameter
+    {
+        System.Data.DbType DbType { get; set; }
+        System.Data.ParameterDirection Direction { get; set; }
+        bool IsNullable { get; }
+        string ParameterName { get; set; }
+        string SourceColumn { get; set; }
+        System.Data.DataRowVersion SourceVersion { get; set; }
+        object Value { get; set; }
+    }
+    public partial interface IDataParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    {
+        object this[string parameterName] { get; set; }
+        bool Contains(string parameterName);
+        int IndexOf(string parameterName);
+        void RemoveAt(string parameterName);
+    }
+    public partial interface IDataReader : System.Data.IDataRecord, System.IDisposable
+    {
+        int Depth { get; }
+        bool IsClosed { get; }
+        int RecordsAffected { get; }
+        void Close();
+        System.Data.DataTable GetSchemaTable();
+        bool NextResult();
+        bool Read();
+    }
+    public partial interface IDataRecord
+    {
+        int FieldCount { get; }
+        object this[int i] { get; }
+        object this[string name] { get; }
+        bool GetBoolean(int i);
+        byte GetByte(int i);
+        long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length);
+        char GetChar(int i);
+        long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length);
+        System.Data.IDataReader GetData(int i);
+        string GetDataTypeName(int i);
+        System.DateTime GetDateTime(int i);
+        decimal GetDecimal(int i);
+        double GetDouble(int i);
+        System.Type GetFieldType(int i);
+        float GetFloat(int i);
+        System.Guid GetGuid(int i);
+        short GetInt16(int i);
+        int GetInt32(int i);
+        long GetInt64(int i);
+        string GetName(int i);
+        int GetOrdinal(string name);
+        string GetString(int i);
+        object GetValue(int i);
+        int GetValues(object[] values);
+        bool IsDBNull(int i);
+    }
+    public partial interface IDbCommand : System.IDisposable
+    {
+        string CommandText { get; set; }
+        int CommandTimeout { get; set; }
+        System.Data.CommandType CommandType { get; set; }
+        System.Data.IDbConnection Connection { get; set; }
+        System.Data.IDataParameterCollection Parameters { get; }
+        System.Data.IDbTransaction Transaction { get; set; }
+        System.Data.UpdateRowSource UpdatedRowSource { get; set; }
+        void Cancel();
+        System.Data.IDbDataParameter CreateParameter();
+        int ExecuteNonQuery();
+        System.Data.IDataReader ExecuteReader();
+        System.Data.IDataReader ExecuteReader(System.Data.CommandBehavior behavior);
+        object ExecuteScalar();
+        void Prepare();
+    }
+    public partial interface IDbConnection : System.IDisposable
+    {
+        string ConnectionString { get; set; }
+        int ConnectionTimeout { get; }
+        string Database { get; }
+        System.Data.ConnectionState State { get; }
+        System.Data.IDbTransaction BeginTransaction();
+        System.Data.IDbTransaction BeginTransaction(System.Data.IsolationLevel il);
+        void ChangeDatabase(string databaseName);
+        void Close();
+        System.Data.IDbCommand CreateCommand();
+        void Open();
+    }
+    public partial interface IDbDataParameter : System.Data.IDataParameter
+    {
+        byte Precision { get; set; }
+        byte Scale { get; set; }
+        int Size { get; set; }
+    }
+    public partial interface IDbTransaction : System.IDisposable
+    {
+        System.Data.IDbConnection Connection { get; }
+        System.Data.IsolationLevel IsolationLevel { get; }
+        void Commit();
+        void Rollback();
     }
     public enum IsolationLevel
     {
@@ -245,6 +351,36 @@ namespace System.Data.Common
         public abstract bool Read();
         public System.Threading.Tasks.Task<bool> ReadAsync() { return default(System.Threading.Tasks.Task<bool>); }
         public virtual System.Threading.Tasks.Task<bool> ReadAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<bool>); }
+    }
+    public abstract partial class DbDataRecord : System.Data.IDataRecord
+    {
+        protected DbDataRecord() { }
+        public abstract int FieldCount { get; }
+        public abstract object this[int i] { get; }
+        public abstract object this[string name] { get; }
+        public abstract bool GetBoolean(int i);
+        public abstract byte GetByte(int i);
+        public abstract long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length);
+        public abstract char GetChar(int i);
+        public abstract long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length);
+        public System.Data.IDataReader GetData(int i) { return default(System.Data.IDataReader); }
+        public abstract string GetDataTypeName(int i);
+        public abstract System.DateTime GetDateTime(int i);
+        protected virtual System.Data.Common.DbDataReader GetDbDataReader(int i) { return default(System.Data.Common.DbDataReader); }
+        public abstract decimal GetDecimal(int i);
+        public abstract double GetDouble(int i);
+        public abstract System.Type GetFieldType(int i);
+        public abstract float GetFloat(int i);
+        public abstract System.Guid GetGuid(int i);
+        public abstract short GetInt16(int i);
+        public abstract int GetInt32(int i);
+        public abstract long GetInt64(int i);
+        public abstract string GetName(int i);
+        public abstract int GetOrdinal(string name);
+        public abstract string GetString(int i);
+        public abstract object GetValue(int i);
+        public abstract int GetValues(object[] values);
+        public abstract bool IsDBNull(int i);
     }
     public abstract partial class DbException : System.Exception
     {

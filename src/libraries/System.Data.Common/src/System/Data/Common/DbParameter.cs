@@ -11,7 +11,8 @@ using System.Data;
 
 namespace System.Data.Common
 {
-    public abstract class DbParameter
+    public abstract class DbParameter : 
+        IDbDataParameter
     {
         protected DbParameter() : base()
         {
@@ -87,6 +88,12 @@ namespace System.Data.Common
         {
             get;
             set;
+        }
+
+        public virtual DataRowVersion SourceVersion
+        {
+            get { return DataRowVersion.Default; }
+            set { }
         }
     }
 }

@@ -14,7 +14,8 @@ using System.Threading.Tasks;
 
 namespace System.Data.Common
 {
-    public abstract class DbConnection :
+    public abstract class DbConnection : 
+        IDbConnection,
         IDisposable
     {
         private StateChangeEventHandler _stateChangeEventHandler;
@@ -151,6 +152,21 @@ namespace System.Data.Common
             {
                 Close();
             }
+        }
+
+        IDbTransaction IDbConnection.BeginTransaction()
+        {
+            return BeginDbTransaction(IsolationLevel.Unspecified);
+        }
+
+        IDbTransaction IDbConnection.BeginTransaction(IsolationLevel isolationLevel)
+        {
+            return BeginDbTransaction(isolationLevel);
+        }
+
+        IDbCommand IDbConnection.CreateCommand()
+        {
+            return CreateDbCommand();
         }
     }
 }

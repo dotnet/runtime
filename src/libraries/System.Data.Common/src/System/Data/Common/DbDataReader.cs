@@ -16,6 +16,7 @@ using System.Threading;
 namespace System.Data.Common
 {
     public abstract class DbDataReader :
+        IDataReader,
         IDisposable,
         IEnumerable
     {
@@ -282,6 +283,20 @@ namespace System.Data.Common
                     return TaskHelpers.FromException<bool>(e);
                 }
             }
+        }
+
+        public virtual void Close()
+        {
+        }
+
+        virtual public DataTable GetSchemaTable()
+        {
+            throw new NotSupportedException();
+        }
+
+        IDataReader IDataRecord.GetData(int ordinal)
+        {
+            return GetDbDataReader(ordinal);
         }
     }
 }
