@@ -21,30 +21,22 @@ namespace System.Globalization.Tests
             int[] expectedElementIndices = new int[] { 0, 2, 4 };
             TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator("\uD800\uDC00\u0061\u0300\u00C6");
 
-            int counter = 0;
-            while (enumerator.MoveNext())
+            for (int i = 0; i < 2; i++)
             {
-                string currentTextElement = enumerator.GetTextElement();
-                Assert.Equal(expectedElements[enumerator.ElementIndex], currentTextElement);
-                Assert.Equal(currentTextElement, enumerator.Current);
+                int counter = 0;
+                while (enumerator.MoveNext())
+                {
+                    string currentTextElement = enumerator.GetTextElement();
+                    Assert.Equal(expectedElements[enumerator.ElementIndex], currentTextElement);
+                    Assert.Equal(currentTextElement, enumerator.Current);
 
-                Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
-                counter++;
+                    Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
+                    counter++;
+                }
+                Assert.Equal(expectedElementIndices.Length, counter);
+
+                enumerator.Reset();
             }
-            Assert.Equal(expectedElementIndices.Length, counter);
-
-            enumerator.Reset();
-            counter = 0;
-            while (enumerator.MoveNext())
-            {
-                string currentTextElement = enumerator.GetTextElement();
-                Assert.Equal(expectedElements[enumerator.ElementIndex], currentTextElement);
-                Assert.Equal(currentTextElement, enumerator.Current);
-
-                Assert.Equal(expectedElementIndices[counter], enumerator.ElementIndex);
-                counter++;
-            }
-            Assert.Equal(expectedElementIndices.Length, counter);
         }
 
         [Fact]
