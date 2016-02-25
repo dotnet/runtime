@@ -235,6 +235,13 @@
             "#import": [ "debian.8", "debian-x64" ]
         },
 
+        "debian.8.2": {
+            "#import": [ "debian" ]
+        },
+        "debian.8.2-x64": {
+            "#import": [ "debian.8.2", "debian.8-x64" ]
+        },
+
         "ubuntu": {
             "#import": [ "linux" ]
         },
