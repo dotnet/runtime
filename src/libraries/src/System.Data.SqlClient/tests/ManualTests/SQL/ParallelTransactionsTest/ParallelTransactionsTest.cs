@@ -154,7 +154,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             using (var conn = new SqlConnection(connectionString))
             {
                 conn.Open();
-                SqlCommand cmd = new SqlCommand(string.Format("SELECT au_id, au_lname, au_fname, phone, address, city, state, zip, contract into {0} from authors", tempTableName), conn);
+                SqlCommand cmd = new SqlCommand(string.Format("SELECT au_id, au_lname, au_fname, phone, address, city, state, zip, contract into {0} from pubs.dbo.authors", tempTableName), conn);
                 cmd.ExecuteNonQuery();
                 cmd.CommandText = string.Format("alter table {0} add constraint au_id_{1} primary key (au_id)", tempTableName, uniqueKey);
                 cmd.ExecuteNonQuery();
