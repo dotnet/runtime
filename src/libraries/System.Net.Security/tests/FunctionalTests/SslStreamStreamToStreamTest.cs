@@ -90,9 +90,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue(5896, PlatformID.OSX)]
-        public void SslStream_StreamToStream_LargeWrites_Sync_Success()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SslStream_StreamToStream_LargeWrites_Sync_Success(bool randomizedData)
         {
             VirtualNetwork network = new VirtualNetwork();
 
@@ -103,7 +104,18 @@ namespace System.Net.Security.Tests
             {
                 Assert.True(DoHandshake(clientSslStream, serverSslStream), "Handshake complete");
 
-                byte[] largeMsg = Enumerable.Range(0, 4096 * 5).Select(i => (byte)i).ToArray();
+                byte[] largeMsg = new byte[4096 * 5]; // length longer than max read chunk size (16K + headers)
+                if (randomizedData)
+                {
+                    new Random().NextBytes(largeMsg); // not very compressible
+                }
+                else
+                {
+                    for (int i = 0; i < largeMsg.Length; i++)
+                    {
+                        largeMsg[i] = (byte)i; // very compressible
+                    }
+                }
                 byte[] receivedLargeMsg = new byte[largeMsg.Length];
 
                 // First do a large write and read blocks at a time
