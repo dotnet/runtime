@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Core;
-using System.Composition.Runtime;
 
 namespace System.Composition.Hosting.Providers.CurrentScope
 {

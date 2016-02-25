@@ -302,6 +302,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>

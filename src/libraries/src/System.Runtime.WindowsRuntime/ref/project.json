@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Portable.Compatibility": "1.0.0",
     "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
     "System.Runtime": "4.0.0",
     "System.IO": "4.0.0",
