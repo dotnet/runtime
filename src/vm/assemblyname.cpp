@@ -176,6 +176,10 @@ FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAF
     STRINGREF filename  = (STRINGREF) filenameUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(filename);
 
+#ifdef FEATURE_PAL
+    // UNIXTODO: UrlEscape not implemented
+    COMPlusThrow(kPlatformNotSupportedException);
+#else
     LPWSTR pCodeBase = NULL;
     DWORD  dwCodeBase = 0;
     CQuickBytes qb;
@@ -207,6 +211,7 @@ FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAF
         else
             COMPlusThrowHR(hr);
     }
+#endif
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
