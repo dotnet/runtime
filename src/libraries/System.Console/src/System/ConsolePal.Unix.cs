@@ -567,6 +567,20 @@ namespace System
         {
             int unprocessedCharCount = endIndex - startIndex;
 
+            // First process special control character codes.  These override anything from terminfo.
+            if (unprocessedCharCount > 0)
+            {
+                // Is this an erase / backspace?
+                char c = givenChars[startIndex];
+                if (c != 0 && c == s_veraseCharacter)
+                {
+                    key = new ConsoleKeyInfo(c, ConsoleKey.Backspace, shift: false, alt: false, control: false);
+                    keyLength = 1;
+                    return true;
+                }
+            }
+
+            // Then process terminfo mappings.
             int minRange = TerminalFormatStrings.Instance.MinKeyFormatLength;
             if (unprocessedCharCount >= minRange)
             {
@@ -585,6 +599,7 @@ namespace System
                 }
             }
 
+            // Otherwise, not a known special console key.
             key = default(ConsoleKeyInfo);
             keyLength = 0;
             return false;
@@ -592,6 +607,9 @@ namespace System
 
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
         private static volatile bool s_initialized;
+
+        /// <summary>Special control character code used to represent an erase (backspace).</summary>
+        private static byte s_veraseCharacter;
 
         /// <summary>Ensures that the console has been initialized for reading.</summary>
         private static void EnsureInitialized()
@@ -611,6 +629,12 @@ namespace System
                 {
                     // Ensure the console is configured appropriately
                     Interop.Sys.InitializeConsole();
+
+                    // Load special control character codes used for input processing
+                    var controlCharacterNames = new[] { Interop.Sys.ControlCharacterNames.VERASE };
+                    var controlCharacterValues = new byte[controlCharacterNames.Length];
+                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length);
+                    s_veraseCharacter = controlCharacterValues[0];
 
                     // Make sure it's in application mode
                     if (!Console.IsOutputRedirected)

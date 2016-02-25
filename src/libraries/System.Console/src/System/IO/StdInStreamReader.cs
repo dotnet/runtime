@@ -97,7 +97,7 @@ namespace System.IO
                     Console.WriteLine();
                     return readLineStr;
                 }
-                else if (keyInfo.Key == ConsoleKey.Backspace || keyInfo.Key == ConsoleKey.Delete)
+                else if (keyInfo.Key == ConsoleKey.Backspace)
                 {
                     int len = _readLineSB.Length;
                     if (len > 0)
