@@ -3,7 +3,7 @@ syntax: glob
 [Bb]inaries/
 
 # Build tools related files
-[Tt]ools/
+/[Tt]ools/
 
 ### VisualStudio ###
 
