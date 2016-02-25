@@ -2652,7 +2652,6 @@ mono_codegen (MonoCompile *cfg)
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 	{
 		MonoJumpInfo *ji;
-		MonoError error;
 		gpointer target;
 
 		for (ji = cfg->patch_info; ji; ji = ji->next) {
@@ -2670,8 +2669,11 @@ mono_codegen (MonoCompile *cfg)
 			if (ji->type == MONO_PATCH_INFO_NONE)
 				continue;
 
-			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, &error);
-			mono_error_raise_exception (&error); /* FIXME: don't raise here */
+			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, &cfg->error);
+			if (!mono_error_ok (&cfg->error)) {
+				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+				return;
+			}
 			mono_arch_patch_code_new (cfg, cfg->domain, cfg->native_code, ji, target);
 		}
 	}
@@ -4069,6 +4071,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #endif
 	} else {
 		MONO_TIME_TRACK (mono_jit_stats.jit_codegen, mono_codegen (cfg));
+		if (cfg->exception_type)
+			return cfg;
 	}
 
 	if (COMPILE_LLVM (cfg))
@@ -4472,9 +4476,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 #endif
 #ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 			for (tmp = jlist->list; tmp; tmp = tmp->next) {
-				MonoError error;
-				gpointer target = mono_resolve_patch_target (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE, &error);
-				mono_error_raise_exception (&error); /* FIXME: don't raise here */
+				gpointer target = mono_resolve_patch_target (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE, error);
+				if (!mono_error_ok (error))
+					break;
 				mono_arch_patch_code_new (NULL, target_domain, (guint8 *)tmp->data, &patch_info, target);
 			}
 #else
@@ -4490,6 +4494,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mono_emit_jit_map (jinfo);
 #endif
 	mono_domain_unlock (target_domain);
+
+	if (!mono_error_ok (error))
+		return NULL;
 
 	vtable = mono_class_vtable (target_domain, method->klass);
 	if (!vtable) {
