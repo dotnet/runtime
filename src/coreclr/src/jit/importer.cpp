@@ -11228,7 +11228,11 @@ DO_LDFTN:
             /* NEWOBJ does not respond to CONSTRAINED */
             prefixFlags &= ~PREFIX_CONSTRAINED;
 
+#if COR_JIT_EE_VERSION > 460
+            _impResolveToken(CORINFO_TOKENKIND_NewObj);
+#else
             _impResolveToken(CORINFO_TOKENKIND_Method);
+#endif
 
             eeGetCallInfo(&resolvedToken, 0 /* constraint typeRef*/,
                           addVerifyFlag(combine(CORINFO_CALLINFO_SECURITYCHECKS,
