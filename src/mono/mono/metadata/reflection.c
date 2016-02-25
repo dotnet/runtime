@@ -8862,49 +8862,52 @@ handle_type:
 }
 
 static MonoObject*
-create_cattr_typed_arg (MonoType *t, MonoObject *val)
+create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 {
 	static MonoMethod *ctor;
-	MonoError error;
 	MonoObject *retval;
 	void *params [2], *unboxed;
+
+	mono_error_init (error);
 
 	if (!ctor)
 		ctor = mono_class_get_method_from_name (mono_class_get_custom_attribute_typed_argument_class (), ".ctor", 2);
 	
-	params [0] = mono_type_get_object_checked (mono_domain_get (), t, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
+	return_val_if_nok (error, NULL);
 
 	params [1] = val;
-	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_typed_argument_class (), &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_typed_argument_class (), error);
+	return_val_if_nok (error, NULL);
 	unboxed = mono_object_unbox (retval);
 
-	mono_runtime_invoke_checked (ctor, unboxed, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (ctor, unboxed, params, error);
+	return_val_if_nok (error, NULL);
 
 	return retval;
 }
 
 static MonoObject*
-create_cattr_named_arg (void *minfo, MonoObject *typedarg)
+create_cattr_named_arg (void *minfo, MonoObject *typedarg, MonoError *error)
 {
 	static MonoMethod *ctor;
-	MonoError error;
 	MonoObject *retval;
 	void *unboxed, *params [2];
+
+	mono_error_init (error);
 
 	if (!ctor)
 		ctor = mono_class_get_method_from_name (mono_class_get_custom_attribute_named_argument_class (), ".ctor", 2);
 
 	params [0] = minfo;
 	params [1] = typedarg;
-	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_named_argument_class (), &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	retval = mono_object_new_checked (mono_domain_get (), mono_class_get_custom_attribute_named_argument_class (), error);
+	return_val_if_nok (error, NULL);
+
 	unboxed = mono_object_unbox (retval);
 
-	mono_runtime_invoke_checked (ctor, unboxed, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (ctor, unboxed, params, error);
+	return_val_if_nok (error, NULL);
 
 	return retval;
 }
@@ -9356,7 +9359,9 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 		MonoObject *obj = mono_array_get (typedargs, MonoObject*, i);
 		MonoObject *typedarg;
 
-		typedarg = create_cattr_typed_arg (mono_method_signature (method)->params [i], obj);
+		typedarg = create_cattr_typed_arg (mono_method_signature (method)->params [i], obj, &error);
+		if (!is_ok (&error))
+			goto leave;
 		mono_array_setref (typedargs, i, typedarg);
 	}
 
@@ -9374,8 +9379,12 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 				goto leave;
 		}
 
-		typedarg = create_cattr_typed_arg (arginfo [i].type, obj);
-		namedarg = create_cattr_named_arg (minfo, typedarg);
+		typedarg = create_cattr_typed_arg (arginfo [i].type, obj, &error);
+		if (!is_ok (&error))
+			goto leave;
+		namedarg = create_cattr_named_arg (minfo, typedarg, &error);
+		if (!is_ok (&error))
+			goto leave;
 
 		mono_array_setref (namedargs, i, namedarg);
 	}
