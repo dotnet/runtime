@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Core;
-using System.Composition.Runtime;
 using System.Reflection;
 
 namespace System.Composition.TypedParts.Discovery

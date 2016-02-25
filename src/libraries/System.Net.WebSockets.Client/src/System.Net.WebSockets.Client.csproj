@@ -126,6 +126,10 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
