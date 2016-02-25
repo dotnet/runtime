@@ -15,13 +15,21 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
-        public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, CompilationLibrary[] compileLibraries, RuntimeLibrary[] runtimeLibraries)
+        public DependencyContext(string target,
+            string runtime,
+            bool isPortable,
+            CompilationOptions compilationOptions,
+            CompilationLibrary[] compileLibraries,
+            RuntimeLibrary[] runtimeLibraries,
+            IReadOnlyList<KeyValuePair<string, string[]>> runtimeGraph)
         {
             Target = target;
             Runtime = runtime;
+            IsPortable = isPortable;
             CompilationOptions = compilationOptions;
             CompileLibraries = compileLibraries;
             RuntimeLibraries = runtimeLibraries;
+            RuntimeGraph = runtimeGraph;
         }
 
         public static DependencyContext Default => _defaultContext.Value;
@@ -30,11 +38,15 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string Runtime { get; }
 
+        public bool IsPortable { get; }
+
         public CompilationOptions CompilationOptions { get; }
 
         public IReadOnlyList<CompilationLibrary> CompileLibraries { get; }
 
         public IReadOnlyList<RuntimeLibrary> RuntimeLibraries { get; }
+
+        public IReadOnlyList<KeyValuePair<string, string[]>> RuntimeGraph { get; } 
 
         private static DependencyContext LoadDefault()
         {
