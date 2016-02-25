@@ -2,62 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Contains some definitions duplicated from pal.h, etc. because pal.h
-// has various conflicits with the linux standard runtime h files.
-//
-typedef void VOID;
-typedef VOID *PVOID;
+// Contains some definitions duplicated from pal.h, palrt.h, rpc.h, 
+// etc. because they have various conflicits with the linux standard
+// runtime h files like wchar_t, memcpy, etc.
 
-typedef int BOOL;
-typedef int LONG;   
-typedef unsigned int ULONG;
-typedef ULONG ULONG32;
-typedef ULONG *PULONG;
-typedef unsigned char BYTE;
-typedef unsigned char UCHAR;
-typedef BYTE *PBYTE;
-typedef unsigned short WORD;
-typedef unsigned short USHORT;
-typedef unsigned int DWORD;
-
-typedef long long LONG64;
-typedef unsigned long long ULONG64;
-typedef ULONG64 *PULONG64;
-
-typedef long long LONGLONG;
-typedef unsigned long long ULONGLONG;
-typedef ULONGLONG DWORD64;
-
-#ifdef DBG_TARGET_64BIT
-typedef ULONG64 ULONG_PTR, *PULONG_PTR;
-typedef ULONG64 DWORD_PTR, *PDWORD_PTR;
-#else
-typedef ULONG32 ULONG_PTR, *PULONG_PTR;
-typedef ULONG32 DWORD_PTR, *PDWORD_PTR;
-#endif
-
-typedef wchar_t WCHAR;
-typedef WCHAR *PWCHAR;
-typedef const WCHAR *PCWSTR;
-
-typedef const char *PCSTR;
-typedef char *PSTR;
-
-typedef int HRESULT;
+#include <../../../pal/inc/pal_mstypes.h>
 
 #define S_OK                             (HRESULT)0x00000000
 #define S_FALSE                          (HRESULT)0x00000001
 #define E_NOTIMPL                        (HRESULT)0x80004001
 #define E_FAIL                           (HRESULT)0x80004005
 #define E_INVALIDARG                     (HRESULT)0x80070057
+#define E_NOINTERFACE                    (HRESULT)0x80004002
 
 #define MAX_PATH                         260 
-
-#if defined(_MSC_VER) || defined(__llvm__)
-#define DECLSPEC_ALIGN(x)   __declspec(align(x))
-#else
-#define DECLSPEC_ALIGN(x) 
-#endif
 
 // Platform-specific library naming
 // 
@@ -74,3 +32,75 @@ typedef int HRESULT;
 #define MAKEDLLNAME_W(name) u"lib" name u".so"
 #define MAKEDLLNAME_A(name)  "lib" name  ".so"
 #endif
+
+#if defined(_MSC_VER) || defined(__llvm__)
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x) 
+#endif
+
+#define interface struct
+#define DECLSPEC_UUID(x)    __declspec(uuid(x))
+#define DECLSPEC_NOVTABLE
+#define MIDL_INTERFACE(x)   struct DECLSPEC_UUID(x) DECLSPEC_NOVTABLE
+
+#ifdef __cplusplus
+#define REFGUID const GUID &
+#else
+#define REFGUID const GUID *
+#endif
+
+#ifdef __cplusplus
+extern "C++" {
+#include "string.h"
+#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
+#define _SYS_GUID_OPERATOR_EQ_
+inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
+    { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
+inline int operator==(REFGUID guidOne, REFGUID guidOther)
+    { return IsEqualGUID(guidOne,guidOther); }
+inline int operator!=(REFGUID guidOne, REFGUID guidOther)
+    { return !IsEqualGUID(guidOne,guidOther); }
+#endif
+};
+#endif // __cplusplus
+
+typedef GUID IID;
+#ifdef __cplusplus
+#define REFIID const IID &
+#else
+#define REFIID const IID *
+#endif
+#define IID_NULL GUID_NULL
+#define IsEqualIID(riid1, riid2) IsEqualGUID(riid1, riid2)
+
+MIDL_INTERFACE("00000000-0000-0000-C000-000000000046")
+IUnknown
+{
+public:
+    virtual HRESULT QueryInterface( 
+        REFIID riid,
+        void **ppvObject) = 0;
+        
+    virtual ULONG AddRef( void) = 0;
+        
+    virtual ULONG Release( void) = 0;
+};
+
+EXTERN_C
+inline
+LONG
+InterlockedIncrement(
+    LONG volatile *lpAddend)
+{
+    return __sync_add_and_fetch(lpAddend, (LONG)1);
+}
+
+EXTERN_C
+inline
+LONG
+InterlockedDecrement(
+    LONG volatile *lpAddend)
+{
+    return __sync_sub_and_fetch(lpAddend, (LONG)1);
+}
