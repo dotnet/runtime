@@ -171,7 +171,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest8_ConcWaitAndRelease
               (0, 1000, 50, 0, 0, 50, 0, 100);
             RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
-               (5, 1000, 50, 50, 50, 0, 5, 1000);
+               (5, 1000, 50, 50, 50, 0, 5, 5000);
             RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
                (0, 1000, 50, 25, 25, 25, 0, 5000);
             RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease
