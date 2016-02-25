@@ -1388,7 +1388,7 @@ namespace System
                     : ((int)digit - (int)'a'))
                     + 10);
             }
-            throw new ArgumentOutOfRangeException(nameof(digit));
+            throw new ArgumentException(nameof(digit));
         }
 
         //
