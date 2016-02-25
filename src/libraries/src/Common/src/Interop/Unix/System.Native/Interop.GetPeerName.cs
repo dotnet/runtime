@@ -10,6 +10,23 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerName")]
-        internal static extern unsafe Error GetPeerName(int socket, byte* socketAddress, int* socketAddressLen);
+        private static extern unsafe Error DangerousGetPeerName(int socket, byte* socketAddress, int* socketAddressLen);
+
+        internal static unsafe Error GetPeerName(SafeHandle socket, byte* socketAddress, int* socketAddressLen)
+        {
+            bool release = false;
+            try
+            {
+                socket.DangerousAddRef(ref release);
+                return DangerousGetPeerName((int)socket.DangerousGetHandle(), socketAddress, socketAddressLen);
+            }
+            finally
+            {
+                if (release)
+                {
+                    socket.DangerousRelease();
+                }
+            }
+        }
     }
 }
