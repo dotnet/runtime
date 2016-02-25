@@ -1046,9 +1046,11 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
+	MonoError error;
 	MonoCustomAttrInfo *ainfo;
 	int i;
-	ainfo = mono_custom_attrs_from_field (fklass, field);
+	ainfo = mono_custom_attrs_from_field_checked (fklass, field, &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error? */
 	if (!ainfo)
 		return FALSE;
 	for (i = 0; i < ainfo->num_attrs; ++i) {

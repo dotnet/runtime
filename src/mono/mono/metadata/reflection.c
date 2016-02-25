@@ -9739,7 +9739,17 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
 	MonoError error;
+	MonoCustomAttrInfo * result = mono_custom_attrs_from_field_checked (klass, field, &error);
+	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	return result;
+}
+
+MonoCustomAttrInfo*
+mono_custom_attrs_from_field_checked (MonoClass *klass, MonoClassField *field, MonoError *error)
+{
 	guint32 idx;
+	mono_error_init (error);
+
 	if (image_is_dynamic (klass->image)) {
 		field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 		return lookup_custom_attr (klass->image, field);
@@ -9747,12 +9757,7 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 	idx = find_field_index (klass, field);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
-	MonoCustomAttrInfo * result = mono_custom_attrs_from_index_checked (klass->image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error); /* FIXME don't set loader error here */
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (klass->image, idx, error);
 }
 
 /**
@@ -9947,7 +9952,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
-		cinfo = mono_custom_attrs_from_field (rfield->field->parent, rfield->field);
+		cinfo = mono_custom_attrs_from_field_checked (rfield->field->parent, rfield->field, error);
+		return_val_if_nok (error, NULL);
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
 		cinfo = mono_custom_attrs_from_method_checked (rmethod->method, error);

@@ -90,6 +90,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, uint32_t param);
 MONO_API mono_bool           mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
