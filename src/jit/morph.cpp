@@ -5729,14 +5729,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 
     if (result->isFailure()) 
     {
-       // Presumably this is one of the first times we've realized
-       // this inlinee can't be inlined, otherwise we would have
-       // filtered it out earlier.
-       if (result->isNever()) 
-       {
-          info.compCompHnd->setMethodAttribs(call->gtCall.gtCallMethHnd, CORINFO_FLG_BAD_INLINEE);
-       }
-
        // Undo some changes made in anticipation of inlining...
 
        // Zero out the used locals
