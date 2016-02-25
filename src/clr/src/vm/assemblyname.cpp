@@ -168,7 +168,6 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 }
 FCIMPLEND
 
-#ifndef FEATURE_CORECLR
 FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAFE)
 {
     FCALL_CONTRACT;
@@ -177,6 +176,10 @@ FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAF
     STRINGREF filename  = (STRINGREF) filenameUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(filename);
 
+#ifdef FEATURE_PAL
+    // UNIXTODO: UrlEscape not implemented
+    COMPlusThrow(kPlatformNotSupportedException);
+#else
     LPWSTR pCodeBase = NULL;
     DWORD  dwCodeBase = 0;
     CQuickBytes qb;
@@ -208,12 +211,12 @@ FCIMPL1(Object*, AssemblyNameNative::EscapeCodeBase, StringObject* filenameUNSAF
         else
             COMPlusThrowHR(hr);
     }
+#endif
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
 }
 FCIMPLEND
-#endif // !FEATURE_CORECLR
 
 FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent)
 {

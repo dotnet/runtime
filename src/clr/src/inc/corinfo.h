@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 13accf3d-12d7-4fd4-bc65-d73578b1a474 */
-    0x13accf3d,
-    0x12d7,
-    0x4fd4,
-    { 0xbc, 0x65, 0xd7, 0x35, 0x78, 0xb1, 0xa4, 0x74 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 35ef98ab-fd22-4ccc-8ddb-b1156a7d94f3 */
+    0x35ef98ab,
+    0xfd22,
+    0x4ccc,
+    { 0x8d, 0xdb, 0xb1, 0x15, 0x6a, 0x7d, 0x94, 0xf3 }
 };
 
 #else
@@ -2761,33 +2761,6 @@ public:
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
         /* IN */    CORINFO_CLASS_HANDLE        structHnd,
         /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
-        ) = 0;
-
-    /*************************************************************************/
-    //
-    // Configuration values - Allows querying of the CLR configuration.
-    //
-    /*************************************************************************/
-
-    //  Return an integer ConfigValue if any.
-    //
-    virtual int getIntConfigValue(
-        const wchar_t *name, 
-        int defaultValue
-        ) = 0;
-
-    //  Return a string ConfigValue if any.
-    //
-    virtual wchar_t *getStringConfigValue(
-        const wchar_t *name
-        ) = 0;
-
-    // Free a string ConfigValue returned by the runtime.
-    // JITs using the getStringConfigValue query are required
-    // to return the string values to the runtime for deletion.
-    // this avoid leaking the memory in the JIT.
-    virtual void freeStringConfigValue(
-        __in_z wchar_t *value
         ) = 0;
 
 #endif // COR_JIT_EE_VERSION
