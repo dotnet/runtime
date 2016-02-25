@@ -31,6 +31,7 @@ set( JIT_SOURCES
   hashbv.cpp
   importer.cpp
   instr.cpp
+  jitconfig.cpp
   jittelemetry.cpp
   lclvars.cpp
   liveness.cpp
