@@ -123,15 +123,13 @@ private:
 };
 
 #ifndef MINIDUMP
-
+ 
 #define EXIT_API     ExtRelease
-
 
 // Safe release and NULL.
 #define EXT_RELEASE(Unk) \
     ((Unk) != NULL ? ((Unk)->Release(), (Unk) = NULL) : NULL)
 
-extern PDEBUG_CLIENT         g_ExtClient;
 extern PDEBUG_CONTROL2       g_ExtControl;
 extern PDEBUG_DATA_SPACES    g_ExtData;
 extern PDEBUG_SYMBOLS        g_ExtSymbols;
@@ -141,14 +139,19 @@ extern PDEBUG_REGISTERS      g_ExtRegisters;
 #ifndef FEATURE_PAL
 
 // Global variables initialized by query.
+extern PDEBUG_CLIENT         g_ExtClient;
 extern PDEBUG_DATA_SPACES2   g_ExtData2;
 extern PDEBUG_SYMBOLS2       g_ExtSymbols2;
 extern PDEBUG_ADVANCED3      g_ExtAdvanced3;
 
-#endif // !FEATURE_PAL
+#else // FEATURE_PAL
+
+extern ILLDBServices*        g_ExtServices;    
+
+#endif // FEATURE_PAL
 
 HRESULT
-ExtQuery(PDEBUG_CLIENT Client);
+ExtQuery(PDEBUG_CLIENT client);
 
 HRESULT 
 ArchQuery(void);
@@ -179,7 +182,7 @@ inline BOOL IsInterrupt()
 #undef DECLARE_API
 
 #define DECLARE_API(extension)     \
-CPPMOD HRESULT CALLBACK extension(PDEBUG_CLIENT Client, PCSTR args)
+CPPMOD HRESULT CALLBACK extension(PDEBUG_CLIENT client, PCSTR args)
 
 class __ExtensionCleanUp
 {
@@ -214,7 +217,7 @@ inline void DACMessage(HRESULT Status)
     ExtOut("\n");
     ExtOut("If you are debugging a minidump, you need to make sure that your executable\n");
     ExtOut("path is pointing to coreclr.dll as well.\n");
-#else
+#else // FEATURE_PAL
     ExtOut("You can run the debugger command 'setclrpath' to control the load of %s.\n", MAKEDLLNAME_A("mscordaccore"));
     ExtOut("If that succeeds, the SOS command should work on retry.\n");
 #endif // FEATURE_PAL
@@ -225,7 +228,7 @@ HRESULT CheckEEDll();
 #define INIT_API_NOEE()                                         \
     HRESULT Status;                                             \
     __ExtensionCleanUp __extensionCleanUp;                      \
-    if ((Status = ExtQuery(Client)) != S_OK) return Status;     \
+    if ((Status = ExtQuery(client)) != S_OK) return Status;     \
     if ((Status = ArchQuery()) != S_OK)      return Status;     \
     ControlC = FALSE;                                           \
     g_bDacBroken = TRUE;
@@ -319,7 +322,6 @@ public:
     // Returns the size of the CONTEXT for the target machine
     virtual ULONG GetContextSize() const = 0;
 
-#ifndef FEATURE_PAL
     // Disassembles a managed method specified by the IPBegin-IPEnd range
     virtual void Unassembly(
                 TADDR IPBegin, 
@@ -330,7 +332,6 @@ public:
                 SOSEHInfo *pEHInfo,
                 BOOL bSuppressLines,
                 BOOL bDisplayOffsets) const = 0;
-#endif
 
     // Validates whether retAddr represents a return address by unassembling backwards.
     // If the instruction before retAddr represents a target-specific call instruction
@@ -421,11 +422,7 @@ inline CLRDATA_ADDRESS GetBP(const CROSS_PLATFORM_CONTEXT& context)
 //
 //-----------------------------------------------------------------------------------------
 
-#ifdef FEATURE_PAL
-
-#define GetExpression(exp) g_ExtClient->GetExpression(exp)
-
-#else // FEATURE_PAL
+#ifndef FEATURE_PAL
 
 extern WINDBG_EXTENSION_APIS ExtensionApis;
 #define GetExpression (ExtensionApis.lpGetExpressionRoutine)
@@ -433,6 +430,10 @@ extern WINDBG_EXTENSION_APIS ExtensionApis;
 extern ULONG TargetMachine;
 extern ULONG g_TargetClass;
 extern ULONG g_VDbgEng;
+
+#else // FEATURE_PAL
+
+#define GetExpression(exp) g_ExtServices->GetExpression(exp)
 
 #endif // FEATURE_PAL
 

@@ -5,11 +5,11 @@
 #include <lldb/API/LLDB.h>
 #include "mstypes.h"
 #define DEFINE_EXCEPTION_RECORD
-#include <dbgeng.h>
+#include <lldbservices.h>
 #include <dbgtargetcontext.h>
-#include "debugclient.h"
+#include "services.h"
 
-typedef HRESULT (*CommandFunc)(PDEBUG_CLIENT client, const char *args);
+typedef HRESULT (*CommandFunc)(ILLDBServices* services, const char *args);
 
 extern char *g_coreclrDirectory;
 extern ULONG g_currentThreadIndex;
