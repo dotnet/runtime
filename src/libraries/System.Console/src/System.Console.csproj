@@ -191,6 +191,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetControlCharacters.cs">
+      <Link>Common\Interop\Unix\Interop.GetControlCharacters.cs"</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IsATty.cs">
       <Link>Common\Interop\Unix\Interop.IsATty.cs</Link>
     </Compile>

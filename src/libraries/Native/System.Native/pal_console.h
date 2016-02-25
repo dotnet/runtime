@@ -6,6 +6,30 @@
 
 #include "pal_types.h"
 
+/**
+* Constants for terminal control codes.
+*/
+enum
+{
+    PAL_VINTR = 0,
+    PAL_VQUIT = 1,
+    PAL_VERASE = 2,
+    PAL_VKILL = 3,
+    PAL_VEOF = 4,
+    PAL_VTIME = 5,
+    PAL_VMIN = 6,
+    PAL_VSWTC = 7,
+    PAL_VSTART = 8,
+    PAL_VSTOP = 9,
+    PAL_VSUSP = 10,
+    PAL_VEOL = 11,
+    PAL_VREPRINT = 12,
+    PAL_VDISCARD = 13,
+    PAL_VWERASE = 14,
+    PAL_VLNEXT = 15,
+    PAL_VEOL2 = 16
+};
+
 /*
  * Window Size of the terminal
  */
@@ -36,6 +60,17 @@ extern "C" int32_t SystemNative_IsATty(intptr_t fd);
  * Initializes the console for use by System.Console.
  */
 extern "C" void SystemNative_InitializeConsole();
+
+/**
+ * Gets the special control character codes for the requested control characters.
+ *
+ * controlCharacterLength is the length of the input controlCharacterNames array and the output controlCharacterValues array.
+ * The controlCharacterValues array is filled with the control codes for the corresponding control character names,
+ * or 0 if a particular name is unsupported or disabled.
+ */
+extern "C" void SystemNative_GetControlCharacters(
+    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, 
+    int32_t controlCharacterLength);
 
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
