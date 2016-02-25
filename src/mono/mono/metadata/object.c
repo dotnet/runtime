@@ -540,7 +540,6 @@ default_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 	return NULL;
 }
 
-static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 static MonoImtThunkBuilder imt_thunk_builder;
 static gboolean always_build_imt_thunks;
@@ -559,12 +558,6 @@ MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void)
 {
 	return &callbacks;
-}
-
-void
-mono_install_trampoline (MonoTrampoline func) 
-{
-	arch_create_jit_trampoline = func? func: default_trampoline;
 }
 
 #ifndef DISABLE_REMOTING
@@ -628,6 +621,7 @@ mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gbo
 	res = callbacks.create_jump_trampoline (domain, method, add_sync_wrapper, &error);
 	if (!mono_error_ok (&error))
 		mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+	return res;
 }
 
 gpointer
@@ -2163,8 +2157,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean
 		for (i = 0; i < klass->vtable_size; ++i) {
 			MonoMethod *cm;
 
-			if ((cm = klass->vtable [i]))
-				vt->vtable [i] = arch_create_jit_trampoline (cm);
+			cm = klass->vtable [i];
+			if (cm) {
+				vt->vtable [i] = callbacks.create_jit_trampoline (domain, cm, &error);
+				if (!mono_error_ok (&error))
+					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+			}
 		}
 	}
 

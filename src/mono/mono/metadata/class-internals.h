@@ -915,7 +915,6 @@ typedef struct {
 
 extern MonoStats mono_stats;
 
-typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
 typedef gpointer (*MonoDelegateTrampoline)       (MonoDomain *domain, MonoClass *klass);
 
@@ -1007,9 +1006,6 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 
 const char*
 mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def_type);
-
-void
-mono_install_trampoline (MonoTrampoline func);
 
 void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func);

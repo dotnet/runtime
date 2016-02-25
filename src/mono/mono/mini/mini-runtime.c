@@ -631,10 +631,15 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_exc);
 	g_free (name);
 
-	if (do_compile)
+	if (do_compile) {
 		trampoline = mono_compile_method (wrapper);
-	else
-		trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
+	} else {
+		MonoError error;
+
+		trampoline = mono_create_jit_trampoline (domain, wrapper, &error);
+		mono_error_assert_ok (&error);
+		trampoline = mono_create_ftnptr (domain, (gpointer)trampoline);
+	}
 
 	mono_loader_lock ();
 	if (!callinfo->trampoline) {
@@ -1498,13 +1503,17 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		 * avoid trampoline, as we not yet know where we will
 		 * be installed.
 		 */
-		target = mono_create_jit_trampoline_in_domain (domain, patch_info->data.method);
+		target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
+		if (!mono_error_ok (error))
+			return NULL;
 #else
 		if (patch_info->data.method == method) {
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
-			target = mono_create_jit_trampoline_in_domain (domain, patch_info->data.method);
+			target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
+			if (!mono_error_ok (error))
+				return NULL;
 		}
 #endif
 		break;
@@ -3655,6 +3664,7 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
 	callbacks.create_jump_trampoline = mono_create_jump_trampoline;
+	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 #endif
 
 	mono_install_callbacks (&callbacks);
@@ -3727,7 +3737,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_free_method (mono_jit_free_method);
-	mono_install_trampoline (mono_create_jit_trampoline);
 #ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 #endif

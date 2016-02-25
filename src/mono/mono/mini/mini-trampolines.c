@@ -1517,9 +1517,8 @@ method_not_found (void)
 }
 
 gpointer
-mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
+mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
-	MonoError error;
 	gpointer tramp;
 
 	if (mono_aot_only) {
@@ -1534,9 +1533,9 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 				/* These wrappers are not generated */
 				return method_not_found;
 			/* Methods are lazily initialized on first call, so this can't lead recursion */
-			code = mono_jit_compile_method (method, &error);
-			if (!mono_error_ok (&error))
-				mono_error_raise_exception (&error);
+			code = mono_jit_compile_method (method, error);
+			if (!mono_error_ok (error))
+				return NULL;
 			return code;
 		}
 	}
@@ -1557,12 +1556,6 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 
 	return tramp;
 }	
-
-gpointer
-mono_create_jit_trampoline (MonoMethod *method)
-{
-	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method);
-}
 
 gpointer
 mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)

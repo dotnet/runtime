@@ -3153,11 +3153,15 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 					g_hash_table_insert (ctx->method_to_callers, call->method, l);
 				}
 			} else {
+				MonoError error;
+
 				callee = LLVMAddFunction (lmodule, "", llvm_sig);
  
 				target =
-					mono_create_jit_trampoline_in_domain (mono_domain_get (),
-														  call->method);
+					mono_create_jit_trampoline (mono_domain_get (),
+												call->method, &error);
+				if (!mono_error_ok (&error))
+					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
 				LLVMAddGlobalMapping (ctx->module->ee, callee, target);
 			}
 		}

@@ -2540,9 +2540,8 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
-gpointer          mono_create_jit_trampoline (MonoMethod *method);
+gpointer          mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error) MONO_LLVM_INTERNAL;
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
-gpointer          mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method) MONO_LLVM_INTERNAL;
 gpointer          mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass);
 MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, MonoMethod *method);
 gpointer          mono_create_delegate_virtual_trampoline (MonoDomain *domain, MonoClass *klass, MonoMethod *method);
