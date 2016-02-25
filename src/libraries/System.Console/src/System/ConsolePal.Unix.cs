@@ -44,7 +44,6 @@ namespace System
             get { return GetConsoleEncoding(); }
         }
 
-        private static readonly object s_stdInReaderSyncObject = new object();
         private static SyncTextReader s_stdInReader;
         private const int DefaultBufferSize = 255;
 
