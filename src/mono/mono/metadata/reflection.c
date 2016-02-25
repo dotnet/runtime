@@ -9398,14 +9398,15 @@ leave:
 }
 
 static MonoObject*
-create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
+create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr, MonoError *error)
 {
 	static MonoMethod *ctor;
 
-	MonoError error;
 	MonoDomain *domain;
 	MonoObject *attr;
 	void *params [4];
+
+	mono_error_init (error);
 
 	g_assert (image->assembly);
 
@@ -9413,18 +9414,17 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr)
 		ctor = mono_class_get_method_from_name (mono_defaults.customattribute_data_class, ".ctor", 4);
 
 	domain = mono_domain_get ();
-	attr = mono_object_new_checked (domain, mono_defaults.customattribute_data_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	params [0] = mono_method_get_object_checked (domain, cattr->ctor, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	params [1] = mono_assembly_get_object_checked (domain, image->assembly, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	attr = mono_object_new_checked (domain, mono_defaults.customattribute_data_class, error);
+	return_val_if_nok (error, NULL);
+	params [0] = mono_method_get_object_checked (domain, cattr->ctor, NULL, error);
+	return_val_if_nok (error, NULL);
+	params [1] = mono_assembly_get_object_checked (domain, image->assembly, error);
+	return_val_if_nok (error, NULL);
 	params [2] = (gpointer)&cattr->data;
 	params [3] = &cattr->data_size;
 
-	mono_runtime_invoke_checked (ctor, attr, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+	mono_runtime_invoke_checked (ctor, attr, params, error);
+	return_val_if_nok (error, NULL);
 	return attr;
 }
 
@@ -9474,15 +9474,17 @@ mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 }
 
 static MonoArray*
-mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo)
+mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo, MonoError *error)
 {
 	MonoArray *result;
 	MonoObject *attr;
 	int i;
 	
+	mono_error_init (error);
 	result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, cinfo->num_attrs);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
-		attr = create_custom_attr_data (cinfo->image, &cinfo->attrs [i]);
+		attr = create_custom_attr_data (cinfo->image, &cinfo->attrs [i], error);
+		return_val_if_nok (error, NULL);
 		mono_array_setref (result, i, attr);
 	}
 	return result;
@@ -10005,7 +10007,8 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 
 	cinfo = mono_reflection_get_custom_attrs_info (obj);
 	if (cinfo) {
-		result = mono_custom_attrs_data_construct (cinfo);
+		result = mono_custom_attrs_data_construct (cinfo, error);
+		return_val_if_nok (error, NULL);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else
