@@ -26,7 +26,7 @@
    ret
 }
 
-.method public static pinvokeimpl("msvcr110.dll" cdecl)
+.method public static pinvokeimpl("msvcrt.dll" cdecl)
     int32 isupper(int32) cil managed preservesig
 {
    .custom instance void [mscorlib]System.Security.SuppressUnmanagedCodeSecurityAttribute::ctor() = (01 00 00 00)
