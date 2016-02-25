@@ -4,9 +4,10 @@
 
 #include <cstdarg>
 
-class DebugClient : public IDebugClient
+class LLDBServices : public ILLDBServices
 {
 private:
+    LONG m_ref;
     lldb::SBDebugger &m_debugger;
     lldb::SBCommandReturnObject &m_returnObject;
 
@@ -24,8 +25,39 @@ private:
     lldb::SBFrame GetCurrentFrame();
 
 public:
-    DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process = nullptr, lldb::SBThread *thread = nullptr);
-    ~DebugClient();
+    LLDBServices(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process = nullptr, lldb::SBThread *thread = nullptr);
+    ~LLDBServices();
+ 
+    //----------------------------------------------------------------------------
+    // IUnknown
+    //----------------------------------------------------------------------------
+
+    HRESULT QueryInterface(
+        REFIID InterfaceId,
+        PVOID* Interface);
+
+    ULONG AddRef();
+
+    ULONG Release();
+
+    //----------------------------------------------------------------------------
+    // ILLDBServices
+    //----------------------------------------------------------------------------
+
+    PCSTR GetCoreClrDirectory();
+
+    DWORD_PTR GetExpression(
+        PCSTR exp);
+
+    HRESULT VirtualUnwind(
+        DWORD threadID,
+        ULONG32 contextSize,
+        PBYTE context);
+
+    HRESULT SetExceptionCallback(
+        PFN_EXCEPTION_CALLBACK callback);
+
+    HRESULT ClearExceptionCallback();
 
     //----------------------------------------------------------------------------
     // IDebugControl2
@@ -81,6 +113,29 @@ public:
         ULONG descriptionSize,
         PULONG descriptionUsed);
 
+    HRESULT Disassemble(
+        ULONG64 offset,
+        ULONG flags,
+        PSTR buffer,
+        ULONG bufferSize,
+        PULONG disassemblySize,
+        PULONG64 endOffset);
+
+    //----------------------------------------------------------------------------
+    // IDebugControl4
+    //----------------------------------------------------------------------------
+
+    HRESULT
+    GetContextStackTrace(
+        PVOID startContext,
+        ULONG startContextSize,
+        PDEBUG_STACK_FRAME frames,
+        ULONG framesSize,
+        PVOID frameContexts,
+        ULONG frameContextsSize,
+        ULONG frameContextsEntrySize,
+        PULONG framesFilled);
+    
     //----------------------------------------------------------------------------
     // IDebugDataSpaces
     //----------------------------------------------------------------------------
@@ -144,8 +199,28 @@ public:
         ULONG loadedImageNameBufferSize,
         PULONG loadedImageNameSize);
 
-    PCSTR GetModuleDirectory(
-        PCSTR name);
+    HRESULT GetLineByOffset(
+        ULONG64 offset,
+        PULONG line,
+        PSTR fileBuffer,
+        ULONG fileBufferSize,
+        PULONG fileSize,
+        PULONG64 displacement);
+     
+    HRESULT GetSourceFileLineOffsets(
+        PCSTR file,
+        PULONG64 buffer,
+        ULONG bufferLines,
+        PULONG fileLines);
+
+    HRESULT FindSourceFile(
+        ULONG startElement,
+        PCSTR file,
+        ULONG flags,
+        PULONG foundElement,
+        PSTR buffer,
+        ULONG bufferSize,
+        PULONG foundSize);
 
     //----------------------------------------------------------------------------
     // IDebugSystemObjects
@@ -191,21 +266,9 @@ public:
         PULONG64 offset);
 
     //----------------------------------------------------------------------------
-    // IDebugClient
+    // LLDBServices (internal)
     //----------------------------------------------------------------------------
 
-    PCSTR GetCoreClrDirectory();
-
-    DWORD_PTR GetExpression(
-        PCSTR exp);
-
-    HRESULT VirtualUnwind(
-        DWORD threadID,
-        ULONG32 contextSize,
-        PBYTE context);
-
-    HRESULT SetExceptionCallback(
-        PFN_EXCEPTION_CALLBACK callback);
-
-    HRESULT ClearExceptionCallback();
+    PCSTR GetModuleDirectory(
+        PCSTR name);
 };
