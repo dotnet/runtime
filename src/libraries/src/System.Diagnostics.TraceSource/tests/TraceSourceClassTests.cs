@@ -116,6 +116,20 @@ namespace System.Diagnostics.TraceSourceTests
             trace.TraceEvent(messageLevel, 0);
             Assert.Equal(expected, listener.GetCallCount(Method.TraceEvent));
         }
+
+        [Fact]
+        public void NullSourceName()
+        {
+            Assert.Throws<ArgumentNullException>("name", () => new TraceSource(null));
+            Assert.Throws<ArgumentNullException>("name", () => new TraceSource(null, SourceLevels.All));
+        }
+
+        [Fact]
+        public void EmptySourceName()
+        {
+            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty));
+            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty, SourceLevels.All));
+        }
     }
 
     public sealed class TraceSourceTests_Default : TraceSourceTestsBase

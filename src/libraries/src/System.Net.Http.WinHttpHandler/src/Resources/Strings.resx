@@ -162,4 +162,7 @@
   <data name="net_http_no_concurrent_io_allowed" xml:space="preserve">
     <value>The stream does not support concurrent I/O read or write operations.</value>
   </data>
+  <data name="net_http_buffer_insufficient_length" xml:space="preserve">
+    <value>The buffer was not long enough.</value>
+  </data>
 </root>

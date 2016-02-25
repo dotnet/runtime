@@ -30,7 +30,7 @@ namespace System.Diagnostics
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(nameof(name));
+                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(name)), nameof(name));
 
             _sourceName = name;
             _switchLevel = defaultLevel;
