@@ -228,6 +228,7 @@ namespace System.Net.Http
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
+            Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
             
             if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
             {
@@ -319,6 +320,7 @@ namespace System.Net.Http
                         // (which means we have no certs to send). For security reasons, we don't
                         // allow the certificate to be re-applied. But we need to tell WinHttp
                         // explicitly that we don't have any certificate to send.
+                        Debug.Assert(state.RequestHandle != null, "OnRequestError: state.RequestHandle is null");
                         WinHttpHandler.SetNoClientCertificate(state.RequestHandle);
                         state.RetryRequest = true;
                         state.TcsReceiveResponseHeaders.TrySetResult(false);
