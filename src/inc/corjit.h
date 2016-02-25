@@ -320,9 +320,16 @@ enum CheckedWriteBarrierKinds {
 };
 #endif
 
+#if COR_JIT_EE_VERSION > 460
+
+#include "corjithost.h"
+
+extern "C" void __stdcall jitStartup(ICorJitHost* host);
+
+#endif
+
 class ICorJitCompiler;
 class ICorJitInfo;
-
 struct IEEMemoryManager;
 
 extern "C" ICorJitCompiler* __stdcall getJit();
