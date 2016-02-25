@@ -924,7 +924,8 @@ void                emitter::emitTmpSizeChanged(unsigned tmpSize)
 
 #ifdef DEBUG
     // Workaround for FP code
-    bool bAssert = JitConfig.JitMaxTempAssert()?true:false;
+    static ConfigDWORD fMaxTempAssert;
+    bool bAssert = fMaxTempAssert.val(CLRConfig::INTERNAL_JITMaxTempAssert)?true:false;
 
     if (tmpSize > emitMaxTmpSize && bAssert)
     {
