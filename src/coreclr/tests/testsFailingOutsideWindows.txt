@@ -176,3 +176,4 @@ JIT/Methodical/Boxing/xlang/_orelsin_cs_il/_orelsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_relsin_cs_il/_relsin_cs_il.sh
 JIT/Methodical/localloc/call/call01_small/call01_small.sh
 JIT/Regression/Dev11/External/dev11_145295/CSharpPart/CSharpPart.sh
+Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/MarshalArrayByValTest.sh
