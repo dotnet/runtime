@@ -4962,13 +4962,16 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         compGenTreeID = 0;
 #endif
 
-        if (compIsForInlining() &&
-            (fgBBcount > 5) &&
-            !forceInline)
+        if (compIsForInlining())
         {
-            compInlineResult->note(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+            if (forceInline)
+            {
+                compInlineResult->noteCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
 
-            if (compInlineResult->isFailure()) 
+            compInlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS, fgBBcount);
+
+            if (compInlineResult->isFailure())
             {
                 goto _Next;
             }

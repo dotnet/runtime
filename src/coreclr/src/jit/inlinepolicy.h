@@ -24,8 +24,11 @@ class LegacyPolicy : public InlinePolicy
 {
 public:
 
-    LegacyPolicy()
+    // Construct a LegacyPolicy
+    LegacyPolicy(Compiler* compiler)
         : InlinePolicy()
+        , inlCompiler(compiler)
+        , inlIsForceInline(false)
     {
         // empty
     }
@@ -52,6 +55,13 @@ private:
     void setFailure(InlineObservation obs);
     void setNever(InlineObservation obs);
     void setCommon(InlineDecision decision, InlineObservation obs);
+
+    // Constants
+    const unsigned MAX_BASIC_BLOCKS = 5;
+
+    // Data members
+    Compiler* inlCompiler;
+    bool      inlIsForceInline;
 };
 
 //
