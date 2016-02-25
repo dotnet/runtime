@@ -83,7 +83,8 @@ ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
     ChunkNum cn = m_chunks.Push(specialConstChunk);
     assert(cn == 0);
 
-  m_mapSelectBudget = JitConfig.JitVNMapSelBudget();
+  static ConfigDWORD fMapSelBudget;
+  m_mapSelectBudget = fMapSelBudget.val(CLRConfig::INTERNAL_JitVNMapSelBudget);
 }
 
 // static.
@@ -1242,7 +1243,8 @@ TailCall:
     // This printing is sometimes useful in debugging.
     // if ((m_numMapSels % 1000) == 0) printf("%d VNF_MapSelect applications.\n", m_numMapSels);
 #endif
-    unsigned selLim = JitConfig.JitVNMapSelLimit();
+    static ConfigDWORD fMapSelLim;
+    unsigned selLim = fMapSelLim.val(CLRConfig::INTERNAL_JitVNMapSelLimit);
     assert(selLim == 0 || m_numMapSels < selLim);
 #endif
     ValueNum res;

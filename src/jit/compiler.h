@@ -4323,7 +4323,8 @@ protected :
     unsigned            fgStressBBProf()
     {
 #ifdef DEBUG
-        unsigned result = JitConfig.JitStressBBProf();
+        static ConfigDWORD fJitStressBBProf;
+        unsigned result = fJitStressBBProf.val(CLRConfig::INTERNAL_JitStressBBProf);
         if (result == 0)
         {
             if (compStressCompile(STRESS_BB_PROFILE, 15))
@@ -7548,7 +7549,6 @@ public :
         opts;
 
 #ifdef ALT_JIT
-    static bool s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
 #endif // ALT_JIT
 
@@ -7641,7 +7641,8 @@ public :
     bool                compTailCallStress()
     {
 #ifdef DEBUG
-        return (JitConfig.TailcallStress() !=0
+        static ConfigDWORD fTailcallStress;
+        return (fTailcallStress.val(CLRConfig::INTERNAL_TailcallStress) !=0
                || compStressCompile(STRESS_TAILCALL, 5)
                );
 #else

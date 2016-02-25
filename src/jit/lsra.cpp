@@ -952,7 +952,8 @@ LinearScan::LinearScan(Compiler * theCompiler)
     initRefTypeNames();
 
     // Get the value of the environment variable that controls stress for register allocation
-    lsraStressMask = JitConfig.JitStressRegs();
+    static ConfigDWORD fJitStressRegs;
+    lsraStressMask = fJitStressRegs.val(CLRConfig::INTERNAL_JitStressRegs);
 #if 0
 #ifdef DEBUG
     if (lsraStressMask != 0)
@@ -989,7 +990,8 @@ LinearScan::LinearScan(Compiler * theCompiler)
 #endif // DEBUG
 #endif
 
-    dumpTerse = (JitConfig.JitDumpTerseLsra() != 0);
+    static ConfigDWORD fJitDumpTerseLsra;
+    dumpTerse = (fJitDumpTerseLsra.val(CLRConfig::INTERNAL_JitDumpTerseLsra) != 0);
 
 #endif // DEBUG
     refPositionCount = 0;
