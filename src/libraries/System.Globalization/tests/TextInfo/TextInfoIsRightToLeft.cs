@@ -6,15 +6,14 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class TextInfoIsReadOnly
+    public class TextInfoIsRightToLeft
     {
         [Theory]
         [InlineData("en-US", false)]
-        [InlineData("fr-FR", false)]
-        public void TestEnUSTextInfo(string name, bool expected)
+        [InlineData("ar", true)]
+        public void IsRightToLeft(string name, bool expected)
         {
-            TextInfo textInfo = new CultureInfo(name).TextInfo;
-            Assert.Equal(expected, textInfo.IsReadOnly);
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
     }
 }

@@ -111,16 +111,14 @@
     <Compile Include="StringInfo\StringInfoParseCombiningCharacters.cs" />
     <Compile Include="StringInfo\StringInfoString.cs" />
     <Compile Include="TextElementEnumerator\TextElementEnumeratorTests.cs" />
-    <Compile Include="TextInfo\TestInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoCultureName.cs" />
     <Compile Include="TextInfo\TextInfoEquals.cs" />
-    <Compile Include="TextInfo\TextInfoGetHashCode.cs" />
+    <Compile Include="TextInfo\TextInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoIsReadOnly.cs" />
     <Compile Include="TextInfo\TextInfoListSeparator.cs" />
     <Compile Include="TextInfo\TextInfoToLower.cs" />
     <Compile Include="TextInfo\TextInfoToString.cs" />
-    <Compile Include="TextInfo\TextInfoToUpper1.cs" />
-    <Compile Include="TextInfo\TextInfoToUpper2.cs" />
+    <Compile Include="TextInfo\TextInfoToUpper.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Performance Tests -->

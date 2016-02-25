@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
     {
         private const int MinStringLength = 8;
         private const int MaxStringLength = 256;
-        private static readonly RandomDataGenerator s_RandomDataGenerator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
         [Fact]
         public void Ctor_Empty()
@@ -24,13 +24,13 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Ctor_String_TestData()
         {
-            yield return new object[] { s_RandomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength) };
+            yield return new object[] { s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength) };
             yield return new object[] { "" };
             yield return new object[] { " " };
         }
 
         [Theory]
-        [MemberData("Ctor_String_TestData")]
+        [MemberData(nameof(Ctor_String_TestData))]
         public void Ctor_String(string value)
         {
             var stringInfo = new StringInfo(value);
