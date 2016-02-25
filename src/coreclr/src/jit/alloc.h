@@ -208,7 +208,8 @@ inline bool norls_allocator::nraDirectAlloc()
     // directly to the OS. This allows taking advantage of pageheap and other gflag
     // knobs for ensuring that we do not have buffer overruns in the JIT.
 
-    return JitConfig.JitDirectAlloc() != 0;
+    static ConfigDWORD fJitDirectAlloc;
+    return (fJitDirectAlloc.val(CLRConfig::INTERNAL_JitDirectAlloc) != 0);
 }
 
 #else  // RELEASE

@@ -58,7 +58,6 @@ LONG     Compiler::jitNestingLevel = 0;
 
 #ifdef ALT_JIT
 // static
-bool Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList = nullptr;
 #endif // ALT_JIT
 
@@ -759,7 +758,8 @@ void                Compiler::compShutdown()
 #if defined(DEBUG) || MEASURE_INLINING
 
 #ifdef DEBUG
-    if ((unsigned)JitConfig.JitInlinePrintStats() == 1)
+    static ConfigDWORD fJitInlinePrintStats;
+    if ((unsigned)fJitInlinePrintStats.val(CLRConfig::INTERNAL_JitInlinePrintStats) == 1)
 #endif // DEBUG
     {
         fprintf(fout, "\n");
@@ -1023,7 +1023,8 @@ void                Compiler::compShutdown()
 
 #if LOOP_HOIST_STATS
 #ifdef DEBUG // Always display loop stats in retail
-    if (JitConfig.DisplayLoopHoistStats() != 0)
+    static ConfigDWORD fDisplayLoopHoistStats;
+    if (fDisplayLoopHoistStats.val(CLRConfig::INTERNAL_JitLoopHoistStats) != 0)
 #endif // DEBUG
     {
         PrintAggregateLoopHoistStats(stdout);
@@ -1525,7 +1526,8 @@ static bool DidComponentUnitTests = false;
 
 void Compiler::compDoComponentUnitTestsOnce()
 {
-    if (!JitConfig.RunComponentUnitTests())
+    static ConfigDWORD fRunComponentUnitTests;
+    if (!fRunComponentUnitTests.val(CLRConfig::INTERNAL_JitComponentUnitTests))
         return;
 
     if (!DidComponentUnitTests) 
@@ -1851,7 +1853,8 @@ void Compiler::compSetProcessor()
     if (((compileFlags & CORJIT_FLG_PREJIT) == 0) &&
         ((compileFlags & CORJIT_FLG_USE_AVX2) != 0))
     {
-        if (JitConfig.EnableAVX() != 0)
+        static ConfigDWORD fEnableAVX;
+        if (fEnableAVX.val(CLRConfig::EXTERNAL_EnableAVX) != 0)
         {
             opts.compCanUseAVX = true;
             if (!compIsForInlining())
@@ -1882,9 +1885,11 @@ void Compiler::compSetProcessor()
         SSE2_FORCE_INVALID  = -1
     };
 
-    if (JitConfig.JitCanUseSSE2() == SSE2_FORCE_DISABLE)
+    static ConfigDWORD fJitCanUseSSE2;
+
+    if (fJitCanUseSSE2.val_DontUse_(CLRConfig::INTERNAL_JitCanUseSSE2, (unsigned) SSE2_FORCE_INVALID) == SSE2_FORCE_DISABLE)
         opts.compCanUseSSE2 = false;
-    else if (JitConfig.JitCanUseSSE2() == SSE2_FORCE_USE)
+    else if (fJitCanUseSSE2.val_DontUse_(CLRConfig::INTERNAL_JitCanUseSSE2, (unsigned) SSE2_FORCE_INVALID) == SSE2_FORCE_USE)
         opts.compCanUseSSE2 = true;
     else if (opts.compCanUseSSE2)
         opts.compCanUseSSE2 = !compStressCompile(STRESS_GENERIC_VARN, 50);
@@ -1933,8 +1938,8 @@ bool                Compiler::compShouldThrowOnNoway(
     return !opts.MinOpts() || !compIsFullTrust();
 }
 
-// ConfigInteger does not offer an option for decimal flags.  Any numbers are interpreted as hex.
-// I could add the decimal option to ConfigInteger or I could write a function to reinterpret this
+// ConfigDWORD does not offer an option for decimal flags.  Any numbers are interpreted as hex.
+// I could add the decimal option to ConfigDWORD or I could write a function to reinterpret this
 // value as the user intended.
 unsigned ReinterpretHexAsDecimal(unsigned in)
 {
@@ -2054,14 +2059,20 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
 #ifdef DEBUG
 
-    const JitConfigValues::MethodSet* pfAltJit;
+    ConfigMethodSet* pfAltJit;
     if (opts.eeFlags & CORJIT_FLG_PREJIT)
     {
-        pfAltJit = &JitConfig.AltJitNgen();
+        static ConfigMethodSet fAltJitNgen;
+        fAltJitNgen.ensureInit(CLRConfig::INTERNAL_AltJitNgen);
+
+        pfAltJit = &fAltJitNgen;
     }
     else
     {
-        pfAltJit = &JitConfig.AltJit();
+        static ConfigMethodSet fAltJit;
+        fAltJit.ensureInit(CLRConfig::EXTERNAL_AltJit);
+
+        pfAltJit = &fAltJit;
     }
 
 #ifdef ALT_JIT
@@ -2070,7 +2081,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         opts.altJit = true;
     }
 
-    unsigned altJitLimit = ReinterpretHexAsDecimal(JitConfig.AltJitLimit());
+    static ConfigDWORD fAltJitLimit;
+    unsigned altJitLimit = ReinterpretHexAsDecimal(fAltJitLimit.val(CLRConfig::INTERNAL_AltJitLimit));
     if (altJitLimit > 0 && Compiler::jitTotalMethodCompiled >= altJitLimit)
     {
         opts.altJit = false;
@@ -2079,14 +2091,16 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
 #else // !DEBUG
 
-    const char* altJitVal;
+    LPWSTR altJitVal;
     if (opts.eeFlags & CORJIT_FLG_PREJIT)
     {
-        altJitVal = JitConfig.AltJitNgen().list();
+        static ConfigString fAltJitNgen;
+        altJitVal = fAltJitNgen.val(CLRConfig::INTERNAL_AltJitNgen);
     }
     else
     {
-        altJitVal = JitConfig.AltJit().list();
+        static ConfigString fAltJit;
+        altJitVal = fAltJit.val(CLRConfig::EXTERNAL_AltJit);
     }
 
 #ifdef ALT_JIT
@@ -2094,7 +2108,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     // You don't get to give a regular expression of methods to match.
     // (Partially, this is because we haven't computed and stored the method and class name except in debug, and it
     // might be expensive to do so.)
-    if ((altJitVal != nullptr) && (strcmp(altJitVal, "*") == 0))
+    if ((altJitVal != NULL) && (wcscmp(altJitVal, W("*")) == 0))
     {
         opts.altJit = true;
     }
@@ -2107,16 +2121,16 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     if (opts.altJit)
     {
         // First, initialize the AltJitExcludeAssemblies list, but only do it once.
-        if (!s_pAltJitExcludeAssembliesListInitialized)
+        static ConfigString fAltJitExcludeAssemblies;
+        if (!fAltJitExcludeAssemblies.isInitialized())
         {
-            const wchar_t* wszAltJitExcludeAssemblyList = JitConfig.AltJitExcludeAssemblies();
+            LPWSTR wszAltJitExcludeAssemblyList = fAltJitExcludeAssemblies.val(CLRConfig::EXTERNAL_AltJitExcludeAssemblies);
             if (wszAltJitExcludeAssemblyList != nullptr)
             {
                 // NOTE: The Assembly name list is allocated in the process heap, not in the no-release heap, which is reclaimed
                 // for every compilation. This is ok because we only allocate once, due to the static.
                 s_pAltJitExcludeAssembliesList = new (ProcessHeapAllocator::Singleton()) AssemblyNamesList2(wszAltJitExcludeAssemblyList, ProcessHeapAllocator::Singleton());
             }
-            s_pAltJitExcludeAssembliesListInitialized = true;
         }
 
         if (s_pAltJitExcludeAssembliesList != nullptr)
@@ -2144,7 +2158,9 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     //  
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
-        if (JitConfig.JitImportBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet fJitImportBreak;
+        fJitImportBreak.ensureInit(CLRConfig::INTERNAL_JitImportBreak);
+        if (fJitImportBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             assert(!"JitImportBreak reached");
     }
 
@@ -2176,41 +2192,63 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
         if (opts.eeFlags & CORJIT_FLG_PREJIT)
         {
-            if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenDump;
+            fNgenDump.ensureInit(CLRConfig::INTERNAL_NgenDump);
+
+            if (fNgenDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 verboseDump = true;
 
-            unsigned ngenHashDumpVal = (unsigned) JitConfig.NgenHashDump();
+            static ConfigDWORD fNgenHashDump;
+            unsigned ngenHashDumpVal = (unsigned) fNgenHashDump.val(CLRConfig::INTERNAL_NgenHashDump);
             if ((ngenHashDumpVal != (DWORD)-1) && (ngenHashDumpVal == info.compMethodHash()))
                 verboseDump = true;
 
-            if (JitConfig.NgenDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenDumpIR;
+            fNgenDumpIR.ensureInit(CLRConfig::INTERNAL_NgenDumpIR);
+
+            if (fNgenDumpIR.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 dumpIR = true;
 
-            unsigned ngenHashDumpIRVal = (unsigned) JitConfig.NgenHashDumpIR();
+            static ConfigDWORD fNgenHashDumpIR;
+            unsigned ngenHashDumpIRVal = (unsigned) fNgenHashDumpIR.val(CLRConfig::INTERNAL_NgenHashDumpIR);
             if ((ngenHashDumpIRVal != (DWORD)-1) && (ngenHashDumpIRVal == info.compMethodHash()))
                 dumpIR = true;
 
-            dumpIRFormat = JitConfig.NgenDumpIRFormat();
-            dumpIRPhase = JitConfig.NgenDumpIRPhase();
+            static ConfigString ngenDumpIRFormat;
+            dumpIRFormat = ngenDumpIRFormat.val(CLRConfig::INTERNAL_NgenDumpIRFormat);
+
+            static ConfigString ngenDumpIRPhase;
+            dumpIRPhase = ngenDumpIRPhase.val(CLRConfig::INTERNAL_NgenDumpIRPhase);
         }
         else
         {
-            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitDump;
+            fJitDump.ensureInit(CLRConfig::INTERNAL_JitDump);
+
+            if (fJitDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 verboseDump = true;
 
-            unsigned jitHashDumpVal = (unsigned) JitConfig.JitHashDump();
+            static ConfigDWORD fJitHashDump;
+            unsigned jitHashDumpVal = (unsigned) fJitHashDump.val(CLRConfig::INTERNAL_JitHashDump);
             if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
                 verboseDump = true;
 
-            if (JitConfig.JitDumpIR().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitDumpIR;
+            fJitDumpIR.ensureInit(CLRConfig::INTERNAL_JitDumpIR);
+
+            if (fJitDumpIR.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 dumpIR = true;
 
-            unsigned jitHashDumpIRVal = (unsigned) JitConfig.JitHashDumpIR();
+            static ConfigDWORD fJitHashDumpIR;
+            unsigned jitHashDumpIRVal = (unsigned) fJitHashDumpIR.val(CLRConfig::INTERNAL_JitHashDumpIR);
             if ((jitHashDumpIRVal != (DWORD)-1) && (jitHashDumpIRVal == info.compMethodHash()))
                 dumpIR = true;
 
-            dumpIRFormat = JitConfig.JitDumpIRFormat();
-            dumpIRPhase = JitConfig.JitDumpIRPhase();
+            static ConfigString jitDumpIRFormat;
+            dumpIRFormat = jitDumpIRFormat.val(CLRConfig::INTERNAL_JitDumpIRFormat);
+
+            static ConfigString jitDumpIRPhase;
+            dumpIRPhase = jitDumpIRPhase.val(CLRConfig::INTERNAL_JitDumpIRPhase);
         }
 
         if (dumpIRPhase == nullptr)
@@ -2576,60 +2614,83 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     {
         if (opts.eeFlags & CORJIT_FLG_PREJIT)
         {
-            if ((JitConfig.NgenOrder() & 1) == 1)
+            static ConfigDWORD fNgenOrder;
+            if ((fNgenOrder.val(CLRConfig::INTERNAL_NgenOrder) & 1) == 1)
                 opts.dspOrder = true;
 
-            if (JitConfig.NgenGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenGCDump;
+            fNgenGCDump.ensureInit(CLRConfig::INTERNAL_NgenGCDump);
+            if (fNgenGCDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspGCtbls = true;
 
-            if (JitConfig.NgenDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenDisasm;
+            fNgenDisasm.ensureInit(CLRConfig::INTERNAL_NgenDisasm);
+            if (fNgenDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.disAsm = true;
-            if (JitConfig.NgenDisasm().contains("SPILLED", NULL, NULL))
+            if (fNgenDisasm.contains("SPILLED", NULL))
                 opts.disAsmSpilled = true;
 
-            if (JitConfig.NgenUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenUnwindDump;
+            fNgenUnwindDump.ensureInit(CLRConfig::INTERNAL_NgenUnwindDump);
+            if (fNgenUnwindDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspUnwind = true;
 
-            if (JitConfig.NgenEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fNgenEHDump;
+            fNgenEHDump.ensureInit(CLRConfig::INTERNAL_NgenEHDump);
+            if (fNgenEHDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspEHTable = true;
         }
         else 
         {
-            if ((JitConfig.JitOrder() & 1) == 1)
+            static ConfigDWORD fJitOrder;
+            if ((fJitOrder.val(CLRConfig::INTERNAL_JitOrder) & 1) == 1)
                 opts.dspOrder = true;
 
-            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitGCDump;
+            fJitGCDump.ensureInit(CLRConfig::INTERNAL_JitGCDump);
+            if (fJitGCDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspGCtbls = true;
 
-            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitDisasm;
+            fJitDisasm.ensureInit(CLRConfig::INTERNAL_JitDisasm);
+            if (fJitDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.disAsm = true;
 
-            if (JitConfig.JitDisasm().contains("SPILLED", NULL, NULL))
+            if (fJitDisasm.contains("SPILLED", NULL))
                 opts.disAsmSpilled = true;
 
-            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitUnwindDump;
+            fJitUnwindDump.ensureInit(CLRConfig::INTERNAL_JitUnwindDump);
+            if (fJitUnwindDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspUnwind = true;
 
-            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            static ConfigMethodSet fJitEHDump;
+            fJitEHDump.ensureInit(CLRConfig::INTERNAL_JitEHDump);
+            if (fJitEHDump.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
                 opts.dspEHTable = true;
         }
 
 #ifdef LATE_DISASM
-        if (JitConfig.JitLateDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet fJitLateDisasm;
+        fJitLateDisasm.ensureInit(CLRConfig::INTERNAL_JitLateDisasm);
+        if (fJitLateDisasm.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
         // This one applies to both Ngen/Jit Disasm output: COMPLUS_JitDiffableDasm=1
-        if (JitConfig.DiffableDasm() != 0)
+        static ConfigDWORD fDiffableDasm;
+        if (fDiffableDasm.val(CLRConfig::INTERNAL_JitDiffableDasm) != 0)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
         }
 
-        if (JitConfig.DisplayMemStats() != 0)
+        static ConfigDWORD fDisplayMemStats;
+        if (fDisplayMemStats.val(CLRConfig::INTERNAL_JitMemStats) != 0)
             s_dspMemStats = true;
 
-        if (JitConfig.JitLargeBranches() != 0)
+        static ConfigDWORD fJitLargeBranches;
+        if (fJitLargeBranches.val(CLRConfig::INTERNAL_JitLargeBranches) != 0)
             opts.compLargeBranches = true;
     }
 
@@ -2646,10 +2707,12 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         codeGen->setVerbose(true);
     }
 
-    treesBeforeAfterMorph = (JitConfig.TreesBeforeAfterMorph() == 1);
+    static ConfigDWORD fTreesBeforeAfterMorph;
+    treesBeforeAfterMorph = (fTreesBeforeAfterMorph.val(CLRConfig::INTERNAL_JitDumpBeforeAfterMorph) == 1);
     morphNum = 0;  // Initialize the morphed-trees counting.
 
-    expensiveDebugCheckLevel = JitConfig.JitExpensiveDebugCheckLevel();
+    static ConfigDWORD fJitExpensiveDebugCheckLevel;
+    expensiveDebugCheckLevel = fJitExpensiveDebugCheckLevel.val(CLRConfig::INTERNAL_JitExpensiveDebugCheckLevel);
     if (expensiveDebugCheckLevel == 0)
     {
         // If we're in a stress mode that modifies the flowgraph, make 1 the default.
@@ -2666,16 +2729,21 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         printf("");         // in our logic this causes a flush
     }
 
-    if (JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    static ConfigMethodSet fJitBreak;
+    fJitBreak.ensureInit(CLRConfig::INTERNAL_JitBreak);
+    if (fJitBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         assert(!"JitBreak reached");
 
-    unsigned jitHashBreakVal = (unsigned)JitConfig.JitHashBreak();
+    static ConfigDWORD fJitHashBreak;
+    unsigned jitHashBreakVal = (unsigned)fJitHashBreak.val(CLRConfig::INTERNAL_JitHashBreak);
     if ((jitHashBreakVal != (DWORD)-1) && (jitHashBreakVal == info.compMethodHash()))
         assert(!"JitHashBreak reached");
 
+    static ConfigMethodSet fJitDebugBreak;
+    fJitDebugBreak.ensureInit(CLRConfig::INTERNAL_JitDebugBreak);
     if (verbose ||
-        JitConfig.JitDebugBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args) ||
-        JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        fJitDebugBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args) ||
+        fJitBreak.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         compDebugBreak = true;
     }
@@ -2689,7 +2757,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #ifdef DEBUGGING_SUPPORT
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
-    opts.compGcChecks = (JitConfig.JitGCChecks() != 0) ||
+    static ConfigDWORD fJitGCChecks;
+    opts.compGcChecks = (fJitGCChecks.val_DontUse_(CLRConfig::INTERNAL_JitGCChecks) != 0) ||
                         compStressCompile(STRESS_GENERIC_VARN, 5);
 
     enum
@@ -2699,7 +2768,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         STACK_CHECK_ALL         = 0x3,
     };
 
-    DWORD dwJitStackChecks = JitConfig.JitStackChecks();
+    static ConfigDWORD fJitStackChecks;
+    DWORD dwJitStackChecks = fJitStackChecks.val_DontUse_(CLRConfig::INTERNAL_JitStackChecks);
     if (compStressCompile(STRESS_GENERIC_VARN, 5)) dwJitStackChecks = STACK_CHECK_ALL;
     opts.compStackCheckOnRet = (dwJitStackChecks & DWORD(STACK_CHECK_ON_RETURN)) != 0;
     opts.compStackCheckOnCall = (dwJitStackChecks & DWORD(STACK_CHECK_ON_CALL)) != 0;
@@ -2730,7 +2800,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     // Honour complus_JitELTHookEnabled only if VM has not asked us to generate profiler 
     // hooks in the first place. That is, Override VM only if it hasn't asked for a 
     // profiler callback for this method.
-    if (!compProfilerHookNeeded  && (JitConfig.JitELTHookEnabled() != 0))
+    static ConfigDWORD fJitELTHookEnabled;
+    if (!compProfilerHookNeeded  && (fJitELTHookEnabled.val(CLRConfig::INTERNAL_JitELTHookEnabled) != 0))
     {
         opts.compJitELTHookEnabled = true;
     }
@@ -2746,13 +2817,14 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif // PROFILING_SUPPORTED
 
 #if FEATURE_TAILCALL_OPT
-    const wchar_t* strTailCallOpt = JitConfig.TailCallOpt();
+    static ConfigString  fTailCallOpt;
+    LPWSTR strTailCallOpt = fTailCallOpt.val(CLRConfig::EXTERNAL_TailCallOpt);
     if (strTailCallOpt != nullptr)
     {
         opts.compTailCallOpt = (UINT)_wtoi(strTailCallOpt) != 0;
     }
-
-    if (JitConfig.TailCallLoopOpt() == 0)
+    static ConfigDWORD  fTailCallLoopOpt;
+    if (fTailCallLoopOpt.val(CLRConfig::EXTERNAL_TailCallLoopOpt) == 0)
     {
         opts.compTailCallLoopOpt = false;
     }
@@ -2776,7 +2848,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #ifdef DEBUG
 #if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
     // Whether encoding of absolute addr as PC-rel offset is enabled in RyuJIT
-    opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
+    static ConfigDWORD fEnablePCRelAddr;
+    opts.compEnablePCRelAddr = (fEnablePCRelAddr.val(CLRConfig::INTERNAL_JitEnablePCRelAddr) != 0);
 #endif
 #endif //DEBUG
 
@@ -2800,15 +2873,21 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
         // This is useful for debugging on a checked build.  Note that we still only do procedure
         // splitting in the zapper.
-        if (JitConfig.JitForceProcedureSplitting().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet fJitForceProcedureSplitting;
+        fJitForceProcedureSplitting.ensureInit(CLRConfig::INTERNAL_JitForceProcedureSplitting);
+        if (fJitForceProcedureSplitting.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplitting = true;
 
         // JitNoProcedureSplitting will always disable procedure splitting.
-        if (JitConfig.JitNoProcedureSplitting().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet fJitNoProcedureSplitting;
+        fJitNoProcedureSplitting.ensureInit(CLRConfig::INTERNAL_JitNoProcedureSplitting);
+        if (fJitNoProcedureSplitting.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplitting = false;
         //
         // JitNoProcedureSplittingEH will disable procedure splitting in functions with EH.
-        if (JitConfig.JitNoProcedureSplittingEH().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet fJitNoProcedureSplittingEH;
+        fJitNoProcedureSplittingEH.ensureInit(CLRConfig::INTERNAL_JitNoProcedureSplittingEH);
+        if (fJitNoProcedureSplittingEH.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             opts.compProcedureSplittingEH = false;
 #endif
     }
@@ -2854,7 +2933,8 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     opts.compNeedStackProbes = false;
 
 #ifdef DEBUG
-    if (JitConfig.StackProbesOverride() != 0 ||
+    static ConfigDWORD fStackProbesOverride;
+    if (fStackProbesOverride.val_DontUse_(CLRConfig::INTERNAL_JitStackProbes) != 0 ||
         compStressCompile(STRESS_GENERIC_VARN, 5))
     {
         opts.compNeedStackProbes = true;
@@ -2865,8 +2945,9 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
     if (compStressCompile(STRESS_NULL_OBJECT_CHECK, 30))
     {
+        static ConfigDWORD fJitMaxUncheckedOffset;
         compMaxUncheckedOffsetForNullObject = 
-            (unsigned) JitConfig.JitMaxUncheckedOffset();
+            (unsigned) fJitMaxUncheckedOffset.val(CLRConfig::INTERNAL_JitMaxUncheckedOffset);
         if (verbose) {
             printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%X\n", compMaxUncheckedOffsetForNullObject);
         }
@@ -2930,14 +3011,17 @@ bool Compiler::compJitHaltMethod()
     /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
     /* Note that this these two "Jit" environment variables also work for ngen images */
 
-    if (JitConfig.JitHalt().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    static ConfigMethodSet fJitHalt;
+    fJitHalt.ensureInit(CLRConfig::INTERNAL_JitHalt);
+    if (fJitHalt.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         return true;
     }
 
     /* Use this Hash variant when there are a lot of method with the same name and different signatures */
 
-    unsigned fJitHashHaltVal = (unsigned)JitConfig.JitHashHalt();
+    static ConfigDWORD fJitHashHalt;
+    unsigned fJitHashHaltVal = (unsigned)fJitHashHalt.val(CLRConfig::INTERNAL_JitHashHalt);
     if ((fJitHashHaltVal != (unsigned)-1) && (fJitHashHaltVal == info.compMethodHash()))
     {
         return true;
@@ -2972,17 +3056,21 @@ bool            Compiler::compStressCompile(compStressArea  stressArea,
         return false;
     }
 
-    if (!JitConfig.JitStressOnly().isEmpty() && 
-        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    static ConfigMethodSet fJitStressOnly;
+    fJitStressOnly.ensureInit(CLRConfig::INTERNAL_JitStressOnly);
+    if (!fJitStressOnly.isEmpty() && 
+        !fJitStressOnly.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
     {
         return false;
     }     
 
     bool doStress = false;
-    const wchar_t* strStressModeNames;
+    static ConfigString fJitStressModeNames;
+    LPWSTR strStressModeNames;
 
     // Does user explicitly prevent using this STRESS_MODE through the command line?
-    const wchar_t* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
+    static ConfigString fJitStressModeNamesNot;
+    LPWSTR strStressModeNamesNot = fJitStressModeNamesNot.val(CLRConfig::INTERNAL_JitStressModeNamesNot);
     if ((strStressModeNamesNot != NULL) &&
         (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != NULL))
     {
@@ -2995,7 +3083,7 @@ bool            Compiler::compStressCompile(compStressArea  stressArea,
     }
 
     // Does user explicitly set this STRESS_MODE through the command line?
-    strStressModeNames = JitConfig.JitStressModeNames();
+    strStressModeNames = fJitStressModeNames.val(CLRConfig::INTERNAL_JitStressModeNames);
     if ((strStressModeNames != NULL) &&
         (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != NULL))
     {
@@ -3170,7 +3258,9 @@ void                 Compiler::compSetOptimizationLevel()
     }
 
 #ifdef  DEBUG
-    jitMinOpts = JitConfig.JitMinOpts();
+    static ConfigDWORD fJitMinOpts;
+
+    jitMinOpts = fJitMinOpts.val_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, 0);
 
     if (!theMinOptsValue && (jitMinOpts > 0))
     {
@@ -3234,7 +3324,10 @@ void                 Compiler::compSetOptimizationLevel()
     
     if (!theMinOptsValue)
     {
-        if (JitConfig.JitMinOptsName().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        static ConfigMethodSet jitMinOptsName;
+        jitMinOptsName.ensureInit(CLRConfig::INTERNAL_JITMinOptsName);
+
+        if (jitMinOptsName.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
             theMinOptsValue = true;
     }
 
@@ -3246,27 +3339,34 @@ void                 Compiler::compSetOptimizationLevel()
     // unless unless CLFLG_MINOPT is set
     else if (!(compileFlags & CORJIT_FLG_PREJIT))
     {
-        if ((unsigned)JitConfig.JitMinOptsCodeSize() < info.compILCodeSize)
+        static ConfigDWORD fJitMinOptsCodeSize;
+        static ConfigDWORD fJitMinOptsInstrCount;
+        static ConfigDWORD fJitMinOptsBbCount;
+        static ConfigDWORD fJitMinOptsLvNumCount;
+        static ConfigDWORD fJitMinOptsLvRefCount;
+        static ConfigDWORD fJitBreakOnMinOpts;
+
+        if (fJitMinOptsCodeSize.val_DontUse_(CLRConfig::INTERNAL_JITMinOptsCodeSize, DEFAULT_MIN_OPTS_CODE_SIZE) < info.compILCodeSize)
         {
             JITLOG((LL_INFO10, "IL Code Size exceeded, using MinOpts for method %s\n", info.compFullName));
             theMinOptsValue = true;
         }
-        else if ((unsigned)JitConfig.JitMinOptsInstrCount() < opts.instrCount)
+        else if (fJitMinOptsInstrCount.val_DontUse_(CLRConfig::INTERNAL_JITMinOptsInstrCount, DEFAULT_MIN_OPTS_INSTR_COUNT) < opts.instrCount)
         {
             JITLOG((LL_INFO10, "IL instruction count exceeded, using MinOpts for method %s\n", info.compFullName));
             theMinOptsValue = true;
         }
-        else if ((unsigned)JitConfig.JitMinOptsBbCount() < fgBBcount)
+        else if (fJitMinOptsBbCount.val_DontUse_(CLRConfig::INTERNAL_JITMinOptsBbCount, DEFAULT_MIN_OPTS_BB_COUNT) < fgBBcount)
         {
             JITLOG((LL_INFO10, "Basic Block count exceeded, using MinOpts for method %s\n", info.compFullName));
             theMinOptsValue = true;
         }
-        else if ((unsigned)JitConfig.JitMinOptsLvNumCount() < lvaCount)
+        else if (fJitMinOptsLvNumCount.val_DontUse_(CLRConfig::INTERNAL_JITMinOptsLvNumcount, DEFAULT_MIN_OPTS_LV_NUM_COUNT) < lvaCount)
         {
             JITLOG((LL_INFO10, "Local Variable Num count exceeded, using MinOpts for method %s\n", info.compFullName));
             theMinOptsValue = true;
         }
-        else if ((unsigned)JitConfig.JitMinOptsLvRefCount() < opts.lvRefCount)
+        else if (fJitMinOptsLvRefCount.val_DontUse_(CLRConfig::INTERNAL_JITMinOptsLvRefcount, DEFAULT_MIN_OPTS_LV_REF_COUNT) < opts.lvRefCount)
         {
             JITLOG((LL_INFO10, "Local Variable Ref count exceeded, using MinOpts for method %s\n", info.compFullName));
             theMinOptsValue = true;
@@ -3275,7 +3375,7 @@ void                 Compiler::compSetOptimizationLevel()
         {
             JITLOG((LL_INFO10000, "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count %3d,%3d for method %s\n",
                     info.compILCodeSize, opts.instrCount, fgBBcount, lvaCount, opts.lvRefCount, info.compFullName));
-            if (JitConfig.JitBreakOnMinOpts() != 0)
+            if (fJitBreakOnMinOpts.val_DontUse_(CLRConfig::INTERNAL_JITBreakOnMinOpts, 0) != 0)
             {
                 assert(!"MinOpts enabled");
             }
@@ -3524,7 +3624,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     EndPhase(PHASE_PRE_IMPORT);
 
 #ifdef DEBUG
-    bool funcTrace = JitConfig.JitFunctionTrace() != 0;
+    bool funcTrace = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitFunctionTrace) != 0);
 
     if (!compIsForInlining())
     {
@@ -3764,13 +3864,14 @@ void                 Compiler::compCompile(void * * methodCodePtr,
         bool doRangeAnalysis = true;
 
 #ifdef DEBUG
-        doSsa           =                    (JitConfig.JitDoSsa()           != 0);
-        doEarlyProp     = doSsa           && (JitConfig.JitDoEarlyProp()     != 0);
-        doValueNum      = doSsa           && (JitConfig.JitDoValueNumber()   != 0);
-        doLoopHoisting  = doValueNum      && (JitConfig.JitDoLoopHoisting()  != 0);
-        doCopyProp      = doValueNum      && (JitConfig.JitDoCopyProp()      != 0);
-        doAssertionProp = doValueNum      && (JitConfig.JitDoAssertionProp() != 0);
-        doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        static ConfigDWORD fJitDoOptConfig[7];
+        doSsa           =                    (fJitDoOptConfig[0].val(CLRConfig::INTERNAL_JitDoSsa)           != 0);
+        doEarlyProp     = doSsa           && (fJitDoOptConfig[1].val(CLRConfig::INTERNAL_JitDoEarlyProp)     != 0);
+        doValueNum      = doSsa           && (fJitDoOptConfig[2].val(CLRConfig::INTERNAL_JitDoValueNumber)   != 0);
+        doLoopHoisting  = doValueNum      && (fJitDoOptConfig[3].val(CLRConfig::INTERNAL_JitDoLoopHoisting)  != 0);
+        doCopyProp      = doValueNum      && (fJitDoOptConfig[4].val(CLRConfig::INTERNAL_JitDoCopyProp)      != 0);
+        doAssertionProp = doValueNum      && (fJitDoOptConfig[5].val(CLRConfig::INTERNAL_JitDoAssertionProp) != 0);
+        doRangeAnalysis = doAssertionProp && (fJitDoOptConfig[6].val(CLRConfig::INTERNAL_JitDoRangeAnalysis) != 0);
 #endif
 
         if (doSsa)
@@ -4098,14 +4199,18 @@ void* forceFrameJIT;       // used to force to frame &useful for fastchecked deb
 bool Compiler::skipMethod()
 {
     static ConfigMethodRange fJitRange;
-    fJitRange.ensureInit(JitConfig.JitRange());
+    fJitRange.ensureInit(CLRConfig::INTERNAL_JitRange);
     if (!fJitRange.contains(info.compCompHnd, info.compMethodHnd))
         return true;
 
-    if (JitConfig.JitExclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    static ConfigMethodSet fJitExclude;
+    fJitExclude.ensureInit(CLRConfig::INTERNAL_JitExclude);
+    if (fJitExclude.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         return true;
 
-    if (!JitConfig.JitInclude().isEmpty() && !JitConfig.JitInclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    static ConfigMethodSet fJitInclude;
+    fJitInclude.ensureInit(CLRConfig::INTERNAL_JitInclude);
+    if (!fJitInclude.isEmpty() && !fJitInclude.contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
         return true;
 
     return false;
@@ -4180,7 +4285,8 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 #endif
 
 #if FUNC_INFO_LOGGING
-    LPCWSTR tmpJitFuncInfoFilename = JitConfig.JitFuncInfoFile();
+    static ConfigString jitFuncInfoFile;
+    LPCWSTR tmpJitFuncInfoFilename = jitFuncInfoFile.val(CLRConfig::INTERNAL_JitFuncInfoLogFile);
 
     if (tmpJitFuncInfoFilename != NULL)
     {
@@ -4262,7 +4368,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
 
     static ConfigMethodRange fJitStressRange;
-    fJitStressRange.ensureInit(JitConfig.JitStressRange());
+    fJitStressRange.ensureInit(CLRConfig::INTERNAL_JitStressRange);
     if (fJitStressRange.contains(info.compCompHnd, info.compMethodHnd))
     {
         bRangeAllowStress = true;
@@ -4724,7 +4830,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 #endif
 
         // Check for COMPLUS_AgressiveInlining
-        if (JitConfig.JitAggressiveInlining())
+        static ConfigDWORD fJitAggressiveInlining;
+        if (fJitAggressiveInlining.val(CLRConfig::INTERNAL_JitAggressiveInlining))
         {
             compDoAggressiveInlining = true;
         }
@@ -4750,7 +4857,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         }
 
         // Force verification if asked to do so
-        if (JitConfig.JitForceVer())
+        static ConfigDWORD fJitForceVer;
+        if (fJitForceVer.val(CLRConfig::INTERNAL_JitForceVer))
             tiVerificationNeeded = (instVerInfo == INSTVER_NOT_INSTANTIATION);
 
         if (tiVerificationNeeded)
@@ -4980,7 +5088,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         }
 
 #ifdef  DEBUG
-        if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining()) 
+        static ConfigDWORD fDumpJittedMethods;
+        if (fDumpJittedMethods.val(CLRConfig::INTERNAL_DumpJittedMethods) == 1 && !compIsForInlining()) 
         {
             printf("Compiling %4d %s::%s, IL size = %u, hsh=0x%x\n", 
                    Compiler::jitTotalMethodCompiled,
@@ -5027,7 +5136,8 @@ _Next:
 
 #ifdef ALT_JIT
 #ifdef DEBUG
-            if (JitConfig.RunAltJitCode() == 0)
+            static ConfigDWORD fRunAltJitCode;
+            if (fRunAltJitCode.val(CLRConfig::INTERNAL_RunAltJitCode) == 0)
             {
                 return CORJIT_SKIPPED;
             }
@@ -6600,7 +6710,8 @@ CritSecObject JitTimer::s_csvLock;
 
 LPCWSTR Compiler::JitTimeLogCsv()
 {
-    LPCWSTR jitTimeLogCsv = JitConfig.JitTimeLogCsv();
+    static ConfigString jitConfigTimeLogCsv;
+    LPCWSTR jitTimeLogCsv = jitConfigTimeLogCsv.val(CLRConfig::INTERNAL_JitTimeLogCsv);
     return jitTimeLogCsv;
 }
 

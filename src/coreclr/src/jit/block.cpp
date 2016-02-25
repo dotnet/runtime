@@ -37,7 +37,8 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
 unsigned SsaStressHashHelper()
 {
     // hash = 0: turned off, hash = 1: use method hash, hash = *: use custom hash.
-    unsigned hash = JitConfig.JitSsaStress();
+    static ConfigDWORD fJitSsaStress;
+    unsigned hash = fJitSsaStress.val(CLRConfig::INTERNAL_JitSsaStress);
 
     if (hash == 0)
     {
