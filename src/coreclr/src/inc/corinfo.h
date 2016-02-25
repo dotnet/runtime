@@ -1584,6 +1584,11 @@ enum CorInfoTokenKind
 
     // token comes from CEE_CONSTRAINED
     CORINFO_TOKENKIND_Constrained = 0x100 | CORINFO_TOKENKIND_Class,
+
+#if COR_JIT_EE_VERSION > 460
+    // token comes from CEE_NEWOBJ
+    CORINFO_TOKENKIND_NewObj    = 0x200 | CORINFO_TOKENKIND_Method,
+#endif
 };
 
 struct CORINFO_RESOLVED_TOKEN
