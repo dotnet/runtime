@@ -75,6 +75,91 @@ extern "C" void SystemNative_InitializeConsole()
 #endif
 }
 
+static int TranslatePalControlCharacterName(int name)
+{
+    switch (name)
+    {
+#ifdef VINTR
+        case PAL_VINTR: return VINTR;
+#endif
+#ifdef VQUIT
+        case PAL_VQUIT: return VQUIT;
+#endif
+#ifdef VERASE
+        case PAL_VERASE: return VERASE;
+#endif
+#ifdef VKILL
+        case PAL_VKILL: return VKILL;
+#endif
+#ifdef VEOF
+        case PAL_VEOF: return VEOF;
+#endif
+#ifdef VTIME
+        case PAL_VTIME: return VTIME;
+#endif
+#ifdef VMIN
+        case PAL_VMIN: return VMIN;
+#endif
+#ifdef VSWTC
+        case PAL_VSWTC: return VSWTC;
+#endif
+#ifdef VSTART
+        case PAL_VSTART: return VSTART;
+#endif
+#ifdef VSTOP
+        case PAL_VSTOP: return VSTOP;
+#endif
+#ifdef VSUSP
+        case PAL_VSUSP: return VSUSP;
+#endif
+#ifdef VEOL
+        case PAL_VEOL: return VEOL;
+#endif
+#ifdef VREPRINT
+        case PAL_VREPRINT: return VREPRINT;
+#endif
+#ifdef VDISCARD
+        case PAL_VDISCARD: return VDISCARD;
+#endif
+#ifdef VWERASE
+        case PAL_VWERASE: return VWERASE;
+#endif
+#ifdef VLNEXT
+        case PAL_VLNEXT: return VLNEXT;
+#endif
+#ifdef VEOL2
+        case PAL_VEOL2: return VEOL2;
+#endif
+        default: return -1;
+    }
+}
+
+extern "C" void SystemNative_GetControlCharacters(
+    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, 
+    int32_t controlCharacterLength)
+{
+    assert(controlCharacterNames != nullptr);
+    assert(controlCharacterValues != nullptr);
+    assert(controlCharacterLength >= 0);
+
+    memset(controlCharacterValues, 0, sizeof(uint8_t) * UnsignedCast(controlCharacterLength));
+
+#if HAVE_TCGETATTR
+    struct termios newtermios = {};
+    if (tcgetattr(STDIN_FILENO, &newtermios) >= 0)
+    {
+        for (int i = 0; i < controlCharacterLength; i++)
+        {
+            int name = TranslatePalControlCharacterName(controlCharacterNames[i]);
+            if (name >= 0)
+            {
+                controlCharacterValues[i] = newtermios.c_cc[name];
+            }
+        }
+    }
+#endif
+}
+
 extern "C" int32_t SystemNative_StdinReady()
 {
     struct pollfd fd;
