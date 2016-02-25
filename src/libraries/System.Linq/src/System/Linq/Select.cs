@@ -217,11 +217,7 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                if (count == 0)
-                {
-                    return (IPartition<TResult>)Clone();
-                }
-
+                Debug.Assert(count > 0);
                 if (count >= _source.Length)
                 {
                     return EmptyPartition<TResult>.Instance;
@@ -232,7 +228,7 @@ namespace System.Linq
 
             public IPartition<TResult> Take(int count)
             {
-                return count >= _source.Length ? (IPartition<TResult>)Clone() : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+                return count >= _source.Length ? (IPartition<TResult>)this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
             public TResult TryGetElementAt(int index, out bool found)
@@ -355,7 +351,8 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                return count == 0 ? (IPartition<TResult>)Clone() : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
+                Debug.Assert(count > 0);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
             public IPartition<TResult> Take(int count)
@@ -494,7 +491,8 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                return count == 0 ? (IPartition<TResult>)Clone() : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
+                Debug.Assert(count > 0);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
             public IPartition<TResult> Take(int count)
@@ -599,7 +597,8 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
-                return count == 0 ? (IPartition<TResult>)Clone() : new SelectIPartitionIterator<TSource, TResult>(_source.Skip(count), _selector);
+                Debug.Assert(count > 0);
+                return new SelectIPartitionIterator<TSource, TResult>(_source.Skip(count), _selector);
             }
 
             public IPartition<TResult> Take(int count)
@@ -729,6 +728,7 @@ namespace System.Linq
 
             public IPartition<TResult> Skip(int count)
             {
+                Debug.Assert(count > 0);
                 int minIndex = _minIndex + count;
                 return minIndex >= _maxIndex ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndex);
             }
@@ -736,7 +736,7 @@ namespace System.Linq
             public IPartition<TResult> Take(int count)
             {
                 int maxIndex = _minIndex + count - 1;
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndex, (uint)maxIndex >= (uint)_maxIndex ? _maxIndex : maxIndex);
+                return (uint)maxIndex >= (uint)_maxIndex ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndex, maxIndex);
             }
 
             public TResult TryGetElementAt(int index, out bool found)
