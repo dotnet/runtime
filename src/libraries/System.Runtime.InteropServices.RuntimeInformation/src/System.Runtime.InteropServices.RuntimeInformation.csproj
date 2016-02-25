@@ -14,8 +14,7 @@
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.1</PackageTargetFramework> 
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime> 
-    <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
     <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>

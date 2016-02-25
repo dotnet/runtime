@@ -8,8 +8,7 @@
     </ProjectReference>
     
     <ProjectReference Include="win/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
-    <ProjectReference Include="linux/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
-    <ProjectReference Include="osx/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
+    <ProjectReference Include="unix/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />
   </ItemGroup>
 
   <ItemGroup>
