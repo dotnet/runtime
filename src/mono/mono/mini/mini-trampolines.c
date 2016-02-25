@@ -1521,6 +1521,8 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 {
 	gpointer tramp;
 
+	mono_error_init (error);
+
 	if (mono_aot_only) {
 		/* Avoid creating trampolines if possible */
 		gpointer code = mono_jit_find_compiled_method (domain, method);
