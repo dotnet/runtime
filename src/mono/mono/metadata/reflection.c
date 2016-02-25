@@ -3181,9 +3181,8 @@ mono_image_get_ctor_on_inst_token (MonoDynamicImage *assembly, MonoReflectionCto
 }
 
 static MonoMethod*
-mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderInst *m)
+mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderInst *m, MonoError *error)
 {
-	MonoError error;
 	MonoClass *klass;
 	MonoGenericContext tmp_context;
 	MonoType **type_argv;
@@ -3191,10 +3190,12 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 	MonoMethod *method, *inflated;
 	int count, i;
 
+	mono_error_init (error);
+
 	init_type_builder_generics ((MonoObject*)m->inst);
 
-	method = inflate_method (m->inst, (MonoObject*)m->mb, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	method = inflate_method (m->inst, (MonoObject*)m->mb, error);
+	return_val_if_nok (error, NULL);
 
 	klass = method->klass;
 
@@ -3217,8 +3218,8 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 	tmp_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 	tmp_context.method_inst = ginst;
 
-	inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, &error);
-	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, error);
+	mono_error_assert_ok (error);
 	return inflated;
 }
 
@@ -3234,7 +3235,9 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 	if (m->method_args) {
 		MonoMethod *inflated;
 
-		inflated = mono_reflection_method_on_tb_inst_get_handle (m);
+		inflated = mono_reflection_method_on_tb_inst_get_handle (m, error);
+		return_val_if_nok (error, 0);
+
 		if (create_methodspec)
 			token = mono_image_get_methodspec_token (assembly, inflated);
 		else
@@ -9806,6 +9809,7 @@ mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_k
 MonoCustomAttrInfo*
 mono_reflection_get_custom_attrs_info (MonoObject *obj)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoCustomAttrInfo *cinfo = NULL;
 	
@@ -9853,7 +9857,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		} 
 #ifndef DISABLE_REFLECTION_EMIT
 		else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
-			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl);
+			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
 		} else if (is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
 			MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
@@ -11946,6 +11951,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 static MonoMethod*
 mono_reflection_method_get_handle (MonoObject *method)
 {
+	MonoError error;
 	MonoClass *klass = mono_object_class (method);
 	if (is_sr_mono_method (klass) || is_sr_mono_generic_method (klass)) {
 		MonoReflectionMethod *sr_method = (MonoReflectionMethod*)method;
@@ -11960,7 +11966,8 @@ mono_reflection_method_get_handle (MonoObject *method)
 		MonoMethod *result;
 		/*FIXME move this to a proper method and unify with resolve_object*/
 		if (m->method_args) {
-			result = mono_reflection_method_on_tb_inst_get_handle (m);
+			result = mono_reflection_method_on_tb_inst_get_handle (m, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		} else {
 			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)m->inst);
 			MonoClass *inflated_klass = mono_class_from_mono_type (type);
@@ -13079,11 +13086,11 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 	} else if (strcmp (obj->vtable->klass->name, "MethodOnTypeBuilderInst") == 0) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)obj;
 		if (m->method_args) {
-			result = mono_reflection_method_on_tb_inst_get_handle (m);
+			result = mono_reflection_method_on_tb_inst_get_handle (m, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			if (context) {
-				MonoError error;
 				result = mono_class_inflate_generic_method_checked ((MonoMethod *)result, context, &error);
-				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				mono_error_assert_ok (&error);
 			}
 		} else {
 			MonoType *type = mono_class_inflate_generic_type (mono_reflection_type_get_handle ((MonoReflectionType*)m->inst), context);
