@@ -1480,7 +1480,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
-		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE);
+		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE, error);
+		if (!mono_error_ok (error))
+			return NULL;
 #if defined(__native_client__) && defined(__native_client_codegen__)
 # if defined(TARGET_AMD64)
 		/* This target is an absolute address, not relative to the */
@@ -3652,6 +3654,7 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
+	callbacks.create_jump_trampoline = mono_create_jump_trampoline;
 #endif
 
 	mono_install_callbacks (&callbacks);
@@ -3725,7 +3728,6 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_free_method (mono_jit_free_method);
 	mono_install_trampoline (mono_create_jit_trampoline);
-	mono_install_jump_trampoline (mono_create_jump_trampoline);
 #ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 #endif

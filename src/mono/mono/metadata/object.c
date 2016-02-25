@@ -541,7 +541,6 @@ default_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 }
 
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
-static MonoJumpTrampoline arch_create_jump_trampoline = default_jump_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 static MonoImtThunkBuilder imt_thunk_builder;
 static gboolean always_build_imt_thunks;
@@ -566,12 +565,6 @@ void
 mono_install_trampoline (MonoTrampoline func) 
 {
 	arch_create_jit_trampoline = func? func: default_trampoline;
-}
-
-void
-mono_install_jump_trampoline (MonoJumpTrampoline func) 
-{
-	arch_create_jump_trampoline = func? func: default_jump_trampoline;
 }
 
 #ifndef DISABLE_REMOTING
@@ -627,9 +620,14 @@ mono_compile_method (MonoMethod *method)
 gpointer
 mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
 {
-	MONO_REQ_GC_NEUTRAL_MODE
+	MonoError error;
+	gpointer res;
 
-	return arch_create_jump_trampoline (domain, method, add_sync_wrapper);
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	res = callbacks.create_jump_trampoline (domain, method, add_sync_wrapper, &error);
+	if (!mono_error_ok (&error))
+		mono_error_raise_exception (&error); /* FIXME: Don't raise here */
 }
 
 gpointer

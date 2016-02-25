@@ -2537,7 +2537,8 @@ guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
 gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 gpointer          mono_create_jump_trampoline (MonoDomain *domain, 
 											   MonoMethod *method, 
-											   gboolean add_sync_wrapper);
+											   gboolean add_sync_wrapper,
+											   MonoError *error);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);

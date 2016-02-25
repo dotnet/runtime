@@ -1457,12 +1457,13 @@ mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, M
 }
 
 gpointer
-mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
+mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error)
 {
-	MonoError error;
 	MonoJitInfo *ji;
 	gpointer code;
 	guint32 code_size = 0;
+
+	mono_error_init (error);
 
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	/*
@@ -1475,9 +1476,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 		return code;
 
 	if (mono_llvm_only) {
-		code = mono_jit_compile_method (method, &error);
-		if (!mono_error_ok (&error))
-			mono_error_raise_exception (&error);
+		code = mono_jit_compile_method (method, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		return code;
 	}
 

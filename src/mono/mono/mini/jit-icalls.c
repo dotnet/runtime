@@ -29,6 +29,7 @@ void*
 mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
+	MonoError error;
 
 	if (mono_llvm_only) {
 		// FIXME: No error handling
@@ -44,8 +45,11 @@ mono_ldftn (MonoMethod *method)
 		return addr;
 	}
 
-	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
-
+	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	return mono_create_ftnptr (mono_domain_get (), addr);
 }
 
