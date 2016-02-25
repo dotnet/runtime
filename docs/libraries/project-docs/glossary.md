@@ -93,7 +93,7 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 ### LINQ
 
-Introduced in .NET Framework 3.5, LINQ's goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
+Introduced in .NET Framework 3.5, LINQ's goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods and Lambda functions (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
 
 A simple example of LINQ is
 
