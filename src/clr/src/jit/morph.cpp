@@ -12854,8 +12854,7 @@ GenTreePtr          Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac
 #ifdef DEBUG
     if (verbose)
     {
-        static ConfigDWORD fBreakOnMorphTree;
-        if (fBreakOnMorphTree.val(CLRConfig::INTERNAL_JitBreakMorphTree) == tree->gtTreeID)
+        if ((unsigned)JitConfig.JitBreakMorphTree() == tree->gtTreeID)
         {
             noway_assert(!"JitBreakMorphTree hit");
         }
@@ -14240,8 +14239,7 @@ void                Compiler::fgSetOptions()
     /* Should we force fully interruptible code ? */
 
 #ifdef DEBUG
-    static ConfigDWORD fJitFullyInt;
-    if (fJitFullyInt.val(CLRConfig::INTERNAL_JitFullyInt) ||
+    if (JitConfig.JitFullyInt() ||
         compStressCompile(STRESS_GENERIC_VARN, 30))
     {
         noway_assert(!codeGen->isGCTypeFixed());

@@ -721,24 +721,18 @@ bool ConfigMethodRange::contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
 }
 
 /**************************************************************************/
-void ConfigMethodRange::init(const CLRConfig::ConfigStringInfo & info)
+void ConfigMethodRange::initRanges(const wchar_t* rangeStr)
 {
     // make sure that the memory was zero initialized
     _ASSERTE(m_inited == 0 || m_inited == 1);
 
-    LPWSTR str = CLRConfig::GetConfigValue(info);
-    initRanges(str);
-    CLRConfig::FreeConfigString(str);
-    m_inited = true;
-}
-
-/**************************************************************************/
-void ConfigMethodRange::initRanges(__in_z LPCWSTR rangeStr)
-{
-    if (rangeStr == 0)
+    if (rangeStr == nullptr)
+    {
+        m_inited = true;
         return;
+    }
 
-    LPCWSTR p = rangeStr;
+    LPCWSTR p = const_cast<LPCWSTR>(rangeStr);
     unsigned char lastRange = 0;
     while (*p) {
         while (*p == ' ')       //skip blanks
@@ -767,6 +761,8 @@ void ConfigMethodRange::initRanges(__in_z LPCWSTR rangeStr)
         m_ranges[lastRange++] = MAX_RANGE;
     assert(lastRange < 100);
     m_lastRange = lastRange;
+
+    m_inited = true;
 }
 
 #endif // DEBUG
@@ -1412,7 +1408,7 @@ void HelperCallProperties::init()
 // MyAssembly;mscorlib;System
 // MyAssembly;mscorlib System
 
-AssemblyNamesList2::AssemblyNamesList2(__in LPWSTR list, IAllocator* alloc)
+AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, IAllocator* alloc)
     : m_alloc(alloc)
 {
     assert(m_alloc != nullptr);
@@ -1421,7 +1417,7 @@ AssemblyNamesList2::AssemblyNamesList2(__in LPWSTR list, IAllocator* alloc)
     LPWSTR nameStart = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
     
-    for (LPWSTR listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (LPWSTR listWalk = const_cast<LPWSTR>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
         WCHAR curChar = *listWalk;
         
