@@ -212,6 +212,10 @@ if defined __MscorlibOnly goto CheckVS
 
 echo %__MsgPrefix%Checking prerequisites
 
+:: Validate that PowerShell is accessibile.
+for %%X in (powershell.exe) do (set __PSDir=%%~$PATH:X)
+if not defined __PSDir goto NoPS
+
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
@@ -648,6 +652,12 @@ echo     build all x86
 echo        -- builds all build types for x86
 echo     build all x64 x86 Checked Release
 echo        -- builds x64 and x86 architectures, Checked and Release build types for each
+exit /b 1
+
+:NoPS
+echo PowerShell is a prerequisite to build this repository, but it is not accessible.
+echo Ensure that it is defined in the PATH environment variable.
+echo Typically it should be %%SYSTEMROOT%%\System32\WindowsPowerShell\v1.0\.
 exit /b 1
 
 :NoVS
