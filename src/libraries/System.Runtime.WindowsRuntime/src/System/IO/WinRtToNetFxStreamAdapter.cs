@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -479,7 +479,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if dotnet53
+#if netstandard
         public override Int32 EndRead(IAsyncResult asyncResult)
 #else
         public Int32 EndRead(IAsyncResult asyncResult)
@@ -589,7 +589,7 @@ namespace System.IO
         #region Writing
 
 
-#if dotnet53
+#if netstandard
         public override IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
 #else
         public IAsyncResult BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state)
@@ -640,7 +640,7 @@ namespace System.IO
             return asyncResult;
         }
 
-#if dotnet53
+#if netstandard
         public override void EndWrite(IAsyncResult asyncResult)
 #else
         public void EndWrite(IAsyncResult asyncResult)

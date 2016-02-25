@@ -10,9 +10,9 @@
     <FileAlignment>512</FileAlignment>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

@@ -5,7 +5,7 @@
     <AssemblyName>System.Diagnostics.Contracts</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.1</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.0</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

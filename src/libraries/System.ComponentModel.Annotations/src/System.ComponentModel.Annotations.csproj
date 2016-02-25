@@ -6,9 +6,9 @@
     <RootNamespace>System.ComponentModel.Annotations</RootNamespace>
     <AssemblyName>System.ComponentModel.Annotations</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

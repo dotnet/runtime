@@ -1,9 +1,12 @@
 {
   "frameworks": {
-    "dotnet5.1": {
+    "netstandard1.0": {
       "dependencies": {
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23818"
-      }
+      },
+      "imports": [
+        "dotnet5.1"
+      ]
     },
     "netcore50": {
       "dependencies": {

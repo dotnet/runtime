@@ -7,7 +7,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.Resources</RootNamespace>
     <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
-    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

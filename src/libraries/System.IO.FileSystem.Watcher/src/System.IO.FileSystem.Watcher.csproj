@@ -9,8 +9,8 @@
     <ProjectGuid>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">dotnet5.4</PackageTargetFramework>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">win7</PackageTargetRuntime> 
     <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime> 
     <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime> 

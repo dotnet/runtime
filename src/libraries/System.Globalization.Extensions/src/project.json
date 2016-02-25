@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dotnet5.4": {
+    "netstandard1.3": {
       "dependencies": {
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
@@ -11,11 +11,14 @@
         "System.Runtime.Extensions": "4.0.10",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Threading.Tasks": "4.0.10"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
-    "net46":{
+    "net46": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1",
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
   }

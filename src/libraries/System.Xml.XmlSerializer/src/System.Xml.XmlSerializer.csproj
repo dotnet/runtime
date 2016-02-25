@@ -10,11 +10,11 @@
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' != 'net46'">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -84,7 +84,7 @@
     <Compile Include="System\Xml\Serialization\SourceInfo.cs" />
     <Compile Include="System\Xml\Serialization\XmlSchema.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">

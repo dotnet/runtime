@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <ProjectGuid>{263DA4F1-C3BC-4B43-98E7-9F38B419A131}</ProjectGuid>
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime>win8</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

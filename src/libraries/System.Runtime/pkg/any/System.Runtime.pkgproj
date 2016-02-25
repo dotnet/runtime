@@ -12,9 +12,10 @@
     <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj"/>
 
     <!-- AOT implementation comes from AOT package -->
-    <ExternalOnTargetFramework Include="netcore50">
-      <PackageTargetRuntime>aot</PackageTargetRuntime>
-    </ExternalOnTargetFramework>
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/aot/lib/netcore50</TargetPath>
+      <TargetFramework>aot</TargetFramework>
+    </File>
 
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
