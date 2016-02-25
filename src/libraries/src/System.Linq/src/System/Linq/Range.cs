@@ -116,9 +116,9 @@ namespace System.Linq
             public IPartition<int> Take(int count)
             {
                 int curCount = _end - _start;
-                if (count > curCount)
+                if (count >= curCount)
                 {
-                    count = curCount;
+                    return this;
                 }
 
                 return new RangeIterator(_start, count);
