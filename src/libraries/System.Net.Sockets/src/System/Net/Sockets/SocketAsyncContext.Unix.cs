@@ -490,7 +490,19 @@ namespace System.Net.Sockets
             Interop.Sys.SocketEvents events = _registeredEvents & ~Interop.Sys.SocketEvents.Read;
 
             Interop.Error errorCode;
-            bool unregistered = _asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode);
+
+            bool unregistered;
+            try
+            {
+                unregistered = _asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode);
+            }
+            catch (ObjectDisposedException)
+            {
+                // The socket has been closed, so the OS has already unregistered us.
+                unregistered = true;
+                errorCode = Interop.Error.SUCCESS;
+            }
+
             if (unregistered)
             {
                 _registeredEvents = events;
