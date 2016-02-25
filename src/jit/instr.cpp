@@ -1205,9 +1205,10 @@ void                CodeGen::sched_AM(instruction  ins,
  *  Emit a "call [r/m]" instruction (the r/m operand given by a tree).
  */
 
-void                CodeGen::instEmit_indCall(GenTreePtr   call,
-                                              size_t       argSize,
-                                              emitAttr     retSize)
+void                CodeGen::instEmit_indCall(GenTreePtr                                call,
+                                              size_t                                    argSize,
+                                              emitAttr                                  retSize
+                                              FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr    secondRetSize))
 {
     GenTreePtr              addr;
 
@@ -1244,15 +1245,16 @@ void                CodeGen::instEmit_indCall(GenTreePtr   call,
         {
             ssize_t     funcPtr = addr->gtIntCon.gtIconVal;
 
-            getEmitter()->emitIns_Call( emitter::EC_FUNC_ADDR,
-                                      NULL,    // methHnd
-                                      INDEBUG_LDISASM_COMMA(sigInfo)
-                                      (void*) funcPtr,
-                                      argSize,
-                                      retSize,
-                                      gcInfo.gcVarPtrSetCur,
-                                      gcInfo.gcRegGCrefSetCur,
-                                      gcInfo.gcRegByrefSetCur);
+            getEmitter()->emitIns_Call(emitter::EC_FUNC_ADDR,
+                                       NULL,    // methHnd
+                                       INDEBUG_LDISASM_COMMA(sigInfo)
+                                       (void*) funcPtr,
+                                       argSize,
+                                       retSize
+                                       FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur);
             return;
         }
     }
@@ -1305,15 +1307,16 @@ void                CodeGen::instEmit_indCall(GenTreePtr   call,
             {
                 ssize_t     funcPtr = addr->gtIntCon.gtIconVal;
 
-                getEmitter()->emitIns_Call( emitter::EC_FUNC_ADDR,
-                                          NULL,    // methHnd
-                                          INDEBUG_LDISASM_COMMA(sigInfo)
-                                          (void*) funcPtr,
-                                          argSize,
-                                          retSize,
-                                          gcInfo.gcVarPtrSetCur,
-                                          gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur);
+                getEmitter()->emitIns_Call(emitter::EC_FUNC_ADDR,
+                                           NULL,    // methHnd
+                                           INDEBUG_LDISASM_COMMA(sigInfo)
+                                           (void*) funcPtr,
+                                           argSize,
+                                           retSize
+                                           FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                                           gcInfo.gcVarPtrSetCur,
+                                           gcInfo.gcRegGCrefSetCur,
+                                           gcInfo.gcRegByrefSetCur);
                 return;
             }
         }
@@ -1369,17 +1372,21 @@ void                CodeGen::instEmit_indCall(GenTreePtr   call,
 
 #endif // CPU_LOAD_STORE_ARCH
 
-    getEmitter()->emitIns_Call( emitCallType,
-                              NULL,   // methHnd
-                              INDEBUG_LDISASM_COMMA(sigInfo)
-                              NULL,                 // addr
-                              argSize,
-                              retSize,
-                              gcInfo.gcVarPtrSetCur,
-                              gcInfo.gcRegGCrefSetCur,
-                              gcInfo.gcRegByrefSetCur,
-                              BAD_IL_OFFSET,        // ilOffset
-                              brg, xrg, mul, cns);  // addressing mode values
+    getEmitter()->emitIns_Call(emitCallType,
+                               NULL,   // methHnd
+                               INDEBUG_LDISASM_COMMA(sigInfo)
+                               NULL,                 // addr
+                               argSize,
+                               retSize
+                               FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize),
+                               gcInfo.gcVarPtrSetCur,
+                               gcInfo.gcRegGCrefSetCur,
+                               gcInfo.gcRegByrefSetCur,
+                               BAD_IL_OFFSET,        // ilOffset
+                               brg,
+                               xrg,
+                               mul,
+                               cns);  // addressing mode values
 }
 
 #ifdef LEGACY_BACKEND
