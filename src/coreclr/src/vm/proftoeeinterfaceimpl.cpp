@@ -1251,14 +1251,15 @@ BOOL AllocByClassHelper(Object * pBO, void * pv)
 // which does the real work.
 //
 // Arguments:
-//      o - Object reference encountered
+//      pObj - Object reference encountered
+///     ppRoot - Address that references ppObject (can be interior pointer)
 //      pSC - ProfilingScanContext * containing the root kind and GCReferencesData used
 //            by RootReference2 
 //      dwFlags - Properties of the root as GC_CALL* constants (this function converts
 //                to COR_PRF_GC_ROOT_FLAGS.
 //
 
-void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
+void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t dwFlags)
 {
     CONTRACTL
     {
@@ -1305,7 +1306,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     {
         // Let the profiling code know about this root reference
         g_profControlBlock.pProfInterface->
-            RootReference2((BYTE *)*ppObject, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
+            RootReference2((BYTE *)pObj, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
     }
 #endif
 
@@ -1318,7 +1319,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     {
         ETW::GCLog::RootReference(
             NULL,           // handle is NULL, cuz this is a non-HANDLE root
-            *ppObject,      // object being rooted
+            pObj,           // object being rooted
             NULL,           // pSecondaryNodeForDependentHandle is NULL, cuz this isn't a dependent handle
             FALSE,          // is dependent handle
             pPSC,
