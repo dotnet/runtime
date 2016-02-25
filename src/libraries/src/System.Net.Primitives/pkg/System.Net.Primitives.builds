@@ -5,7 +5,7 @@
     <Project Include="unix\System.Net.Primitives.pkgproj">
       <OSGroup>Linux</OSGroup>
     </Project>
-    <Project Include="System.Net.Primitives.pkgproj">
+    <Project Include="win\System.Net.Primitives.pkgproj">
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.Primitives.pkgproj" />
