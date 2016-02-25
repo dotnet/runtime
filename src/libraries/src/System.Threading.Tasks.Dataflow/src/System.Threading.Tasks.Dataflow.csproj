@@ -15,8 +15,8 @@
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <PackageDestination Include="lib/dotnet5.2">
-      <TargetFramework>dotnet5.2</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.1">
+      <TargetFramework>netstandard1.1</TargetFramework>
     </PackageDestination>
     <!-- Support targets that were supported in previous package versions -->
     <PackageDestination Include="lib/portable-net45+win8+wpa81">

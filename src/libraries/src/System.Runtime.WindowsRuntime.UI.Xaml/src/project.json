@@ -1,13 +1,16 @@
 {
   "frameworks": {
-    "dotnet5.3":{
+    "netstandard1.2": {
       "dependencies": {
-        "System.Globalization":"4.0.0.0",
-        "System.Resources.ResourceManager":"4.0.0.0",
-        "System.Runtime":"4.0.0.0",
-        "System.Runtime.Extensions":"4.0.0.0",
-        "System.Runtime.WindowsRuntime":"4.0.0.0"
-      }
+        "System.Globalization": "4.0.0.0",
+        "System.Resources.ResourceManager": "4.0.0.0",
+        "System.Runtime": "4.0.0.0",
+        "System.Runtime.Extensions": "4.0.0.0",
+        "System.Runtime.WindowsRuntime": "4.0.0.0"
+      },
+      "imports": [
+        "dotnet5.3"
+      ]
     }
   }
 }

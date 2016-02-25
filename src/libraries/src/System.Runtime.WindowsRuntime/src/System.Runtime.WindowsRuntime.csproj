@@ -12,13 +12,13 @@
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <NoWarn>$(NoWarn)1698</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
     <PackageTargetRuntime>win8</PackageTargetRuntime>
     <AssemblyVersion>4.0.11.0</AssemblyVersion>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETPlatform,Version=v5.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)'==''">
-    <DefineConstants>$(DefineConstants);dotnet53;FEATURE_APPX</DefineConstants>
+    <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
@@ -38,12 +38,12 @@
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <Compile Include="System\IO\StreamOperationAsyncResult.dotnet53.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.netstandard.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
-    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.dotnet53.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.netstandard.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
-    <Compile Include="System\WindowsRuntimeSystemExtensions.dotnet53.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
     </Compile>

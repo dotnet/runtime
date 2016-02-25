@@ -21,10 +21,10 @@
   <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
     <!-- Remove when resolving https://github.com/dotnet/corefx/issues/5471 
          And replace with property 
-         <PackageTargetFramework >dotnet5.6</PackageTargetFramework>
+         <PackageTargetFramework >netstandard1.5</PackageTargetFramework>
     -->
-    <PackageDestination Include="lib/dotnet5.6">
-      <TargetFramework>dotnet5.6</TargetFramework>
+    <PackageDestination Include="lib/netstandard1.5">
+      <TargetFramework>netstandard1.5</TargetFramework>
     </PackageDestination>
     <PackageDestination Include="lib/dnxcore50">
       <TargetFramework>dnxcore50</TargetFramework>

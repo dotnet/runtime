@@ -3,6 +3,10 @@
     "System.Net.Requests": "4.0.0"
   },
   "frameworks": {
-    "dotnet5.2": {}
+    "netstandard1.1": {
+      "imports": [
+        "dotnet5.2"
+      ]
+    }
   }
 }

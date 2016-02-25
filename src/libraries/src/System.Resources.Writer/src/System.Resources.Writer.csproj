@@ -6,7 +6,7 @@
     <AssemblyName>System.Resources.Writer</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.Resources</RootNamespace>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

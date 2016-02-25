@@ -1,14 +1,17 @@
 {
   "frameworks": {
-    "dotnet5.1": {
+    "netstandard1.0": {
       "dependencies": {
         "System.ComponentModel": "4.0.0",
         "System.Runtime": "4.0.0"
-      }
+      },
+      "imports": [
+        "dotnet5.1"
+      ]
     },
-    "net45":{
+    "net45": {
       "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1",
+        "Microsoft.TargetingPack.NETFramework.v4.5": "1.0.1"
       }
     }
   }
