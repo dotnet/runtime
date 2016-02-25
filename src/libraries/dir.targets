@@ -20,8 +20,11 @@
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
+    <!-- We do not want to target a portable profile.
+         TODO: Make this the default in buildtools so this is not necessary. -->
     <TargetFrameworkProfile></TargetFrameworkProfile>
-    <IgnoreDefaultInstalledAssemblyTables>true</IgnoreDefaultInstalledAssemblyTables>
+    <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
+    <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
 
 </Project>
