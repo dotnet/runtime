@@ -1210,6 +1210,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (runtime_compat_attr, System.Runtime.Compil
 static gboolean
 wrap_non_exception_throws (MonoMethod *m)
 {
+	MonoError error;
 	MonoAssembly *ass = m->klass->image->assembly;
 	MonoCustomAttrInfo* attrs;
 	MonoClass *klass;
@@ -1222,7 +1223,8 @@ wrap_non_exception_throws (MonoMethod *m)
 
 	klass = mono_class_get_runtime_compat_attr_class ();
 
-	attrs = mono_custom_attrs_from_assembly (ass);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (i = 0; i < attrs->num_attrs; ++i) {
 			MonoCustomAttrEntry *attr = &attrs->attrs [i];

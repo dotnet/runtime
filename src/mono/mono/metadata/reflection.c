@@ -9654,19 +9654,24 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
 	MonoError error;
+	MonoCustomAttrInfo *result = mono_custom_attrs_from_assembly_checked (assembly, &error);
+	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	return result;
+}
+
+MonoCustomAttrInfo*
+mono_custom_attrs_from_assembly_checked (MonoAssembly *assembly, MonoError *error)
+{
 	guint32 idx;
 	
+	mono_error_init (error);
+
 	if (image_is_dynamic (assembly->image))
 		return lookup_custom_attr (assembly->image, assembly);
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
-	MonoCustomAttrInfo * result = mono_custom_attrs_from_index_checked (assembly->image, idx, &error);
-	if (!is_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error); /* FIXME don't set loader error here */
-		return NULL;
-	}
-	return result;
+	return mono_custom_attrs_from_index_checked (assembly->image, idx, error);
 }
 
 static MonoCustomAttrInfo*
@@ -9926,7 +9931,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Assembly", klass->name) == 0 || strcmp ("MonoAssembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
-		cinfo = mono_custom_attrs_from_assembly (rassembly->assembly);
+		cinfo = mono_custom_attrs_from_assembly_checked (rassembly->assembly, error);
+		return_val_if_nok (error, NULL);
 	} else if (strcmp ("Module", klass->name) == 0 || strcmp ("MonoModule", klass->name) == 0) {
 		MonoReflectionModule *module = (MonoReflectionModule*)obj;
 		cinfo = mono_custom_attrs_from_module (module->image);

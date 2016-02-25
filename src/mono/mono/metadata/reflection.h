@@ -84,6 +84,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_assembly (MonoAssembly *assembly);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property);
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
