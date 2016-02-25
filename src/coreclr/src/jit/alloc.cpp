@@ -65,8 +65,7 @@ bool   norls_allocator::nraInit(IEEMemoryManager* pMemoryManager, size_t pageSiz
     nraPageSize  = pageSize ? pageSize : THE_ALLOCATOR_BASE_SIZE;
 
 #ifdef DEBUG
-    static ConfigDWORD fShouldInjectFault;
-    nraShouldInjectFault = fShouldInjectFault.val(CLRConfig::INTERNAL_InjectFault) != 0;
+    nraShouldInjectFault = JitConfig.ShouldInjectFault() != 0;
 #endif    
 
     if  (preAlloc)

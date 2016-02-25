@@ -71,8 +71,7 @@ void                Compiler::impInit()
 #ifndef DEBUG
     impInlineSize = DEFAULT_MAX_INLINE_SIZE;
 #else
-    static ConfigDWORD fJitInlineSize;
-    impInlineSize = fJitInlineSize.val_DontUse_(CLRConfig::INTERNAL_JITInlineSize, DEFAULT_MAX_INLINE_SIZE);
+    impInlineSize = JitConfig.JitInlineSize();
 
     if (compStressCompile(STRESS_INLINE, 50))
         impInlineSize *= 10;
@@ -191,8 +190,7 @@ inline void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) D
     const char* tail = strrchr(file, '\\');
     if (tail) file = tail+1;
 
-    static ConfigDWORD fJitBreakOnUnsafeCode;
-    if (fJitBreakOnUnsafeCode.val(CLRConfig::INTERNAL_JitBreakOnUnsafeCode))
+    if (JitConfig.JitBreakOnUnsafeCode())
         assert(!"Unsafe code detected");
 #endif
 
@@ -3462,8 +3460,7 @@ void    Compiler::verConvertBBToThrowVerificationException(BasicBlock* block
             printf("\n\nVerification failure: %s near IL %xh \n", info.compFullName, block->bbCodeOffs);
     }
 
-    static ConfigDWORD fDebugBreakOnVerificationFailure;
-    if (fDebugBreakOnVerificationFailure.val(CLRConfig::INTERNAL_DebugBreakOnVerificationFailure))
+    if (JitConfig.DebugBreakOnVerificationFailure())
     {
         DebugBreak();
     }
@@ -15621,8 +15618,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
         // effect of different values was within the standard deviation.  This may be a place where future tuning
         // (with additional benchmarks) would be valuable.
 
-        static ConfigDWORD fJitInlineSIMDMultiplier;
-        int simdMultiplier = fJitInlineSIMDMultiplier.val(CLRConfig::INTERNAL_JitInlineSIMDMultiplier);
+        int simdMultiplier = JitConfig.JitInlineSIMDMultiplier();
 
         multiplier += simdMultiplier;
         JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multipler increased to %g.", multiplier);
@@ -15711,8 +15707,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     }
 
 #ifdef  DEBUG
-    static ConfigDWORD fJitInlineAdditionalMultiplier;
-    int additionalMultiplier = fJitInlineAdditionalMultiplier.val(CLRConfig::EXTERNAL_JitInlineAdditionalMultiplier);
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
 
     if (additionalMultiplier!=0)  
     {   
@@ -15930,8 +15925,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         const char *     className;
         methodName = pParam->pThis->eeGetMethodName(pParam->fncHandle, &className);
 
-        static ConfigDWORD fJitNoInline;
-        if (fJitNoInline.val(CLRConfig::INTERNAL_JitNoInline))
+        if (JitConfig.JitNoInline())
         {
             pParam->result->noteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
             goto _exit;
