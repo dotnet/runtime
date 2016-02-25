@@ -15,13 +15,15 @@ namespace System.Net.Http
     {
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
+        private SafeWinHttpHandle _requestHandle;
         
         // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
         private GCHandle _cachedReceivePinnedBuffer = default(GCHandle);
 
-        internal WinHttpResponseStream(WinHttpRequestState state)
+        internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state)
         {
             _state = state;
+            _requestHandle = requestHandle;
         }
 
         public override bool CanRead
@@ -160,7 +162,7 @@ namespace System.Net.Http
                         lock (_state.Lock)
                         {
                             if (!Interop.WinHttp.WinHttpReadData(
-                                _state.RequestHandle,
+                                _requestHandle,
                                 Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
                                 (uint)bytesToRead,
                                 IntPtr.Zero))
@@ -177,7 +179,7 @@ namespace System.Net.Http
                 
             lock (_state.Lock)
             {
-                if (!Interop.WinHttp.WinHttpQueryDataAvailable(_state.RequestHandle, IntPtr.Zero))
+                if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                 {
                     _state.TcsReadFromResponseStream.TrySetException(
                         new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError()));
@@ -226,10 +228,10 @@ namespace System.Net.Http
 
                 if (disposing)
                 {
-                    if (_state.RequestHandle != null)
+                    if (_requestHandle != null)
                     {
-                        _state.RequestHandle.Dispose();
-                        _state.RequestHandle = null;
+                        _requestHandle.Dispose();
+                        _requestHandle = null;
                     }
                 }
             }
