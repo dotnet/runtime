@@ -32,6 +32,10 @@ any recent (2.4+) version of Python should work, including Python 3.
 - Install [Python](https://www.python.org/downloads/) for Windows.
 - Add it to the PATH environment variable.
 
+PowerShell
+----------
+PowerShell is used in the build system. Ensure that it is accessible via the PATH environment variable. Typically this is %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
+
 Git Setup
 ---------
 
