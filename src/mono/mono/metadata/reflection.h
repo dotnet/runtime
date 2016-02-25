@@ -74,6 +74,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_data (MonoObject *obj);
 MONO_API MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);

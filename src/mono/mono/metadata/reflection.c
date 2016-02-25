@@ -9821,9 +9821,31 @@ MonoCustomAttrInfo*
 mono_reflection_get_custom_attrs_info (MonoObject *obj)
 {
 	MonoError error;
+	MonoCustomAttrInfo *result = mono_reflection_get_custom_attrs_info_checked (obj, &error);
+	mono_error_assert_ok (&error);
+	return result;
+}
+
+/**
+ * mono_reflection_get_custom_attrs_info_checked:
+ * @obj: a reflection object handle
+ * @error: set on error
+ *
+ * Return the custom attribute info for attributes defined for the
+ * reflection handle @obj. The objects.
+ *
+ * On failure returns NULL and sets @error.
+ *
+ * FIXME this function leaks like a sieve for SRE objects.
+ */
+MonoCustomAttrInfo*
+mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error)
+{
 	MonoClass *klass;
 	MonoCustomAttrInfo *cinfo = NULL;
 	
+	mono_error_init (error);
+
 	klass = obj->vtable->klass;
 	if (klass == mono_defaults.monotype_class) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj);
@@ -9868,8 +9890,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		} 
 #ifndef DISABLE_REFLECTION_EMIT
 		else if (is_sre_method_on_tb_inst (member_class)) {/*XXX This is a workaround for Compiler Context*/
-			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoMethod *method = mono_reflection_method_on_tb_inst_get_handle ((MonoReflectionMethodOnTypeBuilderInst*)param->MemberImpl, error);
+			return_val_if_nok (error, NULL);
 			cinfo = mono_custom_attrs_from_param (method, param->PositionImpl + 1);
 		} else if (is_sre_ctor_on_tb_inst (member_class)) { /*XX This is a workaround for Compiler Context*/
 			MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)param->MemberImpl;
@@ -9886,11 +9908,11 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 #endif
 		else {
 			char *type_name = mono_type_get_full_name (member_class);
-			char *msg = g_strdup_printf ("Custom attributes on a ParamInfo with member %s are not supported", type_name);
-			MonoException *ex = mono_get_exception_not_supported  (msg);
+			mono_error_set_generic_error (error, "System", "NotSupportedException",
+						      "Custom attributes on a ParamInfo with member %s are not supported",
+						      type_name);
 			g_free (type_name);
-			g_free (msg);
-			mono_raise_exception (ex);
+			return NULL;
 		}
 	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
 		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
@@ -9912,7 +9934,8 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		cinfo = mono_custom_attrs_from_builders (NULL, &((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image->image, fb->cattrs);
 	} else if (strcmp ("MonoGenericClass", klass->name) == 0) {
 		MonoReflectionGenericClass *gclass = (MonoReflectionGenericClass*)obj;
-		cinfo = mono_reflection_get_custom_attrs_info ((MonoObject*)gclass->generic_type);
+		cinfo = mono_reflection_get_custom_attrs_info_checked ((MonoObject*)gclass->generic_type, error);
+		return_val_if_nok (error, NULL);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
@@ -9937,7 +9960,8 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 
 	mono_error_init (error);
 
-	cinfo = mono_reflection_get_custom_attrs_info (obj);
+	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	return_val_if_nok (error, NULL);
 	if (cinfo) {
 		result = mono_custom_attrs_construct_by_type (cinfo, attr_klass, error);
 		if (!result)
@@ -9946,8 +9970,10 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 			mono_custom_attrs_free (cinfo);
 	} else {
 		/* FIXME add MonoError to mono_reflection_get_custom_attrs_info */
-		if (mono_loader_get_last_error ())
+		if (mono_loader_get_last_error ()) {
+			mono_error_set_from_loader_error (error);
 			return NULL;
+		}
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 
@@ -10005,7 +10031,8 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 
 	mono_error_init (error);
 
-	cinfo = mono_reflection_get_custom_attrs_info (obj);
+	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	return_val_if_nok (error, NULL);
 	if (cinfo) {
 		result = mono_custom_attrs_data_construct (cinfo, error);
 		return_val_if_nok (error, NULL);
