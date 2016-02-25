@@ -1396,8 +1396,10 @@ static bool IsCoreClrModule(const char* pModulePath)
 // between processes with the same PID (which ran at different times). This is to avoid
 // cases where a prior process with the same PID exited abnormally without having a chance
 // to clean up its semaphore. 
-static const char* RuntimeStartupSemaphoreName = "/RuntimeStartupEvent%08x-%llu";
-static const char* RuntimeContinueSemaphoreName = "/RuntimeContinueEvent%08x-%llu";
+// Note to anyone modifying these names in the future: Semaphore names on OS X are limited
+// to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
+static const char* RuntimeStartupSemaphoreName = "/clrst%08x%016llx";
+static const char* RuntimeContinueSemaphoreName = "/clrco%08x%016llx";
 
 class PAL_RuntimeStartupHelper
 {
