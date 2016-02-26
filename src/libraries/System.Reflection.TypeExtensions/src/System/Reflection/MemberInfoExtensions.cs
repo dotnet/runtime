@@ -8,13 +8,13 @@ namespace System.Reflection
     {
         public static bool HasMetadataToken(this MemberInfo member)
         {
-            Requires.NotNull(member, "member");
+            Requires.NotNull(member, nameof(member));
             return false; // never available on .NET Native
         }
         
         public static int GetMetadataToken(this MemberInfo member)
         {
-            Requires.NotNull(member, "member");
+            Requires.NotNull(member, nameof(member));
             throw new InvalidOperationException(SR.MetadataTokenNotSupported);
         }
     }
