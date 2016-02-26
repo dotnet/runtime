@@ -73,10 +73,10 @@ public class DeletedTests
 
                 // renaming a directory
                 //
-                // We don't do this on Linux because depending on the timing of MOVED_FROM and MOVED_TO events,
+                // We don't do this on Linux and OSX because depending on the timing of MOVED_FROM and MOVED_TO events,
                 // a rename can trigger delete + create as a deliberate handling of an edge case, and this
                 // test is checking that no delete events are raised.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     testDir.Move(testDir.Path + "_rename");
                 }
