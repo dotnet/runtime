@@ -1290,8 +1290,9 @@ public:
         }
 
         // Obtain the bias value and reinterpret as decimal.
+        static ConfigDWORD fJitStressBiasedCSE;
         unsigned bias = ReinterpretHexAsDecimal(
-                            JitConfig.JitStressBiasedCSE());
+                            fJitStressBiasedCSE.val(CLRConfig::INTERNAL_JitStressBiasedCSE));
 
         // Invalid value, check if JitStress is ON.
         if (bias > 100)
@@ -2285,7 +2286,8 @@ bool                Compiler::optConfigDisableCSE(bool lexicalCSE)
 
     // Next check if COMPLUS_JitNoCSE is set and applies to this method
     //
-    unsigned jitNoCSE = JitConfig.JitNoCSE();
+    static ConfigDWORD fJitNoCSE;
+    unsigned jitNoCSE = fJitNoCSE.val(CLRConfig::INTERNAL_JitNoCSE);
 
     if (jitNoCSE > 0)
     {
@@ -2325,7 +2327,8 @@ bool                Compiler::optConfigDisableCSE2()
 {
     static unsigned totalCSEcount = 0;
 
-    unsigned jitNoCSE2 = JitConfig.JitNoCSE2();
+    static ConfigDWORD fNoCSE2;
+    unsigned jitNoCSE2 = fNoCSE2.val(CLRConfig::INTERNAL_JitNoCSE2);
 
     totalCSEcount++;
 

@@ -82,7 +82,6 @@
         <CppCompile Include="..\LoopCloning.cpp" />
         <CppCompile Include="..\inline.cpp" />
         <CppCompile Include="..\inlinepolicy.cpp" />
-        <CppCompile Include="..\jitconfig.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\CodeGenLegacy.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\Lower.cpp" />
         <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LSRA.cpp" />
