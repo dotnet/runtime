@@ -45,6 +45,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/mono-route.h>
@@ -5573,7 +5574,11 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		g_list_free (list);
 		list = NULL;
 
-		exc = mono_get_exception_reflection_type_load (res, exl);
+		exc = mono_get_exception_reflection_type_load_checked (res, exl, &error);
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		mono_loader_clear_error ();
 		mono_set_pending_exception (exc);
 		return NULL;

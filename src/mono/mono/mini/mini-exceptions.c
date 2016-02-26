@@ -52,6 +52,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/gc-internals.h>
@@ -1606,7 +1607,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 	if (!mono_object_isinst (obj, mono_defaults.exception_class)) {
 		non_exception = obj;
-		obj = (MonoObject *)mono_get_exception_runtime_wrapped (obj);
+		obj = (MonoObject *)mono_get_exception_runtime_wrapped_checked (obj, &error);
+		mono_error_assert_ok (&error);
 	}
 
 	mono_ex = (MonoException*)obj;
@@ -2876,11 +2878,14 @@ mono_jinfo_get_epilog_size (MonoJitInfo *ji)
 static void
 throw_exception (MonoObject *ex, gboolean rethrow)
 {
+	MonoError error;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoException *mono_ex;
 
-	if (!mono_object_isinst (ex, mono_defaults.exception_class))
-		mono_ex = mono_get_exception_runtime_wrapped (ex);
+	if (!mono_object_isinst (ex, mono_defaults.exception_class)) {
+		mono_ex = mono_get_exception_runtime_wrapped_checked (ex, &error);
+		mono_error_assert_ok (&error);
+	}
 	else
 		mono_ex = (MonoException*)ex;
 

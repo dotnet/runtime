@@ -23,6 +23,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
@@ -233,6 +234,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoDomain *domain = vtable->domain;
 	MonoClass *klass = vtable->klass;
 	MonoException *ex;
@@ -256,8 +258,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 			full_name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
 		else
 			full_name = g_strdup (klass->name);
-		ex = mono_get_exception_type_initialization (full_name, NULL);
+		ex = mono_get_exception_type_initialization_checked (full_name, NULL, &error);
 		g_free (full_name);
+		return_val_if_nok (&error, NULL);
 	}
 
 	return ex;
@@ -419,8 +422,12 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 				full_name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
 			else
 				full_name = g_strdup (klass->name);
-			mono_error_set_exception_instance (error, mono_get_exception_type_initialization (full_name, exc));
+
+			MonoException *exc_to_throw = mono_get_exception_type_initialization_checked (full_name, exc, error);
 			g_free (full_name);
+			return_val_if_nok (error, FALSE);
+
+			mono_error_set_exception_instance (error, exc_to_throw);
 
 			MonoException *exc_to_store = mono_error_convert_to_exception (error);
 			/* What we really want to do here is clone the error object and store one copy in the

@@ -13,6 +13,7 @@
 
 #include <glib.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/exception-internals.h>
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
@@ -107,9 +108,8 @@ mono_exception_from_token (MonoImage *image, guint32 token)
 }
 
 static MonoException *
-create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2)
+create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2, MonoError *error)
 {
-	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethod *method = NULL;
 	MonoObject *o;
@@ -121,8 +121,8 @@ create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2)
 	if (a2 != NULL)
 		count++;
 	
-	o = mono_object_new_checked (domain, klass, &error);
-	mono_error_assert_ok (&error);
+	o = mono_object_new_checked (domain, klass, error);
+	mono_error_assert_ok (error);
 
 	iter = NULL;
 	while ((m = mono_class_get_methods (klass, &iter))) {
@@ -145,8 +145,8 @@ create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2)
 	args [0] = a1;
 	args [1] = a2;
 
-	mono_runtime_invoke_checked (method, o, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (method, o, args, error);
+	return_val_if_nok (error, NULL);
 
 	return (MonoException *) o;
 }
@@ -168,9 +168,16 @@ MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 				      const char *name, MonoString *a1, MonoString *a2)
 {
-	MonoClass *klass = mono_class_load_from_name (image, name_space, name);
+	MonoError error;
+	MonoClass *klass;
+	MonoException *ret;
 
-	return create_exception_two_strings (klass, a1, a2);
+	klass = mono_class_load_from_name (image, name_space, name);
+
+	ret = create_exception_two_strings (klass, a1, a2, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return ret;
 }
 
 /**
@@ -209,10 +216,16 @@ mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
 									   MonoString *a1, MonoString *a2)
 {
 	MonoError error;
-	MonoClass *klass = mono_class_get_checked (image, token, &error);
-	g_assert (mono_error_ok (&error)); /* FIXME handle the error. */
+	MonoClass *klass;
+	MonoException *ret;
 
-	return create_exception_two_strings (klass, a1, a2);
+	klass = mono_class_get_checked (image, token, &error);
+	mono_error_assert_ok (&error); /* FIXME handle the error. */
+
+	ret = create_exception_two_strings (klass, a1, a2, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return ret;
 }
 
 /**
@@ -577,6 +590,18 @@ MonoException *
 mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner)
 {
 	MonoError error;
+	MonoException *ret = mono_get_exception_type_initialization_checked (type_name, inner, &error);
+	if (!is_ok (&error)) {
+		mono_error_cleanup (&error);
+		return NULL;
+	}
+
+	return ret;
+}
+
+MonoException *
+mono_get_exception_type_initialization_checked (const gchar *type_name, MonoException *inner, MonoError *error)
+{
 	MonoClass *klass;
 	gpointer args [2];
 	MonoObject *exc;
@@ -602,10 +627,11 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	args [0] = mono_string_new (mono_domain_get (), type_name);
 	args [1] = inner;
 
-	exc = mono_object_new_checked (mono_domain_get (), klass, &error);
-	mono_error_assert_ok (&error);
-	mono_runtime_invoke_checked (method, exc, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	exc = mono_object_new_checked (mono_domain_get (), klass, error);
+	mono_error_assert_ok (error);
+
+	mono_runtime_invoke_checked (method, exc, args, error);
+	return_val_if_nok (error, NULL);
 
 	return (MonoException *) exc;
 }
@@ -752,6 +778,18 @@ MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions)
 {
 	MonoError error;
+	MonoException *ret = mono_get_exception_reflection_type_load_checked (types, exceptions, &error);
+	if (is_ok (&error)) {
+		mono_error_cleanup (&error);
+		return NULL;
+	}
+
+	return ret;
+}
+
+MonoException *
+mono_get_exception_reflection_type_load_checked (MonoArray *types, MonoArray *exceptions, MonoError *error)
+{
 	MonoClass *klass;
 	gpointer args [2];
 	MonoObject *exc;
@@ -778,11 +816,11 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 	args [0] = types;
 	args [1] = exceptions;
 
-	exc = mono_object_new_checked (mono_domain_get (), klass, &error);
-	mono_error_assert_ok (&error);
+	exc = mono_object_new_checked (mono_domain_get (), klass, error);
+	mono_error_assert_ok (error);
 
-	mono_runtime_invoke_checked (method, exc, args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (method, exc, args, error);
+	return_val_if_nok (error, NULL);
 
 	return (MonoException *) exc;
 }
@@ -791,6 +829,18 @@ MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 {
 	MonoError error;
+	MonoException *ret = mono_get_exception_runtime_wrapped_checked (wrapped_exception, &error);
+	if (!is_ok (&error)) {
+		mono_error_cleanup (&error);
+		return NULL;
+	}
+
+	return ret;
+}
+
+MonoException *
+mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception, MonoError *error)
+{
 	MonoClass *klass;
 	MonoObject *o;
 	MonoMethod *method;
@@ -799,16 +849,17 @@ mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeWrappedException");
 
-	o = mono_object_new_checked (domain, klass, &error);
-	g_assert (o != NULL && mono_error_ok (&error)); /* FIXME don't swallow the error */
+	o = mono_object_new_checked (domain, klass, error);
+	mono_error_assert_ok (error);
+	g_assert (o != NULL);
 
 	method = mono_class_get_method_from_name (klass, ".ctor", 1);
 	g_assert (method);
 
 	params [0] = wrapped_exception;
 
-	mono_runtime_invoke_checked (method, o, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (method, o, params, error);
+	return_val_if_nok (error, NULL);
 
 	return (MonoException *)o;
 }	

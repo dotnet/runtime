@@ -125,6 +125,7 @@ common_sources = \
 	environment.h		\
 	exception.c		\
 	exception.h		\
+	exception-internals.h	\
 	file-io.c		\
 	file-io.h		\
 	filewatcher.c		\
