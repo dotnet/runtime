@@ -6,7 +6,7 @@
     "System.Collections": "4.0.10-beta-*",
     "System.Runtime.InteropServices": "4.0.21-beta-*",
     "System.IO": "4.0.11-beta-*",
-    "System.IO.FileSystem": "4.0.1-beta-*",
+    "System.IO.FileSystem": "4.0.0-beta-23302",
     "System.Globalization": "4.0.11-beta-*",
     "System.Reflection": "4.1.0-beta-*",
     "System.Diagnostics.Process": "4.1.0-beta-*",
