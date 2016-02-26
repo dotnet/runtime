@@ -1393,20 +1393,18 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     extern HINSTANCE g_hThisInst;
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
-        DWORD len = CoreClrFolderHolder.GetCount();
-        WCHAR* CoreClrFolder = CoreClrFolderHolder.OpenUnicodeBuffer(len);
-        WCHAR *filePtr = wcsrchr(CoreClrFolder, DIRECTORY_SEPARATOR_CHAR_W);
-        if (filePtr)
+        SString::Iterator iter = CoreClrFolderHolder.End();
+        BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
+        if (findSep)
         {
-            filePtr[1] = W('\0');
-            wcscat_s(CoreClrFolder, MAX_LONGPATH, pwzJitName);
-            *phJit = CLRLoadLibrary(CoreClrFolder);
+            SString sJitName(pwzJitName);
+            CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
             if (*phJit != NULL)
             {
                 hr = S_OK;
             }
         }
-        CoreClrFolderHolder.CloseBuffer();
     }
 #else
     hr = g_pCLRRuntime->LoadLibrary(pwzJitName, phJit);
