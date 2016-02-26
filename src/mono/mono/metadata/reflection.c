@@ -7470,7 +7470,10 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 			} else
 				type->data.klass = mono_class_from_mono_type (type);
 
-			MONO_OBJECT_SETREF (param, DefaultValueImpl, mono_get_object_from_blob (domain, type, blobs [i]));
+			MonoObject *default_val_obj = mono_get_object_from_blob (domain, type, blobs [i], error);
+			if (!is_ok (error))
+				goto leave;
+			MONO_OBJECT_SETREF (param, DefaultValueImpl, default_val_obj);
 
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
 			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) {
@@ -7727,21 +7730,22 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 }
 
 MonoObject *
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
+mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoError *error)
 {
-	MonoError error;
 	void *retval;
 	MonoClass *klass;
 	MonoObject *object;
 	MonoType *basetype = type;
+
+	mono_error_init (error);
 
 	if (!blob)
 		return NULL;
 	
 	klass = mono_class_from_mono_type (type);
 	if (klass->valuetype) {
-		object = mono_object_new_checked (domain, klass, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		object = mono_object_new_checked (domain, klass, error);
+		return_val_if_nok (error, NULL);
 		retval = ((gchar *) object + sizeof (MonoObject));
 		if (klass->enumtype)
 			basetype = mono_class_enum_basetype (klass);
