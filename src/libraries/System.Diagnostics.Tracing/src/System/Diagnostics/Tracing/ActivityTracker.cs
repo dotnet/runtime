@@ -14,7 +14,6 @@ using Contract = Microsoft.Diagnostics.Contracts.Internal.Contract;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
-using System.Threading.Tasks;
 namespace System.Diagnostics.Tracing
 #endif
 {

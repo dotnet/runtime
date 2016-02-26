@@ -3,22 +3,17 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{0C10C503-FD37-4990-BD0F-B79FE22203DD}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
     <AssemblyVersion>4.6.0.0</AssemblyVersion>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile78</TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
+    <ProjectJson>wp8/project.json</ProjectJson>
+    <ProjectLockJson>wp8/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Base\DataflowBlock.cs" />
     <Compile Include="Base\DataflowBlockOptions.cs" />

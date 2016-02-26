@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Composition.Hosting.Util;
-using System.Composition.Runtime;
 using System.Linq;
 using System.Text;
 using Microsoft.Internal;

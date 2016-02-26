@@ -32,6 +32,7 @@
 
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50'">
     <TargetingPackReference Include="Windows" />
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <Compile Include="System\AppContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
