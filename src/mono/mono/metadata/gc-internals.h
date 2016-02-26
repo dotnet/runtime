@@ -65,7 +65,7 @@
 /* useful until we keep track of gc-references in corlib etc. */
 #define IS_GC_REFERENCE(class,t) (mono_gc_is_moving () ? FALSE : ((t)->type == MONO_TYPE_U && (class)->image == mono_defaults.corlib))
 
-void   mono_object_register_finalizer               (MonoObject  *obj);
+void   mono_object_register_finalizer               (MonoObject  *obj, MonoError *error);
 void   ves_icall_System_GC_InternalCollect          (int          generation);
 gint64 ves_icall_System_GC_GetTotalMemory           (MonoBoolean  forceCollection);
 void   ves_icall_System_GC_KeepAlive                (MonoObject  *obj);
