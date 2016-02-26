@@ -41,7 +41,6 @@ INLINE_OBSERVATION(HAS_NATIVE_VARARGS,        bool,   "native varargs",         
 INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",                   FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NULL_FOR_LDELEM,       bool,   "has null pointer for ldelem",   FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_PINNED_LOCALS,         bool,   "has pinned locals",             FATAL,       CALLEE)
-INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",               FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_GENERIC_VIRTUAL,        bool,   "generic virtual",               FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",      FATAL,       CALLEE)
@@ -66,6 +65,7 @@ INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",     
 
 // ------ Callee Performance ------- 
 
+INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(LDFLD_STATIC_VALUECLASS,   bool,   "ldsfld of value class",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MANY_BASIC_BLOCKS,     bool,   "too many basic blocks",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",             PERFORMANCE, CALLEE)
@@ -75,10 +75,11 @@ INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",      
 INLINE_OBSERVATION(BELOW_ALWAYS_INLINE_SIZE,  bool,   "below ALWAYS_INLINE size",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(CAN_INLINE_IL,             bool,   "IL passes basic checks",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(CHECK_CAN_INLINE_IL,       bool,   "IL passes detailed checks",     INFORMATION, CALLEE)
-INLINE_OBSERVATION(HAS_FORCE_INLINE,          bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_FORCE_INLINE,           bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(MAXSTACK,                  int,    "maxstack",                      INFORMATION, CALLEE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",           INFORMATION, CALLEE)
+INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_IL_BYTES,        int,    "number of bytes of IL",         INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",              INFORMATION, CALLEE)
 
