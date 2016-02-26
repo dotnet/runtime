@@ -265,6 +265,7 @@ Temporary Items
 TestWrappers_x64_debug
 TestWrappers_x64_checked
 TestWrappers_x64_release
+tests/src/common/test_runtime/project.json
 
 Vagrantfile
 .vagrant

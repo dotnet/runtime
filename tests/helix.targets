@@ -3,25 +3,30 @@
 
   <PropertyGroup>
       <PackageTestRuntimeFolder>$(PackagesDir)test.Microsoft.NETCore.Runtime.CoreClr\1.1.1</PackageTestRuntimeFolder>
-      <BUILDTOOLS_OVERRIDE_RUNTIME>$(PackageTestRuntimeFolder)</BUILDTOOLS_OVERRIDE_RUNTIME>
   </PropertyGroup>
 
   <ItemGroup>
-    <CoreRootFiles Include="$(CORE_ROOT)\*.*" />
+    <!-- TODO This should come from some package -->
+    <CoreRootFiles Include="$(CORE_ROOT)\crossgen.exe" /> 
+    <CoreRootFiles Include="$(CORE_ROOT)\ildasm.exe" /> 
+    <CoreRootFiles Include="$(CORE_ROOT)\ilasm.exe" /> 
+
+    <!-- TODO these files should get copied to core_root but does not as they are xunit files. Using temporary workaround for now -->
     <CoreRootFiles Include="$(PackagesDir)Microsoft.DotNet.xunit.performance\1.0.0-alpha-build0027\lib\dotnet\xunit.performance.core.dll" />
     <CoreRootFiles Include="$(PackagesDir)xunit.extensibility.core\2.1.0\lib\dotnet\xunit.core.dll" />
   </ItemGroup>
 
+  <!-- replace *.lock.json to be that of actual tests than XunitWrapper -->
   <Target Name="ReplaceProjectLockJson"
           BeforeTargets="CopyTestToTestDirectory">
     <PropertyGroup>
       <ProjectLockJson></ProjectLockJson>
+      <TestRuntimeProjectLockJson></TestRuntimeProjectLockJson>
     </PropertyGroup>
     <ItemGroup>
       <TestNugetProjectLockFile Include="$(SourceDir)$(Category)\**\project.lock.json"/>
     </ItemGroup>
   </Target>
-
 
   <Target Name="CopyProductInPackagesFolder"
           BeforeTargets="CopyTestToTestDirectory">
@@ -38,17 +43,24 @@
  
   </Target>
 
+
   <Target Name="AddFilesToAssemblyList" 
           BeforeTargets="CreateAssemblyListTxt">
 
     <ItemGroup>
 
-      <RuntimeFiles Include="$(PackageTestRuntimeFolder)\*" />
+      <ToReplace Include="$(PackageTestRuntimeFolder)\*" />
+
       <XunitConsoleExe Include="$(PackagesDir)xunit.runner.console\**\xunit.console.exe" />
 
-      <_TestCopyLocalByFileNameWithoutDuplicates Include="@(RuntimeFiles)">
+      <ToRemove Include="@(_TestCopyLocalByFileNameWithoutDuplicates)" Condition="'%(_TestCopyLocalByFileNameWithoutDuplicates.Filename)' == 'xunit.performance.core'"/>
+      <ToRemove Include="@(_TestCopyLocalByFileNameWithoutDuplicates)" Condition="'%(_TestCopyLocalByFileNameWithoutDuplicates.Filename)' == 'xunit.core'"/>
+
+      <_TestCopyLocalByFileNameWithoutDuplicates Remove="@(ToRemove)" />
+
+      <_TestCopyLocalByFileNameWithoutDuplicates Include="@(ToReplace)">
         <NugetPackageId>test.Microsoft.NETCore.Runtime.CoreClr</NugetPackageId>
-        <SourcePath>%(RuntimeFiles.Identity)</SourcePath>
+        <SourcePath>%(ToReplace.Identity)</SourcePath>
       </_TestCopyLocalByFileNameWithoutDuplicates>
 
       <_TestCopyLocalByFileNameWithoutDuplicates Include="@(XunitConsoleExe)">
@@ -56,16 +68,6 @@
         <SourcePath>%(XunitConsoleExe.Identity)</SourcePath>
       </_TestCopyLocalByFileNameWithoutDuplicates>
     </ItemGroup>
-
-    <RemoveDuplicatesWithLastOneWinsPolicy Inputs="@(_TestCopyLocalByFileNameWithoutDuplicates)">
-      <Output TaskParameter="Filtered" ItemName="FilteredList" />
-    </RemoveDuplicatesWithLastOneWinsPolicy>
-
-    <ItemGroup>
-       <_TestCopyLocalByFileNameWithoutDuplicates Remove="*" />
-       <_TestCopyLocalByFileNameWithoutDuplicates Include="@(FilteredList)" />
-    </ItemGroup>
-
   </Target>
 
 </Project>
