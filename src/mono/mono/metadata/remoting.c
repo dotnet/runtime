@@ -391,7 +391,8 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
-	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args);
+	res = mono_remoting_invoke ((MonoObject *)this_obj->rp, msg, &exc, &out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);
