@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,8 +15,12 @@ namespace System
     {
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
         private static readonly object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
-        private static TextReader _in;
-        private static TextWriter _out, _error;
+        private static TextReader s_in;
+        private static TextWriter s_out, s_error;
+        private static Encoding s_inputEncoding;
+        private static Encoding s_outputEncoding;
+        private static bool s_isOutTextWriterRedirected = false;
+        private static bool s_isErrorTextWriterRedirected = false;
 
         private static ConsoleCancelEventHandler _cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar _registrar;
@@ -38,10 +43,65 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref _in) ?? EnsureInitialized(ref _in, () =>
+                return Volatile.Read(ref s_in) ?? EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
+            }
+        }
+
+        public static Encoding InputEncoding
+        {
+            get
+            {
+                return Volatile.Read(ref s_inputEncoding) ?? EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
+            }
+            set
+            {
+                CheckNonNull(value, "value");
+                lock (InternalSyncObject)
                 {
-                    return ConsolePal.GetOrCreateReader();
-                });
+                    // Set the terminal console encoding.
+                    ConsolePal.SetConsoleInputEncoding(value);
+
+                    Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
+
+                    // We need to reinitialize Console.In in the next call to s_in
+                    // This will discard the current StreamReader, potentially 
+                    // losing buffered data.
+                    Volatile.Write(ref s_in, null);
+                }
+            }
+        }
+
+        public static Encoding OutputEncoding
+        {
+            get
+            {
+                return Volatile.Read(ref s_outputEncoding) ?? EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
+            }
+            set
+            {
+                CheckNonNull(value, "value");
+
+                lock (InternalSyncObject)
+                {
+                    // Set the terminal console encoding.
+                    ConsolePal.SetConsoleOutputEncoding(value);
+
+                    // Before changing the code page we need to flush the data 
+                    // if Out hasn't been redirected. Also, have the next call to  
+                    // s_out reinitialize the console code page.
+                    if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
+                    {
+                        s_out.Flush();
+                        Volatile.Write(ref s_out, null);
+                    }
+                    if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
+                    {
+                        s_error.Flush();
+                        Volatile.Write(ref s_error, null);
+                    }
+
+                    Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
+                }
             }
         }
 
@@ -70,12 +130,12 @@ namespace System
 
         public static TextWriter Out
         {
-            get { return Volatile.Read(ref _out) ?? EnsureInitialized(ref _out, () => CreateOutputWriter(OpenStandardOutput())); }
+            get { return Volatile.Read(ref s_out) ?? EnsureInitialized(ref s_out, () => CreateOutputWriter(OpenStandardOutput())); }
         }
 
         public static TextWriter Error
         {
-            get { return Volatile.Read(ref _error) ?? EnsureInitialized(ref _error, () => CreateOutputWriter(OpenStandardError())); }
+            get { return Volatile.Read(ref s_error) ?? EnsureInitialized(ref s_error, () => CreateOutputWriter(OpenStandardError())); }
         }
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
@@ -84,7 +144,7 @@ namespace System
                 StreamWriter.Null :
                 new StreamWriter(
                     stream: outputStream,
-                    encoding: ConsolePal.OutputEncoding,
+                    encoding: new ConsoleEncoding(OutputEncoding), // This ensures no prefix is written to the stream.
                     bufferSize: DefaultConsoleBufferSize,
                     leaveOpen: true) { AutoFlush = true });
         }
@@ -351,21 +411,34 @@ namespace System
         {
             CheckNonNull(newIn, "newIn");
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
-            lock (InternalSyncObject) { _in = newIn; }
+            lock (InternalSyncObject)
+            {
+                Volatile.Write(ref s_in, newIn);
+            }
         }
 
         public static void SetOut(TextWriter newOut)
         {
             CheckNonNull(newOut, "newOut");
             newOut = SyncTextWriter.GetSynchronizedTextWriter(newOut);
-            lock (InternalSyncObject) { _out = newOut; }
+            Volatile.Write(ref s_isOutTextWriterRedirected, true);
+
+            lock (InternalSyncObject)
+            {
+                Volatile.Write(ref s_out, newOut);
+            }
         }
 
         public static void SetError(TextWriter newError)
         {
             CheckNonNull(newError, "newError");
             newError = SyncTextWriter.GetSynchronizedTextWriter(newError);
-            lock (InternalSyncObject) { _error = newError; }
+            Volatile.Write(ref s_isErrorTextWriterRedirected, true);
+
+            lock (InternalSyncObject)
+            {
+                Volatile.Write(ref s_error, newError);
+            }
         }
 
         private static void CheckNonNull(object obj, string paramName)

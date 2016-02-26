@@ -20,17 +20,17 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return GetStandardFile(InputHandle, FileAccess.Read);
+            return GetStandardFile(Interop.mincore.HandleTypes.STD_INPUT_HANDLE, FileAccess.Read);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return GetStandardFile(OutputHandle, FileAccess.Write);
+            return GetStandardFile(Interop.mincore.HandleTypes.STD_OUTPUT_HANDLE, FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return GetStandardFile(ErrorHandle, FileAccess.Write);
+            return GetStandardFile(Interop.mincore.HandleTypes.STD_ERROR_HANDLE, FileAccess.Write);
         }
 
         private static IntPtr InputHandle
@@ -48,8 +48,10 @@ namespace System
             get { return Interop.mincore.GetStdHandle(Interop.mincore.HandleTypes.STD_ERROR_HANDLE); }
         }
 
-        private static Stream GetStandardFile(IntPtr handle, FileAccess access)
+        private static Stream GetStandardFile(int handleType, FileAccess access)
         {
+            IntPtr handle = Interop.mincore.GetStdHandle(handleType);
+
             // If someone launches a managed process via CreateProcess, stdout,
             // stderr, & stdin could independently be set to INVALID_HANDLE_VALUE.
             // Additionally they might use 0 as an invalid handle.  We also need to
@@ -60,7 +62,7 @@ namespace System
                 return Stream.Null;
             }
 
-            return new WindowsConsoleStream(handle, access);
+            return new WindowsConsoleStream(handle, access, GetUseFileAPIs(handleType));
         }
 
         // Checks whether stdout or stderr are writable.  Do NOT pass
@@ -85,28 +87,52 @@ namespace System
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
-        // Note if we ever support different encodings:
-        // We always use file APIs in WindowsConsoleStream since WriteConsole is called only when the Encoding is Unicode and 
-        // the handle is not redirected. Since changing the Input/OutputEncoding is not currently supported, we will always have 
-        // the either the GetConsoleCP encoding or the UTF8Encoding fallback, in which case we always use the Read/WriteFile native
-        // API.  If that ever changes, WindowsConsoleStream will need to be changed, too.
-
         public static Encoding InputEncoding
         {
-            get { return GetEncoding((int)Interop.mincore.GetConsoleCP()); }
+            get { return EncodingHelper.GetSupportedConsoleEncoding((int)Interop.mincore.GetConsoleCP()); }
+        }
+
+        public static void SetConsoleInputEncoding(Encoding enc)
+        {
+            if (enc.CodePage != Encoding.Unicode.CodePage)
+            {
+                if (!Interop.mincore.SetConsoleCP(enc.CodePage))
+                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
         }
 
         public static Encoding OutputEncoding
         {
-            get { return GetEncoding((int)Interop.mincore.GetConsoleOutputCP()); }
+            get { return EncodingHelper.GetSupportedConsoleEncoding((int)Interop.mincore.GetConsoleOutputCP()); }
         }
 
-        private static Encoding GetEncoding(int codePage)
+        public static void SetConsoleOutputEncoding(Encoding enc)
         {
-            Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
-            Debug.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console stream
+            if (enc.CodePage != Encoding.Unicode.CodePage)
+            {
+                if (!Interop.mincore.SetConsoleOutputCP(enc.CodePage))
+                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
 
-            return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
+        private static bool GetUseFileAPIs(int handleType)
+        {
+            switch (handleType)
+            {
+                case Interop.mincore.HandleTypes.STD_INPUT_HANDLE:
+                    return Console.InputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsInputRedirected;
+
+                case Interop.mincore.HandleTypes.STD_OUTPUT_HANDLE:
+                    return Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsOutputRedirected;
+
+                case Interop.mincore.HandleTypes.STD_ERROR_HANDLE:
+                    return Console.OutputEncoding.CodePage != Encoding.Unicode.CodePage || Console.IsErrorRedirected;
+
+                default:
+                    // This can never happen.
+                    Debug.Assert(false, "Unexpected handleType value (" + handleType + ")");
+                    return true;
+            }
         }
 
         /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
@@ -145,7 +171,7 @@ namespace System
                 StreamReader.Null :
                 new StreamReader(
                     stream: inputStream,
-                    encoding: InputEncoding,
+                    encoding: new ConsoleEncoding(Console.InputEncoding),
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: DefaultConsoleBufferSize,
                     leaveOpen: true));
@@ -511,7 +537,7 @@ namespace System
             {
                 string title = null;
                 int titleLength = -1;
-                Int32 r = Interop.mincore.GetConsoleTitle(out title, out titleLength);
+                int r = Interop.mincore.GetConsoleTitle(out title, out titleLength);
 
                 if (0 != r)
                 {
@@ -1010,13 +1036,15 @@ namespace System
 
             private readonly bool _isPipe; // When reading from pipes, we need to properly handle EOF cases.
             private IntPtr _handle;
+            private readonly bool _useFileAPIs;
 
-            internal WindowsConsoleStream(IntPtr handle, FileAccess access)
+            internal WindowsConsoleStream(IntPtr handle, FileAccess access, bool useFileAPIs)
                 : base(access)
             {
                 Debug.Assert(handle != IntPtr.Zero && handle != s_InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
                 _isPipe = Interop.mincore.GetFileType(handle) == Interop.mincore.FileTypes.FILE_TYPE_PIPE;
+                _useFileAPIs = useFileAPIs;
             }
 
             protected override void Dispose(bool disposing)
@@ -1035,7 +1063,7 @@ namespace System
                 ValidateRead(buffer, offset, count);
 
                 int bytesRead;
-                int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead);
+                int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead, _useFileAPIs);
                 if (Interop.mincore.Errors.ERROR_SUCCESS != errCode)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
                 return bytesRead;
@@ -1045,7 +1073,7 @@ namespace System
             {
                 ValidateWrite(buffer, offset, count);
 
-                int errCode = WriteFileNative(_handle, buffer, offset, count);
+                int errCode = WriteFileNative(_handle, buffer, offset, count, _useFileAPIs);
                 if (Interop.mincore.Errors.ERROR_SUCCESS != errCode)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
             }
@@ -1061,7 +1089,7 @@ namespace System
             // world working set and to avoid requiring a reference to the
             // System.IO.FileSystem contract.
 
-            private unsafe static int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead)
+            private unsafe static int ReadFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool isPipe, out int bytesRead, bool useFileAPIs)
             {
                 Contract.Requires(offset >= 0, "offset >= 0");
                 Contract.Requires(count >= 0, "count >= 0");
@@ -1082,12 +1110,17 @@ namespace System
                 bool readSuccess;
                 fixed (byte* p = bytes)
                 {
-                    readSuccess = (0 != Interop.mincore.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero));
-
-                    // If the code page could be Unicode, we should use ReadConsole instead, e.g.
-                    // int charsRead;
-                    // readSuccess = Interop.mincore.ReadConsole(hFile, p + offset, count / BytesPerWChar, out charsRead, IntPtr.Zero);
-                    // bytesRead = charsRead * BytesPerWChar;
+                    if (useFileAPIs)
+                    {
+                        readSuccess = (0 != Interop.mincore.ReadFile(hFile, p + offset, count, out bytesRead, IntPtr.Zero));
+                    }
+                    else
+                    {
+                        // If the code page could be Unicode, we should use ReadConsole instead, e.g.
+                        int charsRead;
+                        readSuccess = Interop.mincore.ReadConsole(hFile, p + offset, count / BytesPerWChar, out charsRead, IntPtr.Zero);
+                        bytesRead = charsRead * BytesPerWChar;
+                    }
                 }
                 if (readSuccess)
                     return Interop.mincore.Errors.ERROR_SUCCESS;
@@ -1101,7 +1134,7 @@ namespace System
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, byte[] bytes, int offset, int count)
+            private static unsafe int WriteFileNative(IntPtr hFile, byte[] bytes, int offset, int count, bool useFileAPIs)
             {
                 Contract.Requires(offset >= 0, "offset >= 0");
                 Contract.Requires(count >= 0, "count >= 0");
@@ -1115,18 +1148,24 @@ namespace System
                 bool writeSuccess;
                 fixed (byte* p = bytes)
                 {
-                    int numBytesWritten;
-                    writeSuccess = (0 != Interop.mincore.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
-                    Debug.Assert(!writeSuccess || count == numBytesWritten);
+                    if (useFileAPIs)
+                    {
+                        int numBytesWritten;
+                        writeSuccess = (0 != Interop.mincore.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
+                        Debug.Assert(!writeSuccess || count == numBytesWritten);
+                    }
+                    else
+                    {
 
-                    // If the code page could be Unicode, we should use ReadConsole instead, e.g.
-                    // // Note that WriteConsoleW has a max limit on num of chars to write (64K)
-                    // // [http://msdn.microsoft.com/en-us/library/ms687401.aspx]
-                    // // However, we do not need to worry about that because the StreamWriter in Console has
-                    // // a much shorter buffer size anyway.
-                    // Int32 charsWritten;
-                    // writeSuccess = Interop.mincore.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);
-                    // Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
+                        // If the code page could be Unicode, we should use ReadConsole instead, e.g.
+                        // Note that WriteConsoleW has a max limit on num of chars to write (64K)
+                        // [http://msdn.microsoft.com/en-us/library/ms687401.aspx]
+                        // However, we do not need to worry about that because the StreamWriter in Console has
+                        // a much shorter buffer size anyway.
+                        int charsWritten;
+                        writeSuccess = Interop.mincore.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);
+                        Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
+                    }
                 }
                 if (writeSuccess)
                     return Interop.mincore.Errors.ERROR_SUCCESS;
