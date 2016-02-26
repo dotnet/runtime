@@ -110,11 +110,7 @@
     <Compile Include="StringInfo\StringInfoLengthInTextElements.cs" />
     <Compile Include="StringInfo\StringInfoParseCombiningCharacters.cs" />
     <Compile Include="StringInfo\StringInfoString.cs" />
-    <Compile Include="TextElementEnumerator\TextElementEnumeratorCurrent.cs" />
-    <Compile Include="TextElementEnumerator\TextElementEnumeratorElementIndex.cs" />
-    <Compile Include="TextElementEnumerator\TextElementEnumeratorGetTextElement.cs" />
-    <Compile Include="TextElementEnumerator\TextElementEnumeratorMoveNext.cs" />
-    <Compile Include="TextElementEnumerator\TextElementEnumeratorReset.cs" />
+    <Compile Include="TextElementEnumerator\TextElementEnumeratorTests.cs" />
     <Compile Include="TextInfo\TestInfoIsRightToLeft.cs" />
     <Compile Include="TextInfo\TextInfoCultureName.cs" />
     <Compile Include="TextInfo\TextInfoEquals.cs" />
