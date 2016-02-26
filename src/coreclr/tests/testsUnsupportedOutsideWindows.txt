@@ -189,3 +189,4 @@ JIT/opt/Inline/tests/xmodb/xmodb.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b79250/b79250/b79250.sh
 managed/Compilation/Compilation/Compilation.sh
 Regressions/coreclr/0584/Test584/Test584.sh
+GC/Regressions/v2.0-beta2/437657/437657/437657.sh

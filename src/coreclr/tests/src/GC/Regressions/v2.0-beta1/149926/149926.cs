@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//VSWhidbey bug# 149926 - OutOfMemoryException allocating a byte array
-
 using System;
 
 public class ArrayOOM
