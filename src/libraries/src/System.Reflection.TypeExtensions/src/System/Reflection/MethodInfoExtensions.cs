@@ -18,7 +18,7 @@ namespace System.Reflection
         /// <returns>A MethodInfo object for the first implementation of this method.</returns>
         public static MethodInfo GetBaseDefinition(this MethodInfo method)
         {
-            Requires.NotNull(method, "method");
+            Requires.NotNull(method, nameof(method));
 
             while (true)
             {
