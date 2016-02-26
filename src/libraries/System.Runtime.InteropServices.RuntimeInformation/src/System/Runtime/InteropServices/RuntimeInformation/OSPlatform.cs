@@ -8,39 +8,11 @@ namespace System.Runtime.InteropServices
     {
         private readonly string _osPlatform;
 
-        private const string FreeBSDName = "FREEBSD";
-        private const string LinuxName = "LINUX";
-        private const string OSXName = "OSX";
-        private const string WindowsName = "WINDOWS";
+        public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
-        private static readonly OSPlatform s_freebsd = new OSPlatform(FreeBSDName);
-        private static readonly OSPlatform s_linux = new OSPlatform(LinuxName);
-        private static readonly OSPlatform s_osx = new OSPlatform(OSXName);
-        private static readonly OSPlatform s_windows = new OSPlatform(WindowsName);
+        public static OSPlatform OSX { get; } = new OSPlatform("OSX");
 
-        public static OSPlatform Linux
-        {
-            get
-            {
-                return s_linux;
-            }
-        }
-
-        public static OSPlatform OSX
-        {
-            get
-            {
-                return s_osx;
-            }
-        }
-
-        public static OSPlatform Windows
-        {
-            get
-            {
-                return s_windows;
-            }
-        }
+        public static OSPlatform Windows { get; } = new OSPlatform("WINDOWS");
 
         private OSPlatform(string osPlatform)
         {
@@ -57,17 +29,17 @@ namespace System.Runtime.InteropServices
 
         public bool Equals(OSPlatform other)
         {
-            return string.Equals(other._osPlatform, _osPlatform, StringComparison.Ordinal);
+            return Equals(other._osPlatform);
+        }
+
+        internal bool Equals(string other)
+        {
+            return string.Equals(_osPlatform, other, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is OSPlatform)
-            {
-                return Equals((OSPlatform)obj);
-            }
-
-            return false;
+            return obj is OSPlatform && Equals((OSPlatform)obj);
         }
 
         public override int GetHashCode()
