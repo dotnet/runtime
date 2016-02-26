@@ -13904,16 +13904,26 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
 
         op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+
+        // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).  
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // System V ABI requires to return the implicit return buffer explicitly (in RAX).
+        // Change the return type to be BYREF.  
+        op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // In case of Windows AMD64 the profiler hook requires to return the implicit RetBuf explicitly (in RAX).  
+        // In such case the return value of the function is changed to BYREF.  
+        // If profiler hook is not needed the return type of the function is TYP_VOID.  
         if (compIsProfilerHookNeeded())
         {
-            // The profiler callback expects the address of the return buffer in eax
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
         else
         {
-            // return void
+            // return void  
             op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)  
     }
     else if (varTypeIsStruct(info.compRetType))
     {
