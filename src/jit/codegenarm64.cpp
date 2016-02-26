@@ -5990,7 +5990,9 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             emit->emitIns_R_I(INS_cmp, cmpSize, sourceReg, 0);
             emitJumpKind jmpLT = genJumpKindForOper(GT_LT, CK_SIGNED);
             genJumpToThrowHlpBlk(jmpLT, SCK_OVERFLOW);
-            if (dstType == TYP_ULONG)
+            noway_assert(genTypeSize(srcType) == 4 || genTypeSize(srcType) == 8);
+            // This is only interesting case to ensure zero-upper bits.
+            if ((srcType == TYP_INT) && (dstType == TYP_ULONG))
             {
                 // cast to TYP_ULONG:
                 // We use a mov with size=EA_4BYTE
