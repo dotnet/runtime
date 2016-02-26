@@ -1531,7 +1531,9 @@ void    DisAssembler::disAsmCode(BYTE* hotCodePtr, size_t hotCodeSize, BYTE* col
 #endif // !DEBUG
 
 #ifdef DEBUG
-    const wchar_t* fileName = JitConfig.JitLateDisasmTo();
+    static ConfigString fJITLateDisasmTo;
+
+    LPWSTR fileName = fJITLateDisasmTo.val(CLRConfig::INTERNAL_JITLateDisasmTo);
     if (fileName != nullptr)
     {
         errno_t ec = _wfopen_s(&disAsmFile, fileName, W("a+"));

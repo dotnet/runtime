@@ -31,7 +31,8 @@ void                Compiler::fgInit()
 
 #ifdef DEBUG
     fgInlinedCount               = 0;
-    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
+    static ConfigDWORD fJitPrintInlinedMethods;
+    fgPrintInlinedMethods = fJitPrintInlinedMethods.val(CLRConfig::EXTERNAL_JitPrintInlinedMethods) == 1;
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
@@ -162,11 +163,12 @@ void                Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-         if ((JitConfig.JitNoStructPromotion() & 1) == 1)
+         static ConfigDWORD fJitNoStructPromotion;
+         if ((fJitNoStructPromotion.val(CLRConfig::INTERNAL_JitNoStructPromotion) & 1) == 1)
          {
              fgNoStructPromotion = true;
          }
-         if ((JitConfig.JitNoStructPromotion() & 2) == 2)
+         if ((fJitNoStructPromotion.val(CLRConfig::INTERNAL_JitNoStructPromotion) & 2) == 2)
          {
              fgNoStructParamPromotion = true;
          }
@@ -10047,7 +10049,8 @@ void                Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNe
 #endif
 
 #if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
+    static ConfigDWORD fSlowDebugChecksEnabled;
+    if (fSlowDebugChecksEnabled.val(CLRConfig::INTERNAL_JitSlowDebugChecksEnabled) != 0)
     {
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -18911,15 +18914,21 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
 #ifdef DEBUG
     if (opts.eeFlags & CORJIT_FLG_PREJIT)
     {
-        pattern = JitConfig.NgenDumpFg();
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
+        static ConfigString sNgenDumpFg;
+        pattern = sNgenDumpFg.val(CLRConfig::INTERNAL_NgenDumpFg);
+        static ConfigString sNgenDumpFgFile;
+        filename = sNgenDumpFgFile.val(CLRConfig::INTERNAL_NgenDumpFgFile);
+        static ConfigString sNgenDumpFgDir;
+        pathname = sNgenDumpFgDir.val(CLRConfig::INTERNAL_NgenDumpFgDir);
     }
     else
     {
-        pattern = JitConfig.JitDumpFg();
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
+        static ConfigString sJitDumpFg;
+        pattern = sJitDumpFg.val(CLRConfig::INTERNAL_JitDumpFg);
+        static ConfigString sJitDumpFgFile;
+        filename = sJitDumpFgFile.val(CLRConfig::INTERNAL_JitDumpFgFile);
+        static ConfigString sJitDumpFgDir;
+        pathname = sJitDumpFgDir.val(CLRConfig::INTERNAL_JitDumpFgDir);
     }
 #endif // DEBUG
 
@@ -18932,7 +18941,8 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
     if (wcslen(pattern) == 0)
         return NULL;
 
-    LPCWSTR phasePattern = JitConfig.JitDumpFgPhase();
+    static ConfigString sJitDumpFgPhase;
+    LPCWSTR phasePattern = sJitDumpFgPhase.val(CLRConfig::INTERNAL_JitDumpFgPhase);
     LPCWSTR phaseName = PhaseShortNames[phase];
     if (phasePattern == 0)
     {
@@ -19194,8 +19204,9 @@ bool               Compiler::fgDumpFlowGraph(Phases phase)
 {
     bool    result    = false;
     bool    dontClose = false;
+    static ConfigDWORD fJitDumpFgDot;
     bool    createDotFile = false;
-    if (JitConfig.JitDumpFgDot())
+    if (fJitDumpFgDot.val(CLRConfig::INTERNAL_JitDumpFgDot))
     {
         createDotFile = true;
     }

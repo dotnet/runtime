@@ -52,14 +52,6 @@ void __stdcall jitStartup(ICorJitHost* jitHost)
 {
     g_jitHost = jitHost;
 
-    // `jitStartup` may be called multiple times
-    // when pre-jitting. We should not reinitialize
-    // config values each time.
-    if (!JitConfig.isInitialized())
-    {
-        JitConfig.initialize(jitHost);
-    }
-
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
 #endif
@@ -293,7 +285,8 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
         ((cpuCompileFlags & CORJIT_FLG_FEATURE_SIMD) != 0) &&
         ((cpuCompileFlags & CORJIT_FLG_USE_AVX2) != 0))
     {
-        if (JitConfig.EnableAVX() != 0)
+        static ConfigDWORD fEnableAVX;
+        if (fEnableAVX.val(CLRConfig::EXTERNAL_EnableAVX) != 0)
         {
             return 32;
         }
