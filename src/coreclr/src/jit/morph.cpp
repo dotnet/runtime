@@ -9156,6 +9156,24 @@ NO_MUL_64RSLT:
 
     ASSIGN_HELPER_FOR_MOD:
 
+        // For "val % 1", return 0 if op1 doesn't have any side effects
+        // and we are not in the CSE phase, we cannot discard 'tree'
+        // because it may contain CSE expressions that we haven't yet examined.
+        //
+        if (((op1->gtFlags & GTF_SIDE_EFFECT) == 0) && !optValnumCSE_phase)
+        {
+            if (((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1))
+                || ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == 1)))
+            {
+                GenTreePtr zeroNode = new(this, GT_CNS_INT) GenTreeIntCon(typ, 0);
+#ifdef DEBUG
+                zeroNode->gtFlags |= GTF_MORPHED;
+#endif
+                DEBUG_DESTROY_NODE(tree);
+                return zeroNode;
+            }
+        }
+
 #ifndef  _TARGET_64BIT_
 #if !LONG_MATH_REGPARAM
         if  (typ == TYP_LONG)
@@ -10569,25 +10587,6 @@ COMPARE:
         fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO, fgPtrArgCntCur);
         break;
 #endif
-
-    case GT_MOD:
-    case GT_UMOD:
-        // For "val % 1", return 0 if op1 doesn't have any side effects
-        // and we are not in the CSE phase, we cannot discard 'tree' 
-        // because it may contain CSE expressions that we haven't yet examined.
-        //
-        if (((op1->gtFlags & GTF_SIDE_EFFECT) == 0) && !optValnumCSE_phase)
-        {
-            if (((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1))
-                || ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == 1)))
-            {
-                op2->gtIntConCommon.SetIconValue(0);
-                DEBUG_DESTROY_NODE(tree);
-                return op2;
-            }
-        }
-        break;
-
 
     case GT_ADD:
 

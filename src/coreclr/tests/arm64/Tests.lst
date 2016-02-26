@@ -19254,7 +19254,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\ovflrem2_il_r
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [opcodesconv_r_un.exe_1730]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R_Un\OpCodesConv_R_Un.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R_Un
