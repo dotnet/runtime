@@ -392,7 +392,7 @@ mon_new (gsize id)
 					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
 						while (new_->wait_list) {
-							LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d): Closing orphaned event %d", mono_thread_info_get_small_id (), new->wait_list->data));
+							LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d): Closing orphaned event %d", mono_thread_info_get_small_id (), new_->wait_list->data));
 							CloseHandle (new_->wait_list->data);
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
