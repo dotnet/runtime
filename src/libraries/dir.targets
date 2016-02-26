@@ -17,4 +17,17 @@
 
   <!-- permit a wrapping build system to contribute targets to this build -->
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
+
+  <PropertyGroup>
+    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
+         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
+    <!-- We do not want to target a portable profile.
+         TODO: Make this the default in buildtools so this is not necessary. -->
+    <TargetFrameworkProfile></TargetFrameworkProfile>
+    <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
+    <PortableNuGetMode>true</PortableNuGetMode>
+  </PropertyGroup>
+
 </Project>

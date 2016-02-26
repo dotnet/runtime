@@ -4,7 +4,6 @@
 
 using Microsoft.Win32.SafeHandles;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;

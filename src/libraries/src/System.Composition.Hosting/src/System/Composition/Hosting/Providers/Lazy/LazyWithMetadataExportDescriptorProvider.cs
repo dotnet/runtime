@@ -4,9 +4,7 @@
 
 using System.Reflection;
 using System.Composition.Hosting.Core;
-using System.Composition.Runtime;
 using System.Linq;
-using System.Threading;
 using System.Composition.Hosting.Util;
 using System.Collections.Generic;
 using System.Composition.Hosting.Providers.Metadata;
