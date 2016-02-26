@@ -19,9 +19,6 @@
     <Compile Include="Common\Error.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStream.cs" />
-    <Compile Include="$(CommonPath)\System\IO\StreamHelpers.cs">
-      <Link>Common\System\IO\StreamHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />

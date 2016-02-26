@@ -1684,11 +1684,6 @@ namespace System.IO
             return errorCode;
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
-        }
-
         [System.Security.SecuritySafeCritical]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

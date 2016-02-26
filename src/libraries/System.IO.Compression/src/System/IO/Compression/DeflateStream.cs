@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
@@ -97,7 +96,7 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Decompress;
             _leaveOpen = leaveOpen;
-            _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
+            _buffer = new byte[DefaultBufferSize];
         }
 
         /// <summary>
@@ -114,7 +113,7 @@ namespace System.IO.Compression
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
-            _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
+            _buffer = new byte[DefaultBufferSize];
         }
 
         #endregion
@@ -345,11 +344,6 @@ namespace System.IO.Compression
         private static void ThrowCannotWriteToDeflateStreamException()
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
-        }
-
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return StreamHelpers.ArrayPoolCopyToAsync(this, destination, bufferSize, cancellationToken);
         }
 
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
@@ -586,9 +580,6 @@ namespace System.IO.Compression
                     }
                     finally
                     {
-                        if (_buffer != null)
-                            ArrayPool<byte>.Shared.Return(_buffer, clearArray: true);
-                        _buffer = null;
                         _deflater = null;
                         _inflater = null;
                         base.Dispose(disposing);
