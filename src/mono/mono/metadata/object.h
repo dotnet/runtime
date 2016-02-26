@@ -212,6 +212,7 @@ mono_raise_exception	    (MonoException *ex);
 MONO_API void
 mono_runtime_object_init    (MonoObject *this_obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_runtime_class_init	    (MonoVTable *vtable);
 

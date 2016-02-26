@@ -184,6 +184,9 @@ MonoObject*
 mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache);
 
 void
+ves_icall_runtime_class_init (MonoVTable *vtable);
+
+void
 mono_generic_class_init (MonoVTable *vtable);
 
 void mono_interruption_checkpoint_from_trampoline (void);

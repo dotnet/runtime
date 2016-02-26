@@ -893,6 +893,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObj
 ICALL_EXPORT void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (MonoType *handle)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoVTable *vtable;
 
@@ -904,10 +905,15 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	if (klass->generic_container)
 		return;
 
-	vtable = mono_class_vtable_full (mono_domain_get (), klass, TRUE);
+	vtable = mono_class_vtable_full (mono_domain_get (), klass, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	/* This will call the type constructor */
-	mono_runtime_class_init (vtable);
+	if (!mono_runtime_class_init_full (vtable, &error))
+		mono_error_set_pending_exception (&error);
 }
 
 ICALL_EXPORT void
@@ -923,7 +929,13 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 			return;
 		}
 		/*It's fine to raise the exception here*/
-		mono_runtime_class_init (mono_class_vtable_full (mono_domain_get (), module_klass, TRUE));
+		MonoVTable * vtable = mono_class_vtable_full (mono_domain_get (), module_klass, &error);
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return;
+		}
+		if (!mono_runtime_class_init_full (vtable, &error))
+			mono_error_set_pending_exception (&error);
 	}
 }
 
@@ -1883,9 +1895,17 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_full (mono_object_domain (field), cf->parent, TRUE);
-		if (!vtable->initialized)
-			mono_runtime_class_init (vtable);
+		MonoVTable *vtable = mono_class_vtable_full (mono_object_domain (field), cf->parent, &error);
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return;
+		}
+		if (!vtable->initialized) {
+			if (!mono_runtime_class_init_full (vtable, &error)) {
+				mono_error_set_pending_exception (&error);
+				return;
+			}
+		}
 		mono_field_static_set_value (vtable, cf, v);
 	} else {
 		mono_field_set_value (obj, cf, v);
@@ -2962,7 +2982,8 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		mono_security_core_clr_ensure_reflection_access_method (m);
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
-		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, FALSE)) {
+		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, &error)) {
+			mono_error_cleanup (&error); /* FIXME does this make sense? */
 			mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_class_get_exception_for_failure (m->klass));
 			return NULL;
 		}
@@ -3756,7 +3777,11 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	klass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 	domain = ((MonoObject *)type)->vtable->domain;
-	array_vtable = mono_class_vtable_full (domain, MethodInfo_array, TRUE);
+	array_vtable = mono_class_vtable_full (domain, MethodInfo_array, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	if (type->type->byref) {
 		res = mono_array_new_specific_checked (array_vtable, 0, &error);
 		mono_error_set_pending_exception (&error);
@@ -6914,11 +6939,16 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 ICALL_EXPORT void
 ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionType *type, MonoBoolean enable)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoVTable* vtable;
 
 	klass = mono_class_from_mono_type (type->type);
-	vtable = mono_class_vtable_full (mono_domain_get (), klass, TRUE);
+	vtable = mono_class_vtable_full (mono_domain_get (), klass, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	mono_vtable_set_is_remote (vtable, enable);
 }
@@ -6954,8 +6984,13 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 		g_assert (klass->rank == 1);
 		return (MonoObject *) mono_array_new (domain, klass->element_class, 0);
 	} else {
+		MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
+		if (!is_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		}
 		/* Bypass remoting object creation check */
-		ret = mono_object_new_alloc_specific_checked (mono_class_vtable_full (domain, klass, TRUE), &error);
+		ret = mono_object_new_alloc_specific_checked (vtable, &error);
 		mono_error_set_pending_exception (&error);
 
 		return ret;
