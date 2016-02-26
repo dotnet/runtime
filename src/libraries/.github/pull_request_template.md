@@ -10,13 +10,14 @@ If you want to share work-in-progress PRs, create them in your own fork.
 
 # Problem
 
-Include a summary of the problem and the change so that reviewers don't have
-to extract that information from the commit messages.
+Include a summary of the problem being addressed so that reviewers 
+don't have to extract that information from an associated issue or 
+from the commit description(s).
 
-# Summary
+# Solution
 
-Include a summary of the problem and the change so that reviewers don't have
-to extract that information from the commit messages.
+Include a summary of the change so that reviewers don't have
+to extract that information from the commit description(s).
 
 Fixes #1, #2 (If no corresponding GitHub issues exist, delete this line)
 
