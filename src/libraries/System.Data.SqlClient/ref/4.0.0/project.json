@@ -5,8 +5,7 @@
     "System.IO": "4.0.0",
     "System.Runtime": "4.0.0",
     "System.Threading.Tasks": "4.0.0",
-    "System.Xml.ReaderWriter": "4.0.0",
-    "System.Collections.NonGeneric": "4.0.0",
+    "System.Xml.ReaderWriter": "4.0.0"
   },
   "frameworks": {
     "netstandard1.1": {
