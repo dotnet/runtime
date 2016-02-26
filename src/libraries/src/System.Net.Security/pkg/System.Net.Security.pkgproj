@@ -19,5 +19,8 @@
       <PackageTargetRuntime>win7</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Net.Security\runtime.native.System.Net.Security.pkgproj" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

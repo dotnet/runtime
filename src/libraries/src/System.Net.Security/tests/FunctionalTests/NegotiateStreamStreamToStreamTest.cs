@@ -261,12 +261,5 @@ namespace System.Net.Security.Tests
                 Assert.True(_sampleMsg.SequenceEqual(recvBuf));
             }
         }
-        
-        [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
-        public void NegotiateStream_Ctor_Throws()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateStream(new VirtualNetworkStream(null, isServer: false)));
-        }
     }
 }

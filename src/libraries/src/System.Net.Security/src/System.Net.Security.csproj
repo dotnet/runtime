@@ -52,9 +52,15 @@
     <Compile Include="System\Net\SecureProtocols\ProtectionLevel.cs" />
 
     <!-- NegotiateStream -->    
+    <Compile Include="System\Net\ContextFlagsPal.cs" />
+    <Compile Include="System\Net\NTAuthentication.cs" />
+    <Compile Include="System\Net\SSPIHandleCache.cs" />
+    <Compile Include="System\Net\StreamFramer.cs" />
     <Compile Include="System\Net\SecureProtocols\BufferAsyncResult.cs" />
     <Compile Include="System\Net\SecureProtocols\NegotiateStream.cs" />
+    <Compile Include="System\Net\SecureProtocols\NegoState.cs" />
     <Compile Include="System\Net\SecureProtocols\InternalNegotiateStream.cs" />
+    <Compile Include="System\Net\NegotiationInfoClass.cs" />
     
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
@@ -145,13 +151,12 @@
     <Compile Include="System\Net\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+    <Compile Include="System\Net\SecurityStatusAdapterPal.Windows.cs" />
 	
     <!-- NegotiateStream -->
-    <Compile Include="System\Net\NTAuthentication.cs" />
     <Compile Include="System\Net\SpnDictionary.cs" />
-    <Compile Include="System\Net\SSPIHandleCache.cs" />
-    <Compile Include="System\Net\StreamFramer.cs" />
-    <Compile Include="System\Net\SecureProtocols\NegoState.Windows.cs" />
+    <Compile Include="System\Net\NegotiateStreamPal.Windows.cs" />
+    <Compile Include="System\Net\ContextFlagsAdapterPal.Windows.cs" />
    
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -199,6 +204,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecSizes.cs">
       <Link>Common\Interop\Windows\sspicli\SecSizes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\BidirectionalDictionary.cs">
+      <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\SecurityEventSource.Windows.cs">
       <Link>Common\System\Net\Logging\SecurityEventSource.Windows.cs</Link>
     </Compile>
@@ -236,7 +244,8 @@
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
 
     <!-- NegotiateStream -->    
-    <Compile Include="System\Net\SecureProtocols\NegoState.Unix.cs" />
+    <Compile Include="System\Net\NegotiateStreamPal.Unix.cs" />
+    <Compile Include="System\Net\ContextFlagsAdapterPal.Unix.cs" />
     
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -301,6 +310,24 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.GssApi.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApi.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\SecuritySafeHandles.cs">
+       <Link>Common\Interop\Unix\System.Net.Security.Native\SecuritySafeHandles.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
+       <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs</Link>
