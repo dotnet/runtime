@@ -12,7 +12,8 @@ ULONG g_currentThreadIndex = -1;
 ULONG g_currentThreadSystemId = -1;
 char *g_coreclrDirectory;
 
-DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process, lldb::SBThread *thread) : 
+LLDBServices::LLDBServices(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process, lldb::SBThread *thread) : 
+    m_ref(1),
     m_debugger(debugger),
     m_returnObject(returnObject),
     m_currentProcess(process),
@@ -21,8 +22,255 @@ DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject
     returnObject.SetStatus(lldb::eReturnStatusSuccessFinishResult);
 }
 
-DebugClient::~DebugClient()
+LLDBServices::~LLDBServices()
 {
+}
+
+//----------------------------------------------------------------------------
+// IUnknown
+//----------------------------------------------------------------------------
+
+HRESULT
+LLDBServices::QueryInterface(
+    REFIID InterfaceId,
+    PVOID* Interface
+    )
+{
+    if (InterfaceId == __uuidof(IUnknown) ||
+        InterfaceId == __uuidof(ILLDBServices))
+    {
+        *Interface = (ILLDBServices*)this;
+        AddRef();
+        return S_OK;
+    }
+    else
+    {
+        *Interface = NULL;
+        return E_NOINTERFACE;
+    }
+}
+
+ULONG
+LLDBServices::AddRef()
+{
+    LONG ref = InterlockedIncrement(&m_ref);    
+    return ref;
+}
+
+ULONG
+LLDBServices::Release()
+{
+    LONG ref = InterlockedDecrement(&m_ref);
+    if (ref == 0)
+    {
+        delete this;
+    }
+    return ref;
+}
+
+//----------------------------------------------------------------------------
+// ILLDBServices
+//----------------------------------------------------------------------------
+
+PCSTR
+LLDBServices::GetCoreClrDirectory()
+{
+    return g_coreclrDirectory;
+}
+
+DWORD_PTR
+LLDBServices::GetExpression(
+    PCSTR exp)
+{
+    if (exp == nullptr)
+    {
+        return 0;
+    }
+
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return 0;
+    }
+
+    DWORD_PTR result = 0;
+    lldb::SBError error;
+    std::string str;
+
+    // To be compatible with windbg/dbgeng, we need to emulate the default
+    // hex radix (because sos prints addresses and other hex values without
+    // the 0x) by first prepending 0x and if that fails use the actual
+    // undecorated expression.
+    str.append("0x");
+    str.append(exp);
+
+    result = GetExpression(frame, error, str.c_str());
+    if (error.Fail())
+    {
+        result = GetExpression(frame, error, exp);
+    }
+
+    return result;
+}
+
+// Internal function
+DWORD_PTR 
+LLDBServices::GetExpression(
+    /* const */ lldb::SBFrame& frame,
+    lldb::SBError& error,
+    PCSTR exp)
+{
+    DWORD_PTR result = 0;
+
+    lldb::SBValue value = frame.EvaluateExpression(exp, lldb::eNoDynamicValues);
+    if (value.IsValid())
+    {
+        result = value.GetValueAsUnsigned(error);
+    }
+
+    return result;
+}
+
+//
+// lldb doesn't have a way or API to unwind an arbitary context (IP, SP)
+// and return the next frame so we have to stick with the native frames
+// lldb has found and find the closest frame to the incoming context SP.
+//
+HRESULT 
+LLDBServices::VirtualUnwind(
+    DWORD threadID,
+    ULONG32 contextSize,
+    PBYTE context)
+{
+    lldb::SBProcess process;
+    lldb::SBThread thread;
+
+    if (context == NULL || contextSize < sizeof(DT_CONTEXT))
+    {
+        return E_INVALIDARG;
+    }
+
+    process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    thread = process.GetThreadByID(threadID);
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
+    lldb::SBFrame frameFound;
+
+#ifdef DBG_TARGET_AMD64
+    DWORD64 spToFind = dtcontext->Rsp;
+#elif DBG_TARGET_ARM
+    DWORD spToFind = dtcontext->Sp;
+#endif
+    
+    int numFrames = thread.GetNumFrames();
+    for (int i = 0; i < numFrames; i++)
+    {
+        lldb::SBFrame frame = thread.GetFrameAtIndex(i);
+        if (!frame.IsValid())
+        {
+            break;
+        }
+        lldb::addr_t sp = frame.GetSP();
+
+        if ((i + 1) < numFrames)
+        {
+            lldb::SBFrame frameNext = thread.GetFrameAtIndex(i + 1);
+            if (frameNext.IsValid())
+            {
+                lldb::addr_t spNext = frameNext.GetSP();
+
+                // An exact match of the current frame's SP would be nice
+                // but sometimes the incoming context is between lldb frames
+                if (spToFind >= sp && spToFind < spNext)
+                {
+                    frameFound = frameNext;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!frameFound.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    GetContextFromFrame(frameFound, dtcontext);
+
+    return S_OK;
+}
+
+bool 
+ExceptionBreakpointCallback(
+    void *baton, 
+    lldb::SBProcess &process,
+    lldb::SBThread &thread, 
+    lldb::SBBreakpointLocation &location)
+{
+    lldb::SBDebugger debugger = process.GetTarget().GetDebugger();
+
+    // Send the normal and error output to stdout/stderr since we
+    // don't have a return object from the command interpreter.
+    lldb::SBCommandReturnObject result;
+    result.SetImmediateOutputFile(stdout);
+    result.SetImmediateErrorFile(stderr);
+
+    // Save the process and thread to be used by the current process/thread 
+    // helper functions.
+    LLDBServices* client = new LLDBServices(debugger, result, &process, &thread);
+    return ((PFN_EXCEPTION_CALLBACK)baton)(client) == S_OK;
+}
+
+lldb::SBBreakpoint g_exceptionbp;
+
+HRESULT 
+LLDBServices::SetExceptionCallback(
+    PFN_EXCEPTION_CALLBACK callback)
+{
+    if (!g_exceptionbp.IsValid())
+    {
+        lldb::SBTarget target = m_debugger.GetSelectedTarget();
+        if (!target.IsValid())
+        {
+            return E_FAIL;
+        }
+        lldb::SBBreakpoint exceptionbp = target.BreakpointCreateForException(lldb::LanguageType::eLanguageTypeC_plus_plus, false, true);
+        if (!exceptionbp.IsValid())
+        {
+            return E_FAIL;
+        }
+#ifdef FLAGS_ANONYMOUS_ENUM
+        exceptionbp.AddName("DoNotDeleteOrDisable");
+#endif
+        exceptionbp.SetCallback(ExceptionBreakpointCallback, (void *)callback);
+        g_exceptionbp = exceptionbp;
+    }
+    return S_OK;
+}
+
+HRESULT 
+LLDBServices::ClearExceptionCallback()
+{
+    if (g_exceptionbp.IsValid())
+    {
+        lldb::SBTarget target = m_debugger.GetSelectedTarget();
+        if (!target.IsValid())
+        {
+            return E_FAIL;
+        }
+        target.BreakpointDelete(g_exceptionbp.GetID());
+        g_exceptionbp = lldb::SBBreakpoint();
+    }
+    return S_OK;
 }
 
 //----------------------------------------------------------------------------
@@ -33,7 +281,7 @@ DebugClient::~DebugClient()
 // or stop button.
 // This method is reentrant.
 HRESULT 
-DebugClient::GetInterrupt()
+LLDBServices::GetInterrupt()
 {
     return E_FAIL;
 }
@@ -44,7 +292,7 @@ DebugClient::GetInterrupt()
 // according to the output distribution
 // settings.
 HRESULT 
-DebugClient::Output(
+LLDBServices::Output(
     ULONG mask,
     PCSTR format,
     ...)
@@ -57,7 +305,7 @@ DebugClient::Output(
 }
 
 HRESULT 
-DebugClient::OutputVaList(
+LLDBServices::OutputVaList(
     ULONG mask,
     PCSTR format,
     va_list args)
@@ -103,7 +351,7 @@ DebugClient::OutputVaList(
 // extra work in the engine so they should
 // only be used when necessary.
 HRESULT 
-DebugClient::ControlledOutput(
+LLDBServices::ControlledOutput(
     ULONG outputControl,
     ULONG mask,
     PCSTR format,
@@ -117,7 +365,7 @@ DebugClient::ControlledOutput(
 }
 
 HRESULT 
-DebugClient::ControlledOutputVaList(
+LLDBServices::ControlledOutputVaList(
     ULONG outputControl,
     ULONG mask,
     PCSTR format,
@@ -129,7 +377,7 @@ DebugClient::ControlledOutputVaList(
 // Returns information about the debuggee such
 // as user vs. kernel, dump vs. live, etc.
 HRESULT 
-DebugClient::GetDebuggeeType(
+LLDBServices::GetDebuggeeType(
     PULONG debugClass,
     PULONG qualifier)
 {
@@ -142,7 +390,7 @@ DebugClient::GetDebuggeeType(
 // processor context.  The page size may vary between
 // processor types.
 HRESULT 
-DebugClient::GetPageSize(
+LLDBServices::GetPageSize(
     PULONG size)
 {
     *size = 4096;
@@ -150,7 +398,7 @@ DebugClient::GetPageSize(
 }
 
 HRESULT 
-DebugClient::GetExecutingProcessorType(
+LLDBServices::GetExecutingProcessorType(
     PULONG type)
 {
     *type = IMAGE_FILE_MACHINE_AMD64;
@@ -158,7 +406,7 @@ DebugClient::GetExecutingProcessorType(
 }
 
 HRESULT 
-DebugClient::Execute(
+LLDBServices::Execute(
     ULONG outputControl,
     PCSTR command,
     ULONG flags)
@@ -178,7 +426,7 @@ DebugClient::Execute(
 #define VARIABLE_NAME "ExceptionRecord"
 
 HRESULT 
-DebugClient::GetLastEventInformation(
+LLDBServices::GetLastEventInformation(
     PULONG type,
     PULONG processId,
     PULONG threadId,
@@ -192,7 +440,7 @@ DebugClient::GetLastEventInformation(
     if (extraInformationSize < sizeof(DEBUG_LAST_EVENT_INFO_EXCEPTION) || 
         type == NULL || processId == NULL || threadId == NULL || extraInformationUsed == NULL) 
     {
-        return E_FAIL;
+        return E_INVALIDARG;
     }
 
     *type = DEBUG_EVENT_EXCEPTION;
@@ -260,9 +508,115 @@ DebugClient::GetLastEventInformation(
     return E_FAIL;
 }
 
+HRESULT 
+LLDBServices::Disassemble(
+    ULONG64 offset,
+    ULONG flags,
+    PSTR buffer,
+    ULONG bufferSize,
+    PULONG disassemblySize,
+    PULONG64 endOffset)
+{
+    lldb::SBInstruction instruction;
+    lldb::SBInstructionList list;
+    lldb::SBTarget target;
+    lldb::SBAddress address;
+    lldb::SBError error;
+    lldb::SBData data;
+    std::string str;
+    HRESULT hr = S_OK;
+    ULONG size = 0;
+    uint8_t byte;
+    int cch;
+
+    if (buffer == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto exit;
+    }
+    *buffer = 0;
+
+    target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        hr = E_INVALIDARG;
+        goto exit;
+    }
+    address = target.ResolveLoadAddress(offset);
+    if (!address.IsValid())
+    {
+        hr = E_INVALIDARG;
+        goto exit;
+    }
+    list = target.ReadInstructions(address, 1, "intel");
+    if (!list.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+    instruction = list.GetInstructionAtIndex(0);
+    if (!instruction.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+    cch = snprintf(buffer, bufferSize, "%016lx ", offset);
+    buffer += cch;
+    bufferSize -= cch;
+
+    size = instruction.GetByteSize();
+    data = instruction.GetData(target);
+    for (int i = 0; i < size && bufferSize > 0; i++)
+    {
+        byte = data.GetUnsignedInt8(error, i);
+        if (error.Fail())
+        {
+            hr = E_FAIL;
+            goto exit;
+        }
+        cch = snprintf(buffer, bufferSize, "%02x", byte);
+        buffer += cch;
+        bufferSize -= cch;
+    }
+    // Pad the data bytes to 16 chars
+    cch = size * 2;
+    while (bufferSize > 0)
+    {
+        *buffer++ = ' ';
+        bufferSize--;
+        if (++cch >= 21)
+            break;
+    } 
+
+    cch = snprintf(buffer, bufferSize, "%s", instruction.GetMnemonic(target));
+    buffer += cch;
+    bufferSize -= cch;
+
+    // Pad the mnemonic to 8 chars
+    while (bufferSize > 0)
+    {
+        *buffer++ = ' ';
+        bufferSize--;
+        if (++cch >= 8)
+            break;
+    } 
+    snprintf(buffer, bufferSize, "%s\n", instruction.GetOperands(target));
+
+exit:
+    if (disassemblySize != NULL)
+    {
+        *disassemblySize = size;
+    }
+    if (endOffset != NULL)
+    {
+        *endOffset = offset + size;
+    }
+    return hr;
+}
+
 // Internal output string function
 void
-DebugClient::OutputString(
+LLDBServices::OutputString(
     ULONG mask,
     PCSTR str)
 {
@@ -278,11 +632,100 @@ DebugClient::OutputString(
 }
 
 //----------------------------------------------------------------------------
+// IDebugControl4
+//----------------------------------------------------------------------------
+
+HRESULT
+LLDBServices::GetContextStackTrace(
+    PVOID startContext,
+    ULONG startContextSize,
+    PDEBUG_STACK_FRAME frames,
+    ULONG framesSize,
+    PVOID frameContexts,
+    ULONG frameContextsSize,
+    ULONG frameContextsEntrySize,
+    PULONG framesFilled)
+{
+    DT_CONTEXT *currentContext = (DT_CONTEXT*)frameContexts;
+    PDEBUG_STACK_FRAME currentFrame = frames;
+    lldb::SBThread thread;
+    lldb::SBFrame frame;
+    ULONG cFrames = 0;
+    HRESULT hr = S_OK;
+
+    // Doesn't support a starting context
+    if (startContext != NULL || frames == NULL || frameContexts == NULL || frameContextsEntrySize != sizeof(DT_CONTEXT))
+    {
+        hr = E_INVALIDARG;
+        goto exit;
+    }
+
+    thread = GetCurrentThread();
+    if (!thread.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+
+    frame = thread.GetFrameAtIndex(0);
+    for (int i = 0; i < thread.GetNumFrames(); i++)
+    {
+        if (!frame.IsValid() || (cFrames > framesSize) || ((char *)currentContext > ((char *)frameContexts + frameContextsSize)))
+        {
+            break;
+        }
+        lldb::SBFrame framePrevious;
+        lldb::SBFrame frameNext;
+
+        currentFrame->InstructionOffset = frame.GetPC();
+        currentFrame->StackOffset = frame.GetSP();
+
+        currentFrame->FuncTableEntry = 0;
+        currentFrame->Params[0] = 0;
+        currentFrame->Params[1] = 0;
+        currentFrame->Params[2] = 0;
+        currentFrame->Params[3] = 0;
+        currentFrame->Virtual = i == 0 ? TRUE : FALSE;
+        currentFrame->FrameNumber = frame.GetFrameID();
+
+        frameNext = thread.GetFrameAtIndex(i + 1);
+        if (frameNext.IsValid())
+        {
+            currentFrame->ReturnOffset = frameNext.GetPC();
+        }
+
+        if (framePrevious.IsValid())
+        {
+            currentFrame->FrameOffset = framePrevious.GetSP();
+        }
+        else
+        {
+            currentFrame->FrameOffset = frame.GetSP();
+        }
+
+        GetContextFromFrame(frame, currentContext);
+
+        framePrevious = frame;
+        frame = frameNext;
+        currentContext++;
+        currentFrame++;
+        cFrames++;
+    }
+
+exit:
+    if (framesFilled != NULL)
+    {
+        *framesFilled = cFrames;
+    }
+    return hr;
+}
+    
+//----------------------------------------------------------------------------
 // IDebugDataSpaces
 //----------------------------------------------------------------------------
 
 HRESULT 
-DebugClient::ReadVirtual(
+LLDBServices::ReadVirtual(
     ULONG64 offset,
     PVOID buffer,
     ULONG bufferSize,
@@ -308,7 +751,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::WriteVirtual(
+LLDBServices::WriteVirtual(
     ULONG64 offset,
     PVOID buffer,
     ULONG bufferSize,
@@ -338,23 +781,23 @@ exit:
 //----------------------------------------------------------------------------
 
 HRESULT 
-DebugClient::GetSymbolOptions(
+LLDBServices::GetSymbolOptions(
     PULONG options)
 {
-    *options = 0;
+    *options = SYMOPT_LOAD_LINES;
     return S_OK;
 }
 
 HRESULT 
-DebugClient::GetNameByOffset(
+LLDBServices::GetNameByOffset(
     ULONG64 offset,
     PSTR nameBuffer,
     ULONG nameBufferSize,
     PULONG nameSize,
     PULONG64 displacement)
 {
-    HRESULT hr = E_FAIL;
-    ULONG64 disp = 0;
+    ULONG64 disp = DEBUG_INVALID_OFFSET;
+    HRESULT hr = S_OK;
 
     lldb::SBTarget target;
     lldb::SBAddress address;
@@ -366,18 +809,21 @@ DebugClient::GetNameByOffset(
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
     {
+        hr = E_FAIL;
         goto exit;
     }
 
     address = target.ResolveLoadAddress(offset);
     if (!address.IsValid())
     {
+        hr = E_INVALIDARG;
         goto exit;
     }
 
     module = address.GetModule();
     if (!module.IsValid())
     {
+        hr = E_FAIL;
         goto exit;
     }
 
@@ -405,7 +851,6 @@ DebugClient::GetNameByOffset(
     }
 
     str.append(1, '\0');
-    hr = S_OK;
 
 exit:
     if (nameSize)
@@ -424,7 +869,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::GetNumberModules(
+LLDBServices::GetNumberModules(
     PULONG loaded,
     PULONG unloaded)
 {
@@ -452,7 +897,7 @@ exit:
     return hr;
 }
 
-HRESULT DebugClient::GetModuleByIndex(
+HRESULT LLDBServices::GetModuleByIndex(
     ULONG index,
     PULONG64 base)
 {
@@ -484,7 +929,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::GetModuleByModuleName(
+LLDBServices::GetModuleByModuleName(
     PCSTR name,
     ULONG startIndex,
     PULONG index,
@@ -539,7 +984,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::GetModuleByOffset(
+LLDBServices::GetModuleByOffset(
     ULONG64 offset,
     ULONG startIndex,
     PULONG index,
@@ -598,7 +1043,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::GetModuleNames(
+LLDBServices::GetModuleNames(
     ULONG index,
     ULONG64 base,
     PSTR imageNameBuffer,
@@ -611,9 +1056,9 @@ DebugClient::GetModuleNames(
     ULONG loadedImageNameBufferSize,
     PULONG loadedImageNameSize)
 {
-    HRESULT hr = S_OK;
     lldb::SBTarget target;
     lldb::SBFileSpec fileSpec;
+    HRESULT hr = S_OK;
 
     target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
@@ -687,8 +1132,117 @@ exit:
     return hr;
 }
 
+HRESULT 
+LLDBServices::GetLineByOffset(
+    ULONG64 offset,
+    PULONG fileLine,
+    PSTR fileBuffer,
+    ULONG fileBufferSize,
+    PULONG fileSize,
+    PULONG64 displacement)
+{
+    ULONG64 disp = DEBUG_INVALID_OFFSET;
+    HRESULT hr = S_OK;
+    ULONG line = 0;
+
+    lldb::SBTarget target;
+    lldb::SBAddress address;
+    lldb::SBFileSpec file;
+    lldb::SBLineEntry lineEntry;
+    std::string str;
+
+    target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+
+    address = target.ResolveLoadAddress(offset);
+    if (!address.IsValid())
+    {
+        hr = E_INVALIDARG;
+        goto exit;
+    }
+
+    if (displacement)
+    {
+        lldb::SBSymbol symbol = address.GetSymbol();
+        if (symbol.IsValid())
+        {
+            lldb::SBAddress startAddress = symbol.GetStartAddress();
+            disp = address.GetOffset() - startAddress.GetOffset();
+        }
+    }
+
+    lineEntry = address.GetLineEntry();
+    if (!lineEntry.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+
+    line = lineEntry.GetLine();
+    file = lineEntry.GetFileSpec();
+    if (file.IsValid())
+    {
+        str.append(file.GetDirectory());
+        str.append(1, '/');
+        str.append(file.GetFilename());
+    }
+
+    str.append(1, '\0');
+
+exit:
+    if (fileLine)
+    {
+        *fileLine = line;
+    }
+    if (fileSize)
+    {
+        *fileSize = str.length();
+    }
+    if (fileBuffer)
+    {
+        str.copy(fileBuffer, fileBufferSize);
+    }
+    if (displacement)
+    {
+        *displacement = disp;
+    }
+    return hr;
+}
+ 
+HRESULT 
+LLDBServices::GetSourceFileLineOffsets(
+    PCSTR file,
+    PULONG64 buffer,
+    ULONG bufferLines,
+    PULONG fileLines)
+{
+    if (fileLines != NULL)
+    {
+        *fileLines = (ULONG)-1;
+    }
+    return E_NOTIMPL;
+}
+
+HRESULT 
+LLDBServices::FindSourceFile(
+    ULONG startElement,
+    PCSTR file,
+    ULONG flags,
+    PULONG foundElement,
+    PSTR buffer,
+    ULONG bufferSize,
+    PULONG foundSize)
+{
+    return E_NOTIMPL;
+}
+
+// Internal functions
 PCSTR
-DebugClient::GetModuleDirectory(
+LLDBServices::GetModuleDirectory(
     PCSTR name)
 {
     lldb::SBTarget target = m_debugger.GetSelectedTarget();
@@ -709,9 +1263,8 @@ DebugClient::GetModuleDirectory(
     return module.GetFileSpec().GetDirectory();
 }
 
-// Internal function
 ULONG64
-DebugClient::GetModuleBase(
+LLDBServices::GetModuleBase(
     /* const */ lldb::SBTarget& target,
     /* const */ lldb::SBModule& module)
 {
@@ -738,7 +1291,7 @@ DebugClient::GetModuleBase(
 //----------------------------------------------------------------------------
 
 HRESULT 
-DebugClient::GetCurrentProcessId(
+LLDBServices::GetCurrentProcessId(
     PULONG id)
 {
     if (id == NULL)  
@@ -758,7 +1311,7 @@ DebugClient::GetCurrentProcessId(
 }
 
 HRESULT 
-DebugClient::GetCurrentThreadId(
+LLDBServices::GetCurrentThreadId(
     PULONG id)
 {
     if (id == NULL)  
@@ -786,7 +1339,7 @@ DebugClient::GetCurrentThreadId(
 }
 
 HRESULT 
-DebugClient::SetCurrentThreadId(
+LLDBServices::SetCurrentThreadId(
     ULONG id)
 {
     lldb::SBProcess process = GetCurrentProcess();
@@ -804,7 +1357,7 @@ DebugClient::SetCurrentThreadId(
 }
 
 HRESULT 
-DebugClient::GetCurrentThreadSystemId(
+LLDBServices::GetCurrentThreadSystemId(
     PULONG sysId)
 {
     if (sysId == NULL)  
@@ -832,7 +1385,7 @@ DebugClient::GetCurrentThreadSystemId(
 }
 
 HRESULT 
-DebugClient::GetThreadIdBySystemId(
+LLDBServices::GetThreadIdBySystemId(
     ULONG sysId,
     PULONG threadId)
 {
@@ -877,7 +1430,7 @@ exit:
 }
 
 HRESULT 
-DebugClient::GetThreadContextById(
+LLDBServices::GetThreadContextById(
     /* in */ ULONG32 threadID,
     /* in */ ULONG32 contextFlags,
     /* in */ ULONG32 contextSize,
@@ -935,7 +1488,7 @@ exit:
 
 // Internal function
 void
-DebugClient::GetContextFromFrame(
+LLDBServices::GetContextFromFrame(
     /* const */ lldb::SBFrame& frame,
     DT_CONTEXT *dtcontext)
 {
@@ -990,7 +1543,7 @@ DebugClient::GetContextFromFrame(
 
 // Internal function
 DWORD_PTR 
-DebugClient::GetRegister(
+LLDBServices::GetRegister(
     /* const */ lldb::SBFrame& frame,
     const char *name)
 {
@@ -1007,7 +1560,7 @@ DebugClient::GetRegister(
 //----------------------------------------------------------------------------
 
 HRESULT
-DebugClient::GetValueByName(
+LLDBServices::GetValueByName(
     PCSTR name,
     PDWORD_PTR debugValue)
 {
@@ -1030,7 +1583,7 @@ DebugClient::GetValueByName(
 }
 
 HRESULT 
-DebugClient::GetInstructionOffset(
+LLDBServices::GetInstructionOffset(
     PULONG64 offset)
 {
     lldb::SBFrame frame = GetCurrentFrame();
@@ -1045,7 +1598,7 @@ DebugClient::GetInstructionOffset(
 }
 
 HRESULT 
-DebugClient::GetStackOffset(
+LLDBServices::GetStackOffset(
     PULONG64 offset)
 {
     lldb::SBFrame frame = GetCurrentFrame();
@@ -1060,7 +1613,7 @@ DebugClient::GetStackOffset(
 }
 
 HRESULT 
-DebugClient::GetFrameOffset(
+LLDBServices::GetFrameOffset(
     PULONG64 offset)
 {
     lldb::SBFrame frame = GetCurrentFrame();
@@ -1075,202 +1628,11 @@ DebugClient::GetFrameOffset(
 }
 
 //----------------------------------------------------------------------------
-// IDebugClient
-//----------------------------------------------------------------------------
-
-PCSTR
-DebugClient::GetCoreClrDirectory()
-{
-    return g_coreclrDirectory;
-}
-
-DWORD_PTR
-DebugClient::GetExpression(
-    PCSTR exp)
-{
-    if (exp == nullptr)
-    {
-        return 0;
-    }
-
-    lldb::SBFrame frame = GetCurrentFrame();
-    if (!frame.IsValid())
-    {
-        return 0;
-    }
-
-    DWORD_PTR result = 0;
-    lldb::SBError error;
-    std::string str;
-
-    // To be compatible with windbg/dbgeng, we need to emulate the default
-    // hex radix (because sos prints addresses and other hex values without
-    // the 0x) by first prepending 0x and if that fails use the actual
-    // undecorated expression.
-    str.append("0x");
-    str.append(exp);
-
-    result = GetExpression(frame, error, str.c_str());
-    if (error.Fail())
-    {
-        result = GetExpression(frame, error, exp);
-    }
-
-    return result;
-}
-
-// Internal function
-DWORD_PTR 
-DebugClient::GetExpression(
-    /* const */ lldb::SBFrame& frame,
-    lldb::SBError& error,
-    PCSTR exp)
-{
-    DWORD_PTR result = 0;
-
-    lldb::SBValue value = frame.EvaluateExpression(exp, lldb::eNoDynamicValues);
-    if (value.IsValid())
-    {
-        result = value.GetValueAsUnsigned(error);
-    }
-
-    return result;
-}
-
-HRESULT 
-DebugClient::VirtualUnwind(
-    DWORD threadID,
-    ULONG32 contextSize,
-    PBYTE context)
-{
-    lldb::SBProcess process;
-    lldb::SBThread thread;
-
-    if (context == NULL || contextSize < sizeof(DT_CONTEXT))
-    {
-        return E_FAIL;
-    }
-
-    process = GetCurrentProcess();
-    if (!process.IsValid())
-    {
-        return E_FAIL;
-    }
-
-    thread = process.GetThreadByID(threadID);
-    if (!thread.IsValid())
-    {
-        return E_FAIL;
-    }
-
-    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
-    lldb::SBFrame frameFound;
-
-#ifdef DBG_TARGET_AMD64
-    DWORD64 spToFind = dtcontext->Rsp;
-#elif DBG_TARGET_ARM
-    DWORD spToFind = dtcontext->Sp;
-#endif
-    
-    int numFrames = thread.GetNumFrames();
-    for (int i = 0; i < numFrames; i++)
-    {
-        lldb::SBFrame frame = thread.GetFrameAtIndex(i);
-        if (!frame.IsValid())
-        {
-            break;
-        }
-
-        lldb::addr_t sp = frame.GetSP();
-
-        if (sp == spToFind && (i + 1) < numFrames)
-        {
-            // Get next frame after finding the match
-            frameFound = thread.GetFrameAtIndex(i + 1);
-            break;
-        }
-    }
-
-    if (!frameFound.IsValid())
-    {
-        return E_FAIL;
-    }
-
-    GetContextFromFrame(frameFound, dtcontext);
-
-    return S_OK;
-}
-
-bool 
-ExceptionBreakpointCallback(
-    void *baton, 
-    lldb::SBProcess &process,
-    lldb::SBThread &thread, 
-    lldb::SBBreakpointLocation &location)
-{
-    lldb::SBDebugger debugger = process.GetTarget().GetDebugger();
-
-    // Send the normal and error output to stdout/stderr since we
-    // don't have a return object from the command interpreter.
-    lldb::SBCommandReturnObject result;
-    result.SetImmediateOutputFile(stdout);
-    result.SetImmediateErrorFile(stderr);
-
-    // Save the process and thread to be used by the current process/thread 
-    // helper functions.
-    DebugClient* client = new DebugClient(debugger, result, &process, &thread);
-    return ((PFN_EXCEPTION_CALLBACK)baton)(client) == S_OK;
-}
-
-lldb::SBBreakpoint g_exceptionbp;
-
-HRESULT 
-DebugClient::SetExceptionCallback(
-    PFN_EXCEPTION_CALLBACK callback)
-{
-    if (!g_exceptionbp.IsValid())
-    {
-        lldb::SBTarget target = m_debugger.GetSelectedTarget();
-        if (!target.IsValid())
-        {
-            return E_FAIL;
-        }
-        lldb::SBBreakpoint exceptionbp = target.BreakpointCreateForException(lldb::LanguageType::eLanguageTypeC_plus_plus, false, true);
-        if (!exceptionbp.IsValid())
-        {
-            return E_FAIL;
-        }
-#ifdef FLAGS_ANONYMOUS_ENUM
-        exceptionbp.AddName("DoNotDeleteOrDisable");
-#endif
-        exceptionbp.SetCallback(ExceptionBreakpointCallback, (void *)callback);
-        g_exceptionbp = exceptionbp;
-    }
-    return S_OK;
-}
-
-HRESULT 
-DebugClient::ClearExceptionCallback()
-{
-    if (g_exceptionbp.IsValid())
-    {
-        lldb::SBTarget target = m_debugger.GetSelectedTarget();
-        if (!target.IsValid())
-        {
-            return E_FAIL;
-        }
-        target.BreakpointDelete(g_exceptionbp.GetID());
-        g_exceptionbp = lldb::SBBreakpoint();
-    }
-    return S_OK;
-}
-
-//----------------------------------------------------------------------------
 // Helper functions
 //----------------------------------------------------------------------------
 
 lldb::SBProcess
-DebugClient::GetCurrentProcess()
+LLDBServices::GetCurrentProcess()
 {
     lldb::SBProcess process;
 
@@ -1291,7 +1653,7 @@ DebugClient::GetCurrentProcess()
 }
 
 lldb::SBThread 
-DebugClient::GetCurrentThread()
+LLDBServices::GetCurrentThread()
 {
     lldb::SBThread thread;
 
@@ -1312,7 +1674,7 @@ DebugClient::GetCurrentThread()
 }
 
 lldb::SBFrame 
-DebugClient::GetCurrentFrame()
+LLDBServices::GetCurrentFrame()
 {
     lldb::SBFrame frame;
 

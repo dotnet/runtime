@@ -4,112 +4,16 @@
 
 //----------------------------------------------------------------------------
 //
-// Debugger engine interface subset implemented with LLDB APIs.
+// LLDB debugger services for sos
 //
 //----------------------------------------------------------------------------
 
-#ifndef __DBGENG_H__
-#define __DBGENG_H__
-
-#include <cstdarg>
+#ifndef __LLDBSERVICES_H__
+#define __LLDBSERVICES_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//----------------------------------------------------------------------------
-// IDebugControl2
-//----------------------------------------------------------------------------
-
-class IDebugControl2
-{
-public:
-    // Checks for a user interrupt, such a Ctrl-C
-    // or stop button.
-    // This method is reentrant.
-    virtual HRESULT GetInterrupt(
-        void) = 0;
-
-    // Sends output through clients
-    // output callbacks if the mask is allowed
-    // by the current output control mask and
-    // according to the output distribution
-    // settings.
-    virtual HRESULT Output(
-        ULONG mask,
-        PCSTR format, 
-        ...) = 0;
-
-    virtual HRESULT OutputVaList(
-        ULONG mask,
-        PCSTR format,
-        va_list args) = 0;
-
-    // The following methods allow direct control
-    // over the distribution of the given output
-    // for situations where something other than
-    // the default is desired.  These methods require
-    // extra work in the engine so they should
-    // only be used when necessary.
-    virtual HRESULT ControlledOutput(
-        ULONG outputControl,
-        ULONG mask,
-        PCSTR format,
-        ...) = 0;
-
-    virtual HRESULT ControlledOutputVaList(
-        ULONG outputControl,
-        ULONG mask,
-        PCSTR format,
-        va_list args) = 0;
-
-    // Returns information about the debuggee such
-    // as user vs. kernel, dump vs. live, etc.
-    virtual HRESULT GetDebuggeeType(
-        PULONG debugClass,
-        PULONG qualifier) = 0;
-
-    // Returns the page size for the currently executing
-    // processor context.  The page size may vary between
-    // processor types.
-    virtual HRESULT GetPageSize(
-        PULONG size) = 0;
-
-    // Returns the type of processor used in the
-    // current processor context.
-    virtual HRESULT GetExecutingProcessorType(
-        PULONG type) = 0;
-
-    // Executes the given command string.
-    // If the string has multiple commands
-    // Execute will not return until all
-    // of them have been executed.  If this
-    // requires waiting for the debuggee to
-    // execute an internal wait will be done
-    // so Execute can take an arbitrary amount
-    // of time.
-    virtual HRESULT Execute(
-        ULONG outputControl,
-        PCSTR command,
-        ULONG flags) = 0;
-
-    // Retrieves information about the last event that occurred.
-    // EventType is one of the event callback mask bits.
-    // ExtraInformation contains additional event-specific
-    // information.  Not all events have additional information.
-    virtual HRESULT GetLastEventInformation(
-        PULONG type,
-        PULONG processId,
-        PULONG threadId,
-        PVOID extraInformation,
-        ULONG extraInformationSize,
-        PULONG extraInformationUsed,
-        PSTR description,
-        ULONG descriptionSize,
-        PULONG descriptionUsed) = 0;
-};
-
-typedef class IDebugControl2* PDEBUG_CONTROL2;
 
 // Output mask bits.
 // Normal output.
@@ -215,32 +119,6 @@ typedef struct _DEBUG_LAST_EVENT_INFO_EXCEPTION
     ULONG FirstChance;
 } DEBUG_LAST_EVENT_INFO_EXCEPTION, *PDEBUG_LAST_EVENT_INFO_EXCEPTION;
 
-//----------------------------------------------------------------------------
-// IDebugDataSpaces
-//----------------------------------------------------------------------------
-
-struct IDebugDataSpaces
-{
-public:
-    virtual HRESULT ReadVirtual(
-        ULONG64 offset,
-        PVOID buffer,
-        ULONG bufferSize,
-        PULONG bytesRead) = 0;
-
-    virtual HRESULT WriteVirtual(
-        ULONG64 offset,
-        PVOID buffer,
-        ULONG bufferSize,
-        PULONG bytesWritten) = 0;
-};
-
-typedef IDebugDataSpaces* PDEBUG_DATA_SPACES;
-
-//----------------------------------------------------------------------------
-// IDebugSymbols
-//----------------------------------------------------------------------------
-
 //
 // Information about a module.
 //
@@ -280,6 +158,20 @@ typedef struct _DEBUG_MODULE_PARAMETERS
     ULONG64 Reserved[2];
 } DEBUG_MODULE_PARAMETERS, *PDEBUG_MODULE_PARAMETERS;
 
+// FindSourceFile flags.
+#define DEBUG_FIND_SOURCE_DEFAULT      0x00000000
+// Returns fully-qualified paths only.  If this
+// is not set the path returned may be relative.
+#define DEBUG_FIND_SOURCE_FULL_PATH    0x00000001
+// Scans all the path elements for a match and
+// returns the one that has the most similarity
+// between the given file and the matching element.
+#define DEBUG_FIND_SOURCE_BEST_MATCH   0x00000002
+// Do not search source server paths.
+#define DEBUG_FIND_SOURCE_NO_SRCSRV    0x00000004
+// Restrict FindSourceFileAndToken to token lookup only.
+#define DEBUG_FIND_SOURCE_TOKEN_LOOKUP 0x00000008
+
 // A special value marking an offset that should not
 // be treated as a valid offset.  This is only used
 // in special situations where it is unlikely that
@@ -289,9 +181,197 @@ typedef struct _DEBUG_MODULE_PARAMETERS
 // General unspecified ID constant.
 #define DEBUG_ANY_ID 0xffffffff
 
-class IDebugSymbols
+typedef struct _DEBUG_STACK_FRAME
+{
+    ULONG64 InstructionOffset;
+    ULONG64 ReturnOffset;
+    ULONG64 FrameOffset;
+    ULONG64 StackOffset;
+    ULONG64 FuncTableEntry;
+    ULONG64 Params[4];
+    ULONG64 Reserved[6];
+    BOOL    Virtual;
+    ULONG   FrameNumber;
+} DEBUG_STACK_FRAME, *PDEBUG_STACK_FRAME;
+
+#define DBG_FRAME_DEFAULT                0 // the same as INLINE_FRAME_CONTEXT_INIT in dbghelp.h
+#define DBG_FRAME_IGNORE_INLINE 0xFFFFFFFF // the same as INLINE_FRAME_CONTEXT_IGNORE in dbghelp.h
+
+typedef struct _DEBUG_STACK_FRAME_EX
+{
+    // First DEBUG_STACK_FRAME structure
+    ULONG64 InstructionOffset;
+    ULONG64 ReturnOffset;
+    ULONG64 FrameOffset;
+    ULONG64 StackOffset;
+    ULONG64 FuncTableEntry;
+    ULONG64 Params[4];
+    ULONG64 Reserved[6];
+    BOOL    Virtual;
+    ULONG   FrameNumber;
+
+    // Extended DEBUG_STACK_FRAME fields.
+    ULONG InlineFrameContext;
+    ULONG Reserved1; // For alignment purpose.
+} DEBUG_STACK_FRAME_EX, *PDEBUG_STACK_FRAME_EX;
+
+// The types of inline frame context.
+#define STACK_FRAME_TYPE_INIT   0x00
+#define STACK_FRAME_TYPE_STACK  0x01
+#define STACK_FRAME_TYPE_INLINE 0x02
+#define STACK_FRAME_TYPE_RA     0x80 // Whether the instruction pointer is the current IP or a RA from callee frame.
+#define STACK_FRAME_TYPE_IGNORE 0xFF
+
+//
+// options that are set/returned by SymSetOptions() & SymGetOptions()
+// these are used as a mask
+//
+#define SYMOPT_LOAD_LINES                0x00000010
+
+interface ILLDBServices;
+typedef HRESULT (*PFN_EXCEPTION_CALLBACK)(ILLDBServices *services);
+
+//----------------------------------------------------------------------------
+// ILLDBServices
+//----------------------------------------------------------------------------
+
+MIDL_INTERFACE("2E6C569A-9E14-4DA4-9DFC-CDB73A532566")
+ILLDBServices : public IUnknown
 {
 public:
+    //----------------------------------------------------------------------------
+    // ILLDBServices
+    //----------------------------------------------------------------------------
+
+    // Returns the coreclr module directory found by lldb plugin 
+    // in the target process.
+    virtual PCSTR GetCoreClrDirectory() = 0;
+
+    // Evaluates a lldb expression into a value.
+    virtual DWORD_PTR GetExpression(
+        /* [in] */ PCSTR exp) = 0;
+
+    // Unwind one native stack frame given a thread and register context
+    virtual HRESULT VirtualUnwind(
+        /* [in] */ DWORD threadID,
+        /* [in] */ ULONG32 contextSize,
+        /* [in, out, size_is(contextSize)] */ PBYTE context) = 0;
+
+    // Set an exception throw callback
+    virtual HRESULT SetExceptionCallback(
+        /* [in] */ PFN_EXCEPTION_CALLBACK callback) = 0;
+
+    // Clear the exception throw callback
+    virtual HRESULT ClearExceptionCallback() = 0;
+
+    //------------------------------------------------
+    // IDebugControl2
+    //------------------------------------------------
+
+    // Checks for a user interrupt, such a Ctrl-C
+    // or stop button.
+    // This method is reentrant.
+    virtual HRESULT GetInterrupt(
+        void) = 0;
+
+    virtual HRESULT OutputVaList(
+        ULONG mask,
+        PCSTR format,
+        va_list args) = 0;
+
+    // Returns information about the debuggee such
+    // as user vs. kernel, dump vs. live, etc.
+    virtual HRESULT GetDebuggeeType(
+        PULONG debugClass,
+        PULONG qualifier) = 0;
+
+    // Returns the page size for the currently executing
+    // processor context.  The page size may vary between
+    // processor types.
+    virtual HRESULT GetPageSize(
+        PULONG size) = 0;
+
+    // Returns the type of processor used in the
+    // current processor context.
+    virtual HRESULT GetExecutingProcessorType(
+        PULONG type) = 0;
+
+    // Executes the given command string.
+    // If the string has multiple commands
+    // Execute will not return until all
+    // of them have been executed.  If this
+    // requires waiting for the debuggee to
+    // execute an internal wait will be done
+    // so Execute can take an arbitrary amount
+    // of time.
+    virtual HRESULT Execute(
+        ULONG outputControl,
+        PCSTR command,
+        ULONG flags) = 0;
+
+    // Retrieves information about the last event that occurred.
+    // EventType is one of the event callback mask bits.
+    // ExtraInformation contains additional event-specific
+    // information.  Not all events have additional information.
+    virtual HRESULT GetLastEventInformation(
+        PULONG type,
+        PULONG processId,
+        PULONG threadId,
+        PVOID extraInformation,
+        ULONG extraInformationSize,
+        PULONG extraInformationUsed,
+        PSTR description,
+        ULONG descriptionSize,
+        PULONG descriptionUsed) = 0;
+
+    virtual HRESULT Disassemble(
+        ULONG64 offset,
+        ULONG flags,
+        PSTR buffer,
+        ULONG bufferSize,
+        PULONG disassemblySize,
+        PULONG64 endOffset) = 0;
+
+    //----------------------------------------------------------------------------
+    // IDebugControl4
+    //----------------------------------------------------------------------------
+
+    // Stack tracing with a full initial context
+    // and full context return for each frame.
+    // The FrameContextsSize parameter is the total
+    // byte size of FrameContexts.  FrameContextsEntrySize
+    // gives the byte size of each entry in
+    // FrameContexts.
+    virtual HRESULT GetContextStackTrace(
+        PVOID startContext,
+        ULONG startContextSize,
+        PDEBUG_STACK_FRAME frames,
+        ULONG framesSize,
+        PVOID frameContexts,
+        ULONG frameContextsSize,
+        ULONG frameContextsEntrySize,
+        PULONG framesFilled) = 0;
+    
+    //------------------------------------------------
+    // IDebugDataSpaces
+    //------------------------------------------------
+
+    virtual HRESULT ReadVirtual(
+        ULONG64 offset,
+        PVOID buffer,
+        ULONG bufferSize,
+        PULONG bytesRead) = 0;
+
+    virtual HRESULT WriteVirtual(
+        ULONG64 offset,
+        PVOID buffer,
+        ULONG bufferSize,
+        PULONG bytesWritten) = 0;
+
+    //------------------------------------------------
+    // IDebugSymbols
+    //------------------------------------------------
+
     // Controls the symbol options used during
     // symbol operations.
     // Uses the same flags as dbghelps SymSetOptions.
@@ -357,17 +437,45 @@ public:
         PSTR loadedImageNameBuffer,
         ULONG loadedImageNameBufferSize,
         PULONG loadedImageNameSize) = 0;
-};
 
-typedef class IDebugSymbols* PDEBUG_SYMBOLS;
+    HRESULT virtual GetLineByOffset(
+        ULONG64 offset,
+        PULONG line,
+        PSTR fileBuffer,
+        ULONG fileBufferSize,
+        PULONG fileSize,
+        PULONG64 displacement) = 0;
+     
+    HRESULT virtual GetSourceFileLineOffsets(
+        PCSTR file,
+        PULONG64 buffer,
+        ULONG bufferLines,
+        PULONG fileLines) = 0;
 
-//----------------------------------------------------------------------------
-// IDebugSystemObjects
-//----------------------------------------------------------------------------
+    // Uses the given file path and the source path
+    // information to try and locate an existing file.
+    // The given file path is merged with elements
+    // of the source path and checked for existence.
+    // If a match is found the element used is returned.
+    // A starting element can be specified to restrict
+    // the search to a subset of the path elements;
+    // this can be useful when checking for multiple
+    // matches along the source path.
+    // The returned element can be 1, indicating
+    // the file was found directly and not on the path.
+    HRESULT virtual FindSourceFile(
+        ULONG startElement,
+        PCSTR file,
+        ULONG flags,
+        PULONG foundElement,
+        PSTR buffer,
+        ULONG bufferSize,
+        PULONG foundSize) = 0;
+    
+    //------------------------------------------------
+    // IDebugSystemObjects
+    //------------------------------------------------
 
-class IDebugSystemObjects 
-{
-public:
     virtual HRESULT GetCurrentProcessId(
         PULONG id) = 0;
 
@@ -408,17 +516,11 @@ public:
         /* [in] */ ULONG32 contextFlags,
         /* [in] */ ULONG32 contextSize,
         /* [out, size_is(contextSize)] */ PBYTE context) = 0;
-};
 
-typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
+    //------------------------------------------------
+    // IDebugRegister
+    //------------------------------------------------
 
-//----------------------------------------------------------------------------
-// IDebugRegister
-//----------------------------------------------------------------------------
-
-class IDebugRegister
-{
-public:
     // This is the combination of dbgeng's GetIndexByName and GetValue and not
     // actually part of the dbgeng's IDebugRegister interface.
     virtual HRESULT GetValueByName(
@@ -442,44 +544,8 @@ public:
         PULONG64 offset) = 0;
 };
 
-typedef class IDebugRegister* PDEBUG_REGISTERS;
-
-//----------------------------------------------------------------------------
-// IDebugClient
-//----------------------------------------------------------------------------
-
-class IDebugClient;
-typedef HRESULT (*PFN_EXCEPTION_CALLBACK)(IDebugClient* client);
-
-class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects, IDebugRegister
-{
-public:
-    // Returns the coreclr module directory found by lldb plugin 
-    // in the target process.
-    virtual PCSTR GetCoreClrDirectory() = 0;
-
-    // Evaluates a lldb expression into a value.
-    virtual DWORD_PTR GetExpression(
-        /* [in] */ PCSTR exp) = 0;
-
-    // Unwind one native stack frame given a thread and register context
-    virtual HRESULT VirtualUnwind(
-        /* [in] */ DWORD threadID,
-        /* [in] */ ULONG32 contextSize,
-        /* [in, out, size_is(contextSize)] */ PBYTE context) = 0;
-
-    // Set an exception throw callback
-    virtual HRESULT SetExceptionCallback(
-        /* [in] */ PFN_EXCEPTION_CALLBACK callback) = 0;
-
-    // Clear the exception throw callback
-    virtual HRESULT ClearExceptionCallback() = 0;
-};
-
-typedef class IDebugClient* PDEBUG_CLIENT;
-
 #ifdef __cplusplus
 };
 #endif
 
-#endif // #ifndef __DBGENG_H__
+#endif // #ifndef __LLDBSERVICES_H__

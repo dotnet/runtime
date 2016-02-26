@@ -2386,14 +2386,12 @@ public:
     HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset);
 };
 
-#ifndef FEATURE_PAL
 HRESULT
 GetLineByOffset(
         ___in ULONG64 IP,
         ___out ULONG *pLinenum,
         __out_ecount(cbFileName) LPSTR lpszFileName,
         ___in ULONG cbFileName);
-#endif // FEATURE_PAL
 
 /// X86 Context
 #define X86_SIZE_OF_80387_REGISTERS      80
@@ -2690,9 +2688,9 @@ typedef struct _CROSS_PLATFORM_CONTEXT {
 
 
 WString BuildRegisterOutput(const SOSStackRefData &ref, bool printObj = true);
-WString MethodNameFromIP(CLRDATA_ADDRESS methodDesc, BOOL bSuppressLines=FALSE);
+WString MethodNameFromIP(CLRDATA_ADDRESS methodDesc, BOOL bSuppressLines = FALSE, BOOL bAssemblyName = FALSE, BOOL bDisplacement = FALSE);
 HRESULT GetGCRefs(ULONG osID, SOSStackRefData **ppRefs, unsigned int *pRefCnt, SOSStackRefError **ppErrors, unsigned int *pErrCount);
-WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackwalk=0);
+WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackwalk = NULL, BOOL bAssemblyName = FALSE);
 
 /* This cache is used to read data from the target process if the reads are known
  * to be sequential.

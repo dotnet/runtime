@@ -69,15 +69,13 @@ struct SOSEHInfo
 
 BOOL IsClonedFinally(DACEHInfo *pEHInfo);
 
-#ifndef FEATURE_PAL
-
 void DumpStackWorker (DumpStackFlag &DSFlag);
 
 void UnassemblyUnmanaged (DWORD_PTR IP, BOOL bSuppressLines);
 
-BOOL GetCalleeSite (DWORD_PTR IP, DWORD_PTR &IPCallee);
-
 HRESULT CheckEEDll ();
+
+BOOL GetCalleeSite (DWORD_PTR IP, DWORD_PTR &IPCallee);
 
 void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length);
 
@@ -92,11 +90,10 @@ BOOL IsTermSep (char ch);
 const char * HelperFuncName (size_t IP);
 
 enum eTargetType { ettUnk = 0, ettNative = 1, ettJitHelp = 2, ettStub = 3, ettMD = 4 };
+
 // GetFinalTarget is based on HandleCall, but avoids printing anything to the output.
 // This is currently only called on x64
 eTargetType GetFinalTarget(DWORD_PTR callee, DWORD_PTR* finalMDorIP);
-
-#endif // FEATURE_PAL
 
 #ifdef _MSC_VER
 // SOS is essentially single-threaded. ignore "construction of local static object is not thread-safe"
@@ -258,7 +255,7 @@ public:
 
     ULONG GetPlatform()             const { return IMAGE_FILE_MACHINE_AMD64; }
     ULONG GetContextSize()          const { return sizeof(AMD64_CONTEXT); }
-#ifndef FEATURE_PAL
+
     virtual void Unassembly(
                 TADDR IPBegin, 
                 TADDR IPEnd, 
@@ -268,10 +265,11 @@ public:
                 SOSEHInfo *pEHInfo,
                 BOOL bSuppressLines,
                 BOOL bDisplayOffsets) const;
-#endif
+
     virtual void IsReturnAddress(
                 TADDR retAddr, 
                 TADDR* whereCalled) const;
+
     virtual BOOL GetExceptionContext (
                 TADDR stack, 
                 TADDR PC, 
@@ -279,6 +277,7 @@ public:
                 CROSS_PLATFORM_CONTEXT * cxr,
                 TADDR *exrAddr, 
                 PEXCEPTION_RECORD exr) const;
+
     // retrieve stack pointer, frame pointer, and instruction pointer from the target context
     virtual TADDR GetSP(const CROSS_PLATFORM_CONTEXT & ctx) const  { return ctx.Amd64Context.Rsp; }
     virtual TADDR GetBP(const CROSS_PLATFORM_CONTEXT & ctx) const  { return ctx.Amd64Context.Rbp; }
