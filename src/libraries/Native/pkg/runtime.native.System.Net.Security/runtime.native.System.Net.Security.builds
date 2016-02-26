@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <Project Include="runtime.native.System.Net.Security.pkgproj"/>
+    <Project Include="rhel\runtime.native.System.Net.Security.pkgproj">
+      <!-- currently we build both "rhel" and "ubuntu" packages on Linux,
+           but will only publish one of the packages based on what OS we
+           were actually building on.
+           Remove this when fixing https://github.com/dotnet/corefx/issues/5190 -->
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="debian\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="ubuntu\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>Linux</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+    <Project Include="osx\runtime.native.System.Net.Security.pkgproj">
+      <OSGroup>OSX</OSGroup>
+      <Platform>amd64</Platform>
+    </Project>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>

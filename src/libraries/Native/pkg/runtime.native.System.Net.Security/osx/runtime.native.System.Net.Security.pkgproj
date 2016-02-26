@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Version>1.0.1</Version>
+    <PackageTargetRuntime>osx.10.10-$(PackagePlatform)</PackageTargetRuntime>
+    <!-- only build for x64 -->
+    <PackagePlatforms>x64;</PackagePlatforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <File Include="$(OSXNativePath)\System.Net.Security.Native.dylib">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
