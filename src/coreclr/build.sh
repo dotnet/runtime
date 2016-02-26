@@ -17,7 +17,7 @@ usage()
     echo "configureonly - do not perform any builds; just configure the build."
     echo "skipconfigure - skip build configuration."
     echo "skipnative - do not build native components."
-    echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
+    echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
 
@@ -223,8 +223,6 @@ build_mscorlib()
        echo "Skipping building mscorlib."
        return
     fi
-
-    hash mono 2> /dev/null || { echo >&2 "Skipping mscorlib.dll build since Mono is not installed."; __SkipMSCorLib=1; return; }
 
     # Restore buildTools
 
