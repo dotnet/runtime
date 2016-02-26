@@ -265,54 +265,15 @@ int
 mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 
 gpointer
-mono_array_to_savearray (MonoArray *array);
-
-gpointer
-mono_array_to_lparray (MonoArray *array);
-
-void
-mono_free_lparray (MonoArray *array, gpointer* nativeArray);
-
-void
-mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
-
-void
-mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
-
-gchar*
-mono_string_builder_to_utf8 (MonoStringBuilder *sb);
-
-gunichar2*
-mono_string_builder_to_utf16 (MonoStringBuilder *sb);
-
-gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
 
 gpointer
 mono_string_to_bstr (MonoString *string_obj);
 
-void
-mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
-
-void
-mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
-
-gpointer
-mono_delegate_to_ftnptr (MonoDelegate *delegate);
-
-MonoDelegate*
-mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
-
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
 void
 mono_marshal_set_last_error (void);
-
-gpointer
-mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
-
-void
-mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
 
 guint
 mono_type_to_ldind (MonoType *type);
@@ -539,6 +500,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 
 MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegate *delegate);
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk);

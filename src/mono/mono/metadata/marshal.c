@@ -143,6 +143,54 @@ static void init_safe_handle (void);
 static void*
 ves_icall_marshal_alloc (gulong size);
 
+void
+mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
+
+void
+mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
+
+gchar*
+mono_string_builder_to_utf8 (MonoStringBuilder *sb);
+
+gunichar2*
+mono_string_builder_to_utf16 (MonoStringBuilder *sb);
+
+void
+mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
+
+void
+mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
+
+gpointer
+mono_delegate_to_ftnptr (MonoDelegate *delegate);
+
+MonoDelegate*
+mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
+
+gpointer
+mono_array_to_savearray (MonoArray *array);
+
+gpointer
+mono_array_to_lparray (MonoArray *array);
+
+void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray);
+
+gpointer
+mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
+
+void
+mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
+
+gpointer
+mono_array_to_savearray (MonoArray *array);
+
+gpointer
+mono_array_to_lparray (MonoArray *array);
+
+void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray);
+
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (string_builder, System.Text, StringBuilder)
 static GENERATE_GET_CLASS_WITH_CACHE (date_time, System, DateTime)
@@ -152,7 +200,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, System.Runtime.Inte
 /* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
 static MonoMethod *sh_dangerous_add_ref;
 static MonoMethod *sh_dangerous_release;
-
 
 static void
 init_safe_handle ()
@@ -10738,6 +10785,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerIn
 	}
 
 	return mono_ftnptr_to_delegate (klass, ftn);
+}
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegate *delegate)
+{
+	return mono_delegate_to_ftnptr (delegate);
 }
 
 /**
