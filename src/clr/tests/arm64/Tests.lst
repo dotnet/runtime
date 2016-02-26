@@ -12891,7 +12891,7 @@ WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldc_conv_ovf_i8_u8
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [b89409.exe_5447]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b89409\b89409\b89409.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b89409\b89409
