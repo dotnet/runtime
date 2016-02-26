@@ -333,6 +333,7 @@ mono_marshal_unlock_internal (void)
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
+	MonoError error;
 	MonoMethod *method, *wrapper;
 	MonoClass *klass;
 	uint32_t target_handle = 0;
@@ -375,7 +376,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	delegate_hash_table_add (delegate);
 
 	/* when the object is collected, collect the dynamic method, too */
-	mono_object_register_finalizer ((MonoObject*)delegate);
+	mono_object_register_finalizer ((MonoObject*)delegate, &error);
+	mono_error_raise_exception (&error);
 
 	return delegate->delegate_trampoline;
 }
