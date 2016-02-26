@@ -2509,6 +2509,9 @@ public :
 
     InlineInfo         * impInlineInfo;      
 
+    // Get the maximum IL size allowed for an inline
+    unsigned             getImpInlineSize() const { return impInlineSize; }
+
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
 
@@ -2583,8 +2586,10 @@ protected :
     //-------------------- Stack manipulation ---------------------------------
 
     unsigned            impStkSize;   // Size of the full stack
-    StackEntry          impSmallStack[16];  // Use this array is possible
 
+#define SMALL_STACK_SIZE 16           // number of elements in impSmallStack
+
+    StackEntry          impSmallStack[SMALL_STACK_SIZE];  // Use this array if possible
 
     struct SavedStack                   // used to save/restore stack contents.
     {
@@ -3076,10 +3081,6 @@ private:
 
     static unsigned jitIciStmtIsTheLastInBB;
     static unsigned jitInlineeContainsOnlyOneBB;
-
-    #define             INLINER_FAILED                  "\nINLINER FAILED: "
-    #define             INLINER_WARNING                 "\nINLINER WARNING: "
-    #define             INLINER_INFO                    "\nINLINER INFO: "
 
 #endif // defined(DEBUG) || MEASURE_INLINING
 
