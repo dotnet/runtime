@@ -87,6 +87,13 @@
     <Compile Include="TypeInfo\TypeInfo_IsEquivalentTo.cs" />
     <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_FindInterfaces.cs" />
+    <Compile Include="TypeInfo\TypeInfo_GetEnum.cs" />
+    <Compile Include="TypeInfo\TypeInfo_IsAssignableAndInstanceOf.cs" />
+    <Compile Include="TypeInfo\TypeInfo_Members.cs" />
+    <Compile Include="TypeInfo\TypeInfo_StructLayoutAttribute.cs" />
+    <Compile Include="TypeInfo\TypeInfo_TypeInitializer.cs" />
+    <Compile Include="TypeInfo\TypeInfo_UnderlyingSystemType.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assembly\EmbeddedImage.png">
