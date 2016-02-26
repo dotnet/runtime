@@ -25,7 +25,7 @@
 InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler)
 {
     // For now, always create a Legacy policy.
-    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy();
+    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler);
 
     return policy;
 }
@@ -43,6 +43,18 @@ void LegacyPolicy::noteCandidate(InlineObservation obs)
     // Check the impact, it should be INFORMATION
     InlineImpact impact = inlGetImpact(obs);
     assert(impact == InlineImpact::INFORMATION);
+
+    switch (obs)
+    {
+    case InlineObservation::CALLEE_IS_FORCE_INLINE:
+        {
+            inlIsForceInline = true;
+            break;
+        }
+
+    default:
+        break;
+    }
 
     // Update the status
     setCommon(InlineDecision::CANDIDATE, obs);
@@ -71,6 +83,7 @@ void LegacyPolicy::note(InlineObservation obs)
     // As a safeguard, all fatal impact must be
     // reported via noteFatal.
     assert(impact != InlineImpact::FATAL);
+
     noteInternal(obs, impact);
 }
 
@@ -101,8 +114,53 @@ void LegacyPolicy::noteFatal(InlineObservation obs)
 
 void LegacyPolicy::noteInt(InlineObservation obs, int value)
 {
-    (void) value;
-    note(obs);
+    switch (obs)
+    {
+    case InlineObservation::CALLEE_MAXSTACK:
+        {
+            unsigned calleeMaxStack = static_cast<unsigned>(value);
+
+            if (calleeMaxStack > SMALL_STACK_SIZE)
+            {
+                setNever(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
+            }
+
+            break;
+        }
+
+    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
+            assert(value != 0);
+
+            unsigned basicBlockCount = static_cast<unsigned>(value);
+
+            if (!inlIsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
+            {
+                setNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+            }
+
+            break;
+        }
+
+    case InlineObservation::CALLEE_NUMBER_OF_IL_BYTES:
+        {
+            assert(value != 0);
+
+            unsigned ilByteSize = static_cast<unsigned>(value);
+
+            if (ilByteSize > inlCompiler->getImpInlineSize())
+            {
+                setNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+
+            break;
+        }
+
+    default:
+        // Ignore all other information
+        note(obs);
+        break;
+    }
 }
 
 //------------------------------------------------------------------------

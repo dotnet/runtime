@@ -4425,8 +4425,11 @@ DECODE_OPCODE:
 
             if (compIsForInlining())
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_SWITCH);
-                return;
+                compInlineResult->note(InlineObservation::CALLEE_HAS_SWITCH);
+                if (compInlineResult->isFailure()) 
+                {
+                    return;
+                }
             }
 
             // Make sure we don't go past the end reading the number of cases
@@ -21930,7 +21933,7 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
             JITLOG_THIS(pParam->pThis,
                         (LL_INFO100000,
-                         INLINER_INFO "inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
+                         "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
                          pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                          pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
