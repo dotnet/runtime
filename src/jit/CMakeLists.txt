@@ -13,55 +13,55 @@ endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
 set( JIT_SOURCES
   alloc.cpp
+  assertionprop.cpp
   bitset.cpp
   block.cpp
+  codegencommon.cpp
   compiler.cpp
+  copyprop.cpp
   disasm.cpp
   earlyprop.cpp
-  eeinterface.cpp
   ee_il_dll.cpp
-  jiteh.cpp
+  eeinterface.cpp
+  emit.cpp
   error.cpp
   flowgraph.cpp
-  gcinfo.cpp
   gcdecode.cpp
   gcencode.cpp
+  gcinfo.cpp
   gentree.cpp
   gschecks.cpp
   hashbv.cpp
   importer.cpp
+  inline.cpp
+  inlinepolicy.cpp
   instr.cpp
+  jiteh.cpp
   jittelemetry.cpp
   lclvars.cpp
   liveness.cpp
+  loopcloning.cpp
+  lower.cpp
+  lsra.cpp
   morph.cpp
-  optimizer.cpp
   optcse.cpp
+  optimizer.cpp
+  rangecheck.cpp
   rationalize.cpp
   regalloc.cpp
-  regset.cpp
   register_arg_convention.cpp
-  emit.cpp
+  regset.cpp
   scopeinfo.cpp
   sharedfloat.cpp
   sm.cpp
   smdata.cpp
   smweights.cpp
+  ssabuilder.cpp
+  ssarenamestate.cpp
   typeinfo.cpp
   unwind.cpp
   utils.cpp
-  ssabuilder.cpp
-  ssarenamestate.cpp
   valuenum.cpp
-  copyprop.cpp
-  codegencommon.cpp
-  assertionprop.cpp
-  rangecheck.cpp
-  jittelemetry.cpp
-  loopcloning.cpp
-  lower.cpp
-  lsra.cpp
-  inline.cpp
 )
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)

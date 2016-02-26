@@ -2099,7 +2099,7 @@ HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_LONGPATH) 
         hr = g_sos->GetPEFileName(dwAddr, MAX_LONGPATH, fileName, NULL);
         if (SUCCEEDED(hr))
         {
-            if (fileName[0] != L'\0')
+            if (fileName[0] != W('\0'))
                 return hr; // done
         }
 #ifndef FEATURE_PAL
@@ -4165,7 +4165,7 @@ HRESULT LoadClrDebugDll(void)
             return E_FAIL;
         }
         char dacModulePath[MAX_LONGPATH];
-        strcpy_s(dacModulePath, _countof(dacModulePath), g_ExtClient->GetCoreClrDirectory());
+        strcpy_s(dacModulePath, _countof(dacModulePath), g_ExtServices->GetCoreClrDirectory());
         strcat_s(dacModulePath, _countof(dacModulePath), MAKEDLLNAME_A("mscordaccore"));
 
         HMODULE hdac = LoadLibraryA(dacModulePath);
@@ -4446,7 +4446,7 @@ public:
         return hr;
 #else
         WCHAR modulePath[MAX_LONGPATH];
-        int length = MultiByteToWideChar(CP_ACP, 0, g_ExtClient->GetCoreClrDirectory(), -1, modulePath, _countof(modulePath));
+        int length = MultiByteToWideChar(CP_ACP, 0, g_ExtServices->GetCoreClrDirectory(), -1, modulePath, _countof(modulePath));
         if (0 >= length)
         {
             ExtOut("MultiByteToWideChar(coreclrDirectory) failed. Last error = 0x%x\n", GetLastError());
@@ -4657,11 +4657,11 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
     {
-        if (g_ExtClient == NULL)
+        if (g_ExtServices == NULL)
         {
             return E_UNEXPECTED;
         }
-        return g_ExtClient->VirtualUnwind(threadId, contextSize, context);
+        return g_ExtServices->VirtualUnwind(threadId, contextSize, context);
 
     }
 #endif // FEATURE_PAL
@@ -5866,6 +5866,8 @@ ConvertNativeToIlOffset(
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 // Based on a native offset, passed in the first argument this function
 // identifies the corresponding source file name and line number.
 HRESULT
@@ -5878,6 +5880,7 @@ GetLineByOffset(
     HRESULT hr = S_OK;
     ULONG64 displacement = 0;
 
+#ifndef FEATURE_PAL
     // first let's try it the hard way, this will work with the public debuggers
     {
         ImageInfo Image = {0};
@@ -5947,7 +5950,7 @@ GetLineByOffset(
     }
 
 fallback:
-    // 
+#endif // FEATURE_PAL
     return g_ExtSymbols->GetLineByOffset(
                     Offset, 
                     pLinenum,
@@ -5957,7 +5960,6 @@ fallback:
                     &displacement);
 }
 
-#endif // FEATURE_PAL
 
 void TableOutput::ReInit(int numColumns, int defaultColumnWidth, Alignment alignmentDefault, int indent, int padding)
 {
@@ -6457,7 +6459,32 @@ HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 line
     return E_FAIL;
 }
 
-WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
+static void AddAssemblyName(WString& methodOutput, CLRDATA_ADDRESS mdesc)
+{
+    DacpMethodDescData mdescData;
+    if (SUCCEEDED(mdescData.Request(g_sos, mdesc)))
+    {
+        DacpModuleData dmd;
+        if (SUCCEEDED(dmd.Request(g_sos, mdescData.ModulePtr)))
+        {
+            ArrayHolder<WCHAR> wszFileName = new WCHAR[MAX_LONGPATH+1];
+            if (SUCCEEDED(g_sos->GetPEFileName(dmd.File, MAX_LONGPATH, wszFileName, NULL)))
+            {
+                if (wszFileName[0] != W('\0'))
+                {
+                    WCHAR *pJustName = _wcsrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
+                    if (pJustName == NULL)
+                        pJustName = wszFileName - 1;
+
+                    methodOutput += (pJustName + 1);
+                    methodOutput += W("!");
+                }
+            }
+        }
+    }
+}
+
+WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk, BOOL bAssemblyName)
 {
     TADDR vtAddr;
     MOVE(vtAddr, frameAddr);
@@ -6477,9 +6504,17 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
     if (SUCCEEDED(g_sos->GetMethodDescPtrFromFrame(frameAddr, &mdesc)))
     {
         if (SUCCEEDED(g_sos->GetMethodDescName(mdesc, mdNameLen, g_mdName, NULL)))
+        {
+            if (bAssemblyName)
+            {
+                AddAssemblyName(frameOutput, mdesc);
+            }
             frameOutput += g_mdName;
+        }
         else
+        {
             frameOutput += W("<unknown method>");
+        }
     }
     else if (pStackWalk)
     {
@@ -6503,9 +6538,8 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
     return frameOutput;
 }
 
-WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
+WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines, BOOL bAssemblyName, BOOL bDisplacement)
 {
-    ArrayHolder<char> filename = new char[MAX_LONGPATH+1];
     ULONG linenum;
     WString methodOutput;
     CLRDATA_ADDRESS mdesc = 0;
@@ -6519,17 +6553,35 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
         DacpMethodDescData mdescData;
         if (SUCCEEDED(g_sos->GetMethodDescName(mdesc, mdNameLen, g_mdName, NULL)))
         {
+            if (bAssemblyName)
+            {
+                AddAssemblyName(methodOutput, mdesc);
+            }
+
             methodOutput += g_mdName;
+
+            if (bDisplacement)
+            {
+                if (SUCCEEDED(mdescData.Request(g_sos, mdesc)))
+                {
+                    ULONG64 disp = (ip - mdescData.NativeCodeAddr);
+                    if (disp)
+                    {
+                        methodOutput += W(" + ");
+                        methodOutput += Decimal(disp);
+                    }
+                }
+            }
         }
         else if (SUCCEEDED(mdescData.Request(g_sos, mdesc)))
         {
             DacpModuleData dmd;
             BOOL bModuleNameWorked = FALSE;
             ULONG64 addrInModule = ip;
-            if (dmd.Request(g_sos, mdescData.ModulePtr) == S_OK)
+            if (SUCCEEDED(dmd.Request(g_sos, mdescData.ModulePtr)))
             {
                 CLRDATA_ADDRESS peFileBase = 0;
-                if (g_sos->GetPEFileBase(dmd.File, &peFileBase) == S_OK)
+                if (SUCCEEDED(g_sos->GetPEFileBase(dmd.File, &peFileBase)))
                 {
                     if (peFileBase)
                     {
@@ -6539,22 +6591,13 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
             }
             ULONG Index;
             ULONG64 moduleBase;
-            if (g_ExtSymbols->GetModuleByOffset(UL64_TO_CDA(addrInModule), 0, &Index, 
-                &moduleBase) == S_OK)
+            if (SUCCEEDED(g_ExtSymbols->GetModuleByOffset(UL64_TO_CDA(addrInModule), 0, &Index, &moduleBase)))
             {                                    
-                CHAR ModuleName[MAX_LONGPATH+1];
+                ArrayHolder<char> szModuleName = new char[MAX_LONGPATH+1];
 
-                if (g_ExtSymbols->GetModuleNames (Index, moduleBase,
-                    NULL, 0, NULL,
-                    ModuleName, MAX_LONGPATH, NULL,
-                    NULL, 0, NULL) == S_OK)
+                if (SUCCEEDED(g_ExtSymbols->GetModuleNames(Index, moduleBase, NULL, 0, NULL, szModuleName, MAX_LONGPATH, NULL, NULL, 0, NULL)))
                 {
-                    MultiByteToWideChar (CP_ACP, 
-                            0, 
-                            ModuleName, 
-                            -1, 
-                            g_mdName, 
-                            _countof(g_mdName));
+                    MultiByteToWideChar (CP_ACP, 0, szModuleName, MAX_LONGPATH, g_mdName, _countof(g_mdName));
                     methodOutput += g_mdName;
                     methodOutput += W("!");
                 }
@@ -6566,17 +6609,17 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
             methodOutput = W("<unknown>");
         }
 
-#ifndef FEATURE_PAL
+        ArrayHolder<char> szFileName = new char[MAX_LONGPATH+1];
+
         if (!bSuppressLines &&
-            SUCCEEDED(GetLineByOffset(TO_CDADDR(ip), &linenum, filename, MAX_LONGPATH+1)))
+            SUCCEEDED(GetLineByOffset(TO_CDADDR(ip), &linenum, szFileName, MAX_LONGPATH)))
         {
-            int len = MultiByteToWideChar(CP_ACP, 0, filename, -1, NULL, 0);
-            ArrayHolder<WCHAR> wfilename = new WCHAR[len];
-            MultiByteToWideChar(CP_ACP, 0, filename, -1, wfilename, len);
+            int len = MultiByteToWideChar(CP_ACP, 0, szFileName, MAX_LONGPATH, NULL, 0);
+            ArrayHolder<WCHAR> wszFileName = new WCHAR[len];
+            MultiByteToWideChar(CP_ACP, 0, szFileName, MAX_LONGPATH, wszFileName, len);
             
-            methodOutput += WString(W(" [")) + wfilename + W(" @ ") + Decimal(linenum) + W("]");
+            methodOutput += WString(W(" [")) + wszFileName + W(" @ ") + Decimal(linenum) + W("]");
         }
-#endif // FEATURE_PAL
     }
     
     return methodOutput;
