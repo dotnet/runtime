@@ -37,11 +37,12 @@ goto Loop
 
 :Begin
 
+echo Running init-tools.cmd
 call %~dp0init-tools.cmd
 
 if [%src%] == [true] (
   echo Fetching git database from remote repos ...
-  call git fetch --all -p >> %synclog%
+  call git fetch --all -p -v >> %synclog% 2>&1
   if NOT [%ERRORLEVEL%]==[0] (
     echo ERROR: An error occurred while fetching remote source code, see %synclog% for more details.
     exit /b
@@ -50,8 +51,8 @@ if [%src%] == [true] (
 
 if [%packages%] == [true] (
   echo Restoring all packages ...
-  echo msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=diag;Append;LogFile=%synclog% >> %synclog%
-  call msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=diag;Append;LogFile=%synclog%
+  echo msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=detailed;Append;LogFile=%synclog% >> %synclog%
+  call msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=detailed;Append;LogFile=%synclog%
   if NOT [%ERRORLEVEL%]==[0] (
     echo ERROR: An error occurred while syncing packages, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
     exit /b
@@ -68,7 +69,8 @@ echo.
 echo Repository syncing script.
 echo.
 echo Options:
-echo     /s     - Fetches source history from all configured remotes (git fetch --all)
+echo     /s     - Fetches source history from all configured remotes
+echo              (git fetch --all -p -v)
 echo     /p     - Restores all nuget packages for repository
 echo.
 echo If no option is specified then sync.cmd /s /p is implied.
