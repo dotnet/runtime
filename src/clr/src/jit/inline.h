@@ -118,7 +118,7 @@ enum class InlineDecision
 
 // Translate a decision into a CorInfoInline for reporting back to the runtime.
 
-CorInfoInline inlGetDecisionForRuntime(InlineDecision d);
+CorInfoInline inlGetCorInfoInlineDecision(InlineDecision d);
 
 // Get a string describing this InlineDecision
 
@@ -201,7 +201,7 @@ InlineTarget inlGetTarget(InlineObservation obs);
 
 InlineImpact inlGetImpact(InlineObservation obs);
 
-// InlinePolicy is an abstract base class for a familiy of inline
+// InlinePolicy is an abstract base class for a family of inline
 // policies.
 
 class InlinePolicy
@@ -228,9 +228,12 @@ public:
     virtual void noteInt(InlineObservation obs, int value) = 0;
     virtual void noteDouble(InlineObservation obs, double value) = 0;
 
+    // Policy decisions
+    virtual bool propagateNeverToRuntime() const = 0;
+
 #ifdef DEBUG
     // Name of the policy
-    virtual const char* getName() = 0;
+    virtual const char* getName() const = 0;
 #endif
 
 protected:
@@ -252,40 +255,6 @@ protected:
 
     InlineDecision inlDecision;
     InlineObservation inlObservation;
-};
-
-// LegacyPolicy implements the inlining policy used by the jit in its
-// initial release.
-
-class LegacyPolicy : public InlinePolicy
-{
-public:
-
-    LegacyPolicy()
-        : InlinePolicy()
-    {
-        // empty
-    }
-
-    // Policy observations
-    void noteCandidate(InlineObservation obs) override;
-    void noteSuccess() override;
-    void note(InlineObservation obs) override;
-    void noteFatal(InlineObservation obs) override;
-    void noteInt(InlineObservation obs, int value) override;
-    void noteDouble(InlineObservation obs, double value) override;
-
-#ifdef DEBUG
-    const char* getName() override { return "LegacyPolicy"; }
-#endif
-
-private:
-
-    // Helper methods
-    void noteInternal(InlineObservation obs, InlineImpact impact);
-    void setFailure(InlineObservation obs);
-    void setNever(InlineObservation obs);
-    void setCommon(InlineDecision decision, InlineObservation obs);
 };
 
 // InlineResult summarizes what is known about the viability of a
@@ -373,10 +342,7 @@ public:
         inlPolicy->note(obs);
     }
 
-    // Make an observation where caller knows for certain that this
-    // inline cannot happen, and so there's no point in any further
-    // scrutiny of this inline. Update internal state to mark the
-    // inline result as a failure.
+    // Make an observation that must lead to immediate failure.
     void noteFatal(InlineObservation obs)
     {
         inlPolicy->noteFatal(obs);
@@ -423,7 +389,7 @@ public:
     // Result that can be reported back to the runtime
     CorInfoInline result() const
     {
-        return inlGetDecisionForRuntime(inlPolicy->getDecision());
+        return inlGetCorInfoInlineDecision(inlPolicy->getDecision());
     }
 
     // String describing the decision made

@@ -26,10 +26,13 @@ Object Inspection                  Examining code and stacks
 DumpObj (dumpobj)                  Threads (clrthreads)
 DumpArray                          ThreadState
 DumpStackObjects (dso)             IP2MD (ip2md)
-DumpHeap (dumpheap)                CLRStack (clrstack) 
-DumpVC                             GCInfo
-GCRoot (gcroot)                    EHInfo
-PrintException (pe)                bpmd (bpmd)
+DumpHeap (dumpheap)                u (clru)
+DumpVC                             DumpStack (dumpstack)
+GCRoot (gcroot)                    EEStack (eestack)
+PrintException (pe)                CLRStack (clrstack) 
+                                   GCInfo
+                                   EHInfo
+                                   bpmd (bpmd)
 
 Examining CLR data structures      Diagnostic Utilities
 -----------------------------      -----------------------------
@@ -37,12 +40,15 @@ DumpDomain                         VerifyHeap
 EEHeap (eeheap)                    FindAppDomain          
 Name2EE (name2ee)                  DumpLog (dumplog)
 DumpMT (dumpmt)
-DumpClass                                             
+DumpClass (dumpclass)
 DumpMD (dumpmd)                    
 Token2EE                           
-DumpModule                         
-DumpAssembly                       
-DumpRuntimeTypes                   
+DumpModule (dumpmodule)
+DumpAssembly
+DumpRuntimeTypes
+DumpIL (dumpil)
+DumpSig
+DumpSigElem
 
 Other
 -----------------------------
@@ -407,7 +413,9 @@ places:
 First, all stacks will be searched for roots, then handle tables, and finally
 the freachable queue of the finalizer. Some caution about the stack roots: 
 GCRoot doesn't attempt to determine if a stack root it encountered is valid 
-or is old (discarded) data. 
+or is old (discarded) data. You would have to use CLRStack and U to 
+disassemble the frame that the local or argument value belongs to in order to 
+determine if it is still in use.
 
 Because people often want to restrict the search to gc handles and freachable
 objects, there is a -nostacks option.
@@ -548,7 +556,7 @@ exceptions by switching to the thread in question, and running
 \\
 
 COMMAND: clrstack.
-CLRStack [-a] [-l] [-p] [-n]
+CLRStack [-a] [-l] [-p] [-n] [-f]
 CLRStack [-a] [-l] [-p] [-i] [variable name] [frame]
 
 CLRStack attempts to provide a true stack trace for managed code only. It is
@@ -558,6 +566,10 @@ programs. The -p parameter will show arguments to the managed function. The
 SOS can't retrieve local names at this time, so the output for locals is in
 the format <local address> = <value>. The -a (all) parameter is a short-cut
 for -l and -p combined. 
+
+The -f option (full mode) displays the native frames intermixing them with
+the managed frames and the assembly name and function offset for the managed
+frames.
 
 If the debugger has the option SYMOPT_LOAD_LINES specified (either by the
 .lines or .symopt commands), SOS will look up the symbols for every managed 
@@ -634,12 +646,94 @@ associated with it. For example, this output from K:
         Transparency: Critical
 
 We have taken a return address into Mainy.Main, and discovered information 
-about that method. You could run DumpMT, DumpClass, DumpMD, or 
+about that method. You could run U, DumpMT, DumpClass, DumpMD, or 
 DumpModule on the fields listed to learn more.
 
 The "Source line" output will only be present if the debugger can find the 
 symbols for the managed module containing the given <code address>, and if the 
 debugger is configured to load line number information.
+\\
+
+COMMAND: clru.
+COMMAND: u.
+U [-gcinfo] [-ehinfo] [-n] [-o] <MethodDesc address> | <Code address>
+
+Presents an annotated disassembly of a managed method when given a MethodDesc
+pointer for the method, or a code address within the method body. Unlike the
+debugger "U" function, the entire method from start to finish is printed,
+with annotations that convert metadata tokens to names.
+
+	<example output>
+	...
+	03ef015d b901000000       mov     ecx,0x1
+	03ef0162 ff156477a25b     call   dword ptr [mscorlib_dll+0x3c7764 (5ba27764)] (System.Console.InitializeStdOutError(Boolean), mdToken: 06000713)
+	03ef0168 a17c20a701       mov     eax,[01a7207c] (Object: SyncTextWriter)
+	03ef016d 89442414         mov     [esp+0x14],eax
+
+If you pass the -gcinfo flag, you'll get inline display of the GCInfo for
+the method. You can also obtain this information with the GCInfo command.
+
+If you pass the -ehinfo flag, you'll get inline display of exception info
+for the method. (Beginning and end of try/finally/catch handlers, etc.).
+You can also obtain this information with the EHInfo command.
+
+If you pass the -o flag, the byte offset of each instruction from the
+beginning of the method will be printed in addition to the absolute address of
+the instruction.
+
+If the debugger has the option SYMOPT_LOAD_LINES specified (either by the
+.lines or .symopt commands), and if symbols are available for the managed
+module containing the method being examined, the output of the command will
+include the source file name and line number corresponding to the 
+disassembly. The -n (No line numbers) flag can be specified to disable this
+behavior.
+
+	<example output>
+	...
+	c:\Code\prj.mini\exc.cs @ 38:
+	001b00b0 8b0d3020ab03    mov     ecx,dword ptr ds:[3AB2030h] ("Break in debugger. When done type <Enter> to continue: ")
+	001b00b6 e8d5355951      call    mscorlib_ni+0x8b3690 (51743690) (System.Console.Write(System.String), mdToken: 0600091b)
+	001b00bb 90              nop
+
+	c:\Code\prj.mini\exc.cs @ 39:
+	001b00bc e863cdc651      call    mscorlib_ni+0xf8ce24 (51e1ce24) (System.Console.ReadLine(), mdToken: 060008f6)
+	>>> 001b00c1 90              nop
+	...
+\\
+
+COMMAND: dumpstack.
+DumpStack [-EE] [-n] [top stack [bottom stack]]
+
+[x86 and x64 documentation]
+
+This command provides a verbose stack trace obtained by "scraping." Therefore
+the output is very noisy and potentially confusing. The command is good for
+viewing the complete call stack when "kb" gets confused. For best results,
+make sure you have valid symbols.
+
+-EE will only show managed functions.
+
+If the debugger has the option SYMOPT_LOAD_LINES specified (either by the
+.lines or .symopt commands), SOS will look up the symbols for every managed 
+frame and if successful will display the corresponding source file name and 
+line number. The -n (No line numbers) parameter can be specified to disable 
+this behavior.
+
+You can also pass a stack range to limit the output.
+\\
+
+COMMAND: eestack.
+EEStack [-short] [-EE]
+
+This command runs DumpStack on all threads in the process. The -EE option is 
+passed directly to DumpStack. The -short option tries to narrow down the 
+output to "interesting" threads only, which is defined by
+
+1) The thread has taken a lock.
+2) The thread has been "hijacked" in order to allow a garbage collection.
+3) The thread is currently in managed code.
+
+See the documentation for DumpStack for more info.
 \\
 
 COMMAND: ehinfo.
@@ -1061,8 +1155,9 @@ a code address in a managed function into a MethodDesc:
 	IsJitted: yes
 	CodeAddr: 03ef00b8
 
-You can call DumpClass, DumpMT, DumpModule on the Class, MethodTable and Module
-fields above.
+If IsJitted is "yes," you can run U on the CodeAddr pointer to see a 
+disassembly of the JITTED code.  You can call also DumpClass, DumpMT, 
+DumpModule on the Class, MethodTable and Module fields above.
 \\
 
 COMMAND: token2ee.
@@ -1205,7 +1300,126 @@ AppDomains.  For example:
      2843684        ?   23a544c System.IEquatable`1[[System.IntPtr, mscorlib]]
      2843784        ?   3c999c System.Int32
      2843798        ?   3caa04 System.IEquatable`1[[System.Int32, mscorlib]]
+\\
 
+COMMAND: dumpsig.
+DumpSig <sigaddr> <moduleaddr>
+
+This command dumps the signature of a method or field given by <sigaddr>.  This is
+useful when you are debugging parts of the runtime which returns a raw PCCOR_SIGNATURE
+structure and need to know what its contents are.
+
+Sample output for a method:
+    0:000> sos DumpSig 0x000007fe`ec20879d 0x000007fe`eabd1000
+    [DEFAULT] [hasThis] Void (Boolean,String,String)
+
+The first section of the output is the calling convention.  This includes, but is not
+limited to, "[DEFAULT]", "[C]", "[STDCALL]", "[THISCALL]", and so on.  The second
+portion of the output is either "[hasThis]" or "[explicit]" for whether the method
+is an instance method or a static method respectively.  The third portion of the 
+output is the return value (in this case a "void").  Finally, the method's arguments
+are printed as the final portion of the output.
+
+Sample output for a field:
+    0:000> sos DumpSig 0x000007fe`eb7fd8cd 0x000007fe`eabd1000
+    [FIELD] ValueClass System.RuntimeTypeHandle 
+
+DumpSig will also work with generics.  Here is the output for the following
+function:
+    public A Test(IEnumerable<B> n)
+
+    0:000> sos DumpSig 00000000`00bc2437 000007ff00043178 
+    [DEFAULT] [hasThis] __Canon (Class System.Collections.Generic.IEnumerable`1<__Canon>)
+\\
+
+COMMAND: dumpsigelem.
+DumpSigElem <sigaddr> <moduleaddr>
+
+This command dumps a single element of a signature object.  For most circumstances,
+you should use DumpSig to look at individual signature objects, but if you find a 
+signature that has been corrupted in some manner you can use DumpSigElem to read out 
+the valid portions of it.
+
+If we look at a valid signature object for a method we see the following:
+    0:000> dumpsig 0x000007fe`ec20879d 0x000007fe`eabd1000
+    [DEFAULT] [hasThis] Void (Boolean,String,String)
+
+We can look at the individual elements of this object by adding the offsets into the 
+object which correspond to the return value and parameters:
+    0:000> sos DumpSigElem 0x000007fe`ec20879d+2 0x000007fe`eabd1000
+    Void
+    0:000> sos DumpSigElem 0x000007fe`ec20879d+3 0x000007fe`eabd1000
+    Boolean
+    0:000> sos DumpSigElem 0x000007fe`ec20879d+4 0x000007fe`eabd1000
+    String
+    0:000> sos DumpSigElem 0x000007fe`ec20879d+5 0x000007fe`eabd1000
+    String
+
+We can do something similar for fields.  Here is the full signature of a field:
+    0:000> dumpsig 0x000007fe`eb7fd8cd 0x000007fe`eabd1000
+    [FIELD] ValueClass System.RuntimeTypeHandle 
+
+Using DumpSigElem we can find the type of the field by adding the offset of it (1) to 
+the address of the signature:
+    0:000> sos DumpSigElem 0x000007fe`eb7fd8cd+1 0x000007fe`eabd1000
+    ValueClass System.RuntimeTypeHandle
+
+DumpSigElem will also work with generics.  Let a function be defined as follows:
+    public A Test(IEnumerable<B> n)
+
+The elements of this signature can be obtained by adding offsets into the signature
+when calling DumpSigElem:
+
+    0:000> sos DumpSigElem 00000000`00bc2437+2 000007ff00043178 
+    __Canon
+    0:000> sos DumpSigElem 00000000`00bc2437+4 000007ff00043178 
+    Class System.Collections.Generic.IEnumerable`1<__Canon>
+
+The actual offsets that you should add are determined by the contents of the
+signature itself.  By trial and error you should be able to find various elements
+of the signature.
+\\
+
+COMMAND: dumpil.
+DumpIL <Managed DynamicMethod object> | 
+       <DynamicMethodDesc pointer> |
+       <MethodDesc pointer> |
+        /i <IL pointer>
+
+DumpIL prints the IL code associated with a managed method. We added this
+function specifically to debug DynamicMethod code which was constructed on
+the fly. Happily it works for non-dynamic code as well.
+
+You can use it in four ways: 
+
+  1) If you have a System.Reflection.Emit.DynamicMethod object, just pass
+     the pointer as the first argument. 
+  2) If you have a DynamicMethodDesc pointer you can use that to print the
+     IL associated with the dynamic method.
+  3) If you have an ordinary MethodDesc, you can see the IL for that as well,
+     just pass it as the first argument.
+  4) If you have a pointer directly to the IL, specify /i followed by the
+     the IL address.  This is useful for writers of profilers that instrument
+     IL.
+     
+
+Note that dynamic IL is constructed a bit differently. Rather than referring
+to metadata tokens, the IL points to objects in a managed object array. Here
+is a simple example of the output for a dynamic method:
+
+  0:000> sos DumpIL b741dc
+  This is dynamic IL. Exception info is not reported at this time.
+  If a token is unresolved, run "sos DumpObj <addr>" on the addr given
+  in parenthesis. You can also look at the token table yourself, by
+  running "DumpArray 00b77388".
+
+  IL_0000: ldstr 70000002 "Inside invoked method "
+  IL_0005: call 6000003 System.Console.WriteLine(System.String)
+  IL_000a: ldc.i4.1
+  IL_000b: newarr 2000004 "System.Int32"
+  IL_0010: stloc.0
+  IL_0011: ldloc.0
+  IL_0012: ret
 \\
 
 COMMAND: verifyheap.
@@ -1246,7 +1460,6 @@ in the CLR. In user code, an error in constructing PInvoke calls can cause
 this problem, and running with Managed Debugging Assistants is advised. If that
 possibility is eliminated, consider contacting Microsoft Product Support for
 help.
-
 \\
 
 COMMAND: dumplog.

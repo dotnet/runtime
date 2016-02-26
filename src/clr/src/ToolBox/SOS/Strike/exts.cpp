@@ -32,47 +32,62 @@ ULONG   TargetMachine;
 BOOL    Connected;
 ULONG   g_TargetClass;
 DWORD_PTR g_filterHint = 0;
-IMachine* g_targetMachine = NULL;
-BOOL    g_bDacBroken = FALSE;
 
 PDEBUG_CLIENT         g_ExtClient;    
+PDEBUG_DATA_SPACES2   g_ExtData2;
+PDEBUG_SYMBOLS2       g_ExtSymbols2;
+PDEBUG_ADVANCED3      g_ExtAdvanced3;
+PDEBUG_CLIENT         g_pCallbacksClient;
+
+#else
+
+DebugClient*          g_DebugClient;
+ILLDBServices*        g_ExtServices;    
+
+#endif // FEATURE_PAL
+
+IMachine* g_targetMachine = NULL;
+BOOL      g_bDacBroken = FALSE;
+
 PDEBUG_CONTROL2       g_ExtControl;
 PDEBUG_DATA_SPACES    g_ExtData;
-PDEBUG_DATA_SPACES2   g_ExtData2;
 PDEBUG_REGISTERS      g_ExtRegisters;
 PDEBUG_SYMBOLS        g_ExtSymbols;
-PDEBUG_SYMBOLS2       g_ExtSymbols2;
 PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
-PDEBUG_ADVANCED3      g_ExtAdvanced3;
-
-PDEBUG_CLIENT         g_pCallbacksClient;
 
 #define SOS_ExtQueryFailGo(var, riid)                       \
     var = NULL;                                             \
-    if ((Status = Client->QueryInterface(__uuidof(riid),    \
+    if ((Status = client->QueryInterface(__uuidof(riid),    \
                                  (void **)&var)) != S_OK)   \
     {                                                       \
         goto Fail;                                          \
     }
 
 // Queries for all debugger interfaces.
+#ifndef FEATURE_PAL    
 extern "C" HRESULT
-ExtQuery(PDEBUG_CLIENT Client)
+ExtQuery(PDEBUG_CLIENT client)
 {
+    g_ExtClient = client;
+#else
+extern "C" HRESULT
+ExtQuery(ILLDBServices* services)
+{
+    g_ExtServices = services;
+    DebugClient* client = new DebugClient(services);
+    g_DebugClient = client;
+#endif
     HRESULT Status;
-    
     SOS_ExtQueryFailGo(g_ExtControl, IDebugControl2);
     SOS_ExtQueryFailGo(g_ExtData, IDebugDataSpaces);
-    SOS_ExtQueryFailGo(g_ExtData2, IDebugDataSpaces2);
     SOS_ExtQueryFailGo(g_ExtRegisters, IDebugRegisters);
     SOS_ExtQueryFailGo(g_ExtSymbols, IDebugSymbols);
-    SOS_ExtQueryFailGo(g_ExtSymbols2, IDebugSymbols2);
     SOS_ExtQueryFailGo(g_ExtSystem, IDebugSystemObjects);
+#ifndef FEATURE_PAL
+    SOS_ExtQueryFailGo(g_ExtData2, IDebugDataSpaces2);
+    SOS_ExtQueryFailGo(g_ExtSymbols2, IDebugSymbols2);
     SOS_ExtQueryFailGo(g_ExtAdvanced3, IDebugAdvanced3);
-    g_ExtClient = Client;
-
-    
-
+#endif // FEATURE_PAL
     return S_OK;
 
  Fail:
@@ -82,8 +97,6 @@ ExtQuery(PDEBUG_CLIENT Client)
     ExtRelease();
     return Status;
 }
-
-#endif // FEATURE_PAL
 
 extern "C" HRESULT
 ArchQuery(void)
@@ -129,22 +142,27 @@ ArchQuery(void)
     return S_OK;
 }
 
-#ifndef FEATURE_PAL
-
 // Cleans up all debugger interfaces.
 void
 ExtRelease(void)
 {
-    g_ExtClient = NULL;
     EXT_RELEASE(g_ExtControl);
     EXT_RELEASE(g_ExtData);
-    EXT_RELEASE(g_ExtData2);
     EXT_RELEASE(g_ExtRegisters);
     EXT_RELEASE(g_ExtSymbols);
-    EXT_RELEASE(g_ExtSymbols2);
     EXT_RELEASE(g_ExtSystem);
+#ifndef FEATURE_PAL
+    EXT_RELEASE(g_ExtData2);
+    EXT_RELEASE(g_ExtSymbols2);
     EXT_RELEASE(g_ExtAdvanced3);
+    g_ExtClient = NULL;
+#else 
+    EXT_RELEASE(g_DebugClient);
+    g_ExtServices = NULL;
+#endif // FEATURE_PAL
 }
+
+#ifndef FEATURE_PAL
 
 BOOL IsMiniDumpFileNODAC();
 extern HMODULE g_hInstance;
@@ -358,37 +376,48 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 #else // FEATURE_PAL
 
-BOOL g_bDacBroken = FALSE;
-IMachine* g_targetMachine = NULL;
-
-PDEBUG_CLIENT         g_ExtClient;    
-PDEBUG_DATA_SPACES    g_ExtData;
-PDEBUG_CONTROL2       g_ExtControl;
-PDEBUG_SYMBOLS        g_ExtSymbols;
-PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
-PDEBUG_REGISTERS      g_ExtRegisters;
-
-extern "C" HRESULT
-ExtQuery(PDEBUG_CLIENT Client)
+HRESULT
+DebugClient::QueryInterface(
+    REFIID InterfaceId,
+    PVOID* Interface
+    )
 {
-    g_ExtClient = Client;
-    g_ExtControl = (PDEBUG_CONTROL2)Client;
-    g_ExtData = (PDEBUG_DATA_SPACES)Client;
-    g_ExtSymbols = (PDEBUG_SYMBOLS)Client;
-    g_ExtSystem = (PDEBUG_SYSTEM_OBJECTS)Client;
-    g_ExtRegisters = (PDEBUG_REGISTERS)Client;
-    return S_OK;
+    if (InterfaceId == __uuidof(IUnknown) ||
+        InterfaceId == __uuidof(IDebugControl2) ||
+        InterfaceId == __uuidof(IDebugControl4) ||
+        InterfaceId == __uuidof(IDebugDataSpaces) ||
+        InterfaceId == __uuidof(IDebugSymbols) ||
+        InterfaceId == __uuidof(IDebugSystemObjects) ||
+        InterfaceId == __uuidof(IDebugRegisters))
+    {
+        *Interface = this;
+        AddRef();
+        return S_OK;
+    }
+    else
+    {
+        *Interface = NULL;
+        return E_NOINTERFACE;
+    }
 }
 
-void
-ExtRelease(void)
+ULONG
+DebugClient::AddRef()
 {
-    g_ExtClient = NULL;
-    g_ExtControl = NULL;
-    g_ExtData = NULL;
-    g_ExtSymbols = NULL;
-    g_ExtSystem = NULL;
-    g_ExtRegisters = NULL;
+    LONG ref = InterlockedIncrement(&m_ref);    
+    return ref;
+}
+
+ULONG
+DebugClient::Release()
+{
+    LONG ref = InterlockedDecrement(&m_ref);
+    if (ref == 0)
+    {
+        m_lldbservices->Release();
+        delete this;
+    }
+    return ref;
 }
 
 #endif // FEATURE_PAL
