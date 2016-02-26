@@ -467,6 +467,7 @@ verify_image_file (const char *fname)
 
 	mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
 
+	mono_icall_init ();
 	mono_marshal_init ();
 
 
