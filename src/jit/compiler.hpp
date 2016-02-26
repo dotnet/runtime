@@ -4054,7 +4054,7 @@ bool            Compiler::compStressCompile(compStressArea    stressArea,
 
 
 inline
-norls_allocator * Compiler::compGetAllocator()
+ArenaAllocator * Compiler::compGetAllocator()
 {
     return compAllocator;
 }
@@ -4076,7 +4076,7 @@ void  *                 Compiler::compGetMem(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(sz, cmk);
 #endif
 
-    return  compAllocator->nraAlloc(sz);
+    return  compAllocator->allocateMemory(sz);
 }
 
 #endif
@@ -4138,7 +4138,7 @@ void  *                 Compiler::compGetMemA(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(allocSz, cmk);
 #endif
 
-    void * ptr = compAllocator->nraAlloc(allocSz);
+    void * ptr = compAllocator->allocateMemory(allocSz);
 
     // Verify that the current block is aligned. Only then will the next
     // block allocated be on an aligned boundary.
