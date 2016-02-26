@@ -7,12 +7,19 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-# CMake does not add some platform-specific include search paths,
-# thus we add them manually.
-# FreeBSD
-include_directories(SYSTEM /usr/local/include)
-# NetBSD
-include_directories(SYSTEM /usr/pkg/include)
+if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+    set(PAL_UNIX_NAME \"LINUX\")
+elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(PAL_UNIX_NAME \"OSX\")
+elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    set(PAL_UNIX_NAME \"FREEBSD\")
+    include_directories(SYSTEM /usr/local/include)
+elseif (CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    set(PAL_UNIX_NAME \"NETBSD\")
+    include_directories(SYSTEM /usr/pkg/include)
+else ()
+    message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
+endif ()
 
 # in_pktinfo: Find whether this struct exists
 check_include_files(

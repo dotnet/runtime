@@ -3,12 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <PackageTargetRuntime>linux</PackageTargetRuntime>
+    <PackageTargetRuntime>unix</PackageTargetRuntime>
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
  
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.builds" >
+      <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
       <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
