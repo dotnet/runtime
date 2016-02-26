@@ -2,7 +2,6 @@
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
-    "System.Buffers": "4.0.0-rc3-23818",
     "System.Collections": "4.0.10",
     "System.Console": "4.0.0-rc3-23818",
     "System.Diagnostics.Debug": "4.0.10",
