@@ -44,7 +44,6 @@ namespace System
             get { return GetConsoleEncoding(); }
         }
 
-        private static readonly object s_stdInReaderSyncObject = new object();
         private static SyncTextReader s_stdInReader;
         private const int DefaultBufferSize = 255;
 
@@ -60,7 +59,7 @@ namespace System
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInStreamReader(
                                 stream: OpenStandardInput(),
-                                encoding: InputEncoding,
+                                encoding: new ConsoleEncoding(Console.InputEncoding), // This ensures no prefix is written to the stream.
                                 bufferSize: DefaultBufferSize)));
             }
         }
@@ -76,7 +75,7 @@ namespace System
                     StreamReader.Null :
                     new StreamReader(
                         stream: inputStream,
-                        encoding: ConsolePal.InputEncoding,
+                        encoding: new ConsoleEncoding(Console.InputEncoding), // This ensures no prefix is written to the stream.
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: DefaultConsoleBufferSize,
                         leaveOpen: true)
@@ -447,9 +446,19 @@ namespace System
         private static Encoding GetConsoleEncoding()
         {
             Encoding enc = EncodingHelper.GetEncodingFromCharset();
-            return enc != null ? (Encoding)
-                new ConsoleEncoding(enc) :
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            return enc ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        }
+
+        public static void SetConsoleInputEncoding(Encoding enc)
+        {
+            // No-op.
+            // There is no good way to set the terminal console encoding.
+        }
+
+        public static void SetConsoleOutputEncoding(Encoding enc)
+        {
+            // No-op.
+            // There is no good way to set the terminal console encoding.
         }
 
         /// <summary>

@@ -41,6 +41,9 @@
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
+      <Link>Common\System\IO\EncodingHelper.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46' ">
     <Compile Include="System\ConsolePal.Windows.cs" />
@@ -113,11 +116,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleOutput.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsoleOutput.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCP.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleCP.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCursorPosition.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleOutputCP.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleOutputCP.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleScreenBufferSize.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs</Link>
@@ -142,9 +151,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.Windows.cs">
-      <Link>Common\System\IO\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' != 'net46'">

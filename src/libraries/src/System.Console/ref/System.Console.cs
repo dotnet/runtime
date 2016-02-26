@@ -23,6 +23,7 @@ namespace System
         public static bool CursorVisible { get { return default(bool); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
         public static System.ConsoleColor ForegroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static System.Text.Encoding InputEncoding { get { return default(System.Text.Encoding); } set { } }
         public static bool IsErrorRedirected { get { return false; } }
         public static bool IsInputRedirected { get { return false; } }
         public static bool IsOutputRedirected { get { return false; } }
@@ -36,6 +37,7 @@ namespace System
         public static System.IO.Stream OpenStandardInput() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardOutput() { return default(System.IO.Stream); }
         public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
+        public static System.Text.Encoding OutputEncoding { get { return default(System.Text.Encoding); } set { } }
         public static int Read() { return default(int); }
         public static ConsoleKeyInfo ReadKey() { return default(ConsoleKeyInfo); }
         public static ConsoleKeyInfo ReadKey(bool intercept) { return default(ConsoleKeyInfo); }
@@ -125,6 +127,11 @@ namespace System
         public char KeyChar { get { return default(char); } }
         public ConsoleKey Key { get { return default(ConsoleKey); } }
         public ConsoleModifiers Modifiers { get { return default(ConsoleModifiers); ; } }
+        public bool Equals(ConsoleKeyInfo obj) { return default(bool); }
+        public override bool Equals(object value) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public static bool operator ==(ConsoleKeyInfo a, ConsoleKeyInfo b) { return default(bool); }
+        public static bool operator !=(ConsoleKeyInfo a, ConsoleKeyInfo b) { return default(bool); }
     }
     public enum ConsoleKey
     {
