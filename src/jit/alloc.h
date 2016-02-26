@@ -9,16 +9,13 @@
 #include "host.h"
 #endif // defined(_HOST_H_)
 
-struct ArenaAllocator
+class ArenaAllocator
 {
 private:
-    struct MarkDescriptor
-    {
-        void* m_page;
-        BYTE* m_next;
-        BYTE* m_last;
-    };
+    ArenaAllocator(const ArenaAllocator& other) = delete;
+    ArenaAllocator& operator=(const ArenaAllocator& other) = delete;
 
+protected:
     struct PageDescriptor
     {
         PageDescriptor* m_next;
@@ -40,9 +37,8 @@ private:
     };
 
     static size_t s_defaultPageSize;
-    static ArenaAllocator* s_pooledAllocator;
-    static MarkDescriptor s_pooledAllocatorMark;
-    static LONG s_isPooledAllocatorInUse;
+
+    IEEMemoryManager* m_memoryManager;
 
     PageDescriptor* m_firstPage;
     PageDescriptor* m_lastPage;
@@ -51,20 +47,25 @@ private:
     BYTE* m_nextFreeByte; 
     BYTE* m_lastFreeByte;
 
-    IEEMemoryManager* m_memoryManager;
+    bool isInitialized();
 
-    void* allocateNewPage(size_t size);
-
-    // The following methods are used for mark/release operation.
-    void mark(MarkDescriptor& mark);
-    void reset(MarkDescriptor& mark);
+    void* allocateNewPage(size_t size, bool canThrow);
 
     void* allocateHostMemory(size_t size);
     void freeHostMemory(void* block);
 
 public:
-    bool initialize(IEEMemoryManager* memoryManager, bool shouldPreallocate);
-    void destroy();
+    ArenaAllocator();
+    ArenaAllocator(IEEMemoryManager* memoryManager);
+    ArenaAllocator& operator=(ArenaAllocator&& other);
+
+    // NOTE: it would be nice to have a destructor on this type to ensure that any value that
+    //       goes out of scope is either uninitialized or has been torn down via a call to
+    //       destroy(), but this interacts badly in methods that use SEH. #3058 tracks
+    //       revisiting EH in the JIT; such a destructor could be added if SEH is removed
+    //       as part of that work.
+
+    virtual void destroy();
 
 #if defined(DEBUG)
     void* allocateMemory(size_t sz);
@@ -76,7 +77,7 @@ public:
 
         if (m_nextFreeByte > m_lastFreeByte)
         {
-            block = allocateNewPage(size);
+            block = allocateNewPage(size, true);
         }
 
         return block;
@@ -92,12 +93,7 @@ public:
     static void startup();
     static void shutdown();
 
-    // Gets the pooled allocator if it is available. Returns `nullptr` if the
-    // pooled allocator is already in use.
     static ArenaAllocator* getPooledAllocator(IEEMemoryManager* memoryManager);
-
-    // Returns the pooled allocator for use by others.
-    static void returnPooledAllocator(ArenaAllocator* allocator);
 };
 
 #endif // _ALLOC_H_
