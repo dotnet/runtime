@@ -1184,7 +1184,9 @@ FCFuncStart(gAssemblyNameFuncs)
 #endif // FEATURE_CORECLR
     FCFuncElement("nToString", AssemblyNameNative::ToString)
     FCFuncElement("nGetPublicKeyToken", AssemblyNameNative::GetPublicKeyToken)
+#ifndef FEATURE_CORECLR
     FCFuncElement("EscapeCodeBase", AssemblyNameNative::EscapeCodeBase)
+#endif // !FEATURE_CORECLR 
     FCFuncElement("nInit", AssemblyNameNative::Init)
     FCFuncElement("ReferenceMatchesDefinitionInternal", AssemblyNameNative::ReferenceMatchesDefinition)
 FCFuncEnd()

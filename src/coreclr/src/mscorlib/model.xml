@@ -3577,7 +3577,6 @@
       <Member Name="CreateInstance(System.String)" />
       <Member Name="CreateInstance(System.String,System.Boolean)" />
       <Member Name="CreateQualifiedName(System.String,System.String)" />
-      <Member Name="get_EscapedCodeBase" />
       <Member Name="GetReferencedAssemblies" /> 	  
       <Member Name="get_EntryPoint" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="get_FullName" />
