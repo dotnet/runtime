@@ -160,7 +160,7 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlResponseParseUtils.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
     <Compile Include="System\Net\Http\Unix\CurlTransportContext.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
@@ -213,11 +213,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+      <Link>Common\System\CharArrayHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>

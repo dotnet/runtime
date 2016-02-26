@@ -29,11 +29,17 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs">
+      <Link>ProductionCode\Common\System\CharArrayHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>ProductionCode\Common\System\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
+      <Link>ProductionCode\Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>ProductionCode\Common\System\Net\HttpStatusDescription.cs</Link>
@@ -278,8 +284,8 @@
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Unix\CurlResponseParseUtils.cs">
-      <Link>ProductionCode\System\Net\Http\CurlResponseParseUtils.cs</Link>
+    <Compile Include="..\..\src\System\Net\Http\Unix\CurlResponseHeaderReader.cs">
+      <Link>ProductionCode\System\Net\Http\CurlResponseHeaderReader.cs</Link>
     </Compile>
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
@@ -288,7 +294,7 @@
     <Compile Include="Headers\CacheControlHeaderValueTest.cs" />
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
-    <Compile Include="Headers\CurlResponseParseUtilsTest.cs" />
+    <Compile Include="Headers\CurlResponseHeaderReaderTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />
