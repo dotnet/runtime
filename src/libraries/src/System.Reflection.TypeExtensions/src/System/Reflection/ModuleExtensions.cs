@@ -8,13 +8,13 @@ namespace System.Reflection
     {
         public static bool HasModuleVersionId(this Module module)
         {
-            Requires.NotNull(module, "module");
+            Requires.NotNull(module, nameof(module));
             return false; // never available on .NET Native
         }
         
         public static Guid GetModuleVersionId(this Module module)
         {
-            Requires.NotNull(module, "module");
+            Requires.NotNull(module, nameof(module));
             throw new InvalidOperationException(SR.ModuleVersionIdNotSupported);
         }
     }
