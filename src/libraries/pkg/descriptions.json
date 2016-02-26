@@ -42,7 +42,7 @@
     },
     {
         "Name": "Microsoft.NETCore.Portable.Compatibility",
-        "Description": "Enables compatiblity with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name name as the missing assembly.",
+        "Description": "Enables compatibility with portable libraries targeting previous .NET releases like .NET Framework 4.0 and Silverlight.\nThis package supports retargeting references to classic reference assemblies (mscorlib.dll, system.dll, etc) to new contract assemblies (System.Runtime.dll, System.IO, etc).  It does this in a pay-for-play way to prevent consuming assemblies from having to reference all of the contracts that happen to overlap with mscorlib.  As such, when using this package you may encounter errors like\n\terror CS0012: The type 'WebRequest' is defined in an assembly that is not referenced. You must add a reference to assembly 'System.Net.Requests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.\nTo resolve these errors install the package with the same name name as the missing assembly.",
         "CommonTypes": [ ]
     },
     {
@@ -125,13 +125,13 @@
     },
     {
         "Name": "NETStandard.Library",
-        "Description": "A set of standard .NET API's that are prescribed to be used and supported together. This includes all of the API's in the NETStandard.Platform package plus additional libraries that are core to .NET but built on top of NETStandard.Platform.",
+        "Description": "A set of standard .NET APIs that are prescribed to be used and supported together. This includes all of the APIs in the NETStandard.Platform package plus additional libraries that are core to .NET but built on top of NETStandard.Platform.",
         "CommonTypes": [
         ]
     },
     {
         "Name": "NETStandard.Platform",
-        "Description": "A set of low level API that all .NET platforms must support.",
+        "Description": "A set of low level APIs that all .NET platforms must support.",
         "CommonTypes": [
         ]
     },
@@ -519,7 +519,7 @@
     },
     {
         "Name": "System.Globalization.Extensions",
-        "Description": "Provides classes for performing unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.",
+        "Description": "Provides classes for performing Unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.",
         "CommonTypes": [
             "System.StringNormalizationExtensions",
             "System.Text.NormalizationForm",
@@ -737,7 +737,7 @@
     },
     {
         "Name": "System.Net.Http.Rtc",
-        "Description": "Provides the System.Net.Http.RtcRequestFactory class, which creates HTTP requests for use with the Real-Time-Communitications (RTC) background notification infrastructure.",
+        "Description": "Provides the System.Net.Http.RtcRequestFactory class, which creates HTTP requests for use with the Real-Time-Communications (RTC) background notification infrastructure.",
         "CommonTypes": [
             "System.Net.Http.RtcRequestFactory"
         ]
@@ -944,7 +944,7 @@
     },
     {
         "Name": "System.Reflection.DispatchProxy",
-        "Description": "Provides a class to dynamcially create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
+        "Description": "Provides a class to dynamically create proxy types that implement a specified interface and derive from a specified DispatchProxy type. Method invocations on the generated proxyinstance are dispatched to that DispatchProxy base type.",
         "CommonTypes": [
             "System.Reflection.DispatchProxy"
         ]
@@ -967,7 +967,7 @@
     },
     {
         "Name": "System.Reflection.Emit.ILGeneration",
-        "Description": "Provides clases that allow a compiler or tool to emit Microsoft intermediate language (MSIL). The primary clients of these classes are script engines and compilers.",
+        "Description": "Provides classes that allow a compiler or tool to emit Microsoft intermediate language (MSIL). The primary clients of these classes are script engines and compilers.",
         "CommonTypes": [
             "System.Reflection.Emit.ILGenerator",
             "System.Reflection.Emit.Label",
@@ -1523,7 +1523,7 @@
     },
     {
         "Name": "System.Threading.AccessControl",
-        "Description": "Provides support for managing access and audit control lists for synchronization primitves.",
+        "Description": "Provides support for managing access and audit control lists for synchronization primitives.",
         "CommonTypes": [
             "System.Security.AccessControl.EventWaitHandleAccessRule",
             "System.Security.AccessControl.EventWaitHandleAuditRule",
