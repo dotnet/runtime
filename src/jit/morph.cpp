@@ -9107,7 +9107,11 @@ NO_MUL_64RSLT:
 
     case GT_UMOD:
 
-#ifndef _TARGET_ARM_
+#ifdef _TARGET_ARMARCH_
+        //
+        // Note for _TARGET_ARMARCH_ we don't have  a remainder instruction, so we don't do this optimization
+        //
+#else // _TARGET_XARCH
         /* If this is an unsigned long mod with op2 which is a cast to long from a
            constant int, then don't morph to a call to the helper.  This can be done
            faster inline using idiv.
@@ -9148,7 +9152,7 @@ NO_MUL_64RSLT:
                 return tree;
             }
         }
-#endif // !_TARGET_ARM_
+#endif // _TARGET_XARCH
 
     ASSIGN_HELPER_FOR_MOD:
 
@@ -12283,6 +12287,19 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     assert(!"This should only be called for ARM64");
 #endif
 
+    if (tree->OperGet() == GT_MOD)
+    {
+        tree->SetOper(GT_DIV);
+    }
+    else  if (tree->OperGet() == GT_UMOD)
+    {
+        tree->SetOper(GT_UDIV);
+    }
+    else
+    {
+        noway_assert(!"Illegal gtOper in fgMorphModToSubMulDiv");
+    }
+
     var_types type = tree->gtType;
     GenTree* denominator = tree->gtOp2;
     GenTree* numerator = tree->gtOp1;
@@ -12297,7 +12314,6 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         denominator = fgMakeMultiUse(&tree->gtOp2);
     }
 
-    tree->SetOper(GT_DIV);
     GenTree* mul = gtNewOperNode(GT_MUL, type, tree, gtCloneExpr(denominator));
     GenTree* sub = gtNewOperNode(GT_SUB, type, gtCloneExpr(numerator), mul);
 
