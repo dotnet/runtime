@@ -65,7 +65,8 @@
 #ifdef DEBUG    
 int CodeGenInterface::genStressFloat()
 {
-    return compiler->compStressCompile(Compiler::STRESS_FLATFP, 40)?1:JitConfig.JitStressFP();
+    static ConfigDWORD fJitStressRegs;
+    return compiler->compStressCompile(Compiler::STRESS_FLATFP, 40)?1:fJitStressRegs.val(CLRConfig::INTERNAL_JitStressFP);
 }
 #endif
 

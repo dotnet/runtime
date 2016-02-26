@@ -11159,7 +11159,8 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
     {
         // set JitEmitPrintRefRegs=1 will print out emitThisGCrefRegs and emitThisByrefRegs
         // at the beginning of this method.
-        if (JitConfig.JitEmitPrintRefRegs() != 0)
+        static ConfigDWORD fJitEmitPrintRefRegs;
+        if (fJitEmitPrintRefRegs.val(CLRConfig::INTERNAL_JitEmitPrintRefRegs) != 0)
         {
             printf("Before emitOutputInstr for id->idDebugOnlyInfo()->idNum=0x%02x\n", id->idDebugOnlyInfo()->idNum);
             printf("  emitThisGCrefRegs(0x%p)=", emitComp->dspPtr(&emitThisGCrefRegs));
@@ -11174,7 +11175,8 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
 
         // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
         // emitting instruction a6, (i.e. IN00a6 in jitdump).
-        if ((unsigned)JitConfig.JitBreakEmitOutputInstr() == id->idDebugOnlyInfo()->idNum)
+        static ConfigDWORD fJitBreakEmitOutputInstr;
+        if ((unsigned)fJitBreakEmitOutputInstr.val(CLRConfig::INTERNAL_JitBreakEmitOutputInstr) == id->idDebugOnlyInfo()->idNum)
         {
             assert(!"JitBreakEmitOutputInstr reached");
         }
