@@ -18,7 +18,7 @@ namespace System.Reflection
         /// <returns>An array that represents the types defined in this assembly that are visible outside the assembly.</returns>
         public static Type[] GetExportedTypes(this Assembly assembly)
         {
-            Requires.NotNull(assembly, "assembly");
+            Requires.NotNull(assembly, nameof(assembly));
             return assembly.ExportedTypes.ToArray();
         }
 
@@ -29,7 +29,7 @@ namespace System.Reflection
         /// <returns>An array of modules.</returns>
         public static Module[] GetModules(this Assembly assembly)
         {
-            Requires.NotNull(assembly, "assembly");
+            Requires.NotNull(assembly, nameof(assembly));
             return assembly.Modules.ToArray();
         }
 
@@ -40,7 +40,7 @@ namespace System.Reflection
         /// <returns>An array that contains all the types that are defined in this assembly.</returns>
         public static Type[] GetTypes(this Assembly assembly)
         {
-            Requires.NotNull(assembly, "assembly");
+            Requires.NotNull(assembly, nameof(assembly));
             return assembly.DefinedTypes.Select(t => t.AsType()).ToArray();
         }
     }
