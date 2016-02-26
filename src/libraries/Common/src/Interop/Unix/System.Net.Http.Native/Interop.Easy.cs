@@ -193,6 +193,8 @@ internal static partial class Interop
         internal const ulong CURL_READFUNC_PAUSE = 0x10000001;
         internal const ulong CURL_WRITEFUNC_PAUSE = 0x10000001;
 
+        internal const ulong CURL_MAX_HTTP_HEADER = 100 * 1024;
+
         internal sealed class SafeCurlHandle : SafeHandle
         {
             public SafeCurlHandle() : base(IntPtr.Zero, true)
