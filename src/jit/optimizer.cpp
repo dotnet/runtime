@@ -17,6 +17,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning ( disable : 4701 )
 #endif
 
+static ConfigDWORD fCloneLoops;
+
 /*****************************************************************************/
 
 #if COUNT_RANGECHECKS
@@ -2695,7 +2697,8 @@ void                Compiler::optUnrollLoops()
         return;
 
 #ifdef DEBUG
-    if (JitConfig.JitNoUnroll())
+    static ConfigDWORD fJitNoUnroll;
+    if (fJitNoUnroll.val(CLRConfig::INTERNAL_JitNoUnroll))
     {
         return;
     }
@@ -4086,7 +4089,8 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 //
 void                Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore)
 {
-    if (JitConfig.JitDebugLogLoopCloning() == 0)
+    static ConfigDWORD fDebugLogLoopCloning;
+    if (fDebugLogLoopCloning.val(CLRConfig::INTERNAL_JitDebugLogLoopCloning) == 0)
     {
         return;
     }
@@ -4161,7 +4165,7 @@ bool                Compiler::optCanCloneLoops()
     // Enabled for retail builds now.
     unsigned cloneLoopsFlag = 1;
 #ifdef DEBUG
-    cloneLoopsFlag = JitConfig.JitCloneLoops();
+    cloneLoopsFlag = fCloneLoops.val(CLRConfig::INTERNAL_JitCloneLoops);
 #endif
     return (cloneLoopsFlag != 0);
 }
@@ -5434,7 +5438,8 @@ void                    Compiler::optHoistLoopCode()
         return;
 
 #ifdef DEBUG
-    unsigned jitNoHoist = JitConfig.JitNoHoist();
+    static ConfigDWORD fJitNoHoist;
+    unsigned jitNoHoist = fJitNoHoist.val(CLRConfig::INTERNAL_JitNoHoist);
     if (jitNoHoist > 0)
     {
         return;

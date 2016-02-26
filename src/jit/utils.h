@@ -77,19 +77,20 @@ class ConfigMethodRange
 public:
     bool contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
 
-    inline void ensureInit(const wchar_t* rangeStr)
+    inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
     {
         // make sure that the memory was zero initialized
         _ASSERTE(m_inited == 0 || m_inited == 1);
 
         if (!m_inited)
         {
-            initRanges(rangeStr);
+            init(info);
             _ASSERTE(m_inited == 1);
         }
     }
 
 private:
+    void init(const CLRConfig::ConfigStringInfo & info);
     void initRanges(__in_z LPCWSTR rangeStr);
 
 private:
@@ -425,7 +426,7 @@ class AssemblyNamesList2
 public:
 
     // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const wchar_t* list, __in IAllocator* alloc);
+    AssemblyNamesList2(__in LPWSTR list, __in IAllocator* alloc);
 
     ~AssemblyNamesList2();
 
