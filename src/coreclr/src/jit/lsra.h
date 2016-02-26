@@ -102,7 +102,7 @@ typedef regNumber * VarToRegMap;
 typedef StructArrayList<Interval,    /* initial element count */ 32, /* multiplicative chunk size growth factor */ 2, LinearScanMemoryAllocatorInterval>    IntervalList;
 typedef StructArrayList<RefPosition, /* initial element count */ 64, /* multiplicative chunk size growth factor */ 2, LinearScanMemoryAllocatorRefPosition> RefPositionList;
 
-// Wrapper for norls_allocator
+// Wrapper for ArenaAllocator
 class LinearScanMemoryAllocatorRefPosition
 {
 public:
