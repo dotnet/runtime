@@ -1,15 +1,17 @@
 <!--
-This template includes boilerplate for different kinds of issues. Select the
-one that is most suitable and delete the others.
+This template includes boilerplate for different kinds of issues. 
+Select the one that is most suitable and delete the others.
 -->
 
 <!-- ===============
      Template 1: Bug
      =============== -->
 
-Description of the problem
+Describe the problem.
 
 # Affected platforms
+
+List on which platforms the bug manifests, or specify that it manifests on all platforms.
 
 # Repro steps
 
@@ -19,13 +21,18 @@ Description of the problem
 
 # Expected behavior
 
+Describe the expected behavior.
+
 # Actual behavior
+
+Describe the actual behavior.
+
 
 <!-- =============================
      Template 2: Suggest a new API
      ============================= -->
 
-Read http://aka.ms/apireview and include description of the problem.
+Read http://aka.ms/apireview and provide a short summary of why a new API is needed.
 
 # Rationale and Usage
 
@@ -54,6 +61,7 @@ namespace System.Foo
 Include interesting design points. As the discussion on this issue progresses,
 you should update this section and include major decisions so that folks joining
 later get everything at the top.
+
 
 <!-- ================================================
      Template 3: Request an existing API to be ported
