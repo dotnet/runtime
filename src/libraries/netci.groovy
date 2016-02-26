@@ -155,7 +155,7 @@ branchList.each { branchName ->
             // Set the affinity.  All of these run on Windows Nano currently.
             Utilities.setMachineAffinity(newTestJob, os)
             // Set up standard options.
-            Utilities.standardJobSetup(newTestJob, project, isPR, getFullBranchName(branchName))
+            Utilities.addStandardOptions(newTestJob, isPR)
 
             def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
             def newJob = buildFlowJob(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
