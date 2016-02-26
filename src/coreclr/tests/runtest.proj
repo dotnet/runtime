@@ -315,7 +315,55 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Targets="CopyDependecyToCoreRoot"/>
   </Target>
 
+  <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 
+       In addition the version number of built runtime can change so all project.json needs to be dynamically generated. 
+       In order to avoid regenerating project.json for all the tests projects...I added a common project for all the tests.
+       This project is at tests\src\common\test_runtime\test_runtime.csproj. This project is adding common dependencies to
+       all the tests like dependency on Microsoft.netcore.runtime.coreclr ..etc. Project.json for this project is dynamically 
+       generated via task CreateTestRuntimeJsonFile. -->
+  <Target Name="CreateTestRuntimeJsonFile">
+    <ItemGroup>
+      <CoreclrPackage Include="$(CORE_ROOT)\.nuget\**\Microsoft.NETCore.Runtime.CoreCLR.*.nupkg"/>
+    </ItemGroup>
+    <PropertyGroup>
+      <CoreclrPackageFileName>%(CoreclrPackage.Filename)</CoreclrPackageFileName>
+      <!-- Get package version number from nuget package filename at core_root -->
+      <CoreclrPackageVersion>$([System.String]::Copy('$(CoreclrPackageFileName)').Replace('Microsoft.NETCore.Runtime.CoreCLR.',''))</CoreclrPackageVersion>
+      <TestRuntimeJsonContents>
+        <![CDATA[
+{
+  "dependencies": {
+    "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreclrPackageVersion)",
+    "Microsoft.NETCore.TestHost": "1.0.0-rc2-23816",
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}        
+
+        ]]>
+      </TestRuntimeJsonContents>
+    </PropertyGroup>
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="src\Common\test_runtime\project.json"
+      Lines="$(TestRuntimeJsonContents)"
+      Overwrite="true" />
+
+  </Target>
+
   <Target Name="Build">
+
+    <!-- generate project.json for runtime dependency -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CreateTestRuntimeJsonFile"
+             Condition=" '$(NoBuild)'!='true' " />
+
+    <!-- generate project.lock.json file corresponding to above json file -->
+    <MSBuild Projects="src\Common\test_runtime\test_runtime.csproj"
+             Condition=" '$(NoBuild)'!='true' " />
+
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateAllWrappers"
