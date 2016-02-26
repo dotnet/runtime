@@ -7789,17 +7789,22 @@ public :
     // Returns true if the method being compiled returns RetBuf addr as its return value
     bool                compMethodReturnsRetBufAddr() 
     {
-        // Profiler Leave calllback expects the address of retbuf as return value for 
-        // methods with hidden RetBuf argument.  impReturnInstruction() when profiler
-        // callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
-        // methods with hidden RetBufArg.
-        //
-        // TODO-AMD64-Unix - As per this ABI, addr of RetBuf needs to be returned by
-        // methods with hidden RetBufArg.  Right now we are special casing GT_RETURN
-        // of TYP_VOID in codegenxarch.cpp to generate "mov rax, addr of RetBuf".
-        // Instead we should consider explicitly materializing GT_RETURN of TYP_BYREF
-        // return addr of RetBuf in IR.
-        return compIsProfilerHookNeeded() && (info.compRetBuffArg != BAD_VAR_NUM);
+        // There are cases where implicit RetBuf argument should be explicitly returned in a register.  
+        // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.  
+        // These cases are:  
+        // 1. Profiler Leave calllback expects the address of retbuf as return value for   
+        //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler  
+        //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for  
+        //    methods with hidden RetBufArg.  
+        //  
+        // 2. As per the System V ABI, the address of RetBuf needs to be returned by  
+        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,  
+        //    returning the address of RetBuf.  
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return (info.compRetBuffArg != BAD_VAR_NUM);
+#else // FEATURE_UNIX_AMD64_STRUCT_PASSING  
+        return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING  
     }
 
     // Returns true if the method returns a value in more than one return register
@@ -7905,7 +7910,7 @@ public :
     static void         compStartup     ();     // One-time initialization
     static void         compShutdown    ();     // One-time finalization
 
-    void                compInit        (norls_allocator * pAlloc, InlineInfo * inlineInfo);
+    void                compInit        (ArenaAllocator * pAlloc, InlineInfo * inlineInfo);
     void                compDone        ();
 
     static void         compDisplayStaticSizes(FILE* fout);
@@ -7944,7 +7949,7 @@ public :
                                            CORJIT_FLAGS                   * compileFlags,
                                            CorInfoInstantiationVerification instVerInfo);
 
-    norls_allocator *   compGetAllocator();
+    ArenaAllocator *   compGetAllocator();
 
 #if MEASURE_MEM_ALLOC
     struct MemStats
@@ -8148,7 +8153,7 @@ protected :
     bool skipMethod();
 #endif
 
-    norls_allocator *   compAllocator;
+    ArenaAllocator *   compAllocator;
 
 public:
     // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",

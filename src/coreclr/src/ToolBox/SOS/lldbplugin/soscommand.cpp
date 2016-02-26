@@ -24,18 +24,21 @@ public:
                char** arguments,
                lldb::SBCommandReturnObject &result)
     {
-        DebugClient* client = new DebugClient(debugger, result);
-        LoadSos(client);
+        LLDBServices* services = new LLDBServices(debugger, result);
+        LoadSos(services);
 
         if (m_sosHandle)
         {
             const char* sosCommand = m_command;
             if (sosCommand == NULL) 
             {
-                if (arguments == NULL) {
-                    goto exit;
+                if (arguments == NULL || *arguments == NULL) {
+                    sosCommand = "Help";
                 }
-                sosCommand = *arguments++;
+                else
+                {
+                    sosCommand = *arguments++;
+                }
             }
             CommandFunc commandFunc = (CommandFunc)dlsym(m_sosHandle, sosCommand);
             if (commandFunc)
@@ -50,31 +53,31 @@ public:
                     }
                 }
                 const char* sosArgs = str.c_str();
-                HRESULT hr = commandFunc(client, sosArgs);
+                HRESULT hr = commandFunc(services, sosArgs);
                 if (hr != S_OK)
                 {
-                    client->Output(DEBUG_OUTPUT_ERROR, "%s %s failed\n", sosCommand, sosArgs);
+                    services->Output(DEBUG_OUTPUT_ERROR, "%s %s failed\n", sosCommand, sosArgs);
                 }
             }
             else
             {
-                client->Output(DEBUG_OUTPUT_ERROR, "SOS command '%s' not found %s\n", sosCommand, dlerror());
+                services->Output(DEBUG_OUTPUT_ERROR, "SOS command '%s' not found %s\n", sosCommand, dlerror());
             }
         }
-exit:
-        delete client;
+
+        services->Release();
         return result.Succeeded();
     }
 
     void
-    LoadSos(DebugClient *client)
+    LoadSos(LLDBServices *services)
     {
         if (m_sosHandle == NULL)
         {
             if (g_coreclrDirectory == NULL)
             {
                 const char *coreclrModule = MAKEDLLNAME_A("coreclr");
-                const char *directory = client->GetModuleDirectory(coreclrModule);
+                const char *directory = services->GetModuleDirectory(coreclrModule);
                 if (directory != NULL)
                 {
                     std::string path(directory);
@@ -83,19 +86,19 @@ exit:
                 }
                 else
                 {
-                    client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process\n", coreclrModule);
+                    services->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process\n", coreclrModule);
                 }
             }
 
             if (g_coreclrDirectory != NULL)
             {
-                m_sosHandle = LoadModule(client, MAKEDLLNAME_A("sos"));
+                m_sosHandle = LoadModule(services, MAKEDLLNAME_A("sos"));
             }
         }
     }
 
     void *
-    LoadModule(DebugClient *client, const char *moduleName)
+    LoadModule(LLDBServices *services, const char *moduleName)
     {
         std::string modulePath(g_coreclrDirectory);
         modulePath.append(moduleName);
@@ -103,7 +106,7 @@ exit:
         void *moduleHandle = dlopen(modulePath.c_str(), RTLD_NOW);
         if (moduleHandle == NULL)
         {
-            client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", modulePath.c_str(), dlerror());
+            services->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", modulePath.c_str(), dlerror());
         }
 
         return moduleHandle;
@@ -118,13 +121,19 @@ sosCommandInitialize(lldb::SBDebugger debugger)
     interpreter.AddCommand("bpmd", new sosCommand("bpmd"), "Creates a breakpoint at the specified managed method in the specified module.");
     interpreter.AddCommand("clrstack", new sosCommand("ClrStack"), "Provides a stack trace of managed code only.");
     interpreter.AddCommand("clrthreads", new sosCommand("Threads"), "List the managed threads running.");
+    interpreter.AddCommand("clru", new sosCommand("u"), "Displays an annotated disassembly of a managed method.");
+    interpreter.AddCommand("dumpclass", new sosCommand("DumpClass"), "Displays information about a EE class structure at the specified address.");
     interpreter.AddCommand("dumpheap", new sosCommand("DumpHeap"), "Displays info about the garbage-collected heap and collection statistics about objects.");
+    interpreter.AddCommand("dumpil", new sosCommand("DumpIL"), "Displays the Microsoft intermediate language (MSIL) that is associated with a managed method.");
     interpreter.AddCommand("dumplog", new sosCommand("DumpLog"), "Writes the contents of an in-memory stress log to the specified file.");
     interpreter.AddCommand("dumpmd", new sosCommand("DumpMD"), "Displays information about a MethodDesc structure at the specified address.");
+    interpreter.AddCommand("dumpmodule", new sosCommand("DumpModule"), "Displays information about a EE module structure at the specified address.");
     interpreter.AddCommand("dumpmt", new sosCommand("DumpMT"), "Displays information about a method table at the specified address.");
     interpreter.AddCommand("dumpobj", new sosCommand("DumpObj"), "Displays info about an object at the specified address.");
+    interpreter.AddCommand("dumpstack", new sosCommand("DumpStack"), "Displays a native and managed stack trace.");
     interpreter.AddCommand("dso", new sosCommand("DumpStackObjects"), "Displays all managed objects found within the bounds of the current stack.");
     interpreter.AddCommand("eeheap", new sosCommand("EEHeap"), "Displays info about process memory consumed by internal runtime data structures.");
+    interpreter.AddCommand("eestack", new sosCommand("EEStack"), "Runs dumpstack on all threads in the process.");
     interpreter.AddCommand("gcroot", new sosCommand("GCRoot"), "Displays info about references (or roots) to an object at the specified address.");
     interpreter.AddCommand("ip2md", new sosCommand("IP2MD"), "Displays the MethodDesc structure at the specified address in code that has been JIT-compiled.");
     interpreter.AddCommand("name2ee", new sosCommand("Name2EE"), "Displays the MethodTable structure and EEClass structure for the specified type or method in the specified module.");

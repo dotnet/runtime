@@ -2,6 +2,8 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+add_definitions(-DPAL_STDCPP_COMPAT -DBIT64)
+
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-D_TARGET_AMD64_=1)
     add_definitions(-DDBG_TARGET_64BIT=1)
@@ -71,11 +73,16 @@ set(SOURCES
     soscommand.cpp
     setclrpathcommand.cpp
     setsostidcommand.cpp
-    coreruncommand.cpp
-    debugclient.cpp
-    ${CLR_DIR}/src/coreclr/hosts/unixcorerun/corerun.cpp
-    ${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon/coreruncommon.cpp
+    services.cpp
 )
+
+if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    list(APPEND SOURCES
+        coreruncommand.cpp
+        ${CLR_DIR}/src/coreclr/hosts/unixcorerun/corerun.cpp
+        ${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon/coreruncommon.cpp
+    )
+endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
 
 add_library(sosplugin SHARED ${SOURCES})
 add_dependencies(sosplugin sos)
