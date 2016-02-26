@@ -7692,13 +7692,18 @@ property_info_get_default_value (MonoReflectionProperty *property)
 ICALL_EXPORT MonoBoolean
 custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 {
+	MonoError error;
 	MonoClass *attr_class = mono_class_from_mono_type (attr_type->type);
 	MonoCustomAttrInfo *cinfo;
 	gboolean found;
 
 	mono_class_init_or_throw (attr_class);
 
-	cinfo = mono_reflection_get_custom_attrs_info (obj);
+	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return FALSE;
+	}
 	if (!cinfo)
 		return FALSE;
 	found = mono_custom_attrs_has_attr (cinfo, attr_class);
