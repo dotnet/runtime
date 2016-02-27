@@ -446,7 +446,8 @@ struct PtrKeyFuncs: public KeyFuncsDefEquals<const T*>
 public:
     static unsigned GetHashCode(const T* ptr)
     {
-        return (unsigned)ptr;  // Hmm.  Maybe (unsigned) ought to be "ssize_t" -- or this ought to be ifdef'd by size.
+        // Hmm.  Maybe (unsigned) ought to be "ssize_t" -- or this ought to be ifdef'd by size.
+        return static_cast<unsigned>(reinterpret_cast<uintptr_t>(ptr));
     }
 };
 
