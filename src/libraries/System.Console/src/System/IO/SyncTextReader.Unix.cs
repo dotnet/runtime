@@ -21,11 +21,11 @@ namespace System.IO
             }
         }
 
-        public ConsoleKeyInfo ReadKey()
+        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
         {
             lock (this)
             {
-                return Inner.ReadKey();
+                return Inner.ReadKey(out previouslyProcessed);
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.IO
                 lock (this)
                 {
                     StdInStreamReader r = Inner;
-                    return !r.IsExtraBufferEmpty() || r.StdinReady;
+                    return !r.IsUnprocessedBufferEmpty() || r.StdinReady;
                 }
             }
         }
