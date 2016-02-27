@@ -20,6 +20,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)libsos.so"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)libsosplugin.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)System.Globalization.Native.so" />
 
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
