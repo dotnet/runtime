@@ -2,64 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    // Calculates the maximum number of characters produced by decoding the specified number of bytes.  
-    // ASCIIEncoding.GetMaxCharCount(int)
     public class ASCIIEncodingGetMaxCharCount
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: The specified number of bytes is zero.
+        public static IEnumerable<object[]> GetMaxCharCount_TestData()
+        {
+            int randomByteCount = s_randomDataGenerator.GetInt32(-55);
+            yield return new object[] { 0, 0 };
+            yield return new object[] { randomByteCount, randomByteCount };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetMaxCharCount_TestData))]
+        public void GetMaxCharCount(int byteCount, int expected)
+        {
+            Assert.Equal(expected, new ASCIIEncoding().GetMaxCharCount(byteCount));
+        }
+
         [Fact]
-        public void PosTest1()
+        public void GetMaxCharCount_Invalid()
         {
-            DoPosTest(new ASCIIEncoding(), 0, 0);
-        }
-
-        // PosTest2: The specified number of bytes is a random non-negative Int32 value.
-        [Fact]
-        public void PosTest2()
-        {
-            ASCIIEncoding ascii;
-            int byteCount;
-            int expectedValue;
-
-            ascii = new ASCIIEncoding();
-            byteCount = _generator.GetInt32(-55);
-            expectedValue = byteCount;
-            DoPosTest(ascii, byteCount, expectedValue);
-        }
-
-        private void DoPosTest(ASCIIEncoding ascii, int byteCount, int expectedValue)
-        {
-            int actualValue;
-            ascii = new ASCIIEncoding();
-            actualValue = ascii.GetMaxCharCount(byteCount);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // NegTest1: count of characters is less than zero.
-        [Fact]
-        public void NegTest1()
-        {
-            ASCIIEncoding ascii;
-            int byteCount;
-
-            ascii = new ASCIIEncoding();
-            byteCount = -1 * _generator.GetInt32(-55) - 1;
-
-            DoNegAOORTest(ascii, byteCount);
-        }
-
-        private void DoNegAOORTest(ASCIIEncoding ascii, int byteCount)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                ascii.GetMaxCharCount(byteCount);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetMaxCharCount(-1));
         }
     }
 }

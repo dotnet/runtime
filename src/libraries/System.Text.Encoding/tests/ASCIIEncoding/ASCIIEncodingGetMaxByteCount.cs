@@ -2,81 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    // Calculates the maximum number of bytes produced by encoding the specified number of characters.  
-    // ASCIIEncoding.GetMaxByteCount(int)
     public class ASCIIEncodingGetMaxByteCount
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: The specified number of characters is zero.
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMaxByteCount_TestData()
         {
-            DoPosTest(new ASCIIEncoding(), 0, 1);
+            int randomCharCount = s_randomDataGenerator.GetInt32(-55);
+            yield return new object[] { 0, 1 };
+            yield return new object[] { randomCharCount, randomCharCount + 1 };
         }
 
-        // PosTest2: The specified number of characters is a random non-negative Int32 value.
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMaxByteCount_TestData))]
+        public void GetMaxByteCount(int charCount, int expected)
         {
-            ASCIIEncoding ascii;
-            int charCount;
-            int expectedValue;
-
-            ascii = new ASCIIEncoding();
-            int replacementLength = 1;
-            charCount = (replacementLength > 1) ?
-                _generator.GetInt32(-55) % (int.MaxValue / replacementLength) :
-                _generator.GetInt32(-55);
-            expectedValue = replacementLength * charCount + 1;
-            DoPosTest(ascii, charCount, expectedValue);
+            Assert.Equal(expected, new ASCIIEncoding().GetMaxByteCount(charCount));
         }
 
-        private void DoPosTest(ASCIIEncoding ascii, int charCount, int expectedValue)
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        public void GetMaxByteCount_Invalid(int charCount)
         {
-            int actualValue;
-
-            ascii = new ASCIIEncoding();
-            actualValue = ascii.GetMaxByteCount(charCount);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // NegTest1: count of characters is less than zero.
-        [Fact]
-        public void NegTest1()
-        {
-            ASCIIEncoding ascii;
-            int charCount;
-
-            ascii = new ASCIIEncoding();
-            charCount = -1 * _generator.GetInt32(-55) - 1;
-
-            DoNegAOORTest(ascii, charCount);
-        }
-
-        // NegTest2: The resulting number of bytes is greater than the maximum number that can be returned as an int.
-        [Fact]
-        public void NegTest2()
-        {
-            ASCIIEncoding ascii;
-            int charCount;
-
-            ascii = new ASCIIEncoding();
-            charCount = int.MaxValue;
-
-            DoNegAOORTest(ascii, charCount);
-        }
-
-        private void DoNegAOORTest(ASCIIEncoding ascii, int charCount)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                ascii.GetMaxByteCount(charCount);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetMaxByteCount(charCount));
         }
     }
 }
