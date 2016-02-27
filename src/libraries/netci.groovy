@@ -128,6 +128,8 @@ branchList.each { branchName ->
             Utilities.setMachineAffinity(newBuildJob, 'Windows_NT', 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
+            // Archive the results
+            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
             
             def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
             def newTestJobName =  "${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
