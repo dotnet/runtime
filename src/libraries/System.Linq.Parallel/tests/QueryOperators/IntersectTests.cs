@@ -35,7 +35,7 @@ namespace System.Linq.Parallel.Tests
             foreach (int leftCount in counts.Cast<int>())
             {
                 ParallelQuery<int> left = Enumerable.Range(0, leftCount * DuplicateFactor).Select(x => x % leftCount).ToArray().AsParallel().AsOrdered();
-                foreach (int rightCount in new int[] { 0, 1, Math.Max(DuplicateFactor * 2, leftCount), 2 * Math.Max(DuplicateFactor, leftCount * 2) })
+                foreach (int rightCount in new[] { 0, 1, Math.Max(DuplicateFactor * 2, leftCount), 2 * Math.Max(DuplicateFactor, leftCount * 2) })
                 {
                     int rightStart = 0 - rightCount / 2;
                     yield return new object[] { left, leftCount,
@@ -48,7 +48,7 @@ namespace System.Linq.Parallel.Tests
         // Intersect
         //
         [Theory]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Unordered(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -85,14 +85,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -104,14 +104,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Unordered_NotPipelined(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -123,14 +123,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_NotPipelined(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Unordered_Distinct(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -147,14 +147,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Unordered_Distinct_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Unordered_Distinct(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Distinct(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -171,14 +171,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Distinct_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Distinct(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Unordered_Distinct_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -192,14 +192,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectUnorderedData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectUnorderedData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Unordered_Distinct_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Unordered_Distinct_NotPipelined(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 8 })]
+        [MemberData(nameof(IntersectData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 8 })]
         public static void Intersect_Distinct_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -213,14 +213,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectData), new int[] { 512, 1024 * 16 }, new int[] { 0, 1, 512, 1024 * 32 })]
+        [MemberData(nameof(IntersectData), new[] { 512, 1024 * 16 }, new[] { 0, 1, 512, 1024 * 32 })]
         public static void Intersect_Distinct_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount, int count)
         {
             Intersect_Distinct_NotPipelined(left, leftCount, right, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(IntersectSourceMultipleData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_Unordered_SourceMultiple(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
             // The difference between this test and the previous, is that it's not possible to
@@ -234,14 +234,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectSourceMultipleData), (object)(new int[] { 512, 1024 * 16 }))]
+        [MemberData(nameof(IntersectSourceMultipleData), new[] { 512, 1024 * 16 })]
         public static void Intersect_Unordered_SourceMultiple_Longrunning(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
             Intersect_Unordered_SourceMultiple(leftQuery, leftCount, rightQuery, rightCount, count);
         }
 
         [Theory]
-        [MemberData(nameof(IntersectSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(IntersectSourceMultipleData), new[] { 0, 1, 2, 16 })]
         public static void Intersect_SourceMultiple(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
             int seen = 0;
@@ -251,7 +251,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(IntersectSourceMultipleData), (object)(new int[] { 512, 1024 * 16 }))]
+        [MemberData(nameof(IntersectSourceMultipleData), new[] { 512, 1024 * 16 })]
         public static void Intersect_SourceMultiple_Longrunning(ParallelQuery<int> leftQuery, int leftCount, ParallelQuery<int> rightQuery, int rightCount, int count)
         {
             Intersect_SourceMultiple(leftQuery, leftCount, rightQuery, rightCount, count);

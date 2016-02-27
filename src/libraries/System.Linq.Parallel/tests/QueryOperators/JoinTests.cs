@@ -24,7 +24,7 @@ namespace System.Linq.Parallel.Tests
         // Join
         //
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -40,14 +40,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Unordered(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void Join(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -63,14 +63,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 })]
+        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
         public static void Join_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -83,14 +83,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Unordered_NotPipelined(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void Join_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -103,14 +103,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 })]
+        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
         public static void Join_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_NotPipelined(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -130,14 +130,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Unordered_Multiple(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         // Join doesn't always return items from the right ordered.  See Issue #1155
         public static void Join_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
@@ -165,14 +165,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 })]
+        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
         public static void Join_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Multiple(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -202,14 +202,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 512, 1024 }, new int[] { 0, 1, 1024 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 512, 1024 }, new[] { 0, 1, 1024 }, MemberType = typeof(UnorderedSources))]
         public static void Join_Unordered_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Unordered_CustomComparator(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void Join_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -239,14 +239,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new int[] { 512, 1024 }, new int[] { 0, 1, 1024 })]
+        [MemberData(nameof(JoinData), new[] { 512, 1024 }, new[] { 0, 1, 1024 })]
         public static void Join_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_CustomComparator(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(JoinData), new int[] { 0, 1, 2, 16 }, new int[] { 0, 1, 16 })]
+        [MemberData(nameof(JoinData), new[] { 0, 1, 2, 16 }, new[] { 0, 1, 16 })]
         public static void Join_InnerJoin_Ordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -268,7 +268,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(JoinData), new int[] { 1024 * 4, 1024 * 8 }, new int[] { 0, 1, 1024 * 8, 1024 * 16 })]
+        [MemberData(nameof(JoinData), new[] { 1024 * 4, 1024 * 8 }, new[] { 0, 1, 1024 * 8, 1024 * 16 })]
         public static void Join_InnerJoin_Ordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_InnerJoin_Ordered(left, leftCount, right, rightCount);
