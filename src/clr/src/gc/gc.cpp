@@ -8193,7 +8193,7 @@ int index_of_set_bit (size_t power2)
     while (low <= high)
     {
         mid = ((low + high)/2);
-        size_t temp = 1 << mid;
+        size_t temp = (size_t)1 << mid;
         if (power2 & temp)
         {
             return mid;
