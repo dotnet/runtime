@@ -1760,7 +1760,7 @@ AGAIN:
                 hash ^= tree->gtCast.gtCastType;
                 break;
             case GT_LDOBJ:
-                hash ^= reinterpret_cast<unsigned>(tree->gtLdObj.gtClass);
+                hash ^= static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtLdObj.gtClass));
                 break;
             case GT_INDEX:
                 hash += tree->gtIndex.gtIndElemSize;

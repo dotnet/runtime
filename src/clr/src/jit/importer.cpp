@@ -14723,7 +14723,7 @@ void                Compiler::impImportBlockPending(BasicBlock * block)
     {
         verInitBBEntryState(block, &verCurrentState);
         assert(block->bbStkDepth == 0);
-        block->bbStkDepth = verCurrentState.esStackDepth;
+        block->bbStkDepth = static_cast<unsigned short>(verCurrentState.esStackDepth);
         assert(addToPending);
         assert(impGetPendingBlockMember(block) == 0);
     }
