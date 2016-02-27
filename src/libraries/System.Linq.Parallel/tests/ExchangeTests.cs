@@ -89,7 +89,7 @@ namespace System.Linq.Parallel.Tests
         // or WithMergeOptions
 
         [Theory]
-        [MemberData(nameof(PartitioningData), (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             int seen = 0;
@@ -101,14 +101,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(PartitioningData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(PartitioningData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void Partitioning_Default_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             Partitioning_Default(labeled, count, partitions);
         }
 
         [Theory]
-        [MemberData(nameof(PartitioningData), (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             int seen = 0;
@@ -120,14 +120,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(PartitioningData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(PartitioningData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void Partitioning_Striped_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
             Partitioning_Striped(labeled, count, partitions);
         }
 
         [Theory]
-        [MemberData(nameof(MergeData), (object)(new int[] { 0, 1, 2, 16, 1024 }))]
+        [MemberData(nameof(MergeData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Merge_Ordered(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
         {
             int seen = 0;
@@ -139,14 +139,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MergeData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(MergeData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void Merge_Ordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
         {
             Merge_Ordered(labeled, count, options);
         }
 
         [Theory]
-        [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), (object)(new int[] { 4, 8 }))]
+        [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), new[] { 4, 8 })]
         // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
@@ -155,7 +155,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MergeData), (object)(new int[] { 4, 8 }))]
+        [MemberData(nameof(MergeData), new[] { 4, 8 })]
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining_Select(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)
         {
@@ -169,7 +169,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void Merge_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -195,7 +195,7 @@ namespace System.Linq.Parallel.Tests
         // the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 16 }, new int[] { 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void PlinqChunkPartitioner_DontEnumerateAfterException(Labeled<ParallelQuery<int>> left, int leftCount,
             Labeled<ParallelQuery<int>> right, int rightCount)
         {
@@ -215,7 +215,7 @@ namespace System.Linq.Parallel.Tests
         // enumerator disposes the source enumerator... but then other worker threads may generate ODEs.
         // This test verifies any such ODEs are not reflected in the output exception.
         [Theory]
-        [MemberData(nameof(UnorderedSources.BinaryRanges), new int[] { 16 }, new int[] { 16 }, MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.BinaryRanges), new[] { 16 }, new[] { 16 }, MemberType = typeof(UnorderedSources))]
         public static void ManualChunkPartitioner_DontEnumerateAfterException(
             Labeled<ParallelQuery<int>> left, int leftCount,
             Labeled<ParallelQuery<int>> right, int rightCount)

@@ -39,7 +39,7 @@ namespace System.Linq.Parallel.Tests
         // Distinct
         //
         [Theory]
-        [MemberData(nameof(DistinctUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Distinct_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -53,14 +53,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctUnorderedData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Distinct_Unordered(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(DistinctData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctData), new[] { 0, 1, 2, 16 })]
         public static void Distinct(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -74,14 +74,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Distinct(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(DistinctUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Distinct_Unordered_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -92,14 +92,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctUnorderedData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Distinct_Unordered_NotPipelined(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(DistinctData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctData), new[] { 0, 1, 2, 16 })]
         public static void Distinct_NotPipelined(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -110,14 +110,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_NotPiplined_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Distinct_NotPipelined(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(DistinctSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctSourceMultipleData), new[] { 0, 1, 2, 16 })]
         public static void Distinct_Unordered_SourceMultiple(ParallelQuery<int> query, int count)
         {
             // The difference between this test and the previous, is that it's not possible to
@@ -131,14 +131,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctSourceMultipleData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctSourceMultipleData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_Unordered_SourceMultiple_Longrunning(ParallelQuery<int> query, int count)
         {
             Distinct_Unordered_SourceMultiple(query, count);
         }
 
         [Theory]
-        [MemberData(nameof(DistinctSourceMultipleData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(DistinctSourceMultipleData), new[] { 0, 1, 2, 16 })]
         public static void Distinct_SourceMultiple(ParallelQuery<int> query, int count)
         {
             int seen = 0;
@@ -148,7 +148,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(DistinctSourceMultipleData), (object)(new int[] { 1024 * 4, 1024 * 128 }))]
+        [MemberData(nameof(DistinctSourceMultipleData), new[] { 1024 * 4, 1024 * 128 })]
         public static void Distinct_SourceMultiple_Longrunning(ParallelQuery<int> query, int count)
         {
             Distinct_SourceMultiple(query, count);
