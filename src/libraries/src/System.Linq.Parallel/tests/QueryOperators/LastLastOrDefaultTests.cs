@@ -26,8 +26,8 @@ namespace System.Linq.Parallel.Tests
         // Last and LastOrDefault
         //
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1, 2, 16 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1, 2, 16 })]
+        [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void Last(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
@@ -39,16 +39,16 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(LastData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void Last_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             Last(labeled, count, position);
         }
 
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1, 2, 16 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1, 2, 16 })]
+        [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void LastOrDefault(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             // For unordered collections, which element is chosen isn't actually guaranteed, but an effect of the implementation.
@@ -60,16 +60,16 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(LastData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void LastOrDefault_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             LastOrDefault(labeled, count, position);
         }
 
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 0 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 0 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 0 })]
+        [MemberData(nameof(LastData), new[] { 0 })]
         public static void Last_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -77,8 +77,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 0 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 0 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 0 })]
+        [MemberData(nameof(LastData), new[] { 0 })]
         public static void LastOrDefault_Empty(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -86,8 +86,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1, 2, 16 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1, 2, 16 })]
+        [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void Last_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -98,16 +98,16 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(LastData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void Last_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             Last_NoMatch(labeled, count, position);
         }
 
         [Theory]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1, 2, 16 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1, 2, 16 })]
+        [MemberData(nameof(LastData), new[] { 1, 2, 16 })]
         public static void LastOrDefault_NoMatch(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -118,15 +118,15 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(LastUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
-        [MemberData(nameof(LastData), (object)(new int[] { 1024 * 4, 1024 * 1024 }))]
+        [MemberData(nameof(LastUnorderedData), new[] { 1024 * 4, 1024 * 1024 })]
+        [MemberData(nameof(LastData), new[] { 1024 * 4, 1024 * 1024 })]
         public static void LastOrDefault_NoMatch_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int position)
         {
             LastOrDefault_NoMatch(labeled, count, position);
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Last_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -140,7 +140,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Last_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Last(x => { throw new DeliberateTestException(); }));
