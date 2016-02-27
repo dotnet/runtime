@@ -434,24 +434,24 @@ void ArenaAllocator::startup()
 //    Performs any necessary teardown for the arena allocator subsystem.
 //
 // Notes:
-//    We chose not to call s_pooledAllocator->nraFree() and let the memory leak.
+//    We chose not to call s_pooledAllocator->destroy() and let the memory leak.
 //    Below is the reason (VSW 600919).
 //    
 //    The following race-condition exists during ExitProcess.
 //    Thread A calls ExitProcess, which causes thread B to terminate.
 //    Thread B terminated in the middle of reset() 
-//    (through the call-chain of nraFreeTheAllocator()  ==> reset())
-//    And then thread A comes along to call s_pooledAllocator->nraFree() which will cause the double-free 
+//    (through the call-chain of returnPooledAllocator()  ==> reset())
+//    And then thread A comes along to call s_pooledAllocator->destroy() which will cause the double-free 
 //    of page specified by "temp".
 //    
 //    These are possible fixes:
 //    1. Thread A tries to get hold on s_isPooledAllocatorInUse lock before
-//       calling s_theAllocator.nraFree(). However, this could cause the deadlock because thread B
+//       calling s_theAllocator.destroy(). However, this could cause the deadlock because thread B
 //       has already gone and therefore it can't release s_isPooledAllocatorInUse.
-//    2. Fix the logic in reset() and nraFree() to update m_firstPage and m_lastPage in a thread safe way.
+//    2. Fix the logic in reset() and destroy() to update m_firstPage and m_lastPage in a thread safe way.
 //       But it needs careful work to make it high performant (e.g. not holding a lock?)
 //    3. The scenario of dynamically unloading clrjit.dll cleanly is unimportant at this time.
-//       We will leak the memory associated with other instances of morls_allocator anyway.
+//       We will leak the memory associated with other instances of ArenaAllocator anyway.
 //    
 //    Therefore we decided not to call the cleanup code when unloading the jit. 
 void ArenaAllocator::shutdown()
