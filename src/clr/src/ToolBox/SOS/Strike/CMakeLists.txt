@@ -32,6 +32,7 @@ include_directories(${CLR_DIR}/src/gcdump)
 include_directories(${CLR_DIR}/src/debug/shim)
 
 if(WIN32)
+  include_directories(inc)
   include_directories("$ENV{VSInstallDir}/DIA SDK/include")
 
   add_definitions(-DUSE_STL)
@@ -88,7 +89,7 @@ else(WIN32)
   add_compile_options(-Wno-null-arithmetic)
   add_compile_options(-Wno-format)
 
-  include_directories(BEFORE inc)
+  include_directories(BEFORE xplat)
   include_directories(BEFORE ../lldbplugin/inc)
 
   add_compile_options(-fPIC)
