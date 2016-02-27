@@ -2420,23 +2420,26 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // Floating point divide never raises an exception
             genCodeForBinary(treeNode);     
         }
-        else  // integer divide operation
+        else  // an integer divide operation
         {
             GenTreePtr divisorOp = treeNode->gtGetOp2();
+            emitAttr   size      = EA_ATTR(genTypeSize(genActualType(treeNode->TypeGet())));
 
             // TODO-ARM64-CQ: Optimize a divide by power of 2 as we do for AMD64
             
             if (divisorOp->IsZero())
             {
-                emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
-                genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
-                // We don't need to generate the sdiv/udiv instruction
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(treeNode);
             }
-            else
+            else  // the divisor is not the constant zero
             {
-                emitAttr   cmpSize    = EA_ATTR(genTypeSize(genActualType(treeNode->TypeGet())));
                 regNumber  divisorReg = divisorOp->gtRegNum;
 
+                // Generate the require runtime checks for GT_DIV or GT_UDIV
                 if (treeNode->gtOper == GT_DIV)
                 {
                     BasicBlock* sdivLabel   = genCreateTempLabel();
@@ -2446,46 +2449,49 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     //     (MinInt / -1) => ArithmeticException
                     //
                     bool checkDividend = true;
-                    // Do we have a contained immediate for the 'divisorOp'?
-                    if (divisorOp->isContainedIntOrIImmed())
+
+                    // Do we have an immediate for the 'divisorOp'?
+                    // 
+                    if (divisorOp->IsCnsIntOrI())
                     {
-                        GenTreeIntConCommon* intConst = divisorOp->AsIntConCommon();
-                        assert(intConst->IconValue() != 0);      // already checked above by IsZero()
-                        if (intConst->IconValue() != -1)
+                        GenTreeIntConCommon* intConstTree = divisorOp->AsIntConCommon();
+                        ssize_t intConstValue = intConstTree->IconValue();
+                        assert(intConstValue != 0);      // already checked above by IsZero()
+                        if (intConstValue != -1)
                         {                            
                             checkDividend = false;    // We statically know that the dividend is not -1
                         }
                     }
-                    else
+                    else  // insert check for divison by zero 
                     {   
                         // Check if the divisor is zero throw a DivideByZeroException
-                        emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, 0);
+                        emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
                         emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
                         genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
-
-                        // Check if the divisor is not -1 branch to 'sdivLabel'
-                        emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, -1);
-
-                        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
-                        inst_JMP(jmpNotEqual, sdivLabel);
-                        // If control flow continues past here the 'divisorReg' is known to be -1
                     }
                     
                     if (checkDividend)
                     {
+                        // Check if the divisor is not -1 branch to 'sdivLabel'
+                        emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+
+                        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+                        inst_JMP(jmpNotEqual, sdivLabel);
+                        // If control flow continues past here the 'divisorReg' is known to be -1
+
                         regNumber   dividendReg = treeNode->gtGetOp1()->gtRegNum;
                         // At this point the divisor is known to be -1
                         //
-                        // Issue 'adds  zr, dividendReg, dividendReg' instruction
-                        // this will set the Z and V flags only when dividendReg is MinInt
+                        // Issue the 'adds  zr, dividendReg, dividendReg' instruction
+                        // this will set both the Z and V flags only when dividendReg is MinInt
                         //
-                        emit->emitIns_R_R_R(INS_adds, cmpSize, REG_ZR, dividendReg, dividendReg);
-                        emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
+                        emit->emitIns_R_R_R(INS_adds, size, REG_ZR, dividendReg, dividendReg);
+                        
                         inst_JMP(jmpNotEqual, sdivLabel);                  // goto sdiv if the Z flag is clear
-                        genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN);   // if the V flags is set throw ArithmeticException
-                    }
+                        genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN);      // if the V flags is set throw ArithmeticException
 
-                    genDefineTempLabel(sdivLabel);
+                        genDefineTempLabel(sdivLabel);
+                    }
                     genCodeForBinary(treeNode);         // Generate the sdiv instruction
                 }
                 else // (treeNode->gtOper == GT_UDIV)
@@ -2495,14 +2501,15 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     //
                     // Note that division by the constant 0 was already checked for above by the op2->IsZero() check
                     //
-                    if (!divisorOp->isContainedIntOrIImmed())
-                    {                        
-                        emit->emitIns_R_I(INS_cmp, cmpSize, divisorReg, 0);
+                    if (!divisorOp->IsCnsIntOrI())
+                    {
+                        // divisorOp is not a constant, so it could be zero
+                        //
+                        emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
                         emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
                         genJumpToThrowHlpBlk(jmpEqual, SCK_DIV_BY_ZERO);
                     }
-
-                    genCodeForBinary(treeNode);         // Generate the udiv instruction
+                    genCodeForBinary(treeNode); 
                 }
             }
         }
@@ -3716,11 +3723,13 @@ CodeGen::genLclHeap(GenTreePtr tree)
         }
         else if (!compiler->info.compInitMem && (amount < CORINFO_PAGE_SIZE))  // must be < not <=
         {               
-            // Since the size is a page or less, simply adjust ESP                     
-            // ESP might already be in the guard page, must touch it BEFORE
+            // Since the size is a page or less, simply adjust the SP value              
+            // The SP might already be in the guard page, must touch it BEFORE
             // the alloc, not after.
-            getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
-            inst_RV_IV(INS_sub, REG_SPBASE, amount, EA_PTRSIZE);
+            // ldr wz, [SP, #0]
+            getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SP, 0);
+
+            inst_RV_IV(INS_sub, REG_SP, amount, EA_PTRSIZE);
 
             goto ALLOC_DONE;
         }
@@ -4744,8 +4753,16 @@ void CodeGen::genUnspillRegIfNeeded(GenTree *tree)
             GenTreeLclVarCommon* lcl = unspillTree->AsLclVarCommon();
             LclVarDsc* varDsc = &compiler->lvaTable[lcl->gtLclNum];
 
+            var_types   targetType = unspillTree->gtType;
+            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
+            emitAttr    attr       = emitTypeSize(targetType);
+            emitter *   emit       = getEmitter();
+
+            // Fixes Issue #3326
+            attr = emit->emitInsAdjustLoadStoreAttr(ins, attr);
+
             // Load local variable from its home location.
-            inst_RV_TT(ins_Load(unspillTree->gtType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum)), dstReg, unspillTree);
+            inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
 
             unspillTree->SetInReg();
 
@@ -6070,7 +6087,6 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 movSize = emitTypeSize(extendType);
                 movRequired = true;
             }
-
             else
             {
                 if (genTypeSize(srcType) < genTypeSize(dstType))
@@ -6100,6 +6116,9 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             ins = ins_Move_Extend(extendType, castOp->InReg());
         }
     }
+
+    // We should never be generating a load from memory instruction here!
+    assert(!emit->emitInsIsLoad(ins));
 
     if ((ins != INS_mov) || movRequired || (targetReg != sourceReg))
     {            
