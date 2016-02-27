@@ -6,19 +6,13 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    // ASCIIEncoding.GetEncoder() 
     public class ASCIIEncodingGetEncoder
     {
-        // PosTest1: reference of ASCIIEncoding class is created via default constructor.
         [Fact]
-        public void PosTest1()
+        public void GetEncoder()
         {
-            ASCIIEncoding ascii;
-            Encoder actualEncoder;
-
-            ascii = new ASCIIEncoding();
-            actualEncoder = ascii.GetEncoder();
-            Assert.NotNull(actualEncoder);
+            Encoder decoder = new ASCIIEncoding().GetEncoder();
+            Assert.NotNull(decoder);
         }
     }
 }
