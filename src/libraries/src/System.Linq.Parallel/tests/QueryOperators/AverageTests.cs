@@ -22,7 +22,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Int(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -34,14 +34,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(AverageData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
         public static void Average_Int_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             Average_Int(labeled, count, average);
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Int_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -50,7 +50,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Int_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -59,7 +59,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Long(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -71,14 +71,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(AverageData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
         public static void Average_Long_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             Average_Long(labeled, count, average);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void Average_Long_Overflow(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<OverflowException>(() => labeled.Item.Select(x => x == 0 ? 1 : long.MaxValue).Average());
@@ -88,7 +88,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Long_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -97,7 +97,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Long_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -106,7 +106,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Float(Labeled<ParallelQuery<int>> labeled, int count, float average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -118,14 +118,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(AverageData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
         public static void Average_Float_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, float average)
         {
             Average_Float(labeled, count, average);
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Float_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, float average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -134,7 +134,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -143,7 +143,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Double(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -155,14 +155,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(AverageData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
         public static void Average_Double_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             Average_Double(labeled, count, average);
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Double_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -171,7 +171,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Double_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -180,7 +180,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Decimal(Labeled<ParallelQuery<int>> labeled, int count, decimal average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -192,14 +192,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }))]
+        [MemberData(nameof(AverageData), new[] { 1024 * 1024, 1024 * 1024 * 4 })]
         public static void Average_Decimal_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, decimal average)
         {
             Average_Decimal(labeled, count, average);
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Decimal_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, decimal average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -208,7 +208,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AverageData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(AverageData), new[] { 1, 2, 16 })]
         public static void Average_Decimal_AllNull(Labeled<ParallelQuery<int>> labeled, int count, decimal average)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -243,7 +243,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Average_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -266,7 +266,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Average_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Average((Func<int, int>)(x => { throw new DeliberateTestException(); })));

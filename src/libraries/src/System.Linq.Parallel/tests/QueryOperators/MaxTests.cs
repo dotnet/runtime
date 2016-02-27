@@ -25,7 +25,7 @@ namespace System.Linq.Parallel.Tests
         //
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Int(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -37,14 +37,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Int_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             Max_Int(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Int_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -53,7 +53,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Int_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -62,7 +62,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Long(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -74,14 +74,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Long_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
             Max_Long(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Long_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -90,7 +90,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Long_AllNull(Labeled<ParallelQuery<int>> labeled, int count, long max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -99,7 +99,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Float(Labeled<ParallelQuery<int>> labeled, int count, float max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -113,14 +113,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Float_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, float max)
         {
             Max_Float(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Float_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, float max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -129,7 +129,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Float_AllNull(Labeled<ParallelQuery<int>> labeled, int count, float max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -138,7 +138,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Double(Labeled<ParallelQuery<int>> labeled, int count, double max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -152,14 +152,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Double_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, double max)
         {
             Max_Double(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Double_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, double max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -168,7 +168,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Double_AllNull(Labeled<ParallelQuery<int>> labeled, int count, double max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -177,7 +177,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Decimal(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -189,14 +189,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Decimal_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
             Max_Decimal(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Decimal_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -205,7 +205,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Decimal_AllNull(Labeled<ParallelQuery<int>> labeled, int count, decimal max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -214,7 +214,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Other(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -224,14 +224,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1024 * 32, 1024 * 1024 }))]
+        [MemberData(nameof(MaxData), new[] { 1024 * 32, 1024 * 1024 })]
         public static void Max_Other_Longrunning(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             Max_Other(labeled, count, max);
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, }))]
+        [MemberData(nameof(MaxData), new[] { 1 })]
         public static void Max_NotComparable(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             NotComparable a = new NotComparable(0);
@@ -239,7 +239,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Other_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -248,7 +248,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxData), (object)(new int[] { 1, 2, 16 }))]
+        [MemberData(nameof(MaxData), new[] { 1, 2, 16 })]
         public static void Max_Other_AllNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -257,7 +257,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0 }, MemberType = typeof(UnorderedSources))]
         public static void Max_EmptyNullable(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Assert.Null(labeled.Item.Max(x => (int?)x));
@@ -269,7 +269,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0 }, MemberType = typeof(UnorderedSources))]
         public static void Max_InvalidOperationException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max());
@@ -281,7 +281,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Max_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
@@ -306,7 +306,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
         public static void Max_AggregateException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, int>)(x => { throw new DeliberateTestException(); })));
@@ -328,7 +328,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
         public static void Max_AggregateException_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
         {
             Functions.AssertThrowsWrapped<ArgumentException>(() => labeled.Item.Max(x => new NotComparable(x)));

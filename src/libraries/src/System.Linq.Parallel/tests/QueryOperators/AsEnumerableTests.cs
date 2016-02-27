@@ -10,7 +10,7 @@ namespace System.Linq.Parallel.Tests
     public class AsEnumerableTests
     {
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
         public static void AsEnumerable_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             IntegerRangeSet seen = new IntegerRangeSet(0, count);
@@ -21,14 +21,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 1024, 1024 * 1024 * 4 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 1024, 1024 * 1024 * 4 }, MemberType = typeof(UnorderedSources))]
         public static void AsEnumerable_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsEnumerable_Unordered(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void AsEnumerable(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int seen = 0;
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 128 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 4, 1024 * 128 }, MemberType = typeof(Sources))]
         public static void AsEnumerable_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             AsEnumerable(labeled, count);
@@ -47,7 +47,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [ActiveIssue("AsEnumerable.Cast<T>() retains origin type")]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 0, 16 }, MemberType = typeof(Sources))]
         public static void AsEnumerable_LinqBinding(Labeled<ParallelQuery<int>> labeled, int count)
         {
             IEnumerable<int> enumerable = labeled.Item.AsEnumerable();

@@ -48,7 +48,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ZipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ZipUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Zip_Unordered(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -66,14 +66,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ZipUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 64 }))]
+        [MemberData(nameof(ZipUnorderedData), new[] { 1024 * 4, 1024 * 64 })]
         public static void Zip_Unordered_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Zip_Unordered(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(ZipData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ZipData), new[] { 0, 1, 2, 16 })]
         public static void Zip(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -89,14 +89,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ZipData), (object)(new int[] { 1024 * 4, 1024 * 64 }))]
+        [MemberData(nameof(ZipData), new[] { 1024 * 4, 1024 * 64 })]
         public static void Zip_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Zip(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(ZipUnorderedData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ZipUnorderedData), new[] { 0, 1, 2, 16 })]
         public static void Zip_Unordered_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -115,14 +115,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ZipUnorderedData), (object)(new int[] { 1024 * 4, 1024 * 64 }))]
+        [MemberData(nameof(ZipUnorderedData), new[] { 1024 * 4, 1024 * 64 })]
         public static void Zip_Unordered_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Zip_Unordered_NotPipelined(left, leftCount, right, rightCount);
         }
 
         [Theory]
-        [MemberData(nameof(ZipData), (object)(new int[] { 0, 1, 2, 16 }))]
+        [MemberData(nameof(ZipData), new[] { 0, 1, 2, 16 })]
         public static void Zip_NotPipelined(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -139,7 +139,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(ZipData), (object)(new int[] { 1024 * 4, 1024 * 64 }))]
+        [MemberData(nameof(ZipData), new[] { 1024 * 4, 1024 * 64 })]
         public static void Zip_NotPipelined_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Zip_NotPipelined(left, leftCount, right, rightCount);

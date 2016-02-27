@@ -10,7 +10,7 @@ namespace System.Linq.Parallel.Tests
     public class ToListTests
     {
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
         public static void ToList_Unordered(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -21,14 +21,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(UnorderedSources))]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1024 * 4, 1024 * 1024 }, MemberType = typeof(UnorderedSources))]
         public static void ToList_Unordered_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToList_Unordered(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 0, 1, 2, 16 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         public static void ToList(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
@@ -39,14 +39,14 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [OuterLoop]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1024 * 4, 1024 * 1024 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 1024 * 4, 1024 * 1024 }, MemberType = typeof(Sources))]
         public static void ToList_Longrunning(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ToList(labeled, count);
         }
 
         [Theory]
-        [MemberData(nameof(Sources.Ranges), (object)(new int[] { 1 }), MemberType = typeof(Sources))]
+        [MemberData(nameof(Sources.Ranges), new[] { 1 }, MemberType = typeof(Sources))]
         public static void ToList_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
         {
             CancellationTokenSource cs = new CancellationTokenSource();
