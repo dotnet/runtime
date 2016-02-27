@@ -41,36 +41,88 @@ extern "C" int32_t SystemNative_IsATty(intptr_t fd)
     return isatty(ToFileDescriptor(fd));
 }
 
-static bool g_initialized = false;
-static termios g_originalTermios = { };
+static char* g_keypadXmit; // string used to enable application mode, from terminfo
 
-static void UninitializeConsole()
+static void WriteKeypadXmit() // used in a signal handler, must be signal-safe
 {
-    assert(g_initialized);
-    if (g_initialized)
+    // If a terminfo "application mode" keypad_xmit string has been supplied,
+    // write it out to the terminal to enter the mode.
+    if (g_keypadXmit != nullptr)
     {
-        g_initialized = false;
-        tcsetattr(STDIN_FILENO, TCSANOW, &g_originalTermios);
+        ssize_t ret;
+        while (CheckInterrupted(ret = write(STDOUT_FILENO, g_keypadXmit, static_cast<size_t>(sizeof(char) * strlen(g_keypadXmit)))));
+        assert(ret >= 0); // failure to change the mode should not prevent app from continuing
     }
 }
 
-extern "C" void SystemNative_InitializeConsole()
+extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString)
 {
-    assert(!g_initialized);
+    assert(terminfoString != nullptr);
 
-#if HAVE_TCGETATTR && HAVE_TCSETATTR && HAVE_ECHO && HAVE_ICANON && HAVE_TCSANOW
-    struct termios newtermios = {};
-    if (tcgetattr(STDIN_FILENO, &newtermios) >= 0)
+    if (g_keypadXmit != nullptr) // should only happen if initialization initially failed
     {
-        g_originalTermios = newtermios;
-        newtermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON));
-        newtermios.c_cc[VMIN] = 1;
-        newtermios.c_cc[VTIME] = 0;
-        if (tcsetattr(STDIN_FILENO, TCSANOW, &newtermios) >= 0)
+        free(g_keypadXmit);
+        assert(false && "g_keypadXmit was already initialized");
+    }
+
+    // Store the string to use to enter application mode, then enter
+    g_keypadXmit = strdup(terminfoString);
+    WriteKeypadXmit();
+}
+
+static bool g_terminalAttrsChanged = false; // tracks whether a read is currently in progress, such that attributes have been changed
+static struct termios g_origTermios = {}; // the original attributes captured before a read; valid if g_terminalAttrsChanged is true
+static struct termios g_currTermios = {}; // the current attributes set during a read; valid if g_terminalAttrsChanged is true
+
+// In order to support Console.ReadKey(intecept: true), we need to disable echo and canonical mode.
+// We have two main choices: do so for the entire app, or do so only while in the Console.ReadKey(true).
+// The former has a huge downside: the terminal is in a non-echo state, so anything else that runs
+// in the same terminal won't echo even if it expects to, e.g. using Process.Start to launch an interactive,
+// program, or P/Invoking to a native library that reads from stdin rather than using Console.  The second
+// also has a downside, in that any typing which occurs prior to invoking Console.ReadKey(true) will
+// be visible even though it wasn't supposed to be.  The downsides of the former approach are so large
+// and the cons of the latter minimal and constrained to the one API that we've chosen the second approach.
+// Thus, InitializeConsoleBeforeRead is called to set up the state of the console, then a read is done,
+// and then UninitializeConsoleAfterRead is called.
+extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+{
+#if HAVE_TCGETATTR && HAVE_TCSETATTR && HAVE_ECHO && HAVE_ICANON && HAVE_TCSANOW
+    struct termios newTermios = {};
+    if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
+    {
+        if (!g_terminalAttrsChanged)
         {
-            g_initialized = true;
-            atexit(UninitializeConsole);
+            // Store the original settings, but only if we didn't already.  This function
+            // may be called when the process is resumed after being suspended, and if
+            // that happens during a read, we'll call this function to reset the attrs.
+            g_origTermios = newTermios;
         }
+
+        newTermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON | IEXTEN | IXON | IXOFF));
+        newTermios.c_cc[VMIN] = minChars;
+        newTermios.c_cc[VTIME] = decisecondsTimeout;
+
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &newTermios) >= 0)
+        {
+            g_currTermios = newTermios;
+            g_terminalAttrsChanged = true;
+        }
+    }
+#endif
+}
+
+extern "C" void SystemNative_UninitializeConsoleAfterRead()
+{
+#if HAVE_TCSETATTR && HAVE_TCSANOW
+    if (g_terminalAttrsChanged)
+    {
+        g_terminalAttrsChanged = false;
+
+        int tmpErrno = errno; // preserve any errors from before uninitializing
+        int ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_origTermios);
+        assert(ret >= 0); // shouldn't fail, but if it does we don't want to fail in release
+        (void)ret;
+        errno = tmpErrno;
     }
 #endif
 }
@@ -135,25 +187,35 @@ static int TranslatePalControlCharacterName(int name)
 }
 
 extern "C" void SystemNative_GetControlCharacters(
-    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, 
-    int32_t controlCharacterLength)
+    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
+    uint8_t* posixDisableValue)
 {
     assert(controlCharacterNames != nullptr);
     assert(controlCharacterValues != nullptr);
     assert(controlCharacterLength >= 0);
+    assert(posixDisableValue != nullptr);
 
-    memset(controlCharacterValues, 0, sizeof(uint8_t) * UnsignedCast(controlCharacterLength));
+#ifdef _POSIX_VDISABLE
+    *posixDisableValue = _POSIX_VDISABLE;
+#else
+    *posixDisableValue = 0;
+#endif
+
+    memset(controlCharacterValues, *posixDisableValue, sizeof(uint8_t) * UnsignedCast(controlCharacterLength));
 
 #if HAVE_TCGETATTR
-    struct termios newtermios = {};
-    if (tcgetattr(STDIN_FILENO, &newtermios) >= 0)
+    if (controlCharacterLength > 0)
     {
-        for (int i = 0; i < controlCharacterLength; i++)
+        struct termios newTermios = {};
+        if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
         {
-            int name = TranslatePalControlCharacterName(controlCharacterNames[i]);
-            if (name >= 0)
+            for (int i = 0; i < controlCharacterLength; i++)
             {
-                controlCharacterValues[i] = newtermios.c_cc[name];
+                int name = TranslatePalControlCharacterName(controlCharacterNames[i]);
+                if (name >= 0)
+                {
+                    controlCharacterValues[i] = newTermios.c_cc[name];
+                }
             }
         }
     }
@@ -162,13 +224,11 @@ extern "C" void SystemNative_GetControlCharacters(
 
 extern "C" int32_t SystemNative_StdinReady()
 {
-    struct pollfd fd;
-    fd.fd = STDIN_FILENO;
-    fd.events = POLLIN;
+    struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     return poll(&fd, 1, 0) > 0 ? 1 : 0;
 }
 
-extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
+extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
@@ -184,21 +244,21 @@ extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t buffer
     return static_cast<int32_t>(count);
 }
 
-static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers
+static struct sigaction g_origSigIntHandler, g_origSigQuitHandler, g_origSigContHandler; // saved signal handlers
 static volatile CtrlCallback g_ctrlCallback = nullptr; // Callback invoked for SIGINT/SIGQUIT
-static bool g_signalHandlingInitialized = false; // Whether signal handling is initialized
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
 
-// Signal handler for SIGINT / SIGQUIT.
-static void sigintquit_handler(int code)
+// Signal handler for signals where we want our background thread to do the real processing.
+// It simply writes the signal code to a pipe that's read by the thread.
+static void TransferSignalToHandlerLoop(int sig, siginfo_t* siginfo, void* context)
 {
+    (void)siginfo; // unused
+    (void)context; // unused
+
     // Write the signal code to the pipe
-    uint8_t signalCodeByte = static_cast<uint8_t>(code);
+    uint8_t signalCodeByte = static_cast<uint8_t>(sig);
     ssize_t writtenBytes;
-    do
-    {
-        writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1);
-    } while ((writtenBytes == -1) && (errno == EINTR));
+    while (CheckInterrupted(writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1)));
 
     if (writtenBytes != 1)
     {
@@ -206,8 +266,32 @@ static void sigintquit_handler(int code)
     }
 }
 
-// Ctrl-handling worker thread entry point.
-void* CtrlHandleLoop(void* arg)
+static void HandleSigCont(int sig, siginfo_t* siginfo, void* context)
+{
+    // If the process was suspended while reading, we need to
+    // re-initialize the console for the read, as the attributes
+    // previously set were likely overwritten.
+    if (g_terminalAttrsChanged)
+    {
+        tcsetattr(STDIN_FILENO, TCSANOW, &g_currTermios);
+    }
+
+    // "Application mode" will also have been reset and needs to be redone.
+    WriteKeypadXmit();
+
+    // Delegate to any saved SIGCONT handler we may have
+    if (g_origSigContHandler.sa_sigaction != nullptr &&
+        reinterpret_cast<void*>(g_origSigContHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_DFL) &&
+        reinterpret_cast<void*>(g_origSigContHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
+    {
+        g_origSigContHandler.sa_sigaction(sig, siginfo, context);
+    }
+}
+
+// Entrypoint for the thread that handles signals where our handling
+// isn't signal-safe.  Those signal handlers write the signal to a pipe,
+// which this loop reads and processes.
+void* SignalHandlerLoop(void* arg)
 {
     // Passed in argument is a ptr to the file descriptor
     // for the read end of the pipe.
@@ -223,10 +307,7 @@ void* CtrlHandleLoop(void* arg)
         // Read the next signal, trying again if we were interrupted
         uint8_t signalCode;
         ssize_t bytesRead;
-        do
-        {
-            bytesRead = read(pipeFd, &signalCode, 1);
-        } while (bytesRead == -1 && errno == EINTR);
+        while (CheckInterrupted(bytesRead = read(pipeFd, &signalCode, 1)));
 
         if (bytesRead <= 0)
         {
@@ -237,8 +318,9 @@ void* CtrlHandleLoop(void* arg)
             return nullptr;
         }
 
-        // Invoke the callback.  We take the lock while calling it so as to prevent
-        // it from being removed while we're still using it.
+        assert(signalCode == SIGQUIT || signalCode == SIGINT);
+
+        // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
         CtrlCallback callback = g_ctrlCallback;
         int rv = callback != nullptr ? callback(signalCode == SIGQUIT ? Break : Interrupt) : 0;
         if (rv == 0) // callback removed or was invoked and didn't handle the signal
@@ -257,16 +339,18 @@ void* CtrlHandleLoop(void* arg)
 
             if (signalCode == SIGINT)
             {
-                if (g_origSigIntHandler.sa_handler != SIG_IGN)
+                if (reinterpret_cast<void*>(g_origSigIntHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
                 {
+                    SystemNative_UninitializeConsoleAfterRead();
                     sigaction(SIGINT, &g_origSigIntHandler, NULL);
                     kill(getpid(), SIGINT);
                 }
             } 
             else if (signalCode == SIGQUIT)
             {
-                if (g_origSigQuitHandler.sa_handler != SIG_IGN)
+                if (reinterpret_cast<void*>(g_origSigQuitHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
                 {
+                    SystemNative_UninitializeConsoleAfterRead();
                     sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
                     kill(getpid(), SIGQUIT);
                 }
@@ -288,8 +372,6 @@ static void CloseSignalHandlingPipe()
 
 static bool InitializeSignalHandling()
 {
-    assert(!g_signalHandlingInitialized);
-
     // Create a pipe we'll use to communicate with our worker
     // thread.  We can't do anything interesting in the signal handler,
     // so we instead send a message to another thread that'll do
@@ -313,7 +395,7 @@ static bool InitializeSignalHandling()
 
     // The pipe is created.  Create the worker thread.
     pthread_t handlerThread;
-    if (pthread_create(&handlerThread, nullptr, CtrlHandleLoop, readFdPtr) != 0)
+    if (pthread_create(&handlerThread, nullptr, SignalHandlerLoop, readFdPtr) != 0)
     {
         int err = errno;
         free(readFdPtr);
@@ -322,42 +404,53 @@ static bool InitializeSignalHandling()
         return false;
     }
 
-    // Finally, register the signal handlers for SIGINT and SIGQUIT.
+    // Finally, register our signal handlers
     struct sigaction newAction = {
-        .sa_flags = SA_RESTART, .sa_handler = &sigintquit_handler,
+        .sa_flags = SA_RESTART | SA_SIGINFO, 
+        .sa_sigaction = &TransferSignalToHandlerLoop,
     };
     sigemptyset(&newAction.sa_mask);
 
-    int rv = sigaction(SIGINT, &newAction, &g_origSigIntHandler);
+    int rv;
+
+    rv = sigaction(SIGINT, &newAction, &g_origSigIntHandler);
     assert(rv == 0);
+
     rv = sigaction(SIGQUIT, &newAction, &g_origSigQuitHandler);
     assert(rv == 0);
 
-    g_signalHandlingInitialized = true;
+    newAction.sa_sigaction = &HandleSigCont;
+    rv = sigaction(SIGCONT, &newAction, &g_origSigContHandler);
+    assert(rv == 0);
+
     return true;
 }
 
-extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback)
+extern "C" void SystemNative_RegisterForCtrl(CtrlCallback callback)
 {
     assert(callback != nullptr);
     assert(g_ctrlCallback == nullptr);
-
     g_ctrlCallback = callback;
-
-    if (!g_signalHandlingInitialized && !InitializeSignalHandling())
-    {
-        g_ctrlCallback = nullptr;
-        return 0;
-    }
-
-    return 1;
 }
 
 extern "C" void SystemNative_UnregisterForCtrl()
 {
     assert(g_ctrlCallback != nullptr);
     g_ctrlCallback = nullptr;
+}
 
-    // Keep the signal handlers registered and the worker thread
-    // up and running for when registration is done again.
+static void UninitializeConsole()
+{
+    // Make sure that if the program is exited while we've changed
+    // terminal attributes that we change them back.
+    SystemNative_UninitializeConsoleAfterRead();
+}
+
+extern "C" int32_t SystemNative_InitializeConsole()
+{
+    atexit(UninitializeConsole);
+
+    // Do all initialization needed for the console.  Right now that's just
+    // initializing the signal handling thread.
+    return InitializeSignalHandling() ? 1 : 0;
 }
