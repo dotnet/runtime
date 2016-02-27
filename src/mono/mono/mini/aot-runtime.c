@@ -4129,10 +4129,13 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 			if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
 				/* In llvm-only made, we might encounter shared methods */
 				if (mono_llvm_only && ji->type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
-					MonoError error;
-
 					g_assert (context);
-					ji->data.method = mono_class_inflate_generic_method_checked (ji->data.method, context, &error);
+					ji->data.method = mono_class_inflate_generic_method_checked (ji->data.method, context, error);
+					if (!mono_error_ok (error)) {
+						g_free (got_slots);
+						mono_mempool_destroy (mp);
+						return FALSE;
+					}
 				}
 				/* This cannot be resolved in mono_resolve_patch_target () */
 				if (ji->type == MONO_PATCH_INFO_AOT_JIT_INFO) {
@@ -4167,11 +4170,11 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 
 	gboolean inited_ok = TRUE;
 	if (init_class)
-		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), &error);
+		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), error);
 	else if (from_plt && klass && !klass->generic_container)
-		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass), &error);
+		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass), error);
 	if (!inited_ok)
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return FALSE;
 
 	return TRUE;
 
