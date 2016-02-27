@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //@TODO - API level testing for generics, particulary with multicast invocation lists and co/contra variant generics
 //@TODO - Vary the return type
 
