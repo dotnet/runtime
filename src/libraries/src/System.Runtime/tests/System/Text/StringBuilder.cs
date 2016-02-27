@@ -11,11 +11,16 @@ using Xunit;
 
 public static class StringBuilderTests
 {
+    private static readonly string s_chunkSplitSource = new string('a', 30);
+
+    private static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
+
     [Fact]
     public static void TestCtor_Empty()
     {
         var builder = new StringBuilder();
-        Assert.Equal("", builder.ToString());
+        Assert.Same(string.Empty, builder.ToString());
+        Assert.Equal(string.Empty, builder.ToString(0, 0));
         Assert.Equal(0, builder.Length);
     }
 
@@ -23,7 +28,7 @@ public static class StringBuilderTests
     public static void TestCtor_Int()
     {
         var builder = new StringBuilder(42);
-        Assert.Equal("", builder.ToString());
+        Assert.Same(string.Empty, builder.ToString());
         Assert.Equal(0, builder.Length);
 
         Assert.True(builder.Capacity >= 42);
@@ -43,8 +48,7 @@ public static class StringBuilderTests
         Assert.Equal("", builder.ToString());
         Assert.Equal(0, builder.Length);
 
-        Assert.True(builder.Capacity >= 42);
-        Assert.True(builder.Capacity < builder.MaxCapacity);
+        Assert.InRange(builder.Capacity, 42, builder.MaxCapacity);
         Assert.Equal(50, builder.MaxCapacity);
     }
 
@@ -52,9 +56,9 @@ public static class StringBuilderTests
     public static void TestCtor_Int_Int_Invalid()
     {
         Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder(-1, 1)); // Capacity < 0
-        Assert.Throws<ArgumentOutOfRangeException>("maxCapacity", () => new StringBuilder(0, 0)); // Capacity < 1
+        Assert.Throws<ArgumentOutOfRangeException>("maxCapacity", () => new StringBuilder(0, 0)); // MaxCapacity < 1
 
-        Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder(2, 1)); // Capacity > max capacity
+        Assert.Throws<ArgumentOutOfRangeException>("capacity", () => new StringBuilder(2, 1)); // Capacity > maxCapacity
     }
 
     [Theory]
@@ -65,7 +69,7 @@ public static class StringBuilderTests
     {
         var builder = new StringBuilder(value);
 
-        string expected = value != null ? value : "";
+        string expected = value ?? "";
         Assert.Equal(expected, builder.ToString());
         Assert.Equal(expected.Length, builder.Length);
     }
@@ -78,7 +82,7 @@ public static class StringBuilderTests
     {
         var builder = new StringBuilder(value, 42);
 
-        string expected = value != null ? value : "";
+        string expected = value ?? "";
         Assert.Equal(expected, builder.ToString());
         Assert.Equal(expected.Length, builder.Length);
 
@@ -100,7 +104,7 @@ public static class StringBuilderTests
     {
         var builder = new StringBuilder(value, startIndex, length, 42);
 
-        string expected = (value != null ? value.Substring(startIndex, length) : "");
+        string expected = value?.Substring(startIndex, length) ?? "";
         Assert.Equal(expected, builder.ToString());
         Assert.Equal(length, builder.Length);
         Assert.Equal(expected.Length, builder.Length);
@@ -129,7 +133,7 @@ public static class StringBuilderTests
         {
             Assert.Equal(s[i], builder[i]);
 
-            char c = char.Parse(i.ToString());
+            char c = (char)(i + '0');
             builder[i] = c;
             Assert.Equal(c, builder[i]);
         }
@@ -219,29 +223,7 @@ public static class StringBuilderTests
 
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append((ushort)1)); // New length > builder.MaxCapacity
     }
-
-    [Theory]
-    [InlineData("Hello", new char[] { 'a' }, "Helloa")]
-    [InlineData("Hello", new char[] { 'b', 'c', 'd' }, "Hellobcd")]
-    [InlineData("", new char[] { 'e', 'f', 'g' }, "efg")]
-    [InlineData("Hello", new char[] { }, "Hello")]
-    [InlineData("Hello", null, "Hello")]
-    public static void TestAppend_CharArray(string original, char[] value, string expected)
-    {
-        var builder = new StringBuilder(original);
-        builder.Append(value);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestAppend_CharArray_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append(new char[] { 'a' })); // New length > builder.MaxCapacity
-    }
-
+    
     [Theory]
     [InlineData("Hello", true, "HelloTrue")]
     [InlineData("Hello", false, "HelloFalse")]
@@ -423,49 +405,7 @@ public static class StringBuilderTests
 
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append((float)1)); // New length > builder.MaxCapacity
     }
-
-    [Theory]
-    [InlineData("Hello", "abc", "Helloabc")]
-    [InlineData("Hello", "def", "Hellodef")]
-    [InlineData("", "g", "g")]
-    [InlineData("Hello", "", "Hello")]
-    [InlineData("Hello", null, "Hello")]
-    public static void TestAppend_String(string original, string value, string expected)
-    {
-        var builder = new StringBuilder(original);
-        builder.Append(value);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestAppend_String_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append("a")); // New length > builder.MaxCapacity
-    }
-
-    [Theory]
-    [InlineData("Hello", '\0', "Hello\0")]
-    [InlineData("Hello", 'a', "Helloa")]
-    [InlineData("", "b", "b")]
-    public static void TestAppend_Char(string original, char value, string expected)
-    {
-        var builder = new StringBuilder(original);
-        builder.Append(value);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestAppend_Char_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append('a')); // New length > builder.MaxCapacity
-    }
-
+        
     [Theory]
     [InlineData("Hello", (byte)0, "Hello0")]
     [InlineData("Hello", (byte)123, "Hello123")]
@@ -532,20 +472,31 @@ public static class StringBuilderTests
     [InlineData("", 'b', 1, "b")]
     [InlineData("Hello", 'c', 2, "Hellocc")]
     [InlineData("Hello", '\0', 0, "Hello")]
-    public static void TestAppend_Char_Int(string original, char value, int repeatCount, string expected)
+    public static void TestAppend_Char(string original, char value, int repeatCount, string expected)
     {
-        var builder = new StringBuilder(original);
+        StringBuilder builder;
+        if (repeatCount == 1)
+        {
+            // Use Append(char)
+            builder = new StringBuilder(original);
+            builder.Append(value);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Append(char, int)
+        builder = new StringBuilder(original);
         builder.Append(value, repeatCount);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestAppend_Char_Int_Invalid()
+    public static void TestAppend_Char_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
 
         Assert.Throws<ArgumentOutOfRangeException>("repeatCount", () => builder.Append('a', -1)); // Repeat count < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append('a')); // New length > builder.MaxCapacity
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append('a', 1)); // New length > builder.MaxCapacity
     }
 
@@ -599,15 +550,24 @@ public static class StringBuilderTests
     [InlineData("Hello", "g", 0, 0, "Hello")]
     [InlineData("Hello", "", 0, 0, "Hello")]
     [InlineData("Hello", null, 0, 0, "Hello")]
-    public static void TestAppend_String_Int_Int(string original, string value, int startIndex, int count, string expected)
+    public static void TestAppend_String(string original, string value, int startIndex, int count, string expected)
     {
-        var builder = new StringBuilder(original);
+        StringBuilder builder;
+        if (startIndex == 0 && count == (value?.Length ?? 0))
+        {
+            // Use Append(string)
+            builder = new StringBuilder(original);
+            builder.Append(value);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Append(string, int, int)
+        builder = new StringBuilder(original);
         builder.Append(value, startIndex, count);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestAppend_String_Int_Int_Invalid()
+    public static void TestAppend_String_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -620,6 +580,7 @@ public static class StringBuilderTests
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Append("hello", 5, 1)); // Start index + count > value.Length
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Append("hello", 4, 2)); // Start index + count > value.Length
 
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append("a")); // New length > builder.MaxCapacity
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append("a", 0, 1)); // New length > builder.MaxCapacity
     }
 
@@ -631,17 +592,26 @@ public static class StringBuilderTests
     [InlineData("", new char[] { 'e', 'f', 'g' }, 0, 3, "efg")]
     [InlineData("Hello", new char[] { 'e' }, 1, 0, "Hello")]
     [InlineData("Hello", new char[] { 'e' }, 0, 0, "Hello")]
-    [InlineData("Hello", new char[] { }, 0, 0, "Hello")]
+    [InlineData("Hello", new char[0], 0, 0, "Hello")]
     [InlineData("Hello", null, 0, 0, "Hello")]
-    public static void TestAppend_CharArray_Int_Int(string original, char[] value, int startIndex, int count, string expected)
+    public static void TestAppend_CharArray(string original, char[] value, int startIndex, int charCount, string expected)
     {
-        var builder = new StringBuilder(original);
-        builder.Append(value, startIndex, count);
+        StringBuilder builder;
+        if (startIndex == 0 && charCount == (value?.Length ?? 0))
+        {
+            // Use Append(char[])
+            builder = new StringBuilder(original);
+            builder.Append(value);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Append(char[], int, int)
+        builder = new StringBuilder(original);
+        builder.Append(value, startIndex, charCount);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestAppend_CharArray_Int_Int_Invalid()
+    public static void TestAppend_CharArray_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
@@ -654,6 +624,7 @@ public static class StringBuilderTests
         Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 6, 0)); // Start index + count > value.Length
         Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 5, 1)); // Start index + count > value.Length
 
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append(new char[] { 'a' })); // New length > builder.MaxCapacity
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append(new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
     }
 
@@ -693,6 +664,9 @@ public static class StringBuilderTests
         yield return new object[] { "Hello", null, ", Foo {0} {1} {2}", new object[] { "Bar", null, "Baz" }, "Hello, Foo Bar  Baz" }; // Values has null
 
         yield return new object[] { "Hello", CultureInfo.InvariantCulture, ", Foo {0,9:D6}", new object[] { 1 }, "Hello, Foo    000001" }; // Positive minimum length, custom format and custom format provider
+
+        yield return new object[] { "", new CustomFormatter(), "{0}", new object[] { 1.2 }, "abc" }; // Custom format provider
+        yield return new object[] { "", new CustomFormatter(), "{0:0}", new object[] { 1.2 }, "abc" }; // Custom format provider
     }
 
     [Theory]
@@ -700,50 +674,53 @@ public static class StringBuilderTests
     public static void TestAppendFormat(string original, IFormatProvider provider, string format, object[] values, string expected)
     {
         StringBuilder builder;
-        if (values != null && values.Length == 1)
+        if (values != null)
         {
-            // Use AppendFormat(string, object) or AppendFormat(IFormatProvider, string, object)
-            if (provider == null)
+            if (values.Length == 1)
             {
-                // Use AppendFormat(string, object)
+                // Use AppendFormat(string, object) or AppendFormat(IFormatProvider, string, object)
+                if (provider == null)
+                {
+                    // Use AppendFormat(string, object)
+                    builder = new StringBuilder(original);
+                    builder.AppendFormat(format, values[0]);
+                    Assert.Equal(expected, builder.ToString());
+                }
+                // Use AppendFormat(IFormatProvider, string, object)
                 builder = new StringBuilder(original);
-                builder.AppendFormat(format, values[0]);
+                builder.AppendFormat(provider, format, values[0]);
                 Assert.Equal(expected, builder.ToString());
             }
-            // Use AppendFormat(IFormatProvider, string, object)
-            builder = new StringBuilder(original);
-            builder.AppendFormat(provider, format, values[0]);
-            Assert.Equal(expected, builder.ToString());
-        }
-        else if (values != null && values.Length == 2)
-        {
-            // Use AppendFormat(string, object, object) or AppendFormat(IFormatProvider, string, object, object)
-            if (provider == null)
+            else if (values.Length == 2)
             {
-                // Use AppendFormat(string, object, object)
+                // Use AppendFormat(string, object, object) or AppendFormat(IFormatProvider, string, object, object)
+                if (provider == null)
+                {
+                    // Use AppendFormat(string, object, object)
+                    builder = new StringBuilder(original);
+                    builder.AppendFormat(format, values[0], values[1]);
+                    Assert.Equal(expected, builder.ToString());
+                }
+                // Use AppendFormat(IFormatProvider, string, object, object)
                 builder = new StringBuilder(original);
-                builder.AppendFormat(format, values[0], values[1]);
+                builder.AppendFormat(provider, format, values[0], values[1]);
                 Assert.Equal(expected, builder.ToString());
             }
-            // Use AppendFormat(IFormatProvider, string, object, object)
-            builder = new StringBuilder(original);
-            builder.AppendFormat(provider, format, values[0], values[1]);
-            Assert.Equal(expected, builder.ToString());
-        }
-        else if (values != null && values.Length == 3)
-        {
-            // Use AppendFormat(string, object, object, object) or AppendFormat(IFormatProvider, string, object, object, object)
-            if (provider == null)
+            else if (values.Length == 3)
             {
-                // Use AppendFormat(string, object, object, object)
+                // Use AppendFormat(string, object, object, object) or AppendFormat(IFormatProvider, string, object, object, object)
+                if (provider == null)
+                {
+                    // Use AppendFormat(string, object, object, object)
+                    builder = new StringBuilder(original);
+                    builder.AppendFormat(format, values[0], values[1], values[2]);
+                    Assert.Equal(expected, builder.ToString());
+                }
+                // Use AppendFormat(IFormatProvider, string, object, object, object)
                 builder = new StringBuilder(original);
-                builder.AppendFormat(format, values[0], values[1], values[2]);
+                builder.AppendFormat(provider, format, values[0], values[1], values[2]);
                 Assert.Equal(expected, builder.ToString());
             }
-            // Use AppendFormat(IFormatProvider, string, object, object, object)
-            builder = new StringBuilder(original);
-            builder.AppendFormat(provider, format, values[0], values[1], values[2]);
-            Assert.Equal(expected, builder.ToString());
         }
         // Use AppendFormat(string, object[]) or AppendFormat(IFormatProvider, string, object[])
         if (provider == null)
@@ -882,7 +859,7 @@ public static class StringBuilderTests
         var builder = new StringBuilder("Hello");
         builder.Clear();
         Assert.Equal(0, builder.Length);
-        Assert.Equal("", builder.ToString());
+        Assert.Same(string.Empty, builder.ToString());
     }
 
     [Theory]
@@ -895,6 +872,15 @@ public static class StringBuilderTests
         var builder = new StringBuilder(value);
         builder.CopyTo(sourceIndex, destination, destinationIndex, count);
         Assert.Equal(expected, destination);
+    }
+
+    [Fact]
+    public static void TestCopyTo_StringBuilderWithMultipleChunks()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        char[] destination = new char[builder.Length];
+        builder.CopyTo(0, destination, 0, destination.Length);
+        Assert.Equal(s_chunkSplitSource.ToCharArray(), destination);
     }
 
     [Fact]
@@ -966,11 +952,20 @@ public static class StringBuilderTests
         yield return new object[] { sb4, sb5, true };
         yield return new object[] { sb4, sb6, false };
         yield return new object[] { sb4, sb7, false };
-
+        
         yield return new object[] { sb8, sb9, true };
         yield return new object[] { sb8, sb10, false };
 
         yield return new object[] { sb1, null, false };
+
+        StringBuilder chunkSplitBuilder = StringBuilderWithMultipleChunks();
+        yield return new object[] { chunkSplitBuilder, StringBuilderWithMultipleChunks(), true };
+        yield return new object[] { sb1, chunkSplitBuilder, false };
+        yield return new object[] { chunkSplitBuilder, sb1, false };
+        yield return new object[] { chunkSplitBuilder, StringBuilderWithMultipleChunks().Append("b"), false };
+
+        yield return new object[] { new StringBuilder(), new StringBuilder(), true };
+        yield return new object[] { new StringBuilder(), new StringBuilder().Clear(), true };
     }
 
     [Theory]
@@ -1069,30 +1064,6 @@ public static class StringBuilderTests
     }
 
     [Theory]
-    [InlineData("Hello", 0, new char[] { '\0' }, "\0Hello")]
-    [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, "Helabclo")]
-    [InlineData("Hello", 5, new char[] { 'd', 'e', 'f' }, "Hellodef")]
-    [InlineData("Hello", 0, new char[] { }, "Hello")]
-    [InlineData("Hello", 0, null, "Hello")]
-    public static void TestInsert_CharArray(string original, int index, char[] value, string expected)
-    {
-        var builder = new StringBuilder(original);
-        builder.Insert(index, value);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestInsert_CharArray_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, new char[1])); // Index < 0
-        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new char[1])); // Index > builder.Length
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new char[1])); // New length > builder.MaxCapacity
-    }
-
-    [Theory]
     [InlineData("Hello", 0, (ushort)0, "0Hello")]
     [InlineData("Hello", 3, (ushort)123, "Hel123lo")]
     [InlineData("Hello", 5, (ushort)456, "Hello456")]
@@ -1156,30 +1127,6 @@ public static class StringBuilderTests
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, (float)1)); // Index < 0
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, (float)1)); // Index > builder.Length
         Assert.Throws<OutOfMemoryException>(() => builder.Insert(builder.Length, (float)1)); // New length > builder.MaxCapacity
-    }
-
-    [Theory]
-    [InlineData("Hello", 0, "\0", "\0Hello")]
-    [InlineData("Hello", 3, "abc", "Helabclo")]
-    [InlineData("Hello", 5, "def", "Hellodef")]
-    [InlineData("Hello", 0, "", "Hello")]
-    [InlineData("Hello", 0, null, "Hello")]
-    public static void TestInsert_String(string original, int index, string value, string expected)
-    {
-        var builder = new StringBuilder(original);
-        builder.Insert(index, value);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestInsert_String_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, "")); // Index < 0
-        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, "")); // Index > builder.Length
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, "a")); // New length > builder.MaxCapacity
     }
 
     [Theory]
@@ -1339,6 +1286,7 @@ public static class StringBuilderTests
     }
 
     [Theory]
+    [InlineData("Hello", 0, "\0", 0, "Hello")]
     [InlineData("Hello", 0, "\0", 1, "\0Hello")]
     [InlineData("Hello", 3, "abc", 1, "Helabclo")]
     [InlineData("Hello", 5, "def", 1, "Hellodef")]
@@ -1348,7 +1296,16 @@ public static class StringBuilderTests
     [InlineData("Hello", 5, "def", 2, "Hellodefdef")]
     public static void TestInsert_String_Count(string original, int index, string value, int count, string expected)
     {
-        var builder = new StringBuilder(original);
+        StringBuilder builder;
+        if (count == 1)
+        {
+            // Use Insert(int, string)
+            builder = new StringBuilder(original);
+            builder.Insert(index, value);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Insert(int, string, int)
+        builder = new StringBuilder(original);
         builder.Insert(index, value, count);
         Assert.Equal(expected, builder.ToString());
     }
@@ -1359,10 +1316,15 @@ public static class StringBuilderTests
         var builder = new StringBuilder(0, 6);
         builder.Append("Hello");
 
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, "")); // Index < 0
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, "", 0)); // Index < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, "")); // Index > builder.Length
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, "", 0)); // Index > builder.Length
+
         Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Insert(0, "", -1)); // Count < 0
 
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, "aa")); // New length > builder.MaxCapacity
         Assert.Throws<OutOfMemoryException>(() => builder.Insert(builder.Length, "aa", 1)); // New length > builder.MaxCapacity
         Assert.Throws<OutOfMemoryException>(() => builder.Insert(builder.Length, "a", 2)); // New length > builder.MaxCapacity
     }
@@ -1370,26 +1332,40 @@ public static class StringBuilderTests
     [Theory]
     [InlineData("Hello", 0, new char[] { '\0' }, 0, 1, "\0Hello")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 1, "Helalo")]
+    [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 3, "Helabclo")]
     [InlineData("Hello", 5, new char[] { 'd', 'e', 'f' }, 0, 1, "Hellod")]
-    [InlineData("Hello", 0, new char[] { }, 0, 0, "Hello")]
+    [InlineData("Hello", 5, new char[] { 'd', 'e', 'f' }, 0, 3, "Hellodef")]
+    [InlineData("Hello", 0, new char[0], 0, 0, "Hello")]
     [InlineData("Hello", 0, null, 0, 0, "Hello")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 1, "Helblo")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 1, 2, "Helbclo")]
     [InlineData("Hello", 3, new char[] { 'a', 'b', 'c' }, 0, 2, "Helablo")]
-    public static void TestInsert_CharArray_Count(string original, int index, char[] value, int startIndex, int charCount, string expected)
+    public static void TestInsert_CharArray(string original, int index, char[] value, int startIndex, int charCount, string expected)
     {
-        var builder = new StringBuilder(original);
+        StringBuilder builder;
+        if (startIndex == 0 && charCount == (value?.Length ?? 0))
+        {
+            // Use Insert(int, char[])
+            builder = new StringBuilder(original);
+            builder.Insert(index, value);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Insert(int, char[], int, int)
+        builder = new StringBuilder(original);
         builder.Insert(index, value, startIndex, charCount);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestInsert_CharArray_Count_Invalid()
+    public static void TestInsert_CharArray_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
 
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, new char[1])); // Index < 0
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(-1, new char[0], 0, 0)); // Index < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new char[1])); // Index > builder.Length
         Assert.Throws<ArgumentOutOfRangeException>("index", () => builder.Insert(builder.Length + 1, new char[0], 0, 0)); // Index > builder.Length
 
         Assert.Throws<ArgumentNullException>(() => builder.Insert(0, null, 1, 1)); // Value is null (startIndex and count are not zero)
@@ -1401,10 +1377,12 @@ public static class StringBuilderTests
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Insert(0, new char[3], 3, 1)); // Start index + char count > value.Length
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Insert(0, new char[3], 2, 2)); // Start index + char count > value.Length
 
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new char[1])); // New length > builder.MaxCapacity
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
     }
 
     [Theory]
+    [InlineData("", 0, 0, "")]
     [InlineData("Hello", 0, 5, "")]
     [InlineData("Hello", 1, 3, "Ho")]
     [InlineData("Hello", 1, 4, "H")]
@@ -1414,6 +1392,18 @@ public static class StringBuilderTests
     {
         var builder = new StringBuilder(value);
         builder.Remove(startIndex, length);
+        Assert.Equal(expected, builder.ToString());
+    }
+
+    [Theory]
+    [InlineData(1, 29, "a")]
+    [InlineData(0, 29, "a")]
+    [InlineData(20, 10, "aaaaaaaaaaaaaaaaaaaa")]
+    [InlineData(0, 15, "aaaaaaaaaaaaaaa")]
+    public static void TestRemove_StringBuilderWithMultipleChunks(int startIndex, int count, string expected)
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        builder.Remove(startIndex, count);
         Assert.Equal(expected, builder.ToString());
     }
 
@@ -1430,62 +1420,40 @@ public static class StringBuilderTests
     }
 
     [Theory]
-    [InlineData("aaaabbbbccccdddd", 'a', '!', "!!!!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", 'b', '\0', "aaaa\0\0\0\0ccccdddd")]
-    [InlineData("aaaabbbbccccdddd", 'e', '!', "aaaabbbbccccdddd")]
-    public static void TestReplace_Char_Char(string value, char oldChar, char newChar, string expected)
-    {
-        var builder = new StringBuilder(value);
-        builder.Replace(oldChar, newChar);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Theory]
-    [InlineData("aaaabbbbccccdddd", "a", "!", "!!!!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aa", "!", "!!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aa", "$!", "$!$!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aa", "$!$", "$!$$!$bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aaaa", "!", "!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aaaa", "$!", "$!bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "a", "", "bbbbccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "b", null, "aaaaccccdddd")]
-    [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", "")]
-    [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", "aaaabbbbccccdddd")]
-    public static void TestReplace_String_String(string value, string oldValue, string newValue, string expected)
-    {
-        var builder = new StringBuilder(value);
-        builder.Replace(oldValue, newValue);
-        Assert.Equal(expected, builder.ToString());
-    }
-
-    [Fact]
-    public static void TestReplace_String_String_Invalid()
-    {
-        var builder = new StringBuilder(0, 5);
-        builder.Append("Hello");
-
-        Assert.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "")); // Old value is null
-        Assert.Throws<ArgumentException>("oldValue", () => builder.Replace("", "")); // Old value is empty
-
-        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace("o", "oo")); // New length > builder.MaxCapacity
-    }
-
-    [Theory]
+    [InlineData("", 'a', '!', 0, 0, "")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 16, "!!!!bbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 0, 4, "!!!!bbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 2, 3, "aa!!bbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 4, 1, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'b', '!', 0, 0, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", 'a', '!', 16, 0, "aaaabbbbccccdddd")]
-    public static void TestReplace_Char_Char_Int_Int(string value, char oldChar, char newChar, int startIndex, int count, string expected)
+    [InlineData("aaaabbbbccccdddd", 'e', '!', 0, 16, "aaaabbbbccccdddd")]
+    public static void TestReplace_Char(string value, char oldChar, char newChar, int startIndex, int count, string expected)
     {
-        var builder = new StringBuilder(value);
+        StringBuilder builder;
+        if (startIndex == 0 && count == value.Length)
+        {
+            // Use Replace(char, char)
+            builder = new StringBuilder(value);
+            builder.Replace(oldChar, newChar);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Replace(char, char, int, int)
+        builder = new StringBuilder(value);
         builder.Replace(oldChar, newChar, startIndex, count);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestReplace_Char_Char_Int_Int_Invalid()
+    public static void TestReplace_Char_StringBuilderWithMultipleChunks()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        builder.Replace('a', 'b', 0, builder.Length);
+        Assert.Equal(new string('b', builder.Length), builder.ToString());
+    }
+
+    [Fact]
+    public static void TestReplace_Char_Invalid()
     {
         var builder = new StringBuilder("Hello");
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace('a', 'b', -1, 0)); // Start index < 0
@@ -1497,6 +1465,7 @@ public static class StringBuilderTests
     }
 
     [Theory]
+    [InlineData("", "a", "!", 0, 0, "")]
     [InlineData("aaaabbbbccccdddd", "a", "!", 0, 16, "!!!!bbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", "a", "!", 2, 3, "aa!!bbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", "a", "!", 4, 1, "aaaabbbbccccdddd")]
@@ -1512,23 +1481,61 @@ public static class StringBuilderTests
     [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 0, 16, "")]
     [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 16, 0, "aaaabbbbccccdddd")]
     [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", 0, 16, "aaaabbbbccccdddd")]
-    public static void TestReplace_String_String_Int_Int(string value, string oldValue, string newValue, int startIndex, int count, string expected)
+    [InlineData("aaaaaaaaaaaaaaaa", "a", "b", 0, 16, "bbbbbbbbbbbbbbbb")]
+    public static void TestReplace_String(string value, string oldValue, string newValue, int startIndex, int count, string expected)
     {
-        var builder = new StringBuilder(value);
+        StringBuilder builder;
+        if (startIndex == 0 && count == value.Length)
+        {
+            // Use Replace(string, string)
+            builder = new StringBuilder(value);
+            builder.Replace(oldValue, newValue);
+            Assert.Equal(expected, builder.ToString());
+        }
+        // Use Replace(string, string, int, int)
+        builder = new StringBuilder(value);
         builder.Replace(oldValue, newValue, startIndex, count);
         Assert.Equal(expected, builder.ToString());
     }
 
     [Fact]
-    public static void TestReplace_String_String_Int_Int_Invalid()
+    public static void TestReplace_String_StringBuilderWithMultipleChunks()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        builder.Replace("a", "b", builder.Length - 10, 10);
+        Assert.Equal(new string('a', builder.Length - 10) + new string('b', 10), builder.ToString());
+    }
+
+    [Fact]
+    public static void TestReplace_String_StringBuilderWithMultipleChunks_WholeString()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        builder.Replace(builder.ToString(), "");
+        Assert.Same(string.Empty, builder.ToString());
+    }
+
+    [Fact]
+    public static void TestReplace_String_StringBuilderWithMultipleChunks_LongString()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        builder.Replace(builder.ToString() + "b", "");
+        Assert.Equal(s_chunkSplitSource, builder.ToString());
+    }
+
+    [Fact]
+    public static void TestReplace_String_Invalid()
     {
         var builder = new StringBuilder(0, 5);
         builder.Append("Hello");
 
+        Assert.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "")); // Old value is null
         Assert.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, "a", 0, 0)); // Old value is null
+
+        Assert.Throws<ArgumentException>("oldValue", () => builder.Replace("", "a")); // Old value is empty
         Assert.Throws<ArgumentException>("oldValue", () => builder.Replace("", "a", 0, 0)); // Old value is empty
 
         Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace("o", "oo")); // New length > builder.MaxCapacity
+        Assert.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace("o", "oo", 0, 5)); // New length > builder.MaxCapacity
 
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace("a", "b", -1, 0)); // Start index < 0
         Assert.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace("a", "b", 0, -1)); // Count < 0
@@ -1543,6 +1550,7 @@ public static class StringBuilderTests
     [InlineData("Hello", 2, 3, "llo")]
     [InlineData("Hello", 2, 2, "ll")]
     [InlineData("Hello", 5, 0, "")]
+    [InlineData("Hello", 4, 0, "")]
     [InlineData("Hello", 0, 0, "")]
     [InlineData("", 0, 0, "")]
     public static void TestToString(string value, int startIndex, int length, string expected)
@@ -1556,6 +1564,16 @@ public static class StringBuilderTests
     }
 
     [Fact]
+    public static void TestToString_StringBuilderWithMultipleChunks()
+    {
+        StringBuilder builder = StringBuilderWithMultipleChunks();
+        Assert.Equal(s_chunkSplitSource, builder.ToString());
+        Assert.Equal(s_chunkSplitSource, builder.ToString(0, builder.Length));
+        Assert.Equal("a", builder.ToString(0, 1));
+        Assert.Equal(string.Empty, builder.ToString(builder.Length - 1, 0));
+    }
+
+    [Fact]
     public static void TestToString_Invalid()
     {
         var builder = new StringBuilder("Hello");
@@ -1565,5 +1583,11 @@ public static class StringBuilderTests
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.ToString(6, 0)); // Length + start index > builder.Length
         Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.ToString(5, 1)); // Length + start index > builder.Length
         Assert.Throws<ArgumentOutOfRangeException>("length", () => builder.ToString(4, 2)); // Length + start index > builder.Length
+    }
+
+    public class CustomFormatter : ICustomFormatter, IFormatProvider
+    {
+        public string Format(string format, object arg, IFormatProvider formatProvider) => "abc";
+        public object GetFormat(Type formatType) => this;
     }
 }
