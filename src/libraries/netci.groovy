@@ -129,7 +129,7 @@ branchList.each { branchName ->
             // Set up standard options.
             Utilities.standardJobSetup(newBuildJob, project, isPR, getFullBranchName(branchName))
             // Archive the results
-            Utilities.addArchival(newBuildJob, "bin/build.pack,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
+            Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
             
             def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
             def newTestJobName =  "${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
@@ -138,6 +138,7 @@ branchList.each { branchName ->
             		// The tests/corefx components
 	                copyArtifacts(fullCoreFXBuildJobName) {
 	                    includePatterns('bin/build.pack')
+                            includePatterns('run-test.cmd')
 	                    buildSelector {
 	                        buildNumber('\${COREFX_BUILD}')
 	                    }
@@ -146,7 +147,7 @@ branchList.each { branchName ->
 	                // Unpack the build data
 	                batchFile("C:\\Packer\\UnPacker.exe .\\bin\\build.pack .\\bin")
 	                // Run the tests
-	                batchFile("runtest.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
+	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
             	}
 
             	parameters {
