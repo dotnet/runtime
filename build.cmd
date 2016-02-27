@@ -102,6 +102,7 @@ if /i "%1" == "clean"               (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "freebsdmscorlib"     (set __MscorlibOnly=1&set __BuildOS=FreeBSD&shift&goto Arg_Loop)
 if /i "%1" == "linuxmscorlib"       (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
+if /i "%1" == "netbsdmscorlib"      (set __MscorlibOnly=1&set __BuildOS=NetBSD&shift&goto Arg_Loop)
 if /i "%1" == "osxmscorlib"         (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
 if /i "%1" == "windowsmscorlib"     (set __MscorlibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
 
@@ -143,7 +144,7 @@ if defined __ConfigureOnly if defined __SkipConfigure (
 )
 
 if defined __SkipMscorlibBuild if defined __MscorlibOnly (
-    echo Error: option 'skipmscorlib' is incompatible with 'freebsdmscorlib', 'linuxmscorlib', 'osxmscorlib', and 'windowsmscorlib'.
+    echo Error: option 'skipmscorlib' is incompatible with 'freebsdmscorlib', 'linuxmscorlib', 'netbsdmscorlib', 'osxmscorlib' and 'windowsmscorlib'.
     goto Usage
 )
 
@@ -627,9 +628,9 @@ echo Visual Studio version: ^(default: VS2015^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo docrossgen: do a crossgen build of mscorlib.
 echo msbuildargs ... : all arguments following this tag will be passed directly to msbuild.
-echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, osxmscorlib,
+echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, netbsdmscorlib, osxmscorlib,
 echo     or windowsmscorlib. If one of these is passed, only mscorlib is built,
-echo     for the specified platform ^(FreeBSD, Linux, OS X, or Windows,
+echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
 echo sequential: force a non-parallel build ^(default is to build in parallel
