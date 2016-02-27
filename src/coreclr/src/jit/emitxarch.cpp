@@ -5609,7 +5609,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                     // An absolute indir address that doesn't need reloc should fit within 32-bits
                     // to be encoded as offset relative to zero.  This addr mode requires an extra
                     // SIB byte
-                    noway_assert((int)addr == (size_t)addr);
+                    noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                     sz++;
                 }
 #endif //_TARGET_AMD64_
@@ -5647,7 +5647,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert((int)addr == (size_t)addr);
+            noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif //_TARGET_AMD64_
@@ -10478,13 +10478,13 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
                 // the addr can be encoded as pc-relative address.
                 noway_assert(!emitComp->opts.compReloc);
                 noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
-                noway_assert((int)addr == (ssize_t)addr);
+                noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
 
                 // This requires, specifying a SIB byte after ModRM byte.
                 dst += emitOutputWord(dst, code | 0x0400);
                 dst += emitOutputByte(dst, 0x25);
 #endif //_TARGET_AMD64_
-                dst += emitOutputLong(dst, (int)addr);
+                dst += emitOutputLong(dst, static_cast<int>(reinterpret_cast<intptr_t>(addr)));
             }
             goto DONE_CALL;
         }

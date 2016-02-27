@@ -172,7 +172,7 @@ struct FieldSeqNode
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)
     {
-        return reinterpret_cast<int>(fsn.m_fieldHnd) ^ reinterpret_cast<int>(fsn.m_next);
+        return static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_fieldHnd)) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
     }
 
     static bool Equals(FieldSeqNode fsn1, FieldSeqNode fsn2)

@@ -958,11 +958,12 @@ CORINFO_FIELD_HANDLE Compiler::eeFindJitDataOffs(unsigned dataOffs)
 bool Compiler::eeIsJitDataOffs(CORINFO_FIELD_HANDLE field)
 {
     // if 'field' is a jit data offset it has to fit into a 32-bit unsigned int
-    unsigned value = (unsigned) field;
+    unsigned value = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
     if (((CORINFO_FIELD_HANDLE)(size_t)value) != field)
     {
         return false;   // upper bits were set, not a jit data offset
     }
+
     // Data offsets are marked by the fact that the low two bits are 0b01 0x1
     return (value & iaut_MASK) == iaut_DATA_OFFSET;
 }
@@ -972,10 +973,10 @@ int Compiler::eeGetJitDataOffs(CORINFO_FIELD_HANDLE  field)
     // Data offsets are marked by the fact that the low two bits are 0b01 0x1
     if (eeIsJitDataOffs(field))
     {
-        unsigned dataOffs = (unsigned) field;
+        unsigned dataOffs = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
         assert(((CORINFO_FIELD_HANDLE)(size_t)dataOffs) == field);
         assert(dataOffs < 0x40000000);
-        return ((int) field) >> iaut_SHIFT;
+        return (static_cast<int>(reinterpret_cast<intptr_t>(field))) >> iaut_SHIFT;
     }
     else
     {
