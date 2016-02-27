@@ -8,7 +8,7 @@
 
 Module Name:
 
-    environ.c
+    environ.cpp
 
 Abstract:
 
@@ -23,11 +23,24 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/critsect.h"
 #include "pal/dbgmsg.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
+#include "pal/malloc.hpp"
+
+#if HAVE_CRT_EXTERNS_H
+#include <crt_externs.h>
+#endif
 
 #include <stdlib.h>
 
+using namespace CorUnix;
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
+
+char **palEnvironment = nullptr;
+int palEnvironmentCount = 0;
+int palEnvironmentCapacity = 0;
+
+CRITICAL_SECTION gcsEnvironment;
 
 /*++
 Function:
@@ -41,11 +54,11 @@ characters.
 Parameters
 
 lpName 
-       [in] Pointer to a null-terminated string that specifies the environment variable. 
+       [in] Pointer to a null-terminated string that specifies the environment variable.
 lpBuffer 
-       [out] Pointer to a buffer to receive the value of the specified environment variable. 
+       [out] Pointer to a buffer to receive the value of the specified environment variable.
 nSize 
-       [in] Specifies the size, in TCHARs, of the buffer pointed to by the lpBuffer parameter. 
+       [in] Specifies the size, in TCHARs, of the buffer pointed to by the lpBuffer parameter.
 
 Return Values
 
@@ -73,57 +86,71 @@ GetEnvironmentVariableA(
 
     PERF_ENTRY(GetEnvironmentVariableA);
     ENTRY("GetEnvironmentVariableA(lpName=%p (%s), lpBuffer=%p, nSize=%u)\n",
-        lpName?lpName:"NULL",
-        lpName?lpName:"NULL", lpBuffer, nSize);
-    
-    if (lpName == NULL)
+        lpName ? lpName : "NULL",
+        lpName ? lpName : "NULL", lpBuffer, nSize);
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+
+    if (lpName == nullptr)
     {
-        ERROR("lpName is NULL\n");
+        ERROR("lpName is null\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
 
     if (lpName[0] == 0)
     {
-        TRACE("lpName is empty string\n", lpName);
+        TRACE("lpName is an empty string\n", lpName);
         SetLastError(ERROR_ENVVAR_NOT_FOUND);
         goto done;
     }
-    
-    if (strchr(lpName, '=') != NULL)
+
+    if (strchr(lpName, '=') != nullptr)
     {
         // GetEnvironmentVariable doesn't permit '=' in variable names.
-        value = NULL;
+        value = nullptr;
     }
     else
     {
-        value = MiscGetenv(lpName);
+        // Enter the environment critical section so that we can safely get
+        // the environment variable value without EnvironGetenv making an
+        // intermediate copy. We will just copy the string to the output 
+        // buffer anyway, so just stay in the critical section until then.
+        InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+        value = EnvironGetenv(lpName, /* copyValue */ FALSE);
+
+        if (value != nullptr)
+        {
+            DWORD valueLength = strlen(value);
+            if (valueLength < nSize)
+            {
+                strcpy_s(lpBuffer, nSize, value);
+                dwRet = valueLength;
+            }
+            else 
+            {
+                dwRet = valueLength + 1;
+            }
+
+            SetLastError(ERROR_SUCCESS);
+        }
+
+        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
     }
-    
-    if (value == NULL)
+
+    if (value == nullptr)
     {
         TRACE("%s is not found\n", lpName);
         SetLastError(ERROR_ENVVAR_NOT_FOUND);
-        goto done;
     }
-
-    if (strlen(value) < nSize)
-    {
-        strcpy_s(lpBuffer, nSize, value);
-        dwRet = strlen(value);
-    } 
-    else 
-    {
-        dwRet = strlen(value)+1;
-    }
-    SetLastError(ERROR_SUCCESS);
 
 done:
+
     LOGEXIT("GetEnvironmentVariableA returns DWORD 0x%x\n", dwRet);
     PERF_EXIT(GetEnvironmentVariableA);
     return dwRet;
 }
-
 
 /*++
 Function:
@@ -138,36 +165,37 @@ GetEnvironmentVariableW(
             OUT LPWSTR lpBuffer,
             IN DWORD nSize)
 {
-    CHAR *inBuff = NULL;
-    CHAR *outBuff = NULL;
+    CHAR *inBuff = nullptr;
+    CHAR *outBuff = nullptr;
     INT inBuffSize;
     DWORD size = 0;
 
     PERF_ENTRY(GetEnvironmentVariableW);
     ENTRY("GetEnvironmentVariableW(lpName=%p (%S), lpBuffer=%p, nSize=%u)\n",
-          lpName?lpName:W16_NULLSTRING,
-          lpName?lpName:W16_NULLSTRING, lpBuffer, nSize);
+          lpName ? lpName : W16_NULLSTRING,
+          lpName ? lpName : W16_NULLSTRING, lpBuffer, nSize);
 
-    inBuffSize = WideCharToMultiByte( CP_ACP, 0, lpName, -1, 
-                                      inBuff, 0, NULL, NULL);
-    if ( 0 == inBuffSize )
+    inBuffSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1,
+                                     inBuff, 0, nullptr, nullptr);
+    if (0 == inBuffSize)
     {
-        ERROR( "lpName has to be a valid parameter\n" );
-        SetLastError( ERROR_INVALID_PARAMETER );
+        ERROR("lpName has to be a valid parameter\n");
+        SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
 
     inBuff = (CHAR *)PAL_malloc(inBuffSize);
-    if (inBuff == NULL)
+    if (inBuff == nullptr)
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto done;
     }
-    
-    if (nSize) {
+
+    if (nSize)
+    {
         outBuff = (CHAR *)PAL_malloc(nSize*2);
-        if (outBuff == NULL)
+        if (outBuff == nullptr)
         {
             ERROR("malloc failed\n");
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -175,34 +203,35 @@ GetEnvironmentVariableW(
         }
     }
 
-    if ( 0 == WideCharToMultiByte( CP_ACP, 0, lpName, -1, inBuff, 
-                                   inBuffSize, NULL, NULL ) )
+    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName, -1, inBuff,
+                                   inBuffSize, nullptr, nullptr))
     {
-        ASSERT( "WideCharToMultiByte failed!\n" );
-        SetLastError( ERROR_INTERNAL_ERROR );
+        ASSERT("WideCharToMultiByte failed!\n");
+        SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
+
     size = GetEnvironmentVariableA(inBuff, outBuff, nSize);
     if (size > nSize)
     {
         TRACE("Insufficient buffer\n");
     }
-    else if ( size == 0 )
+    else if (size == 0)
     {
-        /* error handle in GetEnvironmentVariableA */
+        // handle error in GetEnvironmentVariableA
     }
     else
     {
         size = MultiByteToWideChar(CP_ACP, 0, outBuff, -1, lpBuffer, nSize);
-        if ( 0 != size )
+        if (0 != size)
         {
-            /* Not including the NULL. */
+            // -1 for the null.
             size--;
         }
         else
         {
-            ASSERT( "MultiByteToWideChar failed!\n" );
-            SetLastError( ERROR_INTERNAL_ERROR );
+            ASSERT("MultiByteToWideChar failed!\n");
+            SetLastError(ERROR_INTERNAL_ERROR);
             size = 0;
             *lpBuffer = '\0';
         }
@@ -214,9 +243,9 @@ done:
 
     LOGEXIT("GetEnvironmentVariableW returns DWORD 0x%x\n", size);
     PERF_EXIT(GetEnvironmentVariableW);
+
     return size;
 }
-
 
 /*++
 Function:
@@ -231,11 +260,11 @@ lpName
        [in] Pointer to a null-terminated string that specifies the
        environment variable whose value is being set. The operating
        system creates the environment variable if it does not exist
-       and lpValue is not NULL.
+       and lpValue is not null.
 lpValue
        [in] Pointer to a null-terminated string containing the new
        value of the specified environment variable. If this parameter
-       is NULL, the variable is deleted from the current process's
+       is null, the variable is deleted from the current process's
        environment.
 
 Return Values
@@ -257,8 +286,8 @@ SetEnvironmentVariableW(
             IN LPCWSTR lpName,
             IN LPCWSTR lpValue)
 {
-    PCHAR name = NULL;
-    PCHAR value = NULL;
+    PCHAR name = nullptr;
+    PCHAR value = nullptr;
     INT nameSize = 0;
     INT valueSize = 0;
     BOOL bRet = FALSE;
@@ -269,7 +298,7 @@ SetEnvironmentVariableW(
         lpName?lpName:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
 
     if ((nameSize = WideCharToMultiByte(CP_ACP, 0, lpName, -1, name, 0, 
-                                        NULL, NULL)) == 0)
+                                        nullptr, nullptr)) == 0)
     {
         ERROR("WideCharToMultiByte failed\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -277,25 +306,25 @@ SetEnvironmentVariableW(
     }
 
     name = (PCHAR)PAL_malloc(sizeof(CHAR)* nameSize);
-    if (name == NULL)
+    if (name == nullptr)
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto done;
     }
     
-    if ( 0 == WideCharToMultiByte(CP_ACP, 0, lpName,  -1, 
-                                  name,  nameSize, NULL, NULL ) )
+    if (0 == WideCharToMultiByte(CP_ACP, 0, lpName,  -1, 
+                                 name,  nameSize, nullptr, nullptr))
     {
-        ASSERT( "WideCharToMultiByte returned 0\n" );
-        SetLastError( ERROR_INTERNAL_ERROR );
+        ASSERT("WideCharToMultiByte returned 0\n");
+        SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
-    if ( NULL != lpValue )
+    if (lpValue != nullptr)
     {
         if ((valueSize = WideCharToMultiByte(CP_ACP, 0, lpValue, -1, value, 
-                                             0, NULL, NULL)) == 0)
+                                             0, nullptr, nullptr)) == 0)
         {
             ERROR("WideCharToMultiByte failed\n");
             SetLastError(ERROR_INVALID_PARAMETER);
@@ -303,34 +332,32 @@ SetEnvironmentVariableW(
         }
 
         value = (PCHAR)PAL_malloc(sizeof(CHAR)*valueSize);
-        
-        if ( NULL == value )
+
+        if (value == nullptr)
         {
             ERROR("malloc failed\n");
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
-        
-        if ( 0 == WideCharToMultiByte( CP_ACP, 0, lpValue, -1, 
-                                       value, valueSize, NULL, NULL ) )
+
+        if (0 == WideCharToMultiByte(CP_ACP, 0, lpValue, -1,
+                                     value, valueSize, nullptr, nullptr))
         {
             ASSERT("WideCharToMultiByte failed\n");
             SetLastError( ERROR_INTERNAL_ERROR );
             goto done;
         }
     }
-    
 
     bRet = SetEnvironmentVariableA(name, value);
 done:
     PAL_free(value);
     PAL_free(name);
-    
+
     LOGEXIT("SetEnvironmentVariableW returning BOOL %d\n", bRet);
     PERF_EXIT(SetEnvironmentVariableW);
     return bRet;
 }
-
 
 /*++
 Function:
@@ -363,13 +390,14 @@ PALAPI
 GetEnvironmentStringsW(
                VOID)
 {
-    WCHAR *wenviron = NULL, *tempEnviron;
+    WCHAR *wenviron = nullptr, *tempEnviron;
     int i, len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsW);
     ENTRY("GetEnvironmentStringsW()\n");
 
-    PALCEnterCriticalSection(&gcsEnvironment);    
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -382,7 +410,7 @@ GetEnvironmentStringsW(
     }
 
     wenviron = (WCHAR *)PAL_malloc(sizeof(WCHAR)* (envNum + 1));
-    if (wenviron == NULL) 
+    if (wenviron == nullptr) 
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -398,16 +426,15 @@ GetEnvironmentStringsW(
         envNum      -= len;
     }
 
-    *tempEnviron = 0; /* Put an extra NULL at the end */
-    
+    *tempEnviron = 0; /* Put an extra null at the end */
+
  EXIT:
-    PALCLeaveCriticalSection(&gcsEnvironment);
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsW returning %p\n", wenviron);
     PERF_EXIT(GetEnvironmentStringsW);
     return wenviron;
 }
-
 
 /*++
 Function:
@@ -421,13 +448,14 @@ PALAPI
 GetEnvironmentStringsA(
                VOID)
 {
-    char *environ = NULL, *tempEnviron;
+    char *environ = nullptr, *tempEnviron;
     int i, len, envNum;
 
     PERF_ENTRY(GetEnvironmentStringsA);
     ENTRY("GetEnvironmentStringsA()\n");
 
-    PALCEnterCriticalSection(&gcsEnvironment);    
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -440,7 +468,7 @@ GetEnvironmentStringsA(
     }
 
     environ = (char *)PAL_malloc(envNum + 1);
-    if (environ == NULL)
+    if (environ == nullptr)
     {
         ERROR("malloc failed\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -457,16 +485,15 @@ GetEnvironmentStringsA(
         envNum      -= len;
     }
 
-    *tempEnviron = 0; /* Put an extra NULL at the end */
-    
+    *tempEnviron = 0; /* Put an extra null at the end */
+
  EXIT:
-    PALCLeaveCriticalSection(&gcsEnvironment);
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsA returning %p\n", environ);
     PERF_EXIT(GetEnvironmentStringsA);
     return environ;
 }
-
 
 /*++
 Function:
@@ -499,18 +526,17 @@ FreeEnvironmentStringsW(
             IN LPWSTR lpValue)
 {
     PERF_ENTRY(FreeEnvironmentStringsW);
-    ENTRY("FreeEnvironmentStringsW(lpValue=%p (%S))\n", lpValue?lpValue:W16_NULLSTRING, lpValue?lpValue:W16_NULLSTRING);
+    ENTRY("FreeEnvironmentStringsW(lpValue=%p (%S))\n", lpValue ? lpValue : W16_NULLSTRING, lpValue ? lpValue : W16_NULLSTRING);
 
-    if (lpValue != NULL)
+    if (lpValue != nullptr)
     {
         PAL_free(lpValue);
     }
 
     LOGEXIT("FreeEnvironmentStringW returning BOOL TRUE\n");
     PERF_EXIT(FreeEnvironmentStringsW);
-    return TRUE ;
+    return TRUE;
 }
-
 
 /*++
 Function:
@@ -525,18 +551,17 @@ FreeEnvironmentStringsA(
             IN LPSTR lpValue)
 {
     PERF_ENTRY(FreeEnvironmentStringsA);
-    ENTRY("FreeEnvironmentStringsA(lpValue=%p (%s))\n", lpValue?lpValue:"NULL", lpValue?lpValue:"NULL");
+    ENTRY("FreeEnvironmentStringsA(lpValue=%p (%s))\n", lpValue ? lpValue : "NULL", lpValue ? lpValue : "NULL");
 
-    if (lpValue != NULL)
+    if (lpValue != nullptr)
     {
         PAL_free(lpValue);
     }
 
     LOGEXIT("FreeEnvironmentStringA returning BOOL TRUE\n");
     PERF_EXIT(FreeEnvironmentStringsA);
-    return TRUE ;
+    return TRUE;
 }
-
 
 /*++
 Function:
@@ -551,11 +576,11 @@ lpName
        [in] Pointer to a null-terminated string that specifies the
        environment variable whose value is being set. The operating
        system creates the environment variable if it does not exist
-       and lpValue is not NULL.
+       and lpValue is not null.
 lpValue
        [in] Pointer to a null-terminated string containing the new
        value of the specified environment variable. If this parameter
-       is NULL, the variable is deleted from the current process's
+       is null, the variable is deleted from the current process's
        environment.
 
 Return Values
@@ -574,59 +599,62 @@ environment variables of other processes.
 BOOL
 PALAPI
 SetEnvironmentVariableA(
-			IN LPCSTR lpName,
-			IN LPCSTR lpValue)
+            IN LPCSTR lpName,
+            IN LPCSTR lpValue)
 {
 
     BOOL bRet = FALSE;
     int nResult =0;
     PERF_ENTRY(SetEnvironmentVariableA);
     ENTRY("SetEnvironmentVariableA(lpName=%p (%s), lpValue=%p (%s))\n",
-        lpName?lpName:"NULL",
-        lpName?lpName:"NULL", lpValue?lpValue:"NULL", lpValue?lpValue:"NULL");
+        lpName ? lpName : "NULL", lpName ? lpName : "NULL",
+        lpValue ? lpValue : "NULL", lpValue ? lpValue : "NULL");
 
-    /*check if the input variable name is null
-     * and if so exit*/
-    if ((lpName == NULL) || (lpName[0] == 0))
+    // exit if the input variable name is null
+    if ((lpName == nullptr) || (lpName[0] == 0))
     {
-        ERROR("lpName is NULL\n");
+        ERROR("lpName is null\n");
         goto done;
     }
-    /*check if the input value is null and if so
+
+    /* check if the input value is null and if so
      * check if the input name is valid and delete
-     * the variable name from process environment*/
-    if (lpValue == NULL)
+     * the variable name from process environment */
+    if (lpValue == nullptr)
     {
-        if ((lpValue = MiscGetenv(lpName)) == NULL)
+        // We tell EnvironGetenv not to bother with making a copy of the
+        // value since we're not going to use it for anything interesting
+        // apart from checking whether it's null.
+        if ((lpValue = EnvironGetenv(lpName, /* copyValue */ FALSE)) == nullptr)
         {
             ERROR("Couldn't find environment variable (%s)\n", lpName);
             SetLastError(ERROR_ENVVAR_NOT_FOUND);
             goto done;
         }
-        MiscUnsetenv(lpName);
+
+        EnvironUnsetenv(lpName);
     }
-    /*All the conditions are met. Set the variable*/
     else
     {
+        // All the conditions are met. Set the variable.
         int iLen = strlen(lpName) + strlen(lpValue) + 2;
         LPSTR string = (LPSTR) PAL_malloc(iLen);
-        if (string == NULL)
+        if (string == nullptr)
         {
             bRet = FALSE;
             ERROR("Unable to allocate memory\n");
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
-        
+
         sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
-        nResult = MiscPutenv(string, FALSE) ? 0 : -1;
+        nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
 
         PAL_free(string);
-        string = NULL;
-        
-        // If MiscPutenv returns FALSE, it almost certainly failed to
-        // allocate memory.        
-        if(nResult == -1)
+        string = nullptr;
+
+        // If EnvironPutenv returns FALSE, it almost certainly failed to allocate memory.
+        if (nResult == -1)
         {
             bRet = FALSE;
             ERROR("Unable to allocate memory\n");
@@ -634,11 +662,435 @@ SetEnvironmentVariableA(
             goto done;
         }
     }
+
     bRet = TRUE;
+
 done:
-    LOGEXIT("SetEnvironmentVariableA returning BOOL %d\n", bRet);    
+    LOGEXIT("SetEnvironmentVariableA returning BOOL %d\n", bRet);
     PERF_EXIT(SetEnvironmentVariableA);
     return bRet;
 }
 
+/*++
+Function:
+  ResizeEnvironment
 
+Resizes the PAL environment buffer.
+
+Parameters
+
+    newSize 
+           [in] New size of palEnvironment
+
+Return Values
+
+    TRUE on success, FALSE otherwise
+
+--*/
+BOOL ResizeEnvironment(int newSize)
+{
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+    BOOL ret = FALSE;
+    if (newSize >= palEnvironmentCount)
+    {
+        // If palEnvironment is null, realloc acts like malloc.
+        char **newEnvironment = (char**)realloc(palEnvironment, newSize * sizeof(char *));
+        if (newEnvironment != nullptr)
+        {
+            // realloc succeeded, so set palEnvironment to what it returned.
+            palEnvironment = newEnvironment;
+            palEnvironmentCapacity = newSize;
+            ret = TRUE;
+        }
+    }
+    else
+    {
+        ASSERT("ResizeEnvironment: newSize < current palEnvironmentCount!\n");
+    }
+
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    return ret;
+}
+
+/*++
+Function:
+  EnvironUnsetenv
+
+Remove the environment variable with the given name from the PAL version
+of the environment if it exists.
+
+Parameters
+
+    name 
+           [in] Name of variable to unset.
+
+--*/
+void EnvironUnsetenv(const char *name)
+{
+    int nameLength = strlen(name);
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+    for (int i = 0; palEnvironment[i] != nullptr; ++i)
+    {
+        const char *equalsSignPosition = strchr(palEnvironment[i], '=');
+        if (equalsSignPosition == nullptr)
+        {
+            equalsSignPosition = palEnvironment[i] + strlen(palEnvironment[i]);
+        }
+
+        // Check whether the name of this variable has the same length as the one
+        // we're looking for before proceeding to compare them.
+        if (equalsSignPosition - palEnvironment[i] == nameLength)
+        {
+            if (memcmp(name, palEnvironment[i], nameLength) == 0)
+            {
+                // Free the string we're removing.
+                InternalFree(palEnvironment[i]);
+
+                // Move the last environment variable pointer here.
+                palEnvironment[i] = palEnvironment[palEnvironmentCount - 1];
+                palEnvironment[palEnvironmentCount - 1] = nullptr;
+
+                palEnvironmentCount--;
+            }
+        }
+    }
+
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+}
+
+/*++
+Function:
+  EnvironPutenv
+
+Add the environment variable string provided to the PAL version
+of the environment.
+
+Parameters
+
+    entry
+            [in] The variable string to add. Should be in the format
+                 "name=value", where value might be empty (see below).
+    deleteIfEmpty
+            [in] If this is TRUE, "name=" will unset the 'name' variable.
+
+Return Values
+
+    TRUE on success, FALSE otherwise
+
+--*/
+BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
+{
+    BOOL result = FALSE;
+
+    bool fOwningCS = false;
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+
+    const char *equalsSignPosition = strchr(entry, '=');
+    if (equalsSignPosition == entry || equalsSignPosition == nullptr)
+    {
+        // "=foo" and "foo" have no meaning
+        return FALSE;
+    }
+
+    char* copy = strdup(entry);
+    if (copy == nullptr)
+    {
+        return FALSE;
+    }
+
+    int nameLength = equalsSignPosition - entry;
+
+    if (equalsSignPosition[1] == '\0' && deleteIfEmpty)
+    {
+        // "foo=" removes foo from the environment in _putenv() on Windows.
+        // The same string can result from a call to SetEnvironmentVariable()
+        // with the empty string as the value, but in that case we want to
+        // set the variable's value to "". deleteIfEmpty will be FALSE in
+        // that case.
+
+        // Change '=' to '\0'
+        copy[nameLength] = '\0';
+
+        EnvironUnsetenv(copy);
+        InternalFree(copy);
+
+        result = TRUE;
+    }
+    else
+    {
+        // See if we are replacing an item or adding one.
+
+        InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+        fOwningCS = true;
+
+        int i;
+        for (i = 0; palEnvironment[i] != nullptr; i++)
+        {
+            const char *existingEquals = strchr(palEnvironment[i], '=');
+            if (existingEquals == nullptr)
+            {
+                // The PAL screens out malformed strings, but the strings which
+                // came from the system during initialization might not have the
+                // equals sign. We treat the entire string as a name in that case.
+                existingEquals = palEnvironment[i] + strlen(palEnvironment[i]);
+            }
+
+            if (existingEquals - palEnvironment[i] == nameLength)
+            {
+                if (memcmp(entry, palEnvironment[i], nameLength) == 0)
+                {
+                    InternalFree(palEnvironment[i]);
+                    palEnvironment[i] = copy;
+
+                    result = TRUE;
+                    break;
+                }
+            }
+        }
+
+        if (palEnvironment[i] == nullptr)
+        {
+            _ASSERTE(i < palEnvironmentCapacity);
+            if (i == (palEnvironmentCapacity - 1))
+            {
+                // We found the first null, but it's the last element in our environment
+                // block. We need more space in our environment, so let's double its size.
+                int resizeRet = ResizeEnvironment(palEnvironmentCapacity * 2);
+                if (resizeRet != TRUE)
+                {
+                    InternalFree(copy);
+                    goto done;
+                }
+            }
+
+            _ASSERTE(copy != nullptr);
+            palEnvironment[i] = copy;
+            palEnvironment[i + 1] = nullptr;
+            palEnvironmentCount++;
+
+            result = TRUE;
+        }
+    }
+done:
+
+    if (fOwningCS)
+    {
+        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    }
+
+    return result;
+}
+
+/*++
+Function:
+  EnvironGetenv
+
+Get the value of environment variable with the given name.
+
+Parameters
+
+    name
+            [in] The name of the environment variable to get.
+    copyValue
+            [in] If this is TRUE, the function will make a copy of the
+                 value and return a pointer to that. Otherwise, it will
+                 return a pointer to the value in the PAL environment
+                 directly. Calling this function with copyValue set to
+                 FALSE is therefore unsafe without taking special pre-
+                 cautions since the pointer may point to garbage later.
+
+Return Value
+
+    A pointer to the value of the environment variable if it exists,
+    or nullptr otherwise.
+
+--*/
+char* EnvironGetenv(const char* name, BOOL copyValue)
+{
+    char *retValue = nullptr;
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+    int nameLength = strlen(name);
+    for (int i = 0; palEnvironment[i] != nullptr; ++i)
+    {
+        if (strlen(palEnvironment[i]) < nameLength)
+        {
+            continue;
+        }
+
+        if (memcmp(palEnvironment[i], name, nameLength) == 0)
+        {
+            char *equalsSignPosition = palEnvironment[i] + nameLength;
+
+            // If this is one of the variables which has no equals sign, we
+            // treat the whole thing as name, so the value is an empty string.
+            if (*equalsSignPosition == '\0')
+            {
+                retValue = (char *)"";
+                break;
+            }
+            else if (*equalsSignPosition == '=')
+            {
+                retValue = equalsSignPosition + 1;
+                break;
+            }
+        }
+    }
+
+    if ((retValue != nullptr) && copyValue)
+    {
+        retValue = strdup(retValue);
+    }
+
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    return retValue;
+}
+
+/*++
+Function:
+  EnvironGetSystemEnvironment
+
+Get a pointer to the array of pointers representing the process's
+environment.
+
+See 'man environ' for details.
+
+Return Value
+
+    A pointer to the environment.
+
+--*/
+char** EnvironGetSystemEnvironment()
+{
+    char** sysEnviron;
+
+#if HAVE__NSGETENVIRON
+    sysEnviron = *(_NSGetEnviron());
+#else   // HAVE__NSGETENVIRON
+    extern char **environ;
+    sysEnviron = environ;
+#endif  // HAVE__NSGETENVIRON
+
+    return sysEnviron;
+}
+
+/*++
+Function:
+  EnvironInitialize
+
+Initialization function called from PAL_Initialize.
+
+Note: This is called before debug channels are initialized, so it
+      cannot use debug tracing calls.
+--*/
+BOOL
+EnvironInitialize(void)
+{
+    BOOL ret = FALSE;
+
+    InternalInitializeCriticalSection(&gcsEnvironment);
+
+    CPalThread * pthrCurrent = InternalGetCurrentThread();
+    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+
+    char** sourceEnviron = EnvironGetSystemEnvironment();
+
+    int variableCount = 0;
+    while (sourceEnviron[variableCount] != nullptr)
+        variableCount++;
+
+    palEnvironmentCount = 0;
+
+    // We need to decide how much space to allocate. Since we need enough
+    // space for all of the 'n' current environment variables, but we don't
+    // know how many more there will be, we will initially make room for
+    // '2n' variables. If even more are added, we will resize again.
+    // If there are no variables, we will still make room for 1 entry to 
+    // store a nullptr there.
+    int initialSize = (variableCount == 0) ? 1 : variableCount * 2;
+
+    ret = ResizeEnvironment(initialSize);
+    if (ret == TRUE)
+    {
+        _ASSERTE(palEnvironment != nullptr);
+        for (int i = 0; i < variableCount; ++i)
+        {
+            palEnvironment[i] = strdup(sourceEnviron[i]);
+            palEnvironmentCount++;
+        }
+
+        // Set the entry after the last variable to null to indicate the end.
+        palEnvironment[variableCount] = nullptr;
+    }
+
+    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    return ret;
+}
+
+/*++
+
+Function : _putenv.
+    
+See MSDN for more details.
+
+Note:   The BSD implementation can cause
+        memory leaks. See man pages for more details.
+--*/
+int
+__cdecl 
+_putenv( const char * envstring )
+{
+    int ret = -1;
+
+    PERF_ENTRY(_putenv);
+    ENTRY( "_putenv( %p (%s) )\n", envstring ? envstring : "NULL", envstring ? envstring : "NULL") ;
+
+    if (envstring != nullptr)
+    {
+        ret = EnvironPutenv(envstring, TRUE) ? 0 : -1;
+    }
+    else
+    {
+        ERROR( "_putenv() called with NULL envstring!\n");
+    }
+
+    LOGEXIT( "_putenv returning %d\n", ret);
+    PERF_EXIT(_putenv);
+    return ret;
+}
+
+/*++
+
+Function : PAL_getenv
+    
+See MSDN for more details.
+--*/
+char * __cdecl PAL_getenv(const char *varname)
+{
+    char *retval;
+
+    PERF_ENTRY(getenv);
+    ENTRY("getenv (%p (%s))\n", varname ? varname : "NULL", varname ? varname : "NULL");
+
+    if (strcmp(varname, "") == 0)
+    {
+        ERROR("getenv called with a empty variable name\n");
+        LOGEXIT("getenv returning NULL\n");
+        PERF_EXIT(getenv);
+        return(NULL);
+    }
+
+    retval = EnvironGetenv(varname);
+
+    LOGEXIT("getenv returning %p\n", retval);
+    PERF_EXIT(getenv);
+    return(retval);
+}
