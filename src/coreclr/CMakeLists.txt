@@ -412,7 +412,6 @@ if (WIN32)
   add_compile_options(/Gm-) # disable minimal rebuild
   add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
-  add_compile_options(/GS) # enable security checks
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
   add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
@@ -431,7 +430,7 @@ if (WIN32)
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
   add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 
- if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   # The generator expression in the following command means that the /homeparams option is added only for debug builds
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
@@ -730,7 +729,7 @@ add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
 add_definitions(-DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
 add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 if(WIN32)
-# Disable the following or UNIX altjit on Windows
+# Disable the following for UNIX altjit on Windows
 add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 endif(WIN32)
 add_definitions(-DFEATURE_MULTICOREJIT)
