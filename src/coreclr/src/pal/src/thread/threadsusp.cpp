@@ -792,7 +792,8 @@ CThreadSuspensionInfo::InitializeSignalSets()
     // Note that SIGPROF is used by the BSD thread scheduler and masking it caused a 
     // significant reduction in performance. Note that SIGCHLD is used by Linux
     // for parent->child process notifications, and masking it caused parents
-    // not to recognize their children had died.
+    // not to recognize their children had died. Masking SIGTSTP and SIGCONT causes
+    // problems for job management.
     sigaddset(&smDefaultmask, SIGHUP);
     sigaddset(&smDefaultmask, SIGABRT);
 #ifdef SIGEMT
@@ -801,8 +802,6 @@ CThreadSuspensionInfo::InitializeSignalSets()
     sigaddset(&smDefaultmask, SIGSYS);
     sigaddset(&smDefaultmask, SIGALRM);
     sigaddset(&smDefaultmask, SIGURG);
-    sigaddset(&smDefaultmask, SIGTSTP);
-    sigaddset(&smDefaultmask, SIGCONT);
     sigaddset(&smDefaultmask, SIGTTIN);
     sigaddset(&smDefaultmask, SIGTTOU);
     sigaddset(&smDefaultmask, SIGIO);
