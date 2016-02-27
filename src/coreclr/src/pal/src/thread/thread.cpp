@@ -30,7 +30,7 @@ Abstract:
 #include "pal/process.h"
 #include "pal/module.h"
 #include "pal/dbgmsg.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/init.h"
 
 #include <signal.h>
@@ -1680,7 +1680,7 @@ CorUnix::InitializeGlobalThreadData(
     // Read in the environment to see whether we need to change the default
     // thread stack size.
     //
-    pszStackSize = MiscGetenv(PAL_THREAD_DEFAULT_STACK_SIZE);
+    pszStackSize = EnvironGetenv(PAL_THREAD_DEFAULT_STACK_SIZE);
     if (NULL != pszStackSize)
     {
         // Environment variable exists
@@ -1690,6 +1690,8 @@ CorUnix::InitializeGlobalThreadData(
         {
             CPalThread::s_dwDefaultThreadStackSize = dw;
         }
+
+        InternalFree(pszStackSize);
     }
 
 #if !HAVE_MACH_EXCEPTIONS

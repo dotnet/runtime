@@ -30,7 +30,7 @@ Abstract:
 #include "pal/critsect.h"
 #include "pal/dbgmsg.h"
 #include "pal/utils.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 
@@ -4357,19 +4357,13 @@ getPath(
     }
 
     pThread = InternalGetCurrentThread();
+
     /* Then try to look in the path */
-    int iLen2 = strlen(MiscGetenv("PATH"))+1;
-    lpPath = (LPSTR) InternalMalloc(iLen2);
+    lpPath = EnvironGetenv("PATH");
 
     if (!lpPath)
     {
-        ERROR("couldn't allocate memory for $PATH\n");
-        return FALSE;
-    }
-
-    if (strcpy_s(lpPath, iLen2, MiscGetenv("PATH")) != SAFECRT_SUCCESS)
-    {
-        ERROR("strcpy_s failed!");
+        ERROR("EnvironGetenv returned NULL for $PATH\n");
         return FALSE;
     }
 

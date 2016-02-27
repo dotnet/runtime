@@ -34,7 +34,7 @@ Revision History:
 #include "pal/process.h"
 #include "pal/context.h"
 #include "pal/debug.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/malloc.hpp"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
@@ -172,17 +172,19 @@ OutputDebugStringA(
 {
     PERF_ENTRY(OutputDebugStringA);
     ENTRY("OutputDebugStringA (lpOutputString=%p (%s))\n",
-          lpOutputString?lpOutputString:"NULL",
-          lpOutputString?lpOutputString:"NULL");
-    
-    /* as we don't support debug events, we are going to output the debug string
-      to stderr instead of generating OUT_DEBUG_STRING_EVENT */
-    if ( (lpOutputString != NULL) && 
-         (NULL != MiscGetenv(PAL_OUTPUTDEBUGSTRING)))
+          lpOutputString ? lpOutputString : "NULL",
+          lpOutputString ? lpOutputString : "NULL");
+
+    // As we don't support debug events, we are going to output the debug string
+    // to stderr instead of generating OUT_DEBUG_STRING_EVENT. It's safe to tell
+    // EnvironGetenv not to make a copy of the value here since we only want to
+    // check whether it exists, not actually use it.
+    if ((lpOutputString != NULL) &&
+        (NULL != EnvironGetenv(PAL_OUTPUTDEBUGSTRING, /* copyValue */ FALSE)))
     {
         fprintf(stderr, "%s", lpOutputString);
     }
-        
+
     LOGEXIT("OutputDebugStringA returns\n");
     PERF_EXIT(OutputDebugStringA);
 }
@@ -340,11 +342,14 @@ DebugBreakCommand()
 {
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     extern MODSTRUCT exe_module;
-    const char *command_string = getenv (PAL_RUN_ON_DEBUG_BREAK);
-    if (command_string) {
+
+    char *command_string = EnvironGetenv(PAL_RUN_ON_DEBUG_BREAK);
+    if (command_string)
+    {
         char pid_buf[sizeof (PID_TEXT) + 32];
         PathCharString exe_bufString;
         int libNameLength = 10;
+
         if (exe_module.lib_name != NULL)
         {
             libNameLength = PAL_wcslen(exe_module.lib_name);
@@ -358,10 +363,13 @@ DebugBreakCommand()
             goto FAILED;
         }
 
-        if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0) {
+        if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0)
+        {
             goto FAILED;
         }
-        if (snprintf (exe_buf, sizeof (CHAR) * (dwexe_buf + 1), EXE_TEXT "%ls", (wchar_t *)exe_module.lib_name) <= 0) {
+
+        if (snprintf (exe_buf, sizeof (CHAR) * (dwexe_buf + 1), EXE_TEXT "%ls", (wchar_t *)exe_module.lib_name) <= 0)
+        {
             goto FAILED;
         }
 
@@ -370,16 +378,28 @@ DebugBreakCommand()
            variables in the child process, but if we do that we can't check
            for errors. putenv/setenv can fail when out of memory */
 
-        if (!MiscPutenv (pid_buf, FALSE) || !MiscPutenv (exe_buf, FALSE)) {
+        if (!EnvironPutenv (pid_buf, FALSE) || !EnvironPutenv (exe_buf, FALSE))
+        {
             goto FAILED;
         }
-        if (run_debug_command (command_string)) {
+
+        if (run_debug_command (command_string))
+        {
             goto FAILED;
         }
+
+        InternalFree(command_string);
         return 1;
     }
+
     return 0;
+
 FAILED:
+    if (command_string)
+    {
+        InternalFree(command_string);
+    }
+
     fprintf (stderr, "Failed to execute command: '%s'\n", command_string);
     return -1;
 #else // ENABLE_RUN_ON_DEBUG_BREAK
