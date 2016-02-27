@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // <Area> Generics - Expressions - specific catch clauses </Area>
 // <Title> 
 // catch type parameters bound by Exception or a subclass of it in the form catch(T)
