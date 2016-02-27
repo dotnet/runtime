@@ -18,6 +18,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)libmscordbi.dylib"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)libsos.dylib"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)System.Globalization.Native.dylib"/>
 
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
