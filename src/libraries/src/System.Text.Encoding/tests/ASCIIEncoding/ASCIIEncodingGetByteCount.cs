@@ -41,18 +41,18 @@ namespace System.Text.Tests
         public void GetByteCount_Invalid()
         {
             // Chars is null
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetByteCount((string)null));
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetByteCount((char[])null));
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetByteCount(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("chars", () => new ASCIIEncoding().GetByteCount((string)null));
+            Assert.Throws<ArgumentNullException>("chars", () => new ASCIIEncoding().GetByteCount((char[])null));
+            Assert.Throws<ArgumentNullException>("chars", () => new ASCIIEncoding().GetByteCount(null, 0, 0));
 
             // Index or count < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetByteCount(new char[3], -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetByteCount(new char[3], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new ASCIIEncoding().GetByteCount(new char[3], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new ASCIIEncoding().GetByteCount(new char[3], 0, -1));
 
             // Index + count > chars.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetByteCount(new char[3], 0, 4));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetByteCount(new char[3], 4, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetByteCount(new char[3], 3, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => new ASCIIEncoding().GetByteCount(new char[3], 0, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => new ASCIIEncoding().GetByteCount(new char[3], 4, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => new ASCIIEncoding().GetByteCount(new char[3], 3, 1));
         }
     }
 }

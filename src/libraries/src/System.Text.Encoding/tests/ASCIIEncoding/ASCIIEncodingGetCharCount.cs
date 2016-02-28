@@ -39,16 +39,17 @@ namespace System.Text.Tests
         public void GetCharCount_Invalid()
         {
             // Bytes is null
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetCharCount(null));
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetCharCount(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetCharCount(null));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetCharCount(null, 0, 0));
 
             // Index or count < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetCharCount(new byte[4], -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetCharCount(new byte[4], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new ASCIIEncoding().GetCharCount(new byte[4], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new ASCIIEncoding().GetCharCount(new byte[4], 0, -1));
 
             // Index + count > bytes.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetCharCount(new byte[4], 5, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetCharCount(new byte[4], 4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 0, 5));
         }
     }
 }

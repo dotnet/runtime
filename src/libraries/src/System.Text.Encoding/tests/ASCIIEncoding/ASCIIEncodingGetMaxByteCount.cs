@@ -30,7 +30,7 @@ namespace System.Text.Tests
         [InlineData(int.MaxValue)]
         public void GetMaxByteCount_Invalid(int charCount)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetMaxByteCount(charCount));
+            Assert.Throws<ArgumentOutOfRangeException>("charCount", () => new ASCIIEncoding().GetMaxByteCount(charCount));
         }
     }
 }

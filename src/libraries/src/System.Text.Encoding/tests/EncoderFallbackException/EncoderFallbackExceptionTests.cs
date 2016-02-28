@@ -16,7 +16,7 @@ namespace System.Text.Tests
             Assert.Equal(default(char), encoderFallbackException.CharUnknown);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownHigh);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownLow);
-            Assert.Equal(default(int), encoderFallbackException.Index);
+            Assert.Equal(0, encoderFallbackException.Index);
 
             Assert.Null(encoderFallbackException.StackTrace);
             Assert.Null(encoderFallbackException.InnerException);
@@ -35,7 +35,7 @@ namespace System.Text.Tests
             Assert.Equal(default(char), encoderFallbackException.CharUnknown);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownHigh);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownLow);
-            Assert.Equal(default(int), encoderFallbackException.Index);
+            Assert.Equal(0, encoderFallbackException.Index);
 
             Assert.Null(encoderFallbackException.StackTrace);
             Assert.Null(encoderFallbackException.InnerException);
@@ -58,7 +58,7 @@ namespace System.Text.Tests
             Assert.Equal(default(char), encoderFallbackException.CharUnknown);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownHigh);
             Assert.Equal(default(char), encoderFallbackException.CharUnknownLow);
-            Assert.Equal(default(int), encoderFallbackException.Index);
+            Assert.Equal(0, encoderFallbackException.Index);
 
             Assert.Null(encoderFallbackException.StackTrace);
             Assert.Equal(0, encoderFallbackException.Data.Count);

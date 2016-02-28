@@ -54,34 +54,37 @@ namespace System.Text.Tests
         public void GetChars_Invalid()
         {
             // Bytes is null
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetChars(null));
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetChars(null, 0, 0));
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetChars(null, 0, 0, new char[0], 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetChars(null));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetChars(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetChars(null, 0, 0, new char[0], 0));
 
             // Chars is null
-            Assert.Throws<ArgumentNullException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, 4, null, 0));
+            Assert.Throws<ArgumentNullException>("chars", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, null, 0));
 
             // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], -1, 4));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], -1, 4, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new ASCIIEncoding().GetChars(new byte[4], -1, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => new ASCIIEncoding().GetChars(new byte[4], -1, 4, new char[1], 0));
 
             // Count < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, -1, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new ASCIIEncoding().GetChars(new byte[4], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => new ASCIIEncoding().GetChars(new byte[4], 0, -1, new char[1], 0));
 
             // Count > bytes.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, 5));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, 5, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 0, 5));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 0, 5, new char[1], 0));
 
             // Index + count > bytes.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 5, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 5, 0, new char[1], 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 4, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 4, 1, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 5, 0, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetChars(new byte[4], 4, 1, new char[1], 0));
 
             // CharIndex < 0 or >= chars.Length
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], -1));
-            Assert.Throws<ArgumentException>(() => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], 1));
+            Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], -1));
+            Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], 2));
+
+            // Chars does not have enough capacity to accomodate result
+            Assert.Throws<ArgumentException>("chars", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], 1));
         }
     }
 }
