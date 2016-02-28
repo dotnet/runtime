@@ -38,15 +38,16 @@ namespace Internal.NativeCrypto
         public static string UpgradeDSS(int dwProvType, string wszProvider)
         {
             string wszUpgrade = null;
-            SafeProvHandle safeProvHandle = SafeProvHandle.InvalidHandle;
             if (string.Equals(wszProvider, MS_DEF_DSS_DH_PROV, StringComparison.Ordinal))
             {
+                SafeProvHandle safeProvHandle;
                 // If this is the base DSS/DH provider, see if we can use the enhanced provider instead.
-                if (S_OK == AcquireCryptContext(ref safeProvHandle, null, MS_ENH_DSS_DH_PROV, dwProvType,
+                if (S_OK == AcquireCryptContext(out safeProvHandle, null, MS_ENH_DSS_DH_PROV, dwProvType,
                                         (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
                 {
                     wszUpgrade = MS_ENH_DSS_DH_PROV;
                 }
+                safeProvHandle.Dispose();
             }
             return wszUpgrade;
         }
@@ -69,25 +70,20 @@ namespace Internal.NativeCrypto
             bool requestedEnhanced = string.Equals(wszProvider, MS_ENHANCED_PROV, StringComparison.Ordinal);
             bool requestedBase = string.Equals(wszProvider, MS_DEF_PROV, StringComparison.Ordinal);
             string wszUpgrade = null;
-            SafeProvHandle safeProvHandle = SafeProvHandle.InvalidHandle;
             if (requestedBase || requestedEnhanced)
             {
+                SafeProvHandle safeProvHandle;
+
                 // attempt to use the AES provider
-                if (S_OK == AcquireCryptContext(ref safeProvHandle, null, MS_ENH_RSA_AES_PROV,
+                if (S_OK == AcquireCryptContext(out safeProvHandle, null, MS_ENH_RSA_AES_PROV,
                                                 dwProvType, (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
                 {
                     wszUpgrade = MS_ENH_RSA_AES_PROV;
                 }
+
+                safeProvHandle.Dispose();
             }
-            else if (wszUpgrade == null && requestedBase)
-            {
-                // if AES wasn't available and we requested the base CSP, try the enhanced one
-                if (S_OK == AcquireCryptContext(ref safeProvHandle, null, MS_ENHANCED_PROV, dwProvType,
-                                                (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
-                {
-                    wszUpgrade = MS_ENHANCED_PROV;
-                }
-            }
+
             return wszUpgrade;
         }
 
@@ -131,7 +127,6 @@ namespace Internal.NativeCrypto
             }
             if (null != wszUpgrade)
             {
-                //ToDo : Missing logging
                 //Overwrite the provider name with the upgraded provider name
                 providerName = new StringBuilder(wszUpgrade);
             }
@@ -141,48 +136,50 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Creates a new key container
         /// </summary>
-        private static void CreateCSP(CspParameters parameters, bool randomKeyContainer, ref SafeProvHandle safeProvHandle)
+        private static void CreateCSP(CspParameters parameters, bool randomKeyContainer, out SafeProvHandle safeProvHandle)
         {
-            //don't persist in CSP if this is random key container. 
-            safeProvHandle.PersistKeyInCsp = randomKeyContainer ? false : true;
-
             uint dwFlags = (uint)CryptAcquireContextFlags.CRYPT_NEWKEYSET;
             if (randomKeyContainer)
             {
                 dwFlags |= (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT;
             }
-            int ret = OpenCSP(parameters, dwFlags, ref safeProvHandle);
+
+            SafeProvHandle hProv;
+            int ret = OpenCSP(parameters, dwFlags, out hProv);
             if (S_OK != ret)
             {
-                //ToDO : Log errors
+                hProv.Dispose();
                 throw new CryptographicException(SR.Format(SR.OpenCSP_Failed, Convert.ToString(ret)));
             }
+            safeProvHandle = hProv;
         }
 
         /// <summary>
         /// Acquire a handle to a crypto service provider and optionally a key container
         /// This function implements the WszCryptAcquireContext_SO_TOLERANT
         /// </summary>
-        internal static int AcquireCryptContext(ref SafeProvHandle safeProvHandle, string keyContainer,
+        private static int AcquireCryptContext(out SafeProvHandle safeProvHandle, string keyContainer,
                                                 string providerName, int providerType, uint flags)
         {
-            uint verifyContextflag = (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT;
-            uint machineContextflag = (uint)CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET;
+            const uint VerifyContextFlag = (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT;
+            const uint MachineContextFlag = (uint)CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET;
+
             int ret = S_OK;
             // Specifying both verify context (for an ephemeral key) and machine keyset (for a persisted machine key)
             // does not make sense.  Additionally, Windows is beginning to lock down against uses of MACHINE_KEYSET
             // (for instance in the app container), even if verify context is present.   Therefore, if we're using
             // an ephemeral key, strip out MACHINE_KEYSET from the flags.
-            if (((flags & verifyContextflag) == verifyContextflag) &&
-                ((flags & machineContextflag) == machineContextflag))
+            if (((flags & VerifyContextFlag) == VerifyContextFlag) &&
+                ((flags & MachineContextFlag) == MachineContextFlag))
             {
-                flags &= ~machineContextflag;
+                flags &= ~MachineContextFlag;
             }
             //Do not throw in this function. Just return the error code
             if (!Interop.CryptAcquireContext(out safeProvHandle, keyContainer, providerName, providerType, flags))
             {
                 ret = GetErrorCode();
             }
+
             return ret;
         }
 
@@ -197,30 +194,35 @@ namespace Internal.NativeCrypto
 
         /// <summary>
         /// This method opens the CSP using CRYPT_VERIFYCONTEXT
-        /// KeyContainer cannot be null for the flag CRYPT_VERIFYCONTEXT
-        /// This method asserts if keyContainer is null
+        /// KeyContainer must be null for the flag CRYPT_VERIFYCONTEXT
+        /// This method asserts if keyContainer is not null
         /// </summary>
         /// <param name="cspParameters">CSPParameter to use</param>
         /// <param name="safeProvHandle">Safe provider handle</param>
-        internal static void AcquireCsp(CspParameters cspParameters, ref SafeProvHandle safeProvHandle)
+        internal static void AcquireCsp(CspParameters cspParameters, out SafeProvHandle safeProvHandle)
         {
+            Debug.Assert(cspParameters != null);
+            Debug.Assert(cspParameters.KeyContainerName == null);
+
+            SafeProvHandle hProv;
             //
             // We want to just open this CSP.  Passing in verify context will
             // open it and, if a container is given, map to open the container.
             //
-            int ret = OpenCSP(cspParameters, (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT, ref safeProvHandle);
+            int ret = OpenCSP(cspParameters, (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT, out hProv);
             if (S_OK != ret)
             {
+                hProv.Dispose();
                 throw new CryptographicException(SR.Format(SR.OpenCSP_Failed, Convert.ToString(ret)));
             }
-            // we never want to delete a key container when using SafeProvHandle
-            safeProvHandle.PersistKeyInCsp = true;
+
+            safeProvHandle = hProv;
         }
 
         /// <summary>
         /// OpenCSP performs the core work of opening and creating CSPs and containers in CSPs
         /// </summary>
-        public static int OpenCSP(CspParameters cspParameters, uint flags, ref SafeProvHandle safeProvHandle)
+        public static int OpenCSP(CspParameters cspParameters, uint flags, out SafeProvHandle safeProvHandle)
         {
             string providerName = null;
             string containerName = null;
@@ -228,24 +230,20 @@ namespace Internal.NativeCrypto
             {
                 throw new ArgumentException(SR.Format(SR.CspParameter_invalid, "cspParameters"));
             }
-            // We never want to delete a key container if it's already there.
-            safeProvHandle.PersistKeyInCsp = true;
+
             //look for provider type in the cspParameters
             int providerType = cspParameters.ProviderType;
 
             //look for provider name in the cspParamters 
             //if CSP provider is not null then use the provider name from cspParameters
-            //ToDO: ProviderHolder is not used here
             if (null != cspParameters.ProviderName)
             {
                 providerName = cspParameters.ProviderName;
-                safeProvHandle.ReleaseProvider = true;
             }
             else //Get the default provider name
             {
                 providerName = GetDefaultProvider(providerType);
                 cspParameters.ProviderName = providerName;
-                safeProvHandle.ReleaseProvider = false;
             }
             // look to see if the user specified that we should pass
             // CRYPT_MACHINE_KEYSET to CAPI to use machine key storage instead
@@ -254,10 +252,6 @@ namespace Internal.NativeCrypto
 
             // If the user specified CSP_PROVIDER_FLAGS_USE_DEFAULT_KEY_CONTAINER,
             // then ignore the key container name and hand back the default container
-
-            //ToDO : POTENTIAL_BUG Looks like existing code does opposite to what is mentioned in the 
-            // Cryptography.cpp - Line 989
-            //Currently I am trying to align my implmentation with existing code base 
             if (!IsFlagBitSet((uint)cspProviderFlags, (uint)CspProviderFlags.UseDefaultKeyContainer))
             {
                 //look for key container name in the cspParameters 
@@ -266,22 +260,31 @@ namespace Internal.NativeCrypto
                     containerName = cspParameters.KeyContainerName;
                 }
             }
+
+            SafeProvHandle hProv;
+
             // Go ahead and try to open the CSP.  If we fail, make sure the CSP
             // returned is 0 as that is going to be the error check in the caller.
-            safeProvHandle = SafeProvHandle.InvalidHandle;
-            flags |= (uint)(MapCspProviderFlags((int)cspParameters.Flags));
-            if (S_OK != AcquireCryptContext(ref safeProvHandle, containerName, providerName, providerType, flags))
+            flags |= MapCspProviderFlags((int)cspParameters.Flags);
+            if (S_OK != AcquireCryptContext(out hProv, containerName, providerName, providerType, flags))
             {
+                hProv.Dispose();
+                safeProvHandle = SafeProvHandle.InvalidHandle;
                 return GetErrorCode();
             }
-            safeProvHandle.ContainerName = containerName;
-            safeProvHandle.ProviderName = providerName;
-            safeProvHandle.Types = providerType;
-            safeProvHandle.Flags = flags;
+
+            hProv.ContainerName = containerName;
+            hProv.ProviderName = providerName;
+            hProv.Types = providerType;
+            hProv.Flags = flags;
+
+            // We never want to delete a key container if it's already there.
             if (IsFlagBitSet(flags, (uint)CryptAcquireContextFlags.CRYPT_VERIFYCONTEXT))
             {
-                safeProvHandle.PersistKeyInCsp = false;
+                hProv.PersistKeyInCsp = false;
             }
+
+            safeProvHandle = hProv;
             return S_OK;
         }
 
@@ -293,12 +296,13 @@ namespace Internal.NativeCrypto
         /// <returns>Returns the safehandle of CSP </returns>
         internal static SafeProvHandle CreateProvHandle(CspParameters parameters, bool randomKeyContainer)
         {
-            SafeProvHandle safeProvHandle = SafeProvHandle.InvalidHandle;
+            SafeProvHandle safeProvHandle;
             uint flag = 0;
-            uint hr = (uint)OpenCSP(parameters, flag, ref safeProvHandle);
+            uint hr = (uint)OpenCSP(parameters, flag, out safeProvHandle);
             //Open container failed 
             if (hr != S_OK)
             {
+                safeProvHandle.Dispose();
                 // If UseExistingKey flag is used and the key container does not exist
                 // throw an exception without attempting to create the container.
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
@@ -308,8 +312,9 @@ namespace Internal.NativeCrypto
                 {
                     throw new CryptographicException(SR.Format(SR.OpenCSP_Failed, Convert.ToString(hr)));
                 }
+
                 //Create a new CSP. This method throws exception on failure
-                CreateCSP(parameters, randomKeyContainer, ref safeProvHandle);
+                CreateCSP(parameters, randomKeyContainer, out safeProvHandle);
             }
             return safeProvHandle;
         }
@@ -367,7 +372,7 @@ namespace Internal.NativeCrypto
                         //If implementation type is not HW
                         if (!IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_HARDWARE))
                         {
-                            if (!Interop.CryptGetUserKey(safeProvHandle, keyNumber, ref safeKeyHandle))
+                            if (!Interop.CryptGetUserKey(safeProvHandle, keyNumber, out safeKeyHandle))
                             {
                                 throw new CryptographicException(SR.Format(SR.CryptGetUserKey_Failed, Convert.ToString(GetErrorCode())));
                             }
@@ -405,7 +410,7 @@ namespace Internal.NativeCrypto
                     }
                     case Constants.CLR_ACCESSIBLE:
                     {
-                        retVal = Interop.CryptGetUserKey(safeProvHandle, keyNumber, ref safeKeyHandle) ? true : false;
+                        retVal = Interop.CryptGetUserKey(safeProvHandle, keyNumber, out safeKeyHandle) ? true : false;
                         break;
                     }
                     case Constants.CLR_UNIQUE_CONTAINER:
@@ -446,11 +451,11 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Retrieves the handle for user public / private key pair. 
         /// </summary>
-        internal static int GetUserKey(SafeProvHandle safeProvHandle, int keySpec, ref SafeKeyHandle safeKeyHandle)
+        internal static int GetUserKey(SafeProvHandle safeProvHandle, int keySpec, out SafeKeyHandle safeKeyHandle)
         {
             int hr = S_OK;
             VerifyValidHandle(safeProvHandle);
-            if (!Interop.CryptGetUserKey(safeProvHandle, keySpec, ref safeKeyHandle))
+            if (!Interop.CryptGetUserKey(safeProvHandle, keySpec, out safeKeyHandle))
             {
                 hr = GetErrorCode();
             }
@@ -464,18 +469,17 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Generates the key if provided CSP handle is valid 
         /// </summary>
-        internal static int GenerateKey(SafeProvHandle safeProvHandle, int algID, int flags, uint keySize, ref SafeKeyHandle safeKeyHandle)
+        internal static int GenerateKey(SafeProvHandle safeProvHandle, int algID, int flags, uint keySize, out SafeKeyHandle safeKeyHandle)
         {
             int hr = S_OK;
             VerifyValidHandle(safeProvHandle);
             int capiFlags = (int)((uint)MapCspKeyFlags(flags) | ((uint)keySize << 16));
-            if (!Interop.CryptGenKey(safeProvHandle, algID, capiFlags, ref safeKeyHandle))
+            if (!Interop.CryptGenKey(safeProvHandle, algID, capiFlags, out safeKeyHandle))
             {
                 hr = GetErrorCode();
             }
             if (hr != S_OK)
             {
-                //ToDO : Log erorr on failure
                 throw new CryptographicException(SR.Format(SR.CryptGenKey_Failed, Convert.ToString(GetErrorCode())));
             }
 
@@ -534,7 +538,6 @@ namespace Internal.NativeCrypto
         {
             if (handle.IsInvalid)
             {
-                //ToDO : Log error. This will be helpful in debugging.
                 throw new CryptographicException(SR.Format(SR.Cryptography_OpenInvalidHandle, "Handle"));
             }
         }
@@ -608,10 +611,11 @@ namespace Internal.NativeCrypto
         /// <param name="defaultFlags">flags </param>
         /// <param name="randomKeyContainer">identifies if it is random key container</param>
         /// <returns></returns>
-        internal static CspParameters SaveCspParameters(CspAlgorithmType keyType,
-                                                CspParameters userParameters,
-                                                CspProviderFlags defaultFlags,
-                                                ref bool randomKeyContainer)
+        internal static CspParameters SaveCspParameters(
+            CspAlgorithmType keyType,
+            CspParameters userParameters,
+            CspProviderFlags defaultFlags,
+            out bool randomKeyContainer)
         {
             CspParameters parameters;
             if (userParameters == null)
@@ -690,44 +694,42 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper function to get the key pair
         /// </summary>
-        internal static void GetKeyPairHelper(CapiHelper.CspAlgorithmType keyType,
-                                                CspParameters parameters,
-                                                bool randomKeyContainer,
-                                                int keySize,
-                                                ref SafeProvHandle safeProvHandle,
-                                                ref SafeKeyHandle safeKeyHandle)
+        internal static SafeKeyHandle GetKeyPairHelper(
+            CspAlgorithmType keyType,
+            CspParameters parameters,
+            int keySize,
+            SafeProvHandle safeProvHandle)
         {
-            SafeProvHandle TempFetchedProvHandle = CapiHelper.CreateProvHandle(parameters, randomKeyContainer);
-            safeProvHandle = TempFetchedProvHandle;
-
             // If the key already exists, use it, else generate a new one
-            SafeKeyHandle TempFetchedKeyHandle = SafeKeyHandle.InvalidHandle;
-            int hr = CapiHelper.GetUserKey(safeProvHandle, parameters.KeyNumber, ref TempFetchedKeyHandle);
+            SafeKeyHandle hKey;
+            int hr = CapiHelper.GetUserKey(safeProvHandle, parameters.KeyNumber, out hKey);
             if (hr != S_OK)
             {
+                hKey.Dispose();
                 if (IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.UseExistingKey) ||
                                                          (uint)hr != (uint)CryptKeyError.NTE_NO_KEY)
                 {
                     throw new CryptographicException(SR.Format(SR.CryptGetUserKey_Failed, Convert.ToString(hr)));
                 }
-                // _GenerateKey will check for failures and throw an exception
+
+                // GenerateKey will check for failures and throw an exception
                 CapiHelper.GenerateKey(safeProvHandle, parameters.KeyNumber, (int)parameters.Flags,
-                                        (uint)keySize, ref TempFetchedKeyHandle);
+                                        (uint)keySize, out hKey);
             }
 
             // check that this is indeed an RSA/DSS key.
-            byte[] algid = CapiHelper.GetKeyParameter(TempFetchedKeyHandle, Constants.CLR_ALGID);
+            byte[] algid = CapiHelper.GetKeyParameter(hKey, Constants.CLR_ALGID);
 
             int dwAlgId = (algid[0] | (algid[1] << 8) | (algid[2] << 16) | (algid[3] << 24));
 
             if ((keyType == CspAlgorithmType.Rsa && dwAlgId != CALG_RSA_KEYX && dwAlgId != CALG_RSA_SIGN) ||
-                    (keyType == CspAlgorithmType.Dss && dwAlgId != CALG_DSS_SIGN))
+                (keyType == CspAlgorithmType.Dss && dwAlgId != CALG_DSS_SIGN))
             {
-                TempFetchedKeyHandle.Dispose();
+                hKey.Dispose();
                 throw new CryptographicException(SR.Format(SR.Cryptography_CSP_WrongKeySpec, Convert.ToString(keyType)));
             }
 
-            safeKeyHandle = TempFetchedKeyHandle;
+            return hKey;
         }
 
         /// <summary>
@@ -882,9 +884,10 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for Import CSP
         /// </summary>
-        internal static void ImportKeyBlob(SafeProvHandle saveProvHandle, CspProviderFlags flags, byte[] keyBlob, ref SafeKeyHandle safeKeyHandle)
+        internal static void ImportKeyBlob(SafeProvHandle saveProvHandle, CspProviderFlags flags, byte[] keyBlob, out SafeKeyHandle safeKeyHandle)
         {
-            // Compat note: This isn't the same check as the one done by ImportKeyBlob but this does match the desktop CLR behavior and the only scenarios it
+            // Compat note: This isn't the same check as the one done by the CLR _ImportCspBlob QCall,
+            // but this does match the desktop CLR behavior and the only scenarios it
             // affects are cases where a corrupt blob is passed in.
             bool isPublic = keyBlob.Length > 0 && keyBlob[0] == CapiHelper.PUBLICKEYBLOB;
 
@@ -898,6 +901,9 @@ namespace Internal.NativeCrypto
             if (!Interop.CryptImportKey(saveProvHandle, keyBlob, keyBlob.Length, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
+
+                hKey.Dispose();
+
                 throw hr.ToCryptographicException();
             }
 
@@ -920,14 +926,12 @@ namespace Internal.NativeCrypto
 
             if (!Interop.CryptExportKey(safeKeyHandle, SafeKeyHandle.InvalidHandle, dwBlobType, 0, null, ref cbRawData))
             {
-                //ToDo : Error logging 
                 throw new CryptographicException(SR.Format(SR.CryptExportKey_Failed, Convert.ToString(GetErrorCode())));
             }
             pbRawData = new byte[cbRawData];
 
             if (!Interop.CryptExportKey(safeKeyHandle, SafeKeyHandle.InvalidHandle, dwBlobType, 0, pbRawData, ref cbRawData))
             {
-                //ToDo : Error logging 
                 throw new CryptographicException(SR.Format(SR.CryptExportKey_Failed, Convert.ToString(GetErrorCode())));
             }
             return pbRawData;
@@ -1323,6 +1327,9 @@ namespace Internal.NativeCrypto
             if (!Interop.CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, CryptCreateHashFlags.None, out hHash))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
+
+                hHash.Dispose();
+
                 throw hr.ToCryptographicException();
             }
 
@@ -1411,17 +1418,17 @@ namespace Internal.NativeCrypto
             public static extern bool CryptGetProvParam(SafeProvHandle safeProvHandle, int dwParam, byte[] pbData,
                                                         ref int dwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
+            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGetUserKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, ref SafeKeyHandle safeKeyHandle);
+            private static extern bool _CryptGetUserKey(SafeProvHandle safeProvHandle, int dwKeySpec, out SafeKeyHandle safeKeyHandle);
 
             [DllImport(AdvapiDll, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptGetKeyParam(SafeKeyHandle safeKeyHandle, int dwParam, byte[] pbData,
                                                         ref int pdwDataLen, int dwFlags);
 
-            [DllImport(AdvapiDll, SetLastError = true)]
-            public static extern bool CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, ref SafeKeyHandle safeKeyHandle);
+            [DllImport(AdvapiDll, SetLastError = true, EntryPoint = "CryptGenKey")]
+            private static extern bool _CryptGenKey(SafeProvHandle safeProvHandle, int Algid, int dwFlags, out SafeKeyHandle safeKeyHandle);
 
             [DllImport(AdvapiDll, SetLastError = true)]
             public static extern bool CryptReleaseContext(IntPtr safeProvHandle, int dwFlags);
@@ -1441,13 +1448,13 @@ namespace Internal.NativeCrypto
             public static extern bool CryptExportKey(SafeKeyHandle hKey, SafeKeyHandle hExpKey, int dwBlobType,
                                                     int dwFlags, [In, Out] byte[] pbData, ref int dwDataLen);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptImportKey")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptImportKey(SafeProvHandle hProv, byte[] pbData, int dwDataLen, SafeKeyHandle hPubKey, int dwFlags, out SafeKeyHandle phKey);
+            private static extern bool _CryptImportKey(SafeProvHandle hProv, byte[] pbData, int dwDataLen, SafeKeyHandle hPubKey, int dwFlags, out SafeKeyHandle phKey);
 
-            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
+            [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CryptCreateHash")]
             [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
+            private static extern bool _CryptCreateHash(SafeProvHandle hProv, int algId, SafeKeyHandle hKey, CryptCreateHashFlags dwFlags, out SafeHashHandle phHash);
 
             [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
@@ -1472,6 +1479,60 @@ namespace Internal.NativeCrypto
             [DllImport(AdvapiDll, CharSet = CharSet.Unicode, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool CryptDestroyHash(IntPtr hHash);
+
+            public static bool CryptGetUserKey(
+                SafeProvHandle safeProvHandle,
+                int dwKeySpec,
+                out SafeKeyHandle safeKeyHandle)
+            {
+                bool response = _CryptGetUserKey(safeProvHandle, dwKeySpec, out safeKeyHandle);
+
+                safeKeyHandle.SetParent(safeProvHandle);
+
+                return response;
+            }
+
+            public static bool CryptGenKey(
+                SafeProvHandle safeProvHandle,
+                int algId,
+                int dwFlags,
+                out SafeKeyHandle safeKeyHandle)
+            {
+                bool response = _CryptGenKey(safeProvHandle, algId, dwFlags, out safeKeyHandle);
+
+                safeKeyHandle.SetParent(safeProvHandle);
+
+                return response;
+            }
+
+            public static bool CryptImportKey(
+                SafeProvHandle hProv,
+                byte[] pbData,
+                int dwDataLen,
+                SafeKeyHandle hPubKey,
+                int dwFlags,
+                out SafeKeyHandle phKey)
+            {
+                bool response = _CryptImportKey(hProv, pbData, dwDataLen, hPubKey, dwFlags, out phKey);
+
+                phKey.SetParent(hProv);
+
+                return response;
+            }
+
+            public static bool CryptCreateHash(
+                SafeProvHandle hProv,
+                int algId,
+                SafeKeyHandle hKey,
+                CryptCreateHashFlags dwFlags,
+                out SafeHashHandle phHash)
+            {
+                bool response = _CryptCreateHash(hProv, algId, hKey, dwFlags, out phHash);
+
+                phHash.SetParent(hProv);
+
+                return response;
+            }
         }
     } //End CapiHelper : Pinvokes
 
