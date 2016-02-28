@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
-
-using System.Data.Common;
-
 using System.Collections;
+using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlBulkCopyColumnMappingCollection : CollectionBase
+    public sealed class SqlBulkCopyColumnMappingCollection : ICollection, IEnumerable, IList
     {
         private enum MappingSchema
         {
@@ -25,33 +20,45 @@ namespace System.Data.SqlClient
             OrdinalsOrdinals = 4,
         }
 
-        private bool _readOnly;
+        private readonly List<object> _list = new List<object>();
         private MappingSchema _mappingSchema = MappingSchema.Undefined;
 
         internal SqlBulkCopyColumnMappingCollection()
         {
         }
 
-        public SqlBulkCopyColumnMapping this[int index]
-        {
-            get
-            {
-                return (SqlBulkCopyColumnMapping)this.List[index];
-            }
-        }
+        public int Count => _list.Count;
 
-        internal bool ReadOnly
+        internal bool ReadOnly { get; set; }
+
+        bool ICollection.IsSynchronized => false;
+
+        object ICollection.SyncRoot => NonGenericList.SyncRoot;
+
+        bool IList.IsFixedSize => false;
+
+        // This always returns false in the full framework, regardless
+        // of the value of the internal ReadOnly property.
+        bool IList.IsReadOnly => false;
+
+        object IList.this[int index]
         {
             get
             {
-                return _readOnly;
+                return NonGenericList[index];
             }
             set
             {
-                _readOnly = value;
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                NonGenericList[index] = value;
             }
         }
 
+        public SqlBulkCopyColumnMapping this[int index] => (SqlBulkCopyColumnMapping)_list[index];
 
         public SqlBulkCopyColumnMapping Add(SqlBulkCopyColumnMapping bulkCopyColumnMapping)
         {
@@ -62,35 +69,31 @@ namespace System.Data.SqlClient
             {
                 throw SQL.BulkLoadNonMatchingColumnMapping();
             }
-            InnerList.Add(bulkCopyColumnMapping);
+            _list.Add(bulkCopyColumnMapping);
             return bulkCopyColumnMapping;
         }
 
         public SqlBulkCopyColumnMapping Add(string sourceColumn, string destinationColumn)
         {
             AssertWriteAccess();
-            SqlBulkCopyColumnMapping column = new SqlBulkCopyColumnMapping(sourceColumn, destinationColumn);
-            return Add(column);
+            return Add(new SqlBulkCopyColumnMapping(sourceColumn, destinationColumn));
         }
 
         public SqlBulkCopyColumnMapping Add(int sourceColumnIndex, string destinationColumn)
         {
             AssertWriteAccess();
-            SqlBulkCopyColumnMapping column = new SqlBulkCopyColumnMapping(sourceColumnIndex, destinationColumn);
-            return Add(column);
+            return Add(new SqlBulkCopyColumnMapping(sourceColumnIndex, destinationColumn));
         }
 
         public SqlBulkCopyColumnMapping Add(string sourceColumn, int destinationColumnIndex)
         {
             AssertWriteAccess();
-            SqlBulkCopyColumnMapping column = new SqlBulkCopyColumnMapping(sourceColumn, destinationColumnIndex);
-            return Add(column);
+            return Add(new SqlBulkCopyColumnMapping(sourceColumn, destinationColumnIndex));
         }
         public SqlBulkCopyColumnMapping Add(int sourceColumnIndex, int destinationColumnIndex)
         {
             AssertWriteAccess();
-            SqlBulkCopyColumnMapping column = new SqlBulkCopyColumnMapping(sourceColumnIndex, destinationColumnIndex);
-            return Add(column);
+            return Add(new SqlBulkCopyColumnMapping(sourceColumnIndex, destinationColumnIndex));
         }
 
         private void AssertWriteAccess()
@@ -101,80 +104,54 @@ namespace System.Data.SqlClient
             }
         }
 
-        new public void Clear()
+        public void Clear()
         {
             AssertWriteAccess();
-            base.Clear();
+            _list.Clear();
         }
 
-        public bool Contains(SqlBulkCopyColumnMapping value)
-        {
-            return (-1 != InnerList.IndexOf(value));
-        }
+        public bool Contains(SqlBulkCopyColumnMapping value) => _list.Contains(value);
 
-        public void CopyTo(SqlBulkCopyColumnMapping[] array, int index)
-        {
-            InnerList.CopyTo(array, index);
-        }
+        public void CopyTo(SqlBulkCopyColumnMapping[] array, int index) => _list.CopyTo(array, index);
 
         internal void CreateDefaultMapping(int columnCount)
         {
             for (int i = 0; i < columnCount; i++)
             {
-                InnerList.Add(new SqlBulkCopyColumnMapping(i, i));
+                _list.Add(new SqlBulkCopyColumnMapping(i, i));
             }
         }
 
-        public int IndexOf(SqlBulkCopyColumnMapping value)
-        {
-            return InnerList.IndexOf(value);
-        }
+        public IEnumerator GetEnumerator() => _list.GetEnumerator();
+
+        public int IndexOf(SqlBulkCopyColumnMapping value) => _list.IndexOf(value);
 
         public void Insert(int index, SqlBulkCopyColumnMapping value)
         {
             AssertWriteAccess();
-            InnerList.Insert(index, value);
+            _list.Insert(index, value);
         }
 
         public void Remove(SqlBulkCopyColumnMapping value)
         {
             AssertWriteAccess();
-            InnerList.Remove(value);
+            _list.Remove(value);
         }
 
-        new public void RemoveAt(int index)
+        public void RemoveAt(int index)
         {
             AssertWriteAccess();
-            base.RemoveAt(index);
+            _list.RemoveAt(index);
         }
 
         internal void ValidateCollection()
         {
             MappingSchema mappingSchema;
-            foreach (SqlBulkCopyColumnMapping a in this)
+            foreach (SqlBulkCopyColumnMapping a in _list)
             {
-                if (a.SourceOrdinal != -1)
-                {
-                    if (a.DestinationOrdinal != -1)
-                    {
-                        mappingSchema = MappingSchema.OrdinalsOrdinals;
-                    }
-                    else
-                    {
-                        mappingSchema = MappingSchema.OrdinalsNames;
-                    }
-                }
-                else
-                {
-                    if (a.DestinationOrdinal != -1)
-                    {
-                        mappingSchema = MappingSchema.NemesOrdinals;
-                    }
-                    else
-                    {
-                        mappingSchema = MappingSchema.NamesNames;
-                    }
-                }
+                mappingSchema = a.SourceOrdinal != -1 ?
+                    (a.DestinationOrdinal != -1 ? MappingSchema.OrdinalsOrdinals : MappingSchema.OrdinalsNames) :
+                    (a.DestinationOrdinal != -1 ? MappingSchema.NemesOrdinals : MappingSchema.NamesNames);
 
                 if (_mappingSchema == MappingSchema.Undefined)
                 {
@@ -189,6 +166,49 @@ namespace System.Data.SqlClient
                 }
             }
         }
+
+        void ICollection.CopyTo(Array array, int index) => NonGenericList.CopyTo(array, index);
+
+        int IList.Add(object value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            return NonGenericList.Add(value);
+        }
+
+        bool IList.Contains(object value) => NonGenericList.Contains(value);
+
+        int IList.IndexOf(object value) => NonGenericList.IndexOf(value);
+
+        void IList.Insert(int index, object value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            NonGenericList.Insert(index, value);
+        }
+
+        void IList.Remove(object value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            bool removed = _list.Remove(value);
+
+            // This throws on full framework, so it will also throw here.
+            if (!removed)
+            {
+                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
+            }
+        }
+
+        private IList NonGenericList => _list;
     }
 }
-
