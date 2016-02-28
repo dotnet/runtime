@@ -2,39 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
     public class UnicodeEncodingEquals
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            UnicodeEncoding uEncoding1 = new UnicodeEncoding();
-            UnicodeEncoding uEncoding2 = new UnicodeEncoding(false, true);
-            bool actualValue;
-            actualValue = uEncoding1.Equals(uEncoding2);
-            Assert.True(actualValue);
+            yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(), true };
+            yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(false, true), true };
+            yield return new object[] { new UnicodeEncoding(), new UnicodeEncoding(false, false), false };
+            yield return new object[] { new UnicodeEncoding(), new TimeSpan(), false };
+            yield return new object[] { new UnicodeEncoding(), null, false };
         }
 
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals(UnicodeEncoding encoding, object value, bool expected)
         {
-            UnicodeEncoding uEncoding1 = new UnicodeEncoding();
-            UnicodeEncoding uEncoding2 = new UnicodeEncoding(false, false);
-            bool actualValue;
-            actualValue = uEncoding1.Equals(uEncoding2);
-            Assert.False(actualValue);
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            UnicodeEncoding uEncoding = new UnicodeEncoding();
-            bool actualValue;
-            actualValue = uEncoding.Equals(new TimeSpan());
-            Assert.False(actualValue);
+            Assert.Equal(expected, encoding.Equals(value));
+            if (value is UnicodeEncoding)
+            {
+                Assert.Equal(expected, encoding.GetHashCode().Equals(value.GetHashCode()));
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -39,6 +39,7 @@
     <Compile Include="Encoder\EncoderCtor.cs" />
     <Compile Include="Encoder\EncoderGetByteCount2.cs" />
     <Compile Include="Encoder\EncoderGetBytes2.cs" />
+    <Compile Include="EncodingTestHelpers.cs" />
     <Compile Include="Encoding\ConvertUnicodeEncodings.cs" />
     <Compile Include="Encoding\Encoding.cs" />
     <Compile Include="Encoding\EncodingBigEndianUnicode.cs" />
@@ -69,17 +70,13 @@
     <Compile Include="Encoding\EncodingUnicode.cs" />
     <Compile Include="Encoding\EncodingUTF8.cs" />
     <Compile Include="Encoding\EncodingWebName.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingCtor1.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingEquals.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount1.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount2.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes1.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes2.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetChars.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetDecoder.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetEncoder.cs" />
-    <Compile Include="UnicodeEncoding\UnicodeEncodingGetHashCode.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxByteCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetPreamble.cs" />
