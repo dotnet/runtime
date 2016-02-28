@@ -7,25 +7,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+
 using Xunit;
 
 public static class PathTests
 {
     [Theory]
     [InlineData(null, null, null)]
-    [InlineData(null, null, "exe")]
+    [InlineData(null, "exe", null)]
     [InlineData("", "", "")]
-    [InlineData("file", "file.exe", null)]
-    [InlineData("file.", "file.exe", "")]
-    [InlineData("file.exe", "file", "exe")]
-    [InlineData("file.exe", "file", ".exe")]
-    [InlineData("file.exe", "file.txt", "exe")]
-    [InlineData("file.exe", "file.txt", ".exe")]
-    [InlineData("file.txt.exe", "file.txt.bin", "exe")]
-    [InlineData("dir/file.exe", "dir/file.t", "exe")]
-    [InlineData("dir/file.t", "dir/file.exe", "t")]
-    [InlineData("dir/file.exe", "dir/file", "exe")]
-    public static void ChangeExtension(string expected, string path, string newExtension)
+    [InlineData("file.exe", null, "file")]
+    [InlineData("file.exe", "", "file.")]
+    [InlineData("file", "exe", "file.exe")]
+    [InlineData("file", ".exe", "file.exe")]
+    [InlineData("file.txt", "exe", "file.exe")]
+    [InlineData("file.txt", ".exe", "file.exe")]
+    [InlineData("file.txt.bin", "exe", "file.txt.exe")]
+    [InlineData("dir/file.t", "exe", "dir/file.exe")]
+    [InlineData("dir/file.exe", "t", "dir/file.t")]
+    [InlineData("dir/file", "exe", "dir/file.exe")]
+    public static void ChangeExtension(string path, string newExtension, string expected)
     {
         if (expected != null)
             expected = expected.Replace('/', Path.DirectorySeparatorChar);
@@ -34,43 +35,40 @@ public static class PathTests
         Assert.Equal(expected, Path.ChangeExtension(path, newExtension));
     }
 
-    [Theory,
-        InlineData(null, null),
-        InlineData(@"", null),
-        InlineData(@".", @""),
-        InlineData(@"..", @""),
-        InlineData(@"baz", @"")
-        ]
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData(".", "")]
+    [InlineData("..", "")]
+    [InlineData("baz", "")]
     public static void GetDirectoryName(string path, string expected)
     {
         Assert.Equal(expected, Path.GetDirectoryName(path));
     }
 
-    [Theory,
-        InlineData(@"dir/baz", @"dir"),
-        InlineData(@"dir\baz", @"dir"),
-        InlineData(@"dir\baz\bar", @"dir\baz"),
-        InlineData(@"dir\\baz", @"dir"),
-        InlineData(@" dir\baz", @" dir"),
-        InlineData(@" C:\dir\baz", @"C:\dir"),
-        InlineData(@"..\..\files.txt", @"..\.."),
-        InlineData(@"C:\", null),
-        InlineData(@"C:", null)
-        ]
+    [Theory]
+    [InlineData(@"dir/baz", "dir")]
+    [InlineData(@"dir\baz", "dir")]
+    [InlineData(@"dir\baz\bar", @"dir\baz")]
+    [InlineData(@"dir\\baz", "dir")]
+    [InlineData(@" dir\baz", " dir")]
+    [InlineData(@" C:\dir\baz", @"C:\dir")]
+    [InlineData(@"..\..\files.txt", @"..\..")]
+    [InlineData(@"C:\", null)]
+    [InlineData(@"C:", null)]
     [PlatformSpecific(PlatformID.Windows)]
     public static void GetDirectoryName_Windows(string path, string expected)
     {
         Assert.Equal(expected, Path.GetDirectoryName(path));
     }
 
-    [Theory,
-        InlineData(@"dir/baz", @"dir"),
-        InlineData(@"dir//baz", @"dir"),
-        InlineData(@"dir\baz", @""),
-        InlineData(@"dir/baz/bar", @"dir/baz"),
-        InlineData(@"../../files.txt", @"../.."),
-        InlineData(@"/", null)
-        ]
+    [Theory]
+    [InlineData(@"dir/baz", @"dir")]
+    [InlineData(@"dir//baz", @"dir")]
+    [InlineData(@"dir\baz", @"")]
+    [InlineData(@"dir/baz/bar", @"dir/baz")]
+    [InlineData(@"../../files.txt", @"../..")]
+    [InlineData(@"/", null)]
     [PlatformSpecific(PlatformID.AnyUnix)]
     public static void GetDirectoryName_Unix(string path, string expected)
     {
@@ -96,14 +94,14 @@ public static class PathTests
     }
 
     [Theory]
-    [InlineData(".exe", "file.exe")]
-    [InlineData("", "file")]
+    [InlineData("file.exe", ".exe")]
+    [InlineData("file", "")]
     [InlineData(null, null)]
-    [InlineData("", "file.")]
-    [InlineData(".s", "file.s")]
-    [InlineData("", "test/file")]
-    [InlineData(".extension", "test/file.extension")]
-    public static void GetExtension(string expected, string path)
+    [InlineData("file.", "")]
+    [InlineData("file.s", ".s")]
+    [InlineData("test/file", "")]
+    [InlineData("test/file.extension", ".extension")]
+    public static void GetExtension(string path, string expected)
     {
         if (path != null)
         {
@@ -115,33 +113,35 @@ public static class PathTests
 
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Theory]
-    [InlineData(".e xe", "file.e xe")]
-    [InlineData(". ", "file. ")]
-    [InlineData(". ", " file. ")]
-    [InlineData(".extension", " file.extension")]
-    [InlineData(".exten\tsion", "file.exten\tsion")]
-    public static void GetExtension_Unix(string expected, string path)
+    [InlineData("file.e xe", ".e xe")]
+    [InlineData("file. ", ". ")]
+    [InlineData(" file. ", ". ")]
+    [InlineData(" file.extension", ".extension")]
+    [InlineData("file.exten\tsion", ".exten\tsion")]
+    public static void GetExtension_Unix(string path, string expected)
     {
         Assert.Equal(expected, Path.GetExtension(path));
         Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path));
     }
 
-    [Fact]
-    public static void GetFileName()
+    public static IEnumerable<object[]> GetFileName_TestData()
     {
-        Assert.Equal(null, Path.GetFileName(null));
-        Assert.Equal(string.Empty, Path.GetFileName(string.Empty));
+        yield return new object[] { null, null };
+        yield return new object[] { ".", "." };
+        yield return new object[] { "..", ".." };
+        yield return new object[] { "file", "file" };
+        yield return new object[] { "file.", "file." };
+        yield return new object[] { "file.exe", "file.exe" };
+        yield return new object[] { Path.Combine("baz", "file.exe"), "file.exe" };
+        yield return new object[] { Path.Combine("bar", "baz", "file.exe"), "file.exe" };
+        yield return new object[] { Path.Combine("bar", "baz", "file.exe") + Path.DirectorySeparatorChar, "" };
+    }
 
-        Assert.Equal(".", Path.GetFileName("."));
-        Assert.Equal("..", Path.GetFileName(".."));
-        Assert.Equal("file", Path.GetFileName("file"));
-        Assert.Equal("file.", Path.GetFileName("file."));
-        Assert.Equal("file.exe", Path.GetFileName("file.exe"));
-
-        Assert.Equal("file.exe", Path.GetFileName(Path.Combine("baz", "file.exe")));
-        Assert.Equal("file.exe", Path.GetFileName(Path.Combine("bar", "baz", "file.exe")));
-
-        Assert.Equal(string.Empty, Path.GetFileName(Path.Combine("bar", "baz") + Path.DirectorySeparatorChar));
+    [Theory]
+    [MemberData(nameof(GetFileName_TestData))]
+    public static void GetFileName(string path, string expected)
+    {
+        Assert.Equal(expected, Path.GetFileName(path));
     }
 
     [PlatformSpecific(PlatformID.AnyUnix)]
@@ -155,17 +155,21 @@ public static class PathTests
         Assert.Equal("fi  le", Path.GetFileName(Path.Combine("b \r\n ar", "fi  le")));
     }
 
-    [Fact]
-    public static void GetFileNameWithoutExtension()
+    public static IEnumerable<object[]> GetFileNameWithoutExtension_TestData()
     {
-        Assert.Equal(null, Path.GetFileNameWithoutExtension(null));
-        Assert.Equal(string.Empty, Path.GetFileNameWithoutExtension(string.Empty));
+        yield return new object[] { null, null };
+        yield return new object[] { "", "" };
+        yield return new object[] { "file", "file" };
+        yield return new object[] { "file.exe", "file" };
+        yield return new object[] { Path.Combine("bar", "baz", "file.exe"), "file" };
+        yield return new object[] { Path.Combine("bar", "baz") + Path.DirectorySeparatorChar, "" };
+    }
 
-        Assert.Equal("file", Path.GetFileNameWithoutExtension("file"));
-        Assert.Equal("file", Path.GetFileNameWithoutExtension("file.exe"));
-        Assert.Equal("file", Path.GetFileNameWithoutExtension(Path.Combine("bar", "baz", "file.exe")));
-
-        Assert.Equal(string.Empty, Path.GetFileNameWithoutExtension(Path.Combine("bar", "baz") + Path.DirectorySeparatorChar));
+    [Theory]
+    [MemberData(nameof(GetFileNameWithoutExtension_TestData))]
+    public static void GetFileNameWithoutExtension(string path, string expected)
+    {
+        Assert.Equal(expected, Path.GetFileNameWithoutExtension(path));
     }
 
     [Fact]
@@ -245,7 +249,7 @@ public static class PathTests
     {
         Assert.NotNull(Path.GetInvalidPathChars());
         Assert.NotSame(Path.GetInvalidPathChars(), Path.GetInvalidPathChars());
-        Assert.Equal((IEnumerable<char>)Path.GetInvalidPathChars(), (IEnumerable<char>)Path.GetInvalidPathChars());
+        Assert.Equal((IEnumerable<char>)Path.GetInvalidPathChars(), Path.GetInvalidPathChars());
         Assert.True(Path.GetInvalidPathChars().Length > 0);
         Assert.All(Path.GetInvalidPathChars(), c =>
         {
@@ -379,40 +383,19 @@ public static class PathTests
         Assert.Throws<ArgumentException>(() => Path.GetFullPath(string.Empty));
     }
 
-    [Fact]
-    public static void GetFullPath_BasicExpansions()
+    public static IEnumerable<object[]> GetFullPath_BasicExpansions_TestData()
     {
         string curDir = Directory.GetCurrentDirectory();
-
-        // Current directory => current directory
-        Assert.Equal(curDir, Path.GetFullPath(curDir));
-
-        // "." => current directory
-        Assert.Equal(curDir, Path.GetFullPath("."));
-
-        // ".." => up a directory
-        Assert.Equal(Path.GetDirectoryName(curDir), Path.GetFullPath(".."));
-
-        // "dir/./././." => "dir"
-        Assert.Equal(curDir, Path.GetFullPath(Path.Combine(curDir, ".", ".", ".", ".", ".")));
-
-        // "dir///." => "dir"
-        Assert.Equal(curDir, Path.GetFullPath(curDir + new string(Path.DirectorySeparatorChar, 3) + "."));
-
-        // "dir/../dir/./../dir" => "dir"
-        Assert.Equal(curDir, Path.GetFullPath(Path.Combine(curDir, "..", Path.GetFileName(curDir), ".", "..", Path.GetFileName(curDir))));
-
-        // "C:\somedir\.." => "C:\"
-        Assert.Equal(Path.GetPathRoot(curDir), Path.GetFullPath(Path.Combine(Path.GetPathRoot(curDir), "somedir", "..")));
-
-        // "C:\." => "C:\"
-        Assert.Equal(Path.GetPathRoot(curDir), Path.GetFullPath(Path.Combine(Path.GetPathRoot(curDir), ".")));
-
-        // "C:\..\..\..\.." => "C:\"
-        Assert.Equal(Path.GetPathRoot(curDir), Path.GetFullPath(Path.Combine(Path.GetPathRoot(curDir), "..", "..", "..", "..")));
-
-        // "C:\\\" => "C:\"
-        Assert.Equal(Path.GetPathRoot(curDir), Path.GetFullPath(Path.GetPathRoot(curDir) + new string(Path.DirectorySeparatorChar, 3)));
+        yield return new object[] { curDir, curDir }; // Current directory => current directory
+        yield return new object[] { ".", curDir }; // "." => current directory
+        yield return new object[] { "..", Path.GetDirectoryName(curDir) }; // "." => up a directory
+        yield return new object[] { Path.Combine(curDir, ".", ".", ".", ".", "."), curDir }; // "dir/./././." => "dir"
+        yield return new object[] { curDir + new string(Path.DirectorySeparatorChar, 3) + ".", curDir }; // "dir///." => "dir"
+        yield return new object[] { Path.Combine(curDir, "..", Path.GetFileName(curDir), ".", "..", Path.GetFileName(curDir)), curDir }; // "dir/../dir/./../dir" => "dir"
+        yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "somedir", ".."), Path.GetPathRoot(curDir) }; // "C:\somedir\.." => "C:\"
+        yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "."), Path.GetPathRoot(curDir) }; // "C:\." => "C:\"
+        yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "..", "..", "..", ".."), Path.GetPathRoot(curDir) }; // "C:\..\..\..\.." => "C:\"
+        yield return new object[] { Path.GetPathRoot(curDir) + new string(Path.DirectorySeparatorChar, 3), Path.GetPathRoot(curDir) }; // "C:\\\" => "C:\"
 
         // Path longer than MaxPath that normalizes down to less than MaxPath
         const int Iters = 10000;
@@ -421,7 +404,14 @@ public static class PathTests
         {
             longPath.Append(Path.DirectorySeparatorChar).Append('.');
         }
-        Assert.Equal(curDir, Path.GetFullPath(longPath.ToString()));
+        yield return new object[] { longPath.ToString(), curDir };
+    }
+
+    [Theory]
+    [MemberData(nameof(GetFullPath_BasicExpansions_TestData))]
+    public static void GetFullPath_BasicExpansions(string path, string expected)
+    {
+        Assert.Equal(expected, Path.GetFullPath(path));
     }
 
     [PlatformSpecific(PlatformID.AnyUnix)]
@@ -442,7 +432,7 @@ public static class PathTests
     {
         // URIs are valid filenames, though the multiple slashes will be consolidated in GetFullPath
         Assert.Equal(
-            Path.Combine(Directory.GetCurrentDirectory(), uriAsFileName.Replace("//", "/")), 
+            Path.Combine(Directory.GetCurrentDirectory(), uriAsFileName.Replace("//", "/")),
             Path.GetFullPath(uriAsFileName));
     }
 
