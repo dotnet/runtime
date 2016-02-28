@@ -6,27 +6,30 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class Environment_Exit : RemoteExecutorTestBase
+namespace System.Tests
 {
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(42)]
-    [InlineData(-1)]
-    [InlineData(-45)]
-    [InlineData(255)]
-    public static void CheckExitCode(int expectedExitCode)
+    public class Environment_Exit : RemoteExecutorTestBase
     {
-        using (Process p = RemoteInvoke(s => int.Parse(s), expectedExitCode.ToString()).Process)
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(42)]
+        [InlineData(-1)]
+        [InlineData(-45)]
+        [InlineData(255)]
+        public static void CheckExitCode(int expectedExitCode)
         {
-            Assert.True(p.WaitForExit(30 * 1000));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            using (Process p = RemoteInvoke(s => int.Parse(s), expectedExitCode.ToString()).Process)
             {
-                Assert.Equal(expectedExitCode, p.ExitCode);
-            }
-            else
-            {
-                Assert.Equal((sbyte)expectedExitCode, (sbyte)p.ExitCode);
+                Assert.True(p.WaitForExit(30 * 1000));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(expectedExitCode, p.ExitCode);
+                }
+                else
+                {
+                    Assert.Equal((sbyte)expectedExitCode, (sbyte)p.ExitCode);
+                }
             }
         }
     }
