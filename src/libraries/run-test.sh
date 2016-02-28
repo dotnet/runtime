@@ -362,7 +362,6 @@ else
   maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
 fi
 
-maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
 TestProjects=($(find . -regex ".*/src/.*/tests/.*\.Tests\.csproj"))
 for file in ${TestProjects[@]}
 do
