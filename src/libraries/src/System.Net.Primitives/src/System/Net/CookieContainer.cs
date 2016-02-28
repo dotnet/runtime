@@ -4,8 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
-using System.Globalization;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Text;
 
@@ -309,7 +308,7 @@ namespace System.Net
                 CookieCollection cookies;
                 lock (pathList.SyncRoot)
                 {
-                    cookies = (CookieCollection)pathList[cookie.Path];
+                    cookies = pathList[cookie.Path];
 
                     if (cookies == null)
                     {
@@ -420,8 +419,9 @@ namespace System.Net
                     domain_count = 0; // Cookies in the domain
                     lock (pathList.SyncRoot)
                     {
-                        foreach (CookieCollection cc in pathList.Values)
+                        foreach (KeyValuePair<string, CookieCollection> pair in pathList)
                         {
+                            CookieCollection cc = pair.Value;
                             itemp = ExpireCollection(cc);
                             removed += itemp;
                             _count -= itemp; // Update this container's count
@@ -447,15 +447,14 @@ namespace System.Net
                         lock (pathList.SyncRoot)
                         {
                             cookies = new KeyValuePair<DateTime, CookieCollection>[pathList.Count];
-                            foreach (CookieCollection cc in pathList.Values)
+                            foreach (KeyValuePair<string, CookieCollection> pair in pathList)
                             {
+                                CookieCollection cc = pair.Value;
                                 cookies[itemp] = new KeyValuePair<DateTime, CookieCollection>(cc.TimeStamp(CookieCollection.Stamp.Check), cc);
                                 ++itemp;
                             }
                         }
-                        Array.Sort(cookies,
-                            (KeyValuePair<DateTime, CookieCollection> a, KeyValuePair<DateTime, CookieCollection> b) =>
-                                { return a.Key.CompareTo(b.Key); });
+                        Array.Sort(cookies, (a, b) => a.Key.CompareTo(b.Key));
 
                         itemp = 0;
                         for (int i = 0; i < cookies.Length; ++i)
@@ -830,14 +829,14 @@ namespace System.Net
 
                 lock (pathList.SyncRoot)
                 {
-                    foreach (DictionaryEntry entry in pathList)
+                    foreach (KeyValuePair<string, CookieCollection> pair in pathList)
                     {
-                        string path = (string)entry.Key;
+                        string path = pair.Key;
                         if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path)))
                         {
                             found = true;
 
-                            CookieCollection cc = (CookieCollection)entry.Value;
+                            CookieCollection cc = pair.Value;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
                             MergeUpdateCollections(cookies, cc, port, isSecure, matchOnlyPlainCookie);
 
@@ -855,7 +854,7 @@ namespace System.Net
 
                 if (!defaultAdded)
                 {
-                    CookieCollection cc = (CookieCollection)pathList["/"];
+                    CookieCollection cc = pathList["/"];
 
                     if (cc != null)
                     {
@@ -978,19 +977,19 @@ namespace System.Net
         }
     }
 
-    internal class PathList
+    internal sealed class PathList
     {
-        private readonly SortedList _list = (SortedList.Synchronized(new SortedList(PathListComparer.StaticInstance)));
-
-        public PathList()
-        {
-        }
+        private readonly SortedList<string, CookieCollection> _list = new SortedList<string, CookieCollection>(PathListComparer.StaticInstance);
+        private readonly object _lock = new object();
 
         public int Count
         {
             get
             {
-                return _list.Count;
+                lock (SyncRoot)
+                {
+                    return _list.Count;
+                }
             }
         }
 
@@ -999,58 +998,53 @@ namespace System.Net
             int count = 0;
             lock (SyncRoot)
             {
-                foreach (CookieCollection cc in _list.Values)
+                foreach (KeyValuePair<string, CookieCollection> pair in _list)
                 {
+                    CookieCollection cc = pair.Value;
                     count += cc.Count;
                 }
             }
             return count;
         }
 
-        public ICollection Values
+        public CookieCollection this[string s]
         {
             get
             {
-                return _list.Values;
-            }
-        }
-
-        public object this[string s]
-        {
-            get
-            {
-                return _list[s];
+                lock (SyncRoot)
+                {
+                    CookieCollection value;
+                    return _list.TryGetValue(s, out value) ? value : null;
+                }
             }
             set
             {
                 lock (SyncRoot)
                 {
+                    Debug.Assert(value != null);
                     _list[s] = value;
                 }
             }
         }
 
-        public IEnumerator GetEnumerator()
+        public IEnumerator<KeyValuePair<string, CookieCollection>> GetEnumerator()
         {
-            return _list.GetEnumerator();
-        }
-
-        public object SyncRoot
-        {
-            get
+            lock (SyncRoot)
             {
-                return _list.SyncRoot;
+                return _list.GetEnumerator();
             }
         }
 
-        private class PathListComparer : IComparer
+        public object SyncRoot => _lock;
+
+        private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();
 
-            int IComparer.Compare(object ol, object or)
+            int IComparer<string>.Compare(string x, string y)
             {
-                string pathLeft = CookieParser.CheckQuoted((string)ol);
-                string pathRight = CookieParser.CheckQuoted((string)or);
+                string pathLeft = CookieParser.CheckQuoted(x);
+                string pathRight = CookieParser.CheckQuoted(y);
                 int ll = pathLeft.Length;
                 int lr = pathRight.Length;
                 int length = Math.Min(ll, lr);
