@@ -38,6 +38,10 @@ namespace System.Net.WebSockets
         private volatile bool _pendingReadOperation = false;
         private volatile bool _pendingWriteOperation = false;
 
+        // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
+        private GCHandle _cachedSendPinnedBuffer = default(GCHandle);
+        private GCHandle _cachedReceivePinnedBuffer = default(GCHandle);
+
         private volatile bool _disposed = false; // To detect redundant calls
 
         public WinHttpWebSocketState()
@@ -56,8 +60,49 @@ namespace System.Net.WebSockets
             {
                 Debug.Assert(_handlesOpenWithCallback == 0);
 
+                // This method only gets called when the WinHTTP request/websocket handles are fully closed and thus
+                // all async operations are done. So, it is safe at this point to unpin the buffers and release
+                // the strong GCHandle for this object.
+                if (_cachedReceivePinnedBuffer.IsAllocated)
+                {
+                    _cachedReceivePinnedBuffer.Free();
+                    _cachedReceivePinnedBuffer = default(GCHandle);
+                }
+
+                if (_cachedSendPinnedBuffer.IsAllocated)
+                {
+                    _cachedSendPinnedBuffer.Free();
+                    _cachedSendPinnedBuffer = default(GCHandle);
+                }
+
                 _operationHandle.Free();
                 _operationHandle = default(GCHandle);
+            }
+        }
+
+        public void PinSendBuffer(ArraySegment<byte> buffer)
+        {
+            if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer.Array)
+            {
+                if (_cachedSendPinnedBuffer.IsAllocated)
+                {
+                    _cachedSendPinnedBuffer.Free();
+                }
+
+                _cachedSendPinnedBuffer = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+            }
+        }
+
+        public void PinReceiveBuffer(ArraySegment<byte> buffer)
+        {
+            if (!_cachedReceivePinnedBuffer.IsAllocated || _cachedReceivePinnedBuffer.Target != buffer.Array)
+            {
+                if (_cachedReceivePinnedBuffer.IsAllocated)
+                {
+                    _cachedReceivePinnedBuffer.Free();
+                }
+
+                _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
             }
         }
 
