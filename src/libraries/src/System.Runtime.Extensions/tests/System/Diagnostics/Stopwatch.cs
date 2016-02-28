@@ -2,80 +2,81 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Threading;
-using System.Diagnostics;
 using Xunit;
 
-public static class StopwatchTests
+namespace System.Diagnostics.Tests
 {
-    private static readonly ManualResetEvent s_sleepEvent = new ManualResetEvent(false);
-
-    [Fact]
-    public static void GetTimestamp()
+    public static class StopwatchTests
     {
-        long ts1 = Stopwatch.GetTimestamp();
-        Sleep();
-        long ts2 = Stopwatch.GetTimestamp();
-        Assert.NotEqual(ts1, ts2);
-    }
+        private static readonly ManualResetEvent s_sleepEvent = new ManualResetEvent(false);
 
-    [Fact]
-    public static void ConstructStartAndStop()
-    {
-        Stopwatch watch = new Stopwatch();
-        Assert.False(watch.IsRunning);
-        watch.Start();
-        Assert.True(watch.IsRunning);
-        Sleep();
-        Assert.True(watch.Elapsed > TimeSpan.Zero);
+        [Fact]
+        public static void GetTimestamp()
+        {
+            long ts1 = Stopwatch.GetTimestamp();
+            Sleep();
+            long ts2 = Stopwatch.GetTimestamp();
+            Assert.NotEqual(ts1, ts2);
+        }
 
-        watch.Stop();
-        Assert.False(watch.IsRunning);
+        [Fact]
+        public static void ConstructStartAndStop()
+        {
+            Stopwatch watch = new Stopwatch();
+            Assert.False(watch.IsRunning);
+            watch.Start();
+            Assert.True(watch.IsRunning);
+            Sleep();
+            Assert.True(watch.Elapsed > TimeSpan.Zero);
 
-        var e1 = watch.Elapsed;
-        Sleep();
-        var e2 = watch.Elapsed;
-        Assert.Equal(e1, e2);
-        Assert.Equal((long)e1.TotalMilliseconds, watch.ElapsedMilliseconds);
+            watch.Stop();
+            Assert.False(watch.IsRunning);
 
-        var t1 = watch.ElapsedTicks;
-        Sleep();
-        var t2 = watch.ElapsedTicks;
-        Assert.Equal(t1, t2);
-    }
+            var e1 = watch.Elapsed;
+            Sleep();
+            var e2 = watch.Elapsed;
+            Assert.Equal(e1, e2);
+            Assert.Equal((long)e1.TotalMilliseconds, watch.ElapsedMilliseconds);
 
-    [Fact]
-    public static void StartNewAndReset()
-    {
-        Stopwatch watch = Stopwatch.StartNew();
-        Assert.True(watch.IsRunning);
-        watch.Start(); // should be no-op
-        Assert.True(watch.IsRunning);
-        Sleep();
-        Assert.True(watch.Elapsed > TimeSpan.Zero);
+            var t1 = watch.ElapsedTicks;
+            Sleep();
+            var t2 = watch.ElapsedTicks;
+            Assert.Equal(t1, t2);
+        }
 
-        watch.Reset();
-        Assert.False(watch.IsRunning);
-        Assert.Equal(TimeSpan.Zero, watch.Elapsed);
-    }
+        [Fact]
+        public static void StartNewAndReset()
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+            Assert.True(watch.IsRunning);
+            watch.Start(); // should be no-op
+            Assert.True(watch.IsRunning);
+            Sleep();
+            Assert.True(watch.Elapsed > TimeSpan.Zero);
 
-    [Fact]
-    public static void StartNewAndRestart()
-    {
-        Stopwatch watch = Stopwatch.StartNew();
-        Assert.True(watch.IsRunning);
-        Sleep(10);
-        TimeSpan elapsedSinceStart = watch.Elapsed;
-        Assert.True(elapsedSinceStart > TimeSpan.Zero);
+            watch.Reset();
+            Assert.False(watch.IsRunning);
+            Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+        }
 
-        watch.Restart();
-        Assert.True(watch.IsRunning);
-        Assert.True(watch.Elapsed < elapsedSinceStart);
-    }
+        [Fact]
+        public static void StartNewAndRestart()
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+            Assert.True(watch.IsRunning);
+            Sleep(10);
+            TimeSpan elapsedSinceStart = watch.Elapsed;
+            Assert.True(elapsedSinceStart > TimeSpan.Zero);
 
-    private static void Sleep(int milliseconds = 1)
-    {
-        s_sleepEvent.WaitOne(milliseconds);
+            watch.Restart();
+            Assert.True(watch.IsRunning);
+            Assert.True(watch.Elapsed < elapsedSinceStart);
+        }
+
+        private static void Sleep(int milliseconds = 1)
+        {
+            s_sleepEvent.WaitOne(milliseconds);
+        }
     }
 }

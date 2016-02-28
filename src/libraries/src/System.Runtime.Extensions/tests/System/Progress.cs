@@ -2,105 +2,106 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
-public class ProgressTests
+namespace System.Tests
 {
-    [Fact]
-    public void Ctor()
+    public class ProgressTests
     {
-        new Progress<int>();
-        new Progress<int>(i => { });
-        Assert.Throws<ArgumentNullException>(() => new Progress<int>(null));
-    }
-
-    [Fact]
-    public void NoWorkQueuedIfNoHandlers()
-    {
-        RunWithoutSyncCtx(() =>
+        [Fact]
+        public void Ctor()
         {
-            var tsc = new TrackingSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(tsc);
-            Progress<int> p = new Progress<int>();
-            for (int i = 0; i < 3; i++)
-                ((IProgress<int>)p).Report(i);
-            Assert.Equal(0, tsc.Posts);
-            SynchronizationContext.SetSynchronizationContext(null);
-        });
-    }
+            new Progress<int>();
+            new Progress<int>(i => { });
+            Assert.Throws<ArgumentNullException>(() => new Progress<int>(null));
+        }
 
-    [Fact]
-    public void TargetsCurrentSynchronizationContext()
-    {
-        RunWithoutSyncCtx(() =>
+        [Fact]
+        public void NoWorkQueuedIfNoHandlers()
         {
-            var tsc = new TrackingSynchronizationContext();
-            SynchronizationContext.SetSynchronizationContext(tsc);
-            Progress<int> p = new Progress<int>(i => { });
-            for (int i = 0; i < 3; i++)
-                ((IProgress<int>)p).Report(i);
-            Assert.Equal(3, tsc.Posts);
-            SynchronizationContext.SetSynchronizationContext(null);
-        });
-    }
-
-    [Fact]
-    public void EventRaisedWithActionHandler()
-    {
-        RunWithoutSyncCtx(() =>
-        {
-            Barrier b = new Barrier(2);
-            Progress<int> p = new Progress<int>(i =>
+            RunWithoutSyncCtx(() =>
             {
-                Assert.Equal(b.CurrentPhaseNumber, i);
-                b.SignalAndWait();
+                var tsc = new TrackingSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(tsc);
+                Progress<int> p = new Progress<int>();
+                for (int i = 0; i < 3; i++)
+                    ((IProgress<int>)p).Report(i);
+                Assert.Equal(0, tsc.Posts);
+                SynchronizationContext.SetSynchronizationContext(null);
             });
-            for (int i = 0; i < 3; i++)
-            {
-                ((IProgress<int>)p).Report(i);
-                b.SignalAndWait();
-            }
-        });
-    }
+        }
 
-    [Fact]
-    public void EventRaisedWithEventHandler()
-    {
-        RunWithoutSyncCtx(() =>
+        [Fact]
+        public void TargetsCurrentSynchronizationContext()
         {
-            Barrier b = new Barrier(2);
-            Progress<int> p = new Progress<int>();
-            p.ProgressChanged += (s, i) =>
+            RunWithoutSyncCtx(() =>
             {
-                Assert.Same(s, p);
-                Assert.Equal(b.CurrentPhaseNumber, i);
-                b.SignalAndWait();
-            };
-            for (int i = 0; i < 3; i++)
-            {
-                ((IProgress<int>)p).Report(i);
-                b.SignalAndWait();
-            }
-        });
-    }
+                var tsc = new TrackingSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(tsc);
+                Progress<int> p = new Progress<int>(i => { });
+                for (int i = 0; i < 3; i++)
+                    ((IProgress<int>)p).Report(i);
+                Assert.Equal(3, tsc.Posts);
+                SynchronizationContext.SetSynchronizationContext(null);
+            });
+        }
 
-    private static void RunWithoutSyncCtx(Action action)
-    {
-        Task.Run(action).GetAwaiter().GetResult();
-    }
-
-    private sealed class TrackingSynchronizationContext : SynchronizationContext
-    {
-        internal int Posts = 0;
-
-        public override void Post(SendOrPostCallback d, object state)
+        [Fact]
+        public void EventRaisedWithActionHandler()
         {
-            Posts++;
-            base.Post(d, state);
+            RunWithoutSyncCtx(() =>
+            {
+                Barrier b = new Barrier(2);
+                Progress<int> p = new Progress<int>(i =>
+                {
+                    Assert.Equal(b.CurrentPhaseNumber, i);
+                    b.SignalAndWait();
+                });
+                for (int i = 0; i < 3; i++)
+                {
+                    ((IProgress<int>)p).Report(i);
+                    b.SignalAndWait();
+                }
+            });
+        }
+
+        [Fact]
+        public void EventRaisedWithEventHandler()
+        {
+            RunWithoutSyncCtx(() =>
+            {
+                Barrier b = new Barrier(2);
+                Progress<int> p = new Progress<int>();
+                p.ProgressChanged += (s, i) =>
+                {
+                    Assert.Same(s, p);
+                    Assert.Equal(b.CurrentPhaseNumber, i);
+                    b.SignalAndWait();
+                };
+                for (int i = 0; i < 3; i++)
+                {
+                    ((IProgress<int>)p).Report(i);
+                    b.SignalAndWait();
+                }
+            });
+        }
+
+        private static void RunWithoutSyncCtx(Action action)
+        {
+            Task.Run(action).GetAwaiter().GetResult();
+        }
+
+        private sealed class TrackingSynchronizationContext : SynchronizationContext
+        {
+            internal int Posts = 0;
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Posts++;
+                base.Post(d, state);
+            }
         }
     }
-
 }
