@@ -2,80 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    //System.Text.UnicodeEncoding.GetMaxByteCount(int)
     public class UnicodeEncodingGetMaxByteCount
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Tests
-        // PosTest1:Invoke the method and set charCount as 0
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMaxByteCount_TestData()
         {
-            int expectedValue = 2;
-            int actualValue;
-            UnicodeEncoding uE = new UnicodeEncoding();
+            yield return new object[] { 0, 2 };
+            yield return new object[] { 1, 4 };
 
-            actualValue = uE.GetMaxByteCount(0);
-            Assert.Equal(expectedValue, actualValue);
+            int randomCharCount = (s_randomDataGenerator.GetInt32(-55) % int.MaxValue + 1) / 2;
+            yield return new object[] { randomCharCount, (randomCharCount + 1) * 2 };
         }
 
-        // PosTest2:Invoke the method and set charCount as 1
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMaxByteCount_TestData))]
+        public void GetMaxByteCount(int charCount, int expected)
         {
-            int expectedValue = 4;
-            int actualValue;
-            UnicodeEncoding uE = new UnicodeEncoding();
-
-            actualValue = uE.GetMaxByteCount(1);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(expected, new UnicodeEncoding().GetMaxByteCount(charCount));
         }
 
-        // PosTest3:Invoke the method and set charCount as random integer
         [Fact]
-        public void PosTest3()
+        public void GetMaxByteCount_Invalid()
         {
-            int charCount = (_generator.GetInt32(-55) % Int32.MaxValue + 1) / 2;
-            int expectedValue = (charCount + 1) * 2;
-            int actualValue;
-            UnicodeEncoding uE = new UnicodeEncoding();
-
-            actualValue = uE.GetMaxByteCount(charCount);
-            Assert.Equal(expectedValue, actualValue);
+            EncodingHelpers.GetMaxByteCount_Invalid(new UnicodeEncoding());
         }
-        #endregion
-
-        #region Negative Tests
-        // NegTest1:Invoke the method and set charCount as -1
-        [Fact]
-        public void NegTest1()
-        {
-            int actualValue;
-            UnicodeEncoding uE = new UnicodeEncoding();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = uE.GetMaxByteCount(-1);
-            });
-        }
-
-        // NegTest2:Invoke the method and set charCount as a large integer that lead the bytecount to overflow
-        [Fact]
-        public void NegTest2()
-        {
-            int actualValue;
-            UnicodeEncoding uE = new UnicodeEncoding();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = uE.GetMaxByteCount(int.MaxValue / 2);
-            });
-        }
-        #endregion
     }
 }
