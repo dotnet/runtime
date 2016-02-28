@@ -8,27 +8,12 @@ namespace System.Text.Tests
 {
     public class UTF7EncodingGetCharCount
     {
-        // PosTest1: Verify method GetCharCount with a non-null Byte[]
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData(new byte[] { 85, 84, 70, 56, 32, 69, 110, 99, 111, 100, 105, 110, 103, 32, 69, 120, 97, 109, 112, 108, 101 }, 2, 8, 8)]
+        [InlineData(new byte[0], 0, 0, 0)]
+        public void GetCharCount(byte[] bytes, int index, int count, int expected)
         {
-            Byte[] bytes = new Byte[] {
-                                         85,  84,  70,  56,  32,  69, 110,
-                                         99, 111, 100, 105, 110, 103,  32,
-                                         69, 120,  97, 109, 112, 108, 101};
-            UTF7Encoding UTF7 = new UTF7Encoding();
-            int charCount = UTF7.GetCharCount(bytes, 2, 8);
-            Assert.Equal(8, charCount);
-        }
-
-        // PosTest2: Verify method GetCharCount with a null Byte[]
-        [Fact]
-        public void PosTest2()
-        {
-            Byte[] bytes = new Byte[] { };
-            UTF7Encoding UTF7 = new UTF7Encoding();
-            int charCount = UTF7.GetCharCount(bytes, 0, 0);
-            Assert.Equal(0, charCount);
+            EncodingHelpers.GetCharCount(new UTF7Encoding(), bytes, index, count, expected);
         }
     }
 }
