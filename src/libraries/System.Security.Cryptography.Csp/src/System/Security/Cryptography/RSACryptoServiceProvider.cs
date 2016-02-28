@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Internal.NativeCrypto;
 
 
@@ -16,17 +12,17 @@ namespace System.Security.Cryptography
     public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm
     {
         private int _keySize;
-        private CspParameters _parameters;
-        private bool _randomKeyContainer;
+        private readonly CspParameters _parameters;
+        private readonly bool _randomKeyContainer;
         private SafeKeyHandle _safeKeyHandle;
         private SafeProvHandle _safeProvHandle;
-        private static volatile CspProviderFlags s_UseMachineKeyStore = 0;
+        private static volatile CspProviderFlags s_useMachineKeyStore = 0;
 
         public RSACryptoServiceProvider()
             : this(0, new CspParameters(CapiHelper.DefaultRsaProviderType,
                                        null,
                                        null,
-                                       s_UseMachineKeyStore),
+                                       s_useMachineKeyStore),
                                        true)
         {
         }
@@ -36,7 +32,7 @@ namespace System.Security.Cryptography
                   new CspParameters(CapiHelper.DefaultRsaProviderType,
                   null,
                   null,
-                  s_UseMachineKeyStore), false)
+                  s_useMachineKeyStore), false)
         {
         }
 
@@ -56,7 +52,12 @@ namespace System.Security.Cryptography
             {
                 throw new ArgumentOutOfRangeException("dwKeySize", "ArgumentOutOfRange_NeedNonNegNum");
             }
-            _parameters = CapiHelper.SaveCspParameters(CapiHelper.CspAlgorithmType.Rsa, parameters, s_UseMachineKeyStore, ref _randomKeyContainer);
+
+            _parameters = CapiHelper.SaveCspParameters(
+                CapiHelper.CspAlgorithmType.Rsa,
+                parameters,
+                s_useMachineKeyStore,
+                out _randomKeyContainer);
 
             _keySize = useDefaultKeySize ? 1024 : keySize;
 
@@ -64,29 +65,102 @@ namespace System.Security.Cryptography
             // in the constructor so we can report any errors now.
             if (!_randomKeyContainer)
             {
-                GetKeyPair();
+                // Force-read the SafeKeyHandle property, which will summon it into existence.
+                SafeKeyHandle localHandle = SafeKeyHandle;
+                Debug.Assert(localHandle != null);
             }
         }
 
-        /// <summary>
-        /// Retreives the key pair
-        /// </summary>
-        private void GetKeyPair()
+        private SafeProvHandle SafeProvHandle
         {
-            if (_safeKeyHandle == null)
+            get
             {
-                lock (this)
+                if (_safeProvHandle == null)
                 {
-                    if (_safeKeyHandle == null)
+                    lock (_parameters)
                     {
-                        // We only attempt to generate a random key on desktop runtimes because the CoreCLR
-                        // RSA surface area is limited to simply verifying signatures.  Since generating a
-                        // random key to verify signatures will always lead to failure (unless we happend to
-                        // win the lottery and randomly generate the signing key ...), there is no need
-                        // to add this functionality to CoreCLR at this point.
-                        CapiHelper.GetKeyPairHelper(CapiHelper.CspAlgorithmType.Rsa, _parameters,
-                                            _randomKeyContainer, _keySize, ref _safeProvHandle, ref _safeKeyHandle);
+                        if (_safeProvHandle == null)
+                        {
+                            SafeProvHandle hProv = CapiHelper.CreateProvHandle(_parameters, _randomKeyContainer);
+
+                            Debug.Assert(hProv != null);
+                            Debug.Assert(!hProv.IsInvalid);
+                            Debug.Assert(!hProv.IsClosed);
+
+                            _safeProvHandle = hProv;
+                        }
                     }
+
+                    return _safeProvHandle;
+                }
+
+                return _safeProvHandle;
+            }
+            set
+            {
+                lock (_parameters)
+                {
+                    SafeProvHandle current = _safeProvHandle;
+
+                    if (ReferenceEquals(value, current))
+                    {
+                        return;
+                    }
+
+                    if (current != null)
+                    {
+                        SafeKeyHandle keyHandle = _safeKeyHandle;
+                        _safeKeyHandle = null;
+                        keyHandle?.Dispose();
+                    }
+
+                    _safeProvHandle = value;
+                    current?.Dispose();
+                }
+            }
+        }
+
+        private SafeKeyHandle SafeKeyHandle
+        {
+            get
+            {
+                if (_safeKeyHandle == null)
+                {
+                    lock (_parameters)
+                    {
+                        if (_safeKeyHandle == null)
+                        {
+                            SafeKeyHandle hKey = CapiHelper.GetKeyPairHelper(
+                                CapiHelper.CspAlgorithmType.Rsa,
+                                _parameters,
+                                _keySize,
+                                SafeProvHandle);
+
+                            Debug.Assert(hKey != null);
+                            Debug.Assert(!hKey.IsInvalid);
+                            Debug.Assert(!hKey.IsClosed);
+
+                            _safeKeyHandle = hKey;
+                        }
+                    }
+                }
+
+                return _safeKeyHandle;
+            }
+
+            set
+            {
+                lock (_parameters)
+                {
+                    SafeKeyHandle current = _safeKeyHandle;
+
+                    if (ReferenceEquals(value, current))
+                    {
+                        return;
+                    }
+
+                    _safeKeyHandle = value;
+                    current?.Dispose();
                 }
             }
         }
@@ -98,7 +172,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                GetKeyPair();
+                // Desktop compat: Read the SafeKeyHandle property to force the key to load,
+                // because it might throw here.
+                SafeKeyHandle localHandle = SafeKeyHandle;
+                Debug.Assert(localHandle != null);
+
                 return new CspKeyContainerInfo(_parameters, _randomKeyContainer);
             }
         }
@@ -110,8 +188,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                GetKeyPair();
-                byte[] keySize = (byte[])CapiHelper.GetKeyParameter(_safeKeyHandle, Constants.CLR_KEYLEN);
+                byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
                 _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
                 return _keySize;
             }
@@ -132,17 +209,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeProvHandle == null)
-                {
-                    lock (this)
-                    {
-                        if (_safeProvHandle == null)
-                        {
-                            _safeProvHandle = CapiHelper.CreateProvHandle(_parameters, _randomKeyContainer);
-                        }
-                    }
-                }
-                return CapiHelper.GetPersistKeyInCsp(_safeProvHandle);
+                return CapiHelper.GetPersistKeyInCsp(SafeProvHandle);
             }
             set
             {
@@ -151,7 +218,7 @@ namespace System.Security.Cryptography
                 {
                     return; // Do nothing
                 }
-                CapiHelper.SetPersistKeyInCsp(_safeProvHandle, value);
+                CapiHelper.SetPersistKeyInCsp(SafeProvHandle, value);
             }
         }
 
@@ -162,8 +229,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                GetKeyPair();
-                byte[] publicKey = (byte[])CapiHelper.GetKeyParameter(_safeKeyHandle, Constants.CLR_PUBLICKEYONLY);
+                byte[] publicKey = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_PUBLICKEYONLY);
                 return (publicKey[0] == 1);
             }
         }
@@ -175,11 +241,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (s_UseMachineKeyStore == CspProviderFlags.UseMachineKeyStore);
+                return (s_useMachineKeyStore == CspProviderFlags.UseMachineKeyStore);
             }
             set
             {
-                s_UseMachineKeyStore = (value ? CspProviderFlags.UseMachineKeyStore : 0);
+                s_useMachineKeyStore = (value ? CspProviderFlags.UseMachineKeyStore : 0);
             }
         }
 
@@ -196,15 +262,17 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(rgb));
             }
 
-            GetKeyPair();
+            // Save the KeySize value to a local because it has non-trivial cost.
+            int keySize = KeySize;
 
             // size check -- must be at most the modulus size
-            if (rgb.Length > (KeySize / 8))
+            if (rgb.Length > (keySize / 8))
             {
-                throw new CryptographicException(SR.Format(SR.Cryptography_Padding_DecDataTooBig, Convert.ToString(KeySize / 8)));
+                throw new CryptographicException(SR.Format(SR.Cryptography_Padding_DecDataTooBig, Convert.ToString(keySize / 8)));
             }
-            byte[] decryptedKey = null;
-            CapiHelper.DecryptKey(_safeKeyHandle, rgb, rgb.Length, fOAEP, out decryptedKey);
+
+            byte[] decryptedKey;
+            CapiHelper.DecryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, out decryptedKey);
             return decryptedKey;
         }
 
@@ -243,10 +311,8 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(rgb));
             }
 
-            GetKeyPair();
-
             byte[] encryptedKey = null;
-            CapiHelper.EncryptKey(_safeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
+            CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
             return encryptedKey;
         }
 
@@ -255,8 +321,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public byte[] ExportCspBlob(bool includePrivateParameters)
         {
-            GetKeyPair();
-            return CapiHelper.ExportKeyBlob(includePrivateParameters, _safeKeyHandle);
+            return CapiHelper.ExportKeyBlob(includePrivateParameters, SafeKeyHandle);
         }
 
         /// <summary>
@@ -264,7 +329,6 @@ namespace System.Security.Cryptography
         /// </summary>
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
-            GetKeyPair();
             byte[] cspBlob = ExportCspBlob(includePrivateParameters);
             return cspBlob.ToRSAParameters(includePrivateParameters);
         }
@@ -273,11 +337,11 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        /// <param name="safeProvHandle"> SafeProvHandle. Intialized if successful</param>
-        /// <returns>does not return. AcquireCSP throw exception</returns>
-        private void AcquireSafeProviderHandle(ref SafeProvHandle safeProvHandle)
+        private SafeProvHandle AcquireSafeProviderHandle()
         {
-            CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultRsaProviderType), ref safeProvHandle);
+            SafeProvHandle safeProvHandle;
+            CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultRsaProviderType), out safeProvHandle);
+            return safeProvHandle;
         }
 
         /// <summary>
@@ -286,29 +350,23 @@ namespace System.Security.Cryptography
         /// <param name="keyBlob"></param>
         public void ImportCspBlob(byte[] keyBlob)
         {
-            // Free the current key handle
-            if (_safeKeyHandle != null && !_safeKeyHandle.IsClosed)
-            {
-                _safeKeyHandle.Dispose();
-                _safeKeyHandle = null;
-            }
-            _safeKeyHandle = SafeKeyHandle.InvalidHandle;
+            SafeKeyHandle safeKeyHandle;
 
             if (IsPublic(keyBlob))
             {
-                SafeProvHandle safeProvHandleTemp = SafeProvHandle.InvalidHandle;
-                AcquireSafeProviderHandle(ref safeProvHandleTemp);
-                CapiHelper.ImportKeyBlob(safeProvHandleTemp, (CspProviderFlags)0, keyBlob, ref _safeKeyHandle);
-                _safeProvHandle = safeProvHandleTemp;
+                SafeProvHandle safeProvHandleTemp = AcquireSafeProviderHandle();
+                CapiHelper.ImportKeyBlob(safeProvHandleTemp, (CspProviderFlags)0, keyBlob, out safeKeyHandle);
+
+                // The property set will take care of releasing any already-existing resources.
+                SafeProvHandle = safeProvHandleTemp;
             }
             else
             {
-                if (_safeProvHandle == null)
-                {
-                    _safeProvHandle = CapiHelper.CreateProvHandle(_parameters, _randomKeyContainer);
-                }
-                CapiHelper.ImportKeyBlob(_safeProvHandle, _parameters.Flags, keyBlob, ref _safeKeyHandle);
+                CapiHelper.ImportKeyBlob(SafeProvHandle, _parameters.Flags, keyBlob, out safeKeyHandle);
             }
+
+            // The property set will take care of releasing any already-existing resources.
+            SafeKeyHandle = safeKeyHandle;
         }
 
         /// <summary>
@@ -316,28 +374,20 @@ namespace System.Security.Cryptography
         /// </summary>
         public override void ImportParameters(RSAParameters parameters)
         {
-            // Free the current key handle
-            if (_safeKeyHandle != null && !_safeKeyHandle.IsClosed)
-            {
-                _safeKeyHandle.Dispose();
-                _safeKeyHandle = null;
-            }
-            _safeKeyHandle = SafeKeyHandle.InvalidHandle;
-
             byte[] keyBlob = parameters.ToKeyBlob(CapiHelper.CALG_RSA_KEYX);
             ImportCspBlob(keyBlob);
-            return;
         }
 
         /// <summary>
-        /// Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.
+        /// Computes the hash value of a subset of the specified byte array using the
+        /// specified hash algorithm, and signs the resulting hash value.
         /// </summary>
         /// <param name="buffer">The input data for which to compute the hash</param>
         /// <param name="offset">The offset into the array from which to begin using data</param>
         /// <param name="count">The number of bytes in the array to use as data. </param>
         /// <param name="halg">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignData(byte[] buffer, int offset, int count, Object halg)
+        public byte[] SignData(byte[] buffer, int offset, int count, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
             HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
@@ -346,7 +396,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.
+        /// Computes the hash value of a subset of the specified byte array using the
+        /// specified hash algorithm, and signs the resulting hash value.
         /// </summary>
         /// <param name="buffer">The input data for which to compute the hash</param>
         /// <param name="halg">The hash algorithm to use to create the hash value. </param>
@@ -360,7 +411,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.
+        /// Computes the hash value of a subset of the specified byte array using the
+        /// specified hash algorithm, and signs the resulting hash value.
         /// </summary>
         /// <param name="inputStream">The input data for which to compute the hash</param>
         /// <param name="halg">The hash algorithm to use to create the hash value. </param>
@@ -374,7 +426,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.
+        /// Computes the hash value of a subset of the specified byte array using the
+        /// specified hash algorithm, and signs the resulting hash value.
         /// </summary>
         /// <param name="rgbHash">The input data for which to compute the hash</param>
         /// <param name="str">The hash algorithm to use to create the hash value. </param>
@@ -392,7 +445,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Computes the hash value of a subset of the specified byte array using the specified hash algorithm, and signs the resulting hash value.
+        /// Computes the hash value of a subset of the specified byte array using the
+        /// specified hash algorithm, and signs the resulting hash value.
         /// </summary>
         /// <param name="rgbHash">The input data for which to compute the hash</param>
         /// <param name="calgHash">The hash algorithm to use to create the hash value. </param>
@@ -400,8 +454,14 @@ namespace System.Security.Cryptography
         private byte[] SignHash(byte[] rgbHash, int calgHash)
         {
             Debug.Assert(rgbHash != null);
-            GetKeyPair();
-            return CapiHelper.SignValue(_safeProvHandle, _safeKeyHandle, _parameters.KeyNumber, CapiHelper.CALG_RSA_SIGN, calgHash, rgbHash);
+
+            return CapiHelper.SignValue(
+                SafeProvHandle,
+                SafeKeyHandle,
+                _parameters.KeyNumber,
+                CapiHelper.CALG_RSA_SIGN,
+                calgHash,
+                rgbHash);
         }
 
         /// <summary>
@@ -434,8 +494,13 @@ namespace System.Security.Cryptography
         /// </summary>
         private bool VerifyHash(byte[] rgbHash, int calgHash, byte[] rgbSignature)
         {
-            GetKeyPair();
-            return CapiHelper.VerifySign(_safeProvHandle, _safeKeyHandle, CapiHelper.CALG_RSA_SIGN, calgHash, rgbHash, rgbSignature);
+            return CapiHelper.VerifySign(
+                SafeProvHandle,
+                SafeKeyHandle,
+                CapiHelper.CALG_RSA_SIGN,
+                calgHash,
+                rgbHash,
+                rgbSignature);
         }
 
         /// <summary>

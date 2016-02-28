@@ -32,6 +32,9 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
+      <Link>Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
