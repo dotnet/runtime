@@ -14,7 +14,7 @@ namespace System.Text.Tests
         {
             DecoderFallbackException decoderFallbackException = new DecoderFallbackException();
             Assert.Null(decoderFallbackException.BytesUnknown);
-            Assert.Equal(default(int), decoderFallbackException.Index);
+            Assert.Equal(0, decoderFallbackException.Index);
             Assert.Null(decoderFallbackException.StackTrace);
             Assert.Null(decoderFallbackException.InnerException);
             Assert.Equal(0, decoderFallbackException.Data.Count);
@@ -29,7 +29,7 @@ namespace System.Text.Tests
         {
             DecoderFallbackException decoderFallbackException = new DecoderFallbackException(message);
             Assert.Null(decoderFallbackException.BytesUnknown);
-            Assert.Equal(default(int), decoderFallbackException.Index);
+            Assert.Equal(0, decoderFallbackException.Index);
             Assert.Null(decoderFallbackException.StackTrace);
             Assert.Null(decoderFallbackException.InnerException);
             Assert.Equal(0, decoderFallbackException.Data.Count);
@@ -48,7 +48,7 @@ namespace System.Text.Tests
         {
             DecoderFallbackException ex = new DecoderFallbackException(message, innerException);
             Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
+            Assert.Equal(0, ex.Index);
             Assert.Null(ex.StackTrace);
             Assert.Equal(0, ex.Data.Count);
             Assert.Same(innerException, ex.InnerException);
