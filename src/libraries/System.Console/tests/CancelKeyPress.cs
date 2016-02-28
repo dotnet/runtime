@@ -3,14 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 
-public class CancelKeyPress
+public class CancelKeyPressTests : RemoteExecutorTestBase
 {
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
-    public static void CanAddAndRemoveHandler()
+    public void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
         {
@@ -22,51 +25,52 @@ public class CancelKeyPress
         Console.CancelKeyPress -= handler;
     }
 
-    // Commented out InvokingCancelKeyPressHandler test:
-    // While this test works, it also causes problems when run as part of
-    // the xunit harness.  Since it issues a ctrl-c back to itself, xunit's own
-    // CancelKeyPress event handler will likely stop running additional tests
-    // after this test has run.  The test is here and commented out rather than
-    // being deleted in case we want to add something like it back in the future.
-    //
-    //[Fact]
-    //[PlatformSpecific(PlatformID.AnyUnix)]
-    //public static void InvokingCancelKeyPressHandler()
-    //{
-    //    // On Windows we could use GenerateConsoleCtrlEvent to send a ctrl-C to the process,
-    //    // however that'll apply to all processes associated with the same group, which will
-    //    // include processes like the code coverage tool when doing code coverage runs, causing
-    //    // those other processes to exit.  As such, we test this only on Unix, where we can
-    //    // send a SIGINT signal to this specific process only.
-    //
-    //    using (var mres = new ManualResetEventSlim())
-    //    {
-    //        ConsoleCancelEventHandler handler = (sender, e) => {
-    //            e.Cancel = true;
-    //            mres.Set();
-    //        };
-    //
-    //        Console.CancelKeyPress += handler;
-    //        try
-    //        {
-    //            Assert.Equal(0, kill(getpid(), SIGINT));
-    //            Assert.True(mres.Wait(WaitFailTestTimeoutSeconds));
-    //        }
-    //        finally
-    //        {
-    //            Console.CancelKeyPress -= handler;
-    //        }
-    //    }
-    //}
-    //
-    //// P/Invokes included here rather than being pulled from Interop\Unix
-    //// to avoid platform-dependent includes in csproj
-    //[DllImport("libc", SetLastError = true)]
-    //private static extern int kill(int pid, int sig);
-    //
-    //[DllImport("libc")]
-    //private static extern int getpid();
-    //
-    //private const int SIGINT = 2;
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [Theory]
+    [InlineData(SIGINT)]
+    [InlineData(SIGQUIT)]
+    public void HandlerInvokedForSignal(int signalOuter)
+    {
+        // On Windows we could use GenerateConsoleCtrlEvent to send a ctrl-C to the process,
+        // however that'll apply to all processes associated with the same group, which will
+        // include processes like the code coverage tool when doing code coverage runs, causing
+        // those other processes to exit.  As such, we test this only on Unix, where we can
+        // send a SIGINT signal to this specific process only.
 
+        // This test sends a SIGINT back to itself... if run in the xunit process, this would end
+        // up canceling the rest of xunit's tests.  So we run the test itself in a separate process.
+        RemoteInvoke(signalStr =>
+        {
+            var tcs = new TaskCompletionSource<ConsoleSpecialKey>();
+
+            ConsoleCancelEventHandler handler = (sender, e) =>
+            {
+                e.Cancel = true;
+                tcs.SetResult(e.SpecialKey);
+            };
+
+            Console.CancelKeyPress += handler;
+            try
+            {
+                int signalInner = int.Parse(signalStr);
+                Assert.Equal(0, kill(Process.GetCurrentProcess().Id, signalInner));
+                Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
+                Assert.Equal(
+                    signalInner == SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak,
+                    tcs.Task.Result);
+            }
+            finally
+            {
+                Console.CancelKeyPress -= handler;
+            }
+
+            return SuccessExitCode;
+        }, signalOuter.ToString()).Dispose();
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int kill(int pid, int sig);
+
+    private const int SIGINT = 2;
+    private const int SIGQUIT = 3;
 }
