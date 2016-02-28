@@ -8,13 +8,11 @@ namespace System.Text.Tests
 {
     public class UTF7EncodingGetDecoder
     {
-        // PosTest1: Verify method GetDecoder
         [Fact]
-        public void PosTest1()
+        public void GetDecoder()
         {
-            UTF7Encoding utf7 = new UTF7Encoding();
-            Decoder decoder = utf7.GetDecoder();
+            Decoder decoder = new UTF7Encoding().GetDecoder();
+            Assert.NotNull(decoder);
         }
     }
 }
-
