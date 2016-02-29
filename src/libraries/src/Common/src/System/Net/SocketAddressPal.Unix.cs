@@ -20,7 +20,7 @@ namespace System.Net
         {
             int ipv6AddressSize, unused;
             Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&unused, &ipv6AddressSize);
-            Debug.Assert(err == Interop.Error.SUCCESS);
+            Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
             return ipv6AddressSize;
         }
 
@@ -28,7 +28,7 @@ namespace System.Net
         {
             int ipv4AddressSize, unused;
             Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &unused);
-            Debug.Assert(err == Interop.Error.SUCCESS);
+            Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
             return ipv4AddressSize;
         }
 

@@ -22,7 +22,7 @@ namespace System.Net.Sockets
             {
                 // *nix does not support the reuse of an existing socket as the accepted
                 // socket.
-                Debug.Assert(value == null);
+                Debug.Assert(value == null, $"Unexpected value: {value}");
             }
         }
 

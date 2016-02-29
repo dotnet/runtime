@@ -67,7 +67,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                Debug.Assert(value == -1 || value > 0);
+                Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
                 _receiveTimeout = value;;
             }
         }
@@ -80,7 +80,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                Debug.Assert(value == -1 || value > 0);
+                Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
                 _sendTimeout = value;
             }
         }
@@ -218,7 +218,7 @@ namespace System.Net.Sockets
                 Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
                 if (error == Interop.Error.SUCCESS)
                 {
-                    Debug.Assert(fd != -1);
+                    Debug.Assert(fd != -1, "fd should not be -1");
 
                     errorCode = SocketError.Success;
 
@@ -237,7 +237,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    Debug.Assert(fd == -1);
+                    Debug.Assert(fd == -1, $"Unexpected fd: {fd}");
 
                     errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                 }
