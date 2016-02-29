@@ -994,9 +994,11 @@ namespace System.Net.Sockets
                 Interop.Sys.MulticastOption.MULTICAST_ADD :
                 Interop.Sys.MulticastOption.MULTICAST_DROP;
 
+            IPAddress localAddress = optionValue.LocalAddress ?? IPAddress.Any;
+
             var opt = new Interop.Sys.IPv4MulticastOption {
                 MulticastAddress = unchecked((uint)optionValue.Group.GetAddress()),
-                LocalAddress = unchecked((uint)optionValue.LocalAddress.GetAddress()),
+                LocalAddress = unchecked((uint)localAddress.GetAddress()),
                 InterfaceIndex = optionValue.InterfaceIndex
             };
 
