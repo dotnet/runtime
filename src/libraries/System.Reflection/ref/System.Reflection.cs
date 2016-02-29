@@ -143,6 +143,12 @@ namespace System.Reflection
         public abstract object GetValue(object obj);
         public virtual void SetValue(object obj, object value) { }
     }
+    public interface ICustomAttributeProvider
+    {
+        object[] GetCustomAttributes(bool inherit);
+        object[] GetCustomAttributes(Type attributeType, bool inherit);
+        bool IsDefined(Type attributeType, bool inherit);
+    }
     public static partial class IntrospectionExtensions
     {
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { return default(System.Reflection.TypeInfo); }
@@ -167,7 +173,7 @@ namespace System.Reflection
         public virtual System.Reflection.ResourceLocation ResourceLocation { get { return default(System.Reflection.ResourceLocation); } }
     }
     public delegate bool MemberFilter(MemberInfo m, object filterCriteria);
-    public abstract partial class MemberInfo
+    public abstract partial class MemberInfo : ICustomAttributeProvider
     {
         internal MemberInfo() { }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { return default(System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData>); } }
@@ -176,6 +182,10 @@ namespace System.Reflection
         public abstract string Name { get; }
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
+        public abstract MemberTypes MemberType { get; }
+        object[] ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
+        object[] ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        bool ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
     }
     [Flags]
     public enum MemberTypes
@@ -223,6 +233,7 @@ namespace System.Reflection
     public abstract partial class MethodInfo : System.Reflection.MethodBase
     {
         internal MethodInfo() { }
+        public abstract MethodInfo GetBaseDefinition();
         public virtual System.Reflection.ParameterInfo ReturnParameter { get { return default(System.Reflection.ParameterInfo); } }
         public virtual System.Type ReturnType { get { return default(System.Type); } }
         public virtual System.Delegate CreateDelegate(System.Type delegateType) { return default(System.Delegate); }
@@ -232,6 +243,8 @@ namespace System.Reflection
         public virtual System.Reflection.MethodInfo GetGenericMethodDefinition() { return default(System.Reflection.MethodInfo); }
         public override int GetHashCode() { return default(int); }
         public virtual System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { return default(System.Reflection.MethodInfo); }
+        public override MemberTypes MemberType { get { return default(MemberTypes); } }
+        public abstract ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
     }
     public abstract partial class Module
     {
