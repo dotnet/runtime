@@ -2,99 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 
 namespace System.Net.Sockets
 {
-    /// <devdoc>
-    ///    <para>
-    ///       Provides socket exceptions to the application.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>Provides socket exceptions to the application.</summary>
     public partial class SocketException : Win32Exception
     {
-        private EndPoint _endPoint;
+        /// <summary>The SocketError or Int32 specified when constructing the exception.</summary>
+        /// <remarks>Based on platform, this may or may not be the same as the underlying NativeErrorCode.</remarks>
+        private readonly SocketError _errorCode;
 
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the default error code.
-        ///    </para>
-        /// </devdoc>
-        public SocketException() : base(Marshal.GetLastWin32Error())
+        /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code.</summary>
+        public SocketException(int errorCode) : this((SocketError)errorCode)
         {
+            // NOTE: SocketException(SocketError) isn't exposed publically.  As a result, code with a SocketError calls
+            // this ctor, e.g. 
+            //     SocketError error = ...;
+            //     throw new SocketException((int)error);
+            // That means we need to assume the errorCode is a SocketError value, rather than a platform-specific error code. 
+            // Hence, no translation on the supplied code.  This does mean on Unix there's a difference between:
+            //     new SocketException(); // will treat the last error as a native error code and translate it appropriately
+            // and:
+            //     new SocketException(Marshal.GetLastWin32Error()); // will treat the last error as a SocketError, inappropriately
+            // but that's the least bad option right now.
+        }
+
+        /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.</summary>
+        internal SocketException(SocketError socketError) : base(GetNativeErrorForSocketError(socketError))
+        {
+            _errorCode = socketError;
+
             if (GlobalLog.IsEnabled)
             {
-                GlobalLog.Print("SocketException::.ctor() " + NativeErrorCode.ToString() + ":" + Message);
+                GlobalLog.Print($"SocketException::.ctor(SocketError={socketError}):{Message}");
             }
         }
 
-        internal SocketException(EndPoint endPoint) : base(Marshal.GetLastWin32Error())
-        {
-            _endPoint = endPoint;
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code.
-        ///    </para>
-        /// </devdoc>
-        public SocketException(int errorCode) : base(errorCode)
-        {
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("SocketException::.ctor(int) " + NativeErrorCode.ToString() + ":" + Message);
-            }
-        }
-
-        internal SocketException(int errorCode, EndPoint endPoint) : base(errorCode)
-        {
-            _endPoint = endPoint;
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.
-        ///    </para>
-        /// </devdoc>
-        internal SocketException(SocketError socketError) : base((int)socketError)
-        {
-        }
-
-        public int ErrorCode
-        {
-            // The base class returns the HResult with this property.
-            // We need the Win32 error code, hence the override.
-            get
-            {
-                return NativeErrorCode;
-            }
-        }
-
-        public override string Message
-        {
-            get
-            {
-                // If not null, add EndPoint.ToString() to end of base Message
-                if (_endPoint == null)
-                {
-                    return base.Message;
-                }
-
-                return base.Message + " " + _endPoint.ToString();
-            }
-        }
-
-
-        public SocketError SocketErrorCode
-        {
-            // The base class returns the HResult with this property.
-            // We need the Win32 error code, hence the override.
-            get
-            {
-                return (SocketError)NativeErrorCode;
-            }
-        }
+        public SocketError SocketErrorCode => _errorCode;
     }
 }

@@ -378,7 +378,6 @@ namespace System.Net.Sockets
     {
         public SocketException() { }
         public SocketException(int errorCode) { }
-        public override string Message { get { return default(string); } }
         public System.Net.Sockets.SocketError SocketErrorCode { get { return default(System.Net.Sockets.SocketError); } }
     }
 }

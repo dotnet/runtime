@@ -205,6 +205,9 @@
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs" >
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs" >
+      <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
+    </Compile>
 
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" >
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
