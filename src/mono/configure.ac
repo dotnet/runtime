@@ -4027,6 +4027,10 @@ fi
     if test x$has_extension_module != xno; then
         echo "EXTENSION_MODULE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
+
+    if test x$enable_gsharedvt = xno; then
+        echo "MONO_DISABLE_GSHAREDVT = 1" >> $srcdir/$mcsdir/build/config.make
+    fi
     
     echo "DEFAULT_PROFILE = $default_profile" >> $srcdir/$mcsdir/build/config.make
     
