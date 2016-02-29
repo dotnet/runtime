@@ -7,6 +7,9 @@
       <SupportedFramework>dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Loader.builds"/>
+    
+    <NotSupportedOnTargetFramework Include="netcore50" />
+    <NotSupportedOnTargetFramework Include="net462" />
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

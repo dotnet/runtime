@@ -5,7 +5,7 @@
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -15,7 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
 
   <ItemGroup>

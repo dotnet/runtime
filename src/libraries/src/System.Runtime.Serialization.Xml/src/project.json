@@ -2,7 +2,11 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23829"
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
+        "System.Runtime": "4.0.20",
+        "System.Reflection": "4.0.10",
+        "System.Reflection.TypeExtensions": "4.0.0",
+        "System.Xml.XmlDocument": "4.0.0"
       },
       "imports": [
         "dotnet5.4"

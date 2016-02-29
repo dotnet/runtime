@@ -5,7 +5,7 @@
     <AssemblyName>System.Runtime.Loader</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->

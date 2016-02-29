@@ -7,6 +7,8 @@
       <SupportedFramework>net46;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Thread.builds" />
+
+    <NotSupportedOnTargetFramework Include="netcore50" />
   </ItemGroup>
 
   <ItemGroup>

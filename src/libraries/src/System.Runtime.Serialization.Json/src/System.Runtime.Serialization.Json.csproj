@@ -5,7 +5,7 @@
     <AssemblyName>System.Runtime.Serialization.Json</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -24,7 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' != 'netcore50aot'" />
+    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
     <TargetingPackReference Include="System.Runtime.Serialization" Condition="'$(TargetGroup)' == 'net46'" />
     <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
     <TargetingPackReference Include="System.Private.DataContractSerialization" Condition="'$(TargetGroup)' == 'netcore50aot'" />
