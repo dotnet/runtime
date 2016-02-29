@@ -7,6 +7,13 @@
       <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Overlapped.builds" />
+
+    <ExcludeDefaultValidateFramework Include="dnxcore50" />
+    <!-- Only supported on windows, so overriding
+         the validation RID's -->
+    <ValidateFramework Include="dnxcore50"> 
+      <RuntimeIDs>win7-x86;win7-x64</RuntimeIDs> 
+    </ValidateFramework> 
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

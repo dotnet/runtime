@@ -10,8 +10,9 @@
     <ProjectGuid>{F75E3008-0562-42DF-BE72-C1384F12157E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>    
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework> 
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
+    <PackageTargetRuntime Condition="'$(PackageTargetFramework)' == ''">win</PackageTargetRuntime> 
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

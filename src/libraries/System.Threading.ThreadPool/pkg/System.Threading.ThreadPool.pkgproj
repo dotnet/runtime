@@ -10,6 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <NotSupportedOnTargetFramework Include="netcore50" />
+
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
