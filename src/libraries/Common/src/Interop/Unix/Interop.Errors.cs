@@ -93,12 +93,17 @@ internal static partial class Interop
         ETIMEDOUT        = 0x1004D,           // Connection timed out.
         ETXTBSY          = 0x1004E,           // Text file busy.
         EXDEV            = 0x1004F,           // Cross-device link.
+        ESOCKTNOSUPPORT  = 0x1005E,           // Socket type not supported.
+        EPFNOSUPPORT     = 0x10060,           // Protocol family not supported.
+        ESHUTDOWN        = 0x1006C,           // Socket shutdown.
+        EHOSTDOWN        = 0x10070,           // Host is down.
+        ENODATA          = 0x10071,           // No data available.
 
         // POSIX permits these to have the same value and we make them always equal so
         // that CoreFX cannot introduce a dependency on distinguishing between them that
         // would not work on all platforms.
-        EOPNOTSUPP      = ENOTSUP,            // Operation not supported on socket
-        EWOULDBLOCK     = EAGAIN,             // Operation would block
+        EOPNOTSUPP      = ENOTSUP,            // Operation not supported on socket.
+        EWOULDBLOCK     = EAGAIN,             // Operation would block.
     }
 
 

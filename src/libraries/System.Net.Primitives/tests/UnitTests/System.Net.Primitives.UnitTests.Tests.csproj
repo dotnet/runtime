@@ -123,6 +123,9 @@
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs" >
+      <Link>ProductionCode\Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

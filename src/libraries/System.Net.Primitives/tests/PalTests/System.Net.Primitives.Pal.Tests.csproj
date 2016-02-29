@@ -160,6 +160,9 @@
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs" >
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs" >
+      <Link>Common\System\Net\Sockets\SocketErrorPal.Unix.cs</Link>
+    </Compile>
 
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
