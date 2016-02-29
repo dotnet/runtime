@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc3-23818",
-    "Microsoft.NETCore.Console": "1.0.0-rc3-23818",
-    "System.IO.Compression": "4.1.0-rc3-23818",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
+    "Microsoft.NETCore.TestHost": "1.0.0-rc3-23829",
+    "Microsoft.NETCore.Console": "1.0.0-rc3-23829",
+    "System.IO.Compression": "4.1.0-rc3-23829",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",

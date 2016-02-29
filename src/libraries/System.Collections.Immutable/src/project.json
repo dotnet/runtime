@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
     "System.Collections": "4.0.0",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.0",
@@ -10,7 +10,7 @@
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.0",
     "System.Runtime.Extensions": "4.0.0",
-    "System.Threading": "4.0.0",
+    "System.Threading": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}
