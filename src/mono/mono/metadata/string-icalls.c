@@ -46,11 +46,12 @@ ves_icall_System_String_InternalAllocateStr (gint32 length)
 MonoString  *
 ves_icall_System_String_InternalIntern (MonoString *str)
 {
+	MonoError error;
 	MonoString *res;
 
-	res = mono_string_intern(str);
+	res = mono_string_intern_checked (str, &error);
 	if (!res) {
-		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
+		mono_error_set_pending_exception (&error);
 		return NULL;
 	}
 	return res;
@@ -59,7 +60,7 @@ ves_icall_System_String_InternalIntern (MonoString *str)
 MonoString * 
 ves_icall_System_String_InternalIsInterned (MonoString *str)
 {
-	return mono_string_is_interned(str);
+	return mono_string_is_interned (str);
 }
 
 int

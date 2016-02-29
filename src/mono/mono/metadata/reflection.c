@@ -12904,7 +12904,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 	gpointer result = NULL;
 
 	if (strcmp (obj->vtable->klass->name, "String") == 0) {
-		result = mono_string_intern ((MonoString*)obj);
+		result = mono_string_intern_checked ((MonoString*)obj, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		*handle_class = mono_defaults.string_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {
