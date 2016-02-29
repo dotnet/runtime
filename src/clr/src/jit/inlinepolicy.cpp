@@ -56,8 +56,19 @@ void LegacyPolicy::noteCandidate(InlineObservation obs)
         break;
     }
 
-    // Update the status
-    setCommon(InlineDecision::CANDIDATE, obs);
+    switch (inlDecision)
+    {
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        // Candidate observations overwrite one another
+        inlDecision = InlineDecision::CANDIDATE;
+        inlObservation = obs;
+        break;
+    default:
+        // SUCCESS or NEVER or FAILURE or ??
+        assert(!"Unexpected inlDecision");
+        unreached();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -177,7 +188,7 @@ void LegacyPolicy::noteDouble(InlineObservation obs, double value)
 }
 
 //------------------------------------------------------------------------
-// setNever: helper for handling an observation
+// noteInternal: helper for handling an observation
 //
 // Arguments:
 //    obs      - the current obsevation
@@ -205,15 +216,32 @@ void LegacyPolicy::noteInternal(InlineObservation obs, InlineImpact impact)
 }
 
 //------------------------------------------------------------------------
-// setNever: helper for setting a failling decision
+// setFailure: helper for setting a failing decision
 //
 // Arguments:
 //    obs      - the current obsevation
 
 void LegacyPolicy::setFailure(InlineObservation obs)
 {
-    assert(!inlDecisionIsSuccess(inlDecision));
-    setCommon(InlineDecision::FAILURE, obs);
+    // Expect a valid observation
+    assert(inlIsValidObservation(obs));
+
+    switch (inlDecision)
+    {
+    case InlineDecision::FAILURE:
+        // Repeated failure only ok if in prejit scan
+        assert(isPrejitScan());
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        inlDecision = InlineDecision::FAILURE;
+        inlObservation = obs;
+        break;
+    default:
+        // SUCCESS, NEVER, or ??
+        assert(!"Unexpected inlDecision");
+        unreached();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -224,21 +252,23 @@ void LegacyPolicy::setFailure(InlineObservation obs)
 
 void LegacyPolicy::setNever(InlineObservation obs)
 {
-    assert(!inlDecisionIsSuccess(inlDecision));
-    setCommon(InlineDecision::NEVER, obs);
-}
-
-//------------------------------------------------------------------------
-// setCommon: helper for updating decision and observation
-//
-// Arguments:
-//    decision - the updated decision
-//    obs      - the current obsevation
-
-void LegacyPolicy::setCommon(InlineDecision decision, InlineObservation obs)
-{
+    // Expect a valid observation
     assert(inlIsValidObservation(obs));
-    assert(decision != InlineDecision::UNDECIDED);
-    inlDecision = decision;
-    inlObservation = obs;
+
+    switch (inlDecision)
+    {
+    case InlineDecision::NEVER:
+        // Repeated never only ok if in prejit scan
+        assert(isPrejitScan());
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        inlDecision = InlineDecision::NEVER;
+        inlObservation = obs;
+        break;
+    default:
+        // SUCCESS, FAILURE or ??
+        assert(!"Unexpected inlDecision");
+        unreached();
+    }
 }
