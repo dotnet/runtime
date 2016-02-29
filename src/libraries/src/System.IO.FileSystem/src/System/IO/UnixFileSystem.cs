@@ -160,7 +160,9 @@ namespace System.IO
                     throw new PathTooLongException(SR.IO_PathTooLong);
                 }
 
-                result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.S_IRWXU);
+                // The mkdir command uses 0777 by default (it'll be AND'd with the process umask internally).
+                // We do the same.
+                result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.Mask);
                 if (result < 0 && firstError.Error == 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
