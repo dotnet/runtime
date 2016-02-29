@@ -17,9 +17,6 @@ namespace System.Net.Http
         private readonly WinHttpRequestState _state;
         private SafeWinHttpHandle _requestHandle;
         
-        // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
-        private GCHandle _cachedReceivePinnedBuffer = default(GCHandle);
-
         internal WinHttpResponseStream(SafeWinHttpHandle requestHandle, WinHttpRequestState state)
         {
             _state = state;
@@ -120,16 +117,7 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_no_concurrent_io_allowed);
             }
 
-            // TODO (Issue 2505): replace with PinnableBufferCache.
-            if (!_cachedReceivePinnedBuffer.IsAllocated || _cachedReceivePinnedBuffer.Target != buffer)
-            {
-                if (_cachedReceivePinnedBuffer.IsAllocated)
-                {
-                    _cachedReceivePinnedBuffer.Free();
-                }
-
-                _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            }
+            _state.PinReceiveBuffer(buffer);
 
             _state.TcsReadFromResponseStream =
                 new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -217,14 +205,6 @@ namespace System.Net.Http
             if (!_disposed)
             {
                 _disposed = true;
-
-                // TODO (Issue 2508): Pinned buffers must be released in the callback, when it is guaranteed no further
-                // operations will be made to the send/receive buffers.
-                if (_cachedReceivePinnedBuffer.IsAllocated)
-                {
-                    _cachedReceivePinnedBuffer.Free();
-                    _cachedReceivePinnedBuffer = default(GCHandle);
-                }
 
                 if (disposing)
                 {
