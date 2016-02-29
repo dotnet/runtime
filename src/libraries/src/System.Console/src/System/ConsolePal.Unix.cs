@@ -319,12 +319,12 @@ namespace System
             // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
             lock (StdInReader) 
             {
-                // Write out the cursor position report request.
-                WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
-
                 Interop.Sys.InitializeConsoleBeforeRead(minChars: 0, decisecondsTimeout: 10);
                 try
                 {
+                    // Write out the cursor position report request.
+                    WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
+
                     // Read the response.  There's a race condition here if the user is typing,
                     // or if other threads are accessing the console; there's relatively little
                     // we can do about that, but we try not to lose any data.
@@ -666,7 +666,11 @@ namespace System
                     // the native lib later to handle signals that require re-entering the mode.
                     if (!Console.IsOutputRedirected)
                     {
-                        Interop.Sys.SetKeypadXmit(TerminalFormatStrings.Instance.KeypadXmit);
+                        string keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
+                        if (keypadXmit != null)
+                        {
+                            Interop.Sys.SetKeypadXmit(keypadXmit);
+                        }
                     }
 
                     // Load special control character codes used for input processing
