@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
@@ -9,7 +9,7 @@
       <SupportedFramework>net451;netcore451;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.InteropServices.csproj">
       <TargetGroup>net46</TargetGroup>
@@ -23,6 +23,8 @@
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

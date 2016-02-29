@@ -6,11 +6,10 @@
       <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Collections.Concurrent.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <!-- reference .CSProj rather than .builds since we don't need the desktop facade -->
-    <ProjectReference Include="..\src\System.Collections.Concurrent.csproj"/>
-
+    <ProjectReference Include="..\src\System.Collections.Concurrent.csproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
@@ -18,6 +17,8 @@
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

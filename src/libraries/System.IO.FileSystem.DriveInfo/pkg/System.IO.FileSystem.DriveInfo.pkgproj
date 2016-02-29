@@ -1,26 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.FileSystem.DriveInfo.csproj">
-      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.FileSystem.DriveInfo.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
-    
     <ProjectReference Include="win\System.IO.FileSystem.DriveInfo.pkgproj" />
     <ProjectReference Include="linux\System.IO.FileSystem.DriveInfo.pkgproj" />
     <ProjectReference Include="osx\System.IO.FileSystem.DriveInfo.pkgproj" />
   </ItemGroup>
-
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

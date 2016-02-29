@@ -8,17 +8,10 @@
     <!-- The Unix implementations place the asset in a generation folder,
          however the assembly won't reference any generation-based contracts -->
     <SkipGenerationCheck>true</SkipGenerationCheck>
+    <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
   
   <ItemGroup>
-    <!-- Implementation only package -->
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/dnxcore50</TargetPath>
-    </File>
-    <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/netcore50</TargetPath>
-    </File>
-
     <ProjectReference Include="win\System.Private.Uri.pkgproj" />
     <ProjectReference Include="unix\System.Private.Uri.pkgproj" />
   </ItemGroup>

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.builds" >
-      <SupportedFramework>net45;netcore45;dnxcore50;wpa81;wp8</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5;wpa81;wp8</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 

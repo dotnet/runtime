@@ -1,22 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Timer.csproj">
-      <SupportedFramework>net451;netcore451;dnxcore50;wpa81</SupportedFramework>
+      <SupportedFramework>net451;netcore451;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Threading.Timer.pkgproj" />
     <ProjectReference Include="aot\System.Threading.Timer.pkgproj" />
-
-    <InboxOnTargetFramework Include="MonoAndroid10"/>
-    <InboxOnTargetFramework Include="MonoTouch10"/>
-    <InboxOnTargetFramework Include="net451"/>
-    <InboxOnTargetFramework Include="win81"/>
-    <InboxOnTargetFramework Include="wpa81"/>
-    <InboxOnTargetFramework Include="xamarinios10"/>
-    <InboxOnTargetFramework Include="xamarinmac20"/>
+    <InboxOnTargetFramework Include="MonoAndroid10" />
+    <InboxOnTargetFramework Include="MonoTouch10" />
+    <InboxOnTargetFramework Include="net451" />
+    <InboxOnTargetFramework Include="win81" />
+    <InboxOnTargetFramework Include="wpa81" />
+    <InboxOnTargetFramework Include="xamarinios10" />
+    <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
-  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
