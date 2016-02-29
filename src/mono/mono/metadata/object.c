@@ -2160,9 +2160,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 			cm = klass->vtable [i];
 			if (cm) {
-				vt->vtable [i] = callbacks.create_jit_trampoline (domain, cm, &error);
-				if (!mono_error_ok (&error))
-					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+				vt->vtable [i] = callbacks.create_jit_trampoline (domain, cm, error);
+				mono_error_raise_exception (error); /* FIXME: Don't raise here */
 			}
 		}
 	}
