@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
-  </PropertyGroup>   
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -44,7 +44,6 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\DateTime.cs" />
     <Compile Include="System\DateTimeOffset.cs" />
-    <Compile Include="System\DateTimeOffset.UnixTimeConversions.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Double.cs" />
