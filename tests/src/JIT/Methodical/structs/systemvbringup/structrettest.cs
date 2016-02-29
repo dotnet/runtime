@@ -112,6 +112,35 @@ namespace structinreg
             return tst5;
         }
 
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]  
+        Test33 test7(Test33 t5)
+        {    
+            int fRes = t5.foo1.iFoo + t5.foo2.iFoo;    
+            Console.WriteLine("From Test7 members: {0} {1}", t5.foo1.iFoo, t5.foo2.iFoo);    
+            Console.WriteLine("From Test7: Res {0}", fRes);    
+            if (fRes != 43) {    
+                throw new Exception("Failed inside test6 test!");    
+            }
+
+            Test33 tst5 = default(Test33);
+
+            unsafe
+            {
+                // Force the use of GS check.
+                int* array = stackalloc int[2];
+                array[0] = 28;
+                array[1] = 29;
+
+                tst5.foo1 = new Foo3();
+                tst5.foo2 = new Foo3();
+                tst5.foo1.iFoo = array[0];
+                tst5.foo2.iFoo = array[1];
+            }
+
+            return tst5;    
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         Test35 test6(Test35 t5)
         {  
@@ -187,6 +216,19 @@ namespace structinreg
             Console.WriteLine("test6 Result: {0}", t6Res.foo1.iFoo + t6Res.foo2.iFoo);
             if ((t6Res.foo1.iFoo + t6Res.foo2.iFoo) != 57) {
                 throw new Exception("Failed test6 test!");
+            }
+
+            Test33 test7 = default(Test33);
+            test7.foo1 = new Foo3();
+            test7.foo2 = new Foo3();
+            test7.foo1.iFoo = 21;
+            test7.foo2.iFoo = 22;
+
+            Test33 t7Res = p.test7(test7);
+
+            Console.WriteLine("test7Result: {0}", t7Res.foo1.iFoo + t7Res.foo2.iFoo);
+            if ((t7Res.foo1.iFoo + t7Res.foo2.iFoo) != 57) {
+                throw new Exception("Failed test7 test!");
             }
 
             return 100;
