@@ -110,16 +110,18 @@ process_set_field_object (MonoObject *obj, const gchar *fieldname,
 
 static void
 process_set_field_string (MonoObject *obj, const gchar *fieldname,
-						  const gunichar2 *val, guint32 len)
+						  const gunichar2 *val, guint32 len, MonoError *error)
 {
-	MonoError error;
 	MonoClassField *field;
 	MonoString *string;
 
+	mono_error_init (error);
+
 	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, g_utf16_to_utf8 (val, len, NULL, NULL, NULL)));
 
-	string = mono_string_new_utf16_checked (mono_object_domain (obj), val, len, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	string = mono_string_new_utf16_checked (mono_object_domain (obj), val, len, error);
+	if (!mono_error_ok (error))
+		return;
 	
 	field = mono_class_get_field_from_name (mono_object_class (obj),
 											fieldname);
@@ -198,11 +200,13 @@ static void
 process_module_string_read (MonoObject *filever, gpointer data,
 							const gchar *fieldname,
 							guchar lang_hi, guchar lang_lo,
-							const gchar *key)
+							const gchar *key, MonoError *error)
 {
 	gchar *lang_key_utf8;
 	gunichar2 *lang_key, *buffer;
 	UINT chars;
+
+	mono_error_init (error);
 
 	lang_key_utf8 = g_strdup_printf (key, lang_lo, lang_hi, 0x04, 0xb0);
 
@@ -213,47 +217,51 @@ process_module_string_read (MonoObject *filever, gpointer data,
 	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &chars) && chars > 0) {
 		LOGDEBUG (g_message ("%s: found %d chars of [%s]", __func__, chars, g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL)));
 		/* chars includes trailing null */
-		process_set_field_string (filever, fieldname, buffer, chars - 1);
+		process_set_field_string (filever, fieldname, buffer, chars - 1, error);
 	} else {
-		process_set_field_string (filever, fieldname, EMPTY_STRING, 0);
+		process_set_field_string (filever, fieldname, EMPTY_STRING, 0, error);
 	}
 
 	g_free (lang_key);
 	g_free (lang_key_utf8);
 }
 
+typedef struct {
+	const char *name;
+	const char *id;
+} StringTableEntry;
+
+static StringTableEntry stringtable_entries [] = {
+	{ "comments", SFI_COMMENTS },
+	{ "companyname", SFI_COMPANYNAME },
+	{ "filedescription", SFI_FILEDESCRIPTION },
+	{ "fileversion", SFI_FILEVERSION },
+	{ "internalname", SFI_INTERNALNAME },
+	{ "legalcopyright", SFI_LEGALCOPYRIGHT },
+	{ "legaltrademarks", SFI_LEGALTRADEMARKS },
+	{ "originalfilename", SFI_ORIGINALFILENAME },
+	{ "privatebuild", SFI_PRIVATEBUILD },
+	{ "productname", SFI_PRODUCTNAME },
+	{ "productversion", SFI_PRODUCTVERSION },
+	{ "specialbuild", SFI_SPECIALBUILD }
+};
+
 static void
 process_module_stringtable (MonoObject *filever, gpointer data,
-							guchar lang_hi, guchar lang_lo)
+							guchar lang_hi, guchar lang_lo, MonoError *error)
 {
-	process_module_string_read (filever, data, "comments", lang_hi, lang_lo,
-				    SFI_COMMENTS);
-	process_module_string_read (filever, data, "companyname", lang_hi,
-				    lang_lo, SFI_COMPANYNAME);
-	process_module_string_read (filever, data, "filedescription", lang_hi,
-				    lang_lo, SFI_FILEDESCRIPTION);
-	process_module_string_read (filever, data, "fileversion", lang_hi,
-				    lang_lo, SFI_FILEVERSION);
-	process_module_string_read (filever, data, "internalname", lang_hi,
-				    lang_lo, SFI_INTERNALNAME);
-	process_module_string_read (filever, data, "legalcopyright", lang_hi,
-				    lang_lo, SFI_LEGALCOPYRIGHT);
-	process_module_string_read (filever, data, "legaltrademarks", lang_hi,
-				    lang_lo, SFI_LEGALTRADEMARKS);
-	process_module_string_read (filever, data, "originalfilename", lang_hi,
-				    lang_lo, SFI_ORIGINALFILENAME);
-	process_module_string_read (filever, data, "privatebuild", lang_hi,
-				    lang_lo, SFI_PRIVATEBUILD);
-	process_module_string_read (filever, data, "productname", lang_hi,
-				    lang_lo, SFI_PRODUCTNAME);
-	process_module_string_read (filever, data, "productversion", lang_hi,
-				    lang_lo, SFI_PRODUCTVERSION);
-	process_module_string_read (filever, data, "specialbuild", lang_hi,
-				    lang_lo, SFI_SPECIALBUILD);
+	int i;
+
+	for (i = 0; i < G_N_ELEMENTS (stringtable_entries); ++i) {
+		process_module_string_read (filever, data, stringtable_entries [i].name, lang_hi, lang_lo,
+									stringtable_entries [i].id, error);
+		if (!mono_error_ok (error))
+			return;
+	}
 }
 
 static void
-process_get_fileversion (MonoObject *filever, gunichar2 *filename)
+process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *error)
 {
 	DWORD verinfohandle;
 	VS_FIXEDFILEINFO *ffi;
@@ -265,6 +273,8 @@ process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	BOOL ok;
 	gunichar2 lang_buf[128];
 	guint32 lang, lang_count;
+
+	mono_error_init (error);
 
 	datalen = GetFileVersionInfoSize (filename, &verinfohandle);
 	if (datalen) {
@@ -323,57 +333,38 @@ process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 					 * otherwise
 					 */
 					lang_count = VerLanguageName (lang & 0xFFFF, lang_buf, 128);
-					if (lang_count)
-						process_set_field_string (filever, "language", lang_buf, lang_count);
-					process_module_stringtable (filever, data, trans_data[0], trans_data[1]);
+					if (lang_count) {
+						process_set_field_string (filever, "language", lang_buf, lang_count, error);
+						if (!mono_error_ok (error))
+							return;
+					}
+					process_module_stringtable (filever, data, trans_data[0], trans_data[1], error);
+					if (!mono_error_ok (error))
+						return;
 				}
 			} else {
-				/* No strings, so set every field to
-				 * the empty string
-				 */
-				process_set_field_string (filever,
-							  "comments",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "companyname",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "filedescription",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "fileversion",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "internalname",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "legalcopyright",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "legaltrademarks",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "originalfilename",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "privatebuild",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "productname",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "productversion",
-							  EMPTY_STRING, 0);
-				process_set_field_string (filever,
-							  "specialbuild",
-							  EMPTY_STRING, 0);
+				int i;
+
+				for (i = 0; i < G_N_ELEMENTS (stringtable_entries); ++i) {
+					/* No strings, so set every field to
+					 * the empty string
+					 */
+					process_set_field_string (filever,
+											  stringtable_entries [i].name,
+											  EMPTY_STRING, 0, error);
+					if (!mono_error_ok (error))
+						return;
+				}
 
 				/* And language seems to be set to
 				 * en_US according to bug 374600
 				 */
 				lang_count = VerLanguageName (0x0409, lang_buf, 128);
-				if (lang_count)
-					process_set_field_string (filever, "language", lang_buf, lang_count);
+				if (lang_count) {
+					process_set_field_string (filever, "language", lang_buf, lang_count, error);
+					if (!mono_error_ok (error))
+						return;
+				}
 			}
 			
 			g_free (query);
@@ -391,22 +382,25 @@ process_get_assembly_fileversion (MonoObject *filever, MonoAssembly *assembly)
 }
 
 static MonoObject*
-get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
+get_process_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *error)
 {
-	MonoError error;
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	char *filename;
 	const char *modulename = assembly->aname.name;
 
-	filename = g_strdup_printf ("[In Memory] %s", modulename);
+	mono_error_init (error);
 
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	item = mono_object_new_checked (domain, proc_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), &error);
-	if (!mono_error_ok (&error)) goto leave;
+	item = mono_object_new_checked (domain, proc_class, error);
+	if (!mono_error_ok (error))
+		return NULL;
+	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), error);
+	if (!mono_error_ok (error))
+		return NULL;
+
+	filename = g_strdup_printf ("[In Memory] %s", modulename);
 
 	process_get_assembly_fileversion (filever, assembly);
 	process_set_field_string_char (filever, "filename", filename);
@@ -417,34 +411,38 @@ get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 	process_set_field_string_char (item, "filename", filename);
 	process_set_field_string_char (item, "modulename", modulename);
 
-leave:
 	g_free (filename);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return item;
 }
 
 static MonoObject*
-process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
+process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class, MonoError *error)
 {
-	MonoError error;
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	MODULEINFO modinfo;
 	BOOL ok;
-	
+
+	mono_error_init (error);
+
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	item = mono_object_new_checked (domain, proc_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	item = mono_object_new_checked (domain, proc_class, error);
+	if (!mono_error_ok (error))
+		return NULL;
+	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), error);
+	if (!mono_error_ok (error))
+		return NULL;
 
-	process_get_fileversion (filever, filename);
+	process_get_fileversion (filever, filename, error);
+	if (!mono_error_ok (error))
+		return NULL;
 
 	process_set_field_string (filever, "filename", filename,
-				  unicode_chars (filename));
-
+							  unicode_chars (filename), error);
+	if (!mono_error_ok (error))
+		return NULL;
 	ok = GetModuleInformation (process, mod, &modinfo, sizeof(MODULEINFO));
 	if (ok) {
 		process_set_field_intptr (item, "baseaddr",
@@ -455,9 +453,13 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 				       modinfo.SizeOfImage);
 	}
 	process_set_field_string (item, "filename", filename,
-				  unicode_chars (filename));
+							  unicode_chars (filename), error);
+	if (!mono_error_ok (error))
+		return NULL;
 	process_set_field_string (item, "modulename", modulename,
-				  unicode_chars (modulename));
+							  unicode_chars (modulename), error);
+	if (!mono_error_ok (error))
+		return NULL;
 	process_set_field_object (item, "version_info", filever);
 
 	return item;
@@ -490,6 +492,7 @@ get_domain_assemblies (MonoDomain *domain)
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
+	MonoError error;
 	MonoArray *temp_arr = NULL;
 	MonoArray *arr;
 	HMODULE mods[1024];
@@ -524,7 +527,11 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 		if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
 				GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
 			MonoObject *module = process_add_module (process, mods[i],
-					filename, modname, mono_class_get_process_module_class ());
+													 filename, modname, mono_class_get_process_module_class (), &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
 			mono_array_setref (temp_arr, num_added++, module);
 		}
 	}
@@ -532,7 +539,11 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 	if (assemblies) {
 		for (i = 0; i < assembly_count; i++) {
 			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
-			MonoObject *module = get_process_module (ass, mono_class_get_process_module_class ());
+			MonoObject *module = get_process_module (ass, mono_class_get_process_module_class (), &error);
+			if (!mono_error_ok (&error)) {
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
 			mono_array_setref (temp_arr, num_added++, module);
 		}
 		g_ptr_array_free (assemblies, TRUE);
@@ -554,12 +565,22 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 void
 ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename)
 {
+	MonoError error;
+
 	stash_system_assembly (this_obj);
 	
-	process_get_fileversion (this_obj, mono_string_chars (filename));
+	process_get_fileversion (this_obj, mono_string_chars (filename), &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 	process_set_field_string (this_obj, "filename",
-				  mono_string_chars (filename),
-				  mono_string_length (filename));
+							  mono_string_chars (filename),
+							  mono_string_length (filename), &error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 }
 
 /* Only used when UseShellExecute is false */
@@ -832,7 +853,8 @@ ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 	LOGDEBUG (g_message ("%s: process name is [%s]", __func__, g_utf16_to_utf8 (name, -1, NULL, NULL, NULL)));
 	
 	string = mono_string_new_utf16_checked (mono_domain_get (), name, len, &error);
-	mono_error_raise_exception (&error);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
 	
 	return string;
 }
