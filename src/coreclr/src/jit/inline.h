@@ -249,7 +249,7 @@ private:
 
     // No copying or assignment supported
     InlinePolicy(const InlinePolicy&) = delete;
-    // InlinePolicy operator=(const InlinePolicy&) = delete;
+    InlinePolicy& operator=(const InlinePolicy&) = delete;
 
 protected:
 
@@ -413,7 +413,7 @@ private:
 
     // No copying or assignment allowed.
     InlineResult(const InlineResult&) = delete;
-    InlineResult operator=(const InlineResult&) = delete;
+    InlineResult& operator=(const InlineResult&) = delete;
 
     // Report/log/dump decision as appropriate
     void report();
