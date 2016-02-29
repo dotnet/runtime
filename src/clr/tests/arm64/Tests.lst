@@ -2657,7 +2657,7 @@ WorkingDir=JIT\Directed\intrinsic\pow\pow1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [_il_relbinop.exe_4069]
 RelativePath=JIT\Methodical\int64\misc\_il_relbinop\_il_relbinop.exe
 WorkingDir=JIT\Methodical\int64\misc\_il_relbinop
