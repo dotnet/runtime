@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -21,7 +21,7 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23818",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23829",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Globalization": "4.0.10",
         "System.Reflection": "4.0.10",

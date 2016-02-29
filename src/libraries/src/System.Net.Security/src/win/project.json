@@ -2,15 +2,16 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
         "System.Collections.Specialized": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Net.Primitives": "4.0.10",
-        "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23818",
+        "System.Runtime": "4.1.0-rc3-23829",
+        "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23829",
         "System.Security.Principal": "4.0.0",
-        "System.Security.Principal.Windows": "4.0.0-rc3-23818",
+        "System.Security.Principal.Windows": "4.0.0-rc3-23829",
         "System.Threading": "4.0.10",
-        "System.Threading.ThreadPool": "4.0.10-rc3-23818"
+        "System.Threading.ThreadPool": "4.0.10-rc3-23829"
       }
     },
     "net46": {
