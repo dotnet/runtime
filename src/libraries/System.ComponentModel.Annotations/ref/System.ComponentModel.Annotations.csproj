@@ -4,9 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <!-- TODO: Update to 5.5 once nuget maps UAP to 5.5 https://github.com/nuget/home/1709 -->
-    <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ComponentModel.Annotations.cs" />
