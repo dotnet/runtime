@@ -14,7 +14,7 @@ namespace System.Net
             var nativeIPAddress = default(Interop.Sys.IPAddress);
 
             byte[] bytes = ipAddress.GetAddressBytes();
-            Debug.Assert(bytes.Length == sizeof(uint) || bytes.Length == Interop.Sys.IPv6AddressBytes);
+            Debug.Assert(bytes.Length == sizeof(uint) || bytes.Length == Interop.Sys.IPv6AddressBytes, $"Unexpected length: {bytes.Length}");
 
             for (int i = 0; i < bytes.Length && i < Interop.Sys.IPv6AddressBytes; i++)
             {

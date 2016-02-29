@@ -41,7 +41,7 @@ namespace System.Net.Sockets
 
             public bool TryRegister(SafeCloseSocket socket, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, out Interop.Error error)
             {
-                Debug.Assert(WasAllocated);
+                Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
                 return _engine.TryRegister(socket, current, events, _handle, out error);
             }
         }
@@ -139,8 +139,8 @@ namespace System.Net.Sockets
 
         private IntPtr AllocateHandle(SocketAsyncContext context)
         {
-            Debug.Assert(Monitor.IsEntered(s_lock));
-            Debug.Assert(!IsFull);
+            Debug.Assert(Monitor.IsEntered(s_lock), "Expected s_lock to be held");
+            Debug.Assert(!IsFull, "Expected !IsFull");
 
             IntPtr handle = _nextHandle;
             _handleToContextMap.Add(handle, context);
@@ -154,13 +154,13 @@ namespace System.Net.Sockets
                 s_currentEngine = null;
             }
 
-            Debug.Assert(handle != ShutdownHandle);
+            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
             return handle;
         }
 
         private void FreeHandle(IntPtr handle)
         {
-            Debug.Assert(handle != ShutdownHandle);
+            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
 
             bool shutdownNeeded = false;
 
@@ -169,7 +169,7 @@ namespace System.Net.Sockets
                 if (_handleToContextMap.Remove(handle))
                 {
                     _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
-                    Debug.Assert(_outstandingHandles.ToInt64() >= 0);
+                    Debug.Assert(_outstandingHandles.ToInt64() >= 0, $"Unexpected _outstandingHandles: {_outstandingHandles}");
 
                     //
                     // If we've allocated all possible handles for this instance, and freed them all, then 
@@ -193,8 +193,8 @@ namespace System.Net.Sockets
 
         private SocketAsyncContext GetContextFromHandle(IntPtr handle)
         {
-            Debug.Assert(handle != ShutdownHandle);
-            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64());
+            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
+            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
             lock (s_lock)
             {
                 SocketAsyncContext context;
@@ -270,7 +270,7 @@ namespace System.Net.Sockets
                     }
 
                     // The native shim is responsible for ensuring this condition.
-                    Debug.Assert(numEvents > 0);
+                    Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
 
                     for (int i = 0; i < numEvents; i++)
                     {
