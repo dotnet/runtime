@@ -26,10 +26,18 @@ public class CancelKeyPressTests : RemoteExecutorTestBase
     }
 
     [PlatformSpecific(PlatformID.AnyUnix)]
-    [Theory]
-    [InlineData(SIGINT)]
-    [InlineData(SIGQUIT)]
-    public void HandlerInvokedForSignal(int signalOuter)
+    public void HandlerInvokedForSigInt()
+    {
+        HandlerInvokedForSignal(SIGINT);
+    }
+
+    [PlatformSpecific(PlatformID.AnyUnix & ~PlatformID.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
+    public void HandlerInvokedForSigQuit()
+    {
+        HandlerInvokedForSignal(SIGQUIT);
+    }
+
+    private void HandlerInvokedForSignal(int signalOuter)
     {
         // On Windows we could use GenerateConsoleCtrlEvent to send a ctrl-C to the process,
         // however that'll apply to all processes associated with the same group, which will
