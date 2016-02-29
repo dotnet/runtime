@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.DispatchProxy.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Reflection.DispatchProxy.pkgproj" />
     <ProjectReference Include="aot\System.Reflection.DispatchProxy.pkgproj" />

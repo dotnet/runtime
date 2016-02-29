@@ -6,7 +6,7 @@
       <SupportedFramework>net45;netcore45;wp80;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Runtime.Extensions.csproj">
-      <SupportedFramework>netcore50;dnxcore50;net46;</SupportedFramework>
+      <SupportedFramework>netcore50;netstandardapp1.5;net46;</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.csproj" >
       <TargetGroup>net46</TargetGroup>

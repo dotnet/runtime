@@ -7,7 +7,7 @@
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.AppContext.csproj">
-      <SupportedFramework>netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\redist\System.AppContext.depproj">
       <TargetGroup>net46</TargetGroup>

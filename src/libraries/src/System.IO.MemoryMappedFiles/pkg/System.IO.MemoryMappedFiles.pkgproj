@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.MemoryMappedFiles.csproj">
-      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>

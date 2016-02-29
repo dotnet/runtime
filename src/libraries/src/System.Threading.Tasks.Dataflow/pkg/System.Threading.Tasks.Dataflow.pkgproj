@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81;dnxcore50</SupportedFramework>
+      <SupportedFramework>net45;netcore45;wp8;wpa81;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.WP8.csproj" />
   </ItemGroup>

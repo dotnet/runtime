@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Numerics.Vectors.csproj">
-      <SupportedFramework>net45;netcore45;dnxcore50</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Numerics.Vectors.builds" />
   </ItemGroup>

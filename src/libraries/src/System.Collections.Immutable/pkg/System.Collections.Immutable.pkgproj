@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Collections.Immutable.builds">
-      <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5;wp8;wpa81</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 

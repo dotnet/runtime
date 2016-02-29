@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.WindowsRuntime.csproj">
-      <SupportedFramework>net45;dnxcore50;netcore45;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netstandardapp1.5;netcore45;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.InteropServices.WindowsRuntime.builds" />
 
@@ -13,11 +13,11 @@
     <InboxOnTargetFramework Include="wp80"/>
     <InboxOnTargetFramework Include="wpa81"/>
 
-    <ExcludeDefaultValidateFramework Include="dnxcore50" />
+    <ExcludeDefaultValidateFramework Include="netstandardapp1.5" />
 
     <!-- Only supported on win8 and higher, so overriding
          the validation RID's -->
-    <ValidateFramework Include="dnxcore50"> 
+    <ValidateFramework Include="netstandardapp1.5"> 
       <RuntimeIDs>win8-x86;win8-x64</RuntimeIDs> 
     </ValidateFramework> 
 
