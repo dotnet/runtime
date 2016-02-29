@@ -1,10 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
-
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.IO.Compression.depproj" >
+    <ProjectReference Include="..\ref\4.0.0\System.IO.Compression.depproj">
       <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.IO.Compression.csproj">
@@ -13,7 +11,6 @@
     <ProjectReference Include="..\src\System.IO.Compression.csproj">
       <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
-
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
@@ -21,10 +18,10 @@
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
-
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
     <ProjectReference Include="win\System.IO.Compression.pkgproj" />
-    <ProjectReference Include="unix\System.IO.Compression.pkgproj"/>
+    <ProjectReference Include="unix\System.IO.Compression.pkgproj" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
