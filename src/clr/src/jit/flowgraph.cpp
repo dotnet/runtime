@@ -4214,19 +4214,11 @@ void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
     // Keep track of constants and args on the stack.
     fgStack pushedStack;
 
-    // compIsMethodForLRSampling and compIsForInlining() can't both be true.
-    noway_assert(!compIsMethodForLRSampling || !compIsForInlining());
-
     // Determine whether to start the state machine to estimate the size of the
     // native code for this method.
     bool useSm = false;
-    if (compIsMethodForLRSampling)
-    {
-        // Linear regression sampling requires the estimated native code size.
-        useSm = true;
-    }
-    else if ((codeSize > ALWAYS_INLINE_SIZE) &&
-             !(info.compFlags & CORINFO_FLG_FORCEINLINE))
+    if ((codeSize > ALWAYS_INLINE_SIZE) &&
+        !(info.compFlags & CORINFO_FLG_FORCEINLINE))
     {
         // The size of the native code for this method matters for inlining
         // decisions.
@@ -4813,10 +4805,6 @@ _SkipCodeAddrAdjustment:
         {
             noway_assert(smOpcode<SM_COUNT);
             noway_assert(smOpcode != SM_PREFIX_N);
-
-#ifdef DEBUG
-            ++pSm->instrCount;
-#endif
 
             pSm->Run(smOpcode DEBUGARG(0));
         }

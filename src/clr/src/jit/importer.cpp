@@ -4875,7 +4875,6 @@ void            Compiler::impCheckForPInvokeCall(
     info.compCallUnmanaged++;
 
     assert(!compIsForInlining());
-    compIsMethodForLRSampling = false;   // Don't sample methods that contain P/I inlining.
 
     // AMD64 convention is same for native and managed
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_C)
