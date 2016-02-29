@@ -46,8 +46,8 @@ internal static partial class Interop
 
         internal unsafe static uint IPAddressToString(byte[] address, bool isIPv6, StringBuilder addressString, uint scope = 0)
         {
-            Debug.Assert(address != null);
-            Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes));
+            Debug.Assert(address != null, "address was null");
+            Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes), $"Unexpected address length: {address.Length}");
 
             int err;
             fixed (byte* rawAddress = address)
