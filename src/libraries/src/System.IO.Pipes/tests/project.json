@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
@@ -9,7 +9,7 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23818",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23829",
     "System.Security.Principal": "4.0.0",
     "System.Threading.Overlapped": "4.0.0",
     "System.Threading.Tasks": "4.0.10",

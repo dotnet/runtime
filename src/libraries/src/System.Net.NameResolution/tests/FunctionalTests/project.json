@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23818",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
-    "System.Net.NameResolution": "4.0.0-rc3-23818",
+    "System.Net.NameResolution": "4.0.0-rc3-23829",
     "System.Net.Primitives": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Threading.Tasks": "4.0.10",
