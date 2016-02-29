@@ -714,7 +714,7 @@ namespace System.Numerics.Tests
                 Assert.True(expectedEquals == complex1.GetHashCode().Equals(complex2.GetHashCode()),
                     string.Format("{0}.GetHashCode().Equals({1}.GetHashCode()) is not '{2}' as expected", complex1, complex2, expectedEquals));
             }
-            Assert.True(expected == complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
+            Assert.True(expectedEquals == complex1.Equals(obj), string.Format("{0}.Equals({1}) is not '{2}' as expected", complex1, obj, expectedEquals));
         }
 
         public static IEnumerable<object[]> Exp_TestData()

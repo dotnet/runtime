@@ -165,7 +165,7 @@ namespace System.Numerics
         public override bool Equals(object obj)
         {
             if (!(obj is Complex)) return false;
-            return this == ((Complex)obj);
+            return Equals((Complex)obj);
         }
 
         public bool Equals(Complex value)
