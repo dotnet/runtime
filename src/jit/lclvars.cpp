@@ -1130,7 +1130,7 @@ void                Compiler::lvaInitVarDsc(LclVarDsc *              varDsc,
         compFloatingPointUsed = true;
     }
 
-    if (tiVerificationNeeded || compIsMethodForLRSampling)    
+    if (tiVerificationNeeded)
     {
         varDsc->lvVerTypeInfo = verParseArgSigToTypeInfo(varSig, varList);
     }
