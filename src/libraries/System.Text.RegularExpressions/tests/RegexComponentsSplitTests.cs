@@ -12,8 +12,8 @@ public class RegexComponentsSplitTests
     public static void RegexComponentsSplit()
     {
         //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
+        string strLoc = "Loc_000oo";
+        string strValue = string.Empty;
         int iCountErrors = 0;
         int iCountTestcases = 0;
         try
@@ -47,37 +47,37 @@ public class RegexComponentsSplitTests
         /*********************************************************
             ValidCases
             *********************************************************/
-    new RegexComponentsSplitTestCase(@"(\s)?(-)", "once -upon-a time", new String[]
+    new RegexComponentsSplitTestCase(@"(\s)?(-)", "once -upon-a time", new string[]
     {
     "once", " ", "-", "upon", "-", "a time"
     }
 
-    ), new RegexComponentsSplitTestCase(@"(\s)?(-)", "once upon a time", new String[]
+    ), new RegexComponentsSplitTestCase(@"(\s)?(-)", "once upon a time", new string[]
     {
     "once upon a time"
     }
 
-    ), new RegexComponentsSplitTestCase(@"(\s)?(-)", "once - -upon- a- time", new String[]
+    ), new RegexComponentsSplitTestCase(@"(\s)?(-)", "once - -upon- a- time", new string[]
     {
     "once", " ", "-", "", " ", "-", "upon", "-", " a", "-", " time"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", "123abcde456aBCDe789", new string[]
     {
     "123", "b", "d", "456aBCDe789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.IgnoreCase, "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.IgnoreCase, "123abcde456aBCDe789", new string[]
     {
     "123", "b", "d", "456", "B", "D", "789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", "123abcde456aBCDe789", new string[]
     {
     "123", "d", "b", "456aBCDe789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.IgnoreCase, "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.IgnoreCase, "123abcde456aBCDe789", new string[]
     {
     "123", "d", "b", "456", "D", "B", "789"
     }
@@ -85,22 +85,22 @@ public class RegexComponentsSplitTests
     ), /*********************************************************
         RightToLeft
         *********************************************************/
-new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.RightToLeft, "123abcde456aBCDe789", new String[]
+new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.RightToLeft, "123abcde456aBCDe789", new string[]
     {
     "123", "d", "b", "456aBCDe789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, "123abcde456aBCDe789", new string[]
     {
     "123", "d", "b", "456", "D", "B", "789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.RightToLeft, "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.RightToLeft, "123abcde456aBCDe789", new string[]
     {
     "123", "b", "d", "456aBCDe789"
     }
 
-    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, "123abcde456aBCDe789", new String[]
+    ), new RegexComponentsSplitTestCase(@"a(?<dot1>.)c(.)e", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, "123abcde456aBCDe789", new string[]
     {
     "123", "b", "d", "456", "B", "D", "789"
     }
@@ -110,16 +110,16 @@ new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.RightToLeft, "123abc
     ;
     public class RegexComponentsSplitTestCase
     {
-        private String _pattern;
-        private String _input;
+        private string _pattern;
+        private string _input;
         private RegexOptions _options;
-        private String[] _expectedResult;
-        public RegexComponentsSplitTestCase(String pattern, String input, String[] expectedResult)
+        private string[] _expectedResult;
+        public RegexComponentsSplitTestCase(string pattern, string input, string[] expectedResult)
             : this(pattern, RegexOptions.None, input, expectedResult)
         {
         }
 
-        public RegexComponentsSplitTestCase(String pattern, RegexOptions options, String input, String[] expectedResult)
+        public RegexComponentsSplitTestCase(string pattern, RegexOptions options, string input, string[] expectedResult)
         {
             _pattern = pattern;
             _options = options;
@@ -151,7 +151,7 @@ new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.RightToLeft, "123abc
             }
         }
 
-        public String[] ExpectedResult
+        public string[] ExpectedResult
         {
             get
             {
@@ -170,7 +170,7 @@ new RegexComponentsSplitTestCase(@"a(.)c(.)e", RegexOptions.RightToLeft, "123abc
         public bool Run()
         {
             Regex r;
-            String[] result = null;
+            string[] result = null;
             r = new Regex(_pattern, _options);
             try
             {
