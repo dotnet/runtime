@@ -8,6 +8,9 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
 
+MonoType*
+mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error);
+
 MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 

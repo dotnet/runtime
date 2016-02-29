@@ -8483,20 +8483,40 @@ MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
 	MonoError error;
+	MonoType  *result = mono_reflection_type_from_name_checked (name, image, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_reflection_type_from_name_checked:
+ * @name: type name.
+ * @image: a metadata context (can be NULL).
+ * @error: set on errror.
+ *
+ * Retrieves a MonoType from its @name. If the name is not fully qualified,
+ * it defaults to get the type from @image or, if @image is NULL or loading
+ * from it fails, uses corlib.  On failure returns NULL and sets @error.
+ * 
+ */
+MonoType*
+mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error)
+{
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
 	char *tmp;
 
+	mono_error_init (error);
 	/* Make a copy since parse_type modifies its argument */
 	tmp = g_strdup (name);
 	
 	/*g_print ("requested type %s\n", str);*/
 	if (mono_reflection_parse_type (tmp, &info)) {
-		type = _mono_reflection_get_type_from_info (&info, image, FALSE, &error);
-		if (!is_ok (&error)) {
+		type = _mono_reflection_get_type_from_info (&info, image, FALSE, error);
+		if (!is_ok (error)) {
 			g_free (tmp);
 			mono_reflection_free_type_info (&info);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 	}
 
@@ -8609,11 +8629,13 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoErr
 
 	n = (char *)g_memdup (p, slen + 1);
 	n [slen] = 0;
-	t = mono_reflection_type_from_name (n, image);
+	t = mono_reflection_type_from_name_checked (n, image, error);
 	if (!t) {
-		/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+		char *msg = g_strdup (mono_error_get_message (error));
+		mono_error_cleanup (error);
 		/* We don't free n, it's consumed by mono_error */
-		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute", n);
+		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute: %s", n, msg);
+		g_free (msg);
 		return NULL;
 	}
 	g_free (n);
@@ -8714,11 +8736,13 @@ handle_type:
 		slen = mono_metadata_decode_value (p, &p);
 		n = (char *)g_memdup (p, slen + 1);
 		n [slen] = 0;
-		t = mono_reflection_type_from_name (n, image);
+		t = mono_reflection_type_from_name_checked (n, image, error);
 		if (!t) {
-			/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+			char *msg = g_strdup (mono_error_get_message (error));
+			mono_error_cleanup (error);
 			/* We don't free n, it's consumed by mono_error */
-			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %msg", n, msg);
+			g_free (msg);
 			return NULL;
 		}
 		g_free (n);
@@ -8767,11 +8791,13 @@ handle_type:
 			slen = mono_metadata_decode_value (p, &p);
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
-			t = mono_reflection_type_from_name (n, image);
+			t = mono_reflection_type_from_name_checked (n, image, error);
 			if (!t) {
-				/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+				char *msg = g_strdup (mono_error_get_message (error));
+				mono_error_cleanup (error);
 				/* We don't free n, it's consumed by mono_error */
-				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %s", n, msg);
+				g_free (msg);
 				return NULL;
 			}
 			g_free (n);
@@ -11242,7 +11268,9 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
-			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
+			mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, klass->image, error);
+			return_val_if_nok  (error, NULL);
+
 			if (mtype) {
 				rt = mono_type_get_object_checked (domain, mtype, error);
 				if (!rt)
