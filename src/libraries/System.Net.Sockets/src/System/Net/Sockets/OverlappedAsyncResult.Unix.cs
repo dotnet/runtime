@@ -23,7 +23,7 @@ namespace System.Net.Sockets
         {
             if (_socketAddress != null)
             {
-                Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress);
+                Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress, $"Unexpected socket address: {socketAddress}");
                 _socketAddressSize = socketAddressSize;
             }
 

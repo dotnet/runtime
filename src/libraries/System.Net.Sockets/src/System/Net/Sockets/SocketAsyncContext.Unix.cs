@@ -79,10 +79,10 @@ namespace System.Net.Sockets
 
             public void QueueCompletionCallback()
             {
-                Debug.Assert(!(CallbackOrEvent is ManualResetEventSlim));
-                Debug.Assert(_state != (int)State.Cancelled);
+                Debug.Assert(!(CallbackOrEvent is ManualResetEventSlim), $"Unexpected CallbackOrEvent: {CallbackOrEvent}");
+                Debug.Assert(_state != (int)State.Cancelled, $"Unexpected _state: {_state}");
 #if DEBUG
-                Debug.Assert(Interlocked.CompareExchange(ref _callbackQueued, 1, 0) == 0);
+                Debug.Assert(Interlocked.CompareExchange(ref _callbackQueued, 1, 0) == 0, $"Unexpected _callbackQueued: {_callbackQueued}");
 #endif
 
                 ThreadPool.QueueUserWorkItem(o => ((AsyncOperation)o).InvokeCallback(), this);
@@ -90,7 +90,7 @@ namespace System.Net.Sockets
 
             public bool TryComplete(SocketAsyncContext context)
             {
-                Debug.Assert(_state == (int)State.Waiting);
+                Debug.Assert(_state == (int)State.Waiting, $"Unexpected _state: {_state}");
 
                 return DoTryComplete(context);
             }
@@ -103,12 +103,12 @@ namespace System.Net.Sockets
             public void AbortAsync()
             {
                 bool completed = TryCompleteOrAbortAsync(null, abort: true);
-                Debug.Assert(completed);
+                Debug.Assert(completed, $"Expected TryCompleteOrAbortAsync to return true");
             }
 
             private bool TryCompleteOrAbortAsync(SocketAsyncContext context, bool abort)
             {
-                Debug.Assert(context != null || abort);
+                Debug.Assert(context != null || abort, $"Unexpected values: context={context}, abort={abort}");
 
                 State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
                 if (oldState == State.Cancelled)
@@ -119,7 +119,7 @@ namespace System.Net.Sockets
                     return true;
                 }
 
-                Debug.Assert(oldState != State.Complete && oldState != State.Running);
+                Debug.Assert(oldState != State.Complete && oldState != State.Running, $"Unexpected oldState: {oldState}");
 
                 bool completed;
                 if (abort)
@@ -279,7 +279,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
-                Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == -1);
+                Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == -1, $"Unexpected values: ErrorCode={ErrorCode}, AcceptedFileDescriptor={AcceptedFileDescriptor}");
                 return completed;
             }
 
@@ -330,8 +330,8 @@ namespace System.Net.Sockets
 
             public void Enqueue(TOperation operation)
             {
-                Debug.Assert(!IsStopped);
-                Debug.Assert(operation.Next == operation);
+                Debug.Assert(!IsStopped, "Expected !IsStopped");
+                Debug.Assert(operation.Next == operation, "Expected operation.Next == operation");
 
                 if (!IsEmpty)
                 {
@@ -368,7 +368,7 @@ namespace System.Net.Sockets
             private void Requeue(TOperation operation)
             {
                 // Insert at the head of the queue
-                Debug.Assert(!IsStopped);
+                Debug.Assert(!IsStopped, "Expected !IsStopped");
                 Debug.Assert(operation.Next == null, "Operation already in queue");
 
                 operation.Next = (_tail == null) ? operation : _tail.Next;
@@ -420,7 +420,7 @@ namespace System.Net.Sockets
                 while (queue.TryDequeue(out op))
                 {
                     bool completed = op.TryCompleteAsync(context);
-                    Debug.Assert(completed);
+                    Debug.Assert(completed, "Expected TryCompleteAsync to return true");
                 }
             }
 
@@ -434,7 +434,7 @@ namespace System.Net.Sockets
                     AsyncOperation op = _tail;
                     do
                     {
-                        Debug.Assert((op is TCandidate) == tailIsCandidateType);
+                        Debug.Assert((op is TCandidate) == tailIsCandidateType, $"Unexpected values: op={op}, tailIsCandidateType={tailIsCandidateType}");
                         op = op.Next;
                     }
                     while (op != _tail);
@@ -462,8 +462,8 @@ namespace System.Net.Sockets
 
         private void Register(Interop.Sys.SocketEvents events)
         {
-            Debug.Assert(Monitor.IsEntered(_queueLock));
-            Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None);
+            Debug.Assert(Monitor.IsEntered(_queueLock), "Expected _queueLock to be held");
+            Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None, $"Unexpected values: _registeredEvents={_registeredEvents}, events={events}");
 
             if (!_asyncEngineToken.WasAllocated)
             {
@@ -484,8 +484,8 @@ namespace System.Net.Sockets
 
         private void UnregisterRead()
         {
-            Debug.Assert(Monitor.IsEntered(_queueLock));
-            Debug.Assert((_registeredEvents & Interop.Sys.SocketEvents.Read) != Interop.Sys.SocketEvents.None);
+            Debug.Assert(Monitor.IsEntered(_queueLock), $"Expected _queueLock to be held");
+            Debug.Assert((_registeredEvents & Interop.Sys.SocketEvents.Read) != Interop.Sys.SocketEvents.None, $"Unexpected _registeredEvents: {_registeredEvents}");
 
             Interop.Sys.SocketEvents events = _registeredEvents & ~Interop.Sys.SocketEvents.Read;
 
@@ -600,14 +600,14 @@ namespace System.Net.Sockets
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, int timeout, out int acceptedFd)
         {
-            Debug.Assert(socketAddress != null);
-            Debug.Assert(socketAddressLen > 0);
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketError errorCode;
             if (SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
-                Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1);
+                Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1, $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
                 return errorCode;
             }
 
@@ -650,9 +650,9 @@ namespace System.Net.Sockets
 
         public SocketError AcceptAsync(byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketError> callback)
         {
-            Debug.Assert(socketAddress != null);
-            Debug.Assert(socketAddressLen > 0);
-            Debug.Assert(callback != null);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(callback != null, "Expected non-null callback");
 
             SetNonBlocking();
 
@@ -660,7 +660,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
             {
-                Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1);
+                Debug.Assert(errorCode == SocketError.Success || acceptedFd == -1, $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
 
                 if (errorCode == SocketError.Success)
                 {
@@ -698,9 +698,9 @@ namespace System.Net.Sockets
 
         public SocketError Connect(byte[] socketAddress, int socketAddressLen, int timeout)
         {
-            Debug.Assert(socketAddress != null);
-            Debug.Assert(socketAddressLen > 0);
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             CheckForPriorConnectFailure();
 
@@ -739,9 +739,9 @@ namespace System.Net.Sockets
 
         public SocketError ConnectAsync(byte[] socketAddress, int socketAddressLen, Action<SocketError> callback)
         {
-            Debug.Assert(socketAddress != null);
-            Debug.Assert(socketAddressLen > 0);
-            Debug.Assert(callback != null);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(callback != null, "Expected non-null callback");
 
             CheckForPriorConnectFailure();
 
@@ -796,7 +796,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
         {
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
             SocketError errorCode;
@@ -908,7 +908,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
         {
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
             SocketError errorCode;
@@ -1006,7 +1006,7 @@ namespace System.Net.Sockets
 
         public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
             SocketError errorCode;
@@ -1129,7 +1129,7 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
             SocketError errorCode;
@@ -1232,7 +1232,7 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
-            Debug.Assert(timeout == -1 || timeout > 0);
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
             int bufferIndex = 0;

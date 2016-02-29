@@ -402,7 +402,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    Debug.Assert(typeof(T) == typeof(LingerOption));
+                    Debug.Assert(typeof(T) == typeof(LingerOption), $"Unexpected type: {typeof(T)}");
                     s.SetSocketOption(level, name, value);
                 }
             }

@@ -159,7 +159,7 @@ namespace System.Net.Sockets
 
         private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
-            Debug.Assert(socketAddress != null || socketAddressLen == 0);
+            Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
             long received;
 
@@ -262,7 +262,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < maxBuffers; i++, startOffset = 0)
                 {
                     ArraySegment<byte> buffer = buffers[startIndex + i];
-                    Debug.Assert(buffer.Offset + startOffset < buffer.Array.Length);
+                    Debug.Assert(buffer.Offset + startOffset < buffer.Array.Length, $"Unexpected values: Offset={buffer.Offset}, startOffset={startOffset}, Length={buffer.Array.Length}");
 
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset + startOffset];
@@ -399,7 +399,7 @@ namespace System.Net.Sockets
 
         private static unsafe int ReceiveMessageFrom(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
-            Debug.Assert(socketAddress != null);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
             var cmsgBuffer = stackalloc byte[cmsgBufferLen];
@@ -466,7 +466,7 @@ namespace System.Net.Sockets
 
             if (errno == Interop.Error.SUCCESS)
             {
-                Debug.Assert(fd != -1);
+                Debug.Assert(fd != -1, "Expected fd != -1");
 
                 socketAddressLen = sockAddrLen;
                 errorCode = SocketError.Success;
@@ -488,8 +488,8 @@ namespace System.Net.Sockets
 
         public static unsafe bool TryStartConnect(SafeCloseSocket socket, byte[] socketAddress, int socketAddressLen, out SocketError errorCode)
         {
-            Debug.Assert(socketAddress != null);
-            Debug.Assert(socketAddressLen > 0);
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
 
             Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress)
@@ -530,7 +530,7 @@ namespace System.Net.Sockets
 
             if (err != Interop.Error.SUCCESS)
             {
-                Debug.Assert(err == Interop.Error.EBADF);
+                Debug.Assert(err == Interop.Error.EBADF, $"Unexpected err: {err}");
                 errorCode = SocketError.SocketError;
                 return true;
             }
@@ -988,7 +988,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
         {
-            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership, $"Unexpected optionName: {optionName}");
 
             Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
                 Interop.Sys.MulticastOption.MULTICAST_ADD :
@@ -1008,7 +1008,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError SetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, IPv6MulticastOption optionValue)
         {
-            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership, $"Unexpected optionName={optionName}");
 
             Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
                 Interop.Sys.MulticastOption.MULTICAST_ADD :
@@ -1097,7 +1097,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out MulticastOption optionValue)
         {
-            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership, $"Unexpected optionName={optionName}");
 
             Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
                 Interop.Sys.MulticastOption.MULTICAST_ADD :
@@ -1122,7 +1122,7 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out IPv6MulticastOption optionValue)
         {
-            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership, $"Unexpected optionName={optionName}");
 
             Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
                 Interop.Sys.MulticastOption.MULTICAST_ADD :
@@ -1338,7 +1338,7 @@ namespace System.Net.Sockets
 
         public static SocketError AcceptAsync(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
         {
-            Debug.Assert(acceptHandle == null);
+            Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
 
             byte[] socketAddressBuffer = new byte[socketAddressSize];
 

@@ -26,7 +26,7 @@ internal static partial class Interop
             {
                 ThrowInvalidFileDescriptor(fd);
             }
-            Debug.Assert(fdset != null);
+            Debug.Assert(fdset != null, "fdset was null");
 
             fdset[fd / FD_SETSIZE_UINTS] |= (1u << (fd % FD_SETSIZE_UINTS));
         }
@@ -37,14 +37,14 @@ internal static partial class Interop
             {
                 ThrowInvalidFileDescriptor(fd);
             }
-            Debug.Assert(fdset != null);
+            Debug.Assert(fdset != null, "fdset was null");
 
             return (fdset[fd / FD_SETSIZE_UINTS] & (1u << (fd % FD_SETSIZE_UINTS))) != 0;
         }
 
         internal static unsafe void FD_ZERO(uint* fdset)
         {
-            Debug.Assert(fdset != null);
+            Debug.Assert(fdset != null, "fdset was null");
             Interop.Sys.MemSet(fdset, 0, (UIntPtr)FD_SETSIZE_BYTES);
         }
 
