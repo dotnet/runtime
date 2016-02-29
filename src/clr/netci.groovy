@@ -35,7 +35,7 @@ class Constants {
     // test execution in the build flow runs.  It generates the exact same build
     // as Windows_NT but without the tests.
     def static osList = ['Ubuntu', 'Debian8.2', 'OSX', 'Windows_NT', 'Windows_NT_BuildOnly', 'FreeBSD', 'CentOS7.1', 'OpenSUSE13.2', 'Ubuntu15.10', 'RHEL7.2']
-    def static crossList = ['Ubuntu', 'OSX']
+    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1']
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
@@ -206,17 +206,25 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 break
             case 'pri1':
                 // Pri one gets a push trigger, and only for release
-                if (architecture == 'x64' && configuration == 'Release') {
-                    // We don't expect to see a job generated except in these scenarios
-                    assert (os == 'Windows_NT') || (os in Constants.crossList)
-                    if (isFlowJob || os == 'Windows_NT') {
-                        Utilities.addGithubPushTrigger(job)
+                if (architecture == 'x64') {
+                    if (configuration == 'Release' && os != 'CentOS7.1') {
+                        // We expect release jobs to be Windows, Ubuntu, or OSX
+                        assert (os == 'Windows_NT') || (os in Constants.crossList)
+                        if (isFlowJob || os == 'Windows_NT') {
+                            Utilities.addGithubPushTrigger(job)
+                        }
+                    } else if (configuration == 'Checked' && os == 'CentOS7.1') {
+                        // We expect checked jobs to be CentOS flow jobs
+                        assert (os in Constants.crossList)
+                        if (isFlowJob) {
+                            Utilities.addGithubPushTrigger(job)  
+                        }
                     }
                 }
                 break
             case 'ilrt':
                 // ILASM/ILDASM roundtrip one gets a daily build, and only for release
-                if (architecture == 'x64' && configuration == 'Release') {
+                if (architecture == 'x64' && configuration == 'Release' && os != 'CentOS7.1') {
                     // We don't expect to see a job generated except in these scenarios
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     if (isFlowJob || os == 'Windows_NT') {
@@ -253,8 +261,10 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'corefx_jitstressregs8':
             case 'corefx_jitstressregs0x10':
             case 'corefx_jitstressregs0x80':
-                assert (os == 'Windows_NT') || (os in Constants.crossList)
-                Utilities.addPeriodicTrigger(job, '@daily')
+                if (os != 'CentOS7.1') {
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    Utilities.addPeriodicTrigger(job, '@daily')
+                }
                 break
             default:
                 println("Unknown scenario: ${scenario}");
@@ -403,10 +413,11 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                     }
                     break
                 case 'CentOS7.1':
+                    if (configuration == 'Checked' && isFlowJob && scenario == 'pri1' && architecture == 'x64') {
+                        Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
+                    }
                 case 'OpenSUSE13.2':
-                    assert !isFlowJob
-                    assert scenario == 'default'
-                    if (configuration == 'Checked') {
+                    if (configuration == 'Checked' && !isFlowJob && scenario == 'default') {
                         Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
                     }
                     break
@@ -923,6 +934,15 @@ combinedScenarios.each { scenario ->
                             return
                         }
                         if (isCorefxTesting(scenario)) {
+                            return
+                        }
+                    }
+                    // For CentOS, we only want Checked pri1 builds.
+                    else if (os == 'CentOS7.1') {
+                        if (scenario != 'pri1') {
+                            return
+                        }
+                        if (configuration != 'Checked') {
                             return
                         }
                     }
