@@ -31,7 +31,12 @@ private:
     PooledAllocator() : ArenaAllocator() {}
     PooledAllocator(IEEMemoryManager* memoryManager);
 
+    PooledAllocator(const PooledAllocator& other) = delete;
+    PooledAllocator& operator=(const PooledAllocator& other) = delete;
+
 public:
+    PooledAllocator& operator=(PooledAllocator&& other);
+
     void destroy() override;
 
     static void shutdown();
@@ -438,6 +443,15 @@ LONG PooledAllocator::s_pooledAllocatorState = POOLED_ALLOCATOR_NOTINITIALIZED;
 PooledAllocator::PooledAllocator(IEEMemoryManager* memoryManager)
     : ArenaAllocator(memoryManager)
 {
+}
+
+//------------------------------------------------------------------------
+// PooledAllocator::operator=:
+//    Move-assigns a `PooledAllocator`.
+PooledAllocator& PooledAllocator::operator=(PooledAllocator&& other)
+{
+    *((ArenaAllocator*)this) = std::move((ArenaAllocator&&)other);
+    return *this;
 }
 
 //------------------------------------------------------------------------
