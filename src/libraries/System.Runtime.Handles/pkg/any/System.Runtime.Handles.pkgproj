@@ -20,6 +20,8 @@
     <InboxOnTargetFramework Include="net46" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

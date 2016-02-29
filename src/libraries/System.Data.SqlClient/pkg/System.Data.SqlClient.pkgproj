@@ -1,7 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.Data.SqlClient.csproj">
       <SupportedFramework>net45;</SupportedFramework>
@@ -9,15 +8,13 @@
     <ProjectReference Include="..\src\System.Data.SqlClient.csproj">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </ProjectReference>
-	<ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
+    <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    
-	<ProjectReference Include="win\System.Data.SqlClient.pkgproj">
-        <PackageAlias>win.System.Data.SqlClient</PackageAlias>
+    <ProjectReference Include="win\System.Data.SqlClient.pkgproj">
+      <PackageAlias>win.System.Data.SqlClient</PackageAlias>
     </ProjectReference>
     <ProjectReference Include="unix\System.Data.SqlClient.pkgproj" />
-
     <!-- Ideally we'd place these in the windows project, but nuget cannot handle
          recursive runtime runtime dependencies -->
     <ProjectReference Include="win\native\System.Data.SqlClient.sni.pkgproj">
@@ -29,13 +26,13 @@
       <Platform>x86</Platform>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
