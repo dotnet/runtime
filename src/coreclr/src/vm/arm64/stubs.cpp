@@ -277,39 +277,40 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
 
-    context.X19 = unwoundstate->captureX19_X28[0] = baseState->captureX19_X28[0];
-    context.X20 = unwoundstate->captureX19_X28[1] = baseState->captureX19_X28[1];
-    context.X21 = unwoundstate->captureX19_X28[2] = baseState->captureX19_X28[2];
-    context.X22 = unwoundstate->captureX19_X28[3] = baseState->captureX19_X28[3];
-    context.X23 = unwoundstate->captureX19_X28[4] = baseState->captureX19_X28[4];
-    context.X24 = unwoundstate->captureX19_X28[5] = baseState->captureX19_X28[5];
-    context.X25 = unwoundstate->captureX19_X28[6] = baseState->captureX19_X28[6];
-    context.X26 = unwoundstate->captureX19_X28[7] = baseState->captureX19_X28[7];
-    context.X27 = unwoundstate->captureX19_X28[8] = baseState->captureX19_X28[8];
-    context.X28 = unwoundstate->captureX19_X28[9] = baseState->captureX19_X28[9];
+    context.X19 = unwoundstate->captureX19_X29[0] = baseState->captureX19_X29[0];
+    context.X20 = unwoundstate->captureX19_X29[1] = baseState->captureX19_X29[1];
+    context.X21 = unwoundstate->captureX19_X29[2] = baseState->captureX19_X29[2];
+    context.X22 = unwoundstate->captureX19_X29[3] = baseState->captureX19_X29[3];
+    context.X23 = unwoundstate->captureX19_X29[4] = baseState->captureX19_X29[4];
+    context.X24 = unwoundstate->captureX19_X29[5] = baseState->captureX19_X29[5];
+    context.X25 = unwoundstate->captureX19_X29[6] = baseState->captureX19_X29[6];
+    context.X26 = unwoundstate->captureX19_X29[7] = baseState->captureX19_X29[7];
+    context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
+    context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
+    context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];	
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
-    context.Fp = baseState->captureFp;
 
 #if !defined(DACCESS_COMPILE)
     // For DAC, if we get here, it means that the LazyMachState is uninitialized and we have to unwind it.
     // The API we use to unwind in DAC is StackWalk64(), which does not support the context pointers.
     //
     // Restore the integer registers to KNONVOLATILE_CONTEXT_POINTERS to be used for unwinding.
-    nonVolContextPtrs.X19 = &unwoundstate->captureX19_X28[0];
-    nonVolContextPtrs.X20 = &unwoundstate->captureX19_X28[1];
-    nonVolContextPtrs.X21 = &unwoundstate->captureX19_X28[2];
-    nonVolContextPtrs.X22 = &unwoundstate->captureX19_X28[3];
-    nonVolContextPtrs.X23 = &unwoundstate->captureX19_X28[4];
-    nonVolContextPtrs.X24 = &unwoundstate->captureX19_X28[5];
-    nonVolContextPtrs.X25 = &unwoundstate->captureX19_X28[6];
-    nonVolContextPtrs.X26 = &unwoundstate->captureX19_X28[7];
-    nonVolContextPtrs.X27 = &unwoundstate->captureX19_X28[8];
-    nonVolContextPtrs.X28 = &unwoundstate->captureX19_X28[9];
+    nonVolContextPtrs.X19 = &unwoundstate->captureX19_X29[0];
+    nonVolContextPtrs.X20 = &unwoundstate->captureX19_X29[1];
+    nonVolContextPtrs.X21 = &unwoundstate->captureX19_X29[2];
+    nonVolContextPtrs.X22 = &unwoundstate->captureX19_X29[3];
+    nonVolContextPtrs.X23 = &unwoundstate->captureX19_X29[4];
+    nonVolContextPtrs.X24 = &unwoundstate->captureX19_X29[5];
+    nonVolContextPtrs.X25 = &unwoundstate->captureX19_X29[6];
+    nonVolContextPtrs.X26 = &unwoundstate->captureX19_X29[7];
+    nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
+    nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
+    nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];	
 #endif // DACCESS_COMPILE
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p,fp:%p)\n", baseState->captureIp, baseState->captureSp, baseState->captureFp));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p)\n", baseState->captureIp, baseState->captureSp));
 
     PCODE pvControlPc;
 
@@ -355,33 +356,34 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
 #ifdef DACCESS_COMPILE
     // For DAC builds, we update the registers directly since we dont have context pointers
-    unwoundstate->captureX19_X28[0] = context.X19;
-    unwoundstate->captureX19_X28[1] = context.X20;
-    unwoundstate->captureX19_X28[2] = context.X21;
-    unwoundstate->captureX19_X28[3] = context.X22;
-    unwoundstate->captureX19_X28[4] = context.X23;
-    unwoundstate->captureX19_X28[5] = context.X24;
-    unwoundstate->captureX19_X28[6] = context.X25;
-    unwoundstate->captureX19_X28[7] = context.X26;
-    unwoundstate->captureX19_X28[8] = context.X27;
-    unwoundstate->captureX19_X28[9] = context.X28;
+    unwoundstate->captureX19_X29[0] = context.X19;
+    unwoundstate->captureX19_X29[1] = context.X20;
+    unwoundstate->captureX19_X29[2] = context.X21;
+    unwoundstate->captureX19_X29[3] = context.X22;
+    unwoundstate->captureX19_X29[4] = context.X23;
+    unwoundstate->captureX19_X29[5] = context.X24;
+    unwoundstate->captureX19_X29[6] = context.X25;
+    unwoundstate->captureX19_X29[7] = context.X26;
+    unwoundstate->captureX19_X29[8] = context.X27;
+    unwoundstate->captureX19_X29[9] = context.X28;
+    unwoundstate->captureX19_X29[10] = context.Fp;	
 #else // !DACCESS_COMPILE
     // For non-DAC builds, update the register state from context pointers
-    unwoundstate->ptrX19_X28[0] = nonVolContextPtrs.X19;
-    unwoundstate->ptrX19_X28[1] = nonVolContextPtrs.X20;
-    unwoundstate->ptrX19_X28[2] = nonVolContextPtrs.X21;
-    unwoundstate->ptrX19_X28[3] = nonVolContextPtrs.X22;
-    unwoundstate->ptrX19_X28[4] = nonVolContextPtrs.X23;
-    unwoundstate->ptrX19_X28[5] = nonVolContextPtrs.X24;
-    unwoundstate->ptrX19_X28[6] = nonVolContextPtrs.X25;
-    unwoundstate->ptrX19_X28[7] = nonVolContextPtrs.X26;
-    unwoundstate->ptrX19_X28[8] = nonVolContextPtrs.X27;
-    unwoundstate->ptrX19_X28[9] = nonVolContextPtrs.X28;
+    unwoundstate->ptrX19_X29[0] = nonVolContextPtrs.X19;
+    unwoundstate->ptrX19_X29[1] = nonVolContextPtrs.X20;
+    unwoundstate->ptrX19_X29[2] = nonVolContextPtrs.X21;
+    unwoundstate->ptrX19_X29[3] = nonVolContextPtrs.X22;
+    unwoundstate->ptrX19_X29[4] = nonVolContextPtrs.X23;
+    unwoundstate->ptrX19_X29[5] = nonVolContextPtrs.X24;
+    unwoundstate->ptrX19_X29[6] = nonVolContextPtrs.X25;
+    unwoundstate->ptrX19_X29[7] = nonVolContextPtrs.X26;
+    unwoundstate->ptrX19_X29[8] = nonVolContextPtrs.X27;
+    unwoundstate->ptrX19_X29[9] = nonVolContextPtrs.X28;
+    unwoundstate->ptrX19_X29[10] = nonVolContextPtrs.Fp;	
 #endif // DACCESS_COMPILE
 
     unwoundstate->_pc = context.Pc;
     unwoundstate->_sp = context.Sp;
-    unwoundstate->_fp = context.Fp;
 
     unwoundstate->_isValid = TRUE;
 }
@@ -418,18 +420,18 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
-        pRD->pCurrentContext->Fp = pUnwoundState->_fp;
 
-        pRD->pCurrentContext->X19 = (DWORD64)(pUnwoundState->captureX19_X28[0]);
-        pRD->pCurrentContext->X20 = (DWORD64)(pUnwoundState->captureX19_X28[1]);
-        pRD->pCurrentContext->X21 = (DWORD64)(pUnwoundState->captureX19_X28[2]);
-        pRD->pCurrentContext->X22 = (DWORD64)(pUnwoundState->captureX19_X28[3]);
-        pRD->pCurrentContext->X23 = (DWORD64)(pUnwoundState->captureX19_X28[4]);
-        pRD->pCurrentContext->X24 = (DWORD64)(pUnwoundState->captureX19_X28[5]);
-        pRD->pCurrentContext->X25 = (DWORD64)(pUnwoundState->captureX19_X28[6]);
-        pRD->pCurrentContext->X26 = (DWORD64)(pUnwoundState->captureX19_X28[7]);
-        pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X28[8]);
-        pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X28[9]);
+        pRD->pCurrentContext->X19 = (DWORD64)(pUnwoundState->captureX19_X29[0]);
+        pRD->pCurrentContext->X20 = (DWORD64)(pUnwoundState->captureX19_X29[1]);
+        pRD->pCurrentContext->X21 = (DWORD64)(pUnwoundState->captureX19_X29[2]);
+        pRD->pCurrentContext->X22 = (DWORD64)(pUnwoundState->captureX19_X29[3]);
+        pRD->pCurrentContext->X23 = (DWORD64)(pUnwoundState->captureX19_X29[4]);
+        pRD->pCurrentContext->X24 = (DWORD64)(pUnwoundState->captureX19_X29[5]);
+        pRD->pCurrentContext->X25 = (DWORD64)(pUnwoundState->captureX19_X29[6]);
+        pRD->pCurrentContext->X26 = (DWORD64)(pUnwoundState->captureX19_X29[7]);
+        pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X29[8]);
+        pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
+        pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
 
         return;
     }
@@ -442,30 +444,31 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     
     pRD->pCurrentContext->Pc = pRD->ControlPC;
     pRD->pCurrentContext->Sp = pRD->SP;
-    pRD->pCurrentContext->Fp = (DWORD64)(size_t)m_MachState._fp;
 
-    pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X28[0];
-    pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X28[1];
-    pRD->pCurrentContext->X21 = *m_MachState.ptrX19_X28[2];
-    pRD->pCurrentContext->X22 = *m_MachState.ptrX19_X28[3];
-    pRD->pCurrentContext->X23 = *m_MachState.ptrX19_X28[4];
-    pRD->pCurrentContext->X24 = *m_MachState.ptrX19_X28[5];
-    pRD->pCurrentContext->X25 = *m_MachState.ptrX19_X28[6];
-    pRD->pCurrentContext->X26 = *m_MachState.ptrX19_X28[7];
-    pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X28[8];
-    pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X28[9];
+    pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
+    pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
+    pRD->pCurrentContext->X21 = *m_MachState.ptrX19_X29[2];
+    pRD->pCurrentContext->X22 = *m_MachState.ptrX19_X29[3];
+    pRD->pCurrentContext->X23 = *m_MachState.ptrX19_X29[4];
+    pRD->pCurrentContext->X24 = *m_MachState.ptrX19_X29[5];
+    pRD->pCurrentContext->X25 = *m_MachState.ptrX19_X29[6];
+    pRD->pCurrentContext->X26 = *m_MachState.ptrX19_X29[7];
+    pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X29[8];
+    pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
+    pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
 
 #if !defined(DACCESS_COMPILE)    
-    pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X28[0];
-    pRD->pCurrentContextPointers->X20 = m_MachState.ptrX19_X28[1];
-    pRD->pCurrentContextPointers->X21 = m_MachState.ptrX19_X28[2];
-    pRD->pCurrentContextPointers->X22 = m_MachState.ptrX19_X28[3];
-    pRD->pCurrentContextPointers->X23 = m_MachState.ptrX19_X28[4];
-    pRD->pCurrentContextPointers->X24 = m_MachState.ptrX19_X28[5];
-    pRD->pCurrentContextPointers->X25 = m_MachState.ptrX19_X28[6];
-    pRD->pCurrentContextPointers->X26 = m_MachState.ptrX19_X28[7];
-    pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X28[8];
-    pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X28[9];
+    pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
+    pRD->pCurrentContextPointers->X20 = m_MachState.ptrX19_X29[1];
+    pRD->pCurrentContextPointers->X21 = m_MachState.ptrX19_X29[2];
+    pRD->pCurrentContextPointers->X22 = m_MachState.ptrX19_X29[3];
+    pRD->pCurrentContextPointers->X23 = m_MachState.ptrX19_X29[4];
+    pRD->pCurrentContextPointers->X24 = m_MachState.ptrX19_X29[5];
+    pRD->pCurrentContextPointers->X25 = m_MachState.ptrX19_X29[6];
+    pRD->pCurrentContextPointers->X26 = m_MachState.ptrX19_X29[7];
+    pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
+    pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
+    pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
     pRD->pCurrentContextPointers->Lr = NULL;
 #endif
 }
