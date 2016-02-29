@@ -2,67 +2,57 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    // Tests the DecoderFallbackException class.
     public class DecoderFallbackExceptionTests
     {
         [Fact]
-        public void Ctor()
+        public void Ctor_Empty()
         {
-            DecoderFallbackException ex = new DecoderFallbackException();
-            Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
-            Assert.Null(ex.StackTrace);
-            Assert.Null(ex.InnerException);
-            Assert.Equal(0, ex.Data.Count);
-            ArgumentException arg = new ArgumentException();
+            DecoderFallbackException decoderFallbackException = new DecoderFallbackException();
+            Assert.Null(decoderFallbackException.BytesUnknown);
+            Assert.Equal(0, decoderFallbackException.Index);
+            Assert.Null(decoderFallbackException.StackTrace);
+            Assert.Null(decoderFallbackException.InnerException);
+            Assert.Equal(0, decoderFallbackException.Data.Count);
 
-            Assert.Equal(ex.Message, arg.Message);
+            Assert.Equal(new ArgumentException().Message, decoderFallbackException.Message);
         }
 
-        [Fact]
-        public void Ctor2()
+        [Theory]
+        [InlineData("Test message.")]
+        [InlineData(".")]
+        public void Ctor_String(string message)
         {
-            string message = "Test message.";
-            DecoderFallbackException ex = new DecoderFallbackException(message);
-            Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
-            Assert.Null(ex.StackTrace);
-            Assert.Null(ex.InnerException);
-            Assert.Equal(0, ex.Data.Count);
-            Assert.Equal(ex.Message, message);
-
-            message = "";
-            ex = new DecoderFallbackException(message);
-            Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
-            Assert.Equal(message, ex.Message);
+            DecoderFallbackException decoderFallbackException = new DecoderFallbackException(message);
+            Assert.Null(decoderFallbackException.BytesUnknown);
+            Assert.Equal(0, decoderFallbackException.Index);
+            Assert.Null(decoderFallbackException.StackTrace);
+            Assert.Null(decoderFallbackException.InnerException);
+            Assert.Equal(0, decoderFallbackException.Data.Count);
+            Assert.Equal(message, decoderFallbackException.Message);
         }
 
-        [Fact]
-        public void Ctor3()
+        public static IEnumerable<object[]> Ctor_String_Exception_TestData()
         {
-            string message = "Test message.";
-            string innerMsg = "Invalid Op Message.";
-            Exception innerException = new InvalidOperationException(innerMsg);
+            yield return new object[] { "Test message.", new InvalidOperationException("Inner exception message.") };
+            yield return new object[] { "", null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_String_Exception_TestData))]
+        public void Ctor_String_Exception(string message, Exception innerException)
+        {
             DecoderFallbackException ex = new DecoderFallbackException(message, innerException);
             Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
+            Assert.Equal(0, ex.Index);
             Assert.Null(ex.StackTrace);
             Assert.Equal(0, ex.Data.Count);
-            Assert.Equal(innerException, ex.InnerException);
-            Assert.Equal(innerMsg, ex.InnerException.Message);
+            Assert.Same(innerException, ex.InnerException);
             Assert.Equal(message, ex.Message);
-
-            message = "";
-            ex = new DecoderFallbackException(message, null);
-            Assert.Null(ex.BytesUnknown);
-            Assert.Equal(default(int), ex.Index);
-            Assert.Equal(message, ex.Message);
-            Assert.Null(ex.InnerException);
         }
     }
 }

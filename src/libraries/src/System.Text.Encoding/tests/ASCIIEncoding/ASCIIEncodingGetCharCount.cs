@@ -2,189 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    // Calculates the number of characters produced 
-    // by decoding a sequence of bytes from the specified byte array.   
-    // ASCIIEncoding.GetCharCount(byte[], int, int)
     public class ASCIIEncodingGetCharCount
     {
-        private const int c_MIN_STRING_LENGTH = 2;
-        private const int c_MAX_STRING_LENGTH = 260;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private const int MinStringLength = 2;
+        private const int MaxStringLength = 260;
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        // PosTest1: zero-length byte array.
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetCharCount_TestData()
         {
-            DoPosTest(new ASCIIEncoding(), new byte[0], 0, 0);
+            string randomString = s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
+            int randomIndex = s_randomDataGenerator.GetInt32(-55) % randomString.Length;
+            int randomCount = s_randomDataGenerator.GetInt32(-55) % (randomString.Length - randomIndex) + 1;
+
+            yield return new object[] { new byte[0], 0, 0, 0 };
+            yield return new object[] { new ASCIIEncoding().GetBytes(randomString), 0, randomString.Length, randomString.Length };
+            yield return new object[] { new ASCIIEncoding().GetBytes(randomString), randomIndex, randomCount, randomCount };
         }
 
-        // PosTest2: random byte array.
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetCharCount_TestData))]
+        public void GetCharCount(byte[] bytes, int index, int count, int expected)
         {
-            ASCIIEncoding ascii;
-            byte[] bytes;
-            int index, count;
-            string source;
-
-            ascii = new ASCIIEncoding();
-            source = _generator.GetString(-55, true, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            bytes = ascii.GetBytes(source);
-            index = _generator.GetInt32(-55) % bytes.Length;
-            count = _generator.GetInt32(-55) % (bytes.Length - index) + 1;
-
-            // ensure that count <= bytes.Length
-            if (count > bytes.Length)
+            if (index == 0 && count == bytes.Length)
             {
-                count = bytes.Length;
+                Assert.Equal(expected, new ASCIIEncoding().GetCharCount(bytes));
             }
-            DoPosTest(ascii, bytes, index, count);
+            Assert.Equal(expected, new ASCIIEncoding().GetCharCount(bytes, index, count));
         }
 
-        private void DoPosTest(ASCIIEncoding ascii, byte[] bytes, int index, int count)
-        {
-            int actualValue;
-            ascii = new ASCIIEncoding();
-            actualValue = ascii.GetCharCount(bytes, index, count);
-            Assert.Equal(count, actualValue);
-        }
-
-        // NegTest1: count of bytes is less than zero.
         [Fact]
-        public void NegTest1()
+        public void GetCharCount_Invalid()
         {
-            ASCIIEncoding ascii;
-            byte[] bytes;
-            int index, count;
+            // Bytes is null
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetCharCount(null));
+            Assert.Throws<ArgumentNullException>("bytes", () => new ASCIIEncoding().GetCharCount(null, 0, 0));
 
-            ascii = new ASCIIEncoding();
-            bytes = new byte[]
-            {
-             65,  83,  67,  73,  73,  32,  69,
-            110,  99, 111, 100, 105, 110, 103,
-             32,  69, 120,  97, 109, 112, 108
-            };
+            // Index or count < 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new ASCIIEncoding().GetCharCount(new byte[4], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => new ASCIIEncoding().GetCharCount(new byte[4], 0, -1));
 
-            count = -1 * _generator.GetInt32(-55) - 1;
-            index = _generator.GetInt32(-55) % bytes.Length;
-
-            DoNegAOORTest(ascii, bytes, index, count);
-        }
-
-        // NegTest2: The start index of bytes is less than zero.
-        [Fact]
-        public void NegTest2()
-        {
-            ASCIIEncoding ascii;
-            byte[] bytes;
-            int index, count;
-
-            ascii = new ASCIIEncoding();
-            bytes = new byte[]
-            {
-             65,  83,  67,  73,  73,  32,  69,
-            110,  99, 111, 100, 105, 110, 103,
-             32,  69, 120,  97, 109, 112, 108
-            };
-            count = _generator.GetInt32(-55) % bytes.Length + 1;
-            index = -1 * _generator.GetInt32(-55) - 1;
-
-            DoNegAOORTest(ascii, bytes, index, count);
-        }
-
-        // NegTest3: count of bytes is too large.
-        [Fact]
-        public void NegTest3()
-        {
-            ASCIIEncoding ascii;
-            byte[] bytes;
-            int index, count;
-
-            ascii = new ASCIIEncoding();
-            bytes = new byte[]
-            {
-             65,  83,  67,  73,  73,  32,  69,
-            110,  99, 111, 100, 105, 110, 103,
-             32,  69, 120,  97, 109, 112, 108
-            };
-            index = _generator.GetInt32(-55) % bytes.Length;
-            count = bytes.Length - index + 1 +
-                _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + index);
-
-            DoNegAOORTest(ascii, bytes, index, count);
-        }
-
-        // NegTest4: The start index of bytes is too large.
-        [Fact]
-        public void NegTest4()
-        {
-            ASCIIEncoding ascii;
-            byte[] bytes;
-            int index, count;
-
-            ascii = new ASCIIEncoding();
-            bytes = new byte[]
-            {
-             65,  83,  67,  73,  73,  32,  69,
-            110,  99, 111, 100, 105, 110, 103,
-             32,  69, 120,  97, 109, 112, 108
-            };
-            count = _generator.GetInt32(-55) % bytes.Length + 1;
-            index = bytes.Length - count + 1 +
-                _generator.GetInt32(-55) % (int.MaxValue - bytes.Length + count);
-
-            DoNegAOORTest(ascii, bytes, index, count);
-        }
-
-        // NegTest5: bytes is a null reference
-        [Fact]
-        public void NegTest5()
-        {
-            ASCIIEncoding ascii = new ASCIIEncoding();
-            byte[] bytes = null;
-            Assert.Throws<ArgumentNullException>(() =>
-           {
-               ascii.GetCharCount(bytes, 0, 0);
-           });
-        }
-
-        private void DoNegAOORTest(ASCIIEncoding ascii, byte[] bytes, int index, int count)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                ascii.GetCharCount(bytes, index, count);
-            });
-        }
-
-        private string GetByteArrayInfo(byte[] bytes, int startIndex, int count)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (null == bytes)
-            {
-                sb.Append("\nByte array: null reference");
-            }
-            else if (bytes.Length == 0)
-            {
-                sb.Append("\nByte array: zero-length array");
-            }
-            else
-            {
-                sb.Append("\nByte array: {");
-                for (int i = 0; i < bytes.Length; ++i)
-                {
-                    if ((i % 8) == 0) sb.Append("\n\t");
-                    //sb.AppendFormat("{0:x02},", bytes[i]);
-                    sb.Append("," + bytes[i].ToString("X4"));
-                }
-                sb.Append("\n}");
-            }
-            sb.AppendFormat("\nStart index: {0}\nCount of bytes decoded: {1}", startIndex, count);
-
-            return sb.ToString();
+            // Index + count > bytes.Length
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => new ASCIIEncoding().GetCharCount(new byte[4], 0, 5));
         }
     }
 }
