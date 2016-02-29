@@ -8554,8 +8554,6 @@ public:
                                          
 #define NATIVE_SIZE_INVALID  (-10000)                
 
-    static bool             s_compInSamplingMode;
-    bool                    compIsMethodForLRSampling;  // Is this the method suitable as a sample for the linear regression?
     int                     compNativeSizeEstimate;     // The estimated native size of this method.
     InlineHints             compInlineeHints;           // Inlining hints from the inline candidate.
 

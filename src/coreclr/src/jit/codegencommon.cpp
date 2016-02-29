@@ -3253,23 +3253,6 @@ void                CodeGen::genGenerateCode(void * * codePtr,
 
 #endif // DISPLAY_SIZES
 
-    
-#ifdef DEBUG 
-    if (compiler->compIsMethodForLRSampling)
-    {
-        // Print this sample.
-        compiler->fgCodeSeqSm.codeSize    = codeSize;
-        compiler->fgCodeSeqSm.prologSize  = prologSize;    
-        compiler->fgCodeSeqSm.epilogSize  = epilogSize;   
-        compiler->fgCodeSeqSm.epilogCount = getEmitter()->emitGetEpilogCnt();
-
-        noway_assert(codeSize >= prologSize + epilogSize * compiler->fgCodeSeqSm.epilogCount);         
-        compiler->fgCodeSeqSm.BBCodeSize = codeSize - prologSize - epilogSize * compiler->fgCodeSeqSm.epilogCount;
-
-        compiler->fgCodeSeqSm.PrintSampleResult();          
-    }
-#endif // DEBUG
-
     compiler->EndPhase(PHASE_EMIT_GCEH);
 }
 

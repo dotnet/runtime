@@ -436,7 +436,6 @@ CONFIG_DWORD_INFO_EX(INTERNAL_JitInlinePrintStats, W("JitInlinePrintStats"), (DW
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_JITInlineSize, W("JITInlineSize"), "")
 CONFIG_STRING_INFO_EX(INTERNAL_JitLateDisasm, W("JitLateDisasm"), "", CLRConfig::REGUTIL_default)
 CONFIG_STRING_INFO_EX(INTERNAL_JITLateDisasmTo, W("JITLateDisasmTo"), "", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_JitLRSampling, W("JitLRSampling"), 0, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JITMaxTempAssert, W("JITMaxTempAssert"), 1, "", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitMaxUncheckedOffset, W("JitMaxUncheckedOffset"), (DWORD)8, "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), "Forces MinOpts")
