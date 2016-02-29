@@ -651,17 +651,6 @@ const bool          Compiler::Options::compDbgCode = false;
 const bool          Compiler::Options::compNoPInvokeInlineCB      = false;
 #endif
 
-#if defined(DEBUG)
-//static ConfigDWORD  fJitLRSampling;
-/* static */
-//bool   Compiler::s_compInSamplingMode = (fJitLRSampling.val(CLRConfig::EXTERNAL_JitLRSampling) != 0);
-bool   Compiler::s_compInSamplingMode = false;    
-#else
-/* static */
-bool   Compiler::s_compInSamplingMode = false;    
-#endif
-
-
 /*****************************************************************************
  *
  *  One time initialization code
@@ -2043,7 +2032,6 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif
 
     opts.compNeedSecurityCheck = false;
-    compIsMethodForLRSampling = false;
     opts.altJit = false;
 
 #if defined(LATE_DISASM) && !defined(DEBUG)
@@ -2555,13 +2543,6 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
     if (compIsForInlining() || compIsForImportOnly())
         return;
-
-    if (Compiler::s_compInSamplingMode)
-    {
-        assert(!compIsForInlining());
-
-        compIsMethodForLRSampling = true;
-    }
                    
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
@@ -4939,19 +4920,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 
         info.compInitMem         = ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0);
  
-        if (compIsMethodForLRSampling)
-        {
-            // Further trim down our sample set.
-            
-            if (info.compILCodeSize  > 100                ||
-                info.compXcptnsCount > 0                  ||  // Exclude methods that have EH
-                instVerInfo != INSTVER_NOT_INSTANTIATION      // Exclude generic methods or methods in generic class
-               )
-            {
-                compIsMethodForLRSampling = false;            
-            }        
-        }
-                   
         /* Allocate the local variable table */
 
         lvaInitTypeRef();
