@@ -120,8 +120,6 @@ process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, g_utf16_to_utf8 (val, len, NULL, NULL, NULL)));
 
 	string = mono_string_new_utf16_checked (mono_object_domain (obj), val, len, error);
-	if (!mono_error_ok (error))
-		return;
 	
 	field = mono_class_get_field_from_name (mono_object_class (obj),
 											fieldname);
@@ -255,8 +253,7 @@ process_module_stringtable (MonoObject *filever, gpointer data,
 	for (i = 0; i < G_N_ELEMENTS (stringtable_entries); ++i) {
 		process_module_string_read (filever, data, stringtable_entries [i].name, lang_hi, lang_lo,
 									stringtable_entries [i].id, error);
-		if (!mono_error_ok (error))
-			return;
+		return_if_nok (error);
 	}
 }
 
@@ -335,12 +332,10 @@ process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *er
 					lang_count = VerLanguageName (lang & 0xFFFF, lang_buf, 128);
 					if (lang_count) {
 						process_set_field_string (filever, "language", lang_buf, lang_count, error);
-						if (!mono_error_ok (error))
-							return;
+						return_if_nok (error);
 					}
 					process_module_stringtable (filever, data, trans_data[0], trans_data[1], error);
-					if (!mono_error_ok (error))
-						return;
+					return_if_nok (error);
 				}
 			} else {
 				int i;
@@ -352,8 +347,7 @@ process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *er
 					process_set_field_string (filever,
 											  stringtable_entries [i].name,
 											  EMPTY_STRING, 0, error);
-					if (!mono_error_ok (error))
-						return;
+					return_if_nok (error);
 				}
 
 				/* And language seems to be set to
@@ -362,8 +356,7 @@ process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *er
 				lang_count = VerLanguageName (0x0409, lang_buf, 128);
 				if (lang_count) {
 					process_set_field_string (filever, "language", lang_buf, lang_count, error);
-					if (!mono_error_ok (error))
-						return;
+					return_if_nok (error);
 				}
 			}
 			
@@ -394,11 +387,9 @@ get_process_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
 	item = mono_object_new_checked (domain, proc_class, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	filename = g_strdup_printf ("[In Memory] %s", modulename);
 
@@ -429,20 +420,16 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
 	item = mono_object_new_checked (domain, proc_class, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	process_get_fileversion (filever, filename, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	process_set_field_string (filever, "filename", filename,
 							  unicode_chars (filename), error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	ok = GetModuleInformation (process, mod, &modinfo, sizeof(MODULEINFO));
 	if (ok) {
 		process_set_field_intptr (item, "baseaddr",
@@ -454,12 +441,10 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 	}
 	process_set_field_string (item, "filename", filename,
 							  unicode_chars (filename), error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	process_set_field_string (item, "modulename", modulename,
 							  unicode_chars (modulename), error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	process_set_field_object (item, "version_info", filever);
 
 	return item;
