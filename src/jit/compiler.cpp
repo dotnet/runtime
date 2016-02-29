@@ -5622,16 +5622,12 @@ START:
     {
         IEEMemoryManager* pMemoryManager = compHnd->getMemoryManager();
 
-        // Try to reuse the pre-inited allocator ?
+        // Try to reuse the pre-inited allocator
         pAlloc = ArenaAllocator::getPooledAllocator(pMemoryManager);
 
-        if (!pAlloc)
+        if (pAlloc == nullptr)
         {
-            bool res = alloc.initialize(pMemoryManager, false);
-            if  (!res) 
-            {
-                return CORJIT_OUTOFMEM;
-            }
+            alloc = ArenaAllocator(pMemoryManager);
             pAlloc = &alloc;
         }
     }
@@ -5737,16 +5733,9 @@ START:
             }
 
             if (pParamOuter->inlineInfo == NULL)
-            {                      
-                // Now free up whichever allocator we were using
-                if (pParamOuter->pAlloc != pParamOuter->alloc)
-                {
-                    ArenaAllocator::returnPooledAllocator(pParamOuter->pAlloc);
-                }
-                else
-                {
-                    pParamOuter->alloc->destroy();
-                }
+            {
+                // Free up the allocator we were using
+                pParamOuter->pAlloc->destroy();
             }
         }
         endErrorTrap()
