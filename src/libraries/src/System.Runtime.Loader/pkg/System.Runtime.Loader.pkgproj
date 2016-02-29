@@ -4,9 +4,12 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.Loader.csproj">
-      <SupportedFramework>dnxcore50</SupportedFramework>
+      <SupportedFramework>netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Loader.builds"/>
+    
+    <NotSupportedOnTargetFramework Include="netcore50" />
+    <NotSupportedOnTargetFramework Include="net462" />
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

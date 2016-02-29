@@ -1,12 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Diagnostics.Process.csproj">
-      <SupportedFramework>net461;dnxcore50</SupportedFramework>
+      <SupportedFramework>net461;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\ref\4.0\System.Diagnostics.Process.csproj" >
+    <ProjectReference Include="..\ref\4.0\System.Diagnostics.Process.csproj">
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Process.csproj">
@@ -15,18 +14,17 @@
     <ProjectReference Include="..\src\System.Diagnostics.Process.csproj">
       <TargetGroup>net461</TargetGroup>
     </ProjectReference>
-    
     <ProjectReference Include="win\System.Diagnostics.Process.pkgproj" />
     <ProjectReference Include="linux\System.Diagnostics.Process.pkgproj" />
     <ProjectReference Include="osx\System.Diagnostics.Process.pkgproj" />
   </ItemGroup>
-
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

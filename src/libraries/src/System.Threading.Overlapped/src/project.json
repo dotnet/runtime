@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "netstandard1.0": {
+    "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23829"
