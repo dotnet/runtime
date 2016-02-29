@@ -73,8 +73,28 @@ check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
-check_function_exists(unw_get_save_loc HAVE_UNW_GET_SAVE_LOC)
-check_function_exists(unw_get_accessors HAVE_UNW_GET_ACCESSORS)
+set(CMAKE_REQUIRED_LIBRARIES unwind unwind-generic)
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv) {
+  unw_cursor_t cursor;
+  unw_save_loc_t saveLoc;
+  int reg = UNW_REG_IP;
+  unw_get_save_loc(&cursor, reg, &saveLoc);
+
+  return 0;
+}" HAVE_UNW_GET_SAVE_LOC)
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv) {
+  unw_addr_space_t as;
+  unw_get_accessors(as);
+
+  return 0;
+}" HAVE_UNW_GET_ACCESSORS)
+set(CMAKE_REQUIRED_LIBRARIES)
 
 check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
 check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
