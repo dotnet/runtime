@@ -51,6 +51,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public static void WarningsBeforeRowsTest()
         {
             string connectionString = DataTestClass.SQL2008_Northwind;
+            bool hitWarnings = false;
 
             int iteration = 0;
             Action<object, SqlInfoMessageEventArgs> warningCallback =
@@ -60,13 +61,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     {
                         Assert.True(imevent.Errors[i].Message.Contains(warningNoiseMessage), "FAILED: WarningsBeforeRowsTest Callback did not contain correct message. Failed in loop iteration: " + iteration);
                     }
+                    hitWarnings = true;
                 };
 
             SqlInfoMessageEventHandler handler = new SqlInfoMessageEventHandler(warningCallback);
             SqlConnection sqlConnection = new SqlConnection(connectionString);
             sqlConnection.InfoMessage += handler;
             sqlConnection.Open();
-            foreach (string orderClause in new string[] { "", " order by name" })
+            foreach (string orderClause in new string[] { "", " order by FirstName" })
             {
                 foreach (bool messagesOnErrors in new bool[] { true, false })
                 {
@@ -74,8 +76,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     sqlConnection.FireInfoMessageEventOnUserErrors = messagesOnErrors;
 
-                    // This query should return rows
-                    SqlCommand cmd = new SqlCommand(" select name from SqlClientCheckinSuitesDb..Names where contains ( name, '\"joe and\"')" + orderClause, sqlConnection);
+                    // These queries should return warnings because AND here is a noise word.
+                    SqlCommand cmd = new SqlCommand("select FirstName from Northwind.dbo.Employees where contains(FirstName, '\"Anne AND\"')" + orderClause, sqlConnection);
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         Assert.True(reader.HasRows, "FAILED: SqlDataReader.HasRows is not correct (should be TRUE)");
@@ -86,10 +88,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             receivedRows = true;
                         }
                         Assert.True(receivedRows, "FAILED: Should have received rows from this query.");
+                        Assert.True(hitWarnings, "FAILED: Should have received warnings from this query");
                     }
+                    hitWarnings = false;
 
-                    // This query should not return any rows
-                    cmd.CommandText = "select name from SqlClientCheckinSuitesDb..Names where contains ( name, '\"tom and\"')" + orderClause;
+                    cmd.CommandText = "select FirstName from Northwind.dbo.Employees where contains(FirstName, '\"NotARealPerson AND\"')" + orderClause;
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         Assert.False(reader.HasRows, "FAILED: SqlDataReader.HasRows is not correct (should be FALSE)");
@@ -100,6 +103,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             receivedRows = true;
                         }
                         Assert.False(receivedRows, "FAILED: Should have NOT received rows from this query.");
+                        Assert.True(hitWarnings, "FAILED: Should have received warnings from this query");
                     }
                 }
             }
