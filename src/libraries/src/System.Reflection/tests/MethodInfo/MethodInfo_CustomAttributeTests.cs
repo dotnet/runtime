@@ -28,7 +28,12 @@ namespace System.Reflection.Tests
         StringAttr("hello", name = "StringAttrSimple"),
         EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
         TypeAttr(typeof(Object), name = "TypeAttrSimple")]
-
+        [return:Attr(77, name = "AttrSimple"),
+        Int32Attr(77, name = "Int32AttrSimple"),
+        Int64Attr((Int64)77, name = "Int64AttrSimple"),
+        StringAttr("hello", name = "StringAttrSimple"),
+        EnumAttr(MyColorEnum.RED, name = "EnumAttrSimple"),
+        TypeAttr(typeof(Object), name = "TypeAttrSimple")]
         public void MyMethod() { }
 
         public int Prop
@@ -111,6 +116,18 @@ namespace System.Reflection.Tests
             }
 
             Assert.True(result);
+
+            // Also check the custom attribute on the return type.
+            VerifyReturnTypeCustomAttribute(type, attributeStr);
+        }
+
+        private static void VerifyReturnTypeCustomAttribute(Type type, String attributeStr)
+        {
+            MethodInfo mi = GetMethod(typeof(MethodInfoTestClass), "MyMethod");
+
+            //Get all the customAttributes of the type.
+            object[] atrs = mi.ReturnTypeCustomAttributes.GetCustomAttributes(type, false);
+            Assert.Equal(1, atrs.Length);
         }
 
         private static MethodInfo GetMethod(Type t, string method)
