@@ -230,7 +230,7 @@ bool inlDecisionIsFailure(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsFailure: check if this decision describes a sucessful inline
+// inlDecisionIsSuccess: check if this decision describes a sucessful inline
 //
 // Arguments:
 //    d - the decision in question
@@ -255,7 +255,7 @@ bool inlDecisionIsSuccess(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsFailure: check if this decision describes a never inline
+// inlDecisionIsNever: check if this decision describes a never inline
 //
 // Arguments:
 //    d - the decision in question
@@ -280,7 +280,7 @@ bool inlDecisionIsNever(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsFailure: check if this decision describes a viable candidate
+// inlDecisionIsCandidate: check if this decision describes a viable candidate
 //
 // Arguments:
 //    d - the decision in question
@@ -294,7 +294,7 @@ bool inlDecisionIsCandidate(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsFailure: check if this decision has been made
+// inlDecisionIsDecided: check if this decision has been made
 //
 // Arguments:
 //    d - the decision in question
