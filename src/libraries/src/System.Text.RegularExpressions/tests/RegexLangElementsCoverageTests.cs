@@ -13,47 +13,10 @@ public class RegexLangElementsCoverageTests
     [Fact]
     public static void RegexLangElementsCoverage()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-
-        try
+        for (int i = 0; i < s_regexTests.Length; i++)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-
-            //AppDomain.CurrentDomain.AssemblyLoad += AssemblyLoadEventHandler;
-
-            for (int i = 0; i < s_regexTests.Length; i++)
-            {
-                try
-                {
-                    iCountTestcases++;
-                    if (!s_regexTests[i].Run())
-                    {
-                        Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2}\n", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
-                        iCountErrors++;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2} threw the following exception:", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
-                    Console.WriteLine(e);
-                    iCountErrors++;
-                }
-            }
-
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
+            Assert.True(s_regexTests[i].Run());
         }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
     }
 
     //private const int GERMAN_PHONEBOOK = 0x10407;
@@ -169,14 +132,14 @@ public class RegexLangElementsCoverageTests
         /*********************************************************
             \x, \u, \a, \b, \e, \f, \n, \r, \t, \v, \c, inside character range 
             *********************************************************/
-       new RegexTestCase(@"(cat)([\x41]*)(dog)", "catAAAdog", new String[] {"catAAAdog", "cat", "AAA", "dog"}),
-       new RegexTestCase(@"(cat)([\u0041]*)(dog)", "catAAAdog", new String[] {"catAAAdog", "cat", "AAA", "dog"}),
-       new RegexTestCase(@"(cat)([\a]*)(dog)", "cat\a\a\adog", new String[] {"cat\a\a\adog", "cat", "\a\a\a", "dog"}),
-       new RegexTestCase(@"(cat)([\b]*)(dog)", "cat\b\b\bdog", new String[] {"cat\b\b\bdog", "cat", "\b\b\b", "dog"}),
-       new RegexTestCase(@"(cat)([\e]*)(dog)", "cat\u001B\u001B\u001Bdog", new String[] {"cat\u001B\u001B\u001Bdog", "cat", "\u001B\u001B\u001B", "dog"}),
-       new RegexTestCase(@"(cat)([\f]*)(dog)", "cat\f\f\fdog", new String[] {"cat\f\f\fdog", "cat", "\f\f\f", "dog"}),
-       new RegexTestCase(@"(cat)([\r]*)(dog)", "cat\r\r\rdog", new String[] {"cat\r\r\rdog", "cat", "\r\r\r", "dog"}),
-       new RegexTestCase(@"(cat)([\v]*)(dog)", "cat\v\v\vdog", new String[] {"cat\v\v\vdog", "cat", "\v\v\v", "dog"}),
+       new RegexTestCase(@"(cat)([\x41]*)(dog)", "catAAAdog", new string[] {"catAAAdog", "cat", "AAA", "dog"}),
+       new RegexTestCase(@"(cat)([\u0041]*)(dog)", "catAAAdog", new string[] {"catAAAdog", "cat", "AAA", "dog"}),
+       new RegexTestCase(@"(cat)([\a]*)(dog)", "cat\a\a\adog", new string[] {"cat\a\a\adog", "cat", "\a\a\a", "dog"}),
+       new RegexTestCase(@"(cat)([\b]*)(dog)", "cat\b\b\bdog", new string[] {"cat\b\b\bdog", "cat", "\b\b\b", "dog"}),
+       new RegexTestCase(@"(cat)([\e]*)(dog)", "cat\u001B\u001B\u001Bdog", new string[] {"cat\u001B\u001B\u001Bdog", "cat", "\u001B\u001B\u001B", "dog"}),
+       new RegexTestCase(@"(cat)([\f]*)(dog)", "cat\f\f\fdog", new string[] {"cat\f\f\fdog", "cat", "\f\f\f", "dog"}),
+       new RegexTestCase(@"(cat)([\r]*)(dog)", "cat\r\r\rdog", new string[] {"cat\r\r\rdog", "cat", "\r\r\r", "dog"}),
+       new RegexTestCase(@"(cat)([\v]*)(dog)", "cat\v\v\vdog", new string[] {"cat\v\v\vdog", "cat", "\v\v\v", "dog"}),
        new RegexTestCase(@"(cat)([\o]*)(dog)", typeof(ArgumentException)),
 
 
@@ -257,12 +220,12 @@ public class RegexLangElementsCoverageTests
        new RegexTestCase(@"(cat) #cat
                             \s+ #followed by 1 or more whitespace
                             (dog)  #followed by dog
-                            ", RegexOptions.IgnorePatternWhitespace, "cat    dog", new String[] {"cat    dog", "cat", "dog" }),
+                            ", RegexOptions.IgnorePatternWhitespace, "cat    dog", new string[] {"cat    dog", "cat", "dog" }),
        new RegexTestCase(@"(cat) #cat
                             \s+ #followed by 1 or more whitespace
-                            (dog)  #followed by dog", RegexOptions.IgnorePatternWhitespace, "cat    dog", new String[] {"cat    dog", "cat", "dog" }),
+                            (dog)  #followed by dog", RegexOptions.IgnorePatternWhitespace, "cat    dog", new string[] {"cat    dog", "cat", "dog" }),
        new RegexTestCase(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace) (dog)  (?#followed by dog)",
-           RegexOptions.IgnorePatternWhitespace, "cat    dog", new String[] {"cat    dog", "cat", "dog" }),
+           RegexOptions.IgnorePatternWhitespace, "cat    dog", new string[] {"cat    dog", "cat", "dog" }),
        new RegexTestCase(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace",
            RegexOptions.IgnorePatternWhitespace, typeof(ArgumentException)),
 
@@ -637,10 +600,10 @@ Use special unicode characters
         Lazy operator Backtracking
         *********************************************************/
        new RegexTestCase(@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/",  RegexOptions.IgnoreCase, "http://www.msn.com", null),
-       new RegexTestCase(@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/",  RegexOptions.IgnoreCase, "http://www.msn.com/", new string[] {"http://www.msn.com/", "com", String.Empty}),
+       new RegexTestCase(@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/",  RegexOptions.IgnoreCase, "http://www.msn.com/", new string[] {"http://www.msn.com/", "com", string.Empty}),
        new RegexTestCase(@"http://([a-zA-Z0-9\-]*\.?)*?/", RegexOptions.IgnoreCase, @"http://www.google.com/", new string[] {"http://www.google.com/", "com"}),
 
-       new RegexTestCase(@"([a-z]*?)([\w])",  RegexOptions.IgnoreCase, "cat", new string[] {"c", String.Empty, "c"}),
+       new RegexTestCase(@"([a-z]*?)([\w])",  RegexOptions.IgnoreCase, "cat", new string[] {"c", string.Empty, "c"}),
        new RegexTestCase(@"^([a-z]*?)([\w])$",  RegexOptions.IgnoreCase, "cat", new string[] {"cat", "ca", "t"}),
 
         // TODO: Come up with more scenarios here
@@ -716,20 +679,20 @@ Use special unicode characters
        new RegexTestCase(@"(?<!", typeof(ArgumentException)),
        new RegexTestCase(@"(?>", typeof(ArgumentException)),
 
-       new RegexTestCase(@"()", "cat", new string[] {String.Empty, String.Empty}),
+       new RegexTestCase(@"()", "cat", new string[] { string.Empty, string.Empty}),
        new RegexTestCase(@"(?)", typeof(ArgumentException)),
        new RegexTestCase(@"(?<)", typeof(ArgumentException)),
-       new RegexTestCase(@"(?<cat>)", "cat", new string[] {String.Empty, String.Empty}),
+       new RegexTestCase(@"(?<cat>)", "cat", new string[] { string.Empty, string.Empty}),
        new RegexTestCase(@"(?')", typeof(ArgumentException)),
-       new RegexTestCase(@"(?'cat')", "cat", new string[] {String.Empty, String.Empty}),
-       new RegexTestCase(@"(?:)", "cat", new string[] {String.Empty}),
-       new RegexTestCase(@"(?imn)", "cat", new string[] {String.Empty}),
+       new RegexTestCase(@"(?'cat')", "cat", new string[] { string.Empty, string.Empty}),
+       new RegexTestCase(@"(?:)", "cat", new string[] { string.Empty}),
+       new RegexTestCase(@"(?imn)", "cat", new string[] { string.Empty}),
        new RegexTestCase(@"(?imn)cat", "(?imn)cat", new string[] {"cat"}),
-       new RegexTestCase(@"(?=)", "cat", new string[] {String.Empty}),
+       new RegexTestCase(@"(?=)", "cat", new string[] { string.Empty}),
        new RegexTestCase(@"(?!)", "(?!)cat"),
-       new RegexTestCase(@"(?<=)", "cat", new string[] {String.Empty}),
+       new RegexTestCase(@"(?<=)", "cat", new string[] { string.Empty}),
        new RegexTestCase(@"(?<!)", "(?<!)cat"),
-       new RegexTestCase(@"(?>)", "cat", new string[] {String.Empty}),
+       new RegexTestCase(@"(?>)", "cat", new string[] { string.Empty}),
 
         /*********************************************************
         Grouping Constructs Invalid Regular Expressions
