@@ -300,12 +300,13 @@ cominterop_object_is_rcw (MonoObject *obj)
 static int
 cominterop_get_com_slot_begin (MonoClass* klass)
 {
+	MonoError error;
 	MonoCustomAttrInfo *cinfo = NULL;
 	MonoInterfaceTypeAttribute* itf_attr = NULL; 
 
-	cinfo = mono_custom_attrs_from_class (klass);
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
 		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_interface_type_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 		if (!cinfo->cached)
@@ -405,11 +406,12 @@ cominterop_mono_string_to_guid (MonoString* string, guint8 *guid);
 static gboolean
 cominterop_class_guid (MonoClass* klass, guint8* guid)
 {
+	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 
-	cinfo = mono_custom_attrs_from_class (klass);	
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
 		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
@@ -432,9 +434,9 @@ cominterop_com_visible (MonoClass* klass)
 	GPtrArray *ifaces;
 	MonoBoolean visible = 1;
 
-	cinfo = mono_custom_attrs_from_class (klass);
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
 		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
@@ -1910,7 +1912,8 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 
-	cinfo = mono_custom_attrs_from_class (itf);
+	cinfo = mono_custom_attrs_from_class_checked (itf, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
 		static MonoClass* coclass_attribute = NULL;
 		if (!coclass_attribute)
@@ -2448,6 +2451,7 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 guint32 lcid, gint32 *rgDispId)
 {
 	static MonoClass *ComDispIdAttribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo = NULL;
 	int i,ret = MONO_S_OK;
 	MonoMethod* method;
@@ -2471,9 +2475,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 
 		method = mono_class_get_method_from_name(klass, methodname, -1);
 		if (method) {
-			cinfo = mono_custom_attrs_from_method (method);
+			cinfo = mono_custom_attrs_from_method_checked (method, &error);
+			mono_error_assert_ok (&error); /* FIXME what's reasonable to do here */
 			if (cinfo) {
-				MonoError error;
 				MonoObject *result = mono_custom_attrs_get_attr_checked (cinfo, ComDispIdAttribute, &error);
 				g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/;
 

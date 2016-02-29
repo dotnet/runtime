@@ -7899,6 +7899,7 @@ is_exception_class (MonoClass *klass)
 static gboolean
 is_jit_optimizer_disabled (MonoMethod *m)
 {
+	MonoError error;
 	MonoAssembly *ass = m->klass->image->assembly;
 	MonoCustomAttrInfo* attrs;
 	MonoClass *klass;
@@ -7919,7 +7920,8 @@ is_jit_optimizer_disabled (MonoMethod *m)
 		return FALSE;
 	}
 
-	attrs = mono_custom_attrs_from_assembly (ass);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (i = 0; i < attrs->num_attrs; ++i) {
 			MonoCustomAttrEntry *attr = &attrs->attrs [i];

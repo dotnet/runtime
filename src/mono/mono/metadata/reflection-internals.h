@@ -17,6 +17,24 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 MonoArray*
 mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error);
 
+MonoCustomAttrInfo*
+mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_method_checked   (MonoMethod *method, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_assembly_checked	(MonoAssembly *assembly, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_property_checked	(MonoClass *klass, MonoProperty *property, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_event_checked	(MonoClass *klass, MonoEvent *event, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_field_checked	(MonoClass *klass, MonoClassField *field, MonoError *error);
+MonoCustomAttrInfo*
+mono_custom_attrs_from_param_checked	(MonoMethod *method, uint32_t param, MonoError *error);
+
+
 char*
 mono_identifier_unescape_type_name_chars (char* identifier);
 

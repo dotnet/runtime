@@ -3323,6 +3323,7 @@ static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
 {
 	static MonoClass *hidden_klass, *step_through_klass, *non_user_klass;
+	MonoError error;
 	MonoCustomAttrInfo *ainfo;
 
 	if (ji->dbg_attrs_inited)
@@ -3337,7 +3338,8 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 	if (!non_user_klass)
 		non_user_klass = mono_class_load_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
 
-	ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
+	ainfo = mono_custom_attrs_from_method_checked (jinfo_get_method (ji), &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error? */
 	if (ainfo) {
 		if (mono_custom_attrs_has_attr (ainfo, hidden_klass))
 			ji->dbg_hidden = TRUE;
@@ -3348,7 +3350,8 @@ init_jit_info_dbg_attrs (MonoJitInfo *ji)
 		mono_custom_attrs_free (ainfo);
 	}
 
-	ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
+	ainfo = mono_custom_attrs_from_class_checked (jinfo_get_method (ji)->klass, &error);
+	mono_error_cleanup (&error); /* FIXME don't swallow the error? */
 	if (ainfo) {
 		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
 			ji->dbg_step_through = TRUE;
@@ -8030,7 +8033,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		if (err != ERR_NONE)
 			return err;
 
-		cinfo = mono_custom_attrs_from_class (klass);
+		cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
 
 		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
 		if (err != ERR_NONE)
@@ -8049,7 +8056,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		if (err != ERR_NONE)
 			return err;
 
-		cinfo = mono_custom_attrs_from_field (klass, field);
+		cinfo = mono_custom_attrs_from_field_checked (klass, field, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
 
 		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
 		if (err != ERR_NONE)
@@ -8068,7 +8079,11 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		if (err != ERR_NONE)
 			return err;
 
-		cinfo = mono_custom_attrs_from_property (klass, prop);
+		cinfo = mono_custom_attrs_from_property_checked (klass, prop, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
 
 		err = buffer_add_cattrs (buf, domain, klass->image, attr_klass, cinfo);
 		if (err != ERR_NONE)
@@ -8684,6 +8699,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_GET_CATTRS: {
+		MonoError error;
 		MonoClass *attr_klass;
 		MonoCustomAttrInfo *cinfo;
 
@@ -8692,7 +8708,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		if (err != ERR_NONE)
 			return err;
 
-		cinfo = mono_custom_attrs_from_method (method);
+		cinfo = mono_custom_attrs_from_method_checked (method, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error message */
+			return ERR_LOADER_ERROR;
+		}
 
 		err = buffer_add_cattrs (buf, domain, method->klass->image, attr_klass, cinfo);
 		if (err != ERR_NONE)

@@ -23,6 +23,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/io-layer/io-layer.h>
@@ -1695,6 +1696,7 @@ free_item (gpointer val, gpointer user_data)
 void
 mono_assembly_load_friends (MonoAssembly* ass)
 {
+	MonoError error;
 	int i;
 	MonoCustomAttrInfo* attrs;
 	GSList *list;
@@ -1702,7 +1704,8 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	if (ass->friend_assembly_names_inited)
 		return;
 
-	attrs = mono_custom_attrs_from_assembly (ass);
+	attrs = mono_custom_attrs_from_assembly_checked (ass, &error);
+	mono_error_assert_ok (&error);
 	if (!attrs) {
 		mono_assemblies_lock ();
 		ass->friend_assembly_names_inited = TRUE;

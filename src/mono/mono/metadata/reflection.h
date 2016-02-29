@@ -78,13 +78,21 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_reflection_get_custom_attrs_info (MonoObject *obj);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, uint32_t idx);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_method   (MonoMethod *method);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_class    (MonoClass *klass);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_assembly (MonoAssembly *assembly);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent *event);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, uint32_t param);
 MONO_API mono_bool           mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
 MONO_API MonoObject*         mono_custom_attrs_get_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);

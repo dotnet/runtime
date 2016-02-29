@@ -40,6 +40,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
@@ -3745,7 +3746,11 @@ add_wrappers (MonoAotCompile *acfg)
 			if (method)
 				add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
 
-			cattr = mono_custom_attrs_from_class (klass);
+			cattr = mono_custom_attrs_from_class_checked (klass, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
+				continue;
+			}
 
 			if (cattr) {
 				int j;
@@ -3910,7 +3915,12 @@ add_wrappers (MonoAotCompile *acfg)
 		 * attribute named MonoPInvokeCallbackAttribute. We search for the attribute by
 		 * name to avoid defining a new assembly to contain it.
 		 */
-		cattr = mono_custom_attrs_from_method (method);
+		cattr = mono_custom_attrs_from_method_checked (method, &error);
+		if (!is_ok (&error)) {
+			char *name = mono_method_get_full_name (method);
+			report_loader_error (acfg, &error, "Failed to load custom attributes from method %s due to %s\n", name, mono_error_get_message (&error));
+			g_free (name);
+		}
 
 		if (cattr) {
 			for (j = 0; j < cattr->num_attrs; ++j)
