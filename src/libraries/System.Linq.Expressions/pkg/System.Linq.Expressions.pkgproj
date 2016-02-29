@@ -6,7 +6,7 @@
       <SupportedFramework>net45;netcore45;wp80;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Linq.Expressions.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
 
     <!-- not yet needed

@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.RuntimeInformation.csproj">
-      <SupportedFramework>net45;netcore45;dnxcore50</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     
     <ProjectReference Include="win/System.Runtime.InteropServices.RuntimeInformation.pkgproj" />

@@ -4,7 +4,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Emit.Lightweight.csproj">
-      <SupportedFramework>net45;dnxcore50;wp8</SupportedFramework>
+      <SupportedFramework>net45;netstandardapp1.5;wp8</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Emit.Lightweight.builds"/>
 

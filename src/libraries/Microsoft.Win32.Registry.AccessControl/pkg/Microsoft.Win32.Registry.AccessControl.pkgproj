@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\Microsoft.Win32.Registry.AccessControl.csproj">
-      <SupportedFramework>net46;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\Microsoft.Win32.Registry.AccessControl.builds" />
 
@@ -12,10 +12,10 @@
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>
 
-    <ExcludeDefaultValidateFramework Include="dnxcore50" />
+    <ExcludeDefaultValidateFramework Include="netstandardapp1.5" />
     <!-- Only supported on windows, so overriding
          the validation RID's -->
-    <ValidateFramework Include="dnxcore50"> 
+    <ValidateFramework Include="netstandardapp1.5"> 
       <RuntimeIDs>win7-x86;win7-x64</RuntimeIDs> 
     </ValidateFramework> 
   </ItemGroup>

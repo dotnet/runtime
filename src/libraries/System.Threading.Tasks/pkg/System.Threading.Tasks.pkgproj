@@ -6,7 +6,7 @@
       <SupportedFramework>net45;netcore45;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.Threading.Tasks.csproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Threading.Tasks.pkgproj" />
     <ProjectReference Include="aot\System.Threading.Tasks.pkgproj" />

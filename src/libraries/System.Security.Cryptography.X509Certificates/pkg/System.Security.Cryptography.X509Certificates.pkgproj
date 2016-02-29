@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.X509Certificates.csproj">
-      <SupportedFramework>net461;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
       <AdditionalProperties>TargetGroup=net461</AdditionalProperties>

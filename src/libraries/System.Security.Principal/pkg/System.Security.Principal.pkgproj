@@ -4,7 +4,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Principal.csproj">
-      <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Principal.builds" />
 

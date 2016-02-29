@@ -4,7 +4,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Tasks.Parallel.csproj">
-      <SupportedFramework>net45;netcore45;dnxcore50;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Tasks.Parallel.builds" />
 
