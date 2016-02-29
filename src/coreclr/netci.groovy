@@ -807,14 +807,15 @@ combinedScenarios.each { scenario ->
                                 case 'x64':
                                 case 'x86':
                                     if (!enableCorefxTesting) {
-                                        // On other OS's we skipmscorlib but run the pal tests
-                                        if ((architecture == 'x64') && ((os == 'Ubuntu') || (os == 'OSX')))
+                                        // We run pal tests on all OS but generate mscorlib (and thus, nuget packages)
+                                        // only on supported OS platforms.
+                                        if ((os == 'FreeBSD') || (os == 'OpenSUSE13.2'))
                                         {
-                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
+                                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
                                         }
                                         else
                                         {
-                                            buildCommands += "./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture}"
+                                            buildCommands += "./build.sh verbose ${lowerConfiguration} ${architecture}"
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
                                     
