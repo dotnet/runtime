@@ -34,29 +34,29 @@
 #include <shellapi.h>
 #endif
 
-HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
+HANDLE
+ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
 	HANDLE handle;
 	
 	/* GetCurrentProcess returns a pseudo-handle, so use
 	 * OpenProcess instead
 	 */
-	handle=OpenProcess (PROCESS_ALL_ACCESS, TRUE, pid);
-	
-	if(handle==NULL) {
+	handle = OpenProcess (PROCESS_ALL_ACCESS, TRUE, pid);
+	if (handle == NULL)
 		/* FIXME: Throw an exception */
-		return(NULL);
-	}
-	
-	return(handle);
+		return NULL;
+	return handle;
 }
 
-#define STASH_SYS_ASS(this_obj) \
-	if(system_assembly == NULL) { \
-		system_assembly=this_obj->vtable->klass->image; \
-	}
+static MonoImage *system_assembly;
 
-static MonoImage *system_assembly=NULL;
+static void
+stash_system_assembly (MonoObject *obj)
+{
+	if (!system_assembly)
+		system_assembly = obj->vtable->klass->image;
+}
 
 //Hand coded version that loads from system
 static MonoClass*
@@ -85,33 +85,32 @@ mono_class_get_process_module_class (void)
 	return klass;
 }
 
-
-static guint32 unicode_chars (const gunichar2 *str)
+static guint32
+unicode_chars (const gunichar2 *str)
 {
-	guint32 len=0;
-	
-	do {
-		if(str[len]=='\0') {
-			return(len);
-		}
-		len++;
-	} while(1);
+	guint32 len;
+
+	for (len = 0; str [len] != '\0'; ++len)
+		;
+	return len;
 }
 
-static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
-				      MonoObject *data)
+static void
+process_set_field_object (MonoObject *obj, const gchar *fieldname,
+						  MonoObject *data)
 {
 	MonoClassField *field;
 
 	LOGDEBUG (g_message ("%s: Setting field %s to object at %p", __func__, fieldname, data));
 
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
+	field = mono_class_get_field_from_name (mono_object_class (obj),
+											fieldname);
 	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, data);
 }
 
-static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
-				      const gunichar2 *val, guint32 len)
+static void
+process_set_field_string (MonoObject *obj, const gchar *fieldname,
+						  const gunichar2 *val, guint32 len)
 {
 	MonoError error;
 	MonoClassField *field;
@@ -122,59 +121,63 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	string = mono_string_new_utf16_checked (mono_object_domain (obj), val, len, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
+	field = mono_class_get_field_from_name (mono_object_class (obj),
+											fieldname);
 	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
-static void process_set_field_string_char (MonoObject *obj, const gchar *fieldname,
-				      const gchar *val)
+static void
+process_set_field_string_char (MonoObject *obj, const gchar *fieldname,
+							   const gchar *val)
 {
 	MonoClassField *field;
 	MonoString *string;
 
 	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, val));
 
-	string=mono_string_new (mono_object_domain (obj), val);
+	string = mono_string_new (mono_object_domain (obj), val);
 	
-	field=mono_class_get_field_from_name (mono_object_class (obj), fieldname);
+	field = mono_class_get_field_from_name (mono_object_class (obj), fieldname);
 	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
-static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
-				   guint32 val)
+static void
+process_set_field_int (MonoObject *obj, const gchar *fieldname,
+					   guint32 val)
 {
 	MonoClassField *field;
 
 	LOGDEBUG (g_message ("%s: Setting field %s to %d", __func__,fieldname, val));
 	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
+	field = mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
 	*(guint32 *)(((char *)obj) + field->offset)=val;
 }
 
-static void process_set_field_intptr (MonoObject *obj, const gchar *fieldname,
-				      gpointer val)
+static void
+process_set_field_intptr (MonoObject *obj, const gchar *fieldname,
+						  gpointer val)
 {
 	MonoClassField *field;
 
 	LOGDEBUG (g_message ("%s: Setting field %s to %p", __func__, fieldname, val));
 	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
-	*(gpointer *)(((char *)obj) + field->offset)=val;
+	field = mono_class_get_field_from_name (mono_object_class (obj),
+											fieldname);
+	*(gpointer *)(((char *)obj) + field->offset) = val;
 }
 
-static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
-				    gboolean val)
+static void
+process_set_field_bool (MonoObject *obj, const gchar *fieldname,
+						gboolean val)
 {
 	MonoClassField *field;
 
-	LOGDEBUG (g_message ("%s: Setting field %s to %s", __func__, fieldname, val?"TRUE":"FALSE"));
+	LOGDEBUG (g_message ("%s: Setting field %s to %s", __func__, fieldname, val ? "TRUE":"FALSE"));
 	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
-	*(guint8 *)(((char *)obj) + field->offset)=val;
+	field = mono_class_get_field_from_name (mono_object_class (obj),
+											fieldname);
+	*(guint8 *)(((char *)obj) + field->offset) = val;
 }
 
 #define SFI_COMMENTS		"\\StringFileInfo\\%02X%02X%02X%02X\\Comments"
@@ -191,10 +194,11 @@ static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
 #define SFI_SPECIALBUILD	"\\StringFileInfo\\%02X%02X%02X%02X\\SpecialBuild"
 #define EMPTY_STRING		(gunichar2*)"\000\000"
 
-static void process_module_string_read (MonoObject *filever, gpointer data,
-					const gchar *fieldname,
-					guchar lang_hi, guchar lang_lo,
-					const gchar *key)
+static void
+process_module_string_read (MonoObject *filever, gpointer data,
+							const gchar *fieldname,
+							guchar lang_hi, guchar lang_lo,
+							const gchar *key)
 {
 	gchar *lang_key_utf8;
 	gunichar2 *lang_key, *buffer;
@@ -218,8 +222,9 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 	g_free (lang_key_utf8);
 }
 
-static void process_module_stringtable (MonoObject *filever, gpointer data,
-					guchar lang_hi, guchar lang_lo)
+static void
+process_module_stringtable (MonoObject *filever, gpointer data,
+							guchar lang_hi, guchar lang_lo)
 {
 	process_module_string_read (filever, data, "comments", lang_hi, lang_lo,
 				    SFI_COMMENTS);
@@ -247,7 +252,8 @@ static void process_module_stringtable (MonoObject *filever, gpointer data,
 				    lang_lo, SFI_SPECIALBUILD);
 }
 
-static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
+static void
+process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 {
 	DWORD verinfohandle;
 	VS_FIXEDFILEINFO *ffi;
@@ -317,9 +323,8 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 					 * otherwise
 					 */
 					lang_count = VerLanguageName (lang & 0xFFFF, lang_buf, 128);
-					if (lang_count) {
+					if (lang_count)
 						process_set_field_string (filever, "language", lang_buf, lang_count);
-					}
 					process_module_stringtable (filever, data, trans_data[0], trans_data[1]);
 				}
 			} else {
@@ -367,9 +372,8 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 				 * en_US according to bug 374600
 				 */
 				lang_count = VerLanguageName (0x0409, lang_buf, 128);
-				if (lang_count) {
+				if (lang_count)
 					process_set_field_string (filever, "language", lang_buf, lang_count);
-				}
 			}
 			
 			g_free (query);
@@ -378,14 +382,16 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	}
 }
 
-static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly *assembly)
+static void
+process_get_assembly_fileversion (MonoObject *filever, MonoAssembly *assembly)
 {
 	process_set_field_int (filever, "filemajorpart", assembly->aname.major);
 	process_set_field_int (filever, "fileminorpart", assembly->aname.minor);
 	process_set_field_int (filever, "filebuildpart", assembly->aname.build);
 }
 
-static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
+static MonoObject*
+get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 {
 	MonoError error;
 	MonoObject *item, *filever;
@@ -418,17 +424,18 @@ leave:
 	return item;
 }
 
-static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
+static MonoObject*
+process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
 	MonoError error;
 	MonoObject *item, *filever;
-	MonoDomain *domain=mono_domain_get ();
+	MonoDomain *domain = mono_domain_get ();
 	MODULEINFO modinfo;
 	BOOL ok;
 	
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	item=mono_object_new_checked (domain, proc_class, &error);
+	item = mono_object_new_checked (domain, proc_class, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	filever = mono_object_new_checked (domain, mono_class_get_file_version_info_class (), &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -456,7 +463,8 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	return item;
 }
 
-static GPtrArray* get_domain_assemblies (MonoDomain *domain)
+static GPtrArray*
+get_domain_assemblies (MonoDomain *domain)
 {
 	GSList *tmp;
 	GPtrArray *assemblies;
@@ -479,7 +487,8 @@ static GPtrArray* get_domain_assemblies (MonoDomain *domain)
 }
 
 /* Returns an array of System.Diagnostics.ProcessModule */
-MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
+MonoArray *
+ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
 	MonoArray *temp_arr = NULL;
 	MonoArray *arr;
@@ -497,7 +506,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 		current_process = ves_icall_System_Diagnostics_Process_GetProcess_internal (pid);
 	}
 
-	STASH_SYS_ASS (this_obj);
+	stash_system_assembly (this_obj);
 
 	if (process == current_process) {
 		assemblies = get_domain_assemblies (mono_domain_get ());
@@ -542,9 +551,10 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	return arr;
 }
 
-void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename)
+void
+ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename)
 {
-	STASH_SYS_ASS (this_obj);
+	stash_system_assembly (this_obj);
 	
 	process_get_fileversion (this_obj, mono_string_chars (filename));
 	process_set_field_string (this_obj, "filename",
@@ -617,7 +627,8 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	return TRUE;
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
+MonoBoolean
+ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
 {
 	SHELLEXECUTEINFO shellex = {0};
 	gboolean ret;
@@ -626,8 +637,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	shellex.fMask = (gulong)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
 	shellex.nShow = (gulong)proc_start_info->window_style;
 	shellex.nShow = (gulong)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
-	
-	
+
 	if (proc_start_info->filename != NULL) {
 		shellex.lpFile = mono_string_chars (proc_start_info->filename);
 	}
@@ -666,10 +676,11 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 		process_info->tid = 0;
 	}
 
-	return (ret);
+	return ret;
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInfo *proc_start_info, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
+MonoBoolean
+ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInfo *proc_start_info, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
 	gunichar2 *dir;
@@ -682,11 +693,11 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	MonoString *cmd = proc_start_info->arguments;
 	guint32 creation_flags, logon_flags;
 	
-	startinfo.cb=sizeof(STARTUPINFO);
-	startinfo.dwFlags=STARTF_USESTDHANDLES;
-	startinfo.hStdInput=stdin_handle;
-	startinfo.hStdOutput=stdout_handle;
-	startinfo.hStdError=stderr_handle;
+	startinfo.cb = sizeof(STARTUPINFO);
+	startinfo.dwFlags = STARTF_USESTDHANDLES;
+	startinfo.hStdInput = stdin_handle;
+	startinfo.hStdOutput = stdout_handle;
+	startinfo.hStdError = stderr_handle;
 
 	creation_flags = CREATE_UNICODE_ENVIRONMENT;
 	if (proc_start_info->create_no_window)
@@ -719,7 +730,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 #endif
 	g_free (spath);
 
-	if (process_info->env_keys != NULL) {
+	if (process_info->env_keys) {
 		gint i, len; 
 		MonoString *ms;
 		MonoString *key, *value;
@@ -763,11 +774,10 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 	/* The default dir name is "".  Turn that into NULL to mean
 	 * "current directory"
 	 */
-	if(proc_start_info->working_directory == NULL || mono_string_length (proc_start_info->working_directory)==0) {
-		dir=NULL;
-	} else {
-		dir=mono_string_chars (proc_start_info->working_directory);
-	}
+	if (proc_start_info->working_directory == NULL || mono_string_length (proc_start_info->working_directory) == 0)
+		dir = NULL;
+	else
+		dir = mono_string_chars (proc_start_info->working_directory);
 
 	if (process_info->username) {
 		logon_flags = process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
@@ -778,29 +788,30 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 			cmd ? mono_string_chars (cmd) : NULL,
 			creation_flags, env_vars, dir, &startinfo, &procinfo);
 	} else {
-		ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
+		ret = CreateProcess (shell_path, cmd ? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
 	}
 
 	g_free (env_vars);
 	if (free_shell_path)
 		g_free (shell_path);
 
-	if(ret) {
-		process_info->process_handle=procinfo.hProcess;
+	if (ret) {
+		process_info->process_handle = procinfo.hProcess;
 		/*process_info->thread_handle=procinfo.hThread;*/
-		process_info->thread_handle=NULL;
+		process_info->thread_handle = NULL;
 		if (procinfo.hThread != NULL && procinfo.hThread != INVALID_HANDLE_VALUE)
-			CloseHandle(procinfo.hThread);
-		process_info->pid=procinfo.dwProcessId;
-		process_info->tid=procinfo.dwThreadId;
+			CloseHandle (procinfo.hThread);
+		process_info->pid = procinfo.dwProcessId;
+		process_info->tid = procinfo.dwThreadId;
 	} else {
 		process_info->pid = -GetLastError ();
 	}
 	
-	return(ret);
+	return ret;
 }
 
-MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
+MonoString *
+ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 {
 	MonoError error;
 	MonoString *string;
@@ -810,23 +821,20 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 	DWORD needed;
 	guint32 len;
 	
-	ok=EnumProcessModules (process, &mod, sizeof(mod), &needed);
-	if(ok==FALSE) {
-		return(NULL);
-	}
+	ok = EnumProcessModules (process, &mod, sizeof(mod), &needed);
+	if (!ok)
+		return NULL;
 	
-	len=GetModuleBaseName (process, mod, name, MAX_PATH);
-	if(len==0) {
-		return(NULL);
-	}
+	len = GetModuleBaseName (process, mod, name, MAX_PATH);
+	if (len == 0)
+		return NULL;
 	
 	LOGDEBUG (g_message ("%s: process name is [%s]", __func__, g_utf16_to_utf8 (name, -1, NULL, NULL, NULL)));
 	
 	string = mono_string_new_utf16_checked (mono_domain_get (), name, len, &error);
-
 	mono_error_raise_exception (&error);
 	
-	return(string);
+	return string;
 }
 
 /* Returns an array of pids */
@@ -901,4 +909,3 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 		*error = perror;
 	return res;
 }
-
