@@ -2,104 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class TextInfoToLower
     {
-        // PosTest1: uppercase character
-        [Fact]
-        public void TestEnUSUppercaseCharacter()
+        [Theory]
+        [InlineData("en-US", "A", "a")]
+        [InlineData("en-US", "a", "a")]
+        [InlineData("en-US", "1", "1")]
+        [InlineData("en-US", "9", "9")]
+        [InlineData("fr-FR", "G", "g")]
+        [InlineData("fr-FR", "g", "g")]
+        [InlineData("tr-TR", "\u0130", "i")]
+        [InlineData("tr-TR", "I", "\u0131")]
+        [InlineData("tr-TR", "i", "i")]
+        public void ToLower(string name, string str, string expected)
         {
-            char ch = 'A';
-            char expectedChar = 'a';
-            TextInfo textInfo = new CultureInfo("en-US").TextInfo;
-
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-        }
-
-        // PosTest2: lowercase character
-        [Fact]
-        public void TestEnUSLowercaseCharacter()
-        {
-            char ch = 'a';
-            char expectedChar = ch;
-            TextInfo textInfo = new CultureInfo("en-US").TextInfo;
-
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-        }
-
-        // PosTest3: non-alphabetic character
-        [Fact]
-        public void TestNonAlphabeticCharacter()
-        {
-            for (int i = 0; i <= 9; i++)
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(str));
+            if (str.Length == 1)
             {
-                char ch = Convert.ToChar(i);
-                char expectedChar = ch;
-                TextInfo textInfo = new CultureInfo("en-US").TextInfo;
-
-                char actualChar = textInfo.ToLower(ch);
-                Assert.Equal(expectedChar, actualChar);
+                Assert.Equal(expected[0], new CultureInfo(name).TextInfo.ToLower(str[0]));
             }
-        }
-
-        // PosTest4: uppercase character and TextInfo is french CultureInfo's
-        [Fact]
-        public void TestFrFRUpperCaseCharacter()
-        {
-            char ch = 'G';
-            char expectedChar = 'g';
-            TextInfo textInfo = new CultureInfo("fr-FR").TextInfo;
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-        }
-
-        // PosTest5: lowercase character and TextInfo is french(France) CultureInfo's
-        [Fact]
-        public void TestFrFRLowerCaseCharacter()
-        {
-            char ch = 'g';
-            char expectedChar = ch;
-            TextInfo textInfo = new CultureInfo("fr-FR").TextInfo;
-
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-        }
-
-        // PosTest6: uppercase character for Turkish Culture
-        [Fact]
-        public void TestTrTRUppercaseCharacter()
-        {
-            char ch = '\u0130';
-            char expectedChar = 'i';
-            TextInfo textInfo = new CultureInfo("tr-TR").TextInfo;
-
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-
-            ch = 'I';
-            expectedChar = '\u0131';
-            actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
-        }
-
-        // PosTest7: lowercase character for Turkish Culture
-        [Fact]
-        public void TestTrTRLowercaseCharacter()
-        {
-            char ch = 'i';
-            char expectedChar = ch;
-            TextInfo textInfo = new CultureInfo("tr-TR").TextInfo;
-
-            char actualChar = textInfo.ToLower(ch);
-            Assert.Equal(expectedChar, actualChar);
         }
     }
 }
-

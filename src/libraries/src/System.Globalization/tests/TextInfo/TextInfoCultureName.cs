@@ -2,40 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class TextInfoCultureName
     {
-        // TestTextInfoCultureName: Verify the TextInfo from specific locales
         [Theory]
-        [InlineData("en-US")]
-        [InlineData("fr-FR")]
-        public void TestTextInfoCultureName(string localeName)
+        public static IEnumerable<object[]> CultureName_TestData()
         {
-            Assert.Equal(localeName, new CultureInfo(localeName).TextInfo.CultureName);
+            yield return new object[] { CultureInfo.InvariantCulture.TextInfo, "" };
+            yield return new object[] { new CultureInfo("").TextInfo, "" };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR").TextInfo, "fr-FR" };
+            yield return new object[] { new CultureInfo("EN-us").TextInfo, "en-US" };
+            yield return new object[] { new CultureInfo("FR-fr").TextInfo, "fr-FR" };
         }
 
-        // TestTextInfoCasingCultureName: Verify the TextInfo from mismatched casing
         [Theory]
-        [InlineData("EN-us", "en-US")]
-        [InlineData("FR-fr", "fr-FR")]
-        public void TestTextInfoCasingCultureName(string localeName, string expectedLocaleName)
+        [MemberData(nameof(CultureName_TestData))]
+        public void CultureName(TextInfo textInfo, string expected)
         {
-            Assert.Equal(expectedLocaleName, new CultureInfo(localeName).TextInfo.CultureName);
-        }
-
-        // TestInvariantCultureName: Verify the invariant TextInfo
-        [Fact]
-        public void TestInvariantCultureName()
-        {
-            CultureInfo ci = CultureInfo.InvariantCulture;
-            string localeName = ci.Name;
-            Assert.Equal(ci.TextInfo.CultureName, localeName);
+            Assert.Equal(expected, textInfo.CultureName);
         }
     }
 }
-
