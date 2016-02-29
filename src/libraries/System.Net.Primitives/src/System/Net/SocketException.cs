@@ -39,6 +39,8 @@ namespace System.Net.Sockets
             }
         }
 
+        public override string Message => base.Message;
+
         public SocketError SocketErrorCode => _errorCode;
     }
 }
