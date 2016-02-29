@@ -2,82 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class TextInfoEquals
     {
-        private int _MINI_STRING_LENGTH = 8;
-        private int _MAX_STRING_LENGTH = 256;
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
-
-        // PosTest1: Verify same culture TextInfo equals original TextInfo
-        [Fact]
-        public void TestSameCultureTextInfo()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            CultureInfo ci = new CultureInfo("en-US");
-            CultureInfo ci2 = new CultureInfo("en-US");
-            object textInfo = ci2.TextInfo;
-            Assert.True(ci.TextInfo.Equals(textInfo));
+            yield return new object[] { new CultureInfo("en-US").TextInfo, new CultureInfo("en-US").TextInfo, true };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, new CultureInfo("fr-FR").TextInfo, false };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, null, false };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, new object(), false };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, 123, false };
+            yield return new object[] { new CultureInfo("en-US").TextInfo, "en-US", false };
+           
         }
 
-        // PosTest2: Verify the TextInfo is not same CultureInfo's
-        [Fact]
-        public void TestDiffCultureTextInfo()
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals(TextInfo textInfo, object obj, bool expected)
         {
-            TextInfo textInfoFrance = new CultureInfo("fr-FR").TextInfo;
-            TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-
-            Assert.False(textInfoFrance.Equals((object)textInfoUS));
+            Assert.Equal(expected, textInfo.Equals(obj));
+            if (obj is TextInfo)
+            {
+                Assert.Equal(expected, textInfo.GetHashCode().Equals(obj.GetHashCode()));
+            }
         }
-
-        // PosTest3: Verify the TextInfo not equal a null reference
-        [Fact]
-        public void TestNullReference()
-        {
-            TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-
-            Assert.False(textInfoUS.Equals(null));
-        }
-
-        // PosTest4: Verify the TextInfo not equal another type object
-        [Fact]
-        public void TestDiffTypeObject()
-        {
-            TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-            object obj = (object)(new MyClass());
-            Assert.False(textInfoUS.Equals(obj));
-        }
-
-        // PosTest5: Verify the TextInfo not equal a int object
-        [Fact]
-        public void TestIntObject()
-        {
-            TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-            int i = _generator.GetInt32(-55);
-            object intObject = i as object;
-            Assert.False(textInfoUS.Equals(intObject));
-        }
-
-        // PosTest6: Verify the TextInfo not equal a string object
-        [Fact]
-        public void TestStringObject()
-        {
-            TextInfo textInfoUS = new CultureInfo("en-US").TextInfo;
-            String str = _generator.GetString(-55, false, _MINI_STRING_LENGTH, _MAX_STRING_LENGTH);
-            object strObject = str as object;
-
-            Assert.False(textInfoUS.Equals(strObject));
-        }
-
-        #region Customer Class
-        public class MyClass
-        {
-        }
-        #endregion
     }
 }
-

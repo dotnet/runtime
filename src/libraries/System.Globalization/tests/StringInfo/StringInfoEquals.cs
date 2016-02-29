@@ -13,11 +13,11 @@ namespace System.Globalization.Tests
     {
         private const int MinStringLength = 8;
         private const int MaxStringLength = 256;
-        private static readonly RandomDataGenerator s_RandomDataGenerator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            string randomString = s_RandomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
+            string randomString = s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
             StringInfo randomStringInfo = new StringInfo(randomString);
             yield return new object[] { randomStringInfo, new StringInfo(randomString), true };
             yield return new object[] { randomStringInfo, randomStringInfo, true };
@@ -29,7 +29,7 @@ namespace System.Globalization.Tests
         }
         
         [Theory]
-        [MemberData("Equals_TestData")]
+        [MemberData(nameof(Equals_TestData))]
         public void Equals(StringInfo stringInfo, object value, bool expected)
         {
             Assert.Equal(expected, stringInfo.Equals(value));

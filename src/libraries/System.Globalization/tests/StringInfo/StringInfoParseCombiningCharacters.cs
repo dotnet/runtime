@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("ParseCombiningCharacters_TestData")]
+        [MemberData(nameof(ParseCombiningCharacters_TestData))]
         public void ParseCombiningCharacters(string str, int[] expected)
         {
             Assert.Equal(expected, StringInfo.ParseCombiningCharacters(str));

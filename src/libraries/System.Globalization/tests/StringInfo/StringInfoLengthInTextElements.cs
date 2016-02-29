@@ -24,7 +24,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("LengthInTextElements_TestData")]
+        [MemberData(nameof(LengthInTextElements_TestData))]
         public void LengthInTextElements(string value, int expected)
         {
             Assert.Equal(expected, new StringInfo(value).LengthInTextElements);
