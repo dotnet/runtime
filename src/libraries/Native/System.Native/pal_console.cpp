@@ -41,7 +41,7 @@ extern "C" int32_t SystemNative_IsATty(intptr_t fd)
     return isatty(ToFileDescriptor(fd));
 }
 
-static char* g_keypadXmit; // string used to enable application mode, from terminfo
+static char* g_keypadXmit = nullptr; // string used to enable application mode, from terminfo
 
 static void WriteKeypadXmit() // used in a signal handler, must be signal-safe
 {
