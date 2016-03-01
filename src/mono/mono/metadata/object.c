@@ -6854,22 +6854,26 @@ mono_message_init (MonoDomain *domain,
  * Returns: the result object.
  */
 MonoObject *
-mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
-		      MonoObject **exc, MonoArray **out_args)
+mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoObject *o;
 	MonoMethod *im = real_proxy->vtable->domain->private_invoke_method;
 	gpointer pa [4];
+
+	g_assert (exc);
+
+	mono_error_init (error);
 
 	/*static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;*/
 
 	if (!im) {
 		im = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "PrivateInvoke", 4);
-		if (!im)
-			mono_raise_exception (mono_get_exception_not_supported ("Linked away."));
+		if (!im) {
+			mono_error_set_generic_error (error, "System", "NotSupportedException", "Linked away.");
+			return NULL;
+		}
 		real_proxy->vtable->domain->private_invoke_method = im;
 	}
 
@@ -6878,12 +6882,8 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 	pa [2] = exc;
 	pa [3] = out_args;
 
-	if (exc) {
-		o = mono_runtime_try_invoke (im, NULL, pa, exc, &error);
-	} else {
-		o = mono_runtime_invoke_checked (im, NULL, pa, &error);
-	}
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	o = mono_runtime_try_invoke (im, NULL, pa, exc, error);
+	return_val_if_nok (error, NULL);
 
 	return o;
 }
@@ -6910,7 +6910,10 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 			target = tp->rp->unwrapped_server;
 		} else {
-			return mono_remoting_invoke ((MonoObject *)tp->rp, msg, exc, out_args);
+			ret = mono_remoting_invoke ((MonoObject *)tp->rp, msg, exc, out_args, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+			return ret;
 		}
 	}
 #endif
@@ -7318,7 +7321,8 @@ mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *
 	mono_array_setref (msg->args, 1, mono_string_new (domain, mono_field_get_name (field)));
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 
@@ -7393,7 +7397,8 @@ mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFie
 	mono_array_setref (msg->args, 1, mono_string_new (domain, mono_field_get_name (field)));
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 
@@ -7467,7 +7472,8 @@ mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField 
 	mono_array_setref (msg->args, 2, arg);
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 }
@@ -7525,7 +7531,8 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	mono_array_setref (msg->args, 2, arg);
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args);
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (exc) mono_raise_exception ((MonoException *)exc);
 }
