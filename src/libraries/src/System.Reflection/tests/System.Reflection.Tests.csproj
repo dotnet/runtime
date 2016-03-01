@@ -51,6 +51,7 @@
     <Compile Include="FieldInfo\FieldInfo_RTGenericTests.cs" />
     <Compile Include="GetType\GetTypeTests.cs" />
     <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="MethodInfo\MethodInfo_GetBaseDefinition.cs" />
     <Compile Include="MethodInfo\MethodInfo_CreateDelegateTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_CustomAttributeTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_EqualsTests.cs" />
@@ -87,6 +88,13 @@
     <Compile Include="TypeInfo\TypeInfo_IsEquivalentTo.cs" />
     <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
     <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_FindInterfaces.cs" />
+    <Compile Include="TypeInfo\TypeInfo_GetEnum.cs" />
+    <Compile Include="TypeInfo\TypeInfo_IsAssignableAndInstanceOf.cs" />
+    <Compile Include="TypeInfo\TypeInfo_Members.cs" />
+    <Compile Include="TypeInfo\TypeInfo_StructLayoutAttribute.cs" />
+    <Compile Include="TypeInfo\TypeInfo_TypeInitializer.cs" />
+    <Compile Include="TypeInfo\TypeInfo_UnderlyingSystemType.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assembly\EmbeddedImage.png">
@@ -103,6 +111,15 @@
       <!-- Don't copy the reference assembly to output -->
       <Private>false</Private>
       <UndefineProperties>OSGroup</UndefineProperties>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Reflection.csproj">
+      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Name>System.Reflection.CoreCLR</Name>
+      <!-- Don't reference implementation assembly, but do deploy it. -->
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
     <ProjectReference Include="TestExe\System.Reflection.Tests.TestExe.csproj">
       <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
