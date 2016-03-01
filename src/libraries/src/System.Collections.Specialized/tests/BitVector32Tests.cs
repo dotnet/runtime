@@ -368,33 +368,21 @@ namespace System.Collections.Specialized.Tests
                 BitVector32 data = new BitVector32();
                 BitVector32.Section section = BitVector32.CreateSection(maximum);
 
-                // In debug mode, attempting to set a value to a section that is too large triggers an assert.
-                // There is no accompanying check in release mode, however, allowing invalid values to be set.
-#if DEBUG
-                Exception e = Assert.ThrowsAny<Exception>(() => data[section] = value);
-                Assert.Equal("DebugAssertException", e.GetType().Name);
-#else
                 data[section] = value;
                 Assert.Equal(maximum & value, data.Data);
                 Assert.NotEqual(value, data.Data);
                 Assert.Equal(maximum & value, data[section]);
                 Assert.NotEqual(value, data[section]);
-#endif
             }
             {
                 BitVector32 data = new BitVector32();
                 BitVector32.Section nested = BitVector32.CreateSection(maximum, BitVector32.CreateSection(short.MaxValue));
-#if DEBUG
 
-                Exception e = Assert.ThrowsAny<Exception>(() => data[nested] = value);
-                Assert.Equal("DebugAssertException", e.GetType().Name);
-#else
                 data[nested] = value;
                 Assert.Equal((maximum & value) << 15, data.Data);
                 Assert.NotEqual(value << 15, data.Data);
                 Assert.Equal(maximum & value, data[nested]);
                 Assert.NotEqual(value, data[nested]);
-#endif
             }
         }
 
