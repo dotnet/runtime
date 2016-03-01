@@ -154,6 +154,7 @@ namespace System.Net.Sockets.Tests
             receiveHandler(0, null);
 
             var random = new Random();
+            var senderFinished = new TaskCompletionSource<bool>();
             var sentChecksums = new uint[DatagramsToSend];
             var sendBuffer = new byte[DatagramSize];
             int sentDatagrams = -1;
@@ -174,6 +175,7 @@ namespace System.Net.Sockets.Tests
                     if (sentDatagrams == DatagramsToSend)
                     {
                         right.Dispose();
+                        senderFinished.SetResult(true);
                         return;
                     }
                 }
@@ -190,6 +192,8 @@ namespace System.Net.Sockets.Tests
             sendHandler(0);
 
             Assert.True(receiverFinished.Task.Wait(TestTimeout));
+            Assert.True(senderFinished.Task.Wait(TestTimeout));
+
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 Assert.NotNull(receivedChecksums[i]);
