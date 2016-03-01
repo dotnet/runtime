@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup Condition="'$(Future)' == 'true'">
@@ -62,6 +62,11 @@
     <Compile Include="System\Reflection\Internal\Utilities\ByteSequenceComparer.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\CustomAttributeDecoder.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\CustomAttributeNamedArgument.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\CustomAttributeTypedArgument.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\CustomAttributeValue.cs" />
+    <Compile Include="System\Reflection\Metadata\Decoding\ICustomAttributeTypeProvider.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\ExceptionRegionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Blobs\InstructionEncoder.cs" />
     <Compile Include="System\Reflection\Metadata\ILOpCode.cs" />
