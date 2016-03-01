@@ -13,7 +13,7 @@
       <SupportedFramework>net451;netcore451;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="$(SourceDir)System.Runtime\ref\4.0.20\System.Runtime.depproj">
-      <SupportedFramework>net46;netcore50;dnxcore50</SupportedFramework>
+      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Runtime.pkgproj" />
     <ProjectReference Include="aot\System.Runtime.pkgproj" />
@@ -25,6 +25,8 @@
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="xamarinios10" />
     <InboxOnTargetFramework Include="xamarinmac20" />
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
