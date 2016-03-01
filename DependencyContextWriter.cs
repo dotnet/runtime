@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -26,9 +27,31 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject Write(DependencyContext context)
         {
             return new JObject(
+                new JProperty(DependencyContextStrings.RuntimeTargetPropertyName, WriteRuntimeTargetInfo(context)),
                 new JProperty(DependencyContextStrings.CompilationOptionsPropertName, WriteCompilationOptions(context.CompilationOptions)),
                 new JProperty(DependencyContextStrings.TargetsPropertyName, WriteTargets(context)),
-                new JProperty(DependencyContextStrings.LibrariesPropertyName, WriteLibraries(context))
+                new JProperty(DependencyContextStrings.LibrariesPropertyName, WriteLibraries(context)),
+                new JProperty(DependencyContextStrings.RuntimesPropertyName, WriteRuntimeGraph(context))
+                );
+        }
+
+        private JObject WriteRuntimeTargetInfo(DependencyContext context)
+        {
+            return new JObject(
+                    new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName,
+                        context.Target + DependencyContextStrings.VersionSeperator + context.Runtime),
+                    new JProperty(DependencyContextStrings.PortablePropertyName, context.IsPortable)
+                );
+        }
+
+        private JObject WriteRuntimeGraph(DependencyContext context)
+        {
+            return new JObject(
+                    new JProperty(context.Target,
+                        new JObject(
+                            context.RuntimeGraph.Select(g => new JProperty(g.Key, new JArray(g.Value)))
+                            )
+                    )
                 );
         }
 
@@ -106,7 +129,7 @@ namespace Microsoft.Extensions.DependencyModel
             var runtimeLibrary = library as RuntimeLibrary;
             if (runtimeLibrary != null)
             {
-                propertyName = DependencyContextStrings.RunTimeAssembliesKey;
+                propertyName = DependencyContextStrings.RuntimeAssembliesKey;
                 assemblies = runtimeLibrary.Assemblies.Select(assembly => assembly.Path).ToArray();
             }
             else

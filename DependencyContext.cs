@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public IReadOnlyList<RuntimeLibrary> RuntimeLibraries { get; }
 
-        public IReadOnlyList<KeyValuePair<string, string[]>> RuntimeGraph { get; } 
+        public IReadOnlyList<KeyValuePair<string, string[]>> RuntimeGraph { get; }
 
         private static DependencyContext LoadDefault()
         {
