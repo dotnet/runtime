@@ -363,6 +363,9 @@
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketErrorPal.Unix.cs">
+      <Link>Common\System\Net\Sockets\SocketErrorPal.Unix</Link>
+    </Compile>
 
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
       <Link>Common\Interop\Interop.CheckedAccess.cs</Link>

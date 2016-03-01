@@ -102,6 +102,11 @@ enum Error : int32_t
     PAL_ETIMEDOUT = 0x1004D,       // Connection timed out.
     PAL_ETXTBSY = 0x1004E,         // Text file busy.
     PAL_EXDEV = 0x1004F,           // Cross-device link.
+    PAL_ESOCKTNOSUPPORT = 0x1005E, // Socket type not supported.
+    PAL_EPFNOSUPPORT = 0x10060,    // Protocol family not supported.
+    PAL_ESHUTDOWN = 0x1006C,       // Socket shutdown.
+    PAL_EHOSTDOWN = 0x10070,       // Host is down.
+    PAL_ENODATA = 0x10071,         // No data available.
 
     // POSIX permits these to have the same value and we make them
     // always equal so that we cannot introduce a dependency on
