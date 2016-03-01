@@ -53,7 +53,7 @@
     <!-- SQL Tests -->
     <Compile Include="SQL\AsyncTest\AsyncTest.cs" />
     <Compile Include="SQL\CommandCancel\CommandCancel.cs" />
-    <Compile Include="SQL\ConnectionPool\ConnectionPool.cs" />
+    <Compile Include="SQL\ConnectionPoolTest\ConnectionPoolTest.cs" />
     <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
     <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
     <Compile Include="SQL\KatmaiDateTimeTest\DateTimeTest.cs" />
