@@ -9,7 +9,7 @@ Target framework version | `1.5`
 Target framework moniker | `.NETStandardApp,Version=v1.5`
 Friendly name | .NET Standard Application
 NuGet folder name | `netstandardapp1.5`
-NETStandard version supported | `nestandard1.5`
+NETStandard version supported | `netstandard1.5`
 
 ##FAQ
 **Q: What is a .NET Standard application?**  
