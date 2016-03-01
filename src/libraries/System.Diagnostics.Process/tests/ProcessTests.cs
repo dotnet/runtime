@@ -677,8 +677,7 @@ namespace System.Diagnostics.Tests
         {
             using (var handle = RemoteInvokeRaw((Func<string, string, string, int>)ConcatThreeArguments,
                 inputArguments,
-                start: true,
-                psi: new ProcessStartInfo { RedirectStandardOutput = true }))
+                new RemoteInvokeOptions { Start = true, StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
             {
                 Assert.Equal(expectedArgv, handle.Process.StandardOutput.ReadToEnd());
             }

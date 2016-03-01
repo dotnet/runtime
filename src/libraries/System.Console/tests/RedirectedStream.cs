@@ -52,6 +52,12 @@ public class RedirectedStream : RemoteExecutorTestBase
 
     private static void RunRemote(Func<int> func, ProcessStartInfo psi = null)
     {
-        using (var remote = RemoteInvoke(func, true, psi)) { }
+        var options = new RemoteInvokeOptions();
+        if (psi != null)
+        {
+            options.StartInfo = psi;
+        }
+
+        RemoteInvoke(func, options).Dispose();
     }
 }
