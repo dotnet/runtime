@@ -244,7 +244,8 @@ extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
     return static_cast<int32_t>(count);
 }
 
-static struct sigaction g_origSigIntHandler, g_origSigQuitHandler, g_origSigContHandler; // saved signal handlers
+static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers for ctrl handling
+static struct sigaction g_origSigContHandler, g_origSigChldHandler; // saved signal handlers for reinitialization
 static volatile CtrlCallback g_ctrlCallback = nullptr; // Callback invoked for SIGINT/SIGQUIT
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
 
@@ -266,8 +267,14 @@ static void TransferSignalToHandlerLoop(int sig, siginfo_t* siginfo, void* conte
     }
 }
 
-static void HandleSigCont(int sig, siginfo_t* siginfo, void* context)
+static void HandleSignalForReinitialize(int sig, siginfo_t* siginfo, void* context)
 {
+    // SIGCONT will be sent when we're resumed after suspension, at which point
+    // we need to set the terminal back up.  Similarly, SIGCHLD will be sent after
+    // a child process completes, and that child could have left things in a bad state,
+    // so we similarly need to reinitialize.
+    assert(sig == SIGCONT || sig == SIGCHLD);
+
     // If the process was suspended while reading, we need to
     // re-initialize the console for the read, as the attributes
     // previously set were likely overwritten.
@@ -279,12 +286,13 @@ static void HandleSigCont(int sig, siginfo_t* siginfo, void* context)
     // "Application mode" will also have been reset and needs to be redone.
     WriteKeypadXmit();
 
-    // Delegate to any saved SIGCONT handler we may have
-    if (g_origSigContHandler.sa_sigaction != nullptr &&
-        reinterpret_cast<void*>(g_origSigContHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_DFL) &&
-        reinterpret_cast<void*>(g_origSigContHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
+    // Delegate to any saved handler we may have
+    struct sigaction origHandler = sig == SIGCONT ? g_origSigContHandler : g_origSigChldHandler;
+    if (origHandler.sa_sigaction != nullptr &&
+        reinterpret_cast<void*>(origHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_DFL) &&
+        reinterpret_cast<void*>(origHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
     {
-        g_origSigContHandler.sa_sigaction(sig, siginfo, context);
+        origHandler.sa_sigaction(sig, siginfo, context);
     }
 }
 
@@ -405,22 +413,22 @@ static bool InitializeSignalHandling()
     }
 
     // Finally, register our signal handlers
-    struct sigaction newAction = {
-        .sa_flags = SA_RESTART | SA_SIGINFO, 
-        .sa_sigaction = &TransferSignalToHandlerLoop,
-    };
+    struct sigaction newAction = { .sa_flags = SA_RESTART | SA_SIGINFO };
     sigemptyset(&newAction.sa_mask);
-
     int rv;
 
+    // Hook up signal handlers for use with ctrl-C / ctrl-Break handling
+    newAction.sa_sigaction = &TransferSignalToHandlerLoop,
     rv = sigaction(SIGINT, &newAction, &g_origSigIntHandler);
     assert(rv == 0);
-
     rv = sigaction(SIGQUIT, &newAction, &g_origSigQuitHandler);
     assert(rv == 0);
 
-    newAction.sa_sigaction = &HandleSigCont;
+    // Hook up signal handlers for use with signals that require us to reinitialize the terminal
+    newAction.sa_sigaction = &HandleSignalForReinitialize;
     rv = sigaction(SIGCONT, &newAction, &g_origSigContHandler);
+    assert(rv == 0);
+    rv = sigaction(SIGCHLD, &newAction, &g_origSigChldHandler);
     assert(rv == 0);
 
     return true;
