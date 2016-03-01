@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class ConnectionPool
+    public class ConnectionPoolTest
     {
         private readonly string _nwnd9Tcp = null;
         private readonly string _nwnd9TcpMars = null;
@@ -20,7 +20,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private readonly string _nwnd10Np = null;
         private readonly string _nwnd10NpMars = null;
 
-        public ConnectionPool()
+        public ConnectionPoolTest()
         {
             PrepareConnectionStrings(DataTestClass.SQL2005_Northwind, out _nwnd9Tcp, out _nwnd9TcpMars, out _nwnd9Np, out _nwnd9NpMars);
             PrepareConnectionStrings(DataTestClass.SQL2008_Northwind, out _nwnd10Tcp, out _nwnd10TcpMars, out _nwnd10Np, out _nwnd10NpMars);
@@ -106,7 +106,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                 using (SqlCommand command = new SqlCommand("SELECT 5;", connection))
                 {
-                    CompareScalarResults(5, command.ExecuteScalar());
+                    DataTestClass.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
                 }
 
                 wrapper.KillConnection();
@@ -118,7 +118,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 Assert.False(wrapper.IsInternalConnectionOf(connection2), "New connection has internal connection that was just killed");
                 using (SqlCommand command = new SqlCommand("SELECT 5;", connection2))
                 {
-                    CompareScalarResults(5, command.ExecuteScalar());
+                    DataTestClass.AssertEqualsWithDescription(5, command.ExecuteScalar(), "Incorrect scalar result.");
                 }
             }
         }
@@ -137,13 +137,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             ConnectionPoolWrapper pool = new ConnectionPoolWrapper(connection);
             connection.Close();
             ConnectionPoolWrapper[] allPools = ConnectionPoolWrapper.AllConnectionPools();
-            Assert.True(1 == allPools.Length, "Incorrect number of pools exist");
+            DataTestClass.AssertEqualsWithDescription(1, allPools.Length, "Incorrect number of pools exist.");
             Assert.True(allPools[0].Equals(pool), "Saved pool is not in the list of all pools");
-            Assert.True(1 == pool.ConnectionCount, "Saved pool has incorrect number of connections");
+            DataTestClass.AssertEqualsWithDescription(1, pool.ConnectionCount, "Saved pool has incorrect number of connections");
 
             SqlConnection.ClearAllPools();
             Assert.True(0 == ConnectionPoolWrapper.AllConnectionPools().Length, "Pools exist after clearing all pools");
-            Assert.True(0 == pool.ConnectionCount, "Saved pool has incorrect number of connections");
+            DataTestClass.AssertEqualsWithDescription(0, pool.ConnectionCount, "Saved pool has incorrect number of connections.");
         }
 
         /// <summary>
@@ -161,8 +161,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            Assert.True(1 == connectionPool.ConnectionCount, "Wrong number of connections in the pool");
-            Assert.True(0 == connectionPool.FreeConnectionCount, "Wrong number of free connections in the pool");
+            DataTestClass.AssertEqualsWithDescription(1, connectionPool.ConnectionCount, "Wrong number of connections in the pool.");
+            DataTestClass.AssertEqualsWithDescription(0, connectionPool.FreeConnectionCount, "Wrong number of free connections in the pool.");
 
             using (SqlConnection connection = new SqlConnection(newConnectionString))
             {
@@ -264,11 +264,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             SqlConnection connection = new SqlConnection(connectionString);
             connection.Open();
             return new InternalConnectionWrapper(connection);
-        }
-
-        private static void CompareScalarResults(int expected, object actual)
-        {
-            Assert.True(expected.Equals(actual), string.Format("Expected scalar value {0}, but instead receieved {1}.", expected, actual));
         }
 
         private static void PrepareConnectionStrings(string originalString, out string tcpString, out string tcpMarsString, out string npString, out string npMarsString)
