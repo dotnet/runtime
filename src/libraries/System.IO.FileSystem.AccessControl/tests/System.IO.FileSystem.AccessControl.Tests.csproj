@@ -5,7 +5,7 @@
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
     <AssemblyName>System.IO.FileSystem.AccessControl.Tests</AssemblyName>
     <RootNamespace>System.IO.FileSystem.AccessControl.Tests</RootNamespace>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+    <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
