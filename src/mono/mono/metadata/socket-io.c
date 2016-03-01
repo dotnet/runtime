@@ -587,9 +587,11 @@ get_socket_assembly (void)
 }
 
 static gint32
-get_family_hint (void)
+get_family_hint (MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
+
+	mono_error_init (error);
 
 	if (!domain->inet_family_hint) {
 		MonoImage *socket_assembly;
@@ -612,9 +614,9 @@ get_family_hint (void)
 		vtable = mono_class_vtable (mono_domain_get (), socket_class);
 		g_assert (vtable);
 
-		MonoError error;
-		mono_runtime_class_init_full (vtable, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_runtime_class_init_full (vtable, error);
+		if (!mono_error_ok (error))
+			return -1;
 
 		mono_field_static_get_value (vtable, ipv4_field, &ipv4_enabled);
 		mono_field_static_get_value (vtable, ipv6_field, &ipv6_enabled);
@@ -820,19 +822,21 @@ is_ipv4_mapped_any (const struct in6_addr *addr)
 }
 
 static MonoObject*
-create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror)
+create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror, MonoError *error)
 {
-	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoObject *sockaddr_obj;
 	MonoArray *data;
 	MonoAddressFamily family;
 
+	mono_error_init (error);
+
 	/* Build a System.Net.SocketAddress object instance */
 	if (!domain->sockaddr_class)
 		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
-	sockaddr_obj = mono_object_new_checked (domain, domain->sockaddr_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	sockaddr_obj = mono_object_new_checked (domain, domain->sockaddr_class, error);
+	if (!mono_error_ok (error))
+		return NULL;
 	
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
@@ -861,13 +865,15 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	mono_array_set (data, guint8, 0, family & 0x0FF);
 	mono_array_set (data, guint8, 1, (family >> 8) & 0x0FF);
 	
-	if (saddr->sa_family==AF_INET) {
+	if (saddr->sa_family == AF_INET) {
 		struct sockaddr_in *sa_in = (struct sockaddr_in *)saddr;
 		guint16 port = ntohs (sa_in->sin_port);
 		guint32 address = ntohl (sa_in->sin_addr.s_addr);
 		
-		if (sa_size < 8)
-			mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+		if (sa_size < 8) {
+			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			return NULL;
+		}
 		
 		mono_array_set (data, guint8, 2, (port>>8) & 0xff);
 		mono_array_set (data, guint8, 3, (port) & 0xff);
@@ -885,8 +891,10 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 
 		guint16 port = ntohs (sa_in->sin6_port);
 
-		if (sa_size < 28)
-			mono_raise_exception ((MonoException *)mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+		if (sa_size < 28) {
+			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			return NULL;
+		}
 
 		mono_array_set (data, guint8, 2, (port>>8) & 0xff);
 		mono_array_set (data, guint8, 3, (port) & 0xff);
@@ -958,6 +966,7 @@ ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (SOCKET sock, gint32 
 	socklen_t salen;
 	int ret;
 	MonoObject *result;
+	MonoError error;
 	
 	*werror = 0;
 	
@@ -983,9 +992,11 @@ ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal (SOCKET sock, gint32 
 	
 	LOGDEBUG (g_message("%s: bound to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port)));
 
-	result = create_object_from_sockaddr ((struct sockaddr *)sa, salen, werror);
+	result = create_object_from_sockaddr ((struct sockaddr *)sa, salen, werror, &error);
 	if (salen > 128)
 		g_free (sa);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
 	return result;
 }
 
@@ -996,6 +1007,7 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (SOCKET sock, gint32
 	socklen_t salen;
 	int ret;
 	MonoObject *result;
+	MonoError error;
 	
 	*werror = 0;
 	
@@ -1022,19 +1034,23 @@ ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal (SOCKET sock, gint32
 	
 	LOGDEBUG (g_message("%s: connected to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)&sa)->sin_addr), ntohs (((struct sockaddr_in *)&sa)->sin_port)));
 
-	result = create_object_from_sockaddr ((struct sockaddr *)sa, salen, werror);
+	result = create_object_from_sockaddr ((struct sockaddr *)sa, salen, werror, &error);
 	if (salen > 128)
 		g_free (sa);
+	if (!mono_error_ok (&error))
+		mono_error_set_pending_exception (&error);
 	return result;
 }
 
 static struct sockaddr*
-create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *werror)
+create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *werror, MonoError *error)
 {
 	MonoClassField *field;
 	MonoArray *data;
 	gint32 family;
 	int len;
+
+	mono_error_init (error);
 
 	/* Dig the SocketAddress data buffer out of the object */
 	field = mono_class_get_field_from_name (saddr_obj->vtable->klass, "data");
@@ -1051,7 +1067,8 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 	 */
 	len = mono_array_length (data);
 	if (len < 2) {
-		mono_raise_exception (mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+		mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+		return NULL;
 	}
 	
 	family = convert_family ((MonoAddressFamily)(mono_array_get (data, guint8, 0) + (mono_array_get (data, guint8, 1) << 8)));
@@ -1061,7 +1078,8 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 		guint32 address;
 		
 		if (len < 8) {
-			mono_raise_exception (mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			return NULL;
 		}
 
 		sa = g_new0 (struct sockaddr_in, 1);
@@ -1085,7 +1103,8 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 		guint32 scopeid;
 		
 		if (len < 28) {
-			mono_raise_exception (mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			mono_error_set_exception_instance (error, mono_exception_from_name (mono_get_corlib (), "System", "SystemException"));
+			return NULL;
 		}
 
 		sa = g_new0 (struct sockaddr_in6, 1);
@@ -1115,7 +1134,8 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 		 * two bytes hold the SocketAddress family
 		 */
 		if (len - 2 >= sizeof (sock_un->sun_path)) {
-			mono_raise_exception (mono_get_exception_index_out_of_range ());
+			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
+			return NULL;
 		}
 		
 		sock_un = g_new0 (struct sockaddr_un, 1);
@@ -1137,15 +1157,20 @@ create_sockaddr_from_object (MonoObject *saddr_obj, socklen_t *sa_size, gint32 *
 void
 ves_icall_System_Net_Sockets_Socket_Bind_internal (SOCKET sock, MonoObject *sockaddr, gint32 *werror)
 {
+	MonoError error;
 	struct sockaddr *sa;
 	socklen_t sa_size;
 	int ret;
 	
 	*werror = 0;
 	
-	sa = create_sockaddr_from_object (sockaddr, &sa_size, werror);
+	sa = create_sockaddr_from_object (sockaddr, &sa_size, werror, &error);
 	if (*werror != 0)
 		return;
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	LOGDEBUG (g_message("%s: binding to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port)));
 
@@ -1256,6 +1281,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 void
 ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *sockaddr, gint32 *werror)
 {
+	MonoError error;
 	struct sockaddr *sa;
 	socklen_t sa_size;
 	int ret;
@@ -1263,9 +1289,13 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 
 	*werror = 0;
 
-	sa = create_sockaddr_from_object (sockaddr, &sa_size, werror);
+	sa = create_sockaddr_from_object (sockaddr, &sa_size, werror, &error);
 	if (*werror != 0)
 		return;
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	LOGDEBUG (g_message("%s: connecting to %s port %d", __func__, inet_ntoa (((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port)));
 
@@ -1489,6 +1519,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (SOCKET sock, MonoArr
 gint32
 ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *werror)
 {
+	MonoError error;
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -1503,9 +1534,13 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 	if (offset > alen - count)
 		return 0;
 
-	sa = create_sockaddr_from_object (*sockaddr, &sa_size, werror);
+	sa = create_sockaddr_from_object (*sockaddr, &sa_size, werror, &error);
 	if (*werror != 0)
 		return 0;
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return 0;
+	}
 	
 	buf = mono_array_addr (buffer, guchar, offset);
 	
@@ -1545,10 +1580,16 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 	 * connected connection-oriented socket and the stack hasn't
 	 * returned the remote address. All we can do is return null.
 	 */
-	if (sa_size != 0 )
-		*sockaddr = create_object_from_sockaddr (sa, sa_size, werror);
-	else
+	if (sa_size) {
+		*sockaddr = create_object_from_sockaddr (sa, sa_size, werror, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			g_free (sa);
+			return 0;
+		}
+	} else {
 		*sockaddr = NULL;
+	}
 
 	g_free (sa);
 	
@@ -1657,6 +1698,7 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (SOCKET sock, MonoArray 
 gint32
 ves_icall_System_Net_Sockets_Socket_SendTo_internal (SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr, gint32 *werror)
 {
+	MonoError error;
 	int ret;
 	guchar *buf;
 	gint32 alen;
@@ -1672,9 +1714,13 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (SOCKET sock, MonoArray *buf
 		return 0;
 	}
 
-	sa = create_sockaddr_from_object(sockaddr, &sa_size, werror);
+	sa = create_sockaddr_from_object(sockaddr, &sa_size, werror, &error);
 	if (*werror != 0)
 		return 0;
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return 0;
+	}
 	
 	LOGDEBUG (g_message ("%s: alen: %d", __func__, alen));
 	
@@ -1752,7 +1798,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 	gboolean interrupted;
 
 	*werror = 0;
-	
+
 	/* *sockets -> READ, null, WRITE, null, ERROR, null */
 	count = mono_array_length (*sockets);
 	nfds = count - 3; /* NULL separators */
@@ -1843,7 +1889,11 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 	sock_arr_class = ((MonoObject *)*sockets)->vtable->klass;
 	socks_size = ((uintptr_t)ret) + 3; /* space for the NULL delimiters */
 	socks = mono_array_new_full_checked (mono_domain_get (), sock_arr_class, &socks_size, NULL, &error);
-	mono_error_raise_exception (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		g_free (pfds);
+		return;
+	}
 
 	mode = idx = 0;
 	for (i = 0; i < count && ret > 0; i++) {
@@ -1969,7 +2019,10 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 											   "System.Net.Sockets",
 											   "LingerOption");
 		obj = mono_object_new_checked (domain, obj_class, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return;
+		}
 
 		/* Locate and set the fields "bool enabled" and "int
 		 * lingerTime"
@@ -2015,7 +2068,10 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 						 "Mono.Posix",
 						 "PeerCredData");
 		obj = mono_object_new_checked (domain, obj_class, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		if (!mono_error_ok (&error)) {
+			mono_error_set_pending_exception (&error);
+			return;
+		}
 		cred_data = (MonoPeerCredData *)obj;
 		cred_data->pid = cred.pid;
 		cred_data->uid = cred.uid;
@@ -2342,7 +2398,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (SOCKET sock, gint3
 		}
 	}
 
-	if (ret==SOCKET_ERROR)
+	if (ret == SOCKET_ERROR)
 		*werror = WSAGetLastError ();
 }
 
@@ -2525,9 +2581,17 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name, MonoArray **
 }
 
 static int
-get_addrinfo_family_hint (void)
+get_addrinfo_family_hint (MonoError *error)
 {
-	switch (get_family_hint ()) {
+	int hint;
+
+	mono_error_init (error);
+
+	hint = get_family_hint (error);
+	if (!mono_error_ok (error))
+		return 0;
+
+	switch (hint) {
 	case PF_UNSPEC:
 		return MONO_HINT_UNSPECIFIED;
 	case PF_INET:
@@ -2549,7 +2613,14 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **
 	gchar this_hostname [256];
 	MonoAddressInfo *info = NULL;
 	char *hostname = mono_string_to_utf8 (host);
-	int hint = get_addrinfo_family_hint ();
+	MonoError error;
+	int hint;
+
+	hint = get_addrinfo_family_hint (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return FALSE;
+	}
 
 	if (*hostname == '\0') {
 		add_local_ips = TRUE;
@@ -2580,6 +2651,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	struct sockaddr_in saddr;
 	struct sockaddr_in6 saddr6;
 	MonoAddressInfo *info = NULL;
+	MonoError error;
 	gint32 family, hint;
 	gchar hostname [NI_MAXHOST] = { 0 };
 	gboolean ret;
@@ -2625,7 +2697,11 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	if (!ret)
 		return FALSE;
 
-	hint = get_addrinfo_family_hint ();
+	hint = get_addrinfo_family_hint (&error);
+	if (!mono_error_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return FALSE;
+	}
 	if (mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info) != 0)
 		return FALSE;
 
