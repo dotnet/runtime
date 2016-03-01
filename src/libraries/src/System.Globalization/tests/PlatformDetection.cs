@@ -11,6 +11,7 @@ public static class PlatformDetection
 {
     public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+    public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
     public static int? s_WindowsVersion;
     public static int WindowsVersion
