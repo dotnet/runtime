@@ -213,7 +213,7 @@ branchList.each { branchName ->
             // First define the nativecomp build
             //
             
-            def newNativeCompBuildJobName = "nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
+            def newNativeCompBuildJobName = "outerloop_nativecomp_${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
             
             def newNativeCompJob = job(getJobName(Utilities.getFullJobName(project, newNativeCompBuildJobName, isPR), branchName)) {
                 steps {
@@ -233,7 +233,7 @@ branchList.each { branchName ->
             // First we set up a build job that builds the corefx repo on Windows
             //
             
-            def newBuildJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld"
+            def newBuildJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}_bld"
 
             def newBuildJob = job(getJobName(Utilities.getFullJobName(project, newBuildJobName, isPR), branchName)) {
                 steps {
@@ -257,7 +257,7 @@ branchList.each { branchName ->
             def fullNativeCompBuildJobName = Utilities.getFolderName(project) + '/' + newNativeCompJob.name
             def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
             
-            def newTestJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}_tst"
+            def newTestJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}_tst"
             
             def newTestJob = job(getJobName(Utilities.getFullJobName(project, newTestJobName, isPR), branchName)) {
                 steps {
@@ -331,7 +331,7 @@ branchList.each { branchName ->
             //
             
             def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
-            def flowJobName = "${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
+            def flowJobName = "outerloop_${os.toLowerCase()}_${configurationGroup.toLowerCase()}"
             def newFlowJob = buildFlowJob(getJobName(Utilities.getFullJobName(project, flowJobName, isPR), branchName)) {
                 buildFlow("""
                     parallel (
