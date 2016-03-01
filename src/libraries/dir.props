@@ -11,6 +11,10 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <InputOSGroup Condition="'$(InputOSGroup)'==''">$(OSEnvironment)</InputOSGroup>
+  </PropertyGroup>
+
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>

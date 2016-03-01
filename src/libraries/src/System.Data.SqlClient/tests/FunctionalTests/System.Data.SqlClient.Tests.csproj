@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Data.SqlClient.Tests</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Tests</AssemblyName>
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
