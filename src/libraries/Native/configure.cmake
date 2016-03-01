@@ -418,11 +418,6 @@ check_cxx_source_compiles(
     "
     HAVE_CURLPIPE_MULTIPLEX)
 
-check_symbol_exists(
-    OPEN_MAX
-    "sys/syslimits.h"
-    HAVE_OPEN_MAX)
-
 set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(
