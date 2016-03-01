@@ -30,61 +30,78 @@ private:
         return;
     }
 
-    void ReallocateBuffer(SIZE_T count)
+    BOOL ReallocateBuffer(SIZE_T count)
     {
         // count is always > STACKCOUNT here.
-        T * newBuffer = (T *)PAL_malloc((count + 1) * sizeof(T));
+        // We got so far, we will allocate a little extra
+        // to prevent frequent allocations
+#if _DEBUG
+        SIZE_T count_allocated = count;
+#else
+        SIZE_T count_allocated = count + 100;
+#endif //_DEBUG
+
+        BOOL dataOnStack =  m_buffer == m_innerBuffer;
+        if( dataOnStack )
+        {
+            m_buffer = NULL;
+        }
+
+        T * newBuffer = (T *)PAL_realloc(m_buffer, (count_allocated + 1) * sizeof(T));
         if (NULL == newBuffer)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
 
             DeleteBuffer();
             m_count = 0;
-
-            return;
+            m_buffer = m_innerBuffer;
+            return FALSE;
         }
 
-        DeleteBuffer();
+        if( dataOnStack)
+        {
+            CopyMemory(newBuffer, m_innerBuffer, (m_count + 1) * sizeof(T));
+        }
+
         m_buffer = newBuffer;
         m_count = count;
-        m_size = count+1;
+        m_size = count_allocated + 1;
 
-        return;
+        return TRUE;
+    }
+    
+    BOOL HasAvailableMemory(SIZE_T count)
+    {
+        return (count < m_size);
     }
 
-    void Resize(SIZE_T count)
+    //NOTE: Always call this before modifying the underlying buffer
+    BOOL Resize(SIZE_T count)
     {
+
         if (NULL == m_buffer)
         {
-            if (count > STACKCOUNT)
-            {
-                ReallocateBuffer(count);
-            }
-            else
-            {
-                m_size = STACKCOUNT+1;
-                m_buffer = m_innerBuffer;
-                m_count = count;
-            }
+            m_buffer = m_innerBuffer;
         }
-        else if (m_innerBuffer == m_buffer)
+        
+        if (HasAvailableMemory(count))
+        {
+            m_count = count;
+        }
+        else 
         {
             if (count > STACKCOUNT)
             {
-                ReallocateBuffer(count);
+                return ReallocateBuffer(count);
             }
             else
             {
                 m_count = count;
                 m_size = STACKCOUNT+1;
             }
-        }
-        else
-        {
-            ReallocateBuffer(count);
         }
 
-        return;
+        return TRUE;
     }
 
     StackString(const StackString &s)
@@ -94,14 +111,14 @@ private:
 
 public:
     StackString()
-        : m_buffer(m_innerBuffer), m_count(0)
+        : m_buffer(m_innerBuffer), m_size(0), m_count(0)
     {
     }
 
+
     BOOL Set(const T * buffer, SIZE_T count)
     {
-        Resize(count);
-        if (NULL == m_buffer)
+        if (!Resize(count))
             return FALSE;
 
         CopyMemory(m_buffer, buffer, (count + 1) * sizeof(T));
@@ -129,12 +146,16 @@ public:
         return (const T *)m_buffer;
     }
 
+    operator const T * () const {  return GetString(); }
+
+    //Always preserves the existing content
     T * OpenStringBuffer(SIZE_T count)
     {
         Resize(count);
         return (T *)m_buffer;
     }
 
+    //count should not include the terminating null
     void CloseBuffer(SIZE_T count)
     {
         if (m_count > count)
@@ -144,10 +165,52 @@ public:
         return;
     }
     
-    ~StackString()
+    //Call this with the best estimate if you want to
+    //prevent possible reallocations on further operations 
+    BOOL Reserve(SIZE_T count)
     {
-        DeleteBuffer();
+        SIZE_T endpos = m_count;
+        
+        if (!Resize(count))
+            return FALSE;
+
+        m_count = endpos;
+        NullTerminate();
+
+        return TRUE;
     }
+
+    //count Should not include the terminating null
+    BOOL Append(const T * buffer, SIZE_T count)
+    {
+        SIZE_T endpos = m_count;
+        if (!Resize(m_count + count))
+            return FALSE;
+
+        CopyMemory(&m_buffer[endpos], buffer, (count + 1) * sizeof(T));
+        NullTerminate();
+        return TRUE;
+    }
+
+    BOOL Append(const StackString &s)
+    {
+        return Append(s.GetString(), s.GetCount());
+    }
+   
+   BOOL IsEmpty()
+   {
+       return 0 == m_buffer[0];
+   }
+
+   void Clear()
+   {
+       m_count = 0;
+       NullTerminate();
+   }
+   ~StackString()
+   {
+       DeleteBuffer();
+   }
 };
 
 #if _DEBUG
@@ -158,3 +221,17 @@ typedef StackString<260, CHAR> PathCharString;
 typedef StackString<260, WCHAR> PathWCharString; 
 #endif
 #endif
+
+// Some Helper Definitions
+BOOL 
+PAL_GetPALDirectoryW(
+        PathWCharString& lpDirectoryName);
+BOOL 
+PAL_GetPALDirectoryA(
+        PathCharString& lpDirectoryName);
+DWORD
+GetCurrentDirectoryA(
+         PathCharString& lpBuffer);
+void 
+FILEDosToUnixPathA(
+        PathCharString& lpPath);
