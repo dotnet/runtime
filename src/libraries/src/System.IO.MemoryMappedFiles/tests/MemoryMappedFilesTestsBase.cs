@@ -297,12 +297,14 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
             else
             {
-                const int _SC_PAGESIZE_OSX = 29;
                 const int _SC_PAGESIZE_FreeBSD = 47;
                 const int _SC_PAGESIZE_Linux = 30;
+                const int _SC_PAGESIZE_NetBSD = 28;
+                const int _SC_PAGESIZE_OSX = 29;
                 pageSize = sysconf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? _SC_PAGESIZE_OSX :
                     RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")) ? _SC_PAGESIZE_FreeBSD :
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? _SC_PAGESIZE_NetBSD :
                     _SC_PAGESIZE_Linux);
             }
             Assert.InRange(pageSize, 1, Int32.MaxValue);
