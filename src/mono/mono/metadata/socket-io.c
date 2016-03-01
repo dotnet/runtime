@@ -615,8 +615,7 @@ get_family_hint (MonoError *error)
 		g_assert (vtable);
 
 		mono_runtime_class_init_full (vtable, error);
-		if (!mono_error_ok (error))
-			return -1;
+		return_val_if_nok (error, -1);
 
 		mono_field_static_get_value (vtable, ipv4_field, &ipv4_enabled);
 		mono_field_static_get_value (vtable, ipv6_field, &ipv6_enabled);
@@ -835,8 +834,7 @@ create_object_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 *werror
 	if (!domain->sockaddr_class)
 		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
 	sockaddr_obj = mono_object_new_checked (domain, domain->sockaddr_class, error);
-	if (!mono_error_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 	
 	/* Locate the SocketAddress data buffer in the object */
 	if (!domain->sockaddr_data_field) {
@@ -2588,8 +2586,7 @@ get_addrinfo_family_hint (MonoError *error)
 	mono_error_init (error);
 
 	hint = get_family_hint (error);
-	if (!mono_error_ok (error))
-		return 0;
+	return_val_if_nok (error, 0);
 
 	switch (hint) {
 	case PF_UNSPEC:
