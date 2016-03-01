@@ -53,7 +53,6 @@
 #cmakedefine01 HAVE_CURLPIPE_MULTIPLEX
 #cmakedefine01 HAVE_TCP_H_TCPSTATE_ENUM
 #cmakedefine01 HAVE_TCP_FSM_H
-#cmakedefine01 HAVE_OPEN_MAX
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
