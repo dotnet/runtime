@@ -14,11 +14,12 @@
   },
   "frameworks": {
     "net451": { },
-    "dotnet5.4": {
+    "netstandard1.3": {
+      "imports": "dnxcore50",
       "dependencies": {
-        "System.Runtime": "4.0.21-rc2-23811"
+        "NETStandard.Library": "1.0.0-rc2-23901"
       }
-    },
+    }
   },
   "scripts": {
   }
