@@ -131,7 +131,7 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
         {
             unsigned calleeMaxStack = static_cast<unsigned>(value);
 
-            if (calleeMaxStack > SMALL_STACK_SIZE)
+            if (!inlIsForceInline && (calleeMaxStack > SMALL_STACK_SIZE))
             {
                 setNever(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
             }
@@ -159,7 +159,7 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
             unsigned ilByteSize = static_cast<unsigned>(value);
 
-            if (ilByteSize > inlCompiler->getImpInlineSize())
+            if (!inlIsForceInline && (ilByteSize > inlCompiler->getImpInlineSize()))
             {
                 setNever(InlineObservation::CALLEE_TOO_MUCH_IL);
             }
