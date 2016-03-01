@@ -34,6 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Metadata\ClassLayoutRow.cs" />
+    <Compile Include="Metadata\Decoding\CustomAttributeDecoderTests.cs" />
     <Compile Include="Metadata\Decoding\DisassemblingTypeProvider.cs" />
     <Compile Include="Metadata\Decoding\MethodSignatureTests.cs" />
     <Compile Include="Metadata\Decoding\OpaqueHandleTypeProvider.cs" />

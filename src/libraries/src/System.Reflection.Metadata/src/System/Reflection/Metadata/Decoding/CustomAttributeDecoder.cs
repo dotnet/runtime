@@ -250,7 +250,8 @@ namespace System.Reflection.Metadata.Decoding
                 info = DecodeNamedArgumentType(ref valueReader);
             }
 
-            // PERF_TODO: Cache/reuse common arguments to avoid boxing (small integers, true, false).
+            // PERF_TODO: https://github.com/dotnet/corefx/issues/6533
+            //   Cache /reuse common arguments to avoid boxing (small integers, true, false).
             object value;
             switch (info.TypeCode)
             {
