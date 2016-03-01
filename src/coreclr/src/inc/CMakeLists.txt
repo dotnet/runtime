@@ -77,6 +77,7 @@ install (FILES cfi.h
                corhdr.h
                corinfo.h
                corjit.h
+               corjithost.h
                opcode.def
                openum.h
                gcinfoencoder.h
