@@ -37,6 +37,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.False(true, "Unexpected Architecture.");
                     break;
             }
+
+            Assert.Equal(osArch, RuntimeInformation.OSArchitecture);
+            Assert.Equal(processArch, RuntimeInformation.ProcessArchitecture);
         }
     }
 }

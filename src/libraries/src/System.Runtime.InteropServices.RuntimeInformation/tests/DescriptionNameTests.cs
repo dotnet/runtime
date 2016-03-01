@@ -15,6 +15,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             string expected = string.Format(".NET Core {0}", typeof(object).GetTypeInfo().Assembly.GetName().Version);
             Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
+            Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
+        }
+
+        [Fact]
+        public void VerifyOSDescription()
+        {
+            Assert.NotNull(RuntimeInformation.OSDescription);
+            Assert.Same(RuntimeInformation.OSDescription, RuntimeInformation.OSDescription);
         }
 
         [Fact, PlatformSpecific(PlatformID.Windows)]
