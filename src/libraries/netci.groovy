@@ -27,7 +27,16 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'RHEL7.2': 'rhel.7-x64']
 
 def branchList = ['master', 'rc2', 'pr']
-def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu14.04' : 'ubuntu14.04', 'OSX' : 'osx', 'Windows Nano' : 'winnano']
+def osShortName = ['Windows 10': 'win10',
+                   'Windows 7' : 'win7',
+                   'Windows_NT' : 'windows_nt',
+                   'Ubuntu14.04' : 'ubuntu14.04',
+                   'OSX' : 'osx',
+                   'Windows Nano' : 'winnano',
+                   'Ubuntu15.10' : 'ubuntu15.10',
+                   'CentOS7.1' : 'centos7.1',
+                   'OpenSUSE13.2' : 'opensuse13.2',
+                   'RHEL7.2' : 'rhel7.2']
 
 def static getFullBranchName(def branch) {
     def branchMap = ['master':'*/master',
