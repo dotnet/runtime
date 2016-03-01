@@ -154,7 +154,7 @@ Windows behavior.
     IN LPSTR lpPath - The path to check.
     LPDWORD lpErrorCode - The error to set.
 */
-void FILEGetProperNotFoundError( LPSTR lpPath, LPDWORD lpErrorCode )
+void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode )
 {
     struct stat stat_data;
     LPSTR lpDupedPath = NULL;
@@ -218,7 +218,7 @@ based on the Windows behavior for nonexistent filenames.
 
     IN LPSTR lpPath - The path to check.
 */
-PAL_ERROR FILEGetLastErrorFromErrnoAndFilename(LPSTR lpPath)
+PAL_ERROR FILEGetLastErrorFromErrnoAndFilename(LPCSTR lpPath)
 {
     PAL_ERROR palError;
     if (ENOENT == errno)
@@ -232,6 +232,19 @@ PAL_ERROR FILEGetLastErrorFromErrnoAndFilename(LPSTR lpPath)
     return palError;
 }
 
+BOOL 
+CorUnix::RealPathHelper(LPCSTR lpUnixPath, PathCharString& lpBuffer)
+{
+    StringHolder lpRealPath;
+    lpRealPath = realpath(lpUnixPath, NULL);
+    if (lpRealPath.IsNull())
+    {
+        return FALSE;
+    }
+
+    lpBuffer.Set(lpRealPath, strlen(lpRealPath));
+    return TRUE; 
+}
 /*++
 InternalCanonicalizeRealPath
     Wraps realpath() to hide platform differences. See the man page for
@@ -241,36 +254,33 @@ InternalCanonicalizeRealPath
     exist, this is a straight thunk through to realpath(). On other
     systems, we remove the last path component, then call realpath().
 
-    cch is the size of lpBuffer and has to be atleast PATH_MAX (since 
-    realpath() requires the buffer to be atleast PATH_MAX).
 --*/
 PAL_ERROR
-CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD cch)
+CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffer)
 {
     PAL_ERROR palError = NO_ERROR;
-    LPSTR lpRealPath = NULL;
 
 #if !REALPATH_SUPPORTS_NONEXISTENT_FILES
-    LPSTR lpExistingPath = NULL;
+    StringHolder lpExistingPath;
     LPSTR pchSeparator = NULL;
     LPSTR lpFilename = NULL;
     DWORD cchBuffer = 0;
     DWORD cchFilename = 0;
 #endif // !REALPATH_SUPPORTS_NONEXISTENT_FILES
  
-    if ( (lpUnixPath == NULL) || (lpBuffer == NULL) || (cch < PATH_MAX) )
+    if (lpUnixPath == NULL) 
     {
         ERROR ("Invalid argument to InternalCanonicalizeRealPath\n");
         palError = ERROR_INVALID_PARAMETER;
-        goto LExitDontFree;
+        goto LExit;
     }
 
 #if REALPATH_SUPPORTS_NONEXISTENT_FILES
-    lpRealPath = realpath(lpUnixPath, lpBuffer);
+    RealPathHelper(lpUnixPath, lpBuffer);
 #else   // !REALPATH_SUPPORTS_NONEXISTENT_FILES
 
     lpExistingPath = strdup(lpUnixPath);
-    if (lpExistingPath == NULL)
+    if (lpExistingPath.IsNull())
     {
         ERROR ("strdup failed with error %d\n", errno);
         palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -280,18 +290,16 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD c
     pchSeparator = strrchr(lpExistingPath, '/');
     if (pchSeparator == NULL)
     {
-        char pszCwdBuffer[MAXPATHLEN+1]; // MAXPATHLEN is for getcwd()
-        DWORD cchCwdBuffer = sizeof(pszCwdBuffer)/sizeof(pszCwdBuffer[0]);
+        PathCharString pszCwdBuffer;
 
-        if (getcwd(pszCwdBuffer, cchCwdBuffer) == NULL)
+        if (GetCurrentDirectoryA(pszCwdBuffer)== 0)
         {
             WARN("getcwd(NULL) failed with error %d\n", errno);
             palError = DIRGetLastErrorFromErrno();
             goto LExit;
         }
 
-        lpRealPath = realpath(pszCwdBuffer, lpBuffer);
-        if (lpRealPath == NULL)
+        if (! RealPathHelper(pszCwdBuffer, lpBuffer))
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
@@ -344,7 +352,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD c
             pchSeparator = lpExistingPath+strlen(lpExistingPath);
 
             // Set the lpBuffer to NULL
-            lpBuffer[0] = '\0';
+            lpBuffer.Clear();
             lpFilename = NULL;
             fSetFilename = false;
         }
@@ -352,8 +360,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD c
 #endif // defined(_AMD64_)
             *pchSeparator = '\0';
             
-        lpRealPath = realpath(lpExistingPath, lpBuffer);
-        if (lpRealPath == NULL)
+        if (!RealPathHelper(lpExistingPath, lpBuffer))
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
@@ -392,54 +399,25 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD c
             lpFilename = pchSeparator + 1;
     }
 
-    cchBuffer = strlen(lpBuffer);
-
-#if defined(_AMD64_)
-    if (lpFilename == NULL)
-        cchFilename = 0;
-    else
-#endif // _AMD64_
-        cchFilename = strlen(lpFilename);
-
-    // Append the file name.
-    // 2 is for "/" and NULL
-    if (cchBuffer + cchFilename + 2 > cch)
-    {
-        ERROR ("Provided buffer size (%d) is smaller than the required (%d)\n", 
-                cch, cchBuffer + cchFilename + 2);
-        palError = ERROR_INSUFFICIENT_BUFFER;
-        lpRealPath = NULL;
-        goto LExit;
-    }
-
-    lpBuffer[cchBuffer] = '/';
-    lpBuffer[cchBuffer+1] = '\0';
-
 #if defined(_AMD64_)
     if (lpFilename == NULL)
         goto LExit;
 #endif // _AMD64_
 
-    if (strcat_s(lpBuffer, cch, lpFilename) != SAFECRT_SUCCESS)
+    if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {
-        ERROR ("strcat_s failed!\n");
+        ERROR ("Append failed!\n");
         palError = ERROR_INSUFFICIENT_BUFFER;
-        lpRealPath = NULL;
 
         // Doing a goto here since we want to exit now. This will work
         // incase someone else adds another if clause below us.
         goto LExit;
     }
 
-LExit:
-    if (lpExistingPath != NULL)
-    {
-        InternalFree(lpExistingPath);
-    }
 #endif // REALPATH_SUPPORTS_NONEXISTENT_FILES
+LExit:
 
-LExitDontFree:
-    if ((palError == NO_ERROR) && (lpRealPath == NULL))
+    if ((palError == NO_ERROR) && lpBuffer.IsEmpty())
     {
         // convert all these into ERROR_PATH_NOT_FOUND
         palError = ERROR_PATH_NOT_FOUND;
@@ -471,7 +449,7 @@ CorUnix::InternalCreateFile(
     BOOL fFileExists = FALSE;
 
     BOOL inheritable = FALSE;
-    LPSTR lpUnixPath = NULL;
+    PathCharString lpUnixPath;
     int   filed = -1;
     int   create_flags = (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     int   open_flags = 0;
@@ -482,8 +460,7 @@ CorUnix::InternalCreateFile(
     BOOL bFileCreated = FALSE;
 
     const char* szNonfilePrefix = "\\\\.\\";
-    LPSTR lpFullUnixPath = NULL;
-    DWORD cchFullUnixPath = PATH_MAX+1; // InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
+    PathCharString lpFullUnixPath;
 
     /* for dwShareMode only three flags are accepted */
     if ( dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE) )
@@ -500,14 +477,6 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    if ( strlen(lpFileName) >= MAX_LONGPATH )
-    {
-        WARN("InternalCreateFile called with a filename whose size is "
-                "%d >= MAX_LONGPATH (%d)\n", strlen(lpFileName), MAX_LONGPATH);
-        palError = ERROR_FILENAME_EXCED_RANGE;
-        goto done;
-    }
-
     if ( strncmp(lpFileName, szNonfilePrefix, strlen(szNonfilePrefix)) == 0 )
     {
         ERROR("InternalCreateFile does not support paths beginning with %s\n", szNonfilePrefix);
@@ -515,38 +484,24 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    lpUnixPath = strdup(lpFileName);
-    if ( lpUnixPath == NULL )
+    if( !lpUnixPath.Set(lpFileName,strlen(lpFileName)))
     {
         ERROR("strdup() failed\n");
         palError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
 
-    lpFullUnixPath =  reinterpret_cast<LPSTR>(InternalMalloc(cchFullUnixPath));
-    if ( lpFullUnixPath == NULL )
-    {
-        ERROR("InternalMalloc() failed\n");
-        palError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    // Initialize the path to zeroes...
-    ZeroMemory(lpFullUnixPath, cchFullUnixPath);
-    
     FILEDosToUnixPathA( lpUnixPath );
 
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
-    palError = InternalCanonicalizeRealPath(lpUnixPath, lpFullUnixPath, cchFullUnixPath);
+    palError = InternalCanonicalizeRealPath(lpUnixPath, lpFullUnixPath);
     if (palError != NO_ERROR)
     {
         goto done;
     }
 
-    InternalFree(lpUnixPath);
-    lpUnixPath = lpFullUnixPath;
-    lpFullUnixPath = NULL;
+    lpUnixPath.Set(lpFullUnixPath);
 
     switch( dwDesiredAccess )
     {
@@ -869,16 +824,6 @@ done:
         pRegisteredFile->ReleaseReference(pThread);
     }
     
-    if (NULL != lpUnixPath)
-    {
-        InternalFree(lpUnixPath);
-    }
-
-    if (NULL != lpFullUnixPath)
-    {
-        InternalFree(lpFullUnixPath);
-    }
-
     if (NO_ERROR == palError && fFileExists)
     {
         palError = ERROR_ALREADY_EXISTS;
@@ -1004,23 +949,17 @@ CreateFileW(
     
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    namePathString.CloseBuffer(size);    
 
     if( size == 0 )
     {
+        namePathString.CloseBuffer(0);    
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            palError = ERROR_FILENAME_EXCED_RANGE;
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            palError = ERROR_INTERNAL_ERROR;
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        palError = ERROR_INTERNAL_ERROR;
         goto done;
     }
+    
+    namePathString.CloseBuffer(size - 1);    
 
     palError = InternalCreateFile(
         pThread,
@@ -1097,25 +1036,19 @@ CopyFileW(
 
     src_size = WideCharToMultiByte( CP_ACP, 0, lpExistingFileName, -1, source, length,
                                 NULL, NULL );
-    sourcePathString.CloseBuffer(src_size);
     
     if( src_size == 0 )
     {
+        sourcePathString.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpExistingFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
-
+    
+    sourcePathString.CloseBuffer(src_size - 1);
     length = 0;
+
     if (lpNewFileName != NULL)
     {
         length = (PAL_wcslen(lpNewFileName)+1) * MaxWCharToAcpLengthFactor;
@@ -1129,24 +1062,17 @@ CopyFileW(
     }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
-    destPathString.CloseBuffer(dest_size);
     
     if( dest_size == 0 )
     {
+        destPathString.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpNewFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
+    destPathString.CloseBuffer(dest_size - 1);
     bRet = CopyFileA(source,dest,bFailIfExists);
 
 done:
@@ -1173,61 +1099,41 @@ DeleteFileA(
     int     result;
     BOOL    bRet = FALSE;
     DWORD   dwLastError = 0;
-    char * lpUnixFileName;
-    int length;
-    PathCharString lpUnixFileNamePS;
-    LPSTR lpFullUnixFileName = NULL;
-    DWORD cchFullUnixFileName = MAX_LONGPATH+1;// InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
+    PathCharString lpunixFileName;
+    PathCharString lpFullunixFileName;
 
     PERF_ENTRY(DeleteFileA);
     ENTRY("DeleteFileA(lpFileName=%p (%s))\n", lpFileName?lpFileName:"NULL", lpFileName?lpFileName:"NULL");
 
     pThread = InternalGetCurrentThread();
-    length = strlen(lpFileName);
 
-    lpUnixFileName = lpUnixFileNamePS.OpenStringBuffer(length);
-    if (NULL == lpUnixFileName)
+    if( !lpunixFileName.Set(lpFileName, strlen(lpFileName)))
     {
         palError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    strcpy_s( lpUnixFileName, lpUnixFileNamePS.GetSizeOf(), lpFileName);
-    lpUnixFileNamePS.CloseBuffer(length);
     
-    FILEDosToUnixPathA( lpUnixFileName );
+    FILEDosToUnixPathA( lpunixFileName );
     
-    if ( !FILEGetFileNameFromSymLink(lpUnixFileName))
+    if ( !FILEGetFileNameFromSymLink(lpunixFileName))
     {
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpUnixFileName);
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpunixFileName);
         goto done;
     }
-
-    lpFullUnixFileName =  reinterpret_cast<LPSTR>(InternalMalloc(cchFullUnixFileName));
-    if ( lpFullUnixFileName == NULL )
-    {
-        ERROR("InternalMalloc() failed\n");
-        palError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    // Initialize the path to zeroes...
-    ZeroMemory(lpFullUnixFileName, cchFullUnixFileName);
     
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
-    palError = InternalCanonicalizeRealPath(lpUnixFileName, lpFullUnixFileName, cchFullUnixFileName);
+    palError = InternalCanonicalizeRealPath(lpunixFileName, lpFullunixFileName);
     if (palError != NO_ERROR)
     {
-        InternalFree(lpFullUnixFileName);
-        lpFullUnixFileName = strdup(lpUnixFileName);
-        if (!lpFullUnixFileName)
+        if (!lpFullunixFileName.Set(lpunixFileName, strlen(lpunixFileName)))
         {
             palError = ERROR_NOT_ENOUGH_MEMORY;
             goto done;
         }
     }
 
-    palError = g_pFileLockManager->GetFileShareModeForFile(lpFullUnixFileName, &dwShareMode);
+    palError = g_pFileLockManager->GetFileShareModeForFile(lpFullunixFileName, &dwShareMode);
 
     // Use unlink if we succesfully found the file to be opened with
     // a FILE_SHARE_DELETE mode.
@@ -1244,17 +1150,17 @@ DeleteFileA(
     dwShareMode != SHARE_MODE_NOT_INITALIZED &&
     (dwShareMode & FILE_SHARE_DELETE) != 0)
     {
-      result = unlink( lpFullUnixFileName );
+      result = unlink( lpFullunixFileName );
     }
     else
     {
-      result = InternalDeleteFile( lpFullUnixFileName );
+      result = InternalDeleteFile( lpFullunixFileName );
     }
 
     if ( result < 0 )
     {
         TRACE("unlink returns %d\n", result);
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFullUnixFileName);
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFullunixFileName);
     }
     else
     {
@@ -1265,10 +1171,6 @@ done:
     if(dwLastError)
     {
         pThread->SetLastError( dwLastError );
-    }
-    if (NULL != lpFullUnixFileName)
-    {
-        InternalFree(lpFullUnixFileName);
     }
     LOGEXIT("DeleteFileA returns BOOL %d\n", bRet);
     PERF_EXIT(DeleteFileA);
@@ -1315,25 +1217,18 @@ DeleteFileW(
 
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    namePS.CloseBuffer(size);
     
     if( size == 0 )
     {
+        namePS.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpFilePathName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         bRet = FALSE;
         goto done;
     }
 
+    namePS.CloseBuffer(size - 1);
     bRet = DeleteFileA( name );
 
 done:
@@ -1419,11 +1314,8 @@ MoveFileExA(
 {
     CPalThread *pThread;
     int   result;
-    int length = 0;
-    PathCharString sourcePS;
-    PathCharString destPS;
-    char * source;
-    char * dest;
+    PathCharString source;
+    PathCharString dest;
     BOOL  bRet = TRUE;
     DWORD dwLastError = 0;
 
@@ -1444,29 +1336,20 @@ MoveFileExA(
         goto done;
     }
 
-    length = strlen(lpExistingFileName);
     
-    source = sourcePS.OpenStringBuffer(length);
-    if (NULL == source)
+    if( !source.Set(lpExistingFileName, strlen(lpExistingFileName)))
     {
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    strcpy_s( source, sourcePS.GetSizeOf(), lpExistingFileName);
-    sourcePS.CloseBuffer(length);
     
     FILEDosToUnixPathA( source );
 
-    length = strlen(lpNewFileName);
-    
-    dest = destPS.OpenStringBuffer(length);
-    if (NULL == dest)
+    if( !dest.Set(lpNewFileName, strlen(lpNewFileName)))
     {
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    strcpy_s( dest, destPS.GetSizeOf(), lpNewFileName);
-    destPS.CloseBuffer(length);
     
     FILEDosToUnixPathA( dest );
 
@@ -1629,23 +1512,16 @@ MoveFileExW(
     }
     src_size = WideCharToMultiByte( CP_ACP, 0, lpExistingFileName, -1, source, length,
                                 NULL, NULL );
-    sourcePS.CloseBuffer(src_size);
     if( src_size == 0 )
     {
+        sourcePS.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpExistingFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
+    sourcePS.CloseBuffer(src_size - 1);
     length = 0;
     if (lpNewFileName != NULL)
     {
@@ -1660,24 +1536,17 @@ MoveFileExW(
     }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
-    destPS.CloseBuffer(dest_size);
     
     if( dest_size == 0 )
     {
+        destPS.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpNewFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
 
+    destPS.CloseBuffer(dest_size - 1);
     bRet = MoveFileExA(source,dest,dwFlags);
 
 done:
@@ -1720,9 +1589,7 @@ GetFileAttributesA(
     struct stat stat_data;
     DWORD dwAttr = 0;
     DWORD dwLastError = 0;
-    CHAR * UnixFileName;
-    int length = 0;
-    PathCharString UnixFileNamePS;
+    PathCharString unixFileName;
 
     PERF_ENTRY(GetFileAttributesA);
     ENTRY("GetFileAttributesA(lpFileName=%p (%s))\n", lpFileName?lpFileName:"NULL", lpFileName?lpFileName:"NULL");
@@ -1734,22 +1601,18 @@ GetFileAttributesA(
         goto done;
     }
 
-    length = strlen(lpFileName);
     
-    UnixFileName = UnixFileNamePS.OpenStringBuffer(length);
-    if (NULL == UnixFileName)
+    if( !unixFileName.Set(lpFileName, strlen(lpFileName)))
     {
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    strcpy_s( UnixFileName, UnixFileNamePS.GetSizeOf(), lpFileName );
-    UnixFileNamePS.CloseBuffer(length);
     
-    FILEDosToUnixPathA( UnixFileName );
+    FILEDosToUnixPathA( unixFileName );
 
-    if ( stat(UnixFileName, &stat_data) != 0 )
+    if ( stat(unixFileName, &stat_data) != 0 )
     {
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(UnixFileName);
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
         goto done;
     }
 
@@ -1833,24 +1696,20 @@ GetFileAttributesW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, filename, length,
                                 NULL, NULL );
-    filenamePS.CloseBuffer(size);
     
     if( size == 0 )
     {
+        filenamePS.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
     }
     else
+    { 
+        filenamePS.CloseBuffer(size - 1);
         dwRet = GetFileAttributesA( filename );
+    }
+
 done:
     LOGEXIT("GetFileAttributesW returns DWORD %#x\n", dwRet);
     PERF_EXIT(GetFileAttributesW);
@@ -1918,24 +1777,17 @@ GetFileAttributesExW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    namePS.CloseBuffer(size);
     
     if( size == 0 )
     {
+        namePS.CloseBuffer(0);
         dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            dwLastError = ERROR_FILENAME_EXCED_RANGE;
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            dwLastError = ERROR_INTERNAL_ERROR;
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        dwLastError = ERROR_INTERNAL_ERROR;
         goto done;
     }
 
+    namePS.CloseBuffer(size - 1);
     attr_data = (LPWIN32_FILE_ATTRIBUTE_DATA)lpFileInformation;
 
     attr_data->dwFileAttributes = GetFileAttributesW(lpFileName);
@@ -2028,23 +1880,16 @@ SetFileAttributesW(
     }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
-    namePS.CloseBuffer(size);
     
     if( size == 0 )
     {
+        namePS.CloseBuffer(0);
         dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            dwLastError = ERROR_FILENAME_EXCED_RANGE;
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            dwLastError = ERROR_INVALID_PARAMETER;
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        dwLastError = ERROR_INVALID_PARAMETER;
         goto done;
     }
+    namePS.CloseBuffer(size - 1);
     bRet = SetFileAttributesA(name,dwFileAttributes);
 
 done:
@@ -3733,24 +3578,18 @@ GetTempFileNameW(
     }
     path_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, full_name,
                                      length, NULL, NULL );
-    full_namePS.CloseBuffer(path_size);
                                      
     if( path_size == 0 )
     {
+        full_namePS.CloseBuffer(0);
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            WARN("lpPathName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-            pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-            pThread->SetLastError(ERROR_INTERNAL_ERROR);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        pThread->SetLastError(ERROR_INTERNAL_ERROR);
         uRet = 0;
         goto done;
     }
+    
+    full_namePS.CloseBuffer(path_size - 1);
     
     if (lpPrefixString != NULL) 
     {
@@ -3766,24 +3605,17 @@ GetTempFileNameW(
                                            prefix_string,
                                            MAX_LONGPATH - path_size - MAX_SEEDSIZE, 
                                            NULL, NULL );
-        prefix_stringPS.CloseBuffer(prefix_size);
         
         if( prefix_size == 0 )
         {
+            prefix_stringPS.CloseBuffer(0);
             DWORD dwLastError = GetLastError();
-            if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-            {
-                WARN("Full name would be larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-                pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-            }
-            else
-            {
-                ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-                pThread->SetLastError(ERROR_INTERNAL_ERROR);
-            }
+            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+            pThread->SetLastError(ERROR_INTERNAL_ERROR);
             uRet = 0;
             goto done;
         }
+        prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
     
     tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
@@ -4110,7 +3942,7 @@ SetFileAttributesA(
 
     DWORD dwLastError = 0;
     BOOL  bRet = FALSE;
-    LPSTR UnixFileName = NULL;
+    LPSTR unixFileName = NULL;
 
     PERF_ENTRY(SetFileAttributesA);
     ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
@@ -4146,19 +3978,19 @@ SetFileAttributesA(
         goto done;
     }
 
-    if ((UnixFileName = strdup(lpFileName)) == NULL)
+    if ((unixFileName = strdup(lpFileName)) == NULL)
     {
         ERROR("strdup() failed\n");
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
 
-    FILEDosToUnixPathA( UnixFileName );
-    if ( stat(UnixFileName, &stat_data) != 0 )
+    FILEDosToUnixPathA( unixFileName );
+    if ( stat(unixFileName, &stat_data) != 0 )
     {
         TRACE("stat failed on %s; errno is %d (%s)\n", 
-             UnixFileName, errno, strerror(errno));
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(UnixFileName);
+             unixFileName, errno, strerror(errno));
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
         goto done;
     }
 
@@ -4194,10 +4026,10 @@ SetFileAttributesA(
     bRet = TRUE;
     if ( new_mode != stat_data.st_mode )
     {
-        if ( chmod(UnixFileName, new_mode) != 0 )
+        if ( chmod(unixFileName, new_mode) != 0 )
         {
-            ERROR("chmod(%s, %#x) failed\n", UnixFileName, new_mode);
-            dwLastError = FILEGetLastErrorFromErrnoAndFilename(UnixFileName);
+            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
+            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
             bRet = FALSE;
         }
     }
@@ -4208,7 +4040,7 @@ done:
         pThread->SetLastError(dwLastError);
     }
     
-    InternalFree(UnixFileName);
+    InternalFree(unixFileName);
 
     LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
     PERF_EXIT(SetFileAttributesA);
@@ -4971,27 +4803,31 @@ Input parameters:
 source  = path to the file on input, path to the file with all 
           symbolic links traversed on return
 
-Note: Assumes the maximum size of the source is MAX_LONGPATH
-
 Return value:
     TRUE on success, FALSE on failure
 --*/
-BOOL FILEGetFileNameFromSymLink(char *source)
+BOOL FILEGetFileNameFromSymLink(PathCharString& source)
 {
     int ret;
-    char * sLinkData = (char*)InternalMalloc(MAX_LONGPATH);
+    PathCharString sLinkDataString;
+    struct stat sb;
 
     do
     {
-        ret = readlink(source, sLinkData, MAX_LONGPATH);
-        if (ret>0)
+        if (lstat(source, &sb) == -1) 
         {
-            sLinkData[ret] = '\0';
-            strcpy_s(source, sizeof(char)*(MAX_LONGPATH), sLinkData);
+            break;
+        }
+        
+        char * sLinkData = sLinkDataString.OpenStringBuffer(sb.st_size);
+        ret = readlink(source, sLinkData, sb.st_size);
+        if (ret > 0)
+        {
+            sLinkDataString.CloseBuffer(ret);
+            source.Set(sLinkDataString);
         }
     } while (ret > 0);
 
-    InternalFree(sLinkData);
     return (errno == EINVAL);
 }
 
