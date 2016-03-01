@@ -43,6 +43,7 @@
       <Link>Common\System\SR.Core.cs</Link>
     </Compile>
     <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 
   <ItemGroup>
