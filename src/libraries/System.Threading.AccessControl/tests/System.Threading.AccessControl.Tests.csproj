@@ -16,6 +16,7 @@
     <ProjectReference Include="..\src\System.Threading.AccessControl.csproj">
       <Project>{E3ED83FD-3015-4BD8-A1B8-6294986E6CFA}</Project>
       <Name>System.Threading.AccessControl</Name>
+      <OSGroup>$(InputOSGroup)</OSGroup>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

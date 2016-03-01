@@ -6,20 +6,14 @@
   </PropertyGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
     <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
   </PropertyGroup>
-  
+  <PropertyGroup>
+    <BuildAllOSGroups Condition="'$(OSGroup)' != '' OR '$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
+  </PropertyGroup>
   <ItemGroup>
-    <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\Microsoft.VisualBasic.Tests.csproj" />
-    <ExcludeProjects Condition="'$(OSGroup)'=='Windows_NT'" Include="**\System.Security.Cryptography.OpenSsl.Tests.csproj" />
-    <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)">
-      <OSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</OSGroup>
-    </Project>
-    <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'">
-      <OSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</OSGroup>
-    </Project>
+    <Project Include="*\tests\*.builds" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
