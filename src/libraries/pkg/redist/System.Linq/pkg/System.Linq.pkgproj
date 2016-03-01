@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(SourceDir)System.Linq\ref\4.0.0\System.Linq.depproj">
-      <SupportedFramework>net45;netcore45;dnxcore50;wp8;wpa81</SupportedFramework>
+      <SupportedFramework>net45;netcore45;netstandardapp1.5;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\lib\System.Linq.builds"/>
 
@@ -19,6 +19,8 @@
     <InboxOnTargetFramework Include="wpa81"/>
     <InboxOnTargetFramework Include="xamarinios10"/>
     <InboxOnTargetFramework Include="xamarinmac20"/>
+    <InboxOnTargetFramework Include="xamarintvos10" />
+    <InboxOnTargetFramework Include="xamarinwatchos10" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
