@@ -162,6 +162,16 @@ extern "C" Error SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
             return PAL_ETXTBSY;
         case EXDEV:
             return PAL_EXDEV;
+        case ESOCKTNOSUPPORT:
+            return PAL_ESOCKTNOSUPPORT;
+        case EPFNOSUPPORT:
+            return PAL_EPFNOSUPPORT;
+        case ESHUTDOWN:
+            return PAL_ESHUTDOWN;
+        case EHOSTDOWN:
+            return PAL_EHOSTDOWN;
+        case ENODATA:
+            return PAL_ENODATA;
 
 // #if because these will trigger duplicate case label warnings when
 // they have the same value, which is permitted by POSIX and common.
@@ -330,6 +340,16 @@ extern "C" int32_t SystemNative_ConvertErrorPalToPlatform(Error error)
             return ETXTBSY;
         case PAL_EXDEV:
             return EXDEV;
+        case PAL_EPFNOSUPPORT:
+            return EPFNOSUPPORT;
+        case PAL_ESOCKTNOSUPPORT:
+            return ESOCKTNOSUPPORT;
+        case PAL_ESHUTDOWN:
+            return ESHUTDOWN;
+        case PAL_EHOSTDOWN:
+            return EHOSTDOWN;
+        case PAL_ENODATA:
+            return ENODATA;
         case PAL_ENONSTANDARD:
             break; // fall through to assert
     }
