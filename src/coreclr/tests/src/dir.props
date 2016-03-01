@@ -23,4 +23,48 @@
     <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
   </PropertyGroup>
 
+  <!-- Setup properties per OSGroup -->
+  <Choose>
+    <When Condition="'$(OSGroup)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Windows_NT'">
+      <PropertyGroup>
+        <TargetsWindows>true</TargetsWindows>
+        <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <TestNugetRuntimeId>osx.10.10-x64</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <PropertyGroup>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
+  </PropertyGroup>
+
 </Project>
