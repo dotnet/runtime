@@ -5247,7 +5247,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32093\b32093
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [lclfldrem_cs_ro.exe_2875]
 RelativePath=JIT\Directed\coverage\oldtests\lclfldrem_cs_ro\lclfldrem_cs_ro.exe
 WorkingDir=JIT\Directed\coverage\oldtests\lclfldrem_cs_ro
