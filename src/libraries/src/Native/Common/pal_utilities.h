@@ -14,10 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <type_traits>
-
-#if HAVE_OPEN_MAX
-#include <sys/syslimits.h>
-#endif
+#include <unistd.h>
 
 /**
  * ResultOf<T> is shorthand for typename std::result_of<T>::type.
@@ -123,11 +120,7 @@ inline void SafeStringCopy(char* destination, int32_t destinationSize, const cha
 */
 inline static int ToFileDescriptor(intptr_t fd)
 {
-#if HAVE_OPEN_MAX
-    assert(0 <= fd && fd <= OPEN_MAX);
-#else
-    assert(0 <= fd && fd <= INT32_MAX);
-#endif
+    assert(0 <= fd && fd < sysconf(_SC_OPEN_MAX));
 
     return static_cast<int>(fd);
 }
