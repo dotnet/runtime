@@ -86,6 +86,31 @@ namespace BasicEventSourceTests
             Test_WriteEvent(new EventListenerListener(true), true);
         }
 
+        [Fact]
+        public void Test_WriteEvent_NoAttribute()
+        {
+            using (EventSourceNoAttribute es = new EventSourceNoAttribute())
+            {
+                Listener el = new EventListenerListener(true);
+                var tests = new List<SubTest>();
+                string arg = "a sample string";
+
+                tests.Add(new SubTest("Write/Basic/EventWith9Strings",
+                delegate ()
+                {
+                    es.EventNoAttributes(arg);
+                },
+                delegate (Event evt)
+                {
+                    Assert.Equal(es.Name, evt.ProviderName);
+                    Assert.Equal("EventNoAttributes", evt.EventName);
+                    Assert.Equal(arg, (string)evt.PayloadValue(0, null));
+                }));
+
+                EventTestHarness.RunTests(tests, el, es);
+            }
+        }
+
         /// <summary>
         /// Helper method for the two tests above.  
         /// </summary>

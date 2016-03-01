@@ -74,10 +74,7 @@ namespace SdtEventSources
 
         [Event(15, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational, Task = Tasks.WorkItem)]
         public void StartTrackingActivity() { WriteEvent(15); }
-
-        // Make sure this is before any #if so it gets a deterministic ID
-        public void EventNoAttributes(string s) { WriteEvent(16, s); }
-
+        
         [Event(17, Keywords = Keywords.Transfer | Keywords.HasStringArgs, Opcode = EventOpcode.Send, Task = Tasks.WorkItem)]
         unsafe public void LogTaskScheduled(Guid RelatedActivityId, string message)
         {
@@ -225,7 +222,7 @@ namespace SdtEventSources
 
         [NonEvent]
         public void NonEvent()
-        { EventNoAttributes(DateTime.Now.ToString()); }
+        { EventWithString(DateTime.Now.ToString()); }
 
         // The above produces different results on 4.5 vs. 4.5.1. Skip the test for those EventSources
         [Event(32, Level = EventLevel.Informational, Message = "msg={0}, n={1}!")]
@@ -381,5 +378,56 @@ namespace SdtEventSources
         Flag1 = 1,
         Flag2 = 2,
         Flag3 = 4,
+    }
+
+    public sealed class EventSourceNoAttribute : EventSource
+    {
+        [Event(1, Level = EventLevel.Informational)]
+        public void Event0() { WriteEvent(1); }
+
+        [Event(2, Level = EventLevel.Informational)]
+        public void EventI(int arg1) { WriteEvent(2, arg1); }
+
+        [Event(3, Level = EventLevel.Informational)]
+        public void EventII(int arg1, int arg2) { WriteEvent(3, arg1, arg2); }
+
+        [Event(4, Level = EventLevel.Informational)]
+        public void EventIII(int arg1, int arg2, int arg3 = 12) { WriteEvent(4, arg1, arg2, arg3); }
+
+        [Event(5, Level = EventLevel.Informational)]
+        public void EventL(long arg1) { WriteEvent(5, arg1); }
+
+        [Event(6, Level = EventLevel.Informational)]
+        public void EventLL(long arg1, long arg2) { WriteEvent(6, arg1, arg2); }
+
+        [Event(7, Level = EventLevel.Informational)]
+        public void EventLLL(long arg1, long arg2, long arg3) { WriteEvent(7, arg1, arg2, arg3); }
+
+        [Event(8, Level = EventLevel.Informational)]
+        public void EventS(string arg1) { WriteEvent(8, arg1); }
+
+        [Event(9, Level = EventLevel.Informational)]
+        public void EventSS(string arg1, string arg2) { WriteEvent(9, arg1, arg2); }
+
+        [Event(10, Level = EventLevel.Informational)]
+        public void EventSSS(string arg1, string arg2, string arg3) { WriteEvent(10, arg1, arg2, arg3); }
+
+        [Event(11, Level = EventLevel.Informational)]
+        public void EventSI(string arg1, int arg2) { WriteEvent(11, arg1, arg2); }
+
+        [Event(12, Level = EventLevel.Informational)]
+        public void EventSL(string arg1, long arg2) { WriteEvent(12, arg1, arg2); }
+
+        [Event(13, Level = EventLevel.Informational)]
+        public void EventSII(string arg1, int arg2, int arg3) { WriteEvent(13, arg1, arg2, arg3); }
+
+        [Event(14, Level = EventLevel.Informational)]
+        public void Message(string arg1) { WriteEvent(14, arg1); }
+
+        [Event(15, Level = EventLevel.Informational)]
+        public void StartTrackingActivity() { WriteEvent(15); }
+
+        // Make sure this is before any #if so it gets a deterministic ID
+        public void EventNoAttributes(string s) { WriteEvent(16, s); }
     }
 }
