@@ -75,16 +75,12 @@ namespace clr
 
                 if (cchDirPath == 0)
                 {
-                    IfFailRet(StringCchLength(wzDirPath, _MAX_PATH, &cchDirPath));
-                }
-
-                if (cchDirPath >= _MAX_PATH)
-                {
-                    return E_INVALIDARG;
+                    cchDirPath = wcslen(wzDirPath);
                 }
 
                 // Try to create the path. If it fails, assume that's because the parent folder does
                 // not exist. Try to create the parent then re-attempt.
+                WCHAR chOrig = wzDirPath[cchDirPath];
                 hr = Create(wzDirPath);
                 if (hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND))
                 {
@@ -118,11 +114,11 @@ namespace clr
                 }
 
                 // Make a writable copy of wzDirPath
-                WCHAR wzBuffer[_MAX_PATH];
-                WCHAR * pPathEnd;
-                IfFailRet(StringCchCopyEx(wzBuffer, countof(wzBuffer), wzDirPath,
-                                          &pPathEnd, nullptr, STRSAFE_NULL_ON_FAILURE));
-                IfFailRet(CreateRecursively(wzBuffer, pPathEnd - wzBuffer));
+                size_t cchDirPath = wcslen(wzDirPath);
+                CQuickWSTR wzBuffer;
+                IfFailRet(wzBuffer.ReSizeNoThrow(cchDirPath + 1));
+                wcscpy_s(wzBuffer.Ptr(), wzBuffer.Size(), wzDirPath);
+                IfFailRet(CreateRecursively(wzBuffer.Ptr(), cchDirPath));
 
                 return hr;
             }

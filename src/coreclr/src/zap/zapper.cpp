@@ -546,6 +546,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         zo->m_compilerFlags |= CORJIT_FLG_PROF_ENTERLEAVE;
     }
 
+#ifdef FEATURE_FUSION
     if (pOptions->lpszRepositoryDir != NULL && pOptions->lpszRepositoryDir[0] != '\0')
     {
         size_t buflen = wcslen(pOptions->lpszRepositoryDir) + 1;
@@ -589,6 +590,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         if (zo->m_repositoryFlags == RepositoryDefault)
             zo->m_repositoryFlags = MoveFromRepository;
     }
+#endif //FEATURE_FUSION
 
     if (pOptions->fInstrument)
         zo->m_compilerFlags |= CORJIT_FLG_BBINSTR;
@@ -3238,7 +3240,7 @@ void Zapper::GetOutputFolder()
     // active use because process ID is unique), increment N, and try again.  Give up if N gets too large.
     for (DWORD n = 0; ; n++)
     {
-        swprintf_s(m_outputPath, W("%s\\%x-%x"), (LPCWSTR)tempPath, GetCurrentProcessId(), n);
+        m_outputPath.Printf(W("%s\\%x-%x"), (LPCWSTR)tempPath, GetCurrentProcessId(), n);
         if (WszCreateDirectory(m_outputPath, NULL))
             break;
 
@@ -3576,11 +3578,11 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
         const WCHAR * pathend = wcsrchr( assemblyPath, DIRECTORY_SEPARATOR_CHAR_W );
         if( pathend )
         {
-            wcsncpy_s(m_outputPath, _countof(m_outputPath), assemblyPath, pathend - assemblyPath);
+            m_outputPath.Set(assemblyPath, COUNT_T(pathend - assemblyPath));
         }
         else
         {
-            wcscpy_s(m_outputPath, _countof(m_outputPath), W(".") DIRECTORY_SEPARATOR_STR_W);
+            m_outputPath.Set(W(".") DIRECTORY_SEPARATOR_STR_W);
         }
     }
 #endif // FEATURE_FUSION

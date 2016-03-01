@@ -19,9 +19,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <LinkPreCrtLibs Include="$(ClrLibPath)\utilcodestaticnohost.lib" />
+    <ProjectReference Include="$(ClrSrcDirectory)utilcode\staticnohost\staticnohost.nativeproj" />
+  </ItemGroup>
+  <ItemGroup>
     <TargetLib Include="$(CoreSystemCrt)" />
     <TargetLib Condition="'$(BuildForWindows7)'=='true'" Include="$(SdkLibPath)\mincore_fw.lib" />
     <TargetLib Condition="'$(BuildForWindows7)'!='true'" Include="$(SdkLibPath)\mincore.lib" />
+    <TargetLib Include="$(SdkLibPath)\oleaut32.lib" />
+    <TargetLib Include="$(SdkLibPath)\uuid.lib" />
   </ItemGroup>
 
   <ItemGroup>
