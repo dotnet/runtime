@@ -8,7 +8,7 @@
     <RootNamespace>System.ServiceProcess.ServiceController.Tests</RootNamespace>
     <AssemblyName>System.ServiceProcess.ServiceController.Tests</AssemblyName>
     <ProjectGuid>{F7D9984B-02EB-4573-84EF-00FFFBFB872C}</ProjectGuid>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+    <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />

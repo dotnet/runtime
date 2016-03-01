@@ -11,7 +11,7 @@
     <AssemblyName>System.Security.Principal.Tests</AssemblyName>
     <RootNamespace>System.Security.Principal.Tests</RootNamespace>
     <ProjectGuid>{49A64F00-C66B-472C-B7D0-6D1FBCC3E7CD}</ProjectGuid>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+    <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <ItemGroup>
     <!--<Compile Include="AddTestsHere.cs" /> -->

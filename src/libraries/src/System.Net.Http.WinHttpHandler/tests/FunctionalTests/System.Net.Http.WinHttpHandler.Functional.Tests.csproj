@@ -10,7 +10,7 @@
     <ProjectGuid>{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler.Functional.Tests</AssemblyName>
-    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+    <UnsupportedPlatforms>FreeBSD;Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />

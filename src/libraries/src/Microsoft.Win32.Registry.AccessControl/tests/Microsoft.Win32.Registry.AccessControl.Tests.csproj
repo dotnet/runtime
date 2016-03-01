@@ -5,7 +5,7 @@
     <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
     <AssemblyName>Microsoft.Win32.Registry.AccessControl.Tests</AssemblyName>
     <RootNamespace>Microsoft.Win32.Registry.AccessControl.Tests</RootNamespace>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+    <UnsupportedPlatforms>Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
