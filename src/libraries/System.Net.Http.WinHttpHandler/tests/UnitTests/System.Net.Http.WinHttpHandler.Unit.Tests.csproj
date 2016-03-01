@@ -12,7 +12,7 @@
     <AssemblyName>System.Net.Http.WinHttpHandler.Unit.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+    <UnsupportedPlatforms>FreeBSD;Linux;NetBSD;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
