@@ -412,18 +412,6 @@ namespace System.Net.Sockets
                 }
             }
 
-            public void StopAndCompleteAll(SocketAsyncContext context)
-            {
-                OperationQueue<TOperation> queue = Stop();
-
-                TOperation op;
-                while (queue.TryDequeue(out op))
-                {
-                    bool completed = op.TryCompleteAsync(context);
-                    Debug.Assert(completed, "Expected TryCompleteAsync to return true");
-                }
-            }
-
             public bool AllOfType<TCandidate>() where TCandidate : TOperation
             {
                 bool tailIsCandidateType = _tail is TCandidate;
@@ -480,37 +468,6 @@ namespace System.Net.Sockets
             }
 
             _registeredEvents = events;
-        }
-
-        private void UnregisterRead()
-        {
-            Debug.Assert(Monitor.IsEntered(_queueLock), $"Expected _queueLock to be held");
-            Debug.Assert((_registeredEvents & Interop.Sys.SocketEvents.Read) != Interop.Sys.SocketEvents.None, $"Unexpected _registeredEvents: {_registeredEvents}");
-
-            Interop.Sys.SocketEvents events = _registeredEvents & ~Interop.Sys.SocketEvents.Read;
-
-            Interop.Error errorCode;
-
-            bool unregistered;
-            try
-            {
-                unregistered = _asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode);
-            }
-            catch (ObjectDisposedException)
-            {
-                // The socket has been closed, so the OS has already unregistered us.
-                unregistered = true;
-                errorCode = Interop.Error.SUCCESS;
-            }
-
-            if (unregistered)
-            {
-                _registeredEvents = events;
-            }
-            else
-            {
-                Debug.Fail(string.Format("UnregisterRead failed: {0}", errorCode));
-            }
         }
 
         public void Close()
@@ -1337,23 +1294,6 @@ namespace System.Net.Sockets
                     // will pick up the error.
                     events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
                 }
-
-                if ((events & Interop.Sys.SocketEvents.ReadClose) != 0)
-                {
-                    // Drain read queue and unregister read operations
-                    Debug.Assert(_acceptOrConnectQueue.IsEmpty, "{Accept,Connect} queue should be empty before ReadClose");
-
-                    _receiveQueue.StopAndCompleteAll(this);
-
-                    UnregisterRead();
-
-                    // Any data left in the socket has been received above; skip further processing.
-                    events &= ~Interop.Sys.SocketEvents.Read;
-                }
-
-                // TODO: optimize locking and completions:
-                // - Dequeues (and therefore locking) for multiple contiguous operations can be combined
-                // - Contiguous completions can happen in a single thread
 
                 if ((events & Interop.Sys.SocketEvents.Read) != 0)
                 {
