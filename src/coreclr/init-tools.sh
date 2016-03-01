@@ -69,6 +69,10 @@ if [ "$__DistroName" == "centos" ]; then
     __DOTNET_PKG=dotnet-centos-x64
 fi
 
+if [ "$__DistroName" == "rhel" ]; then
+    __DOTNET_PKG=dotnet-centos-x64
+fi
+
 __CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
 echo ".NET CLI will be downloaded from $__CLIDownloadURL"
 
