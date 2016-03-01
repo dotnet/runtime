@@ -27,7 +27,16 @@ def targetNugetRuntimeMap = ['OSX' : 'osx.10.10-x64',
                              'RHEL7.2': 'rhel.7-x64']
 
 def branchList = ['master', 'rc2', 'pr']
-def osShortName = ['Windows 10': 'win10', 'Windows 7' : 'win7', 'Windows_NT' : 'windows_nt', 'Ubuntu14.04' : 'ubuntu14.04', 'OSX' : 'osx', 'Windows Nano' : 'winnano']
+def osShortName = ['Windows 10': 'win10',
+                   'Windows 7' : 'win7',
+                   'Windows_NT' : 'windows_nt',
+                   'Ubuntu14.04' : 'ubuntu14.04',
+                   'OSX' : 'osx',
+                   'Windows Nano' : 'winnano',
+                   'Ubuntu15.10' : 'ubuntu15.10',
+                   'CentOS7.1' : 'centos7.1',
+                   'OpenSUSE13.2' : 'opensuse13.2',
+                   'RHEL7.2' : 'rhel7.2']
 
 def static getFullBranchName(def branch) {
     def branchMap = ['master':'*/master',
@@ -138,7 +147,7 @@ branchList.each { branchName ->
             		// The tests/corefx components
 	                copyArtifacts(fullCoreFXBuildJobName) {
 	                    includePatterns('bin/build.pack')
-                            includePatterns('run-test.cmd')
+	                    includePatterns('run-test.cmd')
 	                    buildSelector {
 	                        buildNumber('\${COREFX_BUILD}')
 	                    }
@@ -191,10 +200,11 @@ branchList.each { branchName ->
 }
 
 // **************************
-// Define outerloop windows testing.  Run locally on each machine.
+// Define outerloop testing.  Run locally on each machine.
 // **************************
+def linuxOSes = ['Ubuntu15.10', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2', 'Ubuntu14.04']
 branchList.each { branchName ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'OSX'].each { os ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'OSX', 'Ubuntu15.10', 'CentOS7.1', 'OpenSUSE13.2', 'RHEL7.2'].each { os ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def isPR = (branchName == 'pr')  
@@ -202,10 +212,10 @@ branchList.each { branchName ->
 
             def newJob = job(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
                 steps {
-                    if (os != 'Ubuntu14.04' && os != 'OSX') {
+                    if (os == 'Windows 10' || os == 'Windows 7' || os == 'Windows_NT') {
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"InnerLoop;OuterLoop\" /p:TestWithLocalLibraries=true")
                     }
-                    else if (os != 'Ubuntu14.04') {
+                    else if (os == 'OSX') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh /p:ConfigurationGroup=${configurationGroup} /p:WithCategories=\"\\\"InnerLoop;OuterLoop\\\"\" /p:TestWithLocalLibraries=true")
                     }
                     else {
@@ -215,8 +225,8 @@ branchList.each { branchName ->
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            if (os == 'Ubuntu14.04') {
-                Utilities.setMachineAffinity(newJob, os, "201626test")    
+            if (linuxOSes.contains(os)) {
+                Utilities.setMachineAffinity(newJob, os, "outer-latest-or-auto")    
             }
             else {
                 Utilities.setMachineAffinity(newJob, os, 'latest-or-auto')
@@ -228,7 +238,7 @@ branchList.each { branchName ->
             Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
 
             // Unix runs take more than 2 hours to run, so we set the timeout to be longer.
-            if (os == 'Ubuntu14.04' || os == 'OSX') {
+            if (linuxOSes.contains(os) || os == 'OSX') {
                 Utilities.setJobTimeout(newJob, 240)
             }
 
@@ -236,7 +246,7 @@ branchList.each { branchName ->
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}.*")
+                Utilities.addGithubPRTrigger(newJob, "OuterLoop ${os} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${os}\\W+${configurationGroup}.*")
             }
             else {
                 // Set a periodic trigger
