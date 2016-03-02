@@ -56,5 +56,15 @@ namespace Microsoft.Extensions.DependencyModel
         internal const string RuntimeTargetNamePropertyName = "name";
 
         internal const string RuntimesPropertyName = "runtimes";
+
+        internal const string RuntimeTargetsPropertyName = "runtimeTargets";
+
+        internal const string RidPropertyName = "rid";
+
+        internal const string AssetTypePropertyName = "assetType";
+
+        internal const string RuntimeAssetType = "runtime";
+
+        internal const string NativeAssetType = "native";
     }
 }

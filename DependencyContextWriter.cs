@@ -37,9 +37,12 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WriteRuntimeTargetInfo(DependencyContext context)
         {
+            var target = context.IsPortable?
+                context.Target :
+                context.Target + DependencyContextStrings.VersionSeperator + context.Runtime;
+
             return new JObject(
-                    new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName,
-                        context.Target + DependencyContextStrings.VersionSeperator + context.Runtime),
+                    new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName, target),
                     new JProperty(DependencyContextStrings.PortablePropertyName, context.IsPortable)
                 );
         }
@@ -107,11 +110,22 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WriteTargets(DependencyContext context)
         {
-            return new JObject(
-                new JProperty(context.Target, WriteTarget(context.CompileLibraries)),
-                new JProperty(context.Target + DependencyContextStrings.VersionSeperator + context.Runtime,
-                    WriteTarget(context.RuntimeLibraries))
-                );
+            if (context.IsPortable)
+            {
+                return new JObject(
+                    new JProperty(context.Target, WriteTarget(context.CompileLibraries)),
+                    new JProperty(context.Target + DependencyContextStrings.VersionSeperator + context.Runtime,
+                        WriteTarget(context.RuntimeLibraries))
+                    );
+            }
+            else
+            {
+                return new JObject(
+                    new JProperty(context.Target, WriteTarget(context.CompileLibraries)),
+                    new JProperty(context.Target + DependencyContextStrings.VersionSeperator + context.Runtime,
+                        WriteTarget(context.RuntimeLibraries))
+                    );
+            }
         }
 
         private JObject WriteTarget(IReadOnlyList<Library> libraries)
@@ -144,6 +158,38 @@ namespace Microsoft.Extensions.DependencyModel
                 {
                     throw new NotSupportedException();
                 }
+            }
+
+
+            return new JObject(
+                new JProperty(DependencyContextStrings.DependenciesPropertyName, WriteDependencies(library.Dependencies)),
+                new JProperty(propertyName,
+                    WriteAssemblies(assemblies))
+                );
+        }
+        private JObject WritePortableTargetLibrary(RuntimeLibrary compilationLibrary, CompilationLibrary runtimeLibrary)
+        {
+            var libraryObject = new JObject();
+
+            string propertyName;
+            string[] assemblies;
+
+            if (runtimeLibrary != null)
+            {
+                propertyName = DependencyContextStrings.RuntimeAssembliesKey;
+                assemblies = runtimeLibrary.Assemblies.Select(assembly => assembly.Path).ToArray();
+            }
+
+            RuntimeAssembly[] compilationAssemblies;
+            if (compilationLibrary != null)
+            {
+                propertyName = DependencyContextStrings.CompileTimeAssembliesKey;
+                compilationAssemblies = compilationLibrary.Assemblies.ToArray();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
             }
 
 

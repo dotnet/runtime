@@ -46,8 +46,8 @@ namespace Microsoft.Extensions.DependencyModel
                     packageName: identity.Item2,
                     version: identity.Item3,
                     hash: identity.Item4,
-                    assemblies: packageGroup.Select(l => l.AssetPath).ToArray(),
-                    subTargets: new RuntimeTarget[0], 
+                    assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)).ToArray(),
+                    subTargets: new RuntimeTarget[0],
                     dependencies: new Dependency[] { },
                     serviceable: false
                     ));
