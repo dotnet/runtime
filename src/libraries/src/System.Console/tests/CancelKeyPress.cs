@@ -13,7 +13,7 @@ public class CancelKeyPressTests : RemoteExecutorTestBase
     private const int WaitFailTestTimeoutSeconds = 30;
 
     [Fact]
-    public void CanAddAndRemoveHandler()
+    public static void CanAddAndRemoveHandler()
     {
         ConsoleCancelEventHandler handler = (sender, e) =>
         {
@@ -23,6 +23,19 @@ public class CancelKeyPressTests : RemoteExecutorTestBase
         };
         Console.CancelKeyPress += handler;
         Console.CancelKeyPress -= handler;
+    }
+
+    [Fact]
+    public void CanAddAndRemoveHandler_Remote()
+    {
+        // xunit registers a CancelKeyPress handler at the beginning of the test run and never 
+        // unregisters it, thus we can't execute all of the removal code in the same process.
+        RemoteInvoke(() =>
+        {
+            CanAddAndRemoveHandler();
+            CanAddAndRemoveHandler(); // add and remove again
+            return SuccessExitCode;
+        }).Dispose();
     }
 
     [PlatformSpecific(PlatformID.AnyUnix)]
