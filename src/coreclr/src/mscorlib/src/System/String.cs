@@ -2884,16 +2884,72 @@ namespace System {
         // Replaces all instances of oldChar with newChar.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern String ReplaceInternal(char oldChar, char newChar);
-
         public String Replace(char oldChar, char newChar)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == this.Length);
             Contract.EndContractBlock();
 
-            return ReplaceInternal(oldChar, newChar);
+            if (oldChar == newChar)
+                return this;
+
+            unsafe
+            {
+                int remainingLength = Length;
+
+                fixed (char* pChars = &m_firstChar)
+                {
+                    char* pSrc = pChars;
+
+                    while (remainingLength > 0)
+                    {
+                        if (*pSrc == oldChar)
+                        {
+                            break;
+                        }
+
+                        remainingLength--;
+                        pSrc++;
+                    }
+                }
+
+                if (remainingLength == 0)
+                    return this;
+
+                String result = FastAllocateString(Length);
+
+                fixed (char* pChars = &m_firstChar)
+                {
+                    fixed (char* pResult = &result.m_firstChar)
+                    {
+                        int copyLength = Length - remainingLength;
+
+                        //Copy the characters already proven not to match.
+                        if (copyLength > 0)
+                        {
+                            wstrcpy(pResult, pChars, copyLength);
+                        }
+
+                        //Copy the remaining characters, doing the replacement as we go.
+                        char* pSrc = pChars + copyLength;
+                        char* pDst = pResult + copyLength;
+
+                        do
+                        {
+                            char currentChar = *pSrc;
+                            if (currentChar == oldChar)
+                                currentChar = newChar;
+                            *pDst = currentChar;
+
+                            remainingLength--;
+                            pSrc++;
+                            pDst++;
+                        } while (remainingLength > 0);
+                    }
+                }
+
+                return result;
+            }
         }
 
         // This method contains the same functionality as StringBuilder Replace. The only difference is that
