@@ -8,7 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsole")]
-        internal static extern void InitializeConsole();
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsole", SetLastError = true)]
+        internal static extern bool InitializeConsole();
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetKeypadXmit")]
+        internal static extern void SetKeypadXmit(string terminfoString);
     }
 }
