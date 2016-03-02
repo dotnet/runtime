@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // Regression test for VSW 405223
 // We shouldn't be able to cast from short[] to char[]  or from char[] to short[]
 // since that is the behavior in Everett and we should be consistent in Whidbey.
