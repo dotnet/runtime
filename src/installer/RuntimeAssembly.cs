@@ -10,11 +10,6 @@ namespace Microsoft.Extensions.DependencyModel
     {
         private readonly string _assemblyName;
 
-        public RuntimeAssembly(string path)
-            : this(System.IO.Path.GetFileNameWithoutExtension(path), path)
-        {
-        }
-
         public RuntimeAssembly(string assemblyName, string path)
         {
             _assemblyName = assemblyName;
@@ -24,5 +19,10 @@ namespace Microsoft.Extensions.DependencyModel
         public AssemblyName Name => new AssemblyName(_assemblyName);
 
         public string Path { get; }
+
+        public static RuntimeAssembly Create(string path)
+        {
+            return new RuntimeAssembly(System.IO.Path.GetFileNameWithoutExtension(path), path);
+        }
     }
 }
