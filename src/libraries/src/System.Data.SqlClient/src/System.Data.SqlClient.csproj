@@ -54,7 +54,6 @@
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
-    <Compile Include="System\Data\Common\DbDataRecord.cs" />
     <Compile Include="System\Data\Common\DbEnumerator.cs" />
     <Compile Include="System\Data\Common\FieldNameLookup.cs" />
     <Compile Include="System\Data\Common\MultipartIdentifier.cs" />
