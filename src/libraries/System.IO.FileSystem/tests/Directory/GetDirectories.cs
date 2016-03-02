@@ -18,8 +18,7 @@ namespace System.IO.Tests
             return Directory.GetDirectories(path);
         }
 
-        [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToDirectory()
         {
             using (var containingFolder = new TemporaryDirectory())
@@ -29,20 +28,26 @@ namespace System.IO.Tests
                 {
                     // Create a symlink to a folder that exists
                     string linkPath = Path.Combine(containingFolder.Path, Path.GetRandomFileName());
-                    Assert.Equal(0, symlink(targetDir.Path, linkPath));
+                    Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetDir.Path, isDirectory: true));
+
                     Assert.True(Directory.Exists(linkPath));
                     Assert.Equal(1, GetEntries(containingFolder.Path).Count());
                 }
 
-                // The target file is gone and the symlink still exists; since it can't be resolved,
-                // it's treated as a file rather than as a directory.
-                Assert.Equal(0, GetEntries(containingFolder.Path).Count());
-                Assert.Equal(1, Directory.GetFiles(containingFolder.Path).Count());
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(1, GetEntries(containingFolder.Path).Count());
+                    Assert.Equal(0, Directory.GetFiles(containingFolder.Path).Count());
+                }
+                else
+                {
+                    // The target file is gone and the symlink still exists; since it can't be resolved,
+                    // on Unix it's treated as a file rather than as a directory.
+                    Assert.Equal(0, GetEntries(containingFolder.Path).Count());
+                    Assert.Equal(1, Directory.GetFiles(containingFolder.Path).Count());
+                }
             }
         }
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int symlink(string path1, string path2);
     }
 
     public class Directory_GetDirectories_str_str : Directory_GetFileSystemEntries_str_str

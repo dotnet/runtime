@@ -42,25 +42,32 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => info.Length);
         }
 
-        // In some cases (such as when running without elevated privileges,
-        // the symbolic link may fail to create. Only run this test if it creates
-        // links successfully.
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymLinkLength()
         {
-            var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
-            using (var tempFile = new TempFile(path, 2000))
+            string path = GetTestFilePath();
+            string linkPath = GetTestFilePath();
+
+            const int FileSize = 2000;
+            using (var tempFile = new TempFile(path, FileSize))
             {
-                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
 
                 var info = new FileInfo(path);
-                Assert.Equal(2000, info.Length);
+                Assert.Equal(FileSize, info.Length);
 
                 // On Windows, symlinks have length 0.  
-                // On Unix, we follow to the target and report on the target's size.
+                // On Unix, a symlink contains the path to the target, and thus has that length
                 var linkInfo = new FileInfo(linkPath);
-                Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : info.Length, linkInfo.Length);
+                Assert.Equal(
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : path.Length, 
+                    linkInfo.Length);
+
+                // On both, FileStream should however open the target such that its length is the target length
+                using (FileStream linkFs = File.OpenRead(linkPath))
+                {
+                    Assert.Equal(FileSize, linkFs.Length);
+                }
             }
         }
     }
