@@ -50,39 +50,47 @@ namespace System.Net.Sockets.Tests
             Action<int, EndPoint> receiveHandler = null;
             receiveHandler = (received, remote) =>
             {
-                if (receivedDatagrams != -1)
+                try
                 {
-                    Assert.Equal(DatagramSize, received);
-                    Assert.Equal(rightEndpoint, remote);
-
-                    int datagramId = (int)receiveBuffer[0];
-                    Assert.Null(receivedChecksums[datagramId]);
-
-                    receivedChecksums[datagramId] = Fletcher32.Checksum(receiveBuffer, 0, received);
-
-                    receiverAck.Set();
-                    Assert.True(senderAck.Wait(AckTimeout));
-                    senderAck.Reset();
-
-                    receivedDatagrams++;
-                    if (receivedDatagrams == DatagramsToSend)
+                    if (receivedDatagrams != -1)
                     {
-                        left.Dispose();
-                        receiverFinished.SetResult(true);
-                        return;
-                    }
-                }
-                else
-                {
-                    receivedDatagrams = 0;
-                }
+                        Assert.Equal(DatagramSize, received);
+                        Assert.Equal(rightEndpoint, remote);
 
-                left.ReceiveFromAsync(leftEventArgs, receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, receiveRemote, receiveHandler);
+                        int datagramId = (int)receiveBuffer[0];
+                        Assert.Null(receivedChecksums[datagramId]);
+
+                        receivedChecksums[datagramId] = Fletcher32.Checksum(receiveBuffer, 0, received);
+
+                        receiverAck.Set();
+                        Assert.True(senderAck.Wait(AckTimeout));
+                        senderAck.Reset();
+
+                        receivedDatagrams++;
+                        if (receivedDatagrams == DatagramsToSend)
+                        {
+                            left.Dispose();
+                            receiverFinished.SetResult(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        receivedDatagrams = 0;
+                    }
+
+                    left.ReceiveFromAsync(leftEventArgs, receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, receiveRemote, receiveHandler);
+                }
+                catch (Exception ex)
+                {
+                    receiverFinished.SetException(ex);
+                }
             };
 
             receiveHandler(0, null);
 
             var random = new Random();
+            var senderFinished = new TaskCompletionSource<bool>();
             var sentChecksums = new uint[DatagramsToSend];
             var sendBuffer = new byte[DatagramSize];
             int sentDatagrams = -1;
@@ -90,35 +98,45 @@ namespace System.Net.Sockets.Tests
             Action<int> sendHandler = null;
             sendHandler = sent =>
             {
-                if (sentDatagrams != -1)
+                try
                 {
-                    Assert.True(receiverAck.Wait(AckTimeout));
-                    receiverAck.Reset();
-                    senderAck.Set();
-
-                    Assert.Equal(DatagramSize, sent);
-                    sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
-
-                    sentDatagrams++;
-                    if (sentDatagrams == DatagramsToSend)
+                    if (sentDatagrams != -1)
                     {
-                        right.Dispose();
-                        return;
-                    }
-                }
-                else
-                {
-                    sentDatagrams = 0;
-                }
+                        Assert.True(receiverAck.Wait(AckTimeout));
+                        receiverAck.Reset();
+                        senderAck.Set();
 
-                random.NextBytes(sendBuffer);
-                sendBuffer[0] = (byte)sentDatagrams;
-                right.SendToAsync(rightEventArgs, sendBuffer, 0, sendBuffer.Length, SocketFlags.None, leftEndpoint, sendHandler);
+                        Assert.Equal(DatagramSize, sent);
+                        sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
+
+                        sentDatagrams++;
+                        if (sentDatagrams == DatagramsToSend)
+                        {
+                            right.Dispose();
+                            senderFinished.SetResult(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        sentDatagrams = 0;
+                    }
+
+                    random.NextBytes(sendBuffer);
+                    sendBuffer[0] = (byte)sentDatagrams;
+                    right.SendToAsync(rightEventArgs, sendBuffer, 0, sendBuffer.Length, SocketFlags.None, leftEndpoint, sendHandler);
+                }
+                catch (Exception ex)
+                {
+                    senderFinished.SetException(ex);
+                }
             };
 
             sendHandler(0);
 
             Assert.True(receiverFinished.Task.Wait(TestTimeout));
+            Assert.True(senderFinished.Task.Wait(TestTimeout));
+
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 Assert.NotNull(receivedChecksums[i]);
@@ -379,14 +397,12 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
-        [ActiveIssue(5234, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAsync_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
-        [ActiveIssue(5234, PlatformID.Windows)]
         [Fact]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv4()
         {
@@ -424,7 +440,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(5234, PlatformID.Windows)]
         public void SendRecvAsync_TcpListener_TcpClient_IPv4()
         {
             SendRecvAsync_TcpListener_TcpClient(IPAddress.Loopback);
