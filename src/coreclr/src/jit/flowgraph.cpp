@@ -21478,7 +21478,7 @@ void                Compiler::fgInline()
         fgDispHandlerTab();
     }
 
-    if  (verbose || (fgInlinedCount > 0 && fgPrintInlinedMethods))
+    if  (verbose || fgPrintInlinedMethods)
     {
        printf("**************** Inline Tree\n");
        rootContext->Dump(this);
