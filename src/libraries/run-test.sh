@@ -184,9 +184,9 @@ runtest()
 
   echo
   echo "Running tests in $dirName"
-  echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory" -notrait Benchmark=true
+  echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory" -notrait Benchmark=true
   echo
-  ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true
+  ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true
   exitCode=$?
 
   if [ $exitCode -ne 0 ]
@@ -252,6 +252,7 @@ coreclr_code_coverage()
 # Parse arguments
 
 ((serverGC = 0))
+OuterLoop="-notrait category=outerloop"
 
 while [[ $# > 0 ]]
 do
@@ -292,6 +293,9 @@ do
         ;;
         --useServerGC)
         ((serverGC = 1))
+        ;;
+        --outerloop)
+        OuterLoop="-trait category=outerloop"
         ;;
         *)
         ;;
