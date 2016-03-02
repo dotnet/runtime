@@ -39149,13 +39149,6 @@ MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
 Categories=JIT;EXPECTED_PASS
-[b06435.exe_5013]
-RelativePath=JIT\Regression\CLR-x86-JIT\V1-M10\b06435\b06435\b06435.exe
-WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M10\b06435\b06435
-MaxAllowedDurationSeconds=600
-HostStyle=Any
-Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
 [_il_relqperm.exe_3905]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_relqperm\_il_relqperm.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_relqperm
