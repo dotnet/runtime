@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // This is regression test for VSWhidbey 237932
 // The issue here was that the ThreadStatic field was previously shared for all C1<objref> types
 // and so when we created C1<System.OverflowException> and C1<System.InvalidCastException> the ThreadStatic

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // This test should be run with verification on: e.g. caspol -m -cg 1.1 Everything
 // In this test, we have MyType implementing IFoo<T> twice, first indirectly through MyBaseType
 // as IFoo<string>, and second directly as IFoo<int>.
