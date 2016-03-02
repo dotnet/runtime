@@ -9,13 +9,11 @@ namespace System.Data.SqlClient
 {
     internal class SqlDbColumn : DbColumn
     {
-        private readonly bool _isBrowseModeInfoConsumed;
         private readonly _SqlMetaData _metadata;
 
-        internal SqlDbColumn(_SqlMetaData md, bool isBrowseModeInfoConsumed)
+        internal SqlDbColumn(_SqlMetaData md)
         {
             _metadata = md;
-            _isBrowseModeInfoConsumed = isBrowseModeInfoConsumed;
             Populate();
         }
 
@@ -30,15 +28,6 @@ namespace System.Data.SqlClient
             ColumnName = _metadata.column;
             ColumnOrdinal = _metadata.ordinal;
             ColumnSize = (_metadata.metaType.IsSizeInCharacters && (_metadata.length != 0x7fffffff)) ? (_metadata.length / 2) : _metadata.length;
-
-            if (_isBrowseModeInfoConsumed)
-            {
-                IsAliased = _metadata.isDifferentName;
-                IsKey = _metadata.isKey;
-                IsHidden = _metadata.isHidden;
-                IsExpression = _metadata.isExpression;
-            }
-
             IsAutoIncrement = _metadata.isIdentity;
             IsIdentity = _metadata.isIdentity;
             IsLong = _metadata.metaType.IsLong;
@@ -65,6 +54,38 @@ namespace System.Data.SqlClient
 
             UdtAssemblyQualifiedName = null;
 
+        }
+
+        internal bool? SqlIsAliased
+        {
+            set
+            {
+                IsAliased = value;
+            }
+        }
+
+        internal bool? SqlIsKey
+        {
+            set
+            {
+                IsKey = value;
+            }
+        }
+
+        internal bool? SqlIsHidden
+        {
+            set
+            {
+                IsHidden = value;
+            }
+        }
+
+        internal bool? SqlIsExpression
+        {
+            set
+            {
+                IsExpression = value;
+            }
         }
 
         internal Type SqlDataType
