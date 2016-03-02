@@ -32,8 +32,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
