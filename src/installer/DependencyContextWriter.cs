@@ -71,6 +71,10 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 o[DependencyContextStrings.PublicSignPropertyName] = compilationOptions.PublicSign;
             }
+            if (compilationOptions.DebugType != null)
+            {
+                o[DependencyContextStrings.DebugTypePropertyName] = compilationOptions.DebugType;
+            }
             if (compilationOptions.EmitEntryPoint != null)
             {
                 o[DependencyContextStrings.EmitEntryPointPropertyName] = compilationOptions.EmitEntryPoint;
