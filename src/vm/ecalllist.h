@@ -231,7 +231,6 @@ FCFuncStart(gStringFuncs)
     FCFuncElement("IndexOfAny", COMString::IndexOfCharArray)
     FCFuncElement("LastIndexOf", COMString::LastIndexOfChar)
     FCFuncElement("LastIndexOfAny", COMString::LastIndexOfCharArray)
-    FCFuncElementSig("ReplaceInternal", &gsig_IM_Char_Char_RetStr, COMString::Replace)
     FCFuncElementSig("ReplaceInternal", &gsig_IM_Str_Str_RetStr, COMString::ReplaceString)
     FCFuncElement("PadHelper", COMString::PadHelper)
 #ifdef FEATURE_COMINTEROP
