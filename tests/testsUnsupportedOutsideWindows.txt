@@ -118,9 +118,6 @@ JIT/Methodical/explicit/coverage/seq_short_1_d/seq_short_1_d.sh
 JIT/Methodical/explicit/coverage/seq_short_1_r/seq_short_1_r.sh
 JIT/Methodical/explicit/coverage/seq_val_1_d/seq_val_1_d.sh
 JIT/Methodical/explicit/coverage/seq_val_1_r/seq_val_1_r.sh
-JIT/Performance/CodeQuality/Roslyn/CscBench/CscBench.sh
-JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
-JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/b32374.sh
 JIT/Regression/CLR-x86-JIT/V1.2-M01/b07493/b07493/b07493.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b427411/Desktop/b427411/b427411.sh

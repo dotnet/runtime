@@ -11,9 +11,6 @@ JIT/Directed/UnrollLoop/loop6_cs_d/loop6_cs_d.sh
 JIT/Directed/UnrollLoop/loop6_cs_do/loop6_cs_do.sh
 JIT/Directed/UnrollLoop/loop6_cs_r/loop6_cs_r.sh
 JIT/Directed/UnrollLoop/loop6_cs_ro/loop6_cs_ro.sh
-JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_d/callipinvoke_il_d.sh
-JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_r/callipinvoke_il_r.sh
-JIT/Directed/coverage/oldtests/callipinvoke/callipinvoke.sh
 JIT/Directed/lifetime/lifetime2/lifetime2.sh
 JIT/Methodical/refany/_dbgstress1/_dbgstress1.sh
 JIT/Methodical/refany/_dbgstress3/_dbgstress3.sh
@@ -30,9 +27,6 @@ JIT/Methodical/varargs/callconv/gc_ctor_il_r/gc_ctor_il_r.sh
 JIT/Methodical/varargs/callconv/val_ctor_il_d/val_ctor_il_d.sh
 JIT/Methodical/varargs/callconv/val_ctor_il_r/val_ctor_il_r.sh
 JIT/Methodical/varargs/misc/Dev10_615402/Dev10_615402.sh
-JIT/Performance/CodeQuality/Serialization/Serialize/Serialize.sh
-JIT/Performance/CodeQuality/Serialization/Deserialize/Deserialize.sh
-JIT/Performance/CodeQuality/Roslyn/CscBench/CscBench.sh
 JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16423/b16423/b16423.sh
 JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
