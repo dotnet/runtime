@@ -1318,14 +1318,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 			mono_thread_interruption_checkpoint ();
 	} while (regain == -1);
 
-	if (regain == 0) {
-		/* Something went wrong, so throw a
-		 * SynchronizationLockException
-		 */
-		CloseHandle (event);
-		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Failed to regain lock"));
-		return FALSE;
-	}
+	g_assert (regain == 1);
 
 	mon->nest = nest;
 
