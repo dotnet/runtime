@@ -203,7 +203,7 @@ sgen_thread_handshake (BOOL suspend)
 
 	count = 0;
 	mono_thread_info_current ()->client_info.suspend_done = TRUE;
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}
@@ -218,7 +218,7 @@ sgen_thread_handshake (BOOL suspend)
 		} else {
 			info->client_info.skip = 1;
 		}
-	} FOREACH_THREAD_SAFE_END
+	} FOREACH_THREAD_END
 
 	sgen_wait_for_suspend_ack (count);
 
