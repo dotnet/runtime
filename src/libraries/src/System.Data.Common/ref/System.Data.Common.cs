@@ -361,8 +361,8 @@ namespace System.Data.Common
         public System.Threading.Tasks.Task<bool> ReadAsync() { return default(System.Threading.Tasks.Task<bool>); }
         public virtual System.Threading.Tasks.Task<bool> ReadAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<bool>); }
         System.Data.IDataReader System.Data.IDataRecord.GetData(int ordinal) { return default(System.Data.IDataReader); }
-        public void Close() { }
-        public DataTable GetSchemaTable() { return default(DataTable); }
+        void System.Data.IDataReader.Close() { }
+        System.Data.DataTable System.Data.IDataReader.GetSchemaTable() { return default(System.Data.DataTable); }
     }
     public abstract partial class DbDataRecord : System.Data.IDataRecord
     {
@@ -415,7 +415,7 @@ namespace System.Data.Common
         byte System.Data.IDbDataParameter.Precision { get { return default(byte); } set { } }
         byte System.Data.IDbDataParameter.Scale { get { return default(byte); } set { } }
         public abstract object Value { get; set; }
-        public DataRowVersion SourceVersion { get; set; }
+        System.Data.DataRowVersion IDataParameter.SourceVersion { get; set; }
         public abstract void ResetDbType();
     }
     public abstract partial class DbParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IDataParameterCollection
@@ -459,7 +459,7 @@ namespace System.Data.Common
         public System.Data.Common.DbConnection Connection { get { return default(System.Data.Common.DbConnection); } }
         protected abstract System.Data.Common.DbConnection DbConnection { get; }
         public abstract System.Data.IsolationLevel IsolationLevel { get; }
-        IDbConnection IDbTransaction.Connection { get; }
+        System.Data.IDbConnection System.Data.IDbTransaction.Connection { get; }
         public abstract void Commit();
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
