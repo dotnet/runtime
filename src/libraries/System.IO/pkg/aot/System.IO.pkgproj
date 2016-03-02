@@ -11,6 +11,9 @@
     <ProjectReference Include="..\..\src\System.IO.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\System.IO.csproj">
+      <TargetGroup>netstandard13aot</TargetGroup>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

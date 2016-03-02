@@ -9,6 +9,9 @@
     <Project Include="System.IO.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
+    <Project Include="System.IO.csproj">
+      <TargetGroup>netstandard13aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
