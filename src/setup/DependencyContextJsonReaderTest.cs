@@ -109,9 +109,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     },
     ""libraries"":{
         ""MyApp/1.0.1"": {
-            ""type"": ""project"",
-            ""serviceable"": true,
-            ""sha512"": ""HASH-MyApp""
+            ""type"": ""project""
         },
         ""System.Banana/1.0.0"": {
             ""type"": ""package"",
@@ -124,11 +122,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var project = context.CompileLibraries.Should().Contain(l => l.PackageName == "MyApp").Subject;
             project.Version.Should().Be("1.0.1");
             project.Assemblies.Should().BeEquivalentTo("MyApp.dll");
-            project.Hash.Should().Be("HASH-MyApp");
             project.LibraryType.Should().Be("project");
-            project.Serviceable.Should().Be(true);
-            project.Hash.Should().BeEquivalentTo("HASH-MyApp");
-
 
             var package = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Banana").Subject;
             package.Version.Should().Be("1.0.0");
@@ -137,5 +131,71 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.LibraryType.Should().Be("package");
             package.Serviceable.Should().Be(false);
         }
+
+
+        [Fact]
+        public void ReadsRuntimeLibrariesWithSubtargetsFromMainTargetForPortable()
+        {
+            var context = Read(
+@"{
+    ""runtimeTarget"": {
+        ""portable"": true,
+        ""name"": "".NETStandardApp,Version=v1.5"",
+    },
+    ""targets"": {
+        "".NETStandardApp,Version=v1.5"": {
+            ""MyApp/1.0.1"": {
+                ""dependencies"": {
+                    ""AspNet.Mvc"": ""1.0.0""
+                },
+                ""runtime"": {
+                    ""MyApp.dll"": { }
+                }
+            },
+            ""System.Banana/1.0.0"": {
+                ""dependencies"": {
+                    ""System.Foo"": ""1.0.0""
+                },
+                ""runtime"": {
+                    ""lib/dotnet5.4/System.Banana.dll"": { }
+                },
+                ""runtimeTargets"": {
+                    ""lib/win7/System.Banana.dll"": { ""assetType"": ""runtime"", ""rid"": ""win7-x64""},
+                    ""lib/win7/Banana.dll"": { ""assetType"": ""native"", ""rid"": ""win7-x64""}
+                }
+            }
+        }
+    },
+    ""libraries"":{
+        ""MyApp/1.0.1"": {
+            ""type"": ""project"",
+        },
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        },
+    }
+}");
+            context.CompileLibraries.Should().HaveCount(2);
+            var project = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "MyApp").Subject;
+            project.Version.Should().Be("1.0.1");
+            project.Assemblies.Should().Contain(a => a.Path == "MyApp.dll");
+            project.LibraryType.Should().Be("project");
+
+
+            var package = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "System.Banana").Subject;
+            package.Version.Should().Be("1.0.0");
+            package.Hash.Should().Be("HASH-System.Banana");
+            package.LibraryType.Should().Be("package");
+            package.Serviceable.Should().Be(false);
+            package.Assemblies.Should().Contain(a => a.Path == "lib/dotnet5.4/System.Banana.dll");
+
+            var target = package.SubTargets.Should().Contain(t => t.Runtime == "win7-x64").Subject;
+            target.Assemblies.Should().Contain(a => a.Path == "lib/win7/System.Banana.dll");
+            target.NativeLibraries.Should().Contain("lib/win7/Banana.dll");
+        }
+
+
     }
 }
