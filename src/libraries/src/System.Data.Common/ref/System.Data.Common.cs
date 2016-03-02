@@ -215,7 +215,7 @@ namespace System.Data
 }
 namespace System.Data.Common
 {
-    public abstract partial class DbCommand : System.IDisposable
+    public abstract partial class DbCommand : System.Data.IDbCommand, System.IDisposable
     {
         protected DbCommand() { }
         public abstract string CommandText { get; set; }
@@ -227,6 +227,9 @@ namespace System.Data.Common
         protected abstract System.Data.Common.DbTransaction DbTransaction { get; set; }
         public abstract bool DesignTimeVisible { get; set; }
         public System.Data.Common.DbParameterCollection Parameters { get { return default(System.Data.Common.DbParameterCollection); } }
+        System.Data.IDbConnection System.Data.IDbCommand.Connection { get { return default(System.Data.IDbConnection); } set { } }
+        System.Data.IDataParameterCollection System.Data.IDbCommand.Parameters { get { return default(System.Data.IDataParameterCollection); } }
+        System.Data.IDbTransaction System.Data.IDbCommand.Transaction { get { return default(System.Data.IDbTransaction); } set { } }
         public System.Data.Common.DbTransaction Transaction { get { return default(System.Data.Common.DbTransaction); } set { } }
         public abstract System.Data.UpdateRowSource UpdatedRowSource { get; set; }
         public abstract void Cancel();
@@ -247,8 +250,11 @@ namespace System.Data.Common
         public System.Threading.Tasks.Task<object> ExecuteScalarAsync() { return default(System.Threading.Tasks.Task<object>); }
         public virtual System.Threading.Tasks.Task<object> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<object>); }
         public abstract void Prepare();
+        System.Data.IDbDataParameter System.Data.IDbCommand.CreateParameter() { return default(System.Data.IDbDataParameter); }
+        System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { return default(System.Data.IDataReader); }
+        System.Data.IDataReader System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { return default(System.Data.IDataReader); }
     }
-    public abstract partial class DbConnection : System.IDisposable
+    public abstract partial class DbConnection : System.Data.IDbConnection, System.IDisposable
     {
         protected DbConnection() { }
         public abstract string ConnectionString { get; set; }
@@ -269,6 +275,9 @@ namespace System.Data.Common
         public abstract void Open();
         public System.Threading.Tasks.Task OpenAsync() { return default(System.Threading.Tasks.Task); }
         public virtual System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
+        System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction() { return default(System.Data.IDbTransaction); }
+        System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { return default(System.Data.IDbTransaction); }
+        System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { return default(System.Data.IDbCommand); }
     }
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
     {
@@ -298,7 +307,7 @@ namespace System.Data.Common
         public override string ToString() { return default(string); }
         public virtual bool TryGetValue(string keyword, out object value) { value = default(object); return default(bool); }
     }
-    public abstract partial class DbDataReader : System.Collections.IEnumerable, System.IDisposable
+    public abstract partial class DbDataReader : System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable
     {
         protected DbDataReader() { }
         public abstract int Depth { get; }
@@ -351,6 +360,9 @@ namespace System.Data.Common
         public abstract bool Read();
         public System.Threading.Tasks.Task<bool> ReadAsync() { return default(System.Threading.Tasks.Task<bool>); }
         public virtual System.Threading.Tasks.Task<bool> ReadAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<bool>); }
+        System.Data.IDataReader System.Data.IDataRecord.GetData(int ordinal) { return default(System.Data.IDataReader); }
+        void System.Data.IDataReader.Close() { }
+        System.Data.DataTable System.Data.IDataReader.GetSchemaTable() { return default(System.Data.DataTable); }
     }
     public abstract partial class DbDataRecord : System.Data.IDataRecord
     {
@@ -388,7 +400,7 @@ namespace System.Data.Common
         protected DbException(string message) { }
         protected DbException(string message, System.Exception innerException) { }
     }
-    public abstract partial class DbParameter
+    public abstract partial class DbParameter : System.Data.IDataParameter, System.Data.IDbDataParameter
     {
         protected DbParameter() { }
         public abstract System.Data.DbType DbType { get; set; }
@@ -400,10 +412,13 @@ namespace System.Data.Common
         public abstract int Size { get; set; }
         public abstract string SourceColumn { get; set; }
         public abstract bool SourceColumnNullMapping { get; set; }
+        byte System.Data.IDbDataParameter.Precision { get { return default(byte); } set { } }
+        byte System.Data.IDbDataParameter.Scale { get { return default(byte); } set { } }
         public abstract object Value { get; set; }
+        System.Data.DataRowVersion IDataParameter.SourceVersion { get; set; }
         public abstract void ResetDbType();
     }
-    public abstract partial class DbParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    public abstract partial class DbParameterCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Data.IDataParameterCollection
     {
         protected DbParameterCollection() { }
         public abstract int Count { get; }
@@ -411,6 +426,7 @@ namespace System.Data.Common
         public System.Data.Common.DbParameter this[string parameterName] { get { return default(System.Data.Common.DbParameter); } set { } }
         public abstract object SyncRoot { get; }
         object System.Collections.IList.this[int index] { get { return default(object); } set { } }
+        object System.Data.IDataParameterCollection.this[string parameterName] { get { return default(object); } set { } }
         public abstract int Add(object value);
         public abstract void AddRange(System.Array values);
         public abstract void Clear();
@@ -437,12 +453,13 @@ namespace System.Data.Common
         public virtual System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { return default(System.Data.Common.DbConnectionStringBuilder); }
         public virtual System.Data.Common.DbParameter CreateParameter() { return default(System.Data.Common.DbParameter); }
     }
-    public abstract partial class DbTransaction : System.IDisposable
+    public abstract partial class DbTransaction : System.Data.IDbTransaction, System.IDisposable
     {
         protected DbTransaction() { }
         public System.Data.Common.DbConnection Connection { get { return default(System.Data.Common.DbConnection); } }
         protected abstract System.Data.Common.DbConnection DbConnection { get; }
         public abstract System.Data.IsolationLevel IsolationLevel { get; }
+        System.Data.IDbConnection System.Data.IDbTransaction.Connection { get; }
         public abstract void Commit();
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
