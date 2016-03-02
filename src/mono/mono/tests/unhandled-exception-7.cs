@@ -28,12 +28,20 @@ class CrossDomain : MarshalByRefObject
 
 class Driver
 {
-	/* expected exit code: 0 */
+	/* expected exit code: 255 */
 	static void Main (string[] args)
 	{
+		if (Environment.GetEnvironmentVariable ("TEST_UNHANDLED_EXCEPTION_HANDLER") != null)
+			AppDomain.CurrentDomain.UnhandledException += (s, e) => {};
+
 		ManualResetEvent mre = new ManualResetEvent (false);
 
-		var cd = (CrossDomain) AppDomain.CreateDomain ("ad").CreateInstanceAndUnwrap (typeof(CrossDomain).Assembly.FullName, "CrossDomain");
+		var ad = AppDomain.CreateDomain ("ad");
+
+		if (Environment.GetEnvironmentVariable ("TEST_UNHANDLED_EXCEPTION_HANDLER") != null)
+			ad.UnhandledException += (s, e) => {};
+
+		var cd = (CrossDomain) ad.CreateInstanceAndUnwrap (typeof(CrossDomain).Assembly.FullName, "CrossDomain");
 
 		var action = cd.NewDelegateWithoutTarget ();
 		var ares = action.BeginInvoke (Callback, null);
