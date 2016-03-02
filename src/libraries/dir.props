@@ -211,6 +211,7 @@
     <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
 
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50aot'))">netcore50aot</TargetGroup>
+    <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netstandard13aot'))">netstandard13aot</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('netcore50'))">netcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('dnxcore50'))">dnxcore50</TargetGroup>
     <TargetGroup Condition="'$(TargetGroup)'=='' and $(Configuration.Contains('net462'))">net462</TargetGroup>
@@ -309,6 +310,13 @@
         <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
       </PropertyGroup>
     </When>
+    <When Condition="'$(TargetGroup)'=='netstandard13aot'">
+      <PropertyGroup>
+        <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
+        <PackageTargetRuntime>aot</PackageTargetRuntime>
+        <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+      </PropertyGroup>
+    </When>    
     <When Condition="'$(TargetGroup)'=='dnxcore50'">
       <PropertyGroup>
         <PackageTargetFramework>dnxcore50</PackageTargetFramework>
