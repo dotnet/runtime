@@ -797,7 +797,9 @@ combinedScenarios.each { scenario ->
                                 case 'arm64':
                                     assert scenario == 'default'
                                     buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
-                                    // Add archival.  No xunit results for x64 windows
+                                    buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                    
+                                    // Add archival.  No xunit results for arm64 windows
                                     Utilities.addArchival(newJob, "bin/Product/**")
                                     break
                                 default:
