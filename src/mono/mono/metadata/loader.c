@@ -506,13 +506,17 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	/* FIXME: This needs a cache, especially for generic instances, since
-	 * mono_metadata_parse_type () allocates everything from a mempool.
+	 * we ask mono_metadata_parse_type_checked () to allocates everything from a mempool.
+	 * FIXME part2, mono_metadata_parse_type_checked actually allows for a transient type instead.
+	 * FIXME part3, transient types are not 100% transient, so we need to take care of that first.
 	 */
 	sig_type = (MonoType *)find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
-		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		MonoError inner_error;
+		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, &inner_error);
 		if (sig_type == NULL) {
-			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x", fname, token);
+			mono_error_set_field_load (error, klass, fname, "Could not parse field '%s' signature %08x due to: %s", fname, token, mono_error_get_message (&inner_error));
+			mono_error_cleanup (&inner_error);
 			return NULL;
 		}
 		sig_type = (MonoType *)cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
@@ -868,7 +872,7 @@ mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *co
 }
 
 static MonoMethodHeader*
-inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
+inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethodHeader *res;
 	int i;
@@ -880,18 +884,29 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 	res->init_locals = header->init_locals;
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
-	for (i = 0; i < header->num_locals; ++i)
-		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], context);
+
+	mono_error_init (error);
+
+	for (i = 0; i < header->num_locals; ++i) {
+		res->locals [i] = mono_class_inflate_generic_type_checked (header->locals [i], context, error);
+		if (!is_ok (error))
+			goto fail;
+	}
 	if (res->num_clauses) {
 		res->clauses = (MonoExceptionClause *)g_memdup (header->clauses, sizeof (MonoExceptionClause) * res->num_clauses);
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &res->clauses [i];
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;
-			clause->data.catch_class = mono_class_inflate_generic_class (clause->data.catch_class, context);
+			clause->data.catch_class = mono_class_inflate_generic_class_checked (clause->data.catch_class, context, error);
+			if (!is_ok (error))
+				goto fail;
 		}
 	}
 	return res;
+fail:
+	g_free (res);
+	return NULL;
 }
 
 /*
@@ -904,7 +919,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 {
 	MonoError error;
 	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, context, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_cleanup (&error);
 	return res;
 }
 
@@ -926,8 +941,10 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 
 	if (table == MONO_TABLE_METHODSPEC) {
 		/* the verifier (do_invoke_method) will turn the NULL into a verifier error */
-		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated)
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated) {
+			mono_error_set_bad_image (error, image, "Method is a pinvoke or open generic");
 			return NULL;
+		}
 
 		return mono_method_signature_checked (method, error);
 	}
@@ -1003,7 +1020,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 {
 	MonoError error;
 	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, NULL, &error);
-	g_assert (mono_error_ok (&error));
+	mono_error_cleanup (&error);
 	return res;
 }
 
@@ -2780,30 +2797,35 @@ mono_method_get_token (MonoMethod *method)
 }
 
 MonoMethodHeader*
-mono_method_get_header (MonoMethod *method)
+mono_method_get_header_checked (MonoMethod *method, MonoError *error)
 {
 	int idx;
 	guint32 rva;
 	MonoImage* img;
 	gpointer loc;
-	MonoMethodHeader *header;
 	MonoGenericContainer *container;
 
-	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		return NULL;
-
+	mono_error_init (error);
 	img = method->klass->image;
+
+	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+		mono_error_set_bad_image (error, img, "Method has no body");
+		return NULL;
+	}
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		MonoMethodHeader *header, *iheader;
 
-		header = mono_method_get_header (imethod->declaring);
+		header = mono_method_get_header_checked (imethod->declaring, error);
 		if (!header)
 			return NULL;
 
-		iheader = inflate_generic_header (header, mono_method_get_context (method));
+		iheader = inflate_generic_header (header, mono_method_get_context (method), error);
 		mono_metadata_free_mh (header);
+		if (!iheader) {
+			return NULL;
+		}
 
 		mono_image_lock (img);
 
@@ -2835,12 +2857,16 @@ mono_method_get_header (MonoMethod *method)
 	idx = mono_metadata_token_index (method->token);
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
 
-	if (!mono_verifier_verify_method_header (img, rva, NULL))
+	if (!mono_verifier_verify_method_header (img, rva, NULL)) {
+		mono_error_set_bad_image (error, img, "Invalid method header, failed verification");
 		return NULL;
+	}
 
 	loc = mono_image_rva_map (img, rva);
-	if (!loc)
+	if (!loc) {
+		mono_error_set_bad_image (error, img, "Method has zero rva");
 		return NULL;
+	}
 
 	/*
 	 * When parsing the types of local variables, we must pass any container available
@@ -2849,10 +2875,18 @@ mono_method_get_header (MonoMethod *method)
 	container = mono_method_get_generic_container (method);
 	if (!container)
 		container = method->klass->generic_container;
-	header = mono_metadata_parse_mh_full (img, container, (const char *)loc);
+	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
+}
 
+MonoMethodHeader*
+mono_method_get_header (MonoMethod *method)
+{
+	MonoError error;
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	mono_error_cleanup (&error);
 	return header;
 }
+
 
 guint32
 mono_method_get_flags (MonoMethod *method, guint32 *iflags)

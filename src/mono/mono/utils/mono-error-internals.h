@@ -111,4 +111,7 @@ mono_error_raise_exception (MonoError *error);
 void
 mono_loader_set_error_from_mono_error (MonoError *oerror);
 
+void
+mono_error_move (MonoError *dest, MonoError *src);
+
 #endif

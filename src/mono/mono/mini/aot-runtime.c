@@ -462,6 +462,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		g_assert (mono_error_ok (&error));
 		break;
 	case MONO_AOT_TYPEREF_GINST: {
+		MonoError error;
 		MonoClass *gclass;
 		MonoGenericContext ctx;
 		MonoType *type;
@@ -475,7 +476,8 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		ctx.class_inst = decode_generic_inst (module, p, &p);
 		if (!ctx.class_inst)
 			return NULL;
-		type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
+		type = mono_class_inflate_generic_type_checked (&gclass->byval_arg, &ctx, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		klass = mono_class_from_mono_type (type);
 		mono_metadata_free_type (type);
 		break;
@@ -660,6 +662,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		t->data.type = decode_type (module, p, &p);
 		break;
 	case MONO_TYPE_GENERICINST: {
+		MonoError error;
 		MonoClass *gclass;
 		MonoGenericContext ctx;
 		MonoType *type;
@@ -674,7 +677,9 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		ctx.class_inst = decode_generic_inst (module, p, &p);
 		if (!ctx.class_inst)
 			return NULL;
-		type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
+		type = mono_class_inflate_generic_type_checked (&gclass->byval_arg, &ctx, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		klass = mono_class_from_mono_type (type);
 		t->data.generic_class = klass->generic_class;
 		break;

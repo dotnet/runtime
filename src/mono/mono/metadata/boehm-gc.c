@@ -1079,10 +1079,10 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	info->d.alloc.gc_name = "boehm";
 	info->d.alloc.alloc_type = atype;
+	mb->init_locals = FALSE;
 
 	res = mono_mb_create (mb, csig, 8, info);
 	mono_mb_free (mb);
-	mono_method_get_header (res)->init_locals = FALSE;
 
 	return res;
 }

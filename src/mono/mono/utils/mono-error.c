@@ -729,3 +729,10 @@ mono_error_convert_to_exception (MonoError *target_error)
 	mono_error_cleanup (target_error);
 	return ex;
 }
+
+void
+mono_error_move (MonoError *dest, MonoError *src)
+{
+	memcpy (dest, src, sizeof (MonoErrorInternal));
+	mono_error_init (src);
+}

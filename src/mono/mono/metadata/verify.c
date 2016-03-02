@@ -4854,9 +4854,10 @@ mono_method_verify (MonoMethod *method, int level)
 		return ctx.list;
 	}
 
-	ctx.header = mono_method_get_header (method);
+	ctx.header = mono_method_get_header_checked (method, &error);
 	if (!ctx.header) {
-		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header"));
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header due to %s", mono_error_get_message (&error)));
+		mono_error_cleanup (&error);
 		finish_collect_stats ();
 		return ctx.list;
 	}

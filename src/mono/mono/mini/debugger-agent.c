@@ -8375,6 +8375,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_GET_DEBUG_INFO: {
+		MonoError error;
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
 		int i, j, n_il_offsets;
@@ -8382,8 +8383,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		GPtrArray *source_file_list;
 		MonoSymSeqPoint *sym_seq_points;
 
-		header = mono_method_get_header (method);
+		header = mono_method_get_header_checked (method, &error);
 		if (!header) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			buffer_add_int (buf, 0);
 			buffer_add_string (buf, "");
 			buffer_add_int (buf, 0);
@@ -8470,13 +8472,16 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_GET_LOCALS_INFO: {
+		MonoError error;
 		int i, num_locals;
 		MonoDebugLocalsInfo *locals;
 		int *locals_map = NULL;
 
-		header = mono_method_get_header (method);
-		if (!header)
+		header = mono_method_get_header_checked (method, &error);
+		if (!header) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			return ERR_INVALID_ARGUMENT;
+		}
 
 		locals = mono_debug_lookup_locals (method);
 		if (!locals) {
@@ -8597,10 +8602,12 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		}
 		break;
 	case CMD_METHOD_GET_BODY: {
+		MonoError error;
 		int i;
 
-		header = mono_method_get_header (method);
+		header = mono_method_get_header_checked (method, &error);
 		if (!header) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			buffer_add_int (buf, 0);
 
 			if (CHECK_PROTOCOL_VERSION (2, 18))
@@ -8999,8 +9006,10 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	switch (command) {
 	case CMD_STACK_FRAME_GET_VALUES: {
+		MonoError error;
 		len = decode_int (p, &p, end);
-		header = mono_method_get_header (frame->actual_method);
+		header = mono_method_get_header_checked (frame->actual_method, &error);
+		mono_error_assert_ok (&error); /* FIXME report error */
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);
@@ -9051,12 +9060,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_STACK_FRAME_SET_VALUES: {
+		MonoError error;
 		guint8 *val_buf;
 		MonoType *t;
 		MonoDebugVarInfo *var;
 
 		len = decode_int (p, &p, end);
-		header = mono_method_get_header (frame->actual_method);
+		header = mono_method_get_header_checked (frame->actual_method, &error);
+		mono_error_assert_ok (&error); /* FIXME report error */
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);

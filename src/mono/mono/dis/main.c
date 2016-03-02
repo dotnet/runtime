@@ -663,6 +663,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 static void
 dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *container)
 {
+	MonoError error;
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
 	const char *loc;
@@ -678,7 +679,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh_full (m, container, ptr);
+	mh = mono_metadata_parse_mh_full (m, container, ptr, &error);
 	entry_point = mono_image_get_entry_point (m);
 	if (entry_point && mono_metadata_token_index (entry_point) && mono_metadata_token_table (entry_point) == MONO_TABLE_METHOD) {
 		loc = mono_metadata_locate_token (m, entry_point);
@@ -698,6 +699,8 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
   hex_dump (mh->code + mh->code_size, 0, 64);
 */
 		mono_metadata_free_mh (mh);
+	} else {
+		mono_error_cleanup (&error);
 	}
 }
 
@@ -1527,13 +1530,19 @@ dis_data (MonoImage *m)
 	MonoType *type;
 
 	for (i = 0; i < t->rows; i++) {
+		MonoError error;
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_RVA_SIZE);
 		rva = mono_image_rva_map (m, cols [MONO_FIELD_RVA_RVA]);
 		sig = mono_metadata_blob_heap (m, mono_metadata_decode_row_col (ft, cols [MONO_FIELD_RVA_FIELD] -1, MONO_FIELD_SIGNATURE));
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
-		type = mono_metadata_parse_field_type (m, 0, sig + 1, &sig);
+		type = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, sig + 1, &sig, &error);
+		if (!type) {
+			fprintf (output, "// invalid field %d due to %s\n", i, mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+			continue;
+		}
 		mono_class_init (mono_class_from_mono_type (type));
 		size = mono_type_size (type, &align);
 

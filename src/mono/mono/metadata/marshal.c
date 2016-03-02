@@ -3171,11 +3171,13 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	if (callvirt) {
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
 		if (target_method->is_inflated) {
+			MonoError error;
 			MonoType *target_type;
 
 			g_assert (method->signature->hasthis);
-			target_type = mono_class_inflate_generic_type (method->signature->params [0],
-				mono_method_get_context (method));
+			target_type = mono_class_inflate_generic_type_checked (method->signature->params [0],
+				mono_method_get_context (method), &error);
+			mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 			target_class = mono_class_from_mono_type (target_type);
 		} else {
 			target_class = target_method->klass;

@@ -905,11 +905,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	MonoError error;
 	MonoType *result;
 	result = mono_class_inflate_generic_type_checked (type, context, &error);
-
-	if (!mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
-		return NULL;
-	}
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -955,6 +951,11 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 	return inflated;
 }
 
+/*
+ * mono_class_inflate_generic_class:
+ *
+ *   Inflate the class @gklass with @context. Set @error on failure.
+ */
 MonoClass*
 mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext *context, MonoError *error)
 {
@@ -969,24 +970,6 @@ mono_class_inflate_generic_class_checked (MonoClass *gklass, MonoGenericContext 
 
 	return res;
 }
-/*
- * mono_class_inflate_generic_class:
- *
- *   Inflate the class GKLASS with CONTEXT.
- */
-MonoClass*
-mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context)
-{
-	MonoError error;
-	MonoClass *res;
-
-	res = mono_class_inflate_generic_class_checked (gklass, context, &error);
-	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
-
-	return res;
-}
-
-
 
 static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with, MonoError *error)
@@ -7733,7 +7716,8 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 {
 	MonoError error;
 	MonoClass *res = mono_class_from_name_case_checked (image, name_space, name, &error);
-	g_assert (!mono_error_ok (&error));
+	mono_error_cleanup (&error);
+
 	return res;
 }
 
@@ -8035,10 +8019,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	MonoClass *klass;
 
 	klass = mono_class_from_name_checked (image, name_space, name, &error);
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-	}
+	mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+
 	return klass;
 }
 

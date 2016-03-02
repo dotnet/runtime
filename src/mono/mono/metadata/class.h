@@ -44,7 +44,7 @@ mono_class_from_typeref_checked (MonoImage *image, uint32_t type_token, MonoErro
 MONO_API MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, mono_bool is_mvar);
 
-MONO_API MonoType*
+MONO_RT_EXTERNAL_ONLY MONO_API MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context) /* MONO_DEPRECATED */;
 
 MONO_API MonoMethod*

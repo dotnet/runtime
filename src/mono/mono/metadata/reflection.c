@@ -7553,7 +7553,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	image = method->klass->image;
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	if (!image_is_dynamic (image)) {
 		/* Obtain local vars signature token */
@@ -11858,6 +11859,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	dgclass->field_generic_types = mono_image_set_new0 (gclass->owner, MonoType*, dgclass->count_fields);
 
 	for (i = 0; i < dgclass->count_fields; i++) {
+		MonoError error;
 		MonoObject *obj = (MonoObject *)mono_array_get (fields, gpointer, i);
 		MonoClassField *field, *inflated_field = NULL;
 
@@ -11872,8 +11874,9 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 
 		dgclass->fields [i] = *field;
 		dgclass->fields [i].parent = klass;
-		dgclass->fields [i].type = mono_class_inflate_generic_type (
-			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
+		dgclass->fields [i].type = mono_class_inflate_generic_type_checked (
+			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass), &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		dgclass->field_generic_types [i] = field->type;
 		MONO_GC_REGISTER_ROOT_IF_MOVING (dgclass->field_objects [i], MONO_ROOT_SOURCE_REFLECTION, "dynamic generic class field object");
 		dgclass->field_objects [i] = obj;
@@ -11958,7 +11961,9 @@ fix_partial_generic_class (MonoClass *klass)
 
 		for (i = 0; i < gklass->interface_count; ++i) {
 			MonoError error;
-			MonoType *iface_type = mono_class_inflate_generic_type (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass));
+			MonoType *iface_type = mono_class_inflate_generic_type_checked (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass), &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			klass->interfaces [i] = mono_class_from_mono_type (iface_type);
 			mono_metadata_free_type (iface_type);
 
@@ -11973,9 +11978,11 @@ fix_partial_generic_class (MonoClass *klass)
 		klass->fields = image_g_new0 (klass->image, MonoClassField, klass->field.count);
 
 		for (i = 0; i < klass->field.count; i++) {
+			MonoError error;
 			klass->fields [i] = gklass->fields [i];
 			klass->fields [i].parent = klass;
-			klass->fields [i].type = mono_class_inflate_generic_type (gklass->fields [i].type, mono_class_get_context (klass));
+			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 	}
 
@@ -13019,7 +13026,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			mono_raise_exception (mono_class_get_exception_for_failure (mc));
 
 		if (context) {
-			MonoType *inflated = mono_class_inflate_generic_type (type, context);
+			MonoType *inflated = mono_class_inflate_generic_type_checked (type, context, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			result = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 		} else {
@@ -13087,7 +13096,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 
 		ensure_complete_type (field->parent);
 		if (context) {
-			MonoType *inflated = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
+			MonoType *inflated = mono_class_inflate_generic_type_checked (&field->parent->byval_arg, context, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			MonoClass *klass = mono_class_from_mono_type (inflated);
 			MonoClassField *inflated_field;
 			gpointer iter = NULL;
@@ -13117,7 +13128,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 
 		if (fb->handle && fb->handle->parent->generic_container) {
 			MonoClass *klass = fb->handle->parent;
-			MonoType *type = mono_class_inflate_generic_type (&klass->byval_arg, context);
+			MonoType *type = mono_class_inflate_generic_type_checked (&klass->byval_arg, context, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			MonoClass *inflated = mono_class_from_mono_type (type);
 
 			result = mono_class_get_field_from_name (inflated, mono_field_get_name (fb->handle));
@@ -13181,14 +13194,18 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "GenericTypeParameterBuilder") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj);
-		type = mono_class_inflate_generic_type (type, context);
+		type = mono_class_inflate_generic_type_checked (type, context, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		result = mono_class_from_mono_type (type);
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
 		mono_metadata_free_type (type);
 	} else if (strcmp (obj->vtable->klass->name, "MonoGenericClass") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj);
-		type = mono_class_inflate_generic_type (type, context);
+		type = mono_class_inflate_generic_type_checked (type, context, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		result = mono_class_from_mono_type (type);
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
@@ -13206,7 +13223,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		else
 			g_error ("resolve_object:: can't handle a FTBI with base_method of type %s", mono_type_get_full_name (mono_object_class (f->fb)));
 
-		type = mono_class_inflate_generic_type (mono_reflection_type_get_handle ((MonoReflectionType*)f->inst), context);
+		type = mono_class_inflate_generic_type_checked (mono_reflection_type_get_handle ((MonoReflectionType*)f->inst), context, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		inflated = mono_class_from_mono_type (type);
 
 		result = field = mono_class_get_field_from_name (inflated, mono_field_get_name (field));
@@ -13216,7 +13235,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "ConstructorOnTypeBuilderInst") == 0) {
 		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)obj;
-		MonoType *type = mono_class_inflate_generic_type (mono_reflection_type_get_handle ((MonoReflectionType*)c->inst), context);
+		MonoType *type = mono_class_inflate_generic_type_checked (mono_reflection_type_get_handle ((MonoReflectionType*)c->inst), context, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		MonoClass *inflated_klass = mono_class_from_mono_type (type);
 		MonoMethod *method;
 
@@ -13240,7 +13261,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 				mono_error_assert_ok (&error);
 			}
 		} else {
-			MonoType *type = mono_class_inflate_generic_type (mono_reflection_type_get_handle ((MonoReflectionType*)m->inst), context);
+			MonoType *type = mono_class_inflate_generic_type_checked (mono_reflection_type_get_handle ((MonoReflectionType*)m->inst), context, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			MonoClass *inflated_klass = mono_class_from_mono_type (type);
 			MonoMethod *method;
 
@@ -13289,7 +13312,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		MonoType *type = mono_reflection_type_get_handle (ref_type);
 
 		if (context) {
-			MonoType *inflated = mono_class_inflate_generic_type (type, context);
+			MonoType *inflated = mono_class_inflate_generic_type_checked (type, context, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 			result = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 		} else {

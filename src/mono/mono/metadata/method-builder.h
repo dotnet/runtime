@@ -28,7 +28,7 @@ typedef struct _MonoMethodBuilder {
 	GList *locals_list;
 	int locals;
 	gboolean dynamic;
-	gboolean skip_visibility;
+	gboolean skip_visibility, init_locals;
 	guint32 code_size, pos;
 	unsigned char *code;
 	int num_clauses;

@@ -3,6 +3,7 @@
 
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
+#include <mono/utils/mono-error.h>
 
 MONO_BEGIN_DECLS
 
@@ -22,17 +23,17 @@ mono_get_method_constrained (MonoImage *image, uint32_t token, MonoClass *constr
 MONO_API void               
 mono_free_method           (MonoMethod *method);
 
-MONO_API MonoMethodSignature*
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, uint32_t token,
 				MonoGenericContext *context);
 
-MONO_API MonoMethodSignature* 
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodSignature* 
 mono_method_get_signature  (MonoMethod *method, MonoImage *image, uint32_t token);
 
 MONO_API MonoMethodSignature* 
 mono_method_signature      (MonoMethod *method);
 
-MONO_API MonoMethodHeader* 
+MONO_RT_EXTERNAL_ONLY MONO_API MonoMethodHeader* 
 mono_method_get_header     (MonoMethod *method);
 
 MONO_API const char*
@@ -93,6 +94,9 @@ mono_stack_walk_no_il   (MonoStackWalk func, void* user_data);
 typedef mono_bool (*MonoStackWalkAsyncSafe)     (MonoMethod *method, MonoDomain *domain, void *base_address, int offset, void* data);
 MONO_API void
 mono_stack_walk_async_safe   (MonoStackWalkAsyncSafe func, void *initial_sig_context, void* user_data);
+
+MONO_API MonoMethodHeader*
+mono_method_get_header_checked (MonoMethod *method, MonoError *error);
 
 MONO_END_DECLS
 

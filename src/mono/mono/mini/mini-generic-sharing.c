@@ -551,7 +551,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE: {
 		MonoMethod *method = (MonoMethod *)data;
 		MonoMethod *inflated_method;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&method->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 
 		mono_metadata_free_type (inflated_type);
@@ -602,7 +604,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		MonoJumpInfoGSharedVtCall *info = (MonoJumpInfoGSharedVtCall *)data;
 		MonoMethod *method = info->method;
 		MonoMethod *inflated_method;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&method->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		MonoJumpInfoGSharedVtCall *res;
 		MonoDomain *domain = mono_domain_get ();
@@ -635,8 +639,11 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
+		MonoError error;
 		MonoClassField *field = (MonoClassField *)data;
-		MonoType *inflated_type = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (&field->parent->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		int i = field - field->parent->fields;
 		gpointer dummy = NULL;
@@ -668,7 +675,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		// FIXME: Temporary
 		res = (MonoJumpInfoVirtMethod *)mono_domain_alloc0 (domain, sizeof (MonoJumpInfoVirtMethod));
-		t = mono_class_inflate_generic_type (&info->klass->byval_arg, context);
+		t = mono_class_inflate_generic_type_checked (&info->klass->byval_arg, context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		res->klass = mono_class_from_mono_type (t);
 		mono_metadata_free_type (t);
 
@@ -1077,6 +1086,7 @@ get_wrapper_shared_type (MonoType *t)
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_GENERICINST: {
+		MonoError error;
 		MonoClass *klass;
 		MonoGenericContext ctx;
 		MonoGenericContext *orig_ctx;
@@ -1106,7 +1116,8 @@ get_wrapper_shared_type (MonoType *t)
 				args [i] = get_wrapper_shared_type (inst->type_argv [i]);
 			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
-		klass = mono_class_inflate_generic_class (klass->generic_class->container_class, &ctx);
+		klass = mono_class_inflate_generic_class_checked (klass->generic_class->container_class, &ctx, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		return &klass->byval_arg;
 	}
 #if SIZEOF_VOID_P == 8
@@ -3312,6 +3323,7 @@ get_shared_type (MonoType *t, MonoType *type)
 	MonoTypeEnum ttype;
 
 	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+		MonoError error;
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericContext context;
 		MonoClass *k;
@@ -3322,7 +3334,8 @@ get_shared_type (MonoType *t, MonoType *type)
 		if (gclass->context.method_inst)
 			context.method_inst = get_shared_inst (gclass->context.method_inst, gclass->container_class->generic_container->context.method_inst, NULL, FALSE, FALSE, TRUE);
 
-		k = mono_class_inflate_generic_class (gclass->container_class, &context);
+		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 		return mini_get_shared_gparam (t, &k->byval_arg);
 	} else if (MONO_TYPE_ISSTRUCT (type)) {

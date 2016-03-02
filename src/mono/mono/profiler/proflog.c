@@ -3581,6 +3581,7 @@ create_method_node (MonoMethod *method)
 static gboolean
 coverage_filter (MonoProfiler *prof, MonoMethod *method)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoImage *image;
 	MonoAssembly *assembly;
@@ -3691,7 +3692,8 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	}
 
 	COVERAGE_DEBUG(fprintf (stderr, "   Handling coverage for %s\n", mono_method_get_name (method));)
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_cleanup (&error);
 
 	mono_method_header_get_code (header, &code_size, NULL);
 
