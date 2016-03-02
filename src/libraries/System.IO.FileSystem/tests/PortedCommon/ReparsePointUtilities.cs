@@ -39,7 +39,7 @@ public static class MountHelper
         {
             symLinkProcess = Process.Start("cmd", string.Format("/c mklink \"{0}\" \"{1}\"", linkPath, targetPath));
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        else
         {
             symLinkProcess = Process.Start("ln", string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath));
         }
