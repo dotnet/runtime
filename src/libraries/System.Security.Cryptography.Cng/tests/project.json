@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
-    "System.Console": "4.0.0-rc3-23829",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+    "System.Console": "4.0.0-rc3-23901",
     "System.IO": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23829",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23901",
     "System.Text.Encoding.Extensions": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00123"

@@ -2,7 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23829",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
         "System.Collections": "4.0.10",
         "System.Linq": "4.0.0",
         "System.Linq.Expressions": "4.0.10",
