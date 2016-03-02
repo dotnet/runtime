@@ -24,6 +24,9 @@ bld/
 [Oo]bj/
 msbuild.log
 
+# Cross building rootfs
+cross/rootfs/
+
 # Visual Studio 2015
 .vs/
 

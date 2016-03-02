@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -12,7 +12,8 @@ usage()
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows"
-
+    echo "cross - optional argument to signify cross compilation,"
+    echo "      - will use ROOTFS_DIR environment variable if set."
     exit 1
 }
 
@@ -122,7 +123,7 @@ build_native_corefx()
 
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__nativeroot\" $__CMakeArgs"
-    "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
+    "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__CMakeArgs
 
     # Check that the makefiles were created.
 
@@ -252,6 +253,7 @@ BUILDERRORLEVEL=0
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __UnprocessedBuildArgs=
 __CleanBuild=false
+__CrossBuild=0
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -335,6 +337,9 @@ for i in "$@"
             __BuildOS=Windows_NT
             __TestNugetRuntimeId=win7-x64
             ;;
+        cross)
+            __CrossBuild=1
+            ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
@@ -378,6 +383,14 @@ fi
 # If managed build failed, exit with the status code of the managed build
 if [ $BUILDERRORLEVEL != 0 ]; then
     exit $BUILDERRORLEVEL
+fi
+
+# Configure environment if we are doing a cross compile.
+if [ "$__CrossBuild" == 1 ]; then
+    export CROSSCOMPILE=1
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        export ROOTFS_DIR="$__scriptpath/cross/rootfs/$__BuildArch"
+    fi
 fi
 
 if $__buildnative; then
