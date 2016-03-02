@@ -262,21 +262,6 @@ namespace System.Net
             Add(new_cookie, true);
         }
 
-        private void AddRemoveDomain(string key, PathList value)
-        {
-            lock (_domainTable)
-            {
-                if (value == null)
-                {
-                    _domainTable.Remove(key);
-                }
-                else
-                {
-                    _domainTable[key] = value;
-                }
-            }
-        }
-
         // This method is called *only* when cookie verification is done, so unlike with public
         // Add(Cookie cookie) the cookie is in a reasonable condition.
         internal void Add(Cookie cookie, bool throwOnError)
@@ -296,11 +281,9 @@ namespace System.Net
             {
                 lock (_domainTable)
                 {
-                    _domainTable.TryGetValue(cookie.DomainKey, out pathList);
-                    if (pathList == null)
+                    if (!_domainTable.TryGetValue(cookie.DomainKey, out pathList))
                     {
-                        pathList = new PathList();
-                        AddRemoveDomain(cookie.DomainKey, pathList);
+                        _domainTable[cookie.DomainKey] = (pathList = PathList.Create());
                     }
                 }
                 int domain_count = pathList.GetCookiesCount();
@@ -819,12 +802,10 @@ namespace System.Net
                 PathList pathList;
                 lock (_domainTable)
                 {
-                    _domainTable.TryGetValue(domainAttribute[i], out pathList);
-                }
-
-                if (pathList == null)
-                {
-                    continue;
+                    if (!_domainTable.TryGetValue(domainAttribute[i], out pathList))
+                    {
+                        continue;
+                    }
                 }
 
                 lock (pathList.SyncRoot)
@@ -867,7 +848,10 @@ namespace System.Net
                 // (This is the only place that does domain removal)
                 if (pathList.Count == 0)
                 {
-                    AddRemoveDomain(domainAttribute[i], null);
+                    lock (_domainTable)
+                    {
+                        _domainTable.Remove(domainAttribute[i]);
+                    }
                 }
             }
         }
@@ -977,10 +961,16 @@ namespace System.Net
         }
     }
 
-    internal sealed class PathList
+    internal struct PathList
     {
-        private readonly SortedList<string, CookieCollection> _list = new SortedList<string, CookieCollection>(PathListComparer.StaticInstance);
-        private readonly object _lock = new object();
+        private readonly SortedList<string, CookieCollection> _list;
+
+        public static PathList Create() => new PathList(new SortedList<string, CookieCollection>(PathListComparer.StaticInstance));
+
+        private PathList(SortedList<string, CookieCollection> list)
+        {
+            _list = list;
+        }
 
         public int Count
         {
@@ -1014,7 +1004,8 @@ namespace System.Net
                 lock (SyncRoot)
                 {
                     CookieCollection value;
-                    return _list.TryGetValue(s, out value) ? value : null;
+                    _list.TryGetValue(s, out value);
+                    return value;
                 }
             }
             set
@@ -1035,7 +1026,14 @@ namespace System.Net
             }
         }
 
-        public object SyncRoot => _lock;
+        public object SyncRoot
+        {
+            get
+            {
+                Debug.Assert(_list != null);
+                return _list;
+            }
+        }
 
         private sealed class PathListComparer : IComparer<string>
         {
