@@ -1194,6 +1194,7 @@ void HelperCallProperties::init()
 
         case CORINFO_HELP_NEW_CROSSCONTEXT:
         case CORINFO_HELP_NEWFAST:
+        case CORINFO_HELP_READYTORUN_NEW:
 
             mayFinalize   = true;  // These may run a finalizer
             isAllocator   = true;
@@ -1215,7 +1216,7 @@ void HelperCallProperties::init()
         case CORINFO_HELP_NEW_MDARR:
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_OBJ:
-
+        case CORINFO_HELP_READYTORUN_NEWARR_1:
 
             mayFinalize   = true;  // These may run a finalizer
             isAllocator   = true;
@@ -1263,7 +1264,8 @@ void HelperCallProperties::init()
         case CORINFO_HELP_ISINSTANCEOFARRAY:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
-            
+        case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+
             isPure   = true;
             noThrow  = true;   // These return null for a failing cast
             break;
@@ -1274,7 +1276,8 @@ void HelperCallProperties::init()
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
-            
+        case CORINFO_HELP_READYTORUN_CHKCAST:
+
             // These throw for a failing cast
             // But if given a null input arg will return null
             isPure = true;
@@ -1314,6 +1317,7 @@ void HelperCallProperties::init()
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
         case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
         case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+        case CORINFO_HELP_READYTORUN_STATIC_BASE:
 
             // These may invoke static class constructors
             // These can throw InvalidProgram exception if the class can not be constructed
