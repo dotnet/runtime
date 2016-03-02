@@ -77,7 +77,6 @@ public:
     //
     static FCDECL4(Object*, PadHelper, StringObject* thisRefUNSAFE, INT32 totalWidth, CLR_CHAR paddingChar, CLR_BOOL isRightPadded);
 
-    static FCDECL3(LPVOID, Replace, StringObject* thisRef, CLR_CHAR oldChar, CLR_CHAR newChar);
     static FCDECL3(Object*, ReplaceString, StringObject* thisRef, StringObject* oldValue, StringObject* newValue);
 
     static FCDECL3(Object*, Insert, StringObject* thisRefUNSAFE, INT32 startIndex, StringObject* valueUNSAFE);
