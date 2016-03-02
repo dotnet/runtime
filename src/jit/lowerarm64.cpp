@@ -347,12 +347,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             break;
    
         case GT_MUL:
-            if ((tree->gtFlags & GTF_UNSIGNED) != 0)
-            {
-                // unsigned mul should only need one register
-                info->internalIntCount = 1;
-            }
-            else if (tree->gtOverflow())
+            if (tree->gtOverflow())
             {
                 // Need a register different from target reg to check
                 // for signed overflow.
