@@ -3098,7 +3098,6 @@ private:
 
     void                impCanInlineNative(int              callsiteNativeEstimate, 
                                            int              calleeNativeSizeEstimate,
-                                           InlineHints      inlineHints,
                                            InlineInfo*      pInlineInfo,
                                            InlineResult*    inlineResult);
 
@@ -8555,7 +8554,6 @@ public:
 #define NATIVE_SIZE_INVALID  (-10000)                
 
     int                     compNativeSizeEstimate;     // The estimated native size of this method.
-    InlineHints             compInlineeHints;           // Inlining hints from the inline candidate.
 
 #ifdef DEBUG   
     CodeSeqSM               fgCodeSeqSm;                // The code sequence state machine used in the inliner.
