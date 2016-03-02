@@ -488,6 +488,7 @@ mono_jit_set_aot_mode
 mono_jit_set_aot_only
 mono_jit_set_trace_options
 mono_jit_thread_attach
+mono_jit_thread_detach
 mono_ldstr
 mono_ldtoken
 mono_load_remote_field
@@ -569,7 +570,6 @@ mono_metadata_parse_mh_full
 mono_metadata_parse_param
 mono_metadata_parse_signature
 mono_metadata_parse_type
-mono_metadata_parse_type_full
 mono_metadata_parse_typedef_or_ref
 mono_metadata_properties_from_typedef
 mono_metadata_signature_alloc
@@ -598,6 +598,7 @@ mono_method_get_class
 mono_method_get_flags
 mono_method_get_generic_container
 mono_method_get_header
+mono_method_get_header_checked
 mono_method_get_index
 mono_method_get_last_managed
 mono_method_get_marshal_info
