@@ -25,8 +25,11 @@
   <ItemGroup>
     <TargetLib Include="$(CoreSystemCrt)" />
     <TargetLib Condition="'$(BuildForWindows7)'=='true'" Include="$(SdkLibPath)\mincore_fw.lib" />
+    <TargetLib Condition="'$(BuildForWindows7)'=='true'" Include="$(SdkLibPath)\oleaut32.lib" />
     <TargetLib Condition="'$(BuildForWindows7)'!='true'" Include="$(SdkLibPath)\mincore.lib" />
-    <TargetLib Include="$(SdkLibPath)\oleaut32.lib" />
+    <TargetLib Condition="'$(BuildForWindows7)'!='true'" Include="$(SdkLibPath)\mincore_legacy.lib" />
+    <TargetLib Condition="'$(BuildForWindows7)'!='true'" Include="$(SdkLibPath)\mincore_private.lib" />
+    <TargetLib Condition="'$(BuildForWindows7)'!='true'" Include="$(SdkLibPath)\mincore_obsolete.lib" />
     <TargetLib Include="$(SdkLibPath)\uuid.lib" />
   </ItemGroup>
 
