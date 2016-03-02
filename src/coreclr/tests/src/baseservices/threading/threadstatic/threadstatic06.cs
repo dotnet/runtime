@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //ThreadStatics are only initialized on the first thread to call the constructor
 //   All other threads get the value 0 set for value types
 
