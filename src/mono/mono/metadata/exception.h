@@ -106,6 +106,7 @@ mono_get_exception_file_not_found        (MonoString *fname);
 MONO_API MonoException *
 mono_get_exception_file_not_found2       (const char *msg, MonoString *fname);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_type_initialization (const char *type_name, MonoException *inner);
 
@@ -136,9 +137,11 @@ mono_get_exception_field_access (void);
 MONO_API MonoException *
 mono_get_exception_method_access (void);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception);
 
