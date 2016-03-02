@@ -44,18 +44,6 @@ void LegacyPolicy::noteCandidate(InlineObservation obs)
     InlineImpact impact = inlGetImpact(obs);
     assert(impact == InlineImpact::INFORMATION);
 
-    switch (obs)
-    {
-    case InlineObservation::CALLEE_IS_FORCE_INLINE:
-        {
-            inlIsForceInline = true;
-            break;
-        }
-
-    default:
-        break;
-    }
-
     switch (inlDecision)
     {
     case InlineDecision::UNDECIDED:
@@ -69,6 +57,9 @@ void LegacyPolicy::noteCandidate(InlineObservation obs)
         assert(!"Unexpected inlDecision");
         unreached();
     }
+
+    // Now fall through to the general handling.
+    note(obs);
 }
 
 //------------------------------------------------------------------------
@@ -95,7 +86,55 @@ void LegacyPolicy::note(InlineObservation obs)
     // reported via noteFatal.
     assert(impact != InlineImpact::FATAL);
 
-    noteInternal(obs, impact);
+    // Handle most information here
+    bool isInformation = (impact == InlineImpact::INFORMATION);
+    bool propagate = !isInformation;
+
+    if (isInformation)
+    {
+        switch (obs)
+        {
+        case InlineObservation::CALLEE_IS_FORCE_INLINE:
+            inlIsForceInline = true;
+            break;
+        case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
+            inlIsInstanceCtor = true;
+            break;
+        case InlineObservation::CALLEE_CLASS_PROMOTABLE:
+            inlIsFromPromotableValueClass = true;
+            break;
+        case InlineObservation::CALLEE_HAS_SIMD:
+            inlHasSimd = true;
+            break;
+        case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
+            inlLooksLikeWrapperMethod = true;
+            break;
+        case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
+            inlArgFeedsConstantTest = true;
+            break;
+        case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
+            inlArgFeedsRangeCheck = true;
+            break;
+        case InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE:
+            inlMethodIsMostlyLoadStore = true;
+            break;
+        case InlineObservation::CALLEE_HAS_SWITCH:
+            // Pass this one on, it should cause inlining to fail.
+            propagate = true;
+            break;
+        case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+            inlConstantFeedsConstantTest = true;
+            break;
+        default:
+            // Ignore the remainder for now
+            break;
+        }
+    }
+
+    if (propagate)
+    {
+        noteInternal(obs);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -106,13 +145,10 @@ void LegacyPolicy::note(InlineObservation obs)
 
 void LegacyPolicy::noteFatal(InlineObservation obs)
 {
-    // Check the impact
-    InlineImpact impact = inlGetImpact(obs);
-
     // As a safeguard, all fatal impact must be
     // reported via noteFatal.
-    assert(impact == InlineImpact::FATAL);
-    noteInternal(obs, impact);
+    assert(inlGetImpact(obs) == InlineImpact::FATAL);
+    noteInternal(obs);
     assert(inlDecisionIsFailure(inlDecision));
 }
 
@@ -192,17 +228,11 @@ void LegacyPolicy::noteDouble(InlineObservation obs, double value)
 //
 // Arguments:
 //    obs      - the current obsevation
-//    impact   - impact of the current observation
 
-void LegacyPolicy::noteInternal(InlineObservation obs, InlineImpact impact)
+void LegacyPolicy::noteInternal(InlineObservation obs)
 {
-    // Ignore INFORMATION for now, since policy
-    // is still embedded at the observation sites.
-    if (impact == InlineImpact::INFORMATION)
-    {
-        return;
-    }
-
+    // Note any INFORMATION that reaches here will now cause failure.
+    // Non-fatal INFORMATION observations must be handled higher up.
     InlineTarget target = inlGetTarget(obs);
 
     if (target == InlineTarget::CALLEE)
@@ -271,4 +301,76 @@ void LegacyPolicy::setNever(InlineObservation obs)
         assert(!"Unexpected inlDecision");
         unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// determineMultiplier: determine benefit multiplier for this inline
+//
+// Notes: uses the accumulated set of observations to compute a
+// profitability boost for the inline candidate.
+
+double LegacyPolicy::determineMultiplier()
+{
+    double multiplier = 0;
+
+    // Bump up the multiplier for instance constructors
+
+    if (inlIsInstanceCtor)
+    {
+        multiplier += 1.5;
+        JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
+    }
+
+    // Bump up the multiplier for methods in promotable struct
+
+    if (inlIsFromPromotableValueClass)
+    {
+        multiplier += 3;
+        JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
+    }
+
+#ifdef FEATURE_SIMD
+
+    if (inlHasSimd)
+    {
+        static ConfigDWORD fJitInlineSIMDMultiplier;
+        int simdMultiplier = fJitInlineSIMDMultiplier.val(CLRConfig::INTERNAL_JitInlineSIMDMultiplier);
+
+        multiplier += simdMultiplier;
+        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.", multiplier);
+    }
+
+#endif // FEATURE_SIMD
+
+    if (inlLooksLikeWrapperMethod)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (inlArgFeedsConstantTest)
+    {
+        multiplier += 1.0;
+        JITDUMP("\nInline candidate has an arg that feeds a constant test.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (inlMethodIsMostlyLoadStore)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (inlArgFeedsRangeCheck)
+    {
+        multiplier += 0.5;
+        JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
+    }
+
+    if (inlConstantFeedsConstantTest)
+    {
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
+    }
+
+    return multiplier;
 }
