@@ -21949,7 +21949,14 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
 
             if (result != CORJIT_OK)
             {
-                pParam->inlineInfo->inlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
+                // If we haven't yet determined why this inline fails, use
+                // a catch-all something bad happened observation.
+                InlineResult* innerInlineResult = pParam->inlineInfo->inlineResult;
+
+                if (!innerInlineResult->isFailure())
+                {
+                    innerInlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_FAILURE);
+                }
             }
         }
     }
@@ -21962,7 +21969,13 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
                     eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+
+        // If we haven't yet determined why this inline fails, use
+        // a catch-all something bad happened observation.
+        if (!inlineResult->isFailure())
+        {
+            inlineResult->noteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+        }
     }
     endErrorTrap();
 
