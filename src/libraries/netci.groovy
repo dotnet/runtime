@@ -300,7 +300,7 @@ branchList.each { branchName ->
                     // Unpack the build data
                     shell("unpacker ./bin/build.pack ./bin")
                     // Export the LTTNG environment variable and then run the tests
-                    shell("""export LTTNG_HOME=/home/dotnet-bot
+                    shell("""sudo export LTTNG_HOME=/home/dotnet-bot
                     ./run-test.sh \\
                         --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
