@@ -63,10 +63,10 @@
 // In DEBUG, the jit also searches for non-candidate calls to try
 // and get a complete picture of the set of failed inlines.
 //
-// 4 & 5. Prejit suitability screens (compCompileHelper)
+// 4. Prejit suitability screen (compCompileHelper)
 //
 // When prejitting, each method is scanned to see if it is a viable
-// inline candidate. The scanning happens in two stages.
+// inline candidate.
 //
 // A note on InlinePolicy
 //
