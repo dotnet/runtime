@@ -4620,7 +4620,7 @@ namespace System.Data.SqlClient
             for (int i = 0; i < md.Length; i++)
             {
                 _SqlMetaData col = md[i];
-                SqlDbColumn dbColumn = new SqlDbColumn(md[i], _browseModeInfoConsumed);
+                SqlDbColumn dbColumn = new SqlDbColumn(md[i]);
                 
                 if (_typeSystem <= SqlConnectionString.TypeSystem.SQLServer2005 && col.IsNewKatmaiDateTimeType)
                 {
@@ -4633,6 +4633,14 @@ namespace System.Data.SqlClient
                 else
                 {
                     dbColumn.SqlNumericScale = col.metaType.Scale;
+                }
+
+                if (_browseModeInfoConsumed)
+                {
+                    dbColumn.SqlIsAliased = col.isDifferentName;
+                    dbColumn.SqlIsKey = col.isKey;
+                    dbColumn.SqlIsHidden = col.isHidden;
+                    dbColumn.SqlIsExpression = col.isExpression;
                 }
 
                 dbColumn.SqlDataType = GetFieldTypeInternal(col);
