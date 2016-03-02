@@ -2477,6 +2477,13 @@ protected:
 #endif // BIT64
     PER_HEAP_ISOLATED
     size_t get_total_heap_size ();
+    PER_HEAP_ISOLATED
+    size_t get_total_committed_size();
+
+    PER_HEAP_ISOLATED
+    void get_memory_info (uint32_t* memory_load, 
+                          uint64_t* available_physical=NULL,
+                          uint64_t* available_page_file=NULL);
     PER_HEAP
     size_t generation_size (int gen_number);
     PER_HEAP_ISOLATED
@@ -2505,6 +2512,8 @@ protected:
                                      uint8_t* end);
     PER_HEAP
     size_t generation_sizes (generation* gen);
+    PER_HEAP
+    size_t committed_size();
     PER_HEAP
     size_t approximate_new_allocation();
     PER_HEAP
@@ -2940,7 +2949,10 @@ public:
     uint64_t total_physical_mem;
 
     PER_HEAP_ISOLATED
-    uint64_t available_physical_mem;
+    uint64_t entry_available_physical_mem;
+
+    PER_HEAP_ISOLATED
+    bool restricted_physical_memory_p;
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
