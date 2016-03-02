@@ -173,7 +173,7 @@ The [Rules of the Code](../coding-guidelines/clr-code-guide.md) document describ
 Crst
 ----
 
-Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](../coding-guidelines/clr-code-guide.md#entering-and-leaving-crsts).
+Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](../coding-guidelines/clr-code-guide.md#264-entering-and-leaving-crsts).
 
 It is generally illegal to acquire a Crst while in cooperative mode, though exceptions are made where absolutely necessary.
 
