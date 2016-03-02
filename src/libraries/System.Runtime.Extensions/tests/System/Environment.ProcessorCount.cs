@@ -31,7 +31,10 @@ namespace System.Tests
         public void Unix_ProcessorCountTest()
         {
             //arrange
-            int _SC_NPROCESSORS_ONLN = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 84 : 58;
+            int _SC_NPROCESSORS_ONLN =
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 84 :
+                RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")) ? 1002 :
+                58;
             int expected = (int)sysconf(_SC_NPROCESSORS_ONLN);
 
             //act
