@@ -4888,8 +4888,9 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 		tinfo = g_new0 (MonoTrampInfo, 1);
 		tinfo->code = (guint8 *)code;
 		tinfo->code_size = code_size;
-		tinfo->uw_info = uw_info;
 		tinfo->uw_info_len = uw_info_len;
+		if (uw_info_len)
+			tinfo->uw_info = uw_info;
 
 		*out_tinfo = tinfo;
 	}
@@ -5054,8 +5055,11 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	uw_info = amodule->unwind_info + uw_offset;
 	uw_info_len = decode_value (uw_info, &uw_info);
 
-	info->uw_info = uw_info;
 	info->uw_info_len = uw_info_len;
+	if (uw_info_len)
+		info->uw_info = uw_info;
+	else
+		info->uw_info = NULL;
 
 	/* If successful return the address of the following data */
 	return (guint32*)symbol_addr + 1;
