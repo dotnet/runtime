@@ -2,13 +2,14 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-DPAL_STDCPP_COMPAT -DBIT64)
+add_definitions(-DPAL_STDCPP_COMPAT)
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     add_definitions(-D_TARGET_AMD64_=1)
     add_definitions(-DDBG_TARGET_64BIT=1)
     add_definitions(-DDBG_TARGET_AMD64=1)
     add_definitions(-DDBG_TARGET_WIN64=1)
+    add_definitions(-DBIT64)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_definitions(-D_TARGET_ARM_=1)
     add_definitions(-DDBG_TARGET_32BIT=1)
