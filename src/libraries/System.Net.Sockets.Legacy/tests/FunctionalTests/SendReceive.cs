@@ -122,33 +122,40 @@ namespace System.Net.Sockets.Tests
             Action<int, EndPoint> receiveHandler = null;
             receiveHandler = (received, remote) =>
             {
-                if (receivedDatagrams != -1)
+                try
                 {
-                    Assert.Equal(DatagramSize, received);
-                    Assert.Equal(rightEndpoint, remote);
-
-                    int datagramId = (int)receiveBuffer[0];
-                    Assert.Null(receivedChecksums[datagramId]);
-                    receivedChecksums[datagramId] = Fletcher32.Checksum(receiveBuffer, 0, received);
-
-                    receiverAck.Set();
-                    Assert.True(senderAck.Wait(AckTimeout));
-                    senderAck.Reset();
-
-                    receivedDatagrams++;
-                    if (receivedDatagrams == DatagramsToSend)
+                    if (receivedDatagrams != -1)
                     {
-                        left.Dispose();
-                        receiverFinished.SetResult(true);
-                        return;
-                    }
-                }
-                else
-                {
-                    receivedDatagrams = 0;
-                }
+                        Assert.Equal(DatagramSize, received);
+                        Assert.Equal(rightEndpoint, remote);
 
-                left.ReceiveFromAPM(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, receiveRemote, receiveHandler);
+                        int datagramId = (int)receiveBuffer[0];
+                        Assert.Null(receivedChecksums[datagramId]);
+                        receivedChecksums[datagramId] = Fletcher32.Checksum(receiveBuffer, 0, received);
+
+                        receiverAck.Set();
+                        Assert.True(senderAck.Wait(AckTimeout));
+                        senderAck.Reset();
+
+                        receivedDatagrams++;
+                        if (receivedDatagrams == DatagramsToSend)
+                        {
+                            left.Dispose();
+                            receiverFinished.SetResult(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        receivedDatagrams = 0;
+                    }
+
+                    left.ReceiveFromAPM(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, receiveRemote, receiveHandler);
+                }
+                catch (Exception ex)
+                {
+                    receiverFinished.SetException(ex);
+                }
             };
 
             receiveHandler(0, null);
@@ -162,31 +169,38 @@ namespace System.Net.Sockets.Tests
             Action<int> sendHandler = null;
             sendHandler = sent =>
             {
-                if (sentDatagrams != -1)
+                try
                 {
-                    Assert.True(receiverAck.Wait(AckTimeout));
-                    receiverAck.Reset();
-                    senderAck.Set();
-
-                    Assert.Equal(DatagramSize, sent);
-                    sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
-
-                    sentDatagrams++;
-                    if (sentDatagrams == DatagramsToSend)
+                    if (sentDatagrams != -1)
                     {
-                        right.Dispose();
-                        senderFinished.SetResult(true);
-                        return;
-                    }
-                }
-                else
-                {
-                    sentDatagrams = 0;
-                }
+                        Assert.True(receiverAck.Wait(AckTimeout));
+                        receiverAck.Reset();
+                        senderAck.Set();
 
-                random.NextBytes(sendBuffer);
-                sendBuffer[0] = (byte)sentDatagrams;
-                right.SendToAPM(sendBuffer, 0, sendBuffer.Length, SocketFlags.None, leftEndpoint, sendHandler);
+                        Assert.Equal(DatagramSize, sent);
+                        sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
+
+                        sentDatagrams++;
+                        if (sentDatagrams == DatagramsToSend)
+                        {
+                            right.Dispose();
+                            senderFinished.SetResult(true);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        sentDatagrams = 0;
+                    }
+
+                    random.NextBytes(sendBuffer);
+                    sendBuffer[0] = (byte)sentDatagrams;
+                    right.SendToAPM(sendBuffer, 0, sendBuffer.Length, SocketFlags.None, leftEndpoint, sendHandler);
+                }
+                catch (Exception ex)
+                {
+                    senderFinished.SetException(ex);
+                }
             };
 
             sendHandler(0);
