@@ -98,9 +98,9 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
             }
 
-            ConsoleKeyInfo keyInfo = StdInReader.ReadKey();
-            if (!intercept) Console.Write(keyInfo.KeyChar);
-
+            bool previouslyProcessed;
+            ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
+            if (!intercept && !previouslyProcessed) Console.Write(keyInfo.KeyChar);
             return keyInfo;
         }
 
@@ -319,44 +319,52 @@ namespace System
             // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
             lock (StdInReader) 
             {
-                // Write out the cursor position report request.
-                WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
+                Interop.Sys.InitializeConsoleBeforeRead(minChars: 0, decisecondsTimeout: 10);
+                try
+                {
+                    // Write out the cursor position report request.
+                    WriteStdoutAnsiString(TerminalFormatStrings.CursorPositionReport);
 
-                // Read the response.  There's a race condition here if the user is typing,
-                // or if other threads are accessing the console; there's relatively little
-                // we can do about that, but we try not to lose any data.
-                StdInStreamReader r = StdInReader.Inner;
-                const int BufferSize = 1024;
-                byte* bytes = stackalloc byte[BufferSize];
+                    // Read the response.  There's a race condition here if the user is typing,
+                    // or if other threads are accessing the console; there's relatively little
+                    // we can do about that, but we try not to lose any data.
+                    StdInStreamReader r = StdInReader.Inner;
+                    const int BufferSize = 1024;
+                    byte* bytes = stackalloc byte[BufferSize];
 
-                int bytesRead = 0, i = 0;
+                    int bytesRead = 0, i = 0;
 
-                // Response expected in the form "\ESC[row;colR".  However, user typing concurrently
-                // with the request/response sequence can result in other characters, and potentially
-                // other escape sequences (e.g. for an arrow key) being entered concurrently with
-                // the response.  To avoid garbage showing up in the user's input, we are very liberal
-                // with regards to eating all input from this point until all aspects of the sequence
-                // have been consumed.  
+                    // Response expected in the form "\ESC[row;colR".  However, user typing concurrently
+                    // with the request/response sequence can result in other characters, and potentially
+                    // other escape sequences (e.g. for an arrow key) being entered concurrently with
+                    // the response.  To avoid garbage showing up in the user's input, we are very liberal
+                    // with regards to eating all input from this point until all aspects of the sequence
+                    // have been consumed.  
 
-                // Find the ESC as the start of the sequence.
-                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 0x1B);
-                i++; // move past the ESC
+                    // Find the ESC as the start of the sequence.
+                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 0x1B)) return;
+                    i++; // move past the ESC
 
-                // Find the '['
-                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == '[');
+                    // Find the '['
+                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == '[')) return;
 
-                // Find the first Int32 and parse it.
-                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
-                int row = ParseInt32(bytes, bytesRead, ref i);
-                if (row >= 1) top = row - 1;
+                    // Find the first Int32 and parse it.
+                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b))) return;
+                    int row = ParseInt32(bytes, bytesRead, ref i);
+                    if (row >= 1) top = row - 1;
 
-                // Find the second Int32 and parse it.
-                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
-                int col = ParseInt32(bytes, bytesRead, ref i);
-                if (col >= 1) left = col - 1;
+                    // Find the second Int32 and parse it.
+                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b))) return;
+                    int col = ParseInt32(bytes, bytesRead, ref i);
+                    if (col >= 1) left = col - 1;
 
-                // Find the ending 'R'
-                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R');
+                    // Find the ending 'R'
+                    if (!ReadStdinUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R')) return;
+                }
+                finally
+                {
+                    Interop.Sys.UninitializeConsoleAfterRead();
+                }
             }
         }
 
@@ -371,7 +379,8 @@ namespace System
         }
 
         /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
-        private static unsafe void ReadStdinUnbufferedUntil(
+        /// <returns>true if the condition was met; otherwise, false.</returns>
+        private static unsafe bool ReadStdinUntil(
             StdInStreamReader reader, 
             byte* buffer, int bufferSize, 
             ref int bytesRead, ref int pos, 
@@ -380,9 +389,10 @@ namespace System
             while (true)
             {
                 for (; pos < bytesRead && !condition(buffer[pos]); pos++) ;
-                if (pos < bytesRead) return;
+                if (pos < bytesRead) return true;
 
-                bytesRead = reader.ReadStdinUnbuffered(buffer, bufferSize);
+                bytesRead = reader.ReadStdin(buffer, bufferSize);
+                if (bytesRead == 0) return false;
                 pos = 0;
             }
         }
@@ -581,7 +591,7 @@ namespace System
             {
                 // Is this an erase / backspace?
                 char c = givenChars[startIndex];
-                if (c != 0 && c == s_veraseCharacter)
+                if (c != s_posixDisableValue && c == s_veraseCharacter)
                 {
                     key = new ConsoleKeyInfo(c, ConsoleKey.Backspace, shift: false, alt: false, control: false);
                     keyLength = 1;
@@ -617,10 +627,18 @@ namespace System
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
         private static volatile bool s_initialized;
 
+        /// <summary>Value used to indicate that a special character code isn't available.</summary>
+        internal static byte s_posixDisableValue;
         /// <summary>Special control character code used to represent an erase (backspace).</summary>
         private static byte s_veraseCharacter;
+        /// <summary>Special control character that represents the end of a line.</summary>
+        internal static byte s_veolCharacter;
+        /// <summary>Special control character that represents the end of a line.</summary>
+        internal static byte s_veol2Character;
+        /// <summary>Special control character that represents the end of a file.</summary>
+        internal static byte s_veofCharacter;
 
-        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitialized()
         {
             if (!s_initialized)
@@ -629,28 +647,48 @@ namespace System
             }
         }
 
-        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
                 {
-                    // Ensure the console is configured appropriately
-                    Interop.Sys.InitializeConsole();
-
-                    // Load special control character codes used for input processing
-                    var controlCharacterNames = new[] { Interop.Sys.ControlCharacterNames.VERASE };
-                    var controlCharacterValues = new byte[controlCharacterNames.Length];
-                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length);
-                    s_veraseCharacter = controlCharacterValues[0];
-
-                    // Make sure it's in application mode
-                    if (!Console.IsOutputRedirected)
+                    // Ensure the console is configured appropriately.  This will start
+                    // signal handlers, etc.
+                    if (!Interop.Sys.InitializeConsole())
                     {
-                        WriteStdoutAnsiString(TerminalFormatStrings.Instance.KeypadXmit);
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                     }
 
+                    // Provide the native lib with the correct code from the terminfo to transition us into
+                    // "application mode".  This will both transition it immediately, as well as allow
+                    // the native lib later to handle signals that require re-entering the mode.
+                    if (!Console.IsOutputRedirected)
+                    {
+                        string keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
+                        if (keypadXmit != null)
+                        {
+                            Interop.Sys.SetKeypadXmit(keypadXmit);
+                        }
+                    }
+
+                    // Load special control character codes used for input processing
+                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4] 
+                    {
+                        Interop.Sys.ControlCharacterNames.VERASE,
+                        Interop.Sys.ControlCharacterNames.VEOL,
+                        Interop.Sys.ControlCharacterNames.VEOL2,
+                        Interop.Sys.ControlCharacterNames.VEOF
+                    };
+                    var controlCharacterValues = new byte[controlCharacterNames.Length];
+                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                    s_veraseCharacter = controlCharacterValues[0];
+                    s_veolCharacter = controlCharacterValues[1];
+                    s_veol2Character = controlCharacterValues[2];
+                    s_veofCharacter = controlCharacterValues[3];
+
+                    // Mark us as initialized
                     s_initialized = true;
                 }
             }
@@ -1045,11 +1083,10 @@ namespace System
 
             internal void Register()
             {
+                EnsureInitialized();
+
                 Debug.Assert(!_handlerRegistered);
-                if (!Interop.Sys.RegisterForCtrl(_handler))
-                {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
-                }
+                Interop.Sys.RegisterForCtrl(_handler);
                 _handlerRegistered = true;
             }
 

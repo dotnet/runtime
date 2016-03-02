@@ -58,19 +58,30 @@ extern "C" int32_t SystemNative_IsATty(intptr_t fd);
 
 /**
  * Initializes the console for use by System.Console.
+ *
+ * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-extern "C" void SystemNative_InitializeConsole();
+extern "C" int32_t SystemNative_InitializeConsole();
+
+/**
+ * Stores the string that can be written to stdout to transition
+ * into "application mode".
+ *
+ * Returns 1 on success; otherwise returns 0 and sets errno.
+ */
+extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString);
 
 /**
  * Gets the special control character codes for the requested control characters.
  *
  * controlCharacterLength is the length of the input controlCharacterNames array and the output controlCharacterValues array.
  * The controlCharacterValues array is filled with the control codes for the corresponding control character names,
- * or 0 if a particular name is unsupported or disabled.
+ * or 0 if a particular name is unsupported or disabled. posixDisableValue is the special sentinel used in the output
+ * controlCharacterValues array to indicate no value is available.
  */
 extern "C" void SystemNative_GetControlCharacters(
-    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, 
-    int32_t controlCharacterLength);
+    int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
+    uint8_t* posixDisableValue);
 
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
@@ -78,11 +89,20 @@ extern "C" void SystemNative_GetControlCharacters(
 extern "C" int32_t SystemNative_StdinReady();
 
 /**
+ * Initializes the terminal in preparation for a read operation.
+ */
+extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
+
+/**
+ * Restores the terminal's attributes to what they were before InitializeConsoleBeforeRead was called.
+ */
+extern "C" void SystemNative_UninitializeConsoleAfterRead();
+
+/**
  * Reads the number of bytes specified into the provided buffer from stdin.
- * in a non-echo and non-canonical mode.
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-extern "C" int32_t SystemNative_ReadStdinUnbuffered(void* buffer, int32_t bufferSize);
+extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
 
 enum CtrlCode : int32_t
 {
@@ -99,10 +119,8 @@ typedef int32_t (*CtrlCallback)(CtrlCode signalCode);
  * is not called concurrently with itself or with UnregisterForCtrl.
  *
  * Should only be called when a callback is not currently registered.
- *
- * Returns 1 on success, 0 on failure.
  */
-extern "C" int32_t SystemNative_RegisterForCtrl(CtrlCallback callback);
+extern "C" void SystemNative_RegisterForCtrl(CtrlCallback callback);
 
 /**
  * Unregisters the previously registered ctrlCCallback.

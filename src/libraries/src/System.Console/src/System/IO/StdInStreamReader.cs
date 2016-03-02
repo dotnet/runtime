@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -15,11 +16,16 @@ namespace System.IO
      */
     internal class StdInStreamReader : StreamReader
     {
+        private static string s_moveLeftString; // string written to move the cursor to the left
+
+        private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
+        private readonly Stack<ConsoleKeyInfo> _tmpKeys = new Stack<ConsoleKeyInfo>(); // temporary working stack; should be empty outside of ReadLine
+        private readonly Stack<ConsoleKeyInfo> _availableKeys = new Stack<ConsoleKeyInfo>(); // a queue of already processed key infos available for reading
+
         private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
-        private readonly StringBuilder _readLineSB; // SB that holds readLine output
 
         internal StdInStreamReader(Stream stream, Encoding encoding, int bufferSize) : base(stream: stream, encoding: encoding, detectEncodingFromByteOrderMarks: false, bufferSize: bufferSize, leaveOpen: true)
         {
@@ -30,20 +36,9 @@ namespace System.IO
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
-        internal bool IsExtraBufferEmpty()
+        internal bool IsUnprocessedBufferEmpty()
         {
             return _startIndex >= _endIndex; // Everything has been processed;
-        }
-
-        /// <summary> Reads the buffer in the raw mode. </summary>
-        private unsafe void ReadExtraBuffer()
-        {
-            // Read in bytes
-            byte* bufPtr = stackalloc byte[BytesToBeRead];
-            int result = ReadStdinUnbuffered(bufPtr, BytesToBeRead);
-
-            // Append them
-            AppendExtraBuffer(bufPtr, result);
         }
 
         internal unsafe void AppendExtraBuffer(byte* buffer, int bufferLength)
@@ -54,7 +49,7 @@ namespace System.IO
             charLen = CurrentEncoding.GetChars(buffer, bufferLength, charPtr, charLen);
 
             // Ensure our buffer is large enough to hold all of the data
-            if (IsExtraBufferEmpty())
+            if (IsUnprocessedBufferEmpty())
             {
                 _startIndex = _endIndex = 0;
             }
@@ -73,73 +68,149 @@ namespace System.IO
             _endIndex += charLen;
         }
 
-        internal unsafe int ReadStdinUnbuffered(byte* buffer, int bufferSize)
+        internal unsafe int ReadStdin(byte* buffer, int bufferSize)
         {
-            int result = Interop.CheckIo(Interop.Sys.ReadStdinUnbuffered(buffer, bufferSize));
-            Debug.Assert(result > 0 && result <= bufferSize);
+            int result = Interop.CheckIo(Interop.Sys.ReadStdin(buffer, bufferSize));
+            Debug.Assert(result >= 0 && result <= bufferSize); // may be 0 if hits EOL
             return result;
         }
 
-        private static string s_moveLeftString;
-
         public override string ReadLine()
         {
-            string readLineStr;
-
-            while (true)
-            {
-                ConsoleKeyInfo keyInfo = ReadKey();
-
-                if (keyInfo.Key == ConsoleKey.Enter)
-                {
-                    readLineStr = _readLineSB.ToString();
-                    _readLineSB.Clear();
-                    Console.WriteLine();
-                    return readLineStr;
-                }
-                else if (keyInfo.Key == ConsoleKey.Backspace)
-                {
-                    int len = _readLineSB.Length;
-                    if (len > 0)
-                    {
-                        _readLineSB.Length = len - 1;
-
-                        if (s_moveLeftString == null)
-                        {
-                            string moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
-                            s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
-                        }
-                        Console.Write(s_moveLeftString);
-                    }
-                }
-                else if (keyInfo.Key == ConsoleKey.Tab)
-                {
-                    _readLineSB.Append(keyInfo.KeyChar);
-                    Console.Write(' ');
-                }
-                else if (keyInfo.Key == ConsoleKey.Clear)
-                {
-                    _readLineSB.Clear();
-                    Console.Clear();
-                }
-                else
-                {
-                    _readLineSB.Append(keyInfo.KeyChar);
-                    Console.Write(keyInfo.KeyChar);
-                }
-            }
+            return ReadLine(consumeKeys: true);
         }
 
+        private string ReadLine(bool consumeKeys)
+        {
+            Debug.Assert(_tmpKeys.Count == 0);
+            string readLineStr = null;
+
+            // Disable echo and buffering.  These will be disabled for the duration of the line read.
+            Interop.Sys.InitializeConsoleBeforeRead(); 
+            try
+            {
+                // Read key-by-key until we've read a line.
+                while (true) 
+                {
+                    // Read the next key.  This may come from previously read keys, from previously read but 
+                    // unprocessed data, or from an actual stdin read.
+                    bool previouslyProcessed;
+                    ConsoleKeyInfo keyInfo = ReadKey(out previouslyProcessed);
+                    if (!consumeKeys && keyInfo.Key != ConsoleKey.Backspace) // backspace is the only character not written out in the below if/elses.
+                    {
+                        _tmpKeys.Push(keyInfo);
+                    }
+
+                    // Handle the next key.  Since for other functions we may have ended up reading some of the user's
+                    // input, we need to be able to handle manually processing that input, and so we do that processing
+                    // for all input.  As such, we need to special-case a few characters, e.g. recognizing when Enter is
+                    // pressed to end a line.  We also need to handle Backspace specially, to fix up both our buffer of
+                    // characters and the position of the cursor.  More advanced processing would be possible, but we
+                    // try to keep this very simple, at least for now.
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        readLineStr = _readLineSB.ToString();
+                        _readLineSB.Clear();
+                        if (!previouslyProcessed)
+                        {
+                            Console.WriteLine();
+                        }
+                        break;
+                    }
+                    else if (IsEol(keyInfo.KeyChar))
+                    {
+                        string line = _readLineSB.ToString();
+                        _readLineSB.Clear();
+                        if (line.Length > 0)
+                        {
+                            readLineStr = line;
+                        }
+                        break;
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace)
+                    {
+                        int len = _readLineSB.Length;
+                        if (len > 0)
+                        {
+                            _readLineSB.Length = len - 1;
+                            if (!previouslyProcessed)
+                            {
+                                if (s_moveLeftString == null)
+                                {
+                                    string moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
+                                    s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
+                                }
+                                Console.Write(s_moveLeftString);
+                            }
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Tab)
+                    {
+                        _readLineSB.Append(keyInfo.KeyChar);
+                        if (!previouslyProcessed)
+                        {
+                            Console.Write(' ');
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Clear)
+                    {
+                        _readLineSB.Clear();
+                        if (!previouslyProcessed)
+                        {
+                            Console.Clear();
+                        }
+                    }
+                    else
+                    {
+                        _readLineSB.Append(keyInfo.KeyChar);
+                        if (!previouslyProcessed)
+                        {
+                            Console.Write(keyInfo.KeyChar);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
+
+                // If we're not consuming the read input, make the keys available for a future read
+                while (_tmpKeys.Count > 0)
+                {
+                    _availableKeys.Push(_tmpKeys.Pop());
+                }
+            }
+
+            return readLineStr;
+        }
 
         public override int Read()
         {
-            if (IsExtraBufferEmpty())
+            // If there aren't any keys in our processed keys stack, read a line to populate it.
+            if (_availableKeys.Count == 0)
             {
-                ReadExtraBuffer();
+                ReadLine(consumeKeys: false);
             }
 
-            Debug.Assert(!IsExtraBufferEmpty());
-            return _unprocessedBufferToBeRead[_startIndex++];
+            // Now if there are keys, use the first.
+            if (_availableKeys.Count > 0)
+            {
+                ConsoleKeyInfo keyInfo = _availableKeys.Pop();
+                if (!IsEol(keyInfo.KeyChar))
+                {
+                    return keyInfo.KeyChar;
+                }
+            }
+
+            // EOL
+            return -1;
+        }
+
+        private static bool IsEol(char c)
+        {
+            return 
+                c != ConsolePal.s_posixDisableValue && 
+                (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
 
         internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
@@ -158,7 +229,7 @@ namespace System.IO
                 case '\n':
                     return ConsoleKey.Enter;
 
-                case (char)(int)(0x1B):
+                case (char)(0x1B):
                     return ConsoleKey.Escape;
 
                 case '*':
@@ -173,7 +244,7 @@ namespace System.IO
                 case '/':
                     return ConsoleKey.Divide;
 
-                case (char)(int)(0x7F):
+                case (char)(0x7F):
                     return ConsoleKey.Delete;
 
                 case ' ':
@@ -214,7 +285,7 @@ namespace System.IO
 
         internal bool MapBufferToConsoleKey(out ConsoleKey key, out char ch, out bool isShift, out bool isAlt, out bool isCtrl)
         {
-            Debug.Assert(!IsExtraBufferEmpty());
+            Debug.Assert(!IsUnprocessedBufferEmpty());
 
             // Try to get the special key match from the TermInfo static information.
             ConsoleKeyInfo keyInfo;
@@ -271,19 +342,57 @@ namespace System.IO
         /// not work, we simply return the char associated with that
         /// key with ConsoleKey set to default value.
         /// </summary>
-        public ConsoleKeyInfo ReadKey()
+        public unsafe ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
         {
-            ConsoleKey key;
-            char ch;
-            bool isAlt, isCtrl, isShift;
+            // Order of reading:
+            // 1. A read should first consult _availableKeys, as this contains input that has already been both read from stdin and processed into ConsoleKeyInfos.
+            // 2. If _availableKeys is empty, then _unprocessedBufferToRead should be consulted.  This is input from stdin that was read in bulk but has yet to be processed.
+            // 3. Finally if _unprocessedBufferToRead is empty, input must be obtained from ReadStdinUnbuffered.
 
-            if (IsExtraBufferEmpty())
+            if (_availableKeys.Count > 0)
             {
-                ReadExtraBuffer();
+                previouslyProcessed = true;
+                return _availableKeys.Pop();
             }
 
-            MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
-            return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
+            previouslyProcessed = false;
+            Interop.Sys.InitializeConsoleBeforeRead();
+            try
+            {
+                ConsoleKey key;
+                char ch;
+                bool isAlt, isCtrl, isShift;
+
+                if (IsUnprocessedBufferEmpty())
+                {
+                    // Read in bytes
+                    byte* bufPtr = stackalloc byte[BytesToBeRead];
+                    int result = ReadStdin(bufPtr, BytesToBeRead);
+                    if (result > 0)
+                    {
+                        // Append them
+                        AppendExtraBuffer(bufPtr, result);
+                    }
+                    else
+                    {
+                        // Could be empty if EOL entered on its own.  Pick one of the EOL characters we have,
+                        // or just use 0 if none are available.
+                        return new ConsoleKeyInfo((char)
+                            (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
+                             ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
+                             ConsolePal.s_veofCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veofCharacter :
+                             0), 
+                            default(ConsoleKey), false, false, false);
+                    }
+                }
+
+                MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
+                return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
+            }
+            finally
+            {
+                Interop.Sys.UninitializeConsoleAfterRead();
+            }
         }
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
