@@ -10824,7 +10824,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
     bool isMulOverflow = false;
     bool isUnsignedMul = false;
-    instruction ins2 = INS_invalid;
     regNumber extraReg = REG_NA;
     if (dst->gtOverflowEx())
     {
@@ -10840,7 +10839,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             isMulOverflow = true;
             isUnsignedMul = ((dst->gtFlags & GTF_UNSIGNED) != 0);
-            ins2 = isUnsignedMul ? INS_umulh : INS_smulh;
             assert(intConst == nullptr);   // overflow format doesn't support an int constant operand
         }
         else
@@ -10856,43 +10854,66 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
+            // Make sure that we have an internal register
+            assert(genCountBits(dst->gtRsvdRegs) == 2);
+
+            // There will be two bits set in tmpRegsMask.
+            // Remove the bit for 'dst->gtRegNum' from 'tmpRegsMask'
+            regMaskTP tmpRegsMask = dst->gtRsvdRegs & ~genRegMask(dst->gtRegNum);
+            assert(tmpRegsMask != RBM_NONE);
+            regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask);   // set tmpRegMsk to a one-bit mask
+            extraReg = genRegNumFromMask(tmpRegMask);               // set tmpReg from that mask
+
             if (isUnsignedMul)
             {
-                assert(genCountBits(dst->gtRsvdRegs) == 1);
-                extraReg = genRegNumFromMask(dst->gtRsvdRegs);
+                if (attr == EA_4BYTE)
+                {
+                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
+                    emitIns_R_R_R(INS_umull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
 
-                // Compute the high result
-                emitIns_R_R_R(ins2, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+                    // Get the high result by shifting dst.
+                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
+                }
+                else
+                {
+                    assert(attr == EA_8BYTE);
+                    // Compute the high result.
+                    emitIns_R_R_R(INS_umulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
 
-                emitIns_R_I(INS_cmp, EA_8BYTE, extraReg, 0);
-                codeGen->genCheckOverflow(dst);
+                    // Now multiply without skewing the high result.
+                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                }
 
-                // Now multiply without skewing the high result if no overflow.
-                emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                // zero-sign bit comparision to detect overflow.
+                emitIns_R_I(INS_cmp, attr, extraReg, 0);
             }
             else
             {
-                // Make sure that we have an internal register
-                assert(genCountBits(dst->gtRsvdRegs) == 2);
+                int bitShift = 0;
+                if (attr == EA_4BYTE)
+                {
+                    // Compute 8 byte results from 4 byte by 4 byte multiplication.
+                    emitIns_R_R_R(INS_smull, EA_8BYTE, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
 
-                // There will be two bits set in tmpRegsMask.
-                // Remove the bit for 'dst->gtRegNum' from 'tmpRegsMask'
-                regMaskTP tmpRegsMask = dst->gtRsvdRegs & ~genRegMask(dst->gtRegNum);
-                regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask);   // set tmpRegMsk to a one-bit mask
-                extraReg = genRegNumFromMask(tmpRegMask);               // set tmpReg from that mask
+                    // Get the high result by shifting dst.
+                    emitIns_R_R_I(INS_lsr, EA_8BYTE, extraReg, dst->gtRegNum, 32);
 
-                // Make sure the two registers are not the same.
-                assert(extraReg != dst->gtRegNum);
+                    bitShift = 31;
+                }
+                else
+                {
+                    assert(attr == EA_8BYTE);
+                    // Save the high result in a temporary register.
+                    emitIns_R_R_R(INS_smulh, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
 
-                // Save the high result in a temporary register
-                emitIns_R_R_R(ins2, attr, extraReg, src1->gtRegNum, src2->gtRegNum);
+                    // Now multiply without skewing the high result.
+                    emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
 
-                // Now multiply without skewing the high result.
-                emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+                    bitShift = 63;
+                }
 
-                emitIns_R_R_I(INS_cmp, EA_8BYTE, extraReg, dst->gtRegNum, 63, INS_OPTS_ASR);
-
-                codeGen->genCheckOverflow(dst);
+                // Sign bit comparision to detect overflow.
+                emitIns_R_R_I(INS_cmp, attr, extraReg, dst->gtRegNum, bitShift, INS_OPTS_ASR);
             }
         }
         else
@@ -10902,7 +10923,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
     }
 
-    if (dst->gtOverflowEx() && !isMulOverflow)
+    if (dst->gtOverflowEx())
     {
         assert(!varTypeIsFloating(dst));
         codeGen->genCheckOverflow(dst);
