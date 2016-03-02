@@ -615,13 +615,13 @@ ICALL(MMETHI_2, "get_parameter_info", ves_icall_get_parameter_info)
 ICALL(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal)
 
 ICALL_TYPE(MPROPI, "System.Reflection.MonoPropertyInfo", MPROPI_1)
-ICALL(MPROPI_1, "GetTypeModifiers", property_info_get_type_modifiers)
+ICALL(MPROPI_1, "GetTypeModifiers", ves_icall_MonoPropertyInfo_GetTypeModifiers)
 ICALL(MPROPI_3, "get_default_value", property_info_get_default_value)
 ICALL(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_info)
 
 ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
 ICALL(PARAMI_1, "GetMetadataToken", mono_reflection_get_token)
-ICALL(PARAMI_2, "GetTypeModifiers", param_info_get_type_modifiers)
+ICALL(PARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers)
 
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
 ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
