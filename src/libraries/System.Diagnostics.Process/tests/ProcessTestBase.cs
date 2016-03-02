@@ -40,7 +40,7 @@ namespace System.Diagnostics.Tests
 
         protected Process CreateProcess(Func<int> method = null)
         {
-            Process p = RemoteInvoke(method ?? (() => SuccessExitCode), start: false).Process;
+            Process p = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false }).Process;
             lock (_processes)
             {
                 _processes.Add(p);
@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
 
         protected Process CreateProcess(Func<string, int> method, string arg)
         {
-            Process p = RemoteInvoke(method, arg, start: false).Process;
+            Process p = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false }).Process;
             lock (_processes)
             {
                 _processes.Add(p);
