@@ -133,7 +133,7 @@ Windows Forms is in maintenance mode now. That means new features will generally
 
 Introduced in .NET Framework 3.0, Windows Presentation Foundation (WPF) was a new API for creating desktop applications. Like Windows Forms, WPF is event-driven. However, instead of using GDI/GDI+ for drawing applications, WPF used DirectX. Using DirectX allowed WPF applications to use the GPU for rendering, freeing the CPU for other tasks. WPF also introduced XAML (which would become the corner-stone of Microsoft GUI logic).
 
-There have been many attempts at OSS and/or cross-platform version of WPF or WPF-like libraries (None of which are indorsed by Microsoft):
+The .NET platform currently doesn't contain a cross-platform XAML-based UI stack. There are, however, various community projects in that space:
 
 * [CSHTML5](http://www.cshtml5.com/): A product to compile WPF/.NET Framework applications into HTML5/CSS3/ECMAScript5 applications.
 * [WPFLight](https://github.com/ronnycsharp/WPFLight): An OSS project to create WPF on top of XNA/MonoGame.
