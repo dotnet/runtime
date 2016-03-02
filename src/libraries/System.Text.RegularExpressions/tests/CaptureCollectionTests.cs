@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text.RegularExpressions;
 using System.Collections;
 using Xunit;
 
-namespace Test
+namespace System.Text.RegularExpressions.Tests
 {
     public class CaptureCollectionTests
     {
@@ -33,7 +31,7 @@ namespace Test
         }
 
         [Fact]
-        public static void GetEnumeratorTest_Invalid()
+        public static void GetEnumerator_Invalid()
         {
             Regex regex = new Regex(@"(?<A1>a*)(?<A2>b*)(?<A3>c*)");
             Match match = regex.Match("aaabbccccccccccaaaabc");
