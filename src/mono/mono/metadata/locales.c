@@ -822,12 +822,12 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 	}
 }
 
-void load_normalization_resource (guint8 **argProps,
-				  guint8 **argMappedChars,
-				  guint8 **argCharMapIndex,
-				  guint8 **argHelperIndex,
-				  guint8 **argMapIdxToComposite,
-				  guint8 **argCombiningClass)
+void ves_icall_System_Text_Normalization_load_normalization_resource (guint8 **argProps,
+																	  guint8 **argMappedChars,
+																	  guint8 **argCharMapIndex,
+																	  guint8 **argHelperIndex,
+																	  guint8 **argMapIdxToComposite,
+																	  guint8 **argCombiningClass)
 {
 #ifdef DISABLE_NORMALIZATION
 	mono_set_pending_exception (mono_get_exception_not_supported ("This runtime has been compiled without string normalization support."));
