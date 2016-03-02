@@ -1,9 +1,13 @@
-.assembly extern mscorlib
-{
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         
-  .ver 2:0:0:0
-}
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
+.assembly extern legacy library mscorlib {}
+.assembly extern System.Console
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
+}
 
 .assembly 'fault' {}
 	
@@ -24,7 +28,7 @@
 
 	fault_begin:
 		ldstr	"in fault block."
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldloc.0
 		ldc.i4	1
 		sub
@@ -34,7 +38,7 @@
 	filter_begin:
 		pop
 		ldstr	"in filter."
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldloc.0
 		ldc.i4	1
 		sub
@@ -46,10 +50,10 @@
 		call	 void [mscorlib]System.GC::Collect()
                 castclass  [mscorlib]System.Exception
 		callvirt instance class [mscorlib]System.String [mscorlib]System.Exception::get_Message()
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
 		ldstr	"in except block."
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldloc.0
 		ldc.i4	1
 		sub
@@ -62,13 +66,13 @@
 		bne.un.s FAIL
 			
 		ldstr	"test passed."
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 		ldc.i4	 0x64
 		ret
 
 	FAIL:
 		ldstr	"test failed."
-		call	 void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		call	 void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 
 		ldloc.0
 		ret
