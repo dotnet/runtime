@@ -187,7 +187,6 @@ mono_threads_end_global_suspend (void)
 static void
 dump_threads (void)
 {
-	MonoThreadInfo *info;
 	MonoThreadInfo *cur = mono_thread_info_current ();
 
 	MOSTLY_ASYNC_SAFE_PRINTF ("STATE CUE CARD: (? means a positive number, usually 1 or 2, * means any number)\n");
@@ -210,8 +209,7 @@ dump_threads (void)
 #else
 		MOSTLY_ASYNC_SAFE_PRINTF ("--thread %p id %p [%p] state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
 #endif
-
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_SAFE_END
 }
 
 gboolean
@@ -271,7 +269,7 @@ mono_thread_info_lookup (MonoNativeThreadId id)
 {
 		MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	if (!mono_lls_find (&thread_list, hp, (uintptr_t)id)) {
+	if (!mono_lls_find (&thread_list, hp, (uintptr_t)id, HAZARD_FREE_ASYNC_CTX)) {
 		mono_hazard_pointer_clear_all (hp, -1);
 		return NULL;
 	} 
@@ -285,7 +283,7 @@ mono_thread_info_insert (MonoThreadInfo *info)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	if (!mono_lls_insert (&thread_list, hp, (MonoLinkedListSetNode*)info)) {
+	if (!mono_lls_insert (&thread_list, hp, (MonoLinkedListSetNode*)info, HAZARD_FREE_SAFE_CTX)) {
 		mono_hazard_pointer_clear_all (hp, -1);
 		return FALSE;
 	} 
@@ -301,7 +299,7 @@ mono_thread_info_remove (MonoThreadInfo *info)
 	gboolean res;
 
 	THREADS_DEBUG ("removing info %p\n", info);
-	res = mono_lls_remove (&thread_list, hp, (MonoLinkedListSetNode*)info);
+	res = mono_lls_remove (&thread_list, hp, (MonoLinkedListSetNode*)info, HAZARD_FREE_SAFE_CTX);
 	mono_hazard_pointer_clear_all (hp, -1);
 	return res;
 }
@@ -426,7 +424,7 @@ unregister_thread (void *arg)
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
 	/*now it's safe to free the thread info.*/
-	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);
+	mono_thread_hazardous_free_or_queue (info, free_thread_info, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 	mono_thread_small_id_free (small_id);
 }
 
@@ -637,7 +635,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_coop_sem_init (&global_suspend_semaphore, 1);
 	mono_os_sem_init (&suspend_semaphore, 0);
 
-	mono_lls_init (&thread_list, NULL);
+	mono_lls_init (&thread_list, NULL, HAZARD_FREE_NO_LOCK);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
 	mono_threads_init_coop ();

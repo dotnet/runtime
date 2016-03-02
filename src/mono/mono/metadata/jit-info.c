@@ -613,7 +613,7 @@ jit_info_table_add (MonoDomain *domain, MonoJitInfoTable *volatile *table_ptr, M
 		*table_ptr = new_table;
 		mono_memory_barrier ();
 		domain->num_jit_info_tables++;
-		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)mono_jit_info_table_free, TRUE, FALSE);
+		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)mono_jit_info_table_free, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 		table = new_table;
 
 		goto restart;
@@ -691,7 +691,7 @@ mono_jit_info_free_or_queue (MonoDomain *domain, MonoJitInfo *ji)
 	if (domain->num_jit_info_tables <= 1) {
 		/* Can it actually happen that we only have one table
 		   but ji is still hazardous? */
-		mono_thread_hazardous_free_or_queue (ji, g_free, TRUE, FALSE);
+		mono_thread_hazardous_free_or_queue (ji, g_free, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 	} else {
 		domain->jit_info_free_queue = g_slist_prepend (domain->jit_info_free_queue, ji);
 	}

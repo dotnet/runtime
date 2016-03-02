@@ -300,14 +300,20 @@ mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
 /*
 Requires the world to be stoped
 */
-#define FOREACH_THREAD(thread) MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
-#define END_FOREACH_THREAD MONO_LLS_END_FOREACH
+#define FOREACH_THREAD(thread) \
+	MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+
+#define FOREACH_THREAD_END \
+	MONO_LLS_FOREACH_END
 
 /*
 Snapshot iteration.
 */
-#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
-#define END_FOREACH_THREAD_SAFE MONO_LLS_END_FOREACH_SAFE
+#define FOREACH_THREAD_SAFE(thread) \
+	MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+
+#define FOREACH_THREAD_SAFE_END \
+	MONO_LLS_FOREACH_SAFE_END
 
 static inline MonoNativeThreadId
 mono_thread_info_get_tid (THREAD_INFO_TYPE *info)

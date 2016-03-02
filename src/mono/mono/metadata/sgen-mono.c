@@ -2342,8 +2342,6 @@ mono_gc_scan_object (void *obj, void *gc_data)
 void
 sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx)
 {
-	SgenThreadInfo *info;
-
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
 
@@ -2397,7 +2395,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 				}
 			}
 		}
-	} END_FOREACH_THREAD
+	} FOREACH_THREAD_END
 }
 
 /*
