@@ -45,5 +45,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             return new AndConstraint<JsonAssetions>(this);
         }
+
+        public AndWhichConstraint<JsonAssetions, JObject> HavePropertyAsObject(string expected)
+        {
+            return HaveProperty(expected).Subject.Should().BeOfType<JObject>();
+        }
+
+        public AndConstraint<ObjectAssertions> HavePropertyValue<T>(string expected, T value)
+        {
+            return HaveProperty(expected).Subject.Value<T>().Should().Be(value);
+        }
     }
 }
