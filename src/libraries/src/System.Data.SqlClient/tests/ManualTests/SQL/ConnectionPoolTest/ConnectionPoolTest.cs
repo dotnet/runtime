@@ -54,7 +54,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             BasicConnectionPoolingTest(tcpConnectionString);
             ClearAllPoolsTest(tcpConnectionString);
+#if MANAGED_SNI
             KillConnectionTest(tcpConnectionString);
+#endif
             ReclaimEmancipatedOnOpenTest(tcpConnectionString);
         }
 
