@@ -2569,9 +2569,9 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
         {
             GenTreeIndir* mem = node->AsIndir();
             
-            if (mem->HasBase() && mem->Base()->OperGet() == GT_CLS_VAR_ADDR)
+            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
             {
-                emitIns_R_C(ins, attr, node->gtRegNum, mem->Base()->gtClsVar.gtClsVarHnd, 0);
+                emitIns_R_C(ins, attr, node->gtRegNum, mem->Addr()->gtClsVar.gtClsVarHnd, 0);
                 return;
             }
             else if (mem->Addr()->OperGet() == GT_LCL_VAR_ADDR)
@@ -2586,7 +2586,6 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
                 GenTreePtr addr = mem->Addr();
 
                 assert (addr->OperIsAddrMode() ||
-                        addr->gtOper == GT_CLS_VAR_ADDR ||
                         (addr->IsCnsIntOrI() && addr->isContained()) ||
                         !addr->isContained());
                 size_t offset = mem->Offset();
@@ -2618,15 +2617,15 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
             size_t offset = mem->Offset();
             GenTree* data = node->gtOp.gtOp2;
 
-            if ((memBase != nullptr) && (memBase->OperGet() == GT_CLS_VAR_ADDR))
+            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
             {
                 if (data->isContained())
                 {
-                    emitIns_C_I(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
+                    emitIns_C_I(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
                 }
                 else
                 {
-                    emitIns_C_R(ins, attr, memBase->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                    emitIns_C_R(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
                 }
                 return;
             }
