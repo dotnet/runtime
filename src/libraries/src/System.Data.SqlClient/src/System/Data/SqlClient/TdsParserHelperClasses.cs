@@ -7,6 +7,7 @@
 //------------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
@@ -275,6 +276,7 @@ namespace System.Data.SqlClient
         internal bool isHidden;
         internal bool isExpression;
         internal bool isIdentity;
+        internal string baseColumn;
         internal _SqlMetaData(int ordinal) : base()
         {
             this.ordinal = ordinal;
@@ -346,6 +348,7 @@ namespace System.Data.SqlClient
         internal int[] indexMap;
         internal int visibleColumns;
         private readonly _SqlMetaData[] _metaDataArray;
+        internal ReadOnlyCollection<DbColumn> dbColumnSchema;
 
         internal _SqlMetaDataSet(int count)
         {
@@ -362,6 +365,7 @@ namespace System.Data.SqlClient
             // although indexMap is not immutable, in practice it is initialized once and then passed around
             this.indexMap = original.indexMap;
             this.visibleColumns = original.visibleColumns;
+            this.dbColumnSchema = original.dbColumnSchema;
             if (original._metaDataArray == null)
             {
                 _metaDataArray = null;

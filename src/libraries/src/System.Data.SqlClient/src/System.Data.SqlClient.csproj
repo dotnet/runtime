@@ -47,6 +47,7 @@
     <Compile Include="System\Data\OperationAbortedException.cs" />
     <Compile Include="System\Data\RecordsAffectedEventArgs.cs" />
     <Compile Include="System\Data\RecordsAffectedEventHandler.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDbColumn.cs" />
     <Compile Include="System\Data\SqlDbType.cs" />
     <Compile Include="System\Data\Common\ActivityCorrelator.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
