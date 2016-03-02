@@ -131,7 +131,7 @@ Windows Forms is in maintenance mode now. That means new features will generally
 
 **Also referred to as**: WPF, Avalon
 
-Introduced in .NET Framework 3.0, Windows Presentation Foundation (WPF) was a new API for creating desktop applications. Like Windows Forms, WPF is event-driven. However, instead of using GDI/GDI+ for drawing applications, WPF used DirectX. Using DirectX allowed WPF applications to use the GPU for rendering, freeing the CPU for other tasks. WPF also introduced XAML (which would become the corner-stone of Microsoft GUI logic).
+Introduced in .NET Framework 3.0, Windows Presentation Foundation (WPF) was a new API for creating desktop applications. Like Windows Forms, WPF is event-driven. However, instead of using GDI/GDI+ for drawing applications, WPF used DirectX. Using DirectX allowed WPF applications to use the GPU for rendering, freeing the CPU for other tasks. WPF also introduced XAML, an XML-based language which allows a declarative way to describe user interfaces and data binding to models (XAML is used by Silverlight, UWP, and Xamarin as well).
 
 The .NET platform currently doesn't contain a cross-platform XAML-based UI stack. There are, however, various community projects in that space:
 
