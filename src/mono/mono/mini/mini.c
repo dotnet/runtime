@@ -1261,7 +1261,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 
 					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
 						mono_error_set_generic_error (&cfg->error, "System", "MethodAccessException", "%s", msg);
-					else if (info->exception_type == info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
+					else if (info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
 						mono_error_set_generic_error (&cfg->error, "System", "FieldAccessException", "%s", msg);
 					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
 						mono_error_set_generic_error (&cfg->error, "System.Security", "VerificationException", msg);
