@@ -848,13 +848,13 @@ namespace System.Net.Http.Functional.Tests
         #region Proxy tests
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public void UseCustomProxy_GetRequestGoesThroughProxy_Success(ICredentials creds)
+        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds)
         {
             int port;
-            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: creds != null);
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: creds != null && creds != CredentialCache.DefaultCredentials);
             Uri proxyUrl = new Uri($"http://localhost:{port}");
 
-            using (var handler = new HttpClientHandler() { UseProxy = true, Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
+            using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
             using (var client = new HttpClient(handler))
             {
                 Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
@@ -866,20 +866,57 @@ namespace System.Net.Http.Functional.Tests
 
                 NetworkCredential nc = creds != null ? creds.GetCredential(proxyUrl, "Basic") : null;
                 string expectedAuth =
-                    nc == null ? null :
+                    nc == null || nc == CredentialCache.DefaultCredentials ? null :
                     string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
                     $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
                 Assert.Equal(expectedAuth, proxyTask.Result.AuthenticationHeaderValue);
             }
         }
 
+        [Theory]
+        [MemberData(nameof(BypassedProxies))]
+        public async Task Proxy_BypassTrue_GetRequestDoesntGoesThroughCustomProxy(IWebProxy proxy)
+        {
+            using (var client = new HttpClient(new HttpClientHandler() { Proxy = proxy }))
+            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+            {
+                TestHelper.VerifyResponseBody(
+                    await response.Content.ReadAsStringAsync(),
+                    response.Content.Headers.ContentMD5,
+                    false,
+                    null);
+            }
+        }
+
         private sealed class UseSpecifiedUriWebProxy : IWebProxy
         {
-            private Uri _uri;
-            public UseSpecifiedUriWebProxy(Uri uri, ICredentials credentials = null) { _uri = uri; Credentials = credentials; }
+            private readonly Uri _uri;
+            private readonly bool _bypass;
+
+            public UseSpecifiedUriWebProxy(Uri uri, ICredentials credentials = null, bool bypass = false)
+            {
+                _uri = uri;
+                _bypass = bypass;
+                Credentials = credentials;
+            }
+
             public ICredentials Credentials { get; set; }
             public Uri GetProxy(Uri destination) => _uri;
-            public bool IsBypassed(Uri host) => false;
+            public bool IsBypassed(Uri host) => _bypass;
+        }
+
+        private sealed class PlatformNotSupportedWebProxy : IWebProxy
+        {
+            public ICredentials Credentials { get; set; }
+            public Uri GetProxy(Uri destination) { throw new PlatformNotSupportedException(); }
+            public bool IsBypassed(Uri host) { throw new PlatformNotSupportedException(); }
+        }
+
+        private static IEnumerable<object[]> BypassedProxies()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new PlatformNotSupportedWebProxy() };
+            yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://proxydoesntexist:12345"), bypass: true) };
         }
 
         private static IEnumerable<object[]> CredentialsForProxy()
@@ -887,6 +924,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { null };
             yield return new object[] { new NetworkCredential("username", "password") };
             yield return new object[] { new NetworkCredential("username", "password", "domain") };
+            yield return new object[] { CredentialCache.DefaultCredentials };
         }
         #endregion
     }
