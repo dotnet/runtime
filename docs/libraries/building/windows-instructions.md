@@ -25,7 +25,7 @@ related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
 
 By default building from the root will only build the libraries for the OS you are running on. One can
-build for another OS by specifying `/p:FilterOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
+build for another OS by specifying `/p:FilterToOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
 `/p:BuildAllOSGroups=true`.
 
 
