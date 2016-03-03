@@ -224,8 +224,11 @@ extern "C" void SystemNative_GetControlCharacters(
 
 extern "C" int32_t SystemNative_StdinReady()
 {
+    SystemNative_InitializeConsoleBeforeRead(1, 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
-    return poll(&fd, 1, 0) > 0 ? 1 : 0;
+    int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
+    SystemNative_UninitializeConsoleAfterRead();
+    return rv;
 }
 
 extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
