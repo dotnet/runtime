@@ -176,8 +176,67 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
     // executing GS cookie check will not collect the object pointed to by EAX.
-    if (!pushReg && (compiler->info.compRetType == TYP_REF))
-        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;    
+    //
+    // For Amd64 System V, a two-register-returned struct could be returned in RAX and RDX
+    // In such case make sure that the correct GC-ness of RDX is reported as well, so
+    // a GC object pointed by RDX will not be collected.
+    if (!pushReg)
+    {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // Handling struct returned in two registers (only applicable to System V systems)...
+        if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            // Get the return tye of the struct.
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR retStructDesc;
+            compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(compiler->info.compMethodInfo->args.retTypeClass, &retStructDesc);
+
+            assert(retStructDesc.passedInRegisters);
+
+            // In case the return type is a two-register-return, the native return type should be a struct
+            assert(varTypeIsStruct(compiler->info.compRetNativeType));
+
+            assert(retStructDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+            unsigned __int8 offset0 = 0;
+            unsigned __int8 offset1 = 0;
+
+            var_types type0 = TYP_UNKNOWN;
+            var_types type1 = TYP_UNKNOWN;
+
+            // Set the GC-ness of the struct return registers.
+            getStructTypeOffset(retStructDesc, &type0, &type1, &offset0, &offset1);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, type0);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET_1, type1);
+        }
+        else
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+        if (compiler->compMethodReturnsRetBufAddr())
+        {
+            // This is for returning in an implicit RetBuf.
+            // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
+
+            // In case the return is in an implicit RetBuf, the native return type should be a struct
+            assert(varTypeIsStruct(compiler->info.compRetNativeType));
+
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+        }
+        // ... all other cases.
+        else
+        {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            // For System V structs that are not returned in registers are always 
+            // returned in implicit RetBuf. If we reached here, we should not have
+            // a RetBuf and the return type should not be a struct.
+            assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
+            assert(!varTypeIsStruct(compiler->info.compRetNativeType));
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+            // For Windows we can't make such assertions since we generate code for returning of 
+            // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
+            // compRetNativeType could be TYP_STRUCT.
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
+        }
+    }
 
     regNumber regGSCheck;
     if (!pushReg)
@@ -185,14 +244,16 @@ void                CodeGen::genEmitGSCookieCheck(bool pushReg)
         // Non-tail call: we can use any callee trash register that is not
         // a return register or contain 'this' pointer (keep alive this), since 
         // we are generating GS cookie check after a GT_RETURN block.
+        // Note: On Amd64 System V RDX is an arg register - REG_ARG_2 - as well 
+        // as return register for two-register-returned structs.
         if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvRegister &&
-            (compiler->lvaTable[compiler->info.compThisArg].lvRegNum == REG_ECX))
+            (compiler->lvaTable[compiler->info.compThisArg].lvRegNum == REG_ARG_0))
         {
-            regGSCheck = REG_RDX;
+            regGSCheck = REG_ARG_1;
         }
         else
         {
-            regGSCheck = REG_RCX;
+            regGSCheck = REG_ARG_0;
         }
     }
     else
