@@ -157,7 +157,7 @@ static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGeneri
 static gpointer register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 static gboolean reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb, MonoError *error);
 static gboolean reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb, MonoError *error);
-static guint32 create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb);
+static guint32 create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error);
 #endif
 
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
@@ -2963,9 +2963,10 @@ mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, Mo
 	sig = method_builder_encode_signature (assembly, &rmb, error);
 	return_val_if_nok (error, 0);
 
-	if (tb->generic_params)
-		parent = create_generic_typespec (assembly, tb);
-	else {
+	if (tb->generic_params) {
+		parent = create_generic_typespec (assembly, tb, error);
+		return_val_if_nok (error, 0);
+	} else {
 		MonoType *t = mono_reflection_type_get_handle ((MonoReflectionType*)rmb.type, error);
 		return_val_if_nok (error, 0);
 
@@ -3113,9 +3114,10 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
 		return 0;
 
-	if (tb->generic_params)
-		parent = create_generic_typespec (assembly, tb);
-	else {
+	if (tb->generic_params) {
+		parent = create_generic_typespec (assembly, tb, error);
+		return_val_if_nok (error, 0);
+	} else {
 		MonoType * type = mono_reflection_type_get_handle ((MonoReflectionType*)tb, error);
 		return_val_if_nok (error, 0);
 		parent = mono_image_typedef_or_ref (assembly, type);
@@ -3524,9 +3526,8 @@ mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m)
 }
 
 static guint32
-create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb)
+create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error)
 {
-	MonoError error;
 	MonoDynamicTable *table;
 	MonoClass *klass;
 	MonoType *type;
@@ -3540,8 +3541,8 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	 * ie. what we'd normally use as the generic type in a TypeSpec signature.
 	 * Because of this, we must not insert it into the `typeref' hash table.
 	 */
-	type = mono_reflection_type_get_handle ((MonoReflectionType*)tb, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	type = mono_reflection_type_get_handle ((MonoReflectionType*)tb, error);
+	return_val_if_nok (error, 0);
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typespec, type));
 	if (token)
 		return token;
@@ -3565,8 +3566,9 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 		MonoReflectionGenericParam *gparam;
 
 		gparam = mono_array_get (tb->generic_params, MonoReflectionGenericParam *, i);
-		MonoType *gparam_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *gparam_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, error);
+		if (!is_ok (error))
+			goto fail;
 
 		encode_type (assembly, gparam_type, &buf);
 	}
@@ -3585,6 +3587,9 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	g_hash_table_insert (assembly->typespec, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
+fail:
+	sigbuffer_free (&buf);
+	return 0;
 }
 
 /*
@@ -3681,7 +3686,8 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	sig = fieldref_encode_signature (assembly, NULL, type);
 	g_free (custom);
 
-	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb);
+	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	g_assert ((parent & MONO_TYPEDEFORREF_MASK) == MONO_TYPEDEFORREF_TYPESPEC);
 	
 	pclass = MONO_MEMBERREF_PARENT_TYPESPEC;
