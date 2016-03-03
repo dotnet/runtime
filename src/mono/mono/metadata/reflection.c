@@ -3596,11 +3596,12 @@ fail:
  * Return a copy of TYPE, adding the custom modifiers in MODREQ and MODOPT.
  */
 static MonoType*
-add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *modreq, MonoArray *modopt)
+add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *modreq, MonoArray *modopt, MonoError *error)
 {
-	MonoError error;
 	int i, count, len, pos;
 	MonoType *t;
+
+	mono_error_init (error);
 
 	count = 0;
 	if (modreq)
@@ -3619,8 +3620,9 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 	pos = 0;
 	if (modreq) {
 		for (i = 0; i < mono_array_length (modreq); ++i) {
-			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoType *mod = mono_type_array_get_and_resolve (modreq, i, error);
+			if (!is_ok (error))
+				goto fail;
 			t->modifiers [pos].required = 1;
 			t->modifiers [pos].token = mono_image_typedef_or_ref (assembly, mod);
 			pos ++;
@@ -3628,8 +3630,9 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 	}
 	if (modopt) {
 		for (i = 0; i < mono_array_length (modopt); ++i) {
-			MonoType *mod = mono_type_array_get_and_resolve (modopt, i, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoType *mod = mono_type_array_get_and_resolve (modopt, i, error);
+			if (!is_ok (error))
+				goto fail;
 			t->modifiers [pos].required = 0;
 			t->modifiers [pos].token = mono_image_typedef_or_ref (assembly, mod);
 			pos ++;
@@ -3637,6 +3640,9 @@ add_custom_modifiers (MonoDynamicImage *assembly, MonoType *type, MonoArray *mod
 	}
 
 	return t;
+fail:
+	g_free (t);
+	return NULL;
 }
 
 static void
@@ -3670,7 +3676,6 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	/* FIXME: is this call necessary? */
 	mono_class_from_mono_type (typeb);
-	name = mono_string_to_utf8 (fb->name);
 
 	/*FIXME this is one more layer of ugliness due how types are created.*/
 	init_type_builder_generics (fb->type);
@@ -3680,8 +3685,10 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
-	if (fb->modreq || fb->modopt)
-		type = custom = add_custom_modifiers (assembly, type, fb->modreq, fb->modopt);
+	if (fb->modreq || fb->modopt) {
+		type = custom = add_custom_modifiers (assembly, type, fb->modreq, fb->modopt, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
 
 	sig = fieldref_encode_signature (assembly, NULL, type);
 	g_free (custom);
@@ -3694,6 +3701,8 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	parent >>= MONO_TYPEDEFORREF_BITS;
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
+
+	name = mono_string_to_utf8 (fb->name);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
@@ -11849,8 +11858,12 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 		field->type->attrs = fb->attrs;
 
 		g_assert (image_is_dynamic (klass->image));
-		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt);
+		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt, &error);
 		g_free (field->type);
+		if (!is_ok (&error)) {
+			g_free (field);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		}
 		field->type = mono_metadata_type_dup (klass->image, custom);
 		g_free (custom);
 	} else {
