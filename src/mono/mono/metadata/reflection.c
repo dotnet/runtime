@@ -2277,11 +2277,12 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, M
 }
 
 static void
-mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *assembly)
+mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	MonoDynamicTable *table;
 	guint32 *values;
 
@@ -2294,8 +2295,8 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
 	values [MONO_FIELD_NAME] = string_heap_insert_mstring (&assembly->sheap, fb->name);
 	values [MONO_FIELD_FLAGS] = fb->attrs;
-	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb, error);
+	return_if_nok (error);
 
 
 	if (fb->offset != -1) {
@@ -2341,8 +2342,8 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_MARSHAL_SIZE;
 		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_FIELDSREF;
-		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info, error);
+		return_if_nok (error);
 	}
 }
 
@@ -3939,9 +3940,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		table = &assembly->tables [MONO_TABLE_FIELD];
 		table->rows += tb->num_fields;
 		alloc_table (table, table->rows);
-		for (i = 0; i < tb->num_fields; ++i)
+		for (i = 0; i < tb->num_fields; ++i) {
 			mono_image_get_field_info (
-				mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i), assembly);
+				mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i), assembly, error);
+			return_val_if_nok (error, FALSE);
+		}
 	}
 
 	/* handle constructors */
@@ -5174,9 +5177,13 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *erro
 		table = &assembly->tables [MONO_TABLE_FIELD];
 		table->rows += mono_array_length (moduleb->global_fields);
 		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (moduleb->global_fields); ++i)
+		for (i = 0; i < mono_array_length (moduleb->global_fields); ++i) {
 			mono_image_get_field_info (
-				mono_array_get (moduleb->global_fields, MonoReflectionFieldBuilder*, i), assembly);
+				mono_array_get (moduleb->global_fields, MonoReflectionFieldBuilder*, i), assembly,
+				error);
+			if (!is_ok (error))
+				goto leave;
+		}
 	}
 
 	table = &assembly->tables [MONO_TABLE_MODULE];
