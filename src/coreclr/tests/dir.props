@@ -32,6 +32,21 @@
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir> 
   </PropertyGroup>
 
+   <!-- Package dependency validation -->
+  <PropertyGroup>
+    <ValidatePackageVersions>true</ValidatePackageVersions>
+    <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
+      <ExpectedPrerelease>rc2-23816</ExpectedPrerelease>
+    </ValidationPattern>
+    <ValidationPattern Include="^(?i)xunit\..%2A$">
+      <ExpectedVersion>2.1.0</ExpectedVersion>
+    </ValidationPattern>
+  </ItemGroup>
+
   <!-- Common nuget properties -->
   <PropertyGroup>
     <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(PackagesDir)NuGet.exe</NuGetToolPath>
@@ -81,7 +96,14 @@
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
   </PropertyGroup>
-  
+
+  <!-- Create a collection of all project.json files for dependency updates. -->
+  <ItemGroup>
+    <!-- Skip validation of the test_runtime project created by the test build. -->
+    <ProjectJsonFiles Include="$(SourceDir)**/project.json"
+                      Exclude="$(SourceDir)Common\test_runtime\project.json" />
+  </ItemGroup>
+
   <!-- Which tests shall we build? Default: Priority 0 tests.
     At the command-line, the user can specify /p:CLRTestPriorityToBuild=666 (for example), and
     all tests with CLRTestPriority 666,..., 1 AND 0 will build. 
