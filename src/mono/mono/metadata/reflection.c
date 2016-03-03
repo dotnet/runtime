@@ -2471,11 +2471,10 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 }
 
 static void
-mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *assembly)
+mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint num_methods = 0;
@@ -2493,8 +2492,8 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 	values = table->values + eb->table_idx * MONO_EVENT_SIZE;
 	values [MONO_EVENT_NAME] = string_heap_insert_mstring (&assembly->sheap, eb->name);
 	values [MONO_EVENT_FLAGS] = eb->attrs;
-	MonoType *ebtype = mono_reflection_type_get_handle (eb->type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoType *ebtype = mono_reflection_type_get_handle (eb->type, error);
+	return_if_nok (error);
 	values [MONO_EVENT_TYPE] = mono_image_typedef_or_ref (assembly, ebtype);
 
 	/*
@@ -3987,9 +3986,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		values = table->values + table->rows * MONO_EVENT_MAP_SIZE;
 		values [MONO_EVENT_MAP_PARENT] = tb->table_idx;
 		values [MONO_EVENT_MAP_EVENTLIST] = assembly->tables [MONO_TABLE_EVENT].next_idx;
-		for (i = 0; i < mono_array_length (tb->events); ++i)
+		for (i = 0; i < mono_array_length (tb->events); ++i) {
 			mono_image_get_event_info (
-				mono_array_get (tb->events, MonoReflectionEventBuilder*, i), assembly);
+				mono_array_get (tb->events, MonoReflectionEventBuilder*, i), assembly, error);
+			return_val_if_nok (error, FALSE);
+		}
 	}
 	if (tb->properties && mono_array_length (tb->properties)) {
 		table = &assembly->tables [MONO_TABLE_PROPERTY];
