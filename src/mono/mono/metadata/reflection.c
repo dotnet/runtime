@@ -1070,11 +1070,12 @@ leave:
 }
 
 static guint32
-encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
+encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 idx, sig_idx;
@@ -1091,10 +1092,10 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 		if (lb->is_pinned)
 			sigbuffer_add_value (&buf, MONO_TYPE_PINNED);
 		
-		encode_reflection_type (assembly, (MonoReflectionType*)lb->type, &buf, &error);
-		if (!is_ok (&error)) {
+		encode_reflection_type (assembly, (MonoReflectionType*)lb->type, &buf, error);
+		if (!is_ok (error)) {
 			sigbuffer_free (&buf);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return 0;
 		}
 	}
 	sig_idx = sigbuffer_add_to_blob_cached (assembly, &buf);
@@ -1273,8 +1274,10 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb, Mon
 		return assembly->text_rva + idx;
 	} 
 fat_header:
-	if (num_locals)
-		local_sig = MONO_TOKEN_SIGNATURE | encode_locals (assembly, mb->ilgen);
+	if (num_locals) {
+		local_sig = MONO_TOKEN_SIGNATURE | encode_locals (assembly, mb->ilgen, error);
+		return_val_if_nok (error, 0);
+	}
 	/* 
 	 * FIXME: need to set also the header size in fat_flags.
 	 * (and more sects and init locals flags)
