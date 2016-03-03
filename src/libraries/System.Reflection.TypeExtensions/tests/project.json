@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23903",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Linq": "4.0.0",
-    "System.Reflection": "4.0.10",
+    "System.Reflection": "4.1.0-rc3-23903",
     "System.Reflection.Primitives": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
