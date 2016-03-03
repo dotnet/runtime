@@ -756,8 +756,16 @@ copy_test_native_bin_to_test_root
 load_unsupported_tests
 load_failing_tests
 
+if [ -n "$COMPlus_GCStress" ]; then
+    scriptPath=$(dirname $0)
+    ${scriptPath}/setup-gcstress.sh --outputDir=$coreOverlayDir
+    if [ $? -ne 0 ] 
+    then
+        echo 'Failed to download coredistools library'
+        exit $EXIT_CODE_EXCEPTION
+    fi
+fi
  
-
 cd "$testRootDir"
 if [ -z "$testDirectories" ]
 then
