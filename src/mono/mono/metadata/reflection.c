@@ -163,7 +163,7 @@ static guint32 create_generic_typespec (MonoDynamicImage *assembly, MonoReflecti
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
 static guint32 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
 static void    mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly);
-static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo);
+static guint32 encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, MonoError *error);
 static guint32 encode_constant (MonoDynamicImage *assembly, MonoObject *val, guint32 *ret_type);
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
@@ -1704,7 +1704,8 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 					alloc_table (mtable, mtable->rows);
 					mvalues = mtable->values + mtable->rows * MONO_FIELD_MARSHAL_SIZE;
 					mvalues [MONO_FIELD_MARSHAL_PARENT] = (table->next_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_PARAMDEF;
-					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
+					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info, error);
+					return_val_if_nok (error, FALSE);
 				}
 				pb->table_idx = table->next_idx++;
 				if (pb->attrs & PARAM_ATTRIBUTE_HAS_DEFAULT) {
@@ -2191,11 +2192,12 @@ handle_enum:
 }
 
 static guint32
-encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo)
+encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	char *str;
 	SigBuffer buf;
 	guint32 idx, len;
@@ -2240,8 +2242,11 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo)
 		/* custom marshaler type name */
 		if (minfo->marshaltype || minfo->marshaltyperef) {
 			if (minfo->marshaltyperef) {
-				MonoType *marshaltype = mono_reflection_type_get_handle ((MonoReflectionType*)minfo->marshaltyperef, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				MonoType *marshaltype = mono_reflection_type_get_handle ((MonoReflectionType*)minfo->marshaltyperef, error);
+				if (!is_ok (error)) {
+					sigbuffer_free (&buf);
+					return 0;
+				}
 				str = type_get_fully_qualified_name (marshaltype);
 			} else
 				str = mono_string_to_utf8 (minfo->marshaltype);
@@ -2336,7 +2341,8 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_MARSHAL_SIZE;
 		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_FIELDSREF;
-		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info);
+		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 }
 
