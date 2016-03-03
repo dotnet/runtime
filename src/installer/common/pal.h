@@ -95,6 +95,9 @@ namespace pal
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::wcscmp(str1, str2); }
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
+    inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::wcsncmp(str1, str2, len); }
+    inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
+
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
 
@@ -125,6 +128,8 @@ namespace pal
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::strcasecmp(str1, str2); }
+    inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::strncmp(str1, str2, len); }
+    inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::strncasecmp(str1, str2, len); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfprintf(stderr, format, vl); ::fputc('\n', stderr); }
     inline pal::string_t to_palstring(const std::string& str) { return str; }
