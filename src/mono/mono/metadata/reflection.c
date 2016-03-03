@@ -3201,9 +3201,8 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoObject *f, MonoCl
 }
 
 static guint32
-mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFieldOnTypeBuilderInst *f)
+mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFieldOnTypeBuilderInst *f, MonoError *error)
 {
-	MonoError error;
 	guint32 token;
 	MonoClass *klass;
 	MonoGenericClass *gclass;
@@ -3215,23 +3214,23 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 		return token;
 	if (is_sre_field_builder (mono_object_class (f->fb))) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)f->fb;
-		type = mono_reflection_type_get_handle ((MonoReflectionType*)f->inst, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		type = mono_reflection_type_get_handle ((MonoReflectionType*)f->inst, error);
+		return_val_if_nok (error, 0);
 		klass = mono_class_from_mono_type (type);
 		gclass = type->data.generic_class;
 		g_assert (gclass->is_dynamic);
 
+		guint32 sig_token = field_encode_signature (assembly, fb, error);
+		return_val_if_nok (error, 0);
 		name = mono_string_to_utf8 (fb->name);
-		guint32 sig_token = field_encode_signature (assembly, fb, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig_token);
 		g_free (name);		
 	} else if (is_sr_mono_field (mono_object_class (f->fb))) {
 		guint32 sig;
 		MonoClassField *field = ((MonoReflectionField *)f->fb)->field;
 
-		type = mono_reflection_type_get_handle ((MonoReflectionType*)f->inst, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		type = mono_reflection_type_get_handle ((MonoReflectionType*)f->inst, error);
+		return_val_if_nok (error, 0);
 		klass = mono_class_from_mono_type (type);
 
 		sig = fieldref_encode_signature (assembly, field->parent->image, field->type);
@@ -5625,7 +5624,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 			mono_image_typedef_or_ref (assembly, type));
 	} else if (strcmp (klass->name, "FieldOnTypeBuilderInst") == 0) {
 		MonoReflectionFieldOnTypeBuilderInst *f = (MonoReflectionFieldOnTypeBuilderInst*)obj;
-		token = mono_image_get_field_on_inst_token (assembly, f);
+		token = mono_image_get_field_on_inst_token (assembly, f, error);
+		return_val_if_nok (error, 0);
 	} else if (strcmp (klass->name, "ConstructorOnTypeBuilderInst") == 0) {
 		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)obj;
 		token = mono_image_get_ctor_on_inst_token (assembly, c, create_open_instance, error);
