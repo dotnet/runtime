@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -43,7 +41,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void FirstDayOfWeek_Set_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().FirstDayOfWeek = (DayOfWeek)(-1)); // Value is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = DayOfWeek.Sunday - 1); // Value is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = DayOfWeek.Saturday + 1); // Value is invalid
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FirstDayOfWeek = DayOfWeek.Wednesday); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

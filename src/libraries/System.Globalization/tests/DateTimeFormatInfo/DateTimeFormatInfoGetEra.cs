@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -61,7 +60,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetEra_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().GetEra(null)); // Era name is null
+            Assert.Throws<ArgumentNullException>("eraName", () => new DateTimeFormatInfo().GetEra(null)); // Era name is null
         }
     }
 }

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -28,9 +26,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void AbbreviatedDayNames_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().AbbreviatedDayNames = null); // Value is null
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" }); // Value has null
-            Assert.Throws<ArgumentException>(() => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "sun" }); // Value.Length is not 7
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedDayNames = null); // Value is null
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" }); // Value has null
+            Assert.Throws<ArgumentException>("value", (() => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "sun" })); // Value.Length is not 7
 
             // DateTimeFormatInfo.InvariantInfo is read only
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AbbreviatedDayNames = new string[] { "1", "2", "3", "4", "5", "6", "7" });
