@@ -810,7 +810,5 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => client.ConnectAsync(args));
             }
         }
-
-
     }
 }

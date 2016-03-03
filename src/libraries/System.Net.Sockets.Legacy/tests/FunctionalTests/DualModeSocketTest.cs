@@ -1334,6 +1334,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         public void Socket_ReceiveFromDnsEndPoint_Throws()
         {
             // "The parameter remoteEP must not be of type DnsEndPoint."
@@ -1349,32 +1350,35 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV4BoundToSpecificV4_Success()
         {
             ReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV4BoundToAnyV4_Success()
         {
             ReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV6BoundToSpecificV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV6BoundToAnyV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1384,7 +1388,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
+        [PlatformSpecific(~(PlatformID.Linux | PlatformID.OSX))]
         public void ReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1411,6 +1415,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1420,6 +1425,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromV4BoundToAnyV6_Success()
         {
             ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1465,6 +1471,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginReceiveFromDnsEndPoint_Throws()
         {
@@ -1481,30 +1488,35 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV4BoundToAnyV4_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV6BoundToSpecificV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV6BoundToAnyV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1514,7 +1526,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
+        [PlatformSpecific(~(PlatformID.Linux | PlatformID.OSX))]
         public void BeginReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1541,6 +1553,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1550,6 +1563,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveFromV4BoundToAnyV6_Success()
         {
             BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1612,6 +1626,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveFromAsyncDnsEndPoint_Throws()
         {
@@ -1631,31 +1646,35 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1665,6 +1684,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1674,6 +1694,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1683,6 +1704,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1748,6 +1770,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveMessageFromDnsEndPoint_Throws()
         {
@@ -1766,48 +1789,49 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyV4_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1817,7 +1841,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
+        [PlatformSpecific(~(PlatformID.Linux | PlatformID.OSX))]
         public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1844,6 +1868,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1853,7 +1878,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1939,6 +1964,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_BeginReceiveMessageFromDnsEndPoint_Throws()
         {
@@ -1956,48 +1982,49 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToSpecificV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2007,7 +2034,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
+        [PlatformSpecific(~(PlatformID.Linux | PlatformID.OSX))]
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2034,6 +2061,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2043,7 +2071,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -2114,6 +2142,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveMessageFromAsyncDnsEndPoint_Throws()
         {
@@ -2133,48 +2162,49 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2184,7 +2214,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~PlatformID.Linux)]
+        [PlatformSpecific(~(PlatformID.Linux | PlatformID.OSX))]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2211,6 +2241,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -2220,7 +2251,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -2269,6 +2300,36 @@ namespace System.Net.Sockets.Tests
         #endregion ReceiveMessageFrom Async/Event
 
         #endregion ReceiveMessageFrom
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void BeginReceiveFrom_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                byte[] buf = new byte[1];
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.BeginReceiveFrom(buf, 0, buf.Length, SocketFlags.None, ref ep, null, null));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void BeginReceiveMessageFrom_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                byte[] buf = new byte[1];
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.BeginReceiveMessageFrom(buf, 0, buf.Length, SocketFlags.None, ref ep, null, null));
+            }
+        }
 
         #endregion Connectionless
 
@@ -2436,18 +2497,14 @@ namespace System.Net.Sockets.Tests
 
                 port = _server.BindToAnonymousPort(address);
 
-                IPAddress remoteAddress = address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
-                EndPoint remote = new IPEndPoint(remoteAddress, 0);
-                _server.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref remote, Received, null);
+                _server.BeginReceive(new byte[1], 0, 1, SocketFlags.None, Received, null);
             }
 
             private void Received(IAsyncResult ar)
             {
                 try
                 {
-                    IPAddress remoteAddress = _server.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
-                    EndPoint remote = new IPEndPoint(remoteAddress, 0);
-                    int byteCount = _server.EndReceiveFrom(ar, ref remote);
+                    int byteCount = _server.EndReceive(ar);
                 }
                 catch (SocketException) { }
                 catch (ObjectDisposedException) { }
