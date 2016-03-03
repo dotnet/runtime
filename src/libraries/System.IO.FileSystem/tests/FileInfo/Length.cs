@@ -56,12 +56,20 @@ namespace System.IO.Tests
                 var info = new FileInfo(path);
                 Assert.Equal(FileSize, info.Length);
 
-                // On Windows, symlinks have length 0.  
-                // On Unix, a symlink contains the path to the target, and thus has that length
                 var linkInfo = new FileInfo(linkPath);
-                Assert.Equal(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : path.Length, 
-                    linkInfo.Length);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Windows, symlinks have length 0.
+                    Assert.Equal(0, linkInfo.Length);
+                }
+                else
+                {
+                    // On Unix, a symlink contains the path to the target, and thus has that length.
+                    // But the length could actually be longer if it's not just ASCII characters.
+                    // We just verify it's at least that big, but also verify that we're not accidentally
+                    // getting the target file size.
+                    Assert.InRange(linkInfo.Length, path.Length, FileSize - 1);
+                }
 
                 // On both, FileStream should however open the target such that its length is the target length
                 using (FileStream linkFs = File.OpenRead(linkPath))
