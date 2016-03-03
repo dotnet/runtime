@@ -154,7 +154,7 @@ branchList.each { branchName ->
 	                }
 
 	                // Unpack the build data
-	                powerShell("C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\bin | Out-File .\\bin\\unpacker.log")
+	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\bin\"\"")
 	                // Run the tests
 	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
             	}
