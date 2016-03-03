@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "Microsoft.CodeAnalysis.Compilers": "1.1.1",
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027",
-    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0027",
-    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0027",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0028",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0028",
     "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "System.Console": "4.0.0-rc2-23816",
     "System.Numerics.Vectors": "4.1.1-rc2-23816",
@@ -17,7 +17,7 @@
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.Tasks.Parallel": "4.0.0",
     "xunit": "2.1.0",
-    "xunit.console.netcore": "2.1.0",
+    "xunit.console.netcore": "1.0.2-prerelease-00101",
     "xunit.runner.utility": "2.1.0"
   },
   "frameworks": {
