@@ -844,5 +844,50 @@ namespace System.Net.Http.Functional.Tests
             }
         }
         #endregion
+
+        #region Proxy tests
+        [Theory]
+        [MemberData(nameof(CredentialsForProxy))]
+        public void UseCustomProxy_GetRequestGoesThroughProxy_Success(ICredentials creds)
+        {
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: creds != null);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            using (var handler = new HttpClientHandler() { UseProxy = true, Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
+                Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
+                Task.WaitAll(proxyTask, responseTask, responseStringTask);
+
+                TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
+                Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
+
+                NetworkCredential nc = creds != null ? creds.GetCredential(proxyUrl, "Basic") : null;
+                string expectedAuth =
+                    nc == null ? null :
+                    string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
+                    $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
+                Assert.Equal(expectedAuth, proxyTask.Result.AuthenticationHeaderValue);
+            }
+        }
+
+        private sealed class UseSpecifiedUriWebProxy : IWebProxy
+        {
+            private Uri _uri;
+            public UseSpecifiedUriWebProxy(Uri uri, ICredentials credentials = null) { _uri = uri; Credentials = credentials; }
+            public ICredentials Credentials { get; set; }
+            public Uri GetProxy(Uri destination) => _uri;
+            public bool IsBypassed(Uri host) => false;
+        }
+
+        private static IEnumerable<object[]> CredentialsForProxy()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new NetworkCredential("username", "password") };
+            yield return new object[] { new NetworkCredential("username", "password", "domain") };
+        }
+        #endregion
     }
 }
