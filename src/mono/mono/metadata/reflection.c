@@ -2046,11 +2046,12 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, M
 #endif
 
 static guint32
-field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb)
+field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *fb, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	SigBuffer buf;
 	guint32 idx;
 	guint32 typespec = 0;
@@ -2059,15 +2060,15 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 
 	init_type_builder_generics (fb->type);
 
-	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
+	return_val_if_nok (error, 0);
 	klass = mono_class_from_mono_type (type);
 
 	sigbuffer_init (&buf, 32);
 	
 	sigbuffer_add_value (&buf, 0x06);
-	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, &buf, &error);
-	if (!is_ok (&error))
+	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, &buf, error);
+	if (!is_ok (error))
 		goto fail;
 	/* encode custom attributes before the type */
 
@@ -2086,8 +2087,7 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	return idx;
 fail:
 	sigbuffer_free (&buf);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	g_assert_not_reached ();
+	return 0;
 }
 
 static guint32
@@ -2276,6 +2276,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
 	MonoDynamicTable *table;
 	guint32 *values;
 
@@ -2288,7 +2289,9 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
 	values [MONO_FIELD_NAME] = string_heap_insert_mstring (&assembly->sheap, fb->name);
 	values [MONO_FIELD_FLAGS] = fb->attrs;
-	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb);
+	values [MONO_FIELD_SIGNATURE] = field_encode_signature (assembly, fb, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 
 	if (fb->offset != -1) {
 		table = &assembly->tables [MONO_TABLE_FIELDLAYOUT];
@@ -3207,8 +3210,9 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 		g_assert (gclass->is_dynamic);
 
 		name = mono_string_to_utf8 (fb->name);
-		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, 
-												field_encode_signature (assembly, fb));
+		guint32 sig_token = field_encode_signature (assembly, fb, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig_token);
 		g_free (name);		
 	} else if (is_sr_mono_field (mono_object_class (f->fb))) {
 		guint32 sig;
