@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include "hostallocator.h"
 #include "instr.h"
 #include "emit.h"
 #include "codegen.h"
@@ -264,13 +265,13 @@ static  unsigned    totActualSize;
         unsigned    emitter::emitIFcounts[emitter::IF_COUNT];
 
 static  unsigned    emitSizeBuckets[] = { 100, 1024*1, 1024*2, 1024*3, 1024*4, 1024*5, 1024*10, 0 };
-static  histo       emitSizeTable(DefaultAllocator::Singleton(), emitSizeBuckets);
+static  histo       emitSizeTable(HostAllocator::getHostAllocator(), emitSizeBuckets);
 
 static  unsigned    GCrefsBuckets[] = { 0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0 };
-static  histo       GCrefsTable(DefaultAllocator::Singleton(), GCrefsBuckets);
+static  histo       GCrefsTable(HostAllocator::getHostAllocator(), GCrefsBuckets);
 
 static  unsigned    stkDepthBuckets[] = { 0, 1, 2, 5, 10, 16, 32, 128, 1024, 0 };
-static  histo       stkDepthTable(DefaultAllocator::Singleton(), stkDepthBuckets);
+static  histo       stkDepthTable(HostAllocator::getHostAllocator(), stkDepthBuckets);
 
 size_t              emitter::emitSizeMethod;
 
