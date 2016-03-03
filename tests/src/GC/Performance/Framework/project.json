@@ -20,7 +20,7 @@
         "warningsAsErrors": true
       },
       "dependencies": {
-        "System.Diagnostics.Process": "4.0.0-rc2-23816",
+        "System.Diagnostics.Process": "4.1.0-rc2-23816",
         "System.IO": "4.0.10",
         "System.IO.FileSystem": "4.0.0",
         "System.IO.FileSystem.Primitives": "4.0.0",
