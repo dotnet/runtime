@@ -123,7 +123,7 @@ branchList.each { branchName ->
             def isPR = (branchName == 'pr')  
             def newJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}"
             
-			def newBuildJobName = "${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
+			def newBuildJobName = "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_bld"
 
 			def newBuildJob = job(getJobName(Utilities.getFullJobName(project, newBuildJobName, isPR), branchName)) {
         		steps {
@@ -141,7 +141,7 @@ branchList.each { branchName ->
             Utilities.addArchival(newBuildJob, "bin/build.pack,run-test.cmd,bin/osGroup.AnyCPU.${configurationGroup}/**,bin/ref/**,bin/packages/**,msbuild.log")
             
             def fullCoreFXBuildJobName = Utilities.getFolderName(project) + '/' + newBuildJob.name
-            def newTestJobName =  "${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
+            def newTestJobName =  "outerloop_${osShortName[os]}_${configurationGroup.toLowerCase()}_tst"
             def newTestJob = job(getJobName(Utilities.getFullJobName(project, newTestJobName, isPR), branchName)) {
             	steps {
             		// The tests/corefx components
