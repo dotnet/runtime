@@ -69,7 +69,7 @@ namespace System.Net.Http
 
         private IWebProxy _proxy = null;
         private ICredentials _serverCredentials = null;
-        private ProxyUsePolicy _proxyPolicy = ProxyUsePolicy.UseDefaultProxy;
+        private bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         private CredentialCache _credentialCache = null; // protected by LockObject
@@ -140,15 +140,13 @@ namespace System.Net.Http
         {
             get
             {
-                return _proxyPolicy != ProxyUsePolicy.DoNotUseProxy;
+                return _useProxy;
             }
 
             set
             {
                 CheckDisposedOrStarted();
-                _proxyPolicy = value ?
-                    ProxyUsePolicy.UseCustomProxy :
-                    ProxyUsePolicy.DoNotUseProxy;
+                _useProxy = value;
             }
         }
 
@@ -713,13 +711,6 @@ nameof(value),
         }
 
         #endregion
-
-        private enum ProxyUsePolicy
-        {
-            DoNotUseProxy = 0, // Do not use proxy. Ignores the value set in the environment.
-            UseDefaultProxy = 1, // Do not set the proxy parameter. Use the value of environment variable, if any.
-            UseCustomProxy = 2  // Use The proxy specified by the user.
-        }
     }
 }
 
