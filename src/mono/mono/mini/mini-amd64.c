@@ -5912,7 +5912,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, X86_FP_C0);
 			amd64_pop_reg (code, AMD64_RAX);
 			amd64_fstp (code, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 16);
 			break;
 		case OP_TLS_GET: {

@@ -60,6 +60,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/reflection-internals.h>
 
@@ -2186,6 +2187,9 @@ handle_enum:
 	return -1;
 }
 
+//XXX this ignores if t is byref
+#define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 /*
  * target_type_is_incompatible:
  * @cfg: MonoCompile context
@@ -2206,10 +2210,20 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
 		if (arg->type == STACK_MP) {
-			MonoClass *base_class = mono_class_from_mono_type (target);
-			/* This is needed to handle gshared types + ldaddr */
-			simple_type = mini_get_underlying_type (&base_class->byval_arg);
-			return target->type != MONO_TYPE_I && arg->klass != base_class && arg->klass != mono_class_from_mono_type (simple_type);
+			if (cfg->verbose_level) printf ("ok\n");
+			/* This is needed to handle gshared types + ldaddr. We lower the types so we can handle enums and other typedef-like types. */
+			MonoClass *target_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (&mono_class_from_mono_type (target)->byval_arg));
+			MonoClass *source_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (&arg->klass->byval_arg));
+
+			/* if the target is native int& or same type */
+			if (target->type == MONO_TYPE_I || target_class_lowered == source_class_lowered)
+				return 0;
+
+			/* Both are primitive type byrefs and the source points to a larger type that the destination */
+			if (MONO_TYPE_IS_PRIMITIVE_SCALAR (&target_class_lowered->byval_arg) && MONO_TYPE_IS_PRIMITIVE_SCALAR (&source_class_lowered->byval_arg) &&
+				mono_class_instance_size (target_class_lowered) <= mono_class_instance_size (source_class_lowered))
+				return 0;
+			return 1;
 		}
 		if (arg->type == STACK_PTR)
 			return 0;
@@ -11493,8 +11507,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* STATIC CASE */
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL)
-				UNVERIFIED;
+			if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL) {
+				mono_error_set_field_load (&cfg->error, field->parent, field->name, "Using static instructions with literal field");
+				CHECK_CFG_ERROR;
+			}
 
 			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
 			 * to be called here.
