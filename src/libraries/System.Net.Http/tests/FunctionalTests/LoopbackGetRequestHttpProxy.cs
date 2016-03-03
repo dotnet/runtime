@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
     /// <summary>
     /// Provides a test-only, overly-simplified HTTP proxy for a single GET request.  It is not meant to be robust,
     /// but simply for verification that a GET request is in fact getting routed through a designated proxy
-    /// and providing credentials if expected.
+    /// and providing credentials if expected.  SSL is not supported.
     /// </summary>
     internal sealed class LoopbackGetRequestHttpProxy
     {
@@ -42,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
             string url = null;
             try
             {
-                // Get and parse the incoming request
+                // Get and parse the incoming request.
                 Func<Task> getAndReadRequest = async () => {
                     clientSocket = await listener.AcceptSocketAsync().ConfigureAwait(false);
                     clientStream = new NetworkStream(clientSocket, ownsSocket: false);
@@ -72,24 +72,24 @@ namespace System.Net.Http.Functional.Tests
                     clientSocket.Shutdown(SocketShutdown.Send);
                     clientSocket.Dispose();
 
-                    // Wait for a new connection that should have an auth header this time and parse it
+                    // Wait for a new connection that should have an auth header this time and parse it.
                     await getAndReadRequest().ConfigureAwait(false);
                 }
 
-                // Store any auth header we may have for later comparison
+                // Store any auth header we may have for later comparison.
                 string authValue;
                 if (headers.TryGetValue("Proxy-Authorization", out authValue))
                 {
                     result.AuthenticationHeaderValue = Encoding.UTF8.GetString(Convert.FromBase64String(authValue.Substring("Basic ".Length)));
                 }
 
-                // Forward the request to the server
+                // Forward the request to the server.
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 foreach (var header in headers) request.Headers.Add(header.Key, header.Value);
                 using (HttpClient outboundClient = new HttpClient())
                 using (HttpResponseMessage response = await outboundClient.SendAsync(request).ConfigureAwait(false))
                 {
-                    // Transfer the response headers from the server to the client
+                    // Transfer the response headers from the server to the client.
                     var sb = new StringBuilder($"HTTP/{response.Version.ToString(2)} {(int)response.StatusCode} {response.ReasonPhrase}\r\n");
                     foreach (var header in response.Headers.Concat(response.Content.Headers))
                     {
