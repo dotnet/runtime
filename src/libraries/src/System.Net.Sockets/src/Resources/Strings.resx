@@ -279,4 +279,7 @@
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>
   </data>
+  <data name="net_sockets_dualmode_receivefrom_notsupported" xml:space="preserve">
+    <value>This platform does not support packet information for dual-mode sockets.  If packet information is not required, use Socket.Receive.  If packet information is required set Socket.DualMode to false.</value>
+  </data>
 </root>
