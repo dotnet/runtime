@@ -39,8 +39,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetAbbreviatedMonthName_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedMonthName(MinMonth - 1)); // DayOfWeek is invalid
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedMonthName(MaxMonth + 1)); // DayOfWeek is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => new DateTimeFormatInfo().GetAbbreviatedMonthName(MinMonth - 1)); // Month is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("month", (() => new DateTimeFormatInfo().GetAbbreviatedMonthName(MaxMonth + 1))); // Month is invalid
         }
     }
 }

@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -35,7 +33,10 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetEraName_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
+            Assert.Throws<ArgumentOutOfRangeException>("era", () => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
+
+            const int EnUSMaxEra = 1;
+            Assert.Throws<ArgumentOutOfRangeException>("era", () => new CultureInfo("en-US").DateTimeFormat.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
         }
     }
 }
