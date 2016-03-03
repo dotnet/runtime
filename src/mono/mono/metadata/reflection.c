@@ -149,7 +149,7 @@ const unsigned char table_sizes [MONO_TABLE_NUM] = {
 static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
 static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_open_instance, MonoError *error);
 static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb, MonoError *error);
-static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper);
+static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper, MonoError *error);
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
 static gpointer resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context);
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method, MonoError *error);
@@ -3721,12 +3721,13 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 }
 
 static guint32
-mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper)
+mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper, MonoError *error)
 {
-	MonoError error;
 	SigBuffer buf;
 	guint32 nargs;
 	guint32 i, idx;
+
+	mono_error_init (error);
 
 	if (!assembly->save)
 		return 0;
@@ -3760,8 +3761,8 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 
 	sigbuffer_add_byte (&buf, idx);
 	sigbuffer_add_value (&buf, nargs);
-	encode_reflection_type (assembly, helper->return_type, &buf, &error);
-	if (!is_ok (&error))
+	encode_reflection_type (assembly, helper->return_type, &buf, error);
+	if (!is_ok (error))
 		goto fail;
 	for (i = 0; i < nargs; ++i) {
 		MonoArray *modreqs = NULL;
@@ -3773,12 +3774,12 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 		if (helper->modopts && (i < mono_array_length (helper->modopts)))
 			modopts = mono_array_get (helper->modopts, MonoArray*, i);
 
-		encode_custom_modifiers (assembly, modreqs, modopts, &buf, &error);
-		if (!is_ok (&error))
+		encode_custom_modifiers (assembly, modreqs, modopts, &buf, error);
+		if (!is_ok (error))
 			goto fail;
 		pt = mono_array_get (helper->arguments, MonoReflectionType*, i);
-		encode_reflection_type (assembly, pt, &buf, &error);
-		if (!is_ok (&error))
+		encode_reflection_type (assembly, pt, &buf, error);
+		if (!is_ok (error))
 			goto fail;
 	}
 	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
@@ -3787,16 +3788,17 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 	return idx;
 fail:
 	sigbuffer_free (&buf);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	g_assert_not_reached ();
+	return 0;
 }
 
 static guint32 
-mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper)
+mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper, MonoError *error)
 {
 	guint32 idx;
 	MonoDynamicTable *table;
 	guint32 *values;
+
+	mono_error_init (error);
 
 	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
 	idx = table->next_idx ++;
@@ -3805,8 +3807,9 @@ mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHel
 	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
 
 	values [MONO_STAND_ALONE_SIGNATURE] =
-		mono_reflection_encode_sighelper (assembly, helper);
-
+		mono_reflection_encode_sighelper (assembly, helper, error);
+	return_val_if_nok (error, 0);
+	
 	return idx;
 }
 
@@ -5633,7 +5636,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		token = mono_image_get_array_token (assembly, m);
 	} else if (strcmp (klass->name, "SignatureHelper") == 0) {
 		MonoReflectionSigHelper *s = (MonoReflectionSigHelper*)obj;
-		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s);
+		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s, error);
+		return_val_if_nok (error, 0);
 	} else if (strcmp (klass->name, "EnumBuilder") == 0) {
 		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType *)obj, error);
 		return_val_if_nok (error, 0);
