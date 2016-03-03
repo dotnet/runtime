@@ -14,6 +14,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif // _MSC_VER
+#include "hostallocator.h"
 #include "emit.h"
 #include "ssabuilder.h"
 #include "valuenum.h"
@@ -246,10 +247,10 @@ NodeSizeStats genNodeSizeStats;
 NodeSizeStats genNodeSizeStatsPerFunc;
 
 unsigned    genTreeNcntHistBuckets[] = { 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 5000, 10000, 0 };
-histo       genTreeNcntHist(DefaultAllocator::Singleton(), genTreeNcntHistBuckets);
+histo       genTreeNcntHist(HostAllocator::getHostAllocator(), genTreeNcntHistBuckets);
 
 unsigned    genTreeNsizHistBuckets[] = { 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 0 };
-histo       genTreeNsizHist(DefaultAllocator::Singleton(), genTreeNsizHistBuckets);
+histo       genTreeNsizHist(HostAllocator::getHostAllocator(), genTreeNsizHistBuckets);
 #endif // MEASURE_NODE_SIZE
 
 /*****************************************************************************
@@ -300,16 +301,16 @@ unsigned    argTotalGTF_ASGinArgs;
 unsigned    argMaxTempsPerMethod;
 
 unsigned    argCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argCntTable(DefaultAllocator::Singleton(), argCntBuckets);
+histo       argCntTable(HostAllocator::getHostAllocator(), argCntBuckets);
 
 unsigned    argDWordCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argDWordCntTable(DefaultAllocator::Singleton(), argDWordCntBuckets);
+histo       argDWordCntTable(HostAllocator::getHostAllocator(), argDWordCntBuckets);
 
 unsigned    argDWordLngCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argDWordLngCntTable(DefaultAllocator::Singleton(), argDWordLngCntBuckets);
+histo       argDWordLngCntTable(HostAllocator::getHostAllocator(), argDWordLngCntBuckets);
 
 unsigned    argTempsCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argTempsCntTable(DefaultAllocator::Singleton(), argTempsCntBuckets);
+histo       argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBuckets);
 
 #endif // CALL_ARG_STATS
 
@@ -336,12 +337,12 @@ histo       argTempsCntTable(DefaultAllocator::Singleton(), argTempsCntBuckets);
 //          --------------------------------------------------
 
 unsigned    bbCntBuckets[] = { 1, 2, 3, 5, 10, 20, 50, 100, 1000, 10000, 0 };
-histo       bbCntTable(DefaultAllocator::Singleton(), bbCntBuckets);
+histo       bbCntTable(HostAllocator::getHostAllocator(), bbCntBuckets);
 
 /* Histogram for the IL opcode size of methods with a single basic block */
 
 unsigned    bbSizeBuckets[] = { 1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0 };
-histo       bbOneBBSizeTable(DefaultAllocator::Singleton(), bbSizeBuckets);
+histo       bbOneBBSizeTable(HostAllocator::getHostAllocator(), bbSizeBuckets);
 
 #endif // COUNT_BASIC_BLOCKS
 
@@ -373,12 +374,12 @@ bool        loopOverflowThisMethod;     // True if we exceeded the max # of loop
 /* Histogram for number of loops in a method */
 
 unsigned    loopCountBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0 };
-histo       loopCountTable(DefaultAllocator::Singleton(), loopCountBuckets);
+histo       loopCountTable(HostAllocator::getHostAllocator(), loopCountBuckets);
 
 /* Histogram for number of loop exits */
 
 unsigned    loopExitCountBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 0 };
-histo       loopExitCountTable(DefaultAllocator::Singleton(), loopExitCountBuckets);
+histo       loopExitCountTable(HostAllocator::getHostAllocator(), loopExitCountBuckets);
 
 #endif // COUNT_LOOPS
 
@@ -2113,7 +2114,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
             {
                 // NOTE: The Assembly name list is allocated in the process heap, not in the no-release heap, which is reclaimed
                 // for every compilation. This is ok because we only allocate once, due to the static.
-                s_pAltJitExcludeAssembliesList = new (ProcessHeapAllocator::Singleton()) AssemblyNamesList2(wszAltJitExcludeAssemblyList, ProcessHeapAllocator::Singleton());
+                s_pAltJitExcludeAssembliesList = new (HostAllocator::getHostAllocator()) AssemblyNamesList2(wszAltJitExcludeAssemblyList, HostAllocator::getHostAllocator());
             }
         }
 
