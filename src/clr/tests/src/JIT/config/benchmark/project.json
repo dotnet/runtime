@@ -8,7 +8,7 @@
     "System.Console": "4.0.0-rc2-23816",
     "System.Linq": "4.0.0",
     "System.Numerics.Vectors": "4.1.1-rc2-23816",
-    "System.Runtime": "4.0.20",
+    "System.Runtime": "4.1.0-rc2-23816",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Numerics": "4.0.1-rc2-23816",
     "System.Threading": "4.0.10",
