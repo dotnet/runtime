@@ -6,7 +6,7 @@
     "System.Collections.Specialized": "4.0.1-rc2-23816",
     "System.ComponentModel": "4.0.1-rc2-23816",
     "System.Console": "4.0.0-rc2-23816",
-    "System.Diagnostics.Process": "4.0.0-rc2-23816",
+    "System.Diagnostics.Process": "4.1.0-rc2-23816",
     "System.Globalization": "4.0.10",
     "System.Globalization.Calendars": "4.0.0",
     "System.IO": "4.0.10",
