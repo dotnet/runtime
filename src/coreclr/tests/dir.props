@@ -51,11 +51,9 @@
    <!-- list of nuget package sources passed to dnu --> 
    <ItemGroup> 
      <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. --> 
-     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" /> 
-     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" /> 
-     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" /> 
-     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/" /> 
-     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" /> 
+     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" /> 
+     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" /> 
+     <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" /> 
    </ItemGroup> 
 
   
@@ -76,11 +74,12 @@
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
     <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
     
-    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand>
+    <!-- If CORE_ROOT is set on Windows, the dotnet CLI tool tries to use it. This results in DLL resolution errors. Unset CORE_ROOT during restore. -->
+    <DnuRestoreCommand Condition="'$(OsEnvironment)'!='Unix'">(set CORE_ROOT=) &amp;</DnuRestoreCommand>
+    
+    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
-    
   </PropertyGroup>
   
   <!-- Which tests shall we build? Default: Priority 0 tests.

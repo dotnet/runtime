@@ -84,7 +84,6 @@ $(_XunitEpilog)
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
@@ -132,7 +131,9 @@ $(_XunitEpilog)
     "xunit.runner.msbuild": "2.1.0"
   },
   "frameworks": {
-    "net45": {}
+    "net45": {
+      "imports": "portable-net45+win8"
+    }
   }
 }
       ]]>
@@ -160,9 +161,11 @@ $(_XunitEpilog)
       File="$(XunitWrapperSrcDir)\project.json"
       Lines="$(XunitWrapperGenPackConfig)"
       Overwrite="true" />
-
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" />
-
+  </Target>
+  
+  <Target Name="BuildXunitWrapper">
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
+             Properties="RestorePackages=false"/>
   </Target>
 
   <Target Name="CreateXunitFacts">
@@ -299,6 +302,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+    <!-- Restore all wrapper projects' project.jsons in one pass for perf & to avoid concurrency problems -->
+    <Exec Command="$(DnuRestoreCommand) &quot;$(XunitWrapperGeneratedCSDirBase.TrimEnd('\\'))&quot;"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="^Unable to locate .*"
+          ContinueOnError="WarnAndContinue" />
+    <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
   <Target Name="GetListOfTestCmds">
@@ -312,7 +325,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyDependecyToCoreRoot"/>
+             Targets="CopyDependecyToCoreRoot"
+             Properties="Language=C#" />
   </Target>
 
   <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 

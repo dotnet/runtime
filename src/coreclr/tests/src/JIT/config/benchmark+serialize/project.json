@@ -3,20 +3,24 @@
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027",
     "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0027",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0027",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Console": "4.0.0-beta-*",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "Newtonsoft.Json": "7.0.1",
+    "System.Console": "4.0.0-beta-23516",
     "System.IO": "4.0.10",
+    "System.ObjectModel": "4.0.10",
+    "System.Runtime": "4.0.20-beta-23127",
     "System.Runtime.Serialization.Json": "4.0.0",
     "System.Runtime.Serialization.Primitives": "4.0.10",
     "System.Runtime.Serialization.Xml": "4.0.10",
     "System.Xml.XmlDocument": "4.0.0",
     "System.Xml.XmlSerializer": "4.0.10",
-    "Newtonsoft.Json": "7.0.1",
     "xunit": "2.1.0",
-    "xunit.runner.utility": "2.1.0",
-    "xunit.console.netcore": "1.0.2-prerelease-00128"
+    "xunit.console.netcore": "1.0.2-prerelease-00128",
+    "xunit.runner.utility": "2.1.0"
   },
   "frameworks": {
-    "dnxcore50": { }
-  },
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
+  }
 }
