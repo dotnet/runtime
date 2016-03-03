@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -18,6 +16,9 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> GetNextTextElement_TestData()
         {
+            yield return new object[] { "", 0, "" }; // Empty string
+            yield return new object[] { "Hello", 5, "" }; // Index = string.Length
+
             yield return new object[] { "\uDBFF\uDFFFabcde", 0, "\uDBFF\uDFFF" }; // Surrogate pair
             yield return new object[] { "a\u20D1abcde", 0, "a\u20D1" }; // Combining character or non spacing mark
             yield return new object[] { "z\uFE22\u20D1\u20EBabcde", 0, "z\uFE22\u20D1\u20EB" }; // Base character with several combining characters
@@ -56,11 +57,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetNextTextElement_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => StringInfo.GetNextTextElement(null)); // Str is null
-            Assert.Throws<ArgumentNullException>(() => StringInfo.GetNextTextElement(null, 0)); // Str is null
+            Assert.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElement(null)); // Str is null
+            Assert.Throws<ArgumentNullException>("str", () => StringInfo.GetNextTextElement(null, 0)); // Str is null
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetNextTextElement("abc", -1)); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetNextTextElement("abc", 4)); // Index > str.Length
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElement("abc", -1)); // Index < 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetNextTextElement("abc", 4)); // Index > str.Length
         }
     }
 }
