@@ -10,8 +10,8 @@
     "System.Reflection": "4.0.10",
     "System.Reflection.Extensions": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",
-    "System.Runtime": "4.0.20-rc2-23816",
-    "System.Runtime.Extensions": "4.0.10-rc2-23816",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Numerics": "4.0.1-rc2-23816",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
@@ -24,9 +24,5 @@
     "dnxcore50": {
       "imports": "portable-net45+win8"
     }
-  },
-  "runtimes": {
-    "win8-x86": {},
-    "win8-x64": {}
   }
 }
