@@ -49,17 +49,16 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                     throw new InvalidOperationException($"Invalid hash entry '{library.Hash}' for package '{library.PackageName}'");
                 }
 
-                var hashAlgorithm = library.Hash.Substring(0, hashSplitterPos);
-
-                var cacheHashPath = Path.Combine(_packageCacheDirectory, $"{library.PackageName}.{library.Version}.nupkg.{hashAlgorithm}");
-
-                if (_fileSystem.File.Exists(cacheHashPath) &&
-                    _fileSystem.File.ReadAllText(cacheHashPath) == library.Hash.Substring(hashSplitterPos + 1))
+                string packagePath;
+                if (ResolverUtils.TryResolvePackagePath(_fileSystem, library, _packageCacheDirectory, out packagePath))
                 {
-                    string packagePath;
-                    if (ResolverUtils.TryResolvePackagePath(_fileSystem, library, _packageCacheDirectory, out packagePath))
+                    var hashAlgorithm = library.Hash.Substring(0, hashSplitterPos);
+                    var cacheHashPath = Path.Combine(packagePath, $"{library.PackageName}.{library.Version}.nupkg.{hashAlgorithm}");
+
+                    if (_fileSystem.File.Exists(cacheHashPath) &&
+                        _fileSystem.File.ReadAllText(cacheHashPath) == library.Hash.Substring(hashSplitterPos + 1))
                     {
-                        assemblies.AddRange( ResolverUtils.ResolveFromPackagePath(_fileSystem, library, packagePath));
+                        assemblies.AddRange(ResolverUtils.ResolveFromPackagePath(_fileSystem, library, packagePath));
                         return true;
                     }
                 }
