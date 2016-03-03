@@ -8,7 +8,7 @@
 #include "pal.h"
 #include "trace.h"
 
-static const pal::string_t s_depsArgPrefix = _X("--depsfile:");
+static const pal::string_t s_deps_arg_prefix = _X("--depsfile:");
 
 struct arguments_t
 {

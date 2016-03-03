@@ -12,15 +12,18 @@ bool coreclr_exists_in_dir(const pal::string_t& candidate)
     return pal::file_exists(test);
 }
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
+bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case)
 {
-    return suffix.length() <= value.length() &&
-        (0 == value.compare(value.length() - suffix.length(), suffix.length(), suffix));
+    auto cmp = match_case ? pal::strcmp : pal::strcasecmp;
+    return (value.size() >= suffix.size()) &&
+        cmp(value.c_str() + value.size() - suffix.size(), suffix.c_str()) == 0;
 }
 
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix)
+bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case)
 {
-    return value.find(prefix.c_str(), 0, prefix.length()) == 0;
+    auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
+    return (value.size() >= prefix.size()) &&
+        cmp(value.c_str(), prefix.c_str(), prefix.size()) == 0;
 }
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
@@ -43,10 +46,10 @@ pal::string_t get_executable(const pal::string_t& filename)
 {
     pal::string_t result(filename);
 
-    if (ends_with(result, _X(".exe")))
+    if (ends_with(result, _X(".exe"), false))
     {
         // We need to strip off the old extension
-        result.erase(result.length() - 4);
+        result.erase(result.size() - 4);
     }
 
     return result;
