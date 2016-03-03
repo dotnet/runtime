@@ -3835,17 +3835,17 @@ typedef struct {
 
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32
-mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMethod *m)
+mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMethod *m, MonoError *error)
 {
-	MonoError error;
 	guint32 nparams, i;
 	GList *tmp;
-	char *name;
+	char *name = NULL;
 	MonoMethodSignature *sig;
-	ArrayMethod *am;
+	ArrayMethod *am = NULL;
 	MonoType *mtype;
 
-	name = mono_string_to_utf8 (m->name);
+	mono_error_init (error);
+
 	nparams = mono_array_length (m->parameters);
 	sig = (MonoMethodSignature *)g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + sizeof (MonoType*) * nparams);
 	sig->hasthis = 1;
@@ -3853,19 +3853,23 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	sig->call_convention = reflection_cc_to_file (m->call_conv);
 	sig->param_count = nparams;
 	if (m->ret) {
-		sig->ret = mono_reflection_type_get_handle (m->ret, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		sig->ret = mono_reflection_type_get_handle (m->ret, error);
+		if (!is_ok (error))
+			goto fail;
 	} else
 		sig->ret = &mono_defaults.void_class->byval_arg;
 
-	mtype = mono_reflection_type_get_handle (m->parent, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mtype = mono_reflection_type_get_handle (m->parent, error);
+	if (!is_ok (error))
+		goto fail;
 
 	for (i = 0; i < nparams; ++i) {
-		sig->params [i] = mono_type_array_get_and_resolve (m->parameters, i, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		sig->params [i] = mono_type_array_get_and_resolve (m->parameters, i, error);
+		if (!is_ok (error))
+			goto fail;
 	}
 
+	name = mono_string_to_utf8 (m->name);
 	for (tmp = assembly->array_methods; tmp; tmp = tmp->next) {
 		am = (ArrayMethod *)tmp->data;
 		if (strcmp (name, am->name) == 0 && 
@@ -3886,6 +3890,12 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
 	m->table_idx = am->token & 0xffffff;
 	return am->token;
+fail:
+	g_free (am);
+	g_free (name);
+	g_free (sig);
+	return 0;
+
 }
 
 /*
@@ -5633,7 +5643,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	} else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
 		MonoReflectionArrayMethod *m = (MonoReflectionArrayMethod *)obj;
-		token = mono_image_get_array_token (assembly, m);
+		token = mono_image_get_array_token (assembly, m, error);
+		return_val_if_nok (error, 0);
 	} else if (strcmp (klass->name, "SignatureHelper") == 0) {
 		MonoReflectionSigHelper *s = (MonoReflectionSigHelper*)obj;
 		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s, error);
