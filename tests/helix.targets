@@ -12,7 +12,7 @@
     <CoreRootFiles Include="$(CORE_ROOT)\ilasm.exe" /> 
 
     <!-- TODO these files should get copied to core_root but does not as they are xunit files. Using temporary workaround for now -->
-    <CoreRootFiles Include="$(PackagesDir)Microsoft.DotNet.xunit.performance\1.0.0-alpha-build0027\lib\dotnet\xunit.performance.core.dll" />
+    <CoreRootFiles Include="$(PackagesDir)Microsoft.DotNet.xunit.performance\1.0.0-alpha-build0028\lib\dotnet\xunit.performance.core.dll" />
     <CoreRootFiles Include="$(PackagesDir)xunit.extensibility.core\2.1.0\lib\dotnet\xunit.core.dll" />
   </ItemGroup>
 

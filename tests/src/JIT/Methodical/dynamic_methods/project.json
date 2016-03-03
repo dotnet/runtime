@@ -4,7 +4,7 @@
     "System.Console": "4.0.0-rc2-23816",
     "System.Reflection.Emit.Lightweight": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",
-    "System.Runtime": "4.0.20",
+    "System.Runtime": "4.1.0-rc2-23816",
     "System.Runtime.Extensions": "4.0.10"
   },
   "frameworks": {
