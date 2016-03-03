@@ -12,11 +12,6 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
-
-    <!-- Enable NETStandard -->
-    <UseNetPlatform>false</UseNetPlatform>
-    <BaseLinePackageDependencies>true</BaseLinePackageDependencies>
-    <ExcludeRuntimeJson>true</ExcludeRuntimeJson>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
