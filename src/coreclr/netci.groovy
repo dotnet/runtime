@@ -179,8 +179,13 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 // **************************
 
 // Adds a trigger for the PR build if one is needed.  If isFlowJob is true, then this is the
-// flow job that rolls up the build and test for non-windows OS's
-def static addTriggers(def job, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob) {
+// flow job that rolls up the build and test for non-windows OS's.  // If the job is a windows build only job,
+// it's just used for internal builds
+def static addTriggers(def job, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob) {
+    if (isWindowsBuildOnlyJob) {
+        return
+    }
+    
     // Non pull request builds.
     if (!isPR) {
         // Check scenario.
@@ -686,7 +691,7 @@ combinedScenarios.each { scenario ->
 
                     // Add all the standard options
                     Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
-                    addTriggers(newJob, isPR, architecture, os, configuration, scenario, false)
+                    addTriggers(newJob, isPR, architecture, os, configuration, scenario, false, isBuildOnly)
                 
                     def buildCommands = [];
                     def osGroup = getOSGroup(os)
@@ -1098,7 +1103,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
                     }
 
                     Utilities.standardJobSetup(newFlowJob, project, isPR, getFullBranchName(branchName))
-                    addTriggers(newFlowJob, isPR, architecture, os, configuration, scenario, true)
+                    addTriggers(newFlowJob, isPR, architecture, os, configuration, scenario, true, false)
                 } // configuration
             } // os
         } // architecture
