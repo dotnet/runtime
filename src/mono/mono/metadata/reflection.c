@@ -5072,9 +5072,8 @@ load_public_key (MonoArray *pkey, MonoDynamicImage *assembly) {
 }
 
 static void
-mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
+mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 {
-	MonoError error;
 	MonoDynamicTable *table;
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
@@ -5082,6 +5081,8 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 	guint32 *values;
 	int i;
 	guint32 module_index;
+
+	mono_error_init (error);
 
 	assemblyb = moduleb->assemblyb;
 	assembly = moduleb->dynamic_image;
@@ -5114,8 +5115,8 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 			if (file_module->types) {
 				for (j = 0; j < file_module->num_types; ++j) {
 					MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
-					mono_image_fill_export_table (domain, tb, module_index, 0, assembly, &error);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					mono_image_fill_export_table (domain, tb, module_index, 0, assembly, error);
+					return_if_nok (error);
 				}
 			}
 		}
@@ -5184,7 +5185,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb, MonoError *erro
 	assembly->text_rva = START_TEXT_RVA;
 
 	if (moduleb->is_main) {
-		mono_image_emit_manifest (moduleb);
+		mono_image_emit_manifest (moduleb, error);
+		return_val_if_nok (error, FALSE);
 	}
 
 	table = &assembly->tables [MONO_TABLE_TYPEDEF];
