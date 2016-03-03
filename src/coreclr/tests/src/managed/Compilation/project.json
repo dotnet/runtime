@@ -1,25 +1,28 @@
 {
   "dependencies": {
-    "System.Console": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
-    "System.Collections": "4.0.10-beta-*",
-    "System.Collections.Concurrent": "4.0.10-beta-*",
-    "System.IO": "4.0.10-beta-*",
-    "System.IO.FileSystem": "4.0.0-beta-*",
-    "System.IO.FileSystem.Primitives": "4.0.0-beta-*",
-    "System.Text.Encoding": "4.0.10-beta-*",
-    "System.Threading": "4.0.0-beta-*",
-    "System.Threading.Tasks": "4.0.10-beta-*",
-    "System.Runtime.Handles": "4.0.0-beta-*",
-    "System.Threading.ThreadPool": "4.0.10-beta-*",
-    "System.Threading.Overlapped": "4.0.0-beta-*",
-    "System.Dynamic.Runtime": "4.0.10-beta-*",
-    "System.Threading.Tasks.Parallel": "4.0.0-beta-*",
-    "System.Runtime.Extensions": "4.0.10-beta-*",
     "Microsoft.CodeAnalysis.Compilers": "1.1.1",
-    "System.Collections.Immutable": "1.1.37"
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "System.Collections": "4.0.10-beta-23127",
+    "System.Collections.Concurrent": "4.0.10-beta-23127",
+    "System.Collections.Immutable": "1.1.37",
+    "System.Console": "4.0.0-beta-23516",
+    "System.Dynamic.Runtime": "4.0.10-beta-23127",
+    "System.IO": "4.0.10-beta-23127",
+    "System.IO.FileSystem": "4.0.0-beta-23127",
+    "System.IO.FileSystem.Primitives": "4.0.0-beta-23127",
+    "System.Runtime": "4.0.20-beta-23127",
+    "System.Runtime.Extensions": "4.0.10-beta-23127",
+    "System.Runtime.Handles": "4.0.0-beta-23127",
+    "System.Text.Encoding": "4.0.10-beta-23127",
+    "System.Threading": "4.0.0-beta-23127",
+    "System.Threading.Overlapped": "4.0.0-beta-23127",
+    "System.Threading.Tasks": "4.0.10-beta-23127",
+    "System.Threading.Tasks.Parallel": "4.0.0-beta-23127",
+    "System.Threading.ThreadPool": "4.0.10-beta-23516"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
   }
 }

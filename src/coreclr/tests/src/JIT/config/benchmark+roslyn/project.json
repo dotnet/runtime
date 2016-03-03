@@ -1,18 +1,19 @@
 {
   "dependencies": {
-    "Microsoft.CodeAnalysis.Compilers" : "1.1.1",
+    "Microsoft.CodeAnalysis.Compilers": "1.1.1",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027",
     "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0027",
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0027",
-    "System.Console": "4.0.0-beta-*",
-    "System.Runtime": "4.0.20-beta-*",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "System.Console": "4.0.0-beta-23516",
+    "System.Numerics.Vectors": "4.1.1-beta-23516",
+    "System.Numerics.Vectors.WindowsRuntime": "4.0.1-beta-23516",
     "System.Reflection": "4.0.10",
     "System.Reflection.Extensions": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",
-    "System.Runtime.Extensions": "4.0.10-beta-*",
-    "System.Runtime.Numerics": "4.0.1-beta-*",
-    "System.Numerics.Vectors": "4.1.1-beta-*",
-    "System.Numerics.Vectors.WindowsRuntime": "4.0.1-beta-*",
+    "System.Runtime": "4.0.20-beta-23127",
+    "System.Runtime.Extensions": "4.0.10-beta-23127",
+    "System.Runtime.Numerics": "4.0.1-beta-23516",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.Tasks.Parallel": "4.0.0",
@@ -21,6 +22,12 @@
     "xunit.runner.utility": "2.1.0"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
+  },
+  "runtimes": {
+    "win8-x86": {},
+    "win8-x64": {}
   }
 }
