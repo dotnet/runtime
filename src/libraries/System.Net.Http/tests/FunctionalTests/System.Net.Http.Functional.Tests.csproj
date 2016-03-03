@@ -40,6 +40,7 @@
     <Compile Include="HttpMethodTest.cs" />
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
+    <Compile Include="LoopbackGetRequestHttpProxy.cs" />
     <Compile Include="LoopbackServer.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
