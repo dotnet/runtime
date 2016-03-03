@@ -8,7 +8,7 @@
     "System.Console": "4.0.0-rc2-23816",
     "System.IO": "4.0.10",
     "System.ObjectModel": "4.0.10",
-    "System.Runtime": "4.0.20",
+    "System.Runtime": "4.1.0-rc2-23816",
     "System.Runtime.Serialization.Json": "4.0.0",
     "System.Runtime.Serialization.Primitives": "4.0.10",
     "System.Runtime.Serialization.Xml": "4.0.10",
