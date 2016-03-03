@@ -4321,14 +4321,16 @@ mono_image_fill_export_table_from_class (MonoDomain *domain, MonoClass *klass,
 
 static void
 mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
-	guint32 module_index, guint32 parent_index, MonoDynamicImage *assembly)
+			      guint32 module_index, guint32 parent_index, MonoDynamicImage *assembly,
+			      MonoError *error)
 {
-	MonoError error;
 	MonoClass *klass;
 	guint32 idx, i;
 
-	MonoType *t = mono_reflection_type_get_handle ((MonoReflectionType*)tb, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_init (error);
+
+	MonoType *t = mono_reflection_type_get_handle ((MonoReflectionType*)tb, error);
+	return_if_nok (error);
 
 	klass = mono_class_from_mono_type (t);
 
@@ -4342,8 +4344,10 @@ mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
 	 * We need to do this ourselves since klass->nested_classes is not set up.
 	 */
 	if (tb->subtypes) {
-		for (i = 0; i < mono_array_length (tb->subtypes); ++i)
-			mono_image_fill_export_table (domain, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i), module_index, idx, assembly);
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
+			mono_image_fill_export_table (domain, mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i), module_index, idx, assembly, error);
+			return_if_nok (error);
+		}
 	}
 }
 
@@ -5070,6 +5074,7 @@ load_public_key (MonoArray *pkey, MonoDynamicImage *assembly) {
 static void
 mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 {
+	MonoError error;
 	MonoDynamicTable *table;
 	MonoDynamicImage *assembly;
 	MonoReflectionAssemblyBuilder *assemblyb;
@@ -5109,7 +5114,8 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 			if (file_module->types) {
 				for (j = 0; j < file_module->num_types; ++j) {
 					MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
-					mono_image_fill_export_table (domain, tb, module_index, 0, assembly);
+					mono_image_fill_export_table (domain, tb, module_index, 0, assembly, &error);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
 				}
 			}
 		}
