@@ -284,34 +284,52 @@ namespace System.Net.Http
 
             internal void SetProxyOptions(Uri requestUri)
             {
-                if (_handler._proxyPolicy == ProxyUsePolicy.DoNotUseProxy)
+                if (!_handler._useProxy)
                 {
+                    // Explicitly disable the use of a proxy.  This will prevent libcurl from using
+                    // any proxy, including ones set via environment variable.
                     SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
-                    EventSourceTrace("No proxy");
+                    EventSourceTrace("UseProxy false, disabling proxy");
                     return;
                 }
 
-                if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) ||
-                    (_handler.Proxy == null))
+                if (_handler.Proxy == null)
                 {
+                    // UseProxy was true, but Proxy was null.  Let libcurl do its default handling, 
+                    // which includes checking the http_proxy environment variable.
+                    EventSourceTrace("UseProxy true, Proxy null, using default proxy");
                     return;
                 }
 
-                Debug.Assert(_handler.Proxy != null, "proxy is null");
-                Debug.Assert(_handler._proxyPolicy == ProxyUsePolicy.UseCustomProxy, "_proxyPolicy is not UseCustomProxy");
-                if (_handler.Proxy.IsBypassed(requestUri))
+                // Custom proxy specified.
+                Uri proxyUri;
+                try
                 {
-                    SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
-                    EventSourceTrace("Bypassed proxy");
+                    // Should we bypass a proxy for this URI?
+                    if (_handler.Proxy.IsBypassed(requestUri))
+                    {
+                        SetCurlOption(CURLoption.CURLOPT_PROXY, string.Empty);
+                        EventSourceTrace("Proxy's IsBypassed returned true, bypassing proxy");
+                        return;
+                    }
+
+                    // Get the proxy Uri for this request.
+                    proxyUri = _handler.Proxy.GetProxy(requestUri);
+                    if (proxyUri == null)
+                    {
+                        EventSourceTrace("GetProxy returned null, using default.");
+                        return;
+                    }
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // WebRequest.DefaultWebProxy throws PlatformNotSupportedException,
+                    // in which case we should use the default rather than the custom proxy.
+                    EventSourceTrace("PlatformNotSupportedException from proxy, using default");
                     return;
                 }
 
-                var proxyUri = _handler.Proxy.GetProxy(requestUri);
-                if (proxyUri == null)
-                {
-                    EventSourceTrace("No proxy URI");
-                    return;
-                }
+                // Configure libcurl with the gathered proxy information
 
                 SetCurlOption(CURLoption.CURLOPT_PROXYTYPE, (long)CURLProxyType.CURLPROXY_HTTP);
                 SetCurlOption(CURLoption.CURLOPT_PROXY, proxyUri.AbsoluteUri);
