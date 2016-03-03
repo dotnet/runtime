@@ -2,25 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class TextElementEnumeratorTests
     {
-        [Fact]
-        public void Enumerate()
+        public static IEnumerable<object[]> Enumerate_TestData()
         {
+            yield return new object[] { "", new string[] { "" }, new int[0] };
+            yield return new object[] { "Hello", new string[] { "H", "e", "l", "l", "o" }, new int[] { 0, 1, 2, 3, 4 } };
+
             // Creates and initializes a string containing the following:
             //   - a surrogate pair (high surrogate U+D800 and low surrogate U+DC00)
             //   - a combining character sequence (the Latin small letter "a" followed by the combining grave accent)
             //   - a base character (the ligature "")
-            string[] expectedElements = new string[] { "\uD800\uDC00", "\uD800\uDC00", "\u0061\u0300", "\u0061\u0300", "\u00C6" };
-            int[] expectedElementIndices = new int[] { 0, 2, 4 };
-            TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator("\uD800\uDC00\u0061\u0300\u00C6");
+            yield return new object[] { "\uD800\uDC00\u0061\u0300\u00C6", new string[] { "\uD800\uDC00", "\uD800\uDC00", "\u0061\u0300", "\u0061\u0300", "\u00C6" }, new int[] { 0, 2, 4 } };
+        }
 
+        [Theory]
+        [MemberData(nameof(Enumerate_TestData))]
+        public void Enumerate(string str, string[] expectedElements, int[] expectedElementIndices)
+        {
+            TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(str);
             for (int i = 0; i < 2; i++)
             {
                 int counter = 0;
