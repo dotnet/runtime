@@ -13,7 +13,7 @@
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.IO": "4.0.10",
-        "System.Reflection": "4.1.0-rc3-23901",
+        "System.Reflection": "4.1.0-rc3-23903",
         "System.Reflection.Primitives": "4.0.0",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20.0",
