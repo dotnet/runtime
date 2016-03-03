@@ -424,6 +424,20 @@ image_g_malloc0 (MonoImage *image, guint size)
 		return g_malloc0 (size);
 }
 
+/**
+ * image_g_free:
+ * @image: a MonoImage
+ * @ptr: pointer
+ *
+ * If @image is NULL, free @ptr, otherwise do nothing.
+ */
+static void
+image_g_free (MonoImage *image, gpointer ptr)
+{
+	if (image == NULL)
+		g_free (ptr);
+}
+
 #ifndef DISABLE_REFLECTION_EMIT
 static char*
 image_strdup (MonoImage *image, const char *s)
@@ -1142,11 +1156,12 @@ method_count_clauses (MonoReflectionILGen *ilgen)
 
 #ifndef DISABLE_REFLECTION_EMIT
 static MonoExceptionClause*
-method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, guint32 num_clauses)
+method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, guint32 num_clauses, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	MonoExceptionClause *clauses;
 	MonoExceptionClause *clause;
 	MonoILExceptionInfo *ex_info;
@@ -1176,8 +1191,12 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 			clause->handler_offset = ex_block->start;
 			clause->handler_len = ex_block->len;
 			if (ex_block->extype) {
-				MonoType *extype = mono_reflection_type_get_handle ((MonoReflectionType*)ex_block->extype, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				MonoType *extype = mono_reflection_type_get_handle ((MonoReflectionType*)ex_block->extype, error);
+
+				if (!is_ok (error)) {
+					image_g_free (image, clauses);
+					return NULL;
+				}
 				clause->data.catch_class = mono_class_from_mono_type (extype);
 			} else {
 				if (ex_block->type == MONO_EXCEPTION_CLAUSE_FILTER)
@@ -11580,7 +11599,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		header->num_clauses = num_clauses;
 		if (num_clauses) {
 			header->clauses = method_encode_clauses (image, (MonoDynamicImage*)klass->image,
-				 rmb->ilgen, num_clauses);
+								 rmb->ilgen, num_clauses, &error);
+			mono_error_assert_ok (&error);
 		}
 
 		wrapperm->header = header;
