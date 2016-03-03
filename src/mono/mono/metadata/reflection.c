@@ -2531,11 +2531,12 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 }
 
 static void
-encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
+encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	MonoDynamicTable *table;
 	guint32 num_constraints, i;
 	guint32 *values;
@@ -2553,8 +2554,8 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 		table_idx = table->next_idx ++;
 		values = table->values + table_idx * MONO_GENPARCONSTRAINT_SIZE;
 
-		MonoType *gpbasetype = mono_reflection_type_get_handle (gparam->base_type, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *gpbasetype = mono_reflection_type_get_handle (gparam->base_type, error);
+		return_if_nok (error);
 		values [MONO_GENPARCONSTRAINT_GENERICPAR] = owner;
 		values [MONO_GENPARCONSTRAINT_CONSTRAINT] = mono_image_typedef_or_ref (assembly, gpbasetype);
 	}
@@ -2566,8 +2567,8 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 		table_idx = table->next_idx ++;
 		values = table->values + table_idx * MONO_GENPARCONSTRAINT_SIZE;
 
-		MonoType *constraint_type = mono_reflection_type_get_handle (constraint, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *constraint_type = mono_reflection_type_get_handle (constraint, error);
+		return_if_nok (error);
 
 		values [MONO_GENPARCONSTRAINT_GENERICPAR] = owner;
 		values [MONO_GENPARCONSTRAINT_CONSTRAINT] = mono_image_typedef_or_ref (assembly, constraint_type);
@@ -2626,7 +2627,8 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	if (!mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs, error))
 		return FALSE;
 
-	encode_constraints (entry->gparam, table_idx, assembly);
+	encode_constraints (entry->gparam, table_idx, assembly, error);
+	return_val_if_nok (error, FALSE);
 
 	return TRUE;
 }
