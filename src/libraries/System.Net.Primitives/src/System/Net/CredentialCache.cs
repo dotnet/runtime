@@ -133,11 +133,15 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::Remove() Removing key:[" + key.ToString() + "]");
             }
 
-            if (_cache[key] is SystemNetworkCredential)
+            NetworkCredential value;
+            if (_cache.TryGetValue(key, out value))
             {
-                --_numbDefaultCredInCache;
+                if (value is SystemNetworkCredential)
+                {
+                    --_numbDefaultCredInCache;
+                }
+                _cache.Remove(key);
             }
-            _cache.Remove(key);
         }
 
 
@@ -164,11 +168,15 @@ namespace System.Net
                 GlobalLog.Print("CredentialCache::Remove() Removing key:[" + key.ToString() + "]");
             }
 
-            if (_cacheForHosts[key] is SystemNetworkCredential)
+            NetworkCredential value;
+            if (_cacheForHosts.TryGetValue(key, out value))
             {
-                --_numbDefaultCredInCache;
+                if (value is SystemNetworkCredential)
+                {
+                    --_numbDefaultCredInCache;
+                }
+                _cacheForHosts.Remove(key);
             }
-            _cacheForHosts.Remove(key);
         }
 
         /// <devdoc>
