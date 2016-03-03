@@ -916,7 +916,7 @@ namespace System.Net.Http.Functional.Tests
         {
             yield return new object[] { null };
             yield return new object[] { new PlatformNotSupportedWebProxy() };
-            yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://proxydoesntexist:12345"), bypass: true) };
+            yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://{Guid.NewGuid().ToString().Substring(0, 15)}:12345"), bypass: true) };
         }
 
         private static IEnumerable<object[]> CredentialsForProxy()
