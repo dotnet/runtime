@@ -62,6 +62,6 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
-# Force bash scripts to always use lf line endings so that if a repro is accessed
+# Force bash scripts to always use lf line endings so that if a repo is accessed
 # in Unix via a file share from Windows, the scripts will work.
 *.sh text eol=lf
