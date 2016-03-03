@@ -110,7 +110,8 @@ namespace System.Composition.TypedParts.Discovery
                 var ema = attribute as ExportMetadataAttribute;
                 if (ema != null)
                 {
-                    AddMetadata(metadata, ema.Name, ema.Value);
+                    var valueType = ema.Value?.GetType() ?? typeof(object);
+                    AddMetadata(metadata, ema.Name, valueType, ema.Value);
                 }
                 else
                 {
@@ -119,7 +120,7 @@ namespace System.Composition.TypedParts.Discovery
             }
         }
 
-        private void AddMetadata(IDictionary<string, object> metadata, string name, object value)
+        private void AddMetadata(IDictionary<string, object> metadata, string name, Type valueType, object value)
         {
             object existingValue;
             if (!metadata.TryGetValue(name, out existingValue))
@@ -128,18 +129,17 @@ namespace System.Composition.TypedParts.Discovery
                 return;
             }
 
-            var valueType = existingValue.GetType();
-            if (valueType.IsArray)
+            var existingArray = existingValue as Array;
+            if (existingArray != null)
             {
-                var existingArray = (Array)existingValue;
-                var newArray = Array.CreateInstance(value.GetType(), existingArray.Length + 1);
+                var newArray = Array.CreateInstance(valueType, existingArray.Length + 1);
                 Array.Copy(existingArray, newArray, existingArray.Length);
                 newArray.SetValue(value, existingArray.Length);
                 metadata[name] = newArray;
             }
             else
             {
-                var newArray = Array.CreateInstance(value.GetType(), 2);
+                var newArray = Array.CreateInstance(valueType, 2);
                 newArray.SetValue(existingValue, 0);
                 newArray.SetValue(value, 1);
                 metadata[name] = newArray;
@@ -158,7 +158,7 @@ namespace System.Composition.TypedParts.Discovery
                 .GetRuntimeProperties()
                 .Where(p => p.DeclaringType == attrType && p.CanRead))
             {
-                AddMetadata(metadata, prop.Name, prop.GetValue(attribute, null));
+                AddMetadata(metadata, prop.Name, prop.PropertyType, prop.GetValue(attribute, null));
             }
         }
 

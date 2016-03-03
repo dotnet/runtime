@@ -41,6 +41,12 @@ namespace System.Composition.UnitTests
             Assert.Equal(a.B.Value.A.Metadata.Name, "A");
         }
 
+        [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+        [MetadataAttribute]
+        public class NameNullAttribute : Attribute
+        {
+            public string Name => null;
+        }
 
         [MetadataAttribute]
         public class ExportWithNameFooAttribute : ExportAttribute
@@ -48,10 +54,15 @@ namespace System.Composition.UnitTests
             public string Name { get { return "Foo"; } }
         }
 
+        [Export, NameNull, NameNull]
+        public class NameNullTwiceExport { }
+
         [ExportWithNameFoo]
         public class SingleNamedExport { }
 
         public class Named {[DefaultValue(null)] public string Name { get; set; } }
+
+        public class MultiNamed {[DefaultValue(null)] public IEnumerable<string> Name { get; set; } }
 
         [ExportWithNameFoo, Export, ExportMetadata("Priority", 10)]
         public class MultipleExportsOneNamedAndBothPrioritized { }
@@ -77,6 +88,14 @@ namespace System.Composition.UnitTests
         public class MultiValuedName { public string[] Name { get; set; } }
 
         public class Prioritized {[DefaultValue(0)] public int Priority { get; set; } }
+
+        [Fact]
+        public void MultipleMetadataAttributesWithAPropertyThatReturnsNull()
+        {
+            var cc = CreateContainer(typeof(NameNullTwiceExport));
+            var ne = cc.GetExport<Lazy<NameNullTwiceExport, MultiNamed>>();
+            Assert.Equal(new string[] { null, null }, ne.Metadata.Name);
+        }
 
         [Fact]
         public void DiscoversMetadataSpecifiedUsingMetadataAttributeOnExportAttribute()
