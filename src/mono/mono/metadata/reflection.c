@@ -2348,11 +2348,12 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 }
 
 static guint32
-property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb)
+property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	mono_error_init (error);
+
 	SigBuffer buf;
 	guint32 nparams = 0;
 	MonoReflectionMethodBuilder *mb = fb->get_method;
@@ -2370,30 +2371,30 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 		sigbuffer_add_byte (&buf, 0x08);
 	sigbuffer_add_value (&buf, nparams);
 	if (mb) {
-		encode_reflection_type (assembly, (MonoReflectionType*)mb->rtype, &buf, &error);
-		if (!is_ok (&error))
+		encode_reflection_type (assembly, (MonoReflectionType*)mb->rtype, &buf, error);
+		if (!is_ok (error))
 			goto fail;
 		for (i = 0; i < nparams; ++i) {
 			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
-			encode_reflection_type (assembly, pt, &buf, &error);
-			if (!is_ok (&error))
+			encode_reflection_type (assembly, pt, &buf, error);
+			if (!is_ok (error))
 				goto fail;
 		}
 	} else if (smb && smb->parameters) {
 		/* the property type is the last param */
-		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), &buf, &error);
-		if (!is_ok (&error))
+		encode_reflection_type (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), &buf, error);
+		if (!is_ok (error))
 			goto fail;
 
 		for (i = 0; i < nparams; ++i) {
 			MonoReflectionType *pt = mono_array_get (smb->parameters, MonoReflectionType*, i);
-			encode_reflection_type (assembly, pt, &buf, &error);
-			if (!is_ok (&error))
+			encode_reflection_type (assembly, pt, &buf, error);
+			if (!is_ok (error))
 				goto fail;
 		}
 	} else {
-		encode_reflection_type (assembly, (MonoReflectionType*)fb->type, &buf, &error);
-		if (!is_ok (&error))
+		encode_reflection_type (assembly, (MonoReflectionType*)fb->type, &buf, error);
+		if (!is_ok (error))
 			goto fail;
 	}
 
@@ -2402,14 +2403,15 @@ property_encode_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBui
 	return idx;
 fail:
 	sigbuffer_free (&buf);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	g_assert_not_reached ();
+	return 0;
 }
 
 static void
-mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImage *assembly)
+mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
 
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -2429,7 +2431,9 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 	values = table->values + pb->table_idx * MONO_PROPERTY_SIZE;
 	values [MONO_PROPERTY_NAME] = string_heap_insert_mstring (&assembly->sheap, pb->name);
 	values [MONO_PROPERTY_FLAGS] = pb->attrs;
-	values [MONO_PROPERTY_TYPE] = property_encode_signature (assembly, pb);
+	values [MONO_PROPERTY_TYPE] = property_encode_signature (assembly, pb, error);
+	return_if_nok (error);
+
 
 	/* FIXME: we still don't handle 'other' methods */
 	if (pb->get_method) num_methods ++;
@@ -3997,9 +4001,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		values = table->values + table->rows * MONO_PROPERTY_MAP_SIZE;
 		values [MONO_PROPERTY_MAP_PARENT] = tb->table_idx;
 		values [MONO_PROPERTY_MAP_PROPERTY_LIST] = assembly->tables [MONO_TABLE_PROPERTY].next_idx;
-		for (i = 0; i < mono_array_length (tb->properties); ++i)
+		for (i = 0; i < mono_array_length (tb->properties); ++i) {
 			mono_image_get_property_info (
-				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
+				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly, error);
+			return_val_if_nok (error, FALSE);
+		}
 	}
 
 	/* handle generic parameters */
