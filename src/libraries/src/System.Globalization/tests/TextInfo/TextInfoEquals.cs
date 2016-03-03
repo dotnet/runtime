@@ -11,8 +11,13 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> Equals_TestData()
         {
+            yield return new object[] { CultureInfo.InvariantCulture.TextInfo, CultureInfo.InvariantCulture.TextInfo, true };
+            yield return new object[] { CultureInfo.InvariantCulture.TextInfo, new CultureInfo("").TextInfo, true };
+            yield return new object[] { CultureInfo.InvariantCulture.TextInfo, new CultureInfo("en-US"), false };
+
             yield return new object[] { new CultureInfo("en-US").TextInfo, new CultureInfo("en-US").TextInfo, true };
             yield return new object[] { new CultureInfo("en-US").TextInfo, new CultureInfo("fr-FR").TextInfo, false };
+
             yield return new object[] { new CultureInfo("en-US").TextInfo, null, false };
             yield return new object[] { new CultureInfo("en-US").TextInfo, new object(), false };
             yield return new object[] { new CultureInfo("en-US").TextInfo, 123, false };
