@@ -7,8 +7,8 @@ pushd %1
 
 FOR /D %%F IN (*.Tests) DO (
 pushd %%F\dnxcore50
-@echo "corerun.exe xunit.console.netcore.exe %%F.dll -xml testResults.xml -notrait category=failing -notrait category=nonwindowstests"
-corerun.exe xunit.console.netcore.exe %%F.dll -notrait category=failing -notrait category=nonwindowstests
+@echo "corerun.exe xunit.console.netcore.exe %%F.dll -xml testResults.xml -notrait category=failing -notrait category=nonwindowstests -notrait Benchmark=true"
+corerun.exe xunit.console.netcore.exe %%F.dll -notrait category=failing -notrait category=nonwindowstests -notrait Benchmark=true
 popd )
 
 popd
