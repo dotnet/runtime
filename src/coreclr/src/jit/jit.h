@@ -634,25 +634,22 @@ size_t              unsigned_abs(ssize_t x)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
 
-class histo
+class Histogram
 {
 public:
-                    histo(IAllocator* alloc, unsigned* sizeTab, unsigned sizeCnt = 0);
-                   ~histo();
+    Histogram(IAllocator* allocator, const unsigned* const sizeTable);
+    ~Histogram();
 
-    void            histoClr();
-    void            histoDsp(FILE* fout);
-    void            histoRec(unsigned __int64 siz, unsigned cnt);
-    void            histoRec(unsigned siz, unsigned cnt);
+    void dump(FILE* output);
+    void record(unsigned size);
 
 private:
+    void ensureAllocated();
 
-    void            histoEnsureAllocated();
-
-    IAllocator*     histoAlloc;
-    unsigned        histoSizCnt;
-    unsigned*       histoSizTab;
-    unsigned*       histoCounts;
+    IAllocator* m_allocator;
+    unsigned m_sizeCount;
+    const unsigned* const m_sizeTable;
+    unsigned* m_counts;
 };
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE

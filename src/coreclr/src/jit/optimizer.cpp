@@ -1855,7 +1855,7 @@ void                Compiler::optFindNaturalLoops()
                 loopsThisMethod++;
 
                 /* keep track of the number of exits */
-                loopExitCountTable.histoRec((unsigned)exitCount, 1);
+                loopExitCountTable.record(static_cast<unsigned>(exitCount));
 #endif // COUNT_LOOPS
             }
 
@@ -1865,7 +1865,7 @@ NO_LOOP: ;
     }
 
 #if COUNT_LOOPS
-    loopCountTable.histoRec(loopsThisMethod, 1);
+    loopCountTable.record(loopsThisMethod);
     if (maxLoopsPerMethod < loopsThisMethod)
     {
         maxLoopsPerMethod = loopsThisMethod;
