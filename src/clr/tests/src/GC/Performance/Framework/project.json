@@ -10,7 +10,7 @@
   "projectUrl": "",
   "licenseUrl": "",
   "dependencies": {
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0027",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028",
     "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
     "xunit": "2.1.0"
   },
