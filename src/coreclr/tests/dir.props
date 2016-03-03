@@ -42,8 +42,15 @@
     <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
       <ExpectedPrerelease>rc2-23816</ExpectedPrerelease>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)xunit\..%2A$">
+    <ValidationPattern Include="^(?i)(xunit(\.assert|\.runner\.(utility|msbuild)))$">
       <ExpectedVersion>2.1.0</ExpectedVersion>
+    </ValidationPattern>
+    <!-- Add a dummy value so that the item isn't removed by msbuild. Without the | this item doesn't show up later. -->
+    <ValidationPattern Include="^(?i)(xunit\.console\.netcore|dummy value)$">
+      <ExpectedVersion>1.0.2-prerelease-00101</ExpectedVersion>
+    </ValidationPattern>
+    <ValidationPattern Include="^(?i)Microsoft\.DotNet\.xunit\.performance.%2A$">
+      <ExpectedVersion>1.0.0-alpha-build0028</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
 
@@ -100,7 +107,7 @@
   <!-- Create a collection of all project.json files for dependency updates. -->
   <ItemGroup>
     <!-- Skip validation of the test_runtime project created by the test build. -->
-    <ProjectJsonFiles Include="$(SourceDir)**/project.json"
+    <ProjectJsonFiles Include="$(SourceDir)**\project.json"
                       Exclude="$(SourceDir)Common\test_runtime\project.json" />
   </ItemGroup>
 
