@@ -4335,10 +4335,7 @@ DECODE_OPCODE:
                 noway_assert(codeAddr < codeEndp - sz);
                 if ((OPCODE) getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlLooksLikeWrapperMethod);
-#ifdef DEBUG
-                    //printf("CALL->RET pattern found in %s\n", info.compFullName);
-#endif
+                    compInlineResult->note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
             }
             break;
@@ -4595,14 +4592,13 @@ INL_HANDLE_COMPARE:
                             unsigned slot0 = pushedStack.getSlot0();
                             if (fgStack::isArgument(slot0))
                             {
-                                compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                                compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                                 //Check for the double whammy of an incoming constant argument feeding a
                                 //constant test.
                                 varNum = fgStack::slotTypeToArgNum(slot0);
                                 if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                                 {
-                                    compInlineeHints = (InlineHints)(compInlineeHints
-                                                                        | InlIncomingConstFeedsCond);
+                                    compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                                 }
                             }
                         }
@@ -4617,13 +4613,13 @@ INL_HANDLE_COMPARE:
                 if ((fgStack::isConstant(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isConstant(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                    compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                 }
                 //Arg feeds range check
                 if ((fgStack::isArrayLen(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isArrayLen(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsRngChk);
+                    compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                 }
 
                 //Check for an incoming arg that's a constant.
@@ -4632,7 +4628,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot0);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
                 }
                 if (fgStack::isArgument(slot1))
@@ -4640,7 +4636,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot1);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
                 }
             }
@@ -4824,7 +4820,15 @@ TOO_FAR:
     //This allows for CALL, RET, and one more non-ld/st instruction.
     if ((opts.instrCount - ldStCount) < 4 || ((double)ldStCount/(double)opts.instrCount) > .90)
     {
-        compInlineeHints = (InlineHints)(compInlineeHints | InlMethodMostlyLdSt);
+        // Note this is the one and only case where we don't guard the
+        // observation with compIsForInlining(). The prejit root must
+        // also make this observation. We'll fix this eventually as we
+        // make the LegacyPolicy smarter about what observations it
+        // cares about, and when.
+        if (compInlineResult != nullptr)
+        {
+            compInlineResult->note(InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE);
+        }
     }
 
     if (pSm)
@@ -4842,7 +4846,6 @@ TOO_FAR:
 
         if (compIsForInlining())
         {
-
             // If the inlining decision was obvious from the size of the IL,
             // it should have been made earlier.
             noway_assert(codeSize > ALWAYS_INLINE_SIZE && codeSize <= impInlineSize);
@@ -4852,7 +4855,6 @@ TOO_FAR:
 
             impCanInlineNative(callsiteNativeSizeEstimate,
                                compNativeSizeEstimate,
-                               compInlineeHints,
                                impInlineInfo,
                                compInlineResult);
 
@@ -4875,9 +4877,9 @@ TOO_FAR:
     {
        if (compIsForInlining()) 
        {
-          // This method's IL was small enough that we didn't use the size model to estimate
-          // inlinability. Note that as the latest candidate reason.
-          compInlineResult->noteCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+           // This method's IL was small enough that we didn't use the size model to estimate
+           // inlinability. Note that as the latest candidate reason.
+           compInlineResult->noteCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
        }
     }
 
