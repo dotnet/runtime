@@ -8,23 +8,22 @@ namespace System.Runtime.InteropServices
     /// Native buffer that deals in char size increments. Dispose to free memory. Allows buffers larger
     /// than a maximum size string to enable working with very large string arrays.  Always makes ordinal
     /// comparisons.
-    /// 
+    ///
     /// A more performant replacement for StringBuilder when performing native interop.
     /// </summary>
     /// <remarks>
-    /// Suggested use through P/Invoke: define DllImport arguments that take a character buffer as IntPtr.
-    /// NativeStringBuffer has an implicit conversion to IntPtr.
+    /// Suggested use through P/Invoke: define DllImport arguments that take a character buffer as SafeHandle and pass StringBuffer.GetHandle().
     /// </remarks>
     internal class StringBuffer : NativeBuffer
     {
-        private ulong _length;
+        private uint _length;
 
         /// <summary>
         /// Instantiate the buffer with capacity for at least the specified number of characters. Capacity
         /// includes the trailing null character.
         /// </summary>
-        public StringBuffer(ulong initialCapacity = 0)
-            : base(initialCapacity)
+        public StringBuffer(uint initialCapacity = 0)
+            : base(initialCapacity * (ulong)sizeof(char))
         {
         }
 
@@ -46,7 +45,7 @@ namespace System.Runtime.InteropServices
         /// Get/set the character at the given index.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to index outside of the buffer length.</exception>
-        public new unsafe char this[ulong index]
+        public unsafe char this[uint index]
         {
             get
             {
@@ -63,12 +62,13 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Character capacity of the buffer. Includes the count for the trailing null character.
         /// </summary>
-        public ulong CharCapacity
+        public uint CharCapacity
         {
             get
             {
                 ulong byteCapacity = ByteCapacity;
-                return byteCapacity == 0 ? 0 : byteCapacity / sizeof(char);
+                ulong charCapacity = byteCapacity == 0 ? 0 : byteCapacity / sizeof(char);
+                return charCapacity > uint.MaxValue ? uint.MaxValue : (uint)charCapacity;
             }
         }
 
@@ -76,22 +76,24 @@ namespace System.Runtime.InteropServices
         /// Ensure capacity in characters is at least the given minimum.
         /// </summary>
         /// <exception cref="OutOfMemoryException">Thrown if unable to allocate memory when setting.</exception>
-        public void EnsureCharCapacity(ulong minCapacity)
+        public void EnsureCharCapacity(uint minCapacity)
         {
-            EnsureByteCapacity(minCapacity * sizeof(char));
+            EnsureByteCapacity(minCapacity * (ulong)sizeof(char));
         }
 
         /// <summary>
         /// The logical length of the buffer in characters. (Does not include the final null.) Will automatically attempt to increase capacity.
         /// This is where the usable data ends.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to set <paramref name="nameof(Length)"/> to a value that is larger than the maximum addressable memory.</exception>
         /// <exception cref="OutOfMemoryException">Thrown if unable to allocate memory when setting.</exception>
-        public unsafe ulong Length
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the set size in bytes is uint.MaxValue (as space is implicitly reservced for the trailing null).</exception>
+        public unsafe uint Length
         {
             get { return _length; }
             set
             {
+                if (value == uint.MaxValue) throw new ArgumentOutOfRangeException("Length");
+
                 // Null terminate
                 EnsureCharCapacity(value + 1);
                 CharPointer[value] = '\0';
@@ -107,8 +109,8 @@ namespace System.Runtime.InteropServices
         public unsafe void SetLengthToFirstNull()
         {
             char* buffer = CharPointer;
-            ulong capacity = CharCapacity;
-            for (ulong i = 0; i < capacity; i++)
+            uint capacity = CharCapacity;
+            for (uint i = 0; i < capacity; i++)
             {
                 if (buffer[i] == '\0')
                 {
@@ -132,7 +134,7 @@ namespace System.Runtime.InteropServices
         public bool StartsWith(string value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
-            if (_length < (ulong)value.Length) return false;
+            if (_length < (uint)value.Length) return false;
             return SubstringEquals(value, startIndex: 0, count: value.Length);
         }
 
@@ -146,17 +148,19 @@ namespace System.Runtime.InteropServices
         /// Thrown if <paramref name="startIndex"/> or <paramref name="count"/> are outside the range
         /// of the buffer's length.
         /// </exception>
-        public unsafe bool SubstringEquals(string value, ulong startIndex = 0, int count = -1)
+        public unsafe bool SubstringEquals(string value, uint startIndex = 0, int count = -1)
         {
             if (value == null) return false;
             if (count < -1) throw new ArgumentOutOfRangeException(nameof(count));
-            ulong realCount = count == -1 ? _length - startIndex : (ulong)count;
-            if (startIndex + realCount > _length) throw new ArgumentOutOfRangeException(nameof(count));
+            if (startIndex > _length) throw new ArgumentOutOfRangeException(nameof(startIndex));
+
+            uint realCount = count == -1 ? _length - startIndex : (uint)count;
+            if (checked(startIndex + realCount) > _length) throw new ArgumentOutOfRangeException(nameof(count));
 
             int length = value.Length;
 
             // Check the substring length against the input length
-            if (realCount != (ulong)length) return false;
+            if (realCount != (uint)length) return false;
 
             fixed (char* valueStart = value)
             {
@@ -202,10 +206,34 @@ namespace System.Runtime.InteropServices
         /// Thrown if <paramref name="startIndex"/> or <paramref name="count"/> are outside the range
         /// of <paramref name="value"/> characters.
         /// </exception>
-        public void Append(StringBuffer value, ulong startIndex = 0, ulong count = 0)
+        public void Append(StringBuffer value, uint startIndex = 0)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value.Length == 0) return;
+
+            value.CopyTo(
+                bufferIndex: startIndex,
+                destination: this,
+                destinationIndex: _length,
+                count: value.Length);
+        }
+
+        /// <summary>
+        /// Append the given buffer.
+        /// </summary>
+        /// <param name="value">The buffer to append.</param>
+        /// <param name="startIndex">The index in the input buffer to start appending from.</param>
+        /// <param name="count">The count of characters to copy from the buffer string.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="startIndex"/> or <paramref name="count"/> are outside the range
+        /// of <paramref name="value"/> characters.
+        /// </exception>
+        public void Append(StringBuffer value, uint startIndex, uint count)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
             if (count == 0) return;
+
             value.CopyTo(
                 bufferIndex: startIndex,
                 destination: this,
@@ -217,14 +245,20 @@ namespace System.Runtime.InteropServices
         /// Copy contents to the specified buffer. Destination index must be within current destination length.
         /// Will grow the destination buffer if needed.
         /// </summary>
-        public unsafe void CopyTo(ulong bufferIndex, StringBuffer destination, ulong destinationIndex, ulong count)
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="bufferIndex"/> or <paramref name="destinationIndex"/> or <paramref name="count"/> are outside the range
+        /// of <paramref name="value"/> characters.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="destination"/> is null.</exception>
+        public unsafe void CopyTo(uint bufferIndex, StringBuffer destination, uint destinationIndex, uint count)
         {
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (destinationIndex > destination._length) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
-            if (_length < bufferIndex + count) throw new ArgumentOutOfRangeException(nameof(count));
+            if (bufferIndex >= _length) throw new ArgumentOutOfRangeException(nameof(bufferIndex));
+            if (_length < checked(bufferIndex + count)) throw new ArgumentOutOfRangeException(nameof(count));
 
             if (count == 0) return;
-            ulong lastIndex = destinationIndex + (ulong)count;
+            uint lastIndex = checked(destinationIndex + count);
             if (destination._length < lastIndex) destination.Length = lastIndex;
 
             Buffer.MemoryCopy(
@@ -238,16 +272,16 @@ namespace System.Runtime.InteropServices
         /// Copy contents from the specified string into the buffer at the given index. Start index must be within the current length of
         /// the buffer, will grow as necessary.
         /// </summary>
-        public unsafe void CopyFrom(ulong bufferIndex, string source, int sourceIndex = 0, int count = -1)
+        public unsafe void CopyFrom(uint bufferIndex, string source, int sourceIndex = 0, int count = -1)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (bufferIndex > _length) throw new ArgumentOutOfRangeException(nameof(bufferIndex));
             if (sourceIndex < 0 || sourceIndex > source.Length) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
-            if (count < 0) count = source.Length - sourceIndex;
-            if (source.Length - count < sourceIndex) throw new ArgumentOutOfRangeException(nameof(count));
+            if (count == -1) count = source.Length - sourceIndex;
+            if (count < 0 || source.Length - count < sourceIndex) throw new ArgumentOutOfRangeException(nameof(count));
 
             if (count == 0) return;
-            ulong lastIndex = bufferIndex + (ulong)count;
+            uint lastIndex = bufferIndex + (uint)count;
             if (_length < lastIndex) Length = lastIndex;
 
             fixed (char* content = source)
@@ -295,13 +329,13 @@ namespace System.Runtime.InteropServices
         /// Thrown if <paramref name="startIndex"/> or <paramref name="count"/> are outside the range of the buffer's length
         /// or count is greater than the maximum string size (int.MaxValue).
         /// </exception>
-        public unsafe string Substring(ulong startIndex, int count = -1)
+        public unsafe string Substring(uint startIndex, int count = -1)
         {
-            if (_length > 0 && startIndex > _length - 1) throw new ArgumentOutOfRangeException(nameof(startIndex));
+            if (startIndex > (_length == 0 ? 0 : _length - 1)) throw new ArgumentOutOfRangeException(nameof(startIndex));
             if (count < -1) throw new ArgumentOutOfRangeException(nameof(count));
 
-            ulong realCount = count == -1 ? _length - startIndex : (ulong)count;
-            if (realCount > int.MaxValue || startIndex + realCount > _length) throw new ArgumentOutOfRangeException(nameof(count));
+            uint realCount = count == -1 ? _length - startIndex : (uint)count;
+            if (realCount > int.MaxValue || checked(startIndex + realCount) > _length) throw new ArgumentOutOfRangeException(nameof(count));
             if (realCount == 0) return string.Empty;
 
             // The buffer could be bigger than will fit into a string, but the substring might fit. As the starting
