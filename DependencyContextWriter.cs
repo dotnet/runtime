@@ -66,52 +66,26 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 o[DependencyContextStrings.DefinesPropertyName] = new JArray(compilationOptions.Defines);
             }
-            if (compilationOptions.LanguageVersion != null)
-            {
-                o[DependencyContextStrings.LanguageVersionPropertyName] = compilationOptions.LanguageVersion;
-            }
-            if (compilationOptions.Platform != null)
-            {
-                o[DependencyContextStrings.PlatformPropertyName] = compilationOptions.Platform;
-            }
-            if (compilationOptions.AllowUnsafe != null)
-            {
-                o[DependencyContextStrings.AllowUnsafePropertyName] = compilationOptions.AllowUnsafe;
-            }
-            if (compilationOptions.WarningsAsErrors != null)
-            {
-                o[DependencyContextStrings.WarningsAsErrorsPropertyName] = compilationOptions.WarningsAsErrors;
-            }
-            if (compilationOptions.Optimize != null)
-            {
-                o[DependencyContextStrings.OptimizePropertyName] = compilationOptions.Optimize;
-            }
-            if (compilationOptions.KeyFile != null)
-            {
-                o[DependencyContextStrings.KeyFilePropertyName] = compilationOptions.KeyFile;
-            }
-            if (compilationOptions.DelaySign != null)
-            {
-                o[DependencyContextStrings.DelaySignPropertyName] = compilationOptions.DelaySign;
-            }
-            if (compilationOptions.PublicSign != null)
-            {
-                o[DependencyContextStrings.PublicSignPropertyName] = compilationOptions.PublicSign;
-            }
-            if (compilationOptions.DebugType != null)
-            {
-                o[DependencyContextStrings.DebugTypePropertyName] = compilationOptions.DebugType;
-            }
-            if (compilationOptions.EmitEntryPoint != null)
-            {
-                o[DependencyContextStrings.EmitEntryPointPropertyName] = compilationOptions.EmitEntryPoint;
-            }
-            if (compilationOptions.GenerateXmlDocumentation != null)
-            {
-                o[DependencyContextStrings.GenerateXmlDocumentationPropertyName] = compilationOptions.GenerateXmlDocumentation;
-            }
+            AddPropertyIfNotNull(o, DependencyContextStrings.LanguageVersionPropertyName, compilationOptions.LanguageVersion);
+            AddPropertyIfNotNull(o, DependencyContextStrings.PlatformPropertyName, compilationOptions.Platform);
+            AddPropertyIfNotNull(o, DependencyContextStrings.AllowUnsafePropertyName, compilationOptions.AllowUnsafe);
+            AddPropertyIfNotNull(o, DependencyContextStrings.WarningsAsErrorsPropertyName, compilationOptions.WarningsAsErrors);
+            AddPropertyIfNotNull(o, DependencyContextStrings.OptimizePropertyName, compilationOptions.Optimize);
+            AddPropertyIfNotNull(o, DependencyContextStrings.KeyFilePropertyName, compilationOptions.KeyFile);
+            AddPropertyIfNotNull(o, DependencyContextStrings.DelaySignPropertyName, compilationOptions.DelaySign);
+            AddPropertyIfNotNull(o, DependencyContextStrings.PublicSignPropertyName, compilationOptions.PublicSign);
+            AddPropertyIfNotNull(o, DependencyContextStrings.EmitEntryPointPropertyName, compilationOptions.EmitEntryPoint);
+            AddPropertyIfNotNull(o, DependencyContextStrings.GenerateXmlDocumentationPropertyName, compilationOptions.GenerateXmlDocumentation);
             return o;
-        }
+            }
+
+        private void AddPropertyIfNotNull<T>(JObject o, string name, T value)
+            {
+            if (value != null)
+            {
+                o[name] = value.ToString();
+            }
+            }
 
         private JObject WriteTargets(DependencyContext context)
         {

@@ -28,24 +28,26 @@ namespace Microsoft.Extensions.DependencyModel
 
         private DependencyContext Read(JObject root)
         {
-            string runtime = string.Empty;
-            string target = string.Empty;
+            var runtime = string.Empty;
+            var target = string.Empty;
 
             var runtimeTargetInfo = ReadRuntimeTargetInfo(root);
             var libraryStubs = ReadLibraryStubs((JObject) root[DependencyContextStrings.LibrariesPropertyName]);
-            var targetsObject = (IEnumerable<KeyValuePair<string, JToken>>) root[DependencyContextStrings.TargetsPropertyName];
+            var targetsObject = (JObject) root[DependencyContextStrings.TargetsPropertyName];
 
             JObject runtimeTarget = null;
             JObject compileTarget = null;
             if (targetsObject != null)
             {
-                var compileTargetProperty = targetsObject.FirstOrDefault(t => !IsRuntimeTarget(t.Key));
-                compileTarget = (JObject) compileTargetProperty.Value;
-                target = compileTargetProperty.Key;
+                var compileTargetProperty = targetsObject.Properties()
+                    .FirstOrDefault(p => !IsRuntimeTarget(p.Name));
+
+                compileTarget = (JObject)compileTargetProperty.Value;
+                target = compileTargetProperty.Name;
 
                 if (!string.IsNullOrEmpty(runtimeTargetInfo.Name))
                 {
-                    runtimeTarget = (JObject) targetsObject.FirstOrDefault(t => t.Key == runtimeTargetInfo.Name).Value;
+                    runtimeTarget = (JObject) targetsObject[runtimeTargetInfo.Name];
                     if (runtimeTarget == null)
                     {
                         throw new FormatException($"Target with name {runtimeTargetInfo.Name} not found");
