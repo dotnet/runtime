@@ -7,9 +7,9 @@
     "System.Security.Cryptography.Primitives": "4.0.0-rc3-23901"
   },
   "frameworks": {
-    "netstandard1.4": {
+    "netstandard1.3": {
       "imports": [
-        "dotnet5.5"
+        "dotnet5.4"
       ]
     }
   }
