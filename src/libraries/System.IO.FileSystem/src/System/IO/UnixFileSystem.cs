@@ -208,30 +208,38 @@ namespace System.IO
 
         public override void RemoveDirectory(string fullPath, bool recursive)
         {
-            if (!DirectoryExists(fullPath))
+            var di = new DirectoryInfo(fullPath);
+            if (!di.Exists)
             {
                 throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
             }
-            RemoveDirectoryInternal(fullPath, recursive, throwOnTopLevelDirectoryNotFound: true);
+            RemoveDirectoryInternal(di, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
 
-        private void RemoveDirectoryInternal(string fullPath, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
         {
             Exception firstException = null;
+
+            if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                DeleteFile(directory.FullName);
+                return;
+            }
 
             if (recursive)
             {
                 try
                 {
-                    foreach (string item in EnumeratePaths(fullPath, "*", SearchOption.TopDirectoryOnly, SearchTarget.Both))
+                    foreach (string item in EnumeratePaths(directory.FullName, "*", SearchOption.TopDirectoryOnly, SearchTarget.Both))
                     {
                         if (!ShouldIgnoreDirectory(Path.GetFileName(item)))
                         {
                             try
                             {
-                                if (DirectoryExists(item))
+                                var childDirectory = new DirectoryInfo(item);
+                                if (childDirectory.Exists)
                                 {
-                                    RemoveDirectoryInternal(item, recursive, throwOnTopLevelDirectoryNotFound: false);
+                                    RemoveDirectoryInternal(childDirectory, recursive, throwOnTopLevelDirectoryNotFound: false);
                                 }
                                 else
                                 {
@@ -262,7 +270,7 @@ namespace System.IO
                 }
             }
 
-            if (Interop.Sys.RmDir(fullPath) < 0)
+            if (Interop.Sys.RmDir(directory.FullName) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
@@ -271,7 +279,7 @@ namespace System.IO
                     case Interop.Error.EPERM:
                     case Interop.Error.EROFS:
                     case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
+                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, directory.FullName)); // match Win32 exception
                     case Interop.Error.ENOENT:
                         if (!throwOnTopLevelDirectoryNotFound)
                         {
@@ -279,7 +287,7 @@ namespace System.IO
                         }
                         goto default;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, directory.FullName, isDirectory: true);
                 }
             }
         }
