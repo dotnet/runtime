@@ -279,7 +279,7 @@ int ExecuteManagedAssembly(
     // Without this, any exception handling will fail, so let's do this
     // as early as possible.
     // 0x1: DWARF / 0x2: FRAME / 0x4: EXIDX
-    putenv("UNW_ARM_UNWIND_METHOD=6");
+    putenv(const_cast<char *>("UNW_ARM_UNWIND_METHOD=6"));
 #endif // _ARM_
 
     std::string coreClrDllPath(clrFilesAbsolutePath);
