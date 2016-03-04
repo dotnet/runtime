@@ -3,13 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class RegionInfoPropertyTests
-    {        
+    {
+        [Fact]
+        public void CurrentRegion()
+        {
+            Assert.Equal(RegionInfo.CurrentRegion, new RegionInfo(CultureInfo.CurrentCulture.Name));
+            Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
+        }
+
         [Theory]
         [InlineData("en-US", "United States")]
         public void DisplayName(string name, string expected)
