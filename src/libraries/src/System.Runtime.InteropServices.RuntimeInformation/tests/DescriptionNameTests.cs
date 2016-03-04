@@ -37,6 +37,12 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
+        [Fact, PlatformSpecific(PlatformID.NetBSD)]
+        public void VerifyNetBSDDebugName()
+        {
+            Assert.Contains("netbsd", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
+        }
+
         [Fact, PlatformSpecific(PlatformID.OSX)]
         public void VerifyOSXDebugName()
         {
