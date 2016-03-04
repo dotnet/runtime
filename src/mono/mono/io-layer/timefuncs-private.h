@@ -15,8 +15,6 @@
 #include <sys/time.h>
 
 extern void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime);
-extern void _wapi_timeval_to_filetime (struct timeval *tv,
-				       WapiFileTime *filetime);
 extern void _wapi_guint64_to_filetime (guint64 ticks, WapiFileTime *filetime);
 
 #endif /* _WAPI_TIMEFUNCS_PRIVATE_H_ */
