@@ -10929,7 +10929,8 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *er
 
 	return type;
 }
-/*
+/**
+ * encode_cattr_value:
  * Encode a value in a custom attribute stream of bytes.
  * The value to encode is either supplied as an object in argument val
  * (valuetypes are boxed), or as a pointer to the data in the
@@ -10940,13 +10941,14 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *er
  * @buflen contains the size of the buffer and is used to return the new buffer size
  * if this needs to be realloced.
  * @retbuffer and @retp return the start and the position of the buffer
+ * @error set on error.
  */
 static void
-encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg, char *argval)
+encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg, char *argval, MonoError *error)
 {
-	MonoError error;
 	MonoTypeEnum simple_type;
 	
+	mono_error_init (error);
 	if ((p-buffer) + 10 >= *buflen) {
 		char *newbuf;
 		*buflen *= 2;
@@ -11025,8 +11027,9 @@ handle_enum:
 			break;
 		}
 handle_type:
-		arg_type = mono_reflection_type_get_handle ((MonoReflectionType*)arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		arg_type = mono_reflection_type_get_handle ((MonoReflectionType*)arg, error);
+		return_if_nok (error);
+
 		str = type_get_qualified_name (arg_type, NULL);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
@@ -11069,19 +11072,22 @@ handle_type:
 			char *elptr = mono_array_addr ((MonoArray*)arg, char, 0);
 			int elsize = mono_class_array_element_size (arg_eclass);
 			for (i = 0; i < len; ++i) {
-				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &arg_eclass->byval_arg, NULL, elptr);
+				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &arg_eclass->byval_arg, NULL, elptr, error);
+				return_if_nok (error);
 				elptr += elsize;
 			}
 		} else if (eclass->valuetype && arg_eclass->valuetype) {
 			char *elptr = mono_array_addr ((MonoArray*)arg, char, 0);
 			int elsize = mono_class_array_element_size (eclass);
 			for (i = 0; i < len; ++i) {
-				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, NULL, elptr);
+				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, NULL, elptr, error);
+				return_if_nok (error);
 				elptr += elsize;
 			}
 		} else {
 			for (i = 0; i < len; ++i) {
-				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i), NULL);
+				encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i), NULL, error);
+				return_if_nok (error);
 			}
 		}
 		break;
@@ -11121,7 +11127,8 @@ handle_type:
 				*p++ = 0x51;
 			else
 				*p++ = klass->element_class->byval_arg.type;
-			encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &klass->byval_arg, arg, NULL);
+			encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &klass->byval_arg, arg, NULL, error);
+			return_if_nok (error);
 			break;
 		} else if (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8) {
 			*p++ = simple_type = klass->byval_arg.type;
@@ -11186,9 +11193,12 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 
 #ifndef DISABLE_REFLECTION_EMIT
 static void
-encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, char *name, MonoObject *value)
+encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, char *name, MonoObject *value, MonoError *error)
 {
 	int len;
+
+	mono_error_init (error);
+
 	/* Preallocate a large enough buffer */
 	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
 		char *str = type_get_qualified_name (type, NULL);
@@ -11218,7 +11228,8 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	mono_metadata_encode_value (len, p, &p);
 	memcpy (p, name, len);
 	p += len;
-	encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, buflen, type, value, NULL);
+	encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, buflen, type, value, NULL, error);
+	return_if_nok (error);
 	*retp = p;
 	*retbuffer = buffer;
 }
@@ -11240,11 +11251,13 @@ MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
 {
 	MonoError error;
-	MonoArray *result;
+	MonoArray *result = NULL;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
 	char *buffer, *p;
 	guint32 buflen, i;
+
+	mono_error_init (&error);
 
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 		/* sig is freed later so allocate it in the heap */
@@ -11265,7 +11278,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
 		arg = mono_array_get (ctorArgs, MonoObject*, i);
-		encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, sig->params [i], arg, NULL);
+		encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, sig->params [i], arg, NULL, &error);
+		if (!is_ok (&error)) goto leave;
 	}
 	i = 0;
 	if (properties)
@@ -11284,8 +11298,9 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			get_prop_name_and_type (prop, &pname, &ptype, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			*p++ = 0x54; /* PROPERTY signature */
-			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i));
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i), &error);
 			g_free (pname);
+			if (!is_ok (&error)) goto leave;
 		}
 	}
 
@@ -11299,8 +11314,9 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			get_field_name_and_type (field, &fname, &ftype, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			*p++ = 0x53; /* FIELD signature */
-			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i), &error);
 			g_free (fname);
+			if (!is_ok (&error)) goto leave;
 		}
 	}
 
@@ -11309,9 +11325,11 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
 	p = mono_array_addr (result, char, 0);
 	memcpy (p, buffer, buflen);
+leave:
 	g_free (buffer);
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod"))
 		g_free (sig);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return result;
 }
 
