@@ -436,7 +436,7 @@ public:
             }
         }
 
-        if (FAILED(hr))
+        if (FAILED(hr) && !m_canceled)
         {
             m_callback(NULL, m_parameter, hr);
         }

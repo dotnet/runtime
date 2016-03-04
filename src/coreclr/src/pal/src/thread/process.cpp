@@ -1670,7 +1670,7 @@ public:
             }
         }
 
-        if (pe != NO_ERROR)
+        if (pe != NO_ERROR && !m_canceled)
         {
             SetLastError(pe);
             m_callback(NULL, NULL, m_parameter);
