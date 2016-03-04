@@ -947,5 +947,10 @@ namespace System.Net.Sockets
 
             return errorCode;
         }
+
+        public static void CheckDualModeReceiveSupport(Socket socket)
+        {
+            // Dual-mode sockets support received packet info on Windows.
+        }
     }
 }

@@ -9,7 +9,6 @@ namespace System.Net.Sockets.Tests
     public class ReceiveMessageFrom
     {
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
         public void Success()
         {
             if (Socket.OSSupportsIPv4)

@@ -28,6 +28,14 @@ namespace System.Net.Sockets
             return SocketErrorPal.GetSocketErrorForNativeError(errorCode);
         }
 
+        public static void CheckDualModeReceiveSupport(Socket socket)
+        {
+            if (!SupportsDualModeIPv4PacketInfo && socket.AddressFamily == AddressFamily.InterNetworkV6 && socket.DualMode)
+            {
+                throw new PlatformNotSupportedException(SR.net_sockets_dualmode_receivefrom_notsupported);
+            }
+        }
+
         private static unsafe IPPacketInformation GetIPPacketInformation(Interop.Sys.MessageHeader* messageHeader, bool isIPv4, bool isIPv6)
         {
             if (!isIPv4 && !isIPv6)
