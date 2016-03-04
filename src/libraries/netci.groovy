@@ -168,6 +168,8 @@ branchList.each { branchName ->
             Utilities.setMachineAffinity(newTestJob, os)
             // Set up standard options.
             Utilities.addStandardOptions(newTestJob, isPR)
+            // Add the unit test results
+            Utilities.addXUnitDotNETResults(newTestJob, 'bin/tests/**/testResults.xml')
 
             def fullCoreFXTestJobName = Utilities.getFolderName(project) + '/' + newTestJob.name
             def newJob = buildFlowJob(getJobName(Utilities.getFullJobName(project, newJobName, isPR), branchName)) {
@@ -182,8 +184,6 @@ branchList.each { branchName ->
             Utilities.setMachineAffinity(newJob, os)
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
-            // Add the unit test results
-            Utilities.addXUnitDotNETResults(newJob, 'bin/tests/**/testResults.xml')
 
             // Set up appropriate triggers.  PR on demand, otherwise nightly
             if (isPR) {
