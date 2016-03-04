@@ -171,15 +171,130 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Export(PackageDescription("Pack.Age",
                     servicable: true,
                     hash: "Hash",
-                    version: new NuGetVersion(1,2,3),
-                    dependencies: new []
+                    version: new NuGetVersion(1, 2, 3),
+                    dependencies: new[]
                     {
-                        new LibraryRange()
-                    }))
+                        new LibraryRange("System.Collections",
+                            new VersionRange(new NuGetVersion(2, 1, 2)),
+                            LibraryType.ReferenceAssembly,
+                            LibraryDependencyType.Default)
+                    }),
+                    runtimeAssemblies: new[]
+                    {
+                        new LibraryAsset("Dll", "lib/Pack.Age.dll", ""),
+                    }
+                    ),
+                Export(ReferenceAssemblyDescription("System.Collections",
+                    version: new NuGetVersion(3, 3, 3)),
+                    runtimeAssemblies: new[]
+                    {
+                        new LibraryAsset("Dll", "", "System.Collections.dll"),
+                    })
             });
 
-            var lib = context.RuntimeLibraries.Single();
+            context.RuntimeLibraries.Should().HaveCount(2);
+
+            var lib = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
+            lib.LibraryType.Should().Be("package");
             lib.Serviceable.Should().BeTrue();
+            lib.Hash.Should().Be("sha512-Hash");
+            lib.Version.Should().Be("1.2.3");
+            lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
+            lib.Assemblies.Should().OnlyContain(l => l.Path == "lib/Pack.Age.dll");
+
+            var asm = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
+            asm.LibraryType.Should().Be("referenceassembly");
+            asm.Version.Should().Be("3.3.3");
+            asm.Hash.Should().BeEmpty();
+            asm.Dependencies.Should().BeEmpty();
+            asm.Assemblies.Should().OnlyContain(l => l.Path == "System.Collections.dll");
+        }
+
+
+        [Fact]
+        public void FillsCompileLibraryProperties()
+        {
+            var context = Build(compilationExports: new[]
+            {
+                Export(PackageDescription("Pack.Age",
+                    servicable: true,
+                    hash: "Hash",
+                    version: new NuGetVersion(1, 2, 3),
+                    dependencies: new[]
+                    {
+                        new LibraryRange("System.Collections",
+                            new VersionRange(new NuGetVersion(2, 1, 2)),
+                            LibraryType.ReferenceAssembly,
+                            LibraryDependencyType.Default)
+                    }),
+                    compilationAssemblies: new[]
+                    {
+                        new LibraryAsset("Dll", "lib/Pack.Age.dll", ""),
+                    }
+                    ),
+                Export(ReferenceAssemblyDescription("System.Collections",
+                    version: new NuGetVersion(3, 3, 3)),
+                    compilationAssemblies: new[]
+                    {
+                        new LibraryAsset("Dll", "", "System.Collections.dll"),
+                    })
+            });
+
+            context.CompileLibraries.Should().HaveCount(2);
+
+            var lib = context.CompileLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
+            lib.LibraryType.Should().Be("package");
+            lib.Serviceable.Should().BeTrue();
+            lib.Hash.Should().Be("sha512-Hash");
+            lib.Version.Should().Be("1.2.3");
+            lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
+            lib.Assemblies.Should().OnlyContain(a => a == "lib/Pack.Age.dll");
+
+            var asm = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
+            asm.LibraryType.Should().Be("referenceassembly");
+            asm.Version.Should().Be("3.3.3");
+            asm.Hash.Should().BeEmpty();
+            asm.Dependencies.Should().BeEmpty();
+            asm.Assemblies.Should().OnlyContain(a => a == "System.Collections.dll");
+        }
+
+        [Fact]
+        public void ReferenceAssembliesPathRelativeToDefaultRoot()
+        {
+            var context = Build(compilationExports: new[]
+            {
+                Export(ReferenceAssemblyDescription("System.Collections",
+                    version: new NuGetVersion(3, 3, 3)),
+                    compilationAssemblies: new[]
+                    {
+                        new LibraryAsset("Dll", "", Path.Combine(_referenceAssembliesPath, "sub", "System.Collections.dll"))
+                    })
+            });
+
+            var asm = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
+            asm.Assemblies.Should().OnlyContain(a => a == Path.Combine("sub", "System.Collections.dll"));
+        }
+
+        [Fact]
+        public void SkipsBuildDependencies()
+        {
+            var context = Build(compilationExports: new[]
+           {
+                Export(PackageDescription("Pack.Age",
+                    dependencies: new[]
+                    {
+                        new LibraryRange("System.Collections",
+                            new VersionRange(new NuGetVersion(2, 1, 2)),
+                            LibraryType.ReferenceAssembly,
+                            LibraryDependencyType.Build)
+                    })
+                    ),
+                Export(ReferenceAssemblyDescription("System.Collections",
+                    version: new NuGetVersion(3, 3, 3)))
+            });
+
+            var lib = context.CompileLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
+            lib.Dependencies.Should().BeEmpty();
         }
 
     }
