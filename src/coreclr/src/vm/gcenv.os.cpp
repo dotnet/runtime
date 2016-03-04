@@ -374,6 +374,8 @@ HINSTANCE LoadDllForAPI(WCHAR* dllTraditional, WCHAR* dllApiSet)
 //  at getting that limit, it returns 0.
 uint64_t GCToOSInterface::GetRestrictedPhysicalMemoryLimit()
 {
+    LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_PAL
     return 0;
 #else
@@ -499,6 +501,8 @@ exit:
 //  0 if it has failed, the real value if it has succeeded
 size_t GCToOSInterface::GetCurrentPhysicalMemory()
 {
+    LIMITED_METHOD_CONTRACT;
+
 #ifndef FEATURE_PAL
     PROCESS_MEMORY_COUNTERS pmc;
     if (GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
