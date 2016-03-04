@@ -28,8 +28,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         private DependencyContext Read(JObject root)
         {
-            string runtime = null;
-            string target = null;
+            string runtime = string.Empty;
+            string target = string.Empty;
 
             var runtimeTargetInfo = ReadRuntimeTargetInfo(root);
             var libraryStubs = ReadLibraryStubs((JObject) root[DependencyContextStrings.LibrariesPropertyName]);
