@@ -10800,15 +10800,14 @@ dynamic_method_to_signature (MonoReflectionDynamicMethod *method, MonoError *err
 }
 
 static void
-get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type)
+get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoClass *klass = mono_object_class (prop);
 	if (strcmp (klass->name, "PropertyBuilder") == 0) {
 		MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *)prop;
 		*name = mono_string_to_utf8 (pb->name);
-		*type = mono_reflection_type_get_handle ((MonoReflectionType*)pb->type, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*type = mono_reflection_type_get_handle ((MonoReflectionType*)pb->type, error);
 	} else {
 		MonoReflectionProperty *p = (MonoReflectionProperty *)prop;
 		*name = g_strdup (p->property->name);
@@ -10820,15 +10819,14 @@ get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type)
 }
 
 static void
-get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
+get_field_name_and_type (MonoObject *field, char **name, MonoType **type, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoClass *klass = mono_object_class (field);
 	if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)field;
 		*name = mono_string_to_utf8 (fb->name);
-		*type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		*type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 	} else {
 		MonoReflectionField *f = (MonoReflectionField *)field;
 		*name = g_strdup (mono_field_get_name (f->field));
@@ -11283,7 +11281,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			char *pname;
 
 			prop = (MonoObject *)mono_array_get (properties, gpointer, i);
-			get_prop_name_and_type (prop, &pname, &ptype);
+			get_prop_name_and_type (prop, &pname, &ptype, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			*p++ = 0x54; /* PROPERTY signature */
 			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i));
 			g_free (pname);
@@ -11297,7 +11296,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			char *fname;
 
 			field = (MonoObject *)mono_array_get (fields, gpointer, i);
-			get_field_name_and_type (field, &fname, &ftype);
+			get_field_name_and_type (field, &fname, &ftype, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 			*p++ = 0x53; /* FIELD signature */
 			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
 			g_free (fname);
