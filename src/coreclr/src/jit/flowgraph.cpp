@@ -4182,90 +4182,53 @@ private:
     unsigned slot1;
     unsigned depth;
 };
+//------------------------------------------------------------------------
+// fgFindJumpTargets: walk the IL stream, determining jump target offsets
+//
+// Arguments:
+//    codeAddr   - base address of the IL code buffer
+//    codeSize   - number of bytes in the IL code buffer
+//    jumpTarget - [OUT] xxx yuuu
+//
+// Notes:
+//
+//    If inlining or prejitting the root, this method also makes
+//    various observations about the method that factor into inline
+//    decisions. It sets `compNativeSizeEstimate` as a side effect.
+//
+//    May throw an exception if the IL is malformed.
 
-void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
-                                        IL_OFFSET    codeSize,
-                                        BYTE *       jumpTarget)
+void Compiler::fgFindJumpTargets(const BYTE* codeAddr,
+                                 IL_OFFSET   codeSize,
+                                 BYTE*       jumpTarget)
 {
-
-    const   BYTE *  codeBegp = codeAddr;
-    const   BYTE *  codeEndp = codeAddr + codeSize;
-    unsigned varNum;
-
-    bool    seenJump = false;
-
-    OPCODE  opcode;
-
-    var_types varType = DUMMY_INIT(TYP_UNDEF);  // TYP_ type
-    typeInfo  ti;                               // Verifier type.
-
-#ifndef DEBUG
-    CodeSeqSM   LocalSm;
-#endif
-
-    CodeSeqSM * pSm = NULL;
-
-    SM_OPCODE smOpcode = DUMMY_INIT((SM_OPCODE)0);
-
-    unsigned ldStCount = 0; //Number of load/store instructions.
-
-    // Keep track of constants and args on the stack.
-    fgStack pushedStack;
-
-    // Observe force inline state and code size.
-    bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+    const BYTE* codeBegp     = codeAddr;
+    const BYTE* codeEndp     = codeAddr + codeSize;
+    unsigned    varNum;
+    bool        seenJump     = false;
+    var_types   varType      = DUMMY_INIT(TYP_UNDEF);  // TYP_ type
+    typeInfo    ti;                                // Verifier type.
+    bool        typeIsNormed = false;
+    unsigned    ldStCount    = 0; // Number of load/store instructions.
+    fgStack     pushedStack;      // Keep track of constants and args on the stack.
+    const bool  isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
 
     if (compInlineResult != nullptr)
     {
+        // Observe force inline state and code size.
         compInlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
-    }
 
-    // Determine whether to start the state machine to estimate the size of the
-    // native code for this method.
-    bool useSm = false;
-    if ((codeSize > ALWAYS_INLINE_SIZE) && !isForceInline)
-    {
-        // The size of the native code for this method matters for inlining
-        // decisions.
-
-        if (compIsForInlining())
-        {
-            // This method is being compiled as an inline candidate and will be
-            // rejected if its native code is too large.
-
-            useSm = true;
-        }
-        else if ((opts.eeFlags & CORJIT_FLG_PREJIT) &&
-                 (codeSize <= impInlineSize))
-        {
-            // This method isn't an inline candidate yet, but it's small enough
-            // to be considered for one in the future. Keep track of the
-            // estimated native code size; it will be used elsewhere later.
-
-            useSm = true;
-        }
-    }
-
-    if (useSm)
-    {
-
-#ifdef DEBUG
-        pSm = &fgCodeSeqSm;
-#else
-        pSm = &LocalSm;
-#endif
-
-        pSm->Start(this);
+        // note that we're starting to look at the opcodes.
+        compInlineResult->note(InlineObservation::CALLEE_BEGIN_OPCODE_SCAN);
     }
 
     while (codeAddr < codeEndp)
     {
-        unsigned    sz;
-
-        opcode = (OPCODE) getU1LittleEndian(codeAddr);
+        OPCODE opcode = (OPCODE) getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         opts.instrCount++;
+        typeIsNormed = false;
 
 DECODE_OPCODE:
 
@@ -4274,6 +4237,7 @@ DECODE_OPCODE:
         if (opcode >= CEE_COUNT)
             BADCODE3("Illegal opcode", ": %02X", (int) opcode);
 
+        // --- leave ldstcount for now, though it can be moved ---
         if ((opcode >= CEE_LDARG_0 && opcode <= CEE_STLOC_S) ||
             (opcode >= CEE_LDARG   && opcode <= CEE_STLOC))
         {
@@ -4299,12 +4263,7 @@ DECODE_OPCODE:
             ++ldStCount;
         }
 
-        sz = opcodeSizes[opcode];
-
-        if (pSm)
-        {
-            smOpcode = CodeSeqSM::MapToSMOpcode(opcode);
-        }
+        unsigned sz = opcodeSizes[opcode];
 
         switch (opcode)
         {
@@ -4703,11 +4662,8 @@ ADDR_TAKEN:
                     varNum = compMapILargNum(varNum); // account for possible hidden param
                 }
 
-                if (pSm)
-                {
-                    varType = (var_types)lvaTable[varNum].lvType;
-                    ti      = lvaTable[varNum].lvVerTypeInfo;
-                }
+                varType = (var_types)lvaTable[varNum].lvType;
+                ti      = lvaTable[varNum].lvVerTypeInfo;
 
                 if (!varTypeIsStruct(&lvaTable[varNum]) && // We will put structs in the stack anyway
                                                                 // And changing the addrTaken of a local
@@ -4744,21 +4700,7 @@ ADDR_TAKEN:
                 }
             } // compIsForInlining()
 
-            if (pSm                 &&
-                ti.IsValueClass()      &&
-                !varTypeIsStruct(varType))
-            {
-#ifdef DEBUG
-                if (verbose)
-                    printf("Loading address of normed V%02u at IL offset [0x%x]\n", varNum, codeAddr-codeBegp-1);
-#endif
-
-                if (smOpcode == SM_LDARGA_S)
-                    smOpcode = SM_LDARGA_S_NORMED;
-                else if (smOpcode == SM_LDLOCA_S)
-                    smOpcode = SM_LDLOCA_S_NORMED;
-            }
-
+            typeIsNormed = ti.IsValueClass() && !varTypeIsStruct(varType);
             break;
 
 ARG_WRITE:
@@ -4803,16 +4745,13 @@ ARG_WRITE:
 _SkipCodeAddrAdjustment:
         ;
 
-        if (pSm)
+        if (compInlineResult != nullptr)
         {
-            noway_assert(smOpcode<SM_COUNT);
-            noway_assert(smOpcode != SM_PREFIX_N);
-
-            pSm->Run(smOpcode DEBUGARG(0));
+            InlineObservation obs = typeIsNormed ?
+                InlineObservation::CALLEE_OPCODE_NORMED : InlineObservation::CALLEE_OPCODE;
+            compInlineResult->noteInt(obs, opcode);
         }
-
     }
-
 
     if  (codeAddr != codeEndp)
     {
@@ -4837,45 +4776,51 @@ TOO_FAR:
         }
     }
 
-    if (pSm)
+    if (compInlineResult != nullptr)
     {
-        pSm->End();
-        noway_assert(pSm->NativeSize != NATIVE_SIZE_INVALID);
-        compNativeSizeEstimate = pSm->NativeSize;
+        compInlineResult->note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-#ifdef DEBUG
-        if (verbose)
+        // If we were estimating native code size, grab that data now.
+        if (compInlineResult->hasNativeSizeEstimate())
         {
-            printf("\n\ncompNativeSizeEstimate=%d\n", compNativeSizeEstimate);
-        }
-#endif
+            compNativeSizeEstimate = compInlineResult->determineNativeSizeEstimate();
+            noway_assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
+            JITDUMP("\n\ncompNativeSizeEstimate=%d\n", compNativeSizeEstimate);
 
-        if (compIsForInlining())
-        {
-            // If the inlining decision was obvious from the size of the IL,
-            // it should have been made earlier.
-            noway_assert(codeSize > ALWAYS_INLINE_SIZE && codeSize <= impInlineSize);
-
-            // Make an inlining decision based on the estimated native size.
-            int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
-
-            impCanInlineNative(callsiteNativeSizeEstimate,
-                               compNativeSizeEstimate,
-                               impInlineInfo,
-                               compInlineResult);
-
-            if (compInlineResult->isFailure())
+            // If we're inlining, use the size estimate to do further
+            // screening.
+            //
+            // If we're in the prejit-root case we do something
+            // similar as part of the prejit screen over in
+            // compCompileHelper.
+            if (compIsForInlining())
             {
-#ifdef DEBUG
-                if (verbose)
+                // If the inlining decision was obvious from the size of the IL,
+                // it should have been made earlier.
+                InlineObservation obs = compInlineResult->getObservation();
+                noway_assert(obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+                // Make an inlining decision based on the estimated native size.
+                int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
+
+                impCanInlineNative(callsiteNativeSizeEstimate,
+                                   compNativeSizeEstimate,
+                                   impInlineInfo,
+                                   compInlineResult);
+
+                if (compInlineResult->isFailure())
                 {
-                    printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
-                       compInlineResult->resultString(),
-                       compInlineResult->reasonString());
-                }
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
+                               compInlineResult->resultString(),
+                               compInlineResult->reasonString());
+                    }
 #endif
 
-                return;
+                    return;
+                }
             }
         }
     }

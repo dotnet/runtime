@@ -4860,9 +4860,9 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             // do the profitability screening.
             if (prejitResult.isCandidate())
             {
-                // Only needed if the inline is discretionary (not forced)
-                // and the size is over the always threshold.
-                if (!forceInline && (methodInfo->ILCodeSize > ALWAYS_INLINE_SIZE))
+                // Only needed if the inline is discretionary.
+                InlineObservation obs = prejitResult.getObservation();
+                if (obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
                 {
                     // We should have run the CodeSeq state machine
                     // and got the native size estimate.
