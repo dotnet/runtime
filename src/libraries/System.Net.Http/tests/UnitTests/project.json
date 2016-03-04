@@ -8,7 +8,7 @@
     "System.Reflection": "4.0.10",
     "System.Reflection.TypeExtensions": "4.0.0",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
   "frameworks": {
     "dnxcore50": {
