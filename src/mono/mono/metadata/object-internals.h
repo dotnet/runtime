@@ -1455,7 +1455,7 @@ void
 mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args);
 
 MonoType*
-mono_reflection_type_get_handle (MonoReflectionType *ref);
+mono_reflection_type_get_handle (MonoReflectionType *ref, MonoError *error);
 
 void
 mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass);
