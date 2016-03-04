@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -28,11 +26,27 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(expected, StringInfo.ParseCombiningCharacters(str));
         }
+
+        [Fact]
+        public void ParseCombiningCharacters_InvalidUnicodeChars()
+        {
+            ParseCombiningCharacters("\u0000\uFFFFa", new int[] { 0, 1, 2 }); // Control chars
+            ParseCombiningCharacters("\uD800a", new int[] { 0, 1 }); // Unmatched high surrogate
+            ParseCombiningCharacters("\uDC00a", new int[] { 0, 1 }); // Unmatched low surrogate
+            ParseCombiningCharacters("\u00ADa", new int[] { 0, 1 }); // Format character
+
+            ParseCombiningCharacters("\u0000\u0300\uFFFF\u0300", new int[] { 0, 1, 2, 3 }); // Control chars + combining char
+            ParseCombiningCharacters("\uD800\u0300", new int[] { 0, 1 }); // Unmatched high surrogate + combining char
+            ParseCombiningCharacters("\uDC00\u0300", new int[] { 0, 1 }); // Unmatched low surrogate + combing char
+            ParseCombiningCharacters("\u00AD\u0300", new int[] { 0, 1 }); // Format character + combining char
+
+            ParseCombiningCharacters("\u0300\u0300", new int[] { 0, 1 }); // Two combining chars
+        }
         
         [Fact]
-        public void ParseCombiningCharacters_Invalid()
+        public void ParseCombiningCharacters_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => StringInfo.ParseCombiningCharacters(null)); // Str is null
+            Assert.Throws<ArgumentNullException>("str", () => StringInfo.ParseCombiningCharacters(null)); // Str is null
         }
     }
 }

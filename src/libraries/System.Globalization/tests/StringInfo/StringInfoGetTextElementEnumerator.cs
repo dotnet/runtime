@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -18,6 +16,9 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> GetTextElementEnumerator_TestData()
         {
+            yield return new object[] { "", 0, new string[0] }; // Empty string
+            yield return new object[] { "Hello", 5, new string[0] }; // Index = string.Length
+
             yield return new object[] { "s\uDBFF\uDFFF$", 0, new string[] { "s", "\uDBFF\uDFFF", "$" } }; // Surrogate pair
             yield return new object[] { "13229^a\u20D1a", 0, new string[] { "1", "3", "2", "2", "9", "^", "a\u20D1", "a" } }; // Combining characters
 
@@ -70,11 +71,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetTextElementEnumerator_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => StringInfo.GetTextElementEnumerator(null)); // Str is null
-            Assert.Throws<ArgumentNullException>(() => StringInfo.GetTextElementEnumerator(null, 0)); // Str is null
+            Assert.Throws<ArgumentNullException>("str", () => StringInfo.GetTextElementEnumerator(null)); // Str is null
+            Assert.Throws<ArgumentNullException>("str", () => StringInfo.GetTextElementEnumerator(null, 0)); // Str is null
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetTextElementEnumerator("abc", -1)); // Index < 0
-            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetTextElementEnumerator("abc", 4)); // Index > str.Length
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetTextElementEnumerator("abc", -1)); // Index < 0
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => StringInfo.GetTextElementEnumerator("abc", 4)); // Index > str.Length
         }
     }
 }
