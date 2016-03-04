@@ -236,6 +236,19 @@ done:
     return success ? 0 : -1;
 }
 
+extern "C" FILE* SystemNative_POpen(const char* command, const char* type)
+{
+    assert(command != nullptr);
+    assert(type != nullptr);
+    return popen(command, type);
+}
+
+extern "C" int32_t SystemNative_PClose(FILE* stream)
+{
+    assert(stream != nullptr);
+    return pclose(stream);
+}
+
 // Each platform type has it's own RLIMIT values but the same name, so we need
 // to convert our standard types into the platform specific ones.
 static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)

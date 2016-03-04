@@ -833,6 +833,17 @@ extern "C" int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_
 #endif
 }
 
+extern "C" char* SystemNative_GetLine(FILE* stream)
+{
+    assert(stream != nullptr);
+
+    char* lineptr = nullptr;
+    size_t n = 0;
+    ssize_t length = getline(&lineptr, &n, stream);
+    
+    return length >= 0 ? lineptr : nullptr;
+}
+
 extern "C" int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
