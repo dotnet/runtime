@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include <stdio.h>
 #include <string.h>
 
 /**
@@ -29,6 +30,16 @@ SystemNative_ForkAndExecProcess(const char* filename,   // filename argument to 
                    int32_t* stdinFd,       // [out] if redirectStdin, the parent's fd for the child's stdin
                    int32_t* stdoutFd,      // [out] if redirectStdout, the parent's fd for the child's stdout
                    int32_t* stderrFd);     // [out] if redirectStderr, the parent's fd for the child's stderr
+
+/**
+ * Shim for the popen function.
+ */
+extern "C" FILE* SystemNative_POpen(const char* command, const char* type);
+
+/**
+ * Shim for the pclose function.
+ */
+extern "C" int32_t SystemNative_PClose(FILE* stream);
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
