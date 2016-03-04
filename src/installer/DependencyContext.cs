@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -19,9 +20,9 @@ namespace Microsoft.Extensions.DependencyModel
             string runtime,
             bool isPortable,
             CompilationOptions compilationOptions,
-            CompilationLibrary[] compileLibraries,
-            RuntimeLibrary[] runtimeLibraries,
-            IReadOnlyList<KeyValuePair<string, string[]>> runtimeGraph)
+            IEnumerable<CompilationLibrary> compileLibraries,
+            IEnumerable<RuntimeLibrary> runtimeLibraries,
+            IEnumerable<KeyValuePair<string, string[]>> runtimeGraph)
         {
             if (target == null)
             {
@@ -52,9 +53,9 @@ namespace Microsoft.Extensions.DependencyModel
             Runtime = runtime;
             IsPortable = isPortable;
             CompilationOptions = compilationOptions;
-            CompileLibraries = compileLibraries;
-            RuntimeLibraries = runtimeLibraries;
-            RuntimeGraph = runtimeGraph;
+            CompileLibraries = compileLibraries.ToArray();
+            RuntimeLibraries = runtimeLibraries.ToArray();
+            RuntimeGraph = runtimeGraph.ToArray();
         }
 
         public static DependencyContext Default => _defaultContext.Value;
