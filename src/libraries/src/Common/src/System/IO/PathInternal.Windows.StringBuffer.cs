@@ -31,7 +31,7 @@ namespace System.IO
         /// <summary>
         /// Gets the length of the root of the path (drive, share, etc.).
         /// </summary>
-        internal unsafe static ulong GetRootLength(StringBuffer path)
+        internal unsafe static uint GetRootLength(StringBuffer path)
         {
             Debug.Assert(path != null);
             if (path.Length == 0) return 0;
