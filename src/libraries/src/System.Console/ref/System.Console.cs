@@ -51,6 +51,7 @@ namespace System
         public static void SetWindowPosition(int left, int top) { }
         public static void SetWindowSize(int width, int height) { }
         public static string Title { get { return default(string); } set { } }
+        public static bool TreatControlCAsInput { get { return default(bool); } set { } }
         public static int WindowHeight { get { return default(int); } set { } }
         public static int WindowWidth { get { return default(int); } set { } }
         public static int WindowLeft { get { return default(int); } set { } }
