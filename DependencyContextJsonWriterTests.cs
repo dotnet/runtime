@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "HASH",
                                         new [] { RuntimeAssembly.Create("Banana.dll")},
                                         new []
-                                        {
+                                        {Lock
                                             new RuntimeTarget("win7-x64",
                                                 new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
                                                 new [] { "Banana.Win7-x64.so" }
@@ -334,6 +334,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 optimize: true,
                 keyFile: "Key.snk",
                 delaySign: true,
+                debugType: null,
                 publicSign: true,
                 emitEntryPoint: true,
                 generateXmlDocumentation: true)));

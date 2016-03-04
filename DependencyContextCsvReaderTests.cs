@@ -32,8 +32,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 ");
             context.RuntimeLibraries.Should().HaveCount(1);
             var library = context.RuntimeLibraries.Single();
-            library.LibraryType.Should().Be("Package");
-            library.PackageName.Should().Be("runtime.any.System.AppContext");
+            library.Type.Should().Be("Package");
+            library.Name.Should().Be("runtime.any.System.AppContext");
             library.Version.Should().Be("4.1.0-rc2-23811");
             library.Hash.Should().Be("sha512-1");
             library.Assemblies.Should().HaveCount(2).And

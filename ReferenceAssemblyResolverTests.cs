@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             exception.Message.Should()
                 .Contain(F.SecondAssemblyPath)
-                .And.Contain(library.PackageName);
+                .And.Contain(library.Name);
         }
     }
 }

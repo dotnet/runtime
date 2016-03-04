@@ -68,87 +68,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.CompilationOptions.Platform.Should().Be("Platform");
         }
 
-
-        private LibraryExport Export(
-            LibraryDescription description,
-            IEnumerable<LibraryAsset> compilationAssemblies = null,
-            IEnumerable<LibraryAsset> runtimeAssemblies = null)
-        {
-            return new LibraryExport(
-                description,
-                compilationAssemblies ?? Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                runtimeAssemblies ?? Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<AnalyzerReference>()
-            );
-        }
-
-        private PackageDescription PackageDescription(
-            string name = null,
-            NuGetVersion version = null,
-            string hash = null,
-            IEnumerable<LibraryRange> dependencies = null,
-            bool? servicable = null)
-        {
-            return new PackageDescription(
-                "PATH",
-                new LockFilePackageLibrary()
-                {
-                    Files = new string[] { },
-                    IsServiceable = servicable ?? false,
-                    Name = name ?? _defaultName,
-                    Version = version ?? _defaultVersion,
-                    Sha512 = hash ?? _defaultHash
-                },
-                new LockFileTargetLibrary(),
-                dependencies ?? Enumerable.Empty<LibraryRange>(),
-                true);
-        }
-
-        private ProjectDescription ProjectDescription(
-            string name = null,
-            NuGetVersion version = null,
-            IEnumerable<LibraryRange> dependencies = null)
-        {
-            return new ProjectDescription(
-                new LibraryRange(
-                    name ?? _defaultName,
-                    new VersionRange(version ?? _defaultVersion),
-                    LibraryType.Project,
-                    LibraryDependencyType.Default
-                    ),
-                new Project(),
-                dependencies ?? Enumerable.Empty<LibraryRange>(),
-                new TargetFrameworkInformation(),
-                true);
-        }
-
-        private LibraryDescription ReferenceAssemblyDescription(
-           string name = null,
-           NuGetVersion version = null)
-        {
-            return new LibraryDescription(
-                new LibraryIdentity(
-                    name ?? _defaultName,
-                    version ?? _defaultVersion,
-                    LibraryType.ReferenceAssembly),
-                string.Empty, // Framework assemblies don't have hashes
-                "PATH",
-                Enumerable.Empty<LibraryRange>(),
-                _defaultFramework,
-                true,
-                true);
-        }
-
         [Fact]
         public void FillsRuntimeAndTarget()
         {
-            var context = Build(target: new NuGetFramework("SomeFramework",new Version(1,2)), runtime: "win8-32");
-            context.Runtime.Should().Be("win8-32");
-            context.Target.Should().Be("SomeFramework,Version=v1.2");
+            var context = Build(target: new NuGetFramework("SomeFramework",new Version(1,2)), runtime: "win8-x86");
+            context.Runtime.Should().Be("win8-x86");
+            context.TargetFramework.Should().Be("SomeFramework,Version=v1.2");
         }
 
         [Fact]
@@ -194,16 +119,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             context.RuntimeLibraries.Should().HaveCount(2);
 
-            var lib = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
-            lib.LibraryType.Should().Be("package");
+            var lib = context.RuntimeLibraries.Should().Contain(l => l.Name == "Pack.Age").Subject;
+            lib.Type.Should().Be("package");
             lib.Serviceable.Should().BeTrue();
             lib.Hash.Should().Be("sha512-Hash");
             lib.Version.Should().Be("1.2.3");
             lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
             lib.Assemblies.Should().OnlyContain(l => l.Path == "lib/Pack.Age.dll");
 
-            var asm = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
-            asm.LibraryType.Should().Be("referenceassembly");
+            var asm = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Collections").Subject;
+            asm.Type.Should().Be("referenceassembly");
             asm.Version.Should().Be("3.3.3");
             asm.Hash.Should().BeEmpty();
             asm.Dependencies.Should().BeEmpty();
@@ -242,16 +167,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             context.CompileLibraries.Should().HaveCount(2);
 
-            var lib = context.CompileLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
-            lib.LibraryType.Should().Be("package");
+            var lib = context.CompileLibraries.Should().Contain(l => l.Name == "Pack.Age").Subject;
+            lib.Type.Should().Be("package");
             lib.Serviceable.Should().BeTrue();
             lib.Hash.Should().Be("sha512-Hash");
             lib.Version.Should().Be("1.2.3");
             lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
             lib.Assemblies.Should().OnlyContain(a => a == "lib/Pack.Age.dll");
 
-            var asm = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
-            asm.LibraryType.Should().Be("referenceassembly");
+            var asm = context.CompileLibraries.Should().Contain(l => l.Name == "System.Collections").Subject;
+            asm.Type.Should().Be("referenceassembly");
             asm.Version.Should().Be("3.3.3");
             asm.Hash.Should().BeEmpty();
             asm.Dependencies.Should().BeEmpty();
@@ -271,7 +196,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     })
             });
 
-            var asm = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Collections").Subject;
+            var asm = context.CompileLibraries.Should().Contain(l => l.Name == "System.Collections").Subject;
             asm.Assemblies.Should().OnlyContain(a => a == Path.Combine("sub", "System.Collections.dll"));
         }
 
@@ -293,9 +218,85 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     version: new NuGetVersion(3, 3, 3)))
             });
 
-            var lib = context.CompileLibraries.Should().Contain(l => l.PackageName == "Pack.Age").Subject;
+            var lib = context.CompileLibraries.Should().Contain(l => l.Name == "Pack.Age").Subject;
             lib.Dependencies.Should().BeEmpty();
         }
+
+        private LibraryExport Export(
+            LibraryDescription description,
+            IEnumerable<LibraryAsset> compilationAssemblies = null,
+            IEnumerable<LibraryAsset> runtimeAssemblies = null)
+        {
+            return new LibraryExport(
+                description,
+                compilationAssemblies ?? Enumerable.Empty<LibraryAsset>(),
+                Enumerable.Empty<LibraryAsset>(),
+                runtimeAssemblies ?? Enumerable.Empty<LibraryAsset>(),
+                Enumerable.Empty<LibraryAsset>(),
+                Enumerable.Empty<LibraryAsset>(),
+                Enumerable.Empty<LibraryAsset>(),
+                Enumerable.Empty<AnalyzerReference>()
+            );
+        }
+
+        private PackageDescription PackageDescription(
+            string name = null,
+            NuGetVersion version = null,
+            string hash = null,
+            IEnumerable<LibraryRange> dependencies = null,
+            bool? servicable = null)
+        {
+            return new PackageDescription(
+                "PATH",
+                new LockFilePackageLibrary()
+                {
+                    Files = new string[] { },
+                    IsServiceable = servicable ?? false,
+                    Name = name ?? _defaultName,
+                    Version = version ?? _defaultVersion,
+                    Sha512 = hash ?? _defaultHash
+                },
+                new LockFileTargetLibrary(),
+                dependencies ?? Enumerable.Empty<LibraryRange>(),
+                true,
+                true);
+        }
+
+        private ProjectDescription ProjectDescription(
+            string name = null,
+            NuGetVersion version = null,
+            IEnumerable<LibraryRange> dependencies = null)
+        {
+            return new ProjectDescription(
+                new LibraryRange(
+                    name ?? _defaultName,
+                    new VersionRange(version ?? _defaultVersion),
+                    LibraryType.Project,
+                    LibraryDependencyType.Default
+                    ),
+                new Project(),
+                dependencies ?? Enumerable.Empty<LibraryRange>(),
+                new TargetFrameworkInformation(),
+                true);
+        }
+
+        private LibraryDescription ReferenceAssemblyDescription(
+           string name = null,
+           NuGetVersion version = null)
+        {
+            return new LibraryDescription(
+                new LibraryIdentity(
+                    name ?? _defaultName,
+                    version ?? _defaultVersion,
+                    LibraryType.ReferenceAssembly),
+                string.Empty, // Framework assemblies don't have hashes
+                "PATH",
+                Enumerable.Empty<LibraryRange>(),
+                _defaultFramework,
+                true,
+                true);
+        }
+
 
     }
 }
