@@ -705,7 +705,7 @@ combinedScenarios.each { scenario ->
                                     
                                     if (scenario == 'default' || Constants.jitStressModeScenarios.containsKey(scenario)) {
                                         buildOpts = enableCorefxTesting ? 'skiptests' : ''
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
                                     }
 
                                     // For Pri 1 tests, we must shorten the output test binary path names.
@@ -719,7 +719,7 @@ combinedScenarios.each { scenario ->
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
                                         buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
                                     }
                                     else {
@@ -801,7 +801,7 @@ combinedScenarios.each { scenario ->
                                     break
                                 case 'arm64':
                                     assert scenario == 'default'
-                                    buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
+                                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
 
                                     if (lowerConfiguration == "release") {
                                        buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
