@@ -44,7 +44,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // testing case-insensitivity
+        [PlatformSpecific(CaseInsensitivePlatforms)]
         public void CaseInsensitivity()
         {
             string path = GetTestFilePath();
@@ -54,7 +54,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.FreeBSD)] // testing case-Sensitivity
+        [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitivity()
         {
             string path = GetTestFilePath();
