@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Targets": "1.0.0",
+    "System.Runtime.InteropServices": "4.0.20"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
