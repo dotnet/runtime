@@ -3,12 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace System.IO.Tests
 {
     public abstract class FileSystemTest : FileCleanupTestBase
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
+
+        protected const PlatformID CaseInsensitivePlatforms = PlatformID.Windows | PlatformID.OSX;
+        protected const PlatformID CaseSensitivePlatforms = PlatformID.AnyUnix & ~PlatformID.OSX;
 
         // In some cases (such as when running without elevated privileges),
         // the symbolic link may fail to create. Only run this test if it creates
