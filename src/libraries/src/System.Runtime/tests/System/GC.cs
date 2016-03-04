@@ -7,7 +7,7 @@ using Xunit;
 
 public static class GCTests
 {
-    private static bool s_is32Bits = IntPtrTests.TestSize == 4; // Skip IntPtr tests on 32-bit platforms
+    private static bool s_is32Bits = IntPtr.Size == 4; // Skip IntPtr tests on 32-bit platforms
 
     [Fact]
     public static void TestAddMemoryPressure_Invalid()
@@ -339,8 +339,6 @@ public static class GCTests
         Assert.InRange(GC.CollectionCount(0), gen0 + 1, int.MaxValue);
         Assert.InRange(GC.CollectionCount(1), gen1 + 1, int.MaxValue);
         Assert.InRange(GC.CollectionCount(2), gen2 + 1, int.MaxValue);
-
-        Assert.InRange(GC.GetTotalMemory(false), 1, long.MaxValue);
     }
 
     [Fact]
