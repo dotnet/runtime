@@ -153,7 +153,7 @@ namespace System.Diagnostics
                         {
                             continue;
                         }
-                        string filePath = line.Substring(filePathPos).Trim();
+                        string filePath = line.SubstringTrim(filePathPos);
 
                         // Add the module
                         modules.Add(new ModuleInfo()
