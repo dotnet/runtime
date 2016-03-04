@@ -11,6 +11,7 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> IsReadOnly_TestData()
         {
+            yield return new object[] { CultureInfo.ReadOnly(new CultureInfo("en-US")).TextInfo, true };
             yield return new object[] { CultureInfo.InvariantCulture.TextInfo, true };
             yield return new object[] { new CultureInfo("").TextInfo, false };
             yield return new object[] { new CultureInfo("en-US").TextInfo, false };
