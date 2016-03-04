@@ -47,6 +47,7 @@ MONO_API MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNam
 MONO_API void          mono_reflection_free_type_info (MonoTypeNameParse *info);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
+MONO_RT_EXTERNAL_ONLY
 MONO_API uint32_t      mono_reflection_get_token (MonoObject *obj);
 
 MONO_RT_EXTERNAL_ONLY

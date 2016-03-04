@@ -553,7 +553,7 @@ ICALL(FILEDI_2, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_ma
 ICALL(FILEDI_3, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type)
 
 ICALL_TYPE(MEMBERI, "System.Reflection.MemberInfo", MEMBERI_1)
-ICALL(MEMBERI_1, "get_MetadataToken", mono_reflection_get_token)
+ICALL(MEMBERI_1, "get_MetadataToken", ves_icall_reflection_get_token)
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 ICALL(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod)
@@ -574,7 +574,7 @@ ICALL(MODULE_9, "ResolveMethodToken", ves_icall_System_Reflection_Module_Resolve
 ICALL(MODULE_10, "ResolveSignature", ves_icall_System_Reflection_Module_ResolveSignature)
 ICALL(MODULE_11, "ResolveStringToken", ves_icall_System_Reflection_Module_ResolveStringToken)
 ICALL(MODULE_12, "ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken)
-ICALL(MODULE_13, "get_MetadataToken", mono_reflection_get_token)
+ICALL(MODULE_13, "get_MetadataToken", ves_icall_reflection_get_token)
 
 ICALL_TYPE(MCMETH, "System.Reflection.MonoCMethod", MCMETH_1)
 ICALL(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_MonoMethod_GetGenericMethodDefinition)
@@ -620,7 +620,7 @@ ICALL(MPROPI_3, "get_default_value", property_info_get_default_value)
 ICALL(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_info)
 
 ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
-ICALL(PARAMI_1, "GetMetadataToken", mono_reflection_get_token)
+ICALL(PARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token)
 ICALL(PARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers)
 
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
@@ -771,7 +771,7 @@ ICALL(RTH_3, "GetAttributes", ves_icall_RuntimeTypeHandle_GetAttributes)
 ICALL(RTH_4, "GetBaseType", ves_icall_RuntimeTypeHandle_GetBaseType)
 ICALL(RTH_5, "GetElementType", ves_icall_RuntimeTypeHandle_GetElementType)
 ICALL(RTH_6, "GetGenericTypeDefinition_impl", ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl)
-ICALL(RTH_7, "GetMetadataToken", ves_icall_RuntimeTypeHandle_GetMetadataToken)
+ICALL(RTH_7, "GetMetadataToken", ves_icall_reflection_get_token)
 ICALL(RTH_8, "GetModule", ves_icall_RuntimeTypeHandle_GetModule)
 ICALL(RTH_9, "HasInstantiation", ves_icall_RuntimeTypeHandle_HasInstantiation)
 ICALL(RTH_10, "IsArray", ves_icall_RuntimeTypeHandle_IsArray)

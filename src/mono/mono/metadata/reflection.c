@@ -8818,8 +8818,26 @@ guint32
 mono_reflection_get_token (MonoObject *obj)
 {
 	MonoError error;
+	guint32 result = mono_reflection_get_token_checked (obj, &error);
+	mono_error_assert_ok (&error);
+	return result;
+}
+
+/**
+ * mono_reflection_get_token_checked:
+ * @obj: the object
+ * @error: set on error
+ *
+ *   Return the metadata token of @obj which should be an object
+ * representing a metadata element.  On failure sets @error.
+ */
+guint32
+mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
+{
 	MonoClass *klass;
 	guint32 token = 0;
+
+	mono_error_init (error);
 
 	klass = obj->vtable->klass;
 
@@ -8839,11 +8857,13 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
 	} else if (strcmp (klass->name, "MonoType") == 0) {
-		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, error);
+		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
-		if (!mono_class_init (mc))
-			mono_raise_exception (mono_class_get_exception_for_failure (mc));
+		if (!mono_class_init (mc)) {
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (mc));
+			return 0;
+		}
 
 		token = mc->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
@@ -8869,7 +8889,7 @@ mono_reflection_get_token (MonoObject *obj)
 
 				g_assert (field_index >= 0 && field_index < dgclass->count_fields);
 				obj = dgclass->field_objects [field_index];
-				return mono_reflection_get_token (obj);
+				return mono_reflection_get_token_checked (obj, error);
 			}
 		}
 		token = mono_class_get_field_token (f->field);
@@ -8894,10 +8914,9 @@ mono_reflection_get_token (MonoObject *obj)
 	} else if (strcmp (klass->name, "Assembly") == 0 || strcmp (klass->name, "MonoAssembly") == 0) {
 		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	} else {
-		gchar *msg = g_strdup_printf ("MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
-		MonoException *ex = mono_get_exception_not_implemented (msg);
-		g_free (msg);
-		mono_raise_exception (ex);
+		mono_error_set_generic_error (error, "System", "NotImplementedException",
+					      "MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
+		return 0;
 	}
 
 	return token;
