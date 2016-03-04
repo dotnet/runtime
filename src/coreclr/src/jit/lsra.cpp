@@ -2419,6 +2419,7 @@ LinearScan::getKillSetForNode(GenTree* tree)
                 killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
                 break;
 #ifdef _TARGET_AMD64_
+
             case GenTreeBlkOp::BlkOpKindRepInstr:
                 // rep movs kills RCX, RDI and RSI
                 killMask = RBM_RCX | RBM_RDI | RBM_RSI;
@@ -2537,6 +2538,33 @@ LinearScan::getKillSetForNode(GenTree* tree)
         }
         break;
 #endif // PROFILING_SUPPORTED && _TARGET_AMD64_
+
+#if FEATURE_MULTIREG_ARGS
+#ifdef _TARGET_ARM64_
+    case GT_PUTARG_REG:
+        // TODO-Cleanup: Remove this code after Issue #3524 is complete
+        // 
+        // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
+        // We actually write a second register that isn't being properly tracked
+        // We can prevent anyone else from being alive at this point by adding
+        // an extra RefTypeKill for the second register.
+        //
+        if (tree->TypeGet() == TYP_STRUCT)
+        {
+            TreeNodeInfo info    = tree->gtLsraInfo;
+            regMaskTP    dstMask = info.getDstCandidates(this);
+
+            // Make sure that the dstMask represents two consecutive registers
+            regMaskTP lowRegBit  = genFindLowestBit(dstMask);
+            regMaskTP nextRegBit = lowRegBit << 1;
+            regMaskTP regPairMask = (lowRegBit | nextRegBit);
+
+            assert(dstMask == regPairMask); 
+
+            killMask = nextRegBit;  // setup killMask to be the mask for the second register.
+        }
+#endif // _TARGET_ARM64_
+#endif  // FEATURE_MULTIREG_ARGS
 
     default:
         // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
@@ -4537,6 +4565,8 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
     }
 #if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
+    //
     // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
     if (regType == TYP_STRUCT)
     {
@@ -4897,7 +4927,12 @@ LinearScan::allocateBusyReg(Interval *current, RefPosition *refPosition)
         if (assignedInterval == nullptr)
         {
             RefPosition* nextPhysRegPosition = physRegRecord->getNextRefPosition();
+
+#ifndef _TARGET_ARM64_
+            // TODO-Cleanup: Revisit this after Issue #3524 is complete
+            // On ARM64 the nodeLocation is not always == refLocation, Disabling this assert for now.
             assert(nextPhysRegPosition->nodeLocation == refLocation && candidateBit != candidates);
+#endif
             continue;
         }
 
@@ -5080,6 +5115,7 @@ void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
 
 #if FEATURE_MULTIREG_ARGS_OR_RET
 #ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
     // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
     if (interval->registerType == TYP_STRUCT)
     {
@@ -5256,6 +5292,7 @@ void LinearScan::unassignPhysReg( RegRecord * regRec, RefPosition* spillRefPosit
 
 #if FEATURE_MULTIREG_ARGS_OR_RET
 #ifdef _TARGET_ARM64_
+    // TODO-Cleanup: Remove this code after Issue #3524 is complete
     // Handle the 16-byte pass-by-value TYP_STRUCT for ARM64
     if (assignedInterval->registerType == TYP_STRUCT)
     {
@@ -6103,6 +6140,7 @@ LinearScan::allocateRegisters()
 
             // Identify the special cases where we decide up-front not to allocate
             bool allocate = true;
+            bool didDump = false;
 
             if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
             {
@@ -6114,6 +6152,7 @@ LinearScan::allocateRegisters()
                 if (refType == RefTypeParamDef && varDsc->lvRefCntWtd <= BB_UNITY_WEIGHT)
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
+                    didDump = true;
                     allocate = false;
                 }
                 // If it has no actual references, mark it as "lastUse"; since they're not actually part
@@ -6142,9 +6181,10 @@ LinearScan::allocateRegisters()
                 {
                     unassignPhysReg(getRegisterRecord(assignedRegister), currentRefPosition);
                 }
-                else
+                else if (!didDump)
                 {
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
+                    didDump = true;
                 }
                 currentRefPosition->registerAssignment = RBM_NONE;
                 continue;
