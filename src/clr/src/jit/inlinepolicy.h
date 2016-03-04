@@ -40,6 +40,14 @@ public:
         : InlinePolicy()
         , inlCompiler(compiler)
         , inlIsForceInline(false)
+        , inlIsInstanceCtor(false)
+        , inlIsFromPromotableValueClass(false)
+        , inlHasSimd(false)
+        , inlLooksLikeWrapperMethod(false)
+        , inlArgFeedsConstantTest(false)
+        , inlMethodIsMostlyLoadStore(false)
+        , inlArgFeedsRangeCheck(false)
+        , inlConstantFeedsConstantTest(false)
     {
         // empty
     }
@@ -52,7 +60,10 @@ public:
     void noteInt(InlineObservation obs, int value) override;
     void noteDouble(InlineObservation obs, double value) override;
 
-    // Policy decisions
+    // Policy determinations
+    double determineMultiplier() override;
+
+    // Policy policies
     bool propagateNeverToRuntime() const override { return true; }
 
 #ifdef DEBUG
@@ -62,7 +73,7 @@ public:
 private:
 
     // Helper methods
-    void noteInternal(InlineObservation obs, InlineImpact impact);
+    void noteInternal(InlineObservation obs);
     void setFailure(InlineObservation obs);
     void setNever(InlineObservation obs);
 
@@ -78,7 +89,15 @@ private:
 
     // Data members
     Compiler* inlCompiler;
-    bool      inlIsForceInline;
+    bool      inlIsForceInline :1;
+    bool      inlIsInstanceCtor :1;
+    bool      inlIsFromPromotableValueClass :1;
+    bool      inlHasSimd :1;
+    bool      inlLooksLikeWrapperMethod :1;
+    bool      inlArgFeedsConstantTest :1;
+    bool      inlMethodIsMostlyLoadStore :1;
+    bool      inlArgFeedsRangeCheck :1;
+    bool      inlConstantFeedsConstantTest :1;
 };
 
 #endif // _INLINE_POLICY_H_

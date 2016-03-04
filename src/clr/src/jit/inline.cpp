@@ -660,7 +660,7 @@ void InlineResult::report()
             if (VERBOSE)
             {
                 const char* obsString = inlGetObservationString(obs);
-                JITDUMP("INLINER: Marking %s as NOINLINE because of %s", callee, obsString);
+                JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
 
 #endif  // DEBUG
