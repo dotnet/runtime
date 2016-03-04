@@ -91,9 +91,9 @@ namespace System.IO
                 bool possibleShortPath = false;
                 bool foundTilde = false;
                 bool possibleBadUnc = IsUnc(fullPath);
-                ulong index = possibleBadUnc ? (ulong)2 : 0;
-                ulong lastSeparator = possibleBadUnc ? (ulong)1 : 0;
-                ulong segmentLength;
+                uint index = possibleBadUnc ? 2u : 0;
+                uint lastSeparator = possibleBadUnc ? 1u : 0;
+                uint segmentLength;
                 char* start = fullPath.CharPointer;
                 char current;
 
@@ -118,7 +118,7 @@ namespace System.IO
                                 break;
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
-                                if (segmentLength > (ulong)PathInternal.MaxComponentLength)
+                                if (segmentLength > (uint)PathInternal.MaxComponentLength)
                                     throw new PathTooLongException(SR.IO_PathTooLong);
                                 lastSeparator = index;
 
@@ -158,7 +158,7 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_PathIllegalUNC);
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
-                if (segmentLength > (ulong)PathInternal.MaxComponentLength)
+                if (segmentLength > (uint)PathInternal.MaxComponentLength)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
                 if (foundTilde && segmentLength <= MaxShortName)
@@ -172,7 +172,7 @@ namespace System.IO
                 }
                 else
                 {
-                    if (fullPath.Length == (ulong)path.Length && fullPath.StartsWith(path))
+                    if (fullPath.Length == (uint)path.Length && fullPath.StartsWith(path))
                     {
                         // If we have the exact same string we were passed in, don't bother to allocate another string from the StringBuilder.
                         return path;
@@ -208,7 +208,7 @@ namespace System.IO
             fixed (char* pathStart = path)
             {
                 uint result = 0;
-                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, (uint)fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
+                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
                 {
                     // Reported size (which does not include the null) is greater than the buffer size. Increase the capacity.
                     fullPath.EnsureCharCapacity(result);
@@ -227,22 +227,22 @@ namespace System.IO
             }
         }
 
-        private static ulong GetInputBuffer(StringBuffer content, bool isUnc, out StringBuffer buffer)
+        private static uint GetInputBuffer(StringBuffer content, bool isUnc, out StringBuffer buffer)
         {
-            ulong length = content.Length;
-            length += isUnc ? (ulong)PathInternal.UncExtendedPrefixToInsert.Length : (ulong)PathInternal.ExtendedPathPrefix.Length;
+            uint length = content.Length;
+            length += isUnc ? (uint)PathInternal.UncExtendedPrefixToInsert.Length : (uint)PathInternal.ExtendedPathPrefix.Length;
             buffer = new StringBuffer(length);
 
             if (isUnc)
             {
                 buffer.CopyFrom(bufferIndex: 0, source: PathInternal.UncExtendedPathPrefix);
-                ulong prefixDifference = (ulong)(PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length);
-                content.CopyTo(bufferIndex: prefixDifference, destination: buffer, destinationIndex: (ulong)PathInternal.ExtendedPathPrefix.Length, count: content.Length - prefixDifference);
+                uint prefixDifference = (uint)(PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length);
+                content.CopyTo(bufferIndex: prefixDifference, destination: buffer, destinationIndex: (uint)PathInternal.ExtendedPathPrefix.Length, count: content.Length - prefixDifference);
                 return prefixDifference;
             }
             else
             {
-                ulong prefixSize = (ulong)PathInternal.ExtendedPathPrefix.Length;
+                uint prefixSize = (uint)PathInternal.ExtendedPathPrefix.Length;
                 buffer.CopyFrom(bufferIndex: 0, source: PathInternal.ExtendedPathPrefix);
                 content.CopyTo(bufferIndex: 0, destination: buffer, destinationIndex: prefixSize, count: content.Length);
                 return prefixSize;
@@ -259,19 +259,19 @@ namespace System.IO
 
             // Add the extended prefix before expanding to allow growth over MAX_PATH
             StringBuffer inputBuffer = null;
-            ulong rootLength = PathInternal.GetRootLength(outputBuffer);
+            uint rootLength = PathInternal.GetRootLength(outputBuffer);
             bool isUnc = IsUnc(outputBuffer);
 
-            ulong rootDifference = GetInputBuffer(outputBuffer, isUnc, out inputBuffer);
+            uint rootDifference = GetInputBuffer(outputBuffer, isUnc, out inputBuffer);
             rootLength += rootDifference;
-            ulong inputLength = inputBuffer.Length;
+            uint inputLength = inputBuffer.Length;
 
             bool success = false;
-            ulong foundIndex = inputBuffer.Length - 1;
+            uint foundIndex = inputBuffer.Length - 1;
 
             while (!success)
             {
-                uint result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), (uint)outputBuffer.CharCapacity);
+                uint result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
 
                 // Replace any temporary null we added
                 if (inputBuffer[foundIndex] == '\0') inputBuffer[foundIndex] = '\\';
@@ -305,7 +305,7 @@ namespace System.IO
                 {
                     // Not enough space. The result count for this API does not include the null terminator.
                     outputBuffer.EnsureCharCapacity(result);
-                    result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), (uint)outputBuffer.CharCapacity);
+                    result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), outputBuffer.CharCapacity);
                 }
                 else
                 {
@@ -328,7 +328,7 @@ namespace System.IO
             if (isUnc)
             {
                 // Need to go from \\?\UNC\ to \\?\UN\\
-                bufferToUse[(ulong)PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
+                bufferToUse[(uint)PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
             }
 
             if (bufferToUse.SubstringEquals(originalPath, rootDifference, newLength))

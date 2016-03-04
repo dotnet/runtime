@@ -239,15 +239,15 @@ namespace System.IO
         {
             fixed(char* value = path)
             {
-                return (int)GetRootLength(value, (ulong)path.Length);
+                return (int)GetRootLength(value, (uint)path.Length);
             }
         }
 
-        private unsafe static ulong GetRootLength(char* path, ulong pathLength)
+        private unsafe static uint GetRootLength(char* path, uint pathLength)
         {
-            ulong i = 0;
-            ulong volumeSeparatorLength = 2;  // Length to the colon "C:"
-            ulong uncRootLength = 2;          // Length to the start of the server name "\\"
+            uint i = 0;
+            uint volumeSeparatorLength = 2;  // Length to the colon "C:"
+            uint uncRootLength = 2;          // Length to the start of the server name "\\"
 
             bool extendedSyntax = StartsWithOrdinal(path, pathLength, ExtendedPathPrefix);
             bool extendedUncSyntax = StartsWithOrdinal(path, pathLength, UncExtendedPathPrefix);
@@ -257,12 +257,12 @@ namespace System.IO
                 if (extendedUncSyntax)
                 {
                     // "\\" -> "\\?\UNC\"
-                    uncRootLength = (ulong)UncExtendedPathPrefix.Length;
+                    uncRootLength = (uint)UncExtendedPathPrefix.Length;
                 }
                 else
                 {
                     // "C:" -> "\\?\C:"
-                    volumeSeparatorLength += (ulong)ExtendedPathPrefix.Length;
+                    volumeSeparatorLength += (uint)ExtendedPathPrefix.Length;
                 }
             }
 
@@ -290,9 +290,9 @@ namespace System.IO
             return i;
         }
 
-        private unsafe static bool StartsWithOrdinal(char* source, ulong sourceLength, string value)
+        private unsafe static bool StartsWithOrdinal(char* source, uint sourceLength, string value)
         {
-            if (sourceLength < (ulong)value.Length) return false;
+            if (sourceLength < (uint)value.Length) return false;
             for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] != source[i]) return false;
