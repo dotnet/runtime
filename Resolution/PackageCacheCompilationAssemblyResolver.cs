@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            if (!string.Equals(library.LibraryType, "package", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -46,14 +46,14 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 var hashSplitterPos = library.Hash.IndexOf('-');
                 if (hashSplitterPos <= 0 || hashSplitterPos == library.Hash.Length - 1)
                 {
-                    throw new InvalidOperationException($"Invalid hash entry '{library.Hash}' for package '{library.PackageName}'");
+                    throw new InvalidOperationException($"Invalid hash entry '{library.Hash}' for package '{library.Name}'");
                 }
 
                 string packagePath;
                 if (ResolverUtils.TryResolvePackagePath(_fileSystem, library, _packageCacheDirectory, out packagePath))
                 {
                     var hashAlgorithm = library.Hash.Substring(0, hashSplitterPos);
-                    var cacheHashPath = Path.Combine(packagePath, $"{library.PackageName}.{library.Version}.nupkg.{hashAlgorithm}");
+                    var cacheHashPath = Path.Combine(packagePath, $"{library.Name}.{library.Version}.nupkg.{hashAlgorithm}");
 
                     if (_fileSystem.File.Exists(cacheHashPath) &&
                         _fileSystem.File.ReadAllText(cacheHashPath) == library.Hash.Substring(hashSplitterPos + 1))

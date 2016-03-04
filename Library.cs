@@ -7,19 +7,19 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class Library
     {
-        public Library(string libraryType, string packageName, string version, string hash, Dependency[] dependencies, bool serviceable)
+        public Library(string type, string name, string version, string hash, Dependency[] dependencies, bool serviceable)
         {
-            LibraryType = libraryType;
-            PackageName = packageName;
+            Type = type;
+            Name = name;
             Version = version;
             Hash = hash;
             Dependencies = dependencies;
             Serviceable = serviceable;
         }
 
-        public string LibraryType { get; }
+        public string Type { get; }
 
-        public string PackageName { get; }
+        public string Name { get; }
 
         public string Version { get; }
 
