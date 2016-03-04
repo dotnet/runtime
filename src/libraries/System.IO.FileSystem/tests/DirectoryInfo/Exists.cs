@@ -56,7 +56,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // testing case-insensitivity
+        [PlatformSpecific(CaseInsensitivePlatforms)]
         public void CaseInsensitivity()
         {
             Assert.True(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
@@ -64,7 +64,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.FreeBSD)] // testing case-Sensitivity
+        [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitivity()
         {
             Assert.False(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
