@@ -8,7 +8,7 @@
     "System.Security.Principal": "4.0.0",
     "System.Security.Principal.Windows": "4.0.0-rc3-23901",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
   "frameworks": {
     "dnxcore50": {

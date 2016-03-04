@@ -6,7 +6,7 @@
     "System.Net.TestData": "1.0.0-prerelease",
     "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23901",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
   "frameworks": {
     "dnxcore50": {
