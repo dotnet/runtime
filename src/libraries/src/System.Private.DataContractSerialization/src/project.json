@@ -18,7 +18,7 @@
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
-        "System.Runtime.Serialization.Primitives": "4.1.0-rc3-23901",
+        "System.Runtime.Serialization.Primitives": "4.1.1-rc3-23901",
         "System.Text.Encoding": "4.0.10",
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Text.RegularExpressions": "4.0.10",
