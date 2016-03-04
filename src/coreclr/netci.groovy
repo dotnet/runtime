@@ -59,7 +59,17 @@ class Constants {
                'corefx_jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'corefx_jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
                'corefx_jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'corefx_jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'corefx_jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'corefx_jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
-               'corefx_jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80']]
+               'corefx_jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
+               'gcstress0x3' : ['COMPlus_GCStress'  : '0x3'], 'gcstress0xc' : ['COMPlus_GCStress'  : '0xC'],
+               'zapdisable' : ['COMPlus_ZapDisable'  : '0xC'],
+               'heapverify1' : ['COMPlus_HeapVerify'  : '1'],
+               'gcstress0xc_zapdisable' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1'],
+               'gcstress0xc_zapdisable_jitstress2' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_zapdisable_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1', 'COMPlus_HeapVerify'  : '1'],
+               'gcstress0xc_jitstress1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JitStress'  : '1'],
+               'gcstress0xc_jitstress2' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_minopts_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JITMinOpts'  : '1', 'COMPlus_HeapVerify'  : '1']
+               ]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -266,6 +276,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'corefx_jitstressregs8':
             case 'corefx_jitstressregs0x10':
             case 'corefx_jitstressregs0x80':
+            case 'gcstress0x3':            
+            case 'gcstress0xc':
+            case 'zapdisable':
+            case 'heapverify1':
+            case 'gcstress0xc_zapdisable':
+            case 'gcstress0xc_zapdisable_jitstress2':
+            case 'gcstress0xc_zapdisable_heapverify1':
+            case 'gcstress0xc_jitstress1':
+            case 'gcstress0xc_jitstress2':
+            case 'gcstress0xc_minopts_heapverify1':         
                 if (os != 'CentOS7.1') {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     Utilities.addPeriodicTrigger(job, '@daily')
@@ -390,6 +410,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
+                        case 'gcstress0x3':
+                        case 'gcstress0xc':
+                        case 'zapdisable':
+                        case 'heapverify1':
+                        case 'gcstress0xc_zapdisable':
+                        case 'gcstress0xc_zapdisable_jitstress2':
+                        case 'gcstress0xc_zapdisable_heapverify1':
+                        case 'gcstress0xc_jitstress1':
+                        case 'gcstress0xc_jitstress2':
+                        case 'gcstress0xc_minopts_heapverify1':                                 
                             def displayStr = getStressModeDisplayName(scenario)  
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
@@ -506,6 +536,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
+                        case 'gcstress0x3': 
+                        case 'gcstress0xc':
+                        case 'zapdisable':
+                        case 'heapverify1':
+                        case 'gcstress0xc_zapdisable':
+                        case 'gcstress0xc_zapdisable_jitstress2':
+                        case 'gcstress0xc_zapdisable_heapverify1':
+                        case 'gcstress0xc_jitstress1':
+                        case 'gcstress0xc_jitstress2':
+                        case 'gcstress0xc_minopts_heapverify1':                                 
                             def displayStr = getStressModeDisplayName(scenario)
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
