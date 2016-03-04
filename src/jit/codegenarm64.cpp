@@ -6585,11 +6585,24 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
     { 
         if (hasGCpointers)
         {
-            // We have GC pointers use two ldr instructions 
+            // We have GC pointers use two ldr instructions
+            //
+            // We do it this  way because we can't currently pass or track 
+            // two different emitAttr values for a ldp instruction.
 
-            getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), targetReg,           addrReg, structOffset);
-            noway_assert(REG_NEXT(targetReg) != addrReg);
-            getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), REG_NEXT(targetReg), addrReg, structOffset + TARGET_POINTER_SIZE);
+            // Make sure that the first load instruction does not overwrite the addrReg.
+            //
+            if (targetReg != addrReg)
+            {
+                getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), targetReg,           addrReg, structOffset);
+                getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), REG_NEXT(targetReg), addrReg, structOffset + TARGET_POINTER_SIZE);
+            }
+            else 
+            {
+                assert(REG_NEXT(targetReg) != addrReg);
+                getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type1), REG_NEXT(targetReg), addrReg, structOffset + TARGET_POINTER_SIZE);
+                getEmitter()->emitIns_R_R_I(INS_ldr, emitTypeSize(type0), targetReg,           addrReg, structOffset);
+            }
         }
         else
         {
@@ -6597,7 +6610,7 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
 
             getEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, targetReg, REG_NEXT(targetReg), addrReg, structOffset);
         }
-        remainingSize = 0;     // We have completely wrote the 16-byte struct
+        remainingSize = 0;     // We completely wrote the 16-byte struct
     }
 
     while (remainingSize > 0)
@@ -6642,7 +6655,10 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
             instruction loadIns  = ins_Load(loadType);
             emitAttr    loadAttr = emitAttr(loadSize);
 
-            noway_assert(targetReg != addrReg);
+            // When deferLoad is false, targetReg can be the same as addrReg 
+            // because the last instruction is allowed to overwrite addrReg.
+            //
+            noway_assert(!deferLoad || (targetReg != addrReg));
 
             getEmitter()->emitIns_R_R_I(loadIns, loadAttr, targetReg, addrReg, structOffset);
         }
