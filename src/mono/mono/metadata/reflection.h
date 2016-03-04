@@ -66,6 +66,7 @@ MONO_API MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, M
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionMethodBody* mono_method_body_get_object (MonoDomain *domain, MonoMethod *method);
 
 MONO_API MonoObject *mono_get_dbnull_object (MonoDomain *domain);

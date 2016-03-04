@@ -5103,7 +5103,10 @@ ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMeth
 ICALL_EXPORT MonoReflectionMethodBody*
 ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method)
 {
-	return mono_method_body_get_object (mono_domain_get (), method);
+	MonoError error;
+	MonoReflectionMethodBody *result = mono_method_body_get_object_checked (mono_domain_get (), method, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionAssembly*
