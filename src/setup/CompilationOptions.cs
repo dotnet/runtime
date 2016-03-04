@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         public bool? PublicSign { get; }
 
+        public string DebugType { get; }    
+
         public bool? EmitEntryPoint { get; }
 
         public bool? GenerateXmlDocumentation { get; }
@@ -40,6 +42,7 @@ namespace Microsoft.Extensions.DependencyModel
             keyFile: null,
             delaySign: null,
             publicSign: null,
+            debugType: null,
             emitEntryPoint: null,
             generateXmlDocumentation: null);
 
@@ -52,6 +55,7 @@ namespace Microsoft.Extensions.DependencyModel
             string keyFile,
             bool? delaySign,
             bool? publicSign,
+            string debugType,
             bool? emitEntryPoint,
             bool? generateXmlDocumentation)
         {
@@ -64,6 +68,7 @@ namespace Microsoft.Extensions.DependencyModel
             KeyFile = keyFile;
             DelaySign = delaySign;
             PublicSign = publicSign;
+            DebugType = debugType;
             EmitEntryPoint = emitEntryPoint;
             GenerateXmlDocumentation = generateXmlDocumentation;
         }
