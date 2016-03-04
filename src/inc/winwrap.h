@@ -700,8 +700,8 @@
 #define WszFindNextFile        FindNextFileW
 #define WszCopyFile            CopyFileWrapper
 #define WszCopyFileEx          CopyFileExWrapper
-#define WszMoveFile            MoveFileWrapper
 #define WszMoveFileEx          MoveFileExWrapper
+#define WszMoveFile (lpExistingFileName, lpNewFileName) WszMoveFileEx(lpExistingFileName, lpNewFileName, 0)
 #define WszCreateDirectory     CreateDirectoryWrapper 
 #define WszRemoveDirectory     RemoveDirectoryWrapper
 #define WszCreateHardLink      CreateHardLinkWrapper
