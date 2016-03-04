@@ -268,6 +268,20 @@ int ExecuteManagedAssembly(
     // Indicates failure
     int exitCode = -1;
 
+#ifdef _ARM_
+    // LIBUNWIND-ARM has a bug of side effect with DWARF mode
+    // Ref: https://github.com/dotnet/coreclr/issues/3462
+    // This is why Fedora is disabling it by default as well.
+    // Assuming that we cannot enforce the user to set
+    // environmental variables for third party packages,
+    // we set the environmental variable of libunwind locally here.
+
+    // Without this, any exception handling will fail, so let's do this
+    // as early as possible.
+    // 0x1: DWARF / 0x2: FRAME / 0x4: EXIDX
+    putenv("UNW_ARM_UNWIND_METHOD=6");
+#endif // _ARM_
+
     std::string coreClrDllPath(clrFilesAbsolutePath);
     coreClrDllPath.append("/");
     coreClrDllPath.append(coreClrDll);
