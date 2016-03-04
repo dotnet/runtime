@@ -13229,8 +13229,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 4;
 				inline_costs += 1;
 				break;
-			case CEE_LOCALLOC:
+			case CEE_LOCALLOC: {
 				CHECK_STACK (1);
+				MonoBasicBlock *non_zero_bb, *end_bb;
+				int alloc_ptr = alloc_preg (cfg);
 				--sp;
 				if (sp != stack_start) 
 					UNVERIFIED;
@@ -13242,8 +13244,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					INLINE_FAILURE("localloc");
 
+				NEW_BBLOCK (cfg, non_zero_bb);
+				NEW_BBLOCK (cfg, end_bb);
+
+				/* if size != zero */
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, non_zero_bb);
+
+				//size is zero, so result is NULL
+				MONO_EMIT_NEW_PCONST (cfg, alloc_ptr, NULL);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+				MONO_START_BB (cfg, non_zero_bb);
 				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
-				ins->dreg = alloc_preg (cfg);
+				ins->dreg = alloc_ptr;
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_PTR;
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -13252,9 +13266,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (init_locals)
 					ins->flags |= MONO_INST_INIT;
 
+				MONO_START_BB (cfg, end_bb);
+				EMIT_NEW_UNALU (cfg, ins, OP_MOVE, alloc_preg (cfg), alloc_ptr);
+				ins->type = STACK_PTR;
+
 				*sp++ = ins;
 				ip += 2;
 				break;
+			}
 			case CEE_ENDFILTER: {
 				MonoExceptionClause *clause, *nearest;
 				int cc;
