@@ -207,7 +207,7 @@ namespace System {
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException("mode", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             }
 
             Contract.EndContractBlock();
