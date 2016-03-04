@@ -168,6 +168,8 @@ namespace Internal.Reflection.Extensions.NonPortable
 
             return accessor;
         }
+
+        public override MemberTypes MemberType { get { return MemberTypes.Property; } }
     }
 }
  
