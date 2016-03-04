@@ -7802,7 +7802,7 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 
 	/* for compatibility with .net */
 	if (method_is_dynamic (method)) {
-		mono_error_set_instance (error, mono_get_exception_invalid_operation (NULL));
+		mono_error_set_exception_instance (error, mono_get_exception_invalid_operation (NULL));
 		return NULL;
 	}
 
@@ -8610,10 +8610,28 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
 	MonoError error;
-	MonoType *result = mono_reflection_get_type_with_rootimage(image, image, info, ignorecase, type_resolve, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoType *result = mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, &error);
+	mono_error_cleanup (&error);
 	return result;
 }
+
+/**
+ * mono_reflection_get_type_checked:
+ * @image: a metadata context
+ * @info: type description structure
+ * @ignorecase: flag for case-insensitive string compares
+ * @type_resolve: whenever type resolve was already tried
+ * @error: set on error.
+ *
+ * Build a MonoType from the type description in @info. On failure returns NULL and sets @error.
+ *
+ */
+MonoType*
+mono_reflection_get_type_checked (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error) {
+	mono_error_init (error);
+	return mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, error);
+}
+
 
 static MonoType*
 mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)

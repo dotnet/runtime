@@ -7246,8 +7246,11 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				ass = (MonoAssembly *)tmp->data;
 
 				if (ass->image) {
+					MonoError error;
 					type_resolve = TRUE;
-					t = mono_reflection_get_type (ass->image, &info, ignore_case, &type_resolve);
+					/* FIXME really okay to call while holding locks? */
+					t = mono_reflection_get_type_checked (ass->image, &info, ignore_case, &type_resolve, &error);
+					mono_error_cleanup (&error); 
 					if (t) {
 						g_ptr_array_add (res_classes, mono_type_get_class (t));
 						g_ptr_array_add (res_domains, domain);
@@ -7663,6 +7666,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_ASSEMBLY_GET_TYPE: {
+		MonoError error;
 		char *s = decode_string (p, &p, end);
 		gboolean ignorecase = decode_byte (p, &p, end);
 		MonoTypeNameParse info;
@@ -7679,7 +7683,13 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		} else {
 			if (info.assembly.name)
 				NOT_IMPLEMENTED;
-			t = mono_reflection_get_type (ass->image, &info, ignorecase, &type_resolve);
+			t = mono_reflection_get_type_checked (ass->image, &info, ignorecase, &type_resolve, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+				mono_reflection_free_type_info (&info);
+				g_free (s);
+				return ERR_INVALID_ARGUMENT;
+			}
 		}
 		buffer_add_typeid (buf, domain, t ? mono_class_from_mono_type (t) : NULL);
 		mono_reflection_free_type_info (&info);
