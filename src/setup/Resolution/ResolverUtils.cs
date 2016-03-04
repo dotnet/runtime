@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         internal static bool TryResolvePackagePath(IFileSystem fileSystem, CompilationLibrary library, string basePath, out string packagePath)
         {
-            packagePath = Path.Combine(basePath, library.PackageName, library.Version);
+            packagePath = Path.Combine(basePath, library.Name, library.Version);
             if (fileSystem.Directory.Exists(packagePath))
             {
                 return true;
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 string fullName;
                 if (!TryResolveAssemblyFile(fileSystem, basePath, assembly, out fullName))
                 {
-                    throw new InvalidOperationException($"Can not find assembly file for package {library.PackageName} at '{fullName}'");
+                    throw new InvalidOperationException($"Can not find assembly file for package {library.Name} at '{fullName}'");
                 }
                 yield return fullName;
             }

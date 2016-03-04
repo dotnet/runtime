@@ -42,8 +42,8 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 var identity = packageGroup.Key;
                 runtimeLibraries.Add(new RuntimeLibrary(
-                    libraryType: identity.Item1,
-                    packageName: identity.Item2,
+                    type: identity.Item1,
+                    name: identity.Item2,
                     version: identity.Item3,
                     hash: identity.Item4,
                     assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)).ToArray(),
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new DependencyContext(
-                target: string.Empty,
+                targetFramework: string.Empty,
                 runtime: string.Empty,
                 isPortable: false,
                 compilationOptions: CompilationOptions.Default,

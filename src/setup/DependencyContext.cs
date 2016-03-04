@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
-        public DependencyContext(string target,
+        public DependencyContext(string targetFramework,
             string runtime,
             bool isPortable,
             CompilationOptions compilationOptions,
@@ -24,9 +24,9 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<RuntimeLibrary> runtimeLibraries,
             IEnumerable<KeyValuePair<string, string[]>> runtimeGraph)
         {
-            if (target == null)
+            if (targetFramework == null)
             {
-                throw new ArgumentNullException(nameof(target));
+                throw new ArgumentNullException(nameof(targetFramework));
             }
             if (runtime == null)
             {
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyModel
                 throw new ArgumentNullException(nameof(runtimeGraph));
             }
 
-            Target = target;
+            TargetFramework = targetFramework;
             Runtime = runtime;
             IsPortable = isPortable;
             CompilationOptions = compilationOptions;
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static DependencyContext Default => _defaultContext.Value;
 
-        public string Target { get; }
+        public string TargetFramework { get; }
 
         public string Runtime { get; }
 
