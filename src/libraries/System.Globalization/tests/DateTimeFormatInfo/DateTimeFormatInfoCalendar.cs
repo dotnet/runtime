@@ -11,7 +11,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void Calendar_InvariantInfo()
         {
-            Assert.Equal(typeof(GregorianCalendar), DateTimeFormatInfo.InvariantInfo.Calendar.GetType());
+            Calendar calendar = DateTimeFormatInfo.InvariantInfo.Calendar;
+            Assert.IsType<GregorianCalendar>(calendar);
+            Assert.True(calendar.IsReadOnly);
         }
 
         [Fact]

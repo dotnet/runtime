@@ -38,11 +38,17 @@ namespace System.Globalization.Tests
             Assert.Equal(newFirstDayOfWeek, format.FirstDayOfWeek);
         }
 
-        [Fact]
-        public void FirstDayOfWeek_Set_Invalid()
+        [Theory]
+        [InlineData(DayOfWeek.Sunday - 1)]
+        [InlineData(DayOfWeek.Saturday + 1)]
+        public void FirstDayOfWeek_Set_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek value)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = DayOfWeek.Sunday - 1); // Value is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = DayOfWeek.Saturday + 1); // Value is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().FirstDayOfWeek = value);
+        }
+
+        [Fact]
+        public void FirstDayOfWeek_Set_ReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FirstDayOfWeek = DayOfWeek.Wednesday); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

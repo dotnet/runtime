@@ -58,7 +58,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void GetEra_Invalid()
+        public void GetEra_Null_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("eraName", () => new DateTimeFormatInfo().GetEra(null)); // Era name is null
         }

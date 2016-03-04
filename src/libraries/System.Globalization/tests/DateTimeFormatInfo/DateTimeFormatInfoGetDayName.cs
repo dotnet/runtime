@@ -45,10 +45,12 @@ namespace System.Globalization.Tests
             }
         }
 
-        public void GetDayName_Invalid()
+        [Theory]
+        [InlineData(DayOfWeek.Sunday - 1)]
+        [InlineData(DayOfWeek.Saturday + 1)]
+        public void GetDayName_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek dayofweek)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().GetDayName(DayOfWeek.Sunday - 1)); // DayOfWeek is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().GetDayName(DayOfWeek.Saturday + 1)); // DayOfWeek is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("dayofweek", () => new DateTimeFormatInfo().GetDayName(dayofweek));
         }
     }
 }

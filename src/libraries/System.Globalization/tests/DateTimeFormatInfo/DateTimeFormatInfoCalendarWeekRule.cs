@@ -34,12 +34,17 @@ namespace System.Globalization.Tests
             Assert.Equal(newCalendarWeekRule, format.CalendarWeekRule);
         }
 
-        [Fact]
-        public void CalendarWeekRule_Set_Invalid()
+        [Theory]
+        [InlineData(CalendarWeekRule.FirstDay - 1)]
+        [InlineData(CalendarWeekRule.FirstFourDayWeek + 1)]
+        public void CalendarWeekRule_Set_Invalid_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
         {
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().CalendarWeekRule = CalendarWeekRule.FirstDay - 1); // Value is invalid
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().CalendarWeekRule = CalendarWeekRule.FirstFourDayWeek + 1); // Value is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().CalendarWeekRule = value);
+        }
 
+        [Fact]
+        public void CalendarWeekRule_Set_ReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
