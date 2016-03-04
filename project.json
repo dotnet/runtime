@@ -5,7 +5,8 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23811",
+    "NETStandard.Library": "1.0.0-rc2-23901",
+    "System.IO.Compression": "4.1.0-rc2-23901",
 
     "Microsoft.DotNet.Tools.Tests.Utilities": { "target": "project" },
     "FluentAssertions": "4.0.0",
@@ -15,8 +16,11 @@
   },
 
   "frameworks": {
-    "dnxcore50": {
-      "imports": "portable-net45+win8"
+    "netstandardapp1.5": {
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
     }
   },
 
