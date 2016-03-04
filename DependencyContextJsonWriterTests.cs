@@ -97,14 +97,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             "runtime",
                             true)
                             );
-            var runtimeTarget = result.Should().HaveProperty("runtimeTarget")
-                 .Subject.Should().BeOfType<JObject>().Subject;
-
-            runtimeTarget.Should().HaveProperty("name")
-                .Subject.Value<string>().Should().Be("Target");
-
-            runtimeTarget.Should().HaveProperty("portable")
-                .Subject.Value<bool>().Should().Be(true);
+            result.Should().HavePropertyValue("runtimeTarget", "Target");
         }
 
         [Fact]
