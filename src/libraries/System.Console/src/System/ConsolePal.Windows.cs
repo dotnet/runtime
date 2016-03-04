@@ -374,6 +374,43 @@ namespace System
             return info;
         }
 
+        public static bool TreatControlCAsInput
+        {
+            get
+            {
+                IntPtr handle = InputHandle;
+                if (handle == s_InvalidHandleValue)
+                    throw new IOException(SR.IO_NoConsole);
+
+                int mode = 0;
+                if (!Interop.mincore.GetConsoleMode(handle, out mode))
+                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                return (mode & Interop.mincore.ENABLE_PROCESSED_INPUT) == 0;
+            }
+            set
+            {
+                IntPtr handle = InputHandle;
+                if (handle == s_InvalidHandleValue)
+                    throw new IOException(SR.IO_NoConsole);
+
+                int mode = 0;
+                Interop.mincore.GetConsoleMode(handle, out mode); // failure ignored in full framework
+
+                if (value)
+                {
+                    mode &= ~Interop.mincore.ENABLE_PROCESSED_INPUT;
+                }
+                else
+                {
+                    mode |= Interop.mincore.ENABLE_PROCESSED_INPUT;
+                }
+
+                if (!Interop.mincore.SetConsoleMode(handle, mode))
+                    Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
+
         // For ResetColor
         private static volatile bool _haveReadDefaultColors;
         private static volatile byte _defaultColors;

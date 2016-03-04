@@ -392,6 +392,12 @@ namespace System
             }
         }
 
+        public static bool TreatControlCAsInput
+        {
+            get { return ConsolePal.TreatControlCAsInput; }
+            set { ConsolePal.TreatControlCAsInput = value; }
+        }
+
         public static Stream OpenStandardInput()
         {
             return ConsolePal.OpenStandardInput();
