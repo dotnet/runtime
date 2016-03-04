@@ -742,7 +742,7 @@ mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_int
 	LockWord lw;
 	MonoThreadsSync *mon;
 	HANDLE sem;
-	guint32 then = 0, now, delta;
+	gint64 then = 0, now, delta;
 	guint32 waitms;
 	guint32 ret;
 	guint32 new_status, old_status, tmp_status;
@@ -899,14 +899,9 @@ retry_contended:
 		if (!mono_thread_test_state (mono_thread_internal_current (), (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested))) {
 			if (ms != INFINITE) {
 				now = mono_msec_ticks ();
-				if (now < then) {
-					LOCK_DEBUG (g_message ("%s: wrapped around! now=0x%x then=0x%x", __func__, now, then));
 
-					now += (0xffffffff - then);
-					then = 0;
-
-					LOCK_DEBUG (g_message ("%s: wrap rejig: now=0x%x then=0x%x delta=0x%x", __func__, now, then, now-then));
-				}
+				/* it should not overflow before ~30k years */
+				g_assert (now >= then);
 
 				delta = now - then;
 				if (delta >= ms) {

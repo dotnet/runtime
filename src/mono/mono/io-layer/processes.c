@@ -2725,8 +2725,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 	WapiHandle_process *process_handle;
 	pid_t pid G_GNUC_UNUSED, ret;
 	int status;
-	guint32 start;
-	guint32 now;
+	gint64 start, now;
 	struct MonoProcess *mp;
 
 	/* FIXME: We can now easily wait on processes that aren't our own children,

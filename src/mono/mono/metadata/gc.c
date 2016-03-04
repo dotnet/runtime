@@ -827,14 +827,14 @@ mono_gc_cleanup (void)
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
 			gboolean timed_out = FALSE;
-			guint32 start_ticks = mono_msec_ticks ();
-			guint32 end_ticks = start_ticks + 2000;
+			gint64 start_ticks = mono_msec_ticks ();
+			gint64 end_ticks = start_ticks + 2000;
 
 			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
 			while (!finalizer_thread_exited) {
-				guint32 current_ticks = mono_msec_ticks ();
+				gint64 current_ticks = mono_msec_ticks ();
 				guint32 timeout;
 
 				if (current_ticks >= end_ticks)
