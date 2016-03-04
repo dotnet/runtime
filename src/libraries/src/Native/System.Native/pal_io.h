@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include <stdio.h>
 #include <dirent.h>
 
 /**
@@ -587,6 +588,13 @@ extern "C" Error SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, i
  * Returns 0 on success; otherwise, the error code is returned and errno is NOT set.
  */
 extern "C" int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice);
+
+/**
+* Reads a line from the provided stream.
+*
+* Returns the read line, or null if no line could be read.  The caller is responsible for freeing the malloc'd line.
+*/
+extern "C" char* SystemNative_GetLine(FILE* stream);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
