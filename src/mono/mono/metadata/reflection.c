@@ -10715,10 +10715,11 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
  * LOCKING: Assumes the loader lock is held.
  */
 static MonoMethodSignature*
-parameters_to_signature (MonoImage *image, MonoArray *parameters) {
-	MonoError error;
+parameters_to_signature (MonoImage *image, MonoArray *parameters, MonoError *error) {
 	MonoMethodSignature *sig;
 	int count, i;
+
+	mono_error_init (error);
 
 	count = parameters? mono_array_length (parameters): 0;
 
@@ -10726,8 +10727,11 @@ parameters_to_signature (MonoImage *image, MonoArray *parameters) {
 	sig->param_count = count;
 	sig->sentinelpos = -1; /* FIXME */
 	for (i = 0; i < count; ++i) {
-		sig->params [i] = mono_type_array_get_and_resolve (parameters, i, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		sig->params [i] = mono_type_array_get_and_resolve (parameters, i, error);
+		if (!is_ok (error)) {
+			image_g_free (image, sig);
+			return NULL;
+		}
 	}
 	return sig;
 }
@@ -10736,10 +10740,13 @@ parameters_to_signature (MonoImage *image, MonoArray *parameters) {
  * LOCKING: Assumes the loader lock is held.
  */
 static MonoMethodSignature*
-ctor_builder_to_signature (MonoImage *image, MonoReflectionCtorBuilder *ctor) {
+ctor_builder_to_signature (MonoImage *image, MonoReflectionCtorBuilder *ctor, MonoError *error) {
 	MonoMethodSignature *sig;
 
-	sig = parameters_to_signature (image, ctor->parameters);
+	mono_error_init (error);
+
+	sig = parameters_to_signature (image, ctor->parameters, error);
+	return_val_if_nok (error, NULL);
 	sig->hasthis = ctor->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	sig->ret = &mono_defaults.void_class->byval_arg;
 	return sig;
@@ -10749,15 +10756,20 @@ ctor_builder_to_signature (MonoImage *image, MonoReflectionCtorBuilder *ctor) {
  * LOCKING: Assumes the loader lock is held.
  */
 static MonoMethodSignature*
-method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilder *method) {
-	MonoError error;
+method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilder *method, MonoError *error) {
 	MonoMethodSignature *sig;
 
-	sig = parameters_to_signature (image, method->parameters);
+	mono_error_init (error);
+
+	sig = parameters_to_signature (image, method->parameters, error);
+	return_val_if_nok (error, NULL);
 	sig->hasthis = method->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	if (method->rtype) {
-		sig->ret = mono_reflection_type_get_handle ((MonoReflectionType*)method->rtype, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		sig->ret = mono_reflection_type_get_handle ((MonoReflectionType*)method->rtype, error);
+		if (!is_ok (error)) {
+			image_g_free (image, sig);
+			return NULL;
+		}
 	} else {
 		sig->ret = &mono_defaults.void_class->byval_arg;
 	}
@@ -10766,15 +10778,20 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilder *meth
 }
 
 static MonoMethodSignature*
-dynamic_method_to_signature (MonoReflectionDynamicMethod *method) {
-	MonoError error;
+dynamic_method_to_signature (MonoReflectionDynamicMethod *method, MonoError *error) {
 	MonoMethodSignature *sig;
 
-	sig = parameters_to_signature (NULL, method->parameters);
+	mono_error_init (error);
+
+	sig = parameters_to_signature (NULL, method->parameters, error);
+	return_val_if_nok (error, NULL);
 	sig->hasthis = method->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	if (method->rtype) {
-		sig->ret = mono_reflection_type_get_handle (method->rtype, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		sig->ret = mono_reflection_type_get_handle (method->rtype, error);
+		if (!is_ok (error)) {
+			g_free (sig);
+			return NULL;
+		}
 	} else {
 		sig->ret = &mono_defaults.void_class->byval_arg;
 	}
@@ -11224,6 +11241,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
 {
+	MonoError error;
 	MonoArray *result;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
@@ -11232,7 +11250,11 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 		/* sig is freed later so allocate it in the heap */
-		sig = ctor_builder_to_signature (NULL, (MonoReflectionCtorBuilder*)ctor);
+		sig = ctor_builder_to_signature (NULL, (MonoReflectionCtorBuilder*)ctor, &error);
+		if (!is_ok (&error)) {
+			g_free (sig);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		}
 	} else {
 		sig = mono_method_signature (((MonoReflectionMethod*)ctor)->method);
 	}
@@ -11925,8 +11947,10 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, Mon
 	MonoMethodSignature *sig;
 
 	mono_loader_lock ();
-	sig = ctor_builder_to_signature (klass->image, mb);
+	g_assert (klass->image != NULL);
+	sig = ctor_builder_to_signature (klass->image, mb, error);
 	mono_loader_unlock ();
+	return_val_if_nok (error, NULL);
 
 	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
 		return NULL;
@@ -11952,8 +11976,10 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb,
 	mono_error_init (error);
 
 	mono_loader_lock ();
-	sig = method_builder_to_signature (klass->image, mb);
+	g_assert (klass->image != NULL);
+	sig = method_builder_to_signature (klass->image, mb, error);
 	mono_loader_unlock ();
+	return_val_if_nok (error, NULL);
 
 	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, error))
 		return NULL;
@@ -13280,7 +13306,9 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 		mono_loader_unlock ();
 	}
 
-	sig = dynamic_method_to_signature (mb);
+	sig = dynamic_method_to_signature (mb, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 
 	reflection_methodbuilder_from_dynamic_method (&rmb, mb);
 
