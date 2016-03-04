@@ -12,7 +12,7 @@
     "System.Runtime.Loader": "4.0.0-rc3-23901",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
   "frameworks": {
     "dnxcore50": {
