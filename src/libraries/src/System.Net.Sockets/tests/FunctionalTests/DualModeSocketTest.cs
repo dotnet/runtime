@@ -431,12 +431,14 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void SendToAsyncV4IPEndPointToDualHost_Success()
         {
             DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void SendToAsyncV6IPEndPointToDualHost_Success()
         {
             DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
@@ -494,6 +496,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
+        [PlatformSpecific(~PlatformID.OSX)]
         // "The parameter remoteEP must not be of type DnsEndPoint."
         public void Socket_ReceiveFromAsyncDnsEndPoint_Throws()
         {
@@ -512,31 +515,35 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToSpecificV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -546,6 +553,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -555,6 +563,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -564,6 +573,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -604,6 +614,77 @@ namespace System.Net.Sockets.Tests
         }
 
         #endregion ReceiveFrom Async/Event
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void ReceiveFrom_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                byte[] buf = new byte[1];
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveFrom(buf, ref ep));
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveFrom(buf, SocketFlags.None, ref ep));
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveFrom(buf, buf.Length, SocketFlags.None, ref ep));
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveFrom(buf, 0, buf.Length, SocketFlags.None, ref ep));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void ReceiveMessageFrom_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                byte[] buf = new byte[1];
+                SocketFlags flags = SocketFlags.None;
+                IPPacketInformation packetInfo;
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveMessageFrom(buf, 0, buf.Length, ref flags, ref ep, out packetInfo));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void ReceiveFromAsync_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                byte[] buf = new byte[1];
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.SetBuffer(buf, 0, buf.Length);
+                args.RemoteEndPoint = ep;
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveFromAsync(args));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void ReceiveMessageFromAsync_NotSupported()
+        {
+            using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            {
+                byte[] buf = new byte[1];
+                EndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                sock.Bind(ep);
+
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.SetBuffer(buf, 0, buf.Length);
+                args.RemoteEndPoint = ep;
+
+                Assert.Throws<PlatformNotSupportedException>(() => sock.ReceiveMessageFromAsync(args));
+            }
+        }
 
         #endregion Connectionless
 
