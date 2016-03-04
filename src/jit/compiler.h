@@ -8568,9 +8568,6 @@ public:
 
     int                     compNativeSizeEstimate;     // The estimated native size of this method.
 
-#ifdef DEBUG   
-    CodeSeqSM               fgCodeSeqSm;                // The code sequence state machine used in the inliner.
-#endif    
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
     JitTimer*                     pCompJitTimer;           // Timer data structure (by phases) for current compilation.

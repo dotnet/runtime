@@ -5670,7 +5670,10 @@ void        Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineR
 
 void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 {
-    if  (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
+    // Don't expect any surprises here.
+    assert(result->isCandidate());
+    
+    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
         // For now, attributing this to call site, though it's really
         // more of a budget issue (lvaCount currently includes all
