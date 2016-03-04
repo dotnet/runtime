@@ -53,6 +53,8 @@
 #cmakedefine01 HAS_SYSV_SEMAPHORES
 #cmakedefine01 HAS_PTHREAD_MUTEXES
 #cmakedefine01 HAVE_TTRACE
+#cmakedefine HAVE_UNW_GET_SAVE_LOC
+#cmakedefine HAVE_UNW_GET_ACCESSORS
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_NSEC
