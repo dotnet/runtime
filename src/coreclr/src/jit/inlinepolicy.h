@@ -17,6 +17,8 @@
 #include "jit.h"
 #include "inline.h"
 
+class CodeSeqSM;
+
 // LegacyPolicy implements the inlining policy used by the jit in its
 // initial release.
 //
@@ -39,6 +41,9 @@ public:
     LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
         : InlinePolicy(isPrejitRoot)
         , inlCompiler(compiler)
+        , inlStateMachine(nullptr)
+        , inlCodeSize(0)
+        , inlNativeSizeEstimate(NATIVE_SIZE_INVALID)
         , inlIsForceInline(false)
         , inlIsForceInlineKnown(false)
         , inlIsInstanceCtor(false)
@@ -55,13 +60,15 @@ public:
 
     // Policy observations
     void noteSuccess() override;
-    void noteFatal(InlineObservation obs) override;
     void noteBool(InlineObservation obs, bool value) override;
+    void noteFatal(InlineObservation obs) override;
     void noteInt(InlineObservation obs, int value) override;
     void noteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
     double determineMultiplier() override;
+    int determineNativeSizeEstimate() override;
+    bool hasNativeSizeEstimate() override;
 
     // Policy policies
     bool propagateNeverToRuntime() const override { return true; }
@@ -82,17 +89,20 @@ private:
     const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
-    Compiler* inlCompiler;
-    bool      inlIsForceInline :1;
-    bool      inlIsForceInlineKnown :1;
-    bool      inlIsInstanceCtor :1;
-    bool      inlIsFromPromotableValueClass :1;
-    bool      inlHasSimd :1;
-    bool      inlLooksLikeWrapperMethod :1;
-    bool      inlArgFeedsConstantTest :1;
-    bool      inlMethodIsMostlyLoadStore :1;
-    bool      inlArgFeedsRangeCheck :1;
-    bool      inlConstantFeedsConstantTest :1;
+    Compiler*  inlCompiler;
+    CodeSeqSM* inlStateMachine;
+    unsigned   inlCodeSize;
+    int        inlNativeSizeEstimate;
+    bool       inlIsForceInline :1;
+    bool       inlIsForceInlineKnown :1;
+    bool       inlIsInstanceCtor :1;
+    bool       inlIsFromPromotableValueClass :1;
+    bool       inlHasSimd :1;
+    bool       inlLooksLikeWrapperMethod :1;
+    bool       inlArgFeedsConstantTest :1;
+    bool       inlMethodIsMostlyLoadStore :1;
+    bool       inlArgFeedsRangeCheck :1;
+    bool       inlConstantFeedsConstantTest :1;
 };
 
 #endif // _INLINE_POLICY_H_

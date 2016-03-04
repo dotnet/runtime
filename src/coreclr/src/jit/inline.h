@@ -228,6 +228,8 @@ public:
 
     // Policy determinations
     virtual double determineMultiplier() = 0;
+    virtual bool hasNativeSizeEstimate() = 0;
+    virtual int determineNativeSizeEstimate() = 0;
 
     // Policy policies
     virtual bool propagateNeverToRuntime() const = 0;
@@ -361,6 +363,18 @@ public:
     double determineMultiplier()
     {
         return inlPolicy->determineMultiplier();
+    }
+
+    // Is there a native size estimate?
+    bool hasNativeSizeEstimate()
+    {
+        return inlPolicy->hasNativeSizeEstimate();
+    }
+    
+    // Determine the native size estimate for this inline
+    int determineNativeSizeEstimate()
+    {
+        return inlPolicy->determineNativeSizeEstimate();
     }
 
     // Ensure details of this inlining process are appropriately
