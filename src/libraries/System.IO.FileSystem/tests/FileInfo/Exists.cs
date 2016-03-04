@@ -82,26 +82,45 @@ namespace System.IO.Tests
             Assert.False(di.Exists);
         }
 
-        // In some cases (such as when running without elevated privileges,
-        // the symbolic link may fail to create. Only run this test if it creates
-        // links successfully.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void TrueForNonRegularFile()
+        {
+            string fileName = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fileName, 0));
+            FileInfo fi = new FileInfo(fileName);
+            Assert.True(fi.Exists);
+        }
+
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
             var linkPath = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
-            File.Delete(path);
 
-            // We've delete the target file, so it shouldn't exist.
-            var info = new FileInfo(path);
-            Assert.False(info.Exists);
+            var pathFI = new FileInfo(path);
+            var linkPathFI = new FileInfo(linkPath);
 
-            // On Windows we report about the existence of the symlink file itself, so
-            // does still exist.  On Unix, we report about the target, where it doesn't.
-            var linkInfo = new FileInfo(linkPath);
-            Assert.Equal(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), linkInfo.Exists);
+            pathFI.Create().Dispose();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
+
+            // Both the symlink and the target exist
+            pathFI.Refresh();
+            linkPathFI.Refresh();
+            Assert.True(pathFI.Exists, "path should exist");
+            Assert.True(linkPathFI.Exists, "linkPath should exist");
+
+            // Delete the target.  The symlink should still exist
+            pathFI.Delete();
+            pathFI.Refresh();
+            linkPathFI.Refresh();
+            Assert.False(pathFI.Exists, "path should now not exist");
+            Assert.True(linkPathFI.Exists, "linkPath should still exist");
+
+            // Now delete the symlink.
+            linkPathFI.Delete();
+            linkPathFI.Refresh();
+            Assert.False(linkPathFI.Exists, "linkPath should no longer exist");
         }
     }
 }

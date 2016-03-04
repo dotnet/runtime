@@ -87,6 +87,27 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Delete(Directory.GetCurrentDirectory()));
         }
 
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void DeletingSymLinkDoesntDeleteTarget()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+
+            Directory.CreateDirectory(path);
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+
+            // Both the symlink and the target exist
+            Assert.True(Directory.Exists(path), "path should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+
+            // Delete the symlink
+            Directory.Delete(linkPath);
+
+            // Target should still exist
+            Assert.True(Directory.Exists(path), "path should still exist");
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
+        }
+
         #endregion
 
         #region PlatformSpecific

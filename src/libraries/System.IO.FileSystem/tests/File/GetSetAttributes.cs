@@ -104,44 +104,38 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.Normal, Get(path));
         }
 
-        // In some cases (such as when running without elevated privileges,
-        // the symbolic link may fail to create. Only run this test if it creates
-        // links successfully.
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymLinksAreReparsePoints()
         {
             var path = GetTestFilePath();
             var linkPath = GetTestFilePath();
+
             File.Create(path).Dispose();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
+
+            Assert.NotEqual(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(path));
             Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(linkPath));
         }
 
-        // In some cases (such as when running without elevated privileges,
-        // the symbolic link may fail to create. Only run this test if it creates
-        // links successfully.
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
-        public void SymLinksReflectTargetAttributes()
+        public void SymLinksReflectSymLinkAttributes()
         {
             var path = GetTestFilePath();
             var linkPath = GetTestFilePath();
+
             File.Create(path).Dispose();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path));
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
 
             Set(path, FileAttributes.ReadOnly);
-
-            Assert.Equal(FileAttributes.ReadOnly, Get(path));
-
-            // Can't assume that ReparsePoint is the only attribute because Windows will add Archive automatically
-            // Instead, make sure that ReparsePoint is present.
-            Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & Get(linkPath));
-
-            // Then for ReadOnly, there is a difference between Windows and Unix.  Given the prevalence of symlinks
-            // on Unix, matching the existing Windows behavior doesn't make as much sense, so we still follow
-            // to the target object.  As such, on Windows ReadOnly should not be set, but it should be set elsewhere.
-            Assert.Equal(
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (FileAttributes)0 : FileAttributes.ReadOnly,
-                FileAttributes.ReadOnly & Get(linkPath));
+            try
+            {
+                Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & Get(path));
+                Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & Get(linkPath));
+            }
+            finally
+            {
+                Set(path, Get(path) & ~FileAttributes.ReadOnly);
+            }
         }
     }
 }
