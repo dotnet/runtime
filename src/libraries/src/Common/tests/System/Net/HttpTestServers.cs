@@ -9,6 +9,12 @@ namespace System.Net.Test.Common
         public const string Host = "corefx-net.cloudapp.net";
         public const string Http2Host = "http2.akamai.com";
 
+        public const string SSLv2RemoteServer = "https://www.ssllabs.com:10200/";
+        public const string SSLv3RemoteServer = "https://www.ssllabs.com:10300/";
+        public const string TLSv10RemoteServer = "https://www.ssllabs.com:10301/";
+        public const string TLSv11RemoteServer = "https://www.ssllabs.com:10302/";
+        public const string TLSv12RemoteServer = "https://www.ssllabs.com:10303/";
+
         private const string HttpScheme = "http";
         private const string HttpsScheme = "https";
 
