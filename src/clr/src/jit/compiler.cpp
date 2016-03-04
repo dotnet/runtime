@@ -247,10 +247,10 @@ NodeSizeStats genNodeSizeStats;
 NodeSizeStats genNodeSizeStatsPerFunc;
 
 unsigned    genTreeNcntHistBuckets[] = { 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 5000, 10000, 0 };
-histo       genTreeNcntHist(HostAllocator::getHostAllocator(), genTreeNcntHistBuckets);
+Histogram   genTreeNcntHist(HostAllocator::getHostAllocator(), genTreeNcntHistBuckets);
 
 unsigned    genTreeNsizHistBuckets[] = { 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 0 };
-histo       genTreeNsizHist(HostAllocator::getHostAllocator(), genTreeNsizHistBuckets);
+Histogram   genTreeNsizHist(HostAllocator::getHostAllocator(), genTreeNsizHistBuckets);
 #endif // MEASURE_NODE_SIZE
 
 /*****************************************************************************
@@ -301,16 +301,16 @@ unsigned    argTotalGTF_ASGinArgs;
 unsigned    argMaxTempsPerMethod;
 
 unsigned    argCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argCntTable(HostAllocator::getHostAllocator(), argCntBuckets);
+Histogram   argCntTable(HostAllocator::getHostAllocator(), argCntBuckets);
 
 unsigned    argDWordCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argDWordCntTable(HostAllocator::getHostAllocator(), argDWordCntBuckets);
+Histogram   argDWordCntTable(HostAllocator::getHostAllocator(), argDWordCntBuckets);
 
 unsigned    argDWordLngCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argDWordLngCntTable(HostAllocator::getHostAllocator(), argDWordLngCntBuckets);
+Histogram   argDWordLngCntTable(HostAllocator::getHostAllocator(), argDWordLngCntBuckets);
 
 unsigned    argTempsCntBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 10, 0 };
-histo       argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBuckets);
+Histogram   argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBuckets);
 
 #endif // CALL_ARG_STATS
 
@@ -337,12 +337,12 @@ histo       argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBucke
 //          --------------------------------------------------
 
 unsigned    bbCntBuckets[] = { 1, 2, 3, 5, 10, 20, 50, 100, 1000, 10000, 0 };
-histo       bbCntTable(HostAllocator::getHostAllocator(), bbCntBuckets);
+Histogram   bbCntTable(HostAllocator::getHostAllocator(), bbCntBuckets);
 
 /* Histogram for the IL opcode size of methods with a single basic block */
 
 unsigned    bbSizeBuckets[] = { 1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0 };
-histo       bbOneBBSizeTable(HostAllocator::getHostAllocator(), bbSizeBuckets);
+Histogram   bbOneBBSizeTable(HostAllocator::getHostAllocator(), bbSizeBuckets);
 
 #endif // COUNT_BASIC_BLOCKS
 
@@ -374,12 +374,12 @@ bool        loopOverflowThisMethod;     // True if we exceeded the max # of loop
 /* Histogram for number of loops in a method */
 
 unsigned    loopCountBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0 };
-histo       loopCountTable(HostAllocator::getHostAllocator(), loopCountBuckets);
+Histogram   loopCountTable(HostAllocator::getHostAllocator(), loopCountBuckets);
 
 /* Histogram for number of loop exits */
 
 unsigned    loopExitCountBuckets[] = { 0, 1, 2, 3, 4, 5, 6, 0 };
-histo       loopExitCountTable(HostAllocator::getHostAllocator(), loopExitCountBuckets);
+Histogram   loopExitCountTable(HostAllocator::getHostAllocator(), loopExitCountBuckets);
 
 #endif // COUNT_LOOPS
 
@@ -891,7 +891,7 @@ void                Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "Basic block count frequency table:\n");
     fprintf(fout, "--------------------------------------------------\n");
-    bbCntTable.histoDsp(fout);
+    bbCntTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 
     fprintf(fout, "\n");
@@ -899,7 +899,7 @@ void                Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "IL method size frequency table for methods with a single basic block:\n");
     fprintf(fout, "--------------------------------------------------\n");
-    bbOneBBSizeTable.histoDsp(fout);
+    bbOneBBSizeTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 #endif // COUNT_BASIC_BLOCKS
 
@@ -923,11 +923,11 @@ void                Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "Loop count frequency table:\n");
     fprintf(fout, "--------------------------------------------------\n");
-    loopCountTable.histoDsp(fout);
+    loopCountTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "Loop exit count frequency table:\n");
     fprintf(fout, "--------------------------------------------------\n");
-    loopExitCountTable.histoDsp(fout);
+    loopExitCountTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
@@ -961,12 +961,12 @@ void                Compiler::compShutdown()
     fprintf(fout, "\n");
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "Distribution of per-method GenTree node counts:\n");
-    genTreeNcntHist.histoDsp(fout);
+    genTreeNcntHist.dump(fout);
 
     fprintf(fout, "\n");
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "Distribution of per-method GenTree node  allocations (in bytes):\n");
-    genTreeNsizHist.histoDsp(fout);
+    genTreeNsizHist.dump(fout);
 
 #endif // MEASURE_NODE_SIZE
 
@@ -4518,8 +4518,8 @@ void Compiler::compCompileFinish()
 #endif // LOOP_HOIST_STATS
 
 #if MEASURE_NODE_SIZE
-    genTreeNcntHist.histoRec(genNodeSizeStatsPerFunc.genTreeNodeCnt, 1);
-    genTreeNsizHist.histoRec(genNodeSizeStatsPerFunc.genTreeNodeSize, 1);
+    genTreeNcntHist.record(static_cast<unsigned>(genNodeSizeStatsPerFunc.genTreeNodeCnt));
+    genTreeNsizHist.record(static_cast<unsigned>(genNodeSizeStatsPerFunc.genTreeNodeSize));
 #endif
 
 #if defined(DEBUG)
@@ -5025,11 +5025,11 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         compSetOptimizationLevel();
 
 #if COUNT_BASIC_BLOCKS
-        bbCntTable.histoRec(fgBBcount, 1);
+        bbCntTable.record(fgBBcount);
 
         if (fgBBcount == 1)
         {
-            bbOneBBSizeTable.histoRec(methodInfo->ILCodeSize, 1);
+            bbOneBBSizeTable.record(methodInfo->ILCodeSize);
         }
 #endif // COUNT_BASIC_BLOCKS
 
@@ -6335,15 +6335,15 @@ void            Compiler::compCallArgStats()
 
                 argTempsThisMethod+= regArgTemp;
 
-                argCntTable.histoRec(argNum, 1);
-                argDWordCntTable.histoRec(argDWordNum, 1);
-                argDWordLngCntTable.histoRec(argDWordNum + 2*argLngNum, 1);
+                argCntTable.record(argNum);
+                argDWordCntTable.record(argDWordNum);
+                argDWordLngCntTable.record(argDWordNum + (2 * argLngNum));
 #endif // LEGACY_BACKEND
             }
         }
     }
 
-    argTempsCntTable.histoRec(argTempsThisMethod, 1);
+    argTempsCntTable.record(argTempsThisMethod);
 
     if (argMaxTempsPerMethod < argTempsThisMethod)
     {
@@ -6369,7 +6369,7 @@ void            Compiler::compDispCallArgStats(FILE* fout)
     fprintf(fout, "Percentage of     virtual calls = %4.2f %%\n",      (float)(100 * argVirtualCalls   ) / argTotalCalls);
     fprintf(fout, "Percentage of non-virtual calls = %4.2f %%\n\n",    (float)(100 * argNonVirtualCalls) / argTotalCalls);
 
-    fprintf(fout, "Average # of arguments per call = %.2f%\n\n",       (float) argTotalArgs / argTotalCalls);
+    fprintf(fout, "Average # of arguments per call = %.2f%%\n\n",       (float) argTotalArgs / argTotalCalls);
 
     fprintf(fout, "Percentage of DWORD  arguments   = %.2f %%\n",      (float)(100 * argTotalDWordArgs ) / argTotalArgs);
     fprintf(fout, "Percentage of LONG   arguments   = %.2f %%\n",      (float)(100 * argTotalLongArgs  ) / argTotalArgs);
@@ -6403,26 +6403,26 @@ void            Compiler::compDispCallArgStats(FILE* fout)
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "Argument count frequency table (includes ObjPtr):\n");
     fprintf(fout, "--------------------------------------------------\n");
-    argCntTable.histoDsp(fout);
+    argCntTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "DWORD argument count frequency table (w/o LONG):\n");
     fprintf(fout, "--------------------------------------------------\n");
-    argDWordCntTable.histoDsp(fout);
+    argDWordCntTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "Temps count frequency table (per method):\n");
     fprintf(fout, "--------------------------------------------------\n");
-    argTempsCntTable.histoDsp(fout);
+    argTempsCntTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 
 /*
     fprintf(fout, "--------------------------------------------------\n");
     fprintf(fout, "DWORD argument count frequency table (w/ LONG):\n");
     fprintf(fout, "--------------------------------------------------\n");
-    argDWordLngCntTable.histoDsp(fout);
+    argDWordLngCntTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
 */
 }
