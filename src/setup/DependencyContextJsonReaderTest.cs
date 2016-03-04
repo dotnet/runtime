@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     }
 }");
             context.IsPortable.Should().BeFalse();
-            context.Target.Should().Be(".NETStandardApp,Version=v1.5");
+            context.TargetFramework.Should().Be(".NETStandardApp,Version=v1.5");
             context.Runtime.Should().Be("osx.10.10-x64");
         }
 
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         "".NETStandardApp,Version=v1.5"": {}
     }
 }");
-            context.Target.Should().Be(".NETStandardApp,Version=v1.5");
+            context.TargetFramework.Should().Be(".NETStandardApp,Version=v1.5");
         }
 
         [Fact]
@@ -119,16 +119,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     }
 }");
             context.CompileLibraries.Should().HaveCount(2);
-            var project = context.CompileLibraries.Should().Contain(l => l.PackageName == "MyApp").Subject;
+            var project = context.CompileLibraries.Should().Contain(l => l.Name == "MyApp").Subject;
             project.Version.Should().Be("1.0.1");
             project.Assemblies.Should().BeEquivalentTo("MyApp.dll");
-            project.LibraryType.Should().Be("project");
+            project.Type.Should().Be("project");
 
-            var package = context.CompileLibraries.Should().Contain(l => l.PackageName == "System.Banana").Subject;
+            var package = context.CompileLibraries.Should().Contain(l => l.Name == "System.Banana").Subject;
             package.Version.Should().Be("1.0.0");
             package.Assemblies.Should().BeEquivalentTo("ref/dotnet5.4/System.Banana.dll");
             package.Hash.Should().Be("HASH-System.Banana");
-            package.LibraryType.Should().Be("package");
+            package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
         }
 
@@ -178,20 +178,20 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     }
 }");
             context.CompileLibraries.Should().HaveCount(2);
-            var project = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "MyApp").Subject;
+            var project = context.RuntimeLibraries.Should().Contain(l => l.Name == "MyApp").Subject;
             project.Version.Should().Be("1.0.1");
             project.Assemblies.Should().Contain(a => a.Path == "MyApp.dll");
-            project.LibraryType.Should().Be("project");
+            project.Type.Should().Be("project");
 
 
-            var package = context.RuntimeLibraries.Should().Contain(l => l.PackageName == "System.Banana").Subject;
+            var package = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Banana").Subject;
             package.Version.Should().Be("1.0.0");
             package.Hash.Should().Be("HASH-System.Banana");
-            package.LibraryType.Should().Be("package");
+            package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
             package.Assemblies.Should().Contain(a => a.Path == "lib/dotnet5.4/System.Banana.dll");
 
-            var target = package.SubTargets.Should().Contain(t => t.Runtime == "win7-x64").Subject;
+            var target = package.RuntimeTargets.Should().Contain(t => t.Runtime == "win7-x64").Subject;
             target.Assemblies.Should().Contain(a => a.Path == "lib/win7/System.Banana.dll");
             target.NativeLibraries.Should().Contain("lib/win7/Banana.dll");
         }
