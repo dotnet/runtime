@@ -1409,7 +1409,6 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
 
     compNativeSizeEstimate = NATIVE_SIZE_INVALID;
-    compInlineeHints = (InlineHints)0;
 
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
@@ -4941,13 +4940,29 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             // Do the initial inline screen.
             impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);
 
+            // Temporarily install the prejitResult as the
+            // compInlineResult so it's available to fgFindJumpTargets
+            // and can accumulate more observations as the IL is
+            // scanned.
+            //
+            // We don't pass prejitResult in as a parameter to avoid
+            // potential aliasing confusion -- the other call to
+            // fgFindBasicBlocks may have set up compInlineResult and
+            // the code in fgFindJumpTargets references that data
+            // member extensively.
+            assert(compInlineResult == nullptr);
+            compInlineResult = &prejitResult;
+
             // Find the basic blocks. We must do this regardless of
             // inlineability, since we are prejitting this method.
             //
-            // Among other things, this will set
-            // compNativeSizeEstimate and compInlineeHints for the
-            // subset of methods we check below.
+            // Among other things, this will set compNativeSizeEstimate
+            // for the subset of methods we check below.
             fgFindBasicBlocks();
+
+            // Undo the temporary setup.
+            assert(compInlineResult == &prejitResult);
+            compInlineResult = nullptr;
 
             // If this method is still a viable inline candidate,
             // do the profitability screening.
@@ -4967,10 +4982,14 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                     // See if we're willing to pay for inlining this method
                     impCanInlineNative(callsiteNativeSizeEstimate,
                                        compNativeSizeEstimate,
-                                       compInlineeHints,
                                        nullptr, // Calculate static inlining hint.
                                        &prejitResult);
                 }
+            }
+            else
+            {
+                // If it's not a candidate, it should be a failure.
+                assert(prejitResult.isFailure());
             }
 
             // Handle the results of the inline analysis.

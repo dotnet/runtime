@@ -13,7 +13,6 @@
 // InlineTarget        - target of a particular observation
 // InlineImpact        - impact of a particular observation
 // InlineObservation   - facts observed when considering an inline
-// InlineHints         - alternative form of observations
 //
 // -- CLASSES --
 //
@@ -228,7 +227,10 @@ public:
     virtual void noteInt(InlineObservation obs, int value) = 0;
     virtual void noteDouble(InlineObservation obs, double value) = 0;
 
-    // Policy decisions
+    // Policy determinations
+    virtual double determineMultiplier() = 0;
+
+    // Policy policies
     virtual bool propagateNeverToRuntime() const = 0;
 
 #ifdef DEBUG
@@ -361,6 +363,12 @@ public:
         inlPolicy->noteDouble(obs, value);
     }
 
+    // Determine the benfit multiplier for this inline.
+    double determineMultiplier()
+    {
+        return inlPolicy->determineMultiplier();
+    }
+
     // Ensure details of this inlining process are appropriately
     // reported when the result goes out of scope.
     ~InlineResult()
@@ -469,29 +477,6 @@ struct InlLclVarInfo
     var_types       lclTypeInfo;
     typeInfo        lclVerTypeInfo;
     bool            lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
-};
-
-// InlineHints are a legacy form of observations.
-
-enum InlineHints
-{
-    //Static inline hints are here.
-    InlLooksLikeWrapperMethod = 0x0001,     // The inline candidate looks like it's a simple wrapper method.
-
-    InlArgFeedsConstantTest   = 0x0002,     // One or more of the incoming arguments feeds into a test
-                                            //against a constant.  This is a good candidate for assertion
-                                            //prop.
-
-    InlMethodMostlyLdSt       = 0x0004,     //This method is mostly loads and stores.
-
-    InlMethodContainsCondThrow= 0x0008,     //Method contains a conditional throw, so it does not bloat the
-                                            //code as much.
-    InlArgFeedsRngChk         = 0x0010,     //Incoming arg feeds an array bounds check.  A good assertion
-                                            //prop candidate.
-
-    //Dynamic inline hints are here.  Only put hints that add to the multiplier in here.
-    InlIncomingConstFeedsCond = 0x0100,     //Incoming argument is constant and feeds a conditional.
-    InlAllDynamicHints        = InlIncomingConstFeedsCond
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.
