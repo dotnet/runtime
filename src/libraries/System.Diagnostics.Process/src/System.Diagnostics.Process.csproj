@@ -315,6 +315,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" ('$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true') AND '$(IsPartialFacadeAssembly)'!='true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
