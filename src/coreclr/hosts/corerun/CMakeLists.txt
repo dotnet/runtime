@@ -28,7 +28,7 @@ else()
         oleaut32.lib
         uuid.lib
         user32.lib
-        msvcrt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib
+        msvcrt.lib
     )
 
     # Can't compile on linux yet so only add for windows
