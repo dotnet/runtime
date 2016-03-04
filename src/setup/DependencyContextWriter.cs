@@ -36,16 +36,11 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        private JObject WriteRuntimeTargetInfo(DependencyContext context)
+        private string WriteRuntimeTargetInfo(DependencyContext context)
         {
-            var target = context.IsPortable?
+            return context.IsPortable?
                 context.TargetFramework :
                 context.TargetFramework + DependencyContextStrings.VersionSeperator + context.Runtime;
-
-            return new JObject(
-                    new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName, target),
-                    new JProperty(DependencyContextStrings.PortablePropertyName, context.IsPortable)
-                );
         }
 
         private JObject WriteRuntimeGraph(DependencyContext context)

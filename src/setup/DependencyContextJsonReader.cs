@@ -30,8 +30,10 @@ namespace Microsoft.Extensions.DependencyModel
         {
             var runtime = string.Empty;
             var target = string.Empty;
+            var isPortable = true;
 
-            var runtimeTargetInfo = ReadRuntimeTargetInfo(root);
+            var runtimeTargetName = root[DependencyContextStrings.RuntimeTargetPropertyName]?.Value<string>();
+
             var libraryStubs = ReadLibraryStubs((JObject) root[DependencyContextStrings.LibrariesPropertyName]);
             var targetsObject = (JObject) root[DependencyContextStrings.TargetsPropertyName];
 
@@ -45,18 +47,19 @@ namespace Microsoft.Extensions.DependencyModel
                 compileTarget = (JObject)compileTargetProperty.Value;
                 target = compileTargetProperty.Name;
 
-                if (!string.IsNullOrEmpty(runtimeTargetInfo.Name))
+                if (!string.IsNullOrEmpty(runtimeTargetName))
                 {
-                    runtimeTarget = (JObject) targetsObject[runtimeTargetInfo.Name];
+                    runtimeTarget = (JObject) targetsObject[runtimeTargetName];
                     if (runtimeTarget == null)
                     {
-                        throw new FormatException($"Target with name {runtimeTargetInfo.Name} not found");
+                        throw new FormatException($"Target with name {runtimeTargetName} not found");
                     }
 
-                    var seperatorIndex = runtimeTargetInfo.Name.IndexOf(DependencyContextStrings.VersionSeperator);
-                    if (seperatorIndex > -1 && seperatorIndex < runtimeTargetInfo.Name.Length)
+                    var seperatorIndex = runtimeTargetName.IndexOf(DependencyContextStrings.VersionSeperator);
+                    if (seperatorIndex > -1 && seperatorIndex < runtimeTargetName.Length)
                     {
-                        runtime = runtimeTargetInfo.Name.Substring(seperatorIndex + 1);
+                        runtime = runtimeTargetName.Substring(seperatorIndex + 1);
+                        isPortable = false;
                     }
                 }
                 else
@@ -68,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
             return new DependencyContext(
                 target,
                 runtime,
-                runtimeTargetInfo.Portable,
+                isPortable,
                 ReadCompilationOptions((JObject)root[DependencyContextStrings.CompilationOptionsPropertName]),
                 ReadLibraries(compileTarget, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
                 ReadLibraries(runtimeTarget, true, libraryStubs).Cast<RuntimeLibrary>().ToArray(),
@@ -89,24 +92,6 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 yield return new KeyValuePair<string, string[]>(pair.Key, pair.Value.Values<string>().ToArray());
             }
-        }
-
-        private RuntimeTargetInfo ReadRuntimeTargetInfo(JObject root)
-        {
-
-            var runtimeTarget = (JObject)root[DependencyContextStrings.RuntimeTargetPropertyName];
-            if (runtimeTarget != null)
-            {
-                return new RuntimeTargetInfo()
-                {
-                    Name = runtimeTarget[DependencyContextStrings.RuntimeTargetNamePropertyName]?.Value<string>(),
-                    Portable = runtimeTarget[DependencyContextStrings.PortablePropertyName]?.Value<bool>() == true
-                };
-            }
-            return new RuntimeTargetInfo()
-            {
-                Portable = true
-            };
         }
 
         private CompilationOptions ReadCompilationOptions(JObject compilationOptionsObject)
@@ -266,13 +251,6 @@ namespace Microsoft.Extensions.DependencyModel
             public string Type;
             public string Path;
             public string Rid;
-        }
-
-        private struct RuntimeTargetInfo
-        {
-            public string Name;
-
-            public bool Portable;
         }
 
         private struct LibraryStub
