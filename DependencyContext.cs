@@ -23,6 +23,31 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeLibrary[] runtimeLibraries,
             IReadOnlyList<KeyValuePair<string, string[]>> runtimeGraph)
         {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (runtime == null)
+            {
+                throw new ArgumentNullException(nameof(runtime));
+            }
+            if (compilationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(compilationOptions));
+            }
+            if (compileLibraries == null)
+            {
+                throw new ArgumentNullException(nameof(compileLibraries));
+            }
+            if (runtimeLibraries == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeLibraries));
+            }
+            if (runtimeGraph == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeGraph));
+            }
+
             Target = target;
             Runtime = runtime;
             IsPortable = isPortable;
