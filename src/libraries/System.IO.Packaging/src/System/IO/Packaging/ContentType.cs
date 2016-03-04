@@ -56,12 +56,6 @@ namespace System.IO.Packaging
     /// </summary>
     internal sealed class ContentType
     {
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-
         #region Internal Constructors
 
         /// <summary>
@@ -121,12 +115,6 @@ namespace System.IO.Packaging
 
         #endregion Internal Constructors
 
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-
         #region Internal Properties
 
         /// <summary>
@@ -170,13 +158,7 @@ namespace System.IO.Packaging
             }
         }
         #endregion Internal Properties
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Methods
 
         /// <summary>
@@ -278,12 +260,6 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
 
         #region Private Methods
 
@@ -577,11 +553,6 @@ namespace System.IO.Packaging
 
         #endregion Private Methods
 
-        //------------------------------------------------------
-        //
-        //  Private Members
-        //
-        //------------------------------------------------------
         #region Private Members
 
         private string _contentType = null;

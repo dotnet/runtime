@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//---------------------------------------------------------------------------
-//
-// Description: The FileFormatException class is thrown when an input file or a data stream that is supposed to conform
-// to a certain file format specification is malformed.
-//
-//---------------------------------------------------------------------------
-
 namespace System.IO
 {
     /// <summary>

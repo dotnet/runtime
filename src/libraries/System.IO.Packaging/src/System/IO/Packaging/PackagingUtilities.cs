@@ -2,45 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//---------------------------------------------------------------------------
-//
-// Description:
-//
-//---------------------------------------------------------------------------
-
 using System;
 using System.IO;
-using System.Xml;               // For XmlReader
-using System.Diagnostics;       // For Debug.Assert
-using System.Text;              // For Encoding
+using System.Xml;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.IO.Packaging
 {
     internal static class PackagingUtilities
     {
-        //------------------------------------------------------
-        //
-        //  Internal Fields
-        //
-        //------------------------------------------------------
         internal static readonly string RelationshipNamespaceUri = "http://schemas.openxmlformats.org/package/2006/relationships";
         internal static readonly ContentType RelationshipPartContentType
             = new ContentType("application/vnd.openxmlformats-package.relationships+xml");
 
         internal const string ContainerFileExtension = "xps";
         internal const string XamlFileExtension = "xaml";
-
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
 
         #region Internal Methods
 
@@ -133,13 +110,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
+        
         /// <summary>
         /// Synchronize access to IsolatedStorage methods that can step on each-other
         /// </summary>
@@ -148,6 +119,5 @@ namespace System.IO.Packaging
         private const string EncodingAttribute = "encoding";
         private const string WebNameUTF8 = "utf-8";
         private const string WebNameUnicode = "utf-16";
-
     }
 }
