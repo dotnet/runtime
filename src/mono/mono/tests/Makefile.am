@@ -399,6 +399,8 @@ BASE_TEST_CS_SRC=		\
 	bug-389886-3.cs \
 	monitor.cs	\
 	monitor-resurrection.cs	\
+	monitor-wait-abort.cs	\
+	monitor-abort.cs	\
 	dynamic-method-resurrection.cs	\
 	bug-666008.cs	\
 	bug-685908.cs	\
