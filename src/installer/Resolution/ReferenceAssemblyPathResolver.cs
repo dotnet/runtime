@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            if (!string.Equals(library.LibraryType, "referenceassembly", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 string fullName;
                 if (!TryResolveReferenceAssembly(assembly, out fullName))
                 {
-                    throw new InvalidOperationException($"Can not find reference assembly '{assembly}' file for package {library.PackageName}");
+                    throw new InvalidOperationException($"Can not find reference assembly '{assembly}' file for package {library.Name}");
                 }
                 assemblies.Add(fullName);
             }

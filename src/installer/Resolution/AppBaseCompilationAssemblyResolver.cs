@@ -37,11 +37,11 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
-            var isProject = string.Equals(library.LibraryType, "project", StringComparison.OrdinalIgnoreCase);
+            var isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase);
 
             if (!isProject &&
-                !string.Equals(library.LibraryType, "package", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(library.LibraryType, "referenceassembly", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(library.Type, "referenceassembly", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

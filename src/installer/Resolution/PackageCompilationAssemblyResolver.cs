@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
         {
             if (string.IsNullOrEmpty(_nugetPackageDirectory) ||
-                !string.Equals(library.LibraryType, "package", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

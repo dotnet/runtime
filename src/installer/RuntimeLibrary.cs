@@ -9,22 +9,22 @@ namespace Microsoft.Extensions.DependencyModel
     public class RuntimeLibrary : Library
     {
         public RuntimeLibrary(
-            string libraryType,
-            string packageName,
+            string type,
+            string name,
             string version,
             string hash,
             RuntimeAssembly[] assemblies,
             RuntimeTarget[] subTargets,
             Dependency[] dependencies,
             bool serviceable)
-            : base(libraryType, packageName, version, hash, dependencies, serviceable)
+            : base(type, name, version, hash, dependencies, serviceable)
         {
             Assemblies = assemblies;
-            SubTargets = subTargets;
+            RuntimeTargets = subTargets;
         }
 
         public IReadOnlyList<RuntimeAssembly> Assemblies { get; }
 
-        public IReadOnlyList<RuntimeTarget> SubTargets { get; }
+        public IReadOnlyList<RuntimeTarget> RuntimeTargets { get; }
     }
 }
