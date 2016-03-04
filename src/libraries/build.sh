@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [cmakeargs]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -14,6 +14,7 @@ usage()
     echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows"
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
+    echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
 }
 
@@ -122,8 +123,8 @@ build_native_corefx()
     cd "$__IntermediatesDir"
 
     # Regenerate the CMake solution
-    echo "Invoking cmake with arguments: \"$__nativeroot\" $__CMakeArgs"
-    "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__CMakeArgs
+    echo "Invoking cmake with arguments: \"$__nativeroot\" $__CMakeArgs $__CMakeExtraArgs"
+    "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__CMakeArgs "$__CMakeExtraArgs"
 
     # Check that the makefiles were created.
 
@@ -247,6 +248,7 @@ esac
 __BuildOS=$__HostOS
 __BuildType=Debug
 __CMakeArgs=DEBUG
+__CMakeExtraArgs=""
 
 BUILDERRORLEVEL=0
 
@@ -258,10 +260,13 @@ __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
 
-for i in "$@"
-    do
-        lowerI="$(echo $i | awk '{print tolower($0)}')"
-        case $lowerI in
+while :; do
+    if [ $# -le 0 ]; then
+        break
+    fi
+
+    lowerI="$(echo $1 | awk '{print tolower($0)}')"
+    case $lowerI in
         -?|-h|--help)
             usage
             exit 1
@@ -275,19 +280,15 @@ for i in "$@"
         x86)
             __BuildArch=x86
             ;;
-
         x64)
             __BuildArch=x64
             ;;
-
         arm)
             __BuildArch=arm
             ;;
-
         arm64)
             __BuildArch=arm64
             ;;
-
         debug)
             __BuildType=Debug
             ;;
@@ -340,9 +341,20 @@ for i in "$@"
         cross)
             __CrossBuild=1
             ;;
+        cmakeargs)
+            if [ -n "$2" ]; then
+                __CMakeExtraArgs="$2"
+                shift
+            else
+                echo "ERROR: 'cmakeargs' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
         *)
-          __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+          __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
+
+    shift
 done
 
 # If neither managed nor native are passed as arguments, default to building both
