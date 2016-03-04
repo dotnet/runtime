@@ -86,14 +86,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             false)
                             );
 
-            var runtimeTarget = result.Should().HaveProperty("runtimeTarget")
-                .Subject.Should().BeOfType<JObject>().Subject;
-
-            runtimeTarget.Should().HaveProperty("name")
-                .Subject.Value<string>().Should().Be("Target/runtime");
-
-            runtimeTarget.Should().HaveProperty("portable")
-                .Subject.Value<bool>().Should().Be(false);
+            result.Should().HavePropertyValue("runtimeTarget", "Target/runtime");
         }
 
         [Fact]
@@ -169,7 +162,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "HASH",
                                         new [] { RuntimeAssembly.Create("Banana.dll")},
                                         new []
-                                        {Lock
+                                        {
                                             new RuntimeTarget("win7-x64",
                                                 new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
                                                 new [] { "Banana.Win7-x64.so" }
