@@ -6,6 +6,7 @@
 // ------------------------------------------------------------------------------
 
 
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.BindingFlags))]
 namespace System.Reflection
 {
     public static partial class AssemblyExtensions
@@ -13,17 +14,6 @@ namespace System.Reflection
         public static System.Type[] GetExportedTypes(this System.Reflection.Assembly assembly) { return default(System.Type[]); }
         public static System.Reflection.Module[] GetModules(this System.Reflection.Assembly assembly) { return default(System.Reflection.Module[]); }
         public static System.Type[] GetTypes(this System.Reflection.Assembly assembly) { return default(System.Type[]); }
-    }
-    [System.FlagsAttribute]
-    public enum BindingFlags
-    {
-        DeclaredOnly = 2,
-        FlattenHierarchy = 64,
-        IgnoreCase = 1,
-        Instance = 4,
-        NonPublic = 32,
-        Public = 16,
-        Static = 8,
     }
     public static partial class EventInfoExtensions
     {

@@ -75,7 +75,8 @@
 
   <!-- Package dependency validation -->
   <PropertyGroup>
-    <ValidatePackageVersions>true</ValidatePackageVersions>
+    <!-- Temporarily disabled the validation -->
+    <ValidatePackageVersions>false</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
   </PropertyGroup>
 
