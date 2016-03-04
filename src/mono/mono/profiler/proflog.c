@@ -33,6 +33,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 #if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
@@ -2512,6 +2515,13 @@ mono_cpu_count (void)
 		close (present);
 	if (count > 0)
 		return count + 1;
+#endif
+#ifdef HAVE_SCHED_GETAFFINITY
+	{
+		cpu_set_t set;
+		if (sched_getaffinity (getpid (), sizeof (set), &set) == 0)
+			return CPU_COUNT (&set);
+	}
 #endif
 #ifdef _SC_NPROCESSORS_ONLN
 	count = sysconf (_SC_NPROCESSORS_ONLN);
