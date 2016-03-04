@@ -40,8 +40,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             IReadOnlyList<KeyValuePair<string, string[]>> runtimeGraph = null)
         {
             return new DependencyContext(
-                            target,
-                            runtime,
+                            target ?? string.Empty,
+                            runtime ?? string.Empty,
                             isPortable ?? false,
                             compilationOptions ?? CompilationOptions.Default,
                             compileLibraries ?? new CompilationLibrary[0],
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyAsObject("runtime")
                 .Subject.Should().HaveProperty("Banana.dll");
 
-            var runtimeTargets = library.Should().HavePropertyAsObject("target").Subject;
+            var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
 
             var runtimeAssembly = runtimeTargets.Should().HavePropertyAsObject("Banana.Win7-x64.dll").Subject;
             runtimeAssembly.Should().HavePropertyValue("rid", "win7-x64");
@@ -207,6 +207,150 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             library.Should().HavePropertyValue("sha512", "HASH");
             library.Should().HavePropertyValue("type", "package");
             library.Should().HavePropertyValue("serviceable", true);
+        }
+
+        [Fact]
+        public void MergesRuntimeAndCompileLibrariesForPortable()
+        {
+            var result = Save(Create(
+                            "Target",
+                            "runtime",
+                            true,
+                            compileLibraries: new[]
+                            {
+                                 new CompilationLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] { "ref/Banana.dll" },
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true
+                                    )
+                            },
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] { RuntimeAssembly.Create("Banana.dll")},
+                                        new []
+                                        {
+                                            new RuntimeTarget("win7-x64",
+                                                new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
+                                                new [] { "Banana.Win7-x64.so" }
+                                            )
+                                        },
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true
+                                    ),
+                            }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+            var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
+            dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
+            library.Should().HavePropertyAsObject("runtime")
+                .Subject.Should().HaveProperty("Banana.dll");
+
+            library.Should().HavePropertyAsObject("compile")
+              .Subject.Should().HaveProperty("ref/Banana.dll");
+
+            var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
+
+            var runtimeAssembly = runtimeTargets.Should().HavePropertyAsObject("Banana.Win7-x64.dll").Subject;
+            runtimeAssembly.Should().HavePropertyValue("rid", "win7-x64");
+            runtimeAssembly.Should().HavePropertyValue("assetType", "runtime");
+
+            var nativeLibrary = runtimeTargets.Should().HavePropertyAsObject("Banana.Win7-x64.so").Subject;
+            nativeLibrary.Should().HavePropertyValue("rid", "win7-x64");
+            nativeLibrary.Should().HavePropertyValue("assetType", "native");
+
+            //libraries
+            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("type", "package");
+            library.Should().HavePropertyValue("serviceable", true);
+        }
+
+        [Fact]
+        public void WritesRuntimeTargetForNonPortable()
+        {
+            var result = Save(Create(
+                            "Target",
+                            "runtime",
+                            false,
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] { RuntimeAssembly.Create("Banana.dll")},
+                                        new RuntimeTarget[] {},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true
+                                    ),
+                            }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target/runtime").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+            var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
+            dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
+            library.Should().HavePropertyAsObject("runtime")
+                .Subject.Should().HaveProperty("Banana.dll");
+
+            //libraries
+            var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
+            library = libraries.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+            library.Should().HavePropertyValue("sha512", "HASH");
+            library.Should().HavePropertyValue("type", "package");
+            library.Should().HavePropertyValue("serviceable", true);
+        }
+
+        [Fact]
+        public void WritesCompilationOptions()
+        {
+            var result = Save(Create(compilationOptions: new CompilationOptions(
+                defines: new[] {"MY", "DEFINES"},
+                languageVersion: "C#8",
+                platform: "Platform",
+                allowUnsafe: true,
+                warningsAsErrors: true,
+                optimize: true,
+                keyFile: "Key.snk",
+                delaySign: true,
+                publicSign: true,
+                emitEntryPoint: true,
+                generateXmlDocumentation: true)));
+
+            var options = result.Should().HavePropertyAsObject("compilationOptions").Subject;
+            options.Should().HavePropertyValue("allowUnsafe", true);
+            options.Should().HavePropertyValue("delaySign", true);
+            options.Should().HavePropertyValue("emitEntryPoint", true);
+            options.Should().HavePropertyValue("xmlDoc", true);
+            options.Should().HavePropertyValue("publicSign", true);
+            options.Should().HavePropertyValue("optimize", true);
+            options.Should().HavePropertyValue("warningsAsErrors", true);
+            options.Should().HavePropertyValue("allowUnsafe", true);
+            options.Should().HavePropertyValue("languageVersion", "C#8");
+            options.Should().HavePropertyValue("keyFile", "Key.snk");
+            options.Should().HaveProperty("defines")
+                .Subject.Values<string>().Should().BeEquivalentTo(new [] {"MY", "DEFINES" });
         }
     }
 }
