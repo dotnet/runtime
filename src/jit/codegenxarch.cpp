@@ -5803,8 +5803,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             }
             else
             {
-                GenTree* addr = target->gtGetOp1();
-                genConsumeAddress(addr);
                 genEmitCall(emitter::EC_INDIR_ARD,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
