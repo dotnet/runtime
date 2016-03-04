@@ -82,6 +82,27 @@ namespace System.IO.Tests
             Assert.Throws<UnauthorizedAccessException>(() => Delete(TestDirectory));
         }
 
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void DeletingSymLinkDoesntDeleteTarget()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+
+            File.Create(path).Dispose();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
+
+            // Both the symlink and the target exist
+            Assert.True(File.Exists(path), "path should exist");
+            Assert.True(File.Exists(linkPath), "linkPath should exist");
+
+            // Delete the symlink
+            File.Delete(linkPath);
+
+            // Target should still exist
+            Assert.True(File.Exists(path), "path should still exist");
+            Assert.False(File.Exists(linkPath), "linkPath should no longer exist");
+        }
+
         #endregion
 
         #region PlatformSpecific

@@ -115,6 +115,66 @@ namespace System.IO.Tests
             });
         }
 
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void SymLinksMayExistIndependentlyOfTarget()
+        {
+            var path = GetTestFilePath();
+            var linkPath = GetTestFilePath();
+
+            Directory.CreateDirectory(path);
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+
+            // Both the symlink and the target exist
+            Assert.True(Directory.Exists(path), "path should exist");
+            Assert.True(Directory.Exists(linkPath), "linkPath should exist");
+            Assert.False(File.Exists(linkPath));
+
+            // Delete the target.  The symlink should still exist.  On Unix, the symlink will now be
+            // considered a file (since it's broken and we don't know what it'll eventually point to).
+            Directory.Delete(path);
+            Assert.False(Directory.Exists(path), "path should now not exist");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.True(Directory.Exists(linkPath), "linkPath should still exist as a directory");
+                Assert.False(File.Exists(linkPath), "linkPath should not be a file");
+            }
+            else
+            {
+                Assert.False(Directory.Exists(linkPath), "linkPath should no longer be a directory");
+                Assert.True(File.Exists(linkPath), "linkPath should now be a file");
+            }
+
+            // Now delete the symlink.
+            // On Unix, deleting the symlink should fail, because it's not a directory, it's a file.
+            // On Windows, it should succeed.
+            try
+            {
+                Directory.Delete(linkPath);
+                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Should only succeed on Windows");
+            }
+            catch (IOException)
+            {
+                Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Should only fail on Unix");
+                File.Delete(linkPath);
+            }
+
+            Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist as a directory");
+            Assert.False(File.Exists(linkPath), "linkPath should no longer exist as a file");
+        }
+
+        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        public void SymlinkToNewDirectory()
+        {
+            string path = GetTestFilePath();
+            Directory.CreateDirectory(path);
+
+            string linkPath = GetTestFilePath();
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+
+            Assert.True(Directory.Exists(path));
+            Assert.True(Directory.Exists(linkPath));
+        }
+
         #endregion
 
         #region PlatformSpecific
@@ -317,17 +377,13 @@ namespace System.IO.Tests
             Assert.False(Exists(Path.Combine(IOServices.GetNonExistentDrive(), "nonexistentsubdir")));
         }
 
-
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
-        public void SymlinkToNewDirectory()
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void FalseForNonRegularFile()
         {
-            string targetPath = GetTestFilePath();
-            Directory.CreateDirectory(targetPath);
-
-            string linkPath = GetTestFilePath();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetPath));
-
-            Assert.NotEqual(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), Directory.Exists(linkPath));
+            string fileName = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fileName, 0));
+            Assert.False(Directory.Exists(fileName));
         }
 
         #endregion
