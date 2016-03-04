@@ -5602,11 +5602,13 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
 	p = buf = (guint8 *)g_malloc (buf_size);
 
-	if (mono_class_get_cctor (method->klass))
+	if (mono_class_get_cctor (method->klass)) {
+		encode_value (1, p, &p);
 		encode_klass_ref (acfg, method->klass, p, &p);
-	else
+	} else {
 		/* Not needed when loading the method */
 		encode_value (0, p, &p);
+	}
 
 	g_assert (!(cfg->opt & MONO_OPT_SHARED));
 

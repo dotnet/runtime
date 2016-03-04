@@ -4076,7 +4076,7 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMemPool *mp;
-	MonoClass *klass;
+	MonoClass *klass_to_run_ctor = NULL;
 	gboolean from_plt = method == NULL;
 	int pindex, n_patches;
 	guint8 *p;
@@ -4090,12 +4090,13 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 
 	p = info;
 
-	if (method) {
-		klass = method->klass;
-		decode_klass_ref (amodule, p, &p);
-	} else {
-		klass = decode_klass_ref (amodule, p, &p);
-	}
+	//does the method's class has a cctor?
+	if (decode_value (p, &p) == 1)
+		klass_to_run_ctor = decode_klass_ref (amodule, p, &p);
+
+	//FIXME old code would use the class from @method if not null and ignore the one encoded. I don't know if we need to honor that -- @kumpera
+	if (method)
+		klass_to_run_ctor = method->klass;
 
 	n_patches = decode_value (p, &p);
 
@@ -4176,8 +4177,8 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	gboolean inited_ok = TRUE;
 	if (init_class)
 		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, init_class), error);
-	else if (from_plt && klass && !klass->generic_container)
-		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass), error);
+	else if (from_plt && klass_to_run_ctor && !klass_to_run_ctor->generic_container)
+		inited_ok = mono_runtime_class_init_full (mono_class_vtable (domain, klass_to_run_ctor), error);
 	if (!inited_ok)
 		return FALSE;
 
