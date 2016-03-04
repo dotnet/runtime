@@ -7,22 +7,20 @@
   <PropertyGroup>
     <ProjectGuid>{45DB5F86-7AE3-45C6-870D-F9357B66BDB5}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <UnsupportedPlatforms>Linux;NetBSD;OSX;Windows_NT</UnsupportedPlatforms>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Data.SqlClient.csproj">
       <Name>System.Data.SqlClient</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <!-- SQL Common Files -->
+  <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
     <Compile Include="SQL\Common\AsyncDebugScope.cs" />
     <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />
     <Compile Include="SQL\Common\InternalConnectionWrapper.cs" />
@@ -33,27 +31,27 @@
     <Compile Include="SQL\Common\SystemDataInternals\DataReaderHelper.cs" />
     <Compile Include="SQL\Common\SystemDataInternals\TdsParserHelper.cs" />
     <Compile Include="SQL\Common\SystemDataInternals\TdsParserStateObjectHelper.cs" />
-    <!-- Data Common Files -->
+
     <Compile Include="DataCommon\AssemblyResourceManager.cs" />
     <Compile Include="DataCommon\CarriageReturnLineFeedReplacer.cs" />
     <Compile Include="DataCommon\DataSourceBuilder.cs" />
     <Compile Include="DataCommon\DataTestClass.cs" />
     <Compile Include="DataCommon\ProxyServer.cs" />
     <Compile Include="DataCommon\SystemDataResourceManager.cs" />
-    <!-- ADO Tests -->
+
     <Compile Include="ADO\BaseProviderAsyncTest\BaseProviderAsyncTest.cs" />
     <Compile Include="ADO\BaseProviderAsyncTest\MockCommand.cs" />
     <Compile Include="ADO\BaseProviderAsyncTest\MockConnection.cs" />
     <Compile Include="ADO\BaseProviderAsyncTest\MockDataReader.cs" />
     <Compile Include="ADO\ParametersTest\ParametersTest.cs" />
-    <!-- DDBasics Tests -->
+
     <Compile Include="DDBasics\AsyncTest\AsyncTest.cs" />
     <Compile Include="DDBasics\DataTypes\DataTypes.cs" />
     <Compile Include="DDBasics\MARSTest\DDMARSTest.cs" />
-    <!-- ProviderAgnostic Tests -->
+
     <Compile Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.cs" />
     <Compile Include="ProviderAgnostic\ReaderTest\ReaderTest.cs" />
-    <!-- SQL Tests -->
+
     <Compile Include="SQL\AsyncTest\AsyncTest.cs" />
     <Compile Include="SQL\CommandCancel\CommandCancel.cs" />
     <Compile Include="SQL\ConnectionPoolTest\ConnectionPoolTest.cs" />
@@ -78,8 +76,7 @@
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
-  </ItemGroup>
-  <ItemGroup>
+
     <None Include="DDBasics\DataTypes\data.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -88,7 +85,6 @@
     </None>
     <None Include="DataCommon\ConnectionString.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
     </None>
     <None Include="project.json" />
   </ItemGroup>
