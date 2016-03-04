@@ -10,16 +10,15 @@
     <ProjectGuid>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetGroup)'=='net46'">4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetGroup)' == 'net46'"></PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.4</PackageTargetFramework>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net46' OR '$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <UsePackageTargetRuntimeDefaults Condition=" '$(IsPartialFacadeAssembly)' != 'true' ">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
@@ -258,7 +257,7 @@
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='net46'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)'=='true'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
