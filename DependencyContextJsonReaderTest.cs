@@ -196,6 +196,36 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             target.NativeLibraries.Should().Contain("lib/win7/Banana.dll");
         }
 
-
+        [Fact]
+        public void ReadsCompilationOptions()
+        {
+            var context = Read(
+@"{
+    ""compilationOptions"": {
+        ""allowUnsafe"": true,
+        ""defines"": [""MY"", ""DEFINES""],
+        ""delaySign"": true,
+        ""emitEntryPoint"": true,
+        ""xmlDoc"": true,
+        ""keyFile"": ""Key.snk"",
+        ""languageVersion"": ""C#8"",
+        ""platform"": ""Platform"",
+        ""publicSign"": true,
+        ""warningsAsErrors"": true,
+        ""optimize"": true
+    }
+}");
+            context.CompilationOptions.AllowUnsafe.Should().Be(true);
+            context.CompilationOptions.Defines.Should().BeEquivalentTo(new [] {"MY", "DEFINES"});
+            context.CompilationOptions.DelaySign.Should().Be(true);
+            context.CompilationOptions.EmitEntryPoint.Should().Be(true);
+            context.CompilationOptions.GenerateXmlDocumentation.Should().Be(true);
+            context.CompilationOptions.KeyFile.Should().Be("Key.snk");
+            context.CompilationOptions.LanguageVersion.Should().Be("C#8");
+            context.CompilationOptions.Optimize.Should().Be(true);
+            context.CompilationOptions.Platform.Should().Be("Platform");
+            context.CompilationOptions.PublicSign.Should().Be(true);
+            context.CompilationOptions.WarningsAsErrors.Should().Be(true);
+        }
     }
 }
