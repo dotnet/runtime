@@ -332,6 +332,79 @@ void ZapImage::OutputDebugInfoForReadyToRun()
     GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_DEBUG_INFO, pBlob);
 }
 
+void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
+{
+    NativeWriter writer;
+    VertexHashtable typesHashtable;
+
+    NativeSection * pSection = writer.NewSection();
+    pSection->Place(&typesHashtable);
+
+    // Note on duplicate types with same name: there is not need to perform that check when building
+    // the hashtable. If such types were encountered, the R2R compilation would fail before reaching here.
+
+    LPCUTF8 pszName;
+    LPCUTF8 pszNameSpace;
+
+    // Save the TypeDefs to the hashtable
+    {
+        HENUMInternalHolder hEnum(pMDImport);
+        hEnum.EnumAllInit(mdtTypeDef);
+
+        mdToken mdTypeToken;
+        while (pMDImport->EnumNext(&hEnum, &mdTypeToken))
+        {
+            DWORD dwHash = 0;
+            mdTypeDef mdCurrentToken = mdTypeToken;
+
+            do
+            {
+                if (FAILED(pMDImport->GetNameOfTypeDef(mdCurrentToken, &pszName, &pszNameSpace)))
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+
+                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszName);
+                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
+
+            } while (SUCCEEDED(pMDImport->GetNestedClassProps(mdCurrentToken, &mdCurrentToken)));
+
+            typesHashtable.Append(dwHash, pSection->Place(new UnsignedConstant(RidFromToken(mdTypeToken) << 1)));
+        }
+    }
+
+    // Save the ExportedTypes to the hashtable
+    {
+        HENUMInternalHolder hEnum(pMDImport);
+        hEnum.EnumInit(mdtExportedType, mdTokenNil);
+
+        mdToken mdTypeToken;
+        while (pMDImport->EnumNext(&hEnum, &mdTypeToken))
+        {
+            DWORD dwHash = 0;
+            mdTypeDef mdCurrentToken = mdTypeToken;
+
+            do 
+            {
+                if (FAILED(pMDImport->GetExportedTypeProps(mdCurrentToken, &pszNameSpace, &pszName, &mdCurrentToken, NULL, NULL)))
+                    ThrowHR(COR_E_BADIMAGEFORMAT);
+
+                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszName);
+                dwHash = ((dwHash << 5) + dwHash) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
+
+            } while (TypeFromToken(mdCurrentToken) == mdtExportedType);
+
+            typesHashtable.Append(dwHash, pSection->Place(new UnsignedConstant((RidFromToken(mdTypeToken) << 1) | 1)));
+        }
+    }
+
+    vector<byte>& blob = writer.Save();
+
+    ZapNode * pBlob = ZapBlob::NewBlob(this, &blob[0], blob.size());
+    _ASSERTE(m_pAvailableTypesSection);
+    m_pAvailableTypesSection->Place(pBlob);
+
+    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_AVAILABLE_TYPES, pBlob);
+}
+
 
 //
 // Verify that data structures and flags shared between NGen and ReadyToRun are in sync
