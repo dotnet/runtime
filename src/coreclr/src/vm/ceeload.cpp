@@ -104,15 +104,6 @@
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
 #endif // !_WIN64
 
-// Hash table parameter of available classes (name -> module/class) hash
-#define AVAILABLE_CLASSES_HASH_BUCKETS 1024
-#define AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE 128
-#define PARAMTYPES_HASH_BUCKETS 23
-#define PARAMMETHODS_HASH_BUCKETS 11
-#define METHOD_STUBS_HASH_BUCKETS 11
-
-#define GUID_TO_TYPE_HASH_BUCKETS 16
-
 #define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
@@ -851,10 +842,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
+#ifdef FEATURE_READYTORUN
+    if (!HasNativeImage() && !IsResource())
+        m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker);
+#endif
+
     // Initialize the instance fields that we need for all non-Resource Modules
     if (!IsResource())
     {
-        if (m_pAvailableClasses == NULL)
+        if (m_pAvailableClasses == NULL && !IsReadyToRun())
         {
             m_pAvailableClasses = EEClassHashTable::Create(this,
                 GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
@@ -921,11 +917,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // Set up native image
     if (HasNativeImage())
         InitializeNativeImage(pamTracker);
-#ifdef FEATURE_READYTORUN
-    else
-    if (!IsResource())
-        m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker);
-#endif
 #endif // FEATURE_PREJIT
 
 
