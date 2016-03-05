@@ -213,7 +213,8 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(_process.MachineName);
         }
 
-        [Fact, PlatformSpecific(~PlatformID.OSX)]
+        [ActiveIssue(6677, PlatformID.OSX)]
+        [Fact]
         public void TestMainModuleOnNonOSX()
         {
             string fileName = "corerun";
@@ -297,6 +298,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestModules()
         {

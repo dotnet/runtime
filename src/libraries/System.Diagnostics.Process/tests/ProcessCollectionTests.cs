@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessCollectionTests : ProcessTestBase
     {
+        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestModuleCollectionBehavior()
         {
