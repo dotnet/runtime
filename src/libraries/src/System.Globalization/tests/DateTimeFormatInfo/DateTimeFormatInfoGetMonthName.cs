@@ -39,8 +39,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetMonthName_Invalid()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetMonthName(MinMonth - 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetMonthName(MaxMonth + 1));
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => new DateTimeFormatInfo().GetMonthName(MinMonth - 1));
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => new DateTimeFormatInfo().GetMonthName(MaxMonth + 1));
         }
     }
 }

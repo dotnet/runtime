@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -28,9 +26,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void MonthNames_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().MonthNames = null); // Value is null
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().MonthNames = new string[] { "1", "2", "3", null, "5", "6", "7", "8", "9", "10", "11", "12", "" }); // Value has null
-            Assert.Throws<ArgumentException>(() => new DateTimeFormatInfo().MonthNames = new string[] { "Jan" }); // Value.Length is not 13
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().MonthNames = null); // Value is null
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().MonthNames = new string[] { "1", "2", "3", null, "5", "6", "7", "8", "9", "10", "11", "12", "" }); // Value has null
+            Assert.Throws<ArgumentException>("value", () => new DateTimeFormatInfo().MonthNames = new string[] { "Jan" }); // Value.Length is not 13
 
             // DateTimeFormatInfo.InvariantInfo is read only
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.MonthNames = new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "" });

@@ -44,10 +44,12 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
-        public void GetAbbreviatedDayName_Invalid()
+        [Theory]
+        [InlineData(DayOfWeek.Sunday - 1)]
+        [InlineData(DayOfWeek.Saturday + 1)]
+        public void GetAbbreviatedDayName_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek dayofweek)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().GetAbbreviatedDayName((DayOfWeek)(-1))); // DayOfWeek is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("dayofweek", () => new DateTimeFormatInfo().GetAbbreviatedDayName(dayofweek));
         }
     }
 }

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -29,7 +27,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void PMDesignator_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().PMDesignator = null); // Value is null
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().PMDesignator = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.PMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
