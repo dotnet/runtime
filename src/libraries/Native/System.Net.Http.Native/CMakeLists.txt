@@ -1,10 +1,9 @@
 project(System.Net.Http.Native)
 
-find_library(CURL NAMES curl)
-if(CURL STREQUAL CURL-NOTFOUND)
-    message(SEND_ERROR "!!! Cannot find libcurl and System.Net.Http.Native cannot build without it. Try installing libcurl4-openssl-dev (or the appropriate package for your platform) !!!")
-    return()
-endif()
+find_package(CURL)
+if(NOT CURL_FOUND)
+    message(FATAL_ERROR "!!! Cannot find libcurl and System.Net.Http.Native cannot build without it. Try installing libcurl4-openssl-dev (or the appropriate package for your platform) !!!")
+endif(NOT CURL_FOUND)
 
 set(NATIVEHTTP_SOURCES
     pal_curlinit.cpp
@@ -14,13 +13,15 @@ set(NATIVEHTTP_SOURCES
     pal_versioninfo.cpp
 )
 
+include_directories(SYSTEM ${CURL_INCLUDE_DIR})
+
 add_library(System.Net.Http.Native
     SHARED
     ${NATIVEHTTP_SOURCES}
 )
 
 target_link_libraries(System.Net.Http.Native
-  ${CURL}
+  ${CURL_LIBRARIES}
 )
 
 install (TARGETS System.Net.Http.Native DESTINATION .)
