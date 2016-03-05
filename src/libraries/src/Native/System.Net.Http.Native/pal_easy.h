@@ -17,6 +17,7 @@ enum
 enum PAL_CURLoption : int32_t
 {
     PAL_CURLOPT_INFILESIZE = CurlOptionLongBase + 14,
+    PAL_CURLOPT_SSLVERSION = CurlOptionLongBase + 32,
     PAL_CURLOPT_VERBOSE = CurlOptionLongBase + 41,
     PAL_CURLOPT_NOBODY = CurlOptionLongBase + 44,
     PAL_CURLOPT_UPLOAD = CurlOptionLongBase + 46,
@@ -76,6 +77,11 @@ enum PAL_CURL_HTTP_VERSION
     PAL_CURL_HTTP_VERSION_1_0 = 1,
     PAL_CURL_HTTP_VERSION_1_1 = 2,
     PAL_CURL_HTTP_VERSION_2_0 = 3
+};
+
+enum PAL_CURL_SSLVERSION
+{
+    PAL_CURL_SSLVERSION_TLSv1 = 1
 };
 
 enum PAL_CURLINFO : int32_t

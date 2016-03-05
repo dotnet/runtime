@@ -845,6 +845,31 @@ namespace System.Net.Http.Functional.Tests
         }
         #endregion
 
+        #region SSL Version tests
+        [Theory]
+        [InlineData("SSLv2", HttpTestServers.SSLv2RemoteServer)]
+        [InlineData("SSLv3", HttpTestServers.SSLv3RemoteServer)]
+        public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+            }
+        }
+
+        [Theory]
+        [InlineData("TLSv1.0", HttpTestServers.TLSv10RemoteServer)]
+        [InlineData("TLSv1.1", HttpTestServers.TLSv11RemoteServer)]
+        [InlineData("TLSv1.2", HttpTestServers.TLSv12RemoteServer)]
+        public async Task GetAsync_SupportedSSLVersion_Succeeds(string name, string url)
+        {
+            using (HttpClient client = new HttpClient())
+            using (await client.GetAsync(url))
+            {
+            }
+        }
+        #endregion
+
         #region Proxy tests
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
