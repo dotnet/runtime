@@ -9,6 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessModuleTests : ProcessTestBase
     {
+        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         public void TestModuleProperties()
         {
@@ -28,6 +29,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(6677, PlatformID.OSX)]
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestModulesContainsUnixNativeLibs()
