@@ -8,17 +8,18 @@
     <RootNamespace>System.Drawing</RootNamespace>
     <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45'">true</IsPartialFacadeAssembly>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.1</PackageTargetFramework>
     <ProjectGuid>{F9DF2357-81B4-4317-908E-512DA9395583}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
     <Compile Include="System\Drawing\Point.cs" />
     <Compile Include="System\Drawing\PointF.cs" />
     <Compile Include="System\Drawing\Rectangle.cs" />
@@ -26,7 +27,7 @@
     <Compile Include="System\Drawing\Size.cs" />
     <Compile Include="System\Drawing\SizeF.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System.Drawing" />
   </ItemGroup>

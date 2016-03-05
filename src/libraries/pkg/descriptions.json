@@ -471,6 +471,18 @@
         ]
     },
     {
+        "Name": "System.Drawing.Primitives",
+        "Description": "Provides access to GDI+ basic graphics functionality that should be used in place of the corresponding types in System.Drawing.dll.",
+        "CommonTypes": [
+            "System.Drawing.Point",
+            "System.Drawing.PointF",
+            "System.Drawing.Size",
+            "System.Drawing.SizeF",
+            "System.Drawing.Rectangle",
+            "System.Drawing.RectangleF"
+        ]
+    },
+    {
         "Name": "System.Dynamic.Runtime",
         "Description": "Provides classes and interfaces that support the Dynamic Language Runtime (DLR).",
         "CommonTypes": [
