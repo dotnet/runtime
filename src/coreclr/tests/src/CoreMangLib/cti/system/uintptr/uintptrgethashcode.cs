@@ -170,7 +170,7 @@ public class UIntPtrGetHashCode
             System.UIntPtr ipTwo = new UIntPtr(addressTwo);
             if (ipOne.GetHashCode() == ipTwo.GetHashCode())
             {
-                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.")
+                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.");
                 retVal = false;
             }
         }
