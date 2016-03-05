@@ -4965,7 +4965,7 @@ namespace CoreXml.Test.XLinq
                 public void writeValue_2()
                 {
                     Calendar myCal = CultureInfo.InvariantCulture.Calendar;
-                    DateTime myDT = new DateTime(2002, 4, 3);
+                    DateTime myDT = new DateTime(2002, 4, 3, 0, 0, 0, DateTimeKind.Utc);
                     XDocument doc = new XDocument();
                     XmlWriter w = CreateWriter(doc);
                     w.WriteStartElement("Root");
@@ -4973,7 +4973,7 @@ namespace CoreXml.Test.XLinq
                     w.WriteEndElement();
                     w.Dispose();
 
-                    if (!CompareReader(doc, "<Root>2002-04-03T00:00:00-08:00</Root>")) throw new TestException(TestResult.Failed, "");
+                    if (!CompareReader(doc, "<Root>2002-04-03T00:00:00Z</Root>")) throw new TestException(TestResult.Failed, "");
                 }
 
                 //[Variation(Id = 3, Desc = "WriteValue(decimal)", Priority = 1)]
