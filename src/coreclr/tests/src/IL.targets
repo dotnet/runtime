@@ -22,7 +22,7 @@
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="$(__BinDir)\ilasm $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
+    <Exec Command="ilasm $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
     <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
