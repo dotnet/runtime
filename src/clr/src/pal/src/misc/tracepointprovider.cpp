@@ -35,7 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 Initialization logic for LTTng tracepoint providers.
 
 --*/
-#if defined(__LINUX__)
+#if defined(__linux__)
 
 static const char tpLibName[] = "libcoreclrtraceptprovider.so";
 

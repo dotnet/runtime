@@ -54,7 +54,7 @@ Abstract:
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#if defined(__LINUX__)
+#if defined(__linux__)
 #include <gnu/lib-names.h>
 #endif
 

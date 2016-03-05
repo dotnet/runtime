@@ -53,7 +53,7 @@ typedef int (*ExecuteAssemblyFunction)(
             const char* managedAssemblyPath,
             unsigned int* exitCode);
 
-#if defined(__LINUX__)
+#if defined(__linux__)
 #define symlinkEntrypointExecutable "/proc/self/exe"
 #elif !defined(__APPLE__)
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
@@ -67,7 +67,7 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
 
     // Get path to the executable for the current process using
     // platform specific means.
-#if defined(__LINUX__)
+#if defined(__linux__)
     // On Linux, fetch the entry point EXE absolute path, inclusive of filename.
     char exe[PATH_MAX];
     ssize_t res = readlink(symlinkEntrypointExecutable, exe, PATH_MAX - 1);
