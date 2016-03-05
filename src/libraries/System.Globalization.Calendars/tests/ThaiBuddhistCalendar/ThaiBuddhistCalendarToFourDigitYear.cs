@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Globalization.Tests;
 using Xunit;
 
 namespace System.Globalization.CalendarsTests
@@ -63,30 +64,10 @@ namespace System.Globalization.CalendarsTests
         }
         #endregion
 
-        #region Negative Test Cases
-        // NegTest1: The year greater than max year
         [Fact]
-        public void NegTest1()
+        public void ToFourDigitYear_Invalid()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            int year = 10000 + 543;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tbc.ToFourDigitYear(year);
-            });
+            CalendarHelpers.ToFourDigitYear_Invalid(new ThaiBuddhistCalendar());
         }
-
-        // NegTest2: The year less than 0
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            int year = -1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tbc.ToFourDigitYear(year);
-            });
-        }
-        #endregion
     }
 }

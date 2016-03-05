@@ -4,6 +4,7 @@
 
 using System;
 using System.Globalization;
+using System.Globalization.Tests;
 using Xunit;
 
 namespace System.Globalization.CalendarsTests
@@ -98,22 +99,11 @@ namespace System.Globalization.CalendarsTests
         }
         #endregion
 
-        #region Negative Tests
-        // NegTest5: The era is greater than 1
         [Fact]
-        public void NegTest1()
+        public void GetDaysInMonth_Invalid()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tbc.MinSupportedDateTime.Year + 543, tbc.MaxSupportedDateTime.Year + 544);
-            int month = rand.Next(1, 13);
-            int era = 2;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tbc.GetDaysInMonth(year, month, era);
-            });
+            CalendarHelpers.GetDaysInMonth_Invalid(new ThaiBuddhistCalendar());
         }
-        #endregion
 
         #region Helper Methods
         private bool IsLeapYear(int i)
