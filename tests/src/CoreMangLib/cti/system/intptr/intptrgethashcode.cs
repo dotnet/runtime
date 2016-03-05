@@ -113,7 +113,7 @@ public class IntPtrGetHashCode
             System.IntPtr ipTwo = new IntPtr(addressTwo);
             if (ipOne.GetHashCode() == ipTwo.GetHashCode())
             {
-                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.")
+                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.");
                 retVal = false;
             }
         }
