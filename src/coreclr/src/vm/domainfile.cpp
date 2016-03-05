@@ -943,6 +943,11 @@ void DomainFile::CheckZapRequired()
     if (m_pFile->HasNativeImage() || !IsZapRequired())
         return;
 
+#ifdef FEATURE_READYTORUN
+    if(m_pFile->GetLoaded()->HasReadyToRunHeader())
+        return;
+#endif
+
     // Flush any log messages
     GetFile()->FlushExternalLog();
 
