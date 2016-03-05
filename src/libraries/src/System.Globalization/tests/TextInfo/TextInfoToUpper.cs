@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("tr-TR", "i", "\u0130")]
         [InlineData("tr-TR", "\u0130", "\u0130")]
         [InlineData("en-US", "HelloWorld!", "HELLOWORLD!")]
+        [InlineData("en-US", "HELLOWORLD123!", "HELLOWORLD123!")]
         [InlineData("en-US", "", "")]
         [InlineData("en-US", "Hello\n\0World\u0009!", "HELLO\n\0WORLD\t!")]
         [InlineData("fr-FR", "HelloWorld!", "HELLOWORLD!")]
