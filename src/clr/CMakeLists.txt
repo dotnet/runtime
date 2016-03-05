@@ -293,7 +293,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
 
   if(CLR_CMAKE_PLATFORM_LINUX)
-    add_definitions(-D__LINUX__=1)
     if(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
       message("Detected Linux x86_64")
       add_definitions(-DLINUX64)
