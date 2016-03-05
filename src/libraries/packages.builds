@@ -6,6 +6,7 @@
       <AdditionalProperties>SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
     </Project>
     <Project Include="*\pkg\*.builds" />
+    <Project Include="..\pkg\redist\pkg.builds"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
