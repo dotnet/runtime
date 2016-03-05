@@ -24,7 +24,8 @@ namespace System.Net.Http
 
             internal static void SetSslOptions(EasyRequest easy, ClientCertificateOption clientCertOption)
             {
-                easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSLVERSION, (long)Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1); // disable SSLv2/SSLv3
+                // Disable SSLv2/SSLv3, allow TLSv1.*
+                easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSLVERSION, (long)Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1);
 
                 IntPtr userPointer = IntPtr.Zero;
                 if (clientCertOption == ClientCertificateOption.Automatic)
