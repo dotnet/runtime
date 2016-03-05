@@ -670,7 +670,7 @@ BOOL
 PALAPI
 PAL_IsDebuggerPresent()
 {
-#if defined(__LINUX__)
+#if defined(__linux__)
     BOOL debugger_present = FALSE;
     char buf[2048];
 
