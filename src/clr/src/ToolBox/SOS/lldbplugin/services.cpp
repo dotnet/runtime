@@ -560,7 +560,7 @@ LLDBServices::Disassemble(
         hr = E_FAIL;
         goto exit;
     }
-    cch = snprintf(buffer, bufferSize, "%016lx ", offset);
+    cch = snprintf(buffer, bufferSize, "%016llx ", (unsigned long long)offset);
     buffer += cch;
     bufferSize -= cch;
 
