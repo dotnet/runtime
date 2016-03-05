@@ -164,21 +164,18 @@ public static class GuidTests
         Guid result;
 
         Assert.False(Guid.TryParse(input, out result));
+        Assert.Equal(Guid.Empty, result);
 
         Assert.False(Guid.TryParseExact(input, "N", out result));
-        Assert.False(Guid.TryParseExact(input, "D", out result));
-        Assert.False(Guid.TryParseExact(input, "B", out result));
-        Assert.False(Guid.TryParseExact(input, "P", out result));
-        Assert.False(Guid.TryParseExact(input, "X", out result));
-    }
+        Assert.Equal(Guid.Empty, result);
 
-    [ActiveIssue(6316)]
-    [Theory]
-    [MemberData(nameof(GuidStrings_Format_Invalid_TryParseThrows_TestData))]
-    public static void TestTryParse_Invalid_ReturnsFals(string input, string format, Type exceptionType)
-    {
-        Guid result;
-        Assert.False(Guid.TryParse(input, out result));
+        Assert.False(Guid.TryParseExact(input, "D", out result));
+        Assert.Equal(Guid.Empty, result);
+
+        Assert.False(Guid.TryParseExact(input, "B", out result));
+        Assert.Equal(Guid.Empty, result);
+
+        Assert.False(Guid.TryParseExact(input, "P", out result));
         Assert.Equal(Guid.Empty, result);
 
         Assert.False(Guid.TryParseExact(input, "X", out result));
@@ -339,7 +336,8 @@ public static class GuidTests
 
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd}", typeof(FormatException) }; // 8-4-4
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} - missing group
-        
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2-2} - extra group
+
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} with leading brace only
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} with leading brace only
 
@@ -387,6 +385,13 @@ public static class GuidTests
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xddd,0xddd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-3-2-2}
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xddd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-3-2}
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xddd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-3}
+
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd0xdd,0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd0xdd,0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
+        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd0xdd}}", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
     }
 
@@ -423,17 +428,5 @@ public static class GuidTests
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "D", typeof(FormatException) }; // Hex values
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "B", typeof(FormatException) }; // Hex values
         yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "P", typeof(FormatException) }; // Hex values
-    }
-
-    public static IEnumerable<object[]> GuidStrings_Format_Invalid_TryParseThrows_TestData()
-    {
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2-2} - extra group
-
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd0xdd,0xdd,0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd0xdd,0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
-        yield return new object[] { "{0xdddddddd, 0xdddd, 0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd0xdd,0xdd}}", "X", typeof(FormatException) }; // 8-4-4-{2-2-2-2-2-2-2-2} without comma
     }
 }
