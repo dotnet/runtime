@@ -2411,7 +2411,7 @@ namespace System.Threading.Tasks.Dataflow
                             _observersState.Unlinker = _source.LinkTo(_observersState.Target);
                             if (_observersState.Unlinker == null)
                             {
-                                _observersState.Observers = ImmutableList<IObserver<TOutput>>.Empty;
+                                _observersState.Observers = ImmutableArray<IObserver<TOutput>>.Empty;
                                 return null;
                             }
                         }
@@ -2461,7 +2461,7 @@ namespace System.Threading.Tasks.Dataflow
 
             /// <summary>Resets the observer state to the original, inactive state.</summary>
             /// <returns>The list of active observers prior to the reset.</returns>
-            private ImmutableList<IObserver<TOutput>> ResetObserverState()
+            private ImmutableArray<IObserver<TOutput>> ResetObserverState()
             {
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: true);
 
@@ -2471,7 +2471,7 @@ namespace System.Threading.Tasks.Dataflow
                 Debug.Assert(currentState.Canceler != null, "The target should have set up continuations.");
 
                 // Replace the target with a clean one, unlink and cancel, and return the previous set of observers
-                ImmutableList<IObserver<TOutput>> currentObservers = currentState.Observers;
+                ImmutableArray<IObserver<TOutput>> currentObservers = currentState.Observers;
                 _observersState = new ObserversState(this);
                 currentState.Unlinker.Dispose();
                 currentState.Canceler.Cancel();
@@ -2526,7 +2526,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// A list of the observers currently registered with this target.  The list is immutable
                 /// to enable iteration through the list while the set of observers may be changing.
                 /// </summary>
-                internal ImmutableList<IObserver<TOutput>> Observers = ImmutableList<IObserver<TOutput>>.Empty;
+                internal ImmutableArray<IObserver<TOutput>> Observers = ImmutableArray<IObserver<TOutput>>.Empty;
                 /// <summary>Used to unlink the source from this target when the last observer is unsubscribed.</summary>
                 internal IDisposable Unlinker;
                 /// <summary>
@@ -2578,7 +2578,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     Common.ContractAssertMonitorStatus(Observable._SubscriptionLock, held: false);
 
-                    ImmutableList<IObserver<TOutput>> currentObservers;
+                    ImmutableArray<IObserver<TOutput>> currentObservers;
                     lock (Observable._SubscriptionLock) currentObservers = Observers;
                     try
                     {
@@ -2642,7 +2642,7 @@ namespace System.Threading.Tasks.Dataflow
                     Common.ContractAssertMonitorStatus(Observable._SubscriptionLock, held: false);
 
                     // Send completion notification to all observers.
-                    ImmutableList<IObserver<TOutput>> currentObservers;
+                    ImmutableArray<IObserver<TOutput>> currentObservers;
                     lock (Observable._SubscriptionLock)
                     {
                         // Get the currently registered set of observers. Then, if we're being called due to the target 
@@ -2650,7 +2650,7 @@ namespace System.Threading.Tasks.Dataflow
                         // subscribed observers will get a new target block.  Finally clear out our observer list.
                         currentObservers = Observers;
                         if (targetException != null) Observable.ResetObserverState();
-                        Observers = ImmutableList<IObserver<TOutput>>.Empty;
+                        Observers = ImmutableArray<IObserver<TOutput>>.Empty;
                     }
 
                     // If there are any observers to complete...
