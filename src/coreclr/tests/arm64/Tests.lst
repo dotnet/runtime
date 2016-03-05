@@ -837,7 +837,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_dbglcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [b34952.exe_5207]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b34952\b34952\b34952.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b34952\b34952
@@ -1936,7 +1936,7 @@ WorkingDir=JIT\opt\ETW\TailCallCases
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE;REL_PASS
+Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
 [nested-try-catch02.exe_14]
 RelativePath=baseservices\exceptions\generics\nested-try-catch02\nested-try-catch02.exe
 WorkingDir=baseservices\exceptions\generics\nested-try-catch02
@@ -2251,7 +2251,7 @@ WorkingDir=CoreMangLib\cti\system\math\MathIEEERemainder
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;DBG_PASS
+Categories=RT;EXPECTED_FAIL;DBG_PASS;NEED_TRIAGE
 [listienumerablegetenumerator.exe_636]
 RelativePath=CoreMangLib\cti\system\collections\generic\list\ListIEnumerableGetEnumerator\ListIEnumerableGetEnumerator.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\list\ListIEnumerableGetEnumerator
@@ -3490,7 +3490,7 @@ WorkingDir=GC\Features\HeapExpansion\Handles
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS
+Categories=RT;UNSTABLE;NEEDS_TRIAGE
 [enumeratorcurrent.exe_671]
 RelativePath=CoreMangLib\cti\system\collections\generic\queueenumerator\EnumeratorCurrent\EnumeratorCurrent.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\queueenumerator\EnumeratorCurrent
@@ -4939,7 +4939,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\33objref_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [uint16equals1.exe_2456]
 RelativePath=CoreMangLib\cti\system\uint16\UInt16Equals1\UInt16Equals1.exe
 WorkingDir=CoreMangLib\cti\system\uint16\UInt16Equals1
@@ -5142,7 +5142,7 @@ WorkingDir=GC\Coverage\LargeObjectAlloc
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_3104
+Categories=RT;UNSTABLE;ISSUE_3104
 [textelementenumeratorgettextelement.exe_1218]
 RelativePath=CoreMangLib\cti\system\globalization\textelementenumerator\TextElementEnumeratorGetTextElement\TextElementEnumeratorGetTextElement.exe
 WorkingDir=CoreMangLib\cti\system\globalization\textelementenumerator\TextElementEnumeratorGetTextElement
@@ -7571,7 +7571,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_speed_rellcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [_speed_rellcs.exe_3607]
 RelativePath=JIT\Methodical\Arrays\lcs\_speed_rellcs\_speed_rellcs.exe
 WorkingDir=JIT\Methodical\Arrays\lcs\_speed_rellcs
@@ -7809,7 +7809,7 @@ WorkingDir=CoreMangLib\cti\system\string\StringConcat8
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;LONG_RUNNING
+Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;LONG_RUNNING;REL_PASS
 [_dbgldc_mulovf.exe_4139]
 RelativePath=JIT\Methodical\int64\unsigned\_dbgldc_mulovf\_dbgldc_mulovf.exe
 WorkingDir=JIT\Methodical\int64\unsigned\_dbgldc_mulovf
@@ -8040,7 +8040,7 @@ WorkingDir=JIT\Methodical\VT\port\_speed_dbglcs_gcref
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [datetimegethashcode.exe_937]
 RelativePath=CoreMangLib\cti\system\datetime\DateTimeGetHashCode\DateTimeGetHashCode.exe
 WorkingDir=CoreMangLib\cti\system\datetime\DateTimeGetHashCode
@@ -8075,7 +8075,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2c
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_3151
 [attributector.exe_2053]
 RelativePath=CoreMangLib\cti\system\resources\satellitecontractversionattribute\AttributeCtor\AttributeCtor.exe
 WorkingDir=CoreMangLib\cti\system\resources\satellitecontractversionattribute\AttributeCtor
@@ -9244,7 +9244,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_dbglcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [ldc_ret_r8.exe_3344]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldc_ret_r8\ldc_ret_r8.exe
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldc_ret_r8
@@ -9440,7 +9440,7 @@ WorkingDir=JIT\Methodical\VT\port\_rellcs_gcref
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [arrayindexof2.exe_304]
 RelativePath=CoreMangLib\cti\system\array\ArrayIndexOf2\ArrayIndexOf2.exe
 WorkingDir=CoreMangLib\cti\system\array\ArrayIndexOf2
@@ -9986,7 +9986,7 @@ WorkingDir=Regressions\coreclr\1514\InterlockExchange
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS
+Categories=RT;UNSTABLE;ISSUE_3515
 [threadstartshort_2.exe_226]
 RelativePath=baseservices\threading\paramthreadstart\ThreadStartShort_2\ThreadStartShort_2.exe
 WorkingDir=baseservices\threading\paramthreadstart\ThreadStartShort_2
@@ -10028,7 +10028,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_rellcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [_relvcall.exe_4676]
 RelativePath=JIT\Methodical\VT\identity\_relvcall\_relvcall.exe
 WorkingDir=JIT\Methodical\VT\identity\_relvcall
@@ -11841,7 +11841,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_rellcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [dictenumienumreset.exe_538]
 RelativePath=CoreMangLib\cti\system\collections\generic\dictionaryenumerator\DictEnumIEnumReset\DictEnumIEnumReset.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\dictionaryenumerator\DictEnumIEnumReset
@@ -12611,7 +12611,7 @@ WorkingDir=GC\Features\HeapExpansion\Finalizer
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS
+Categories=RT;UNSTABLE;ISSUE_3515
 [streamdispose2_psc.exe_1465]
 RelativePath=CoreMangLib\cti\system\io\stream\StreamDispose2_PSC\StreamDispose2_PSC.exe
 WorkingDir=CoreMangLib\cti\system\io\stream\StreamDispose2_PSC
@@ -13836,7 +13836,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2b
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_3151
 [ldfldahack.exe_5577]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack\LdfldaHack.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack
@@ -17210,7 +17210,7 @@ WorkingDir=baseservices\threading\generics\threadstart\GThread24
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;DBG_FAIL;ASSERT_ONLY
+Categories=RT;EXPECTED_PASS
 [class04.exe_3129]
 RelativePath=JIT\Generics\Arrays\ConstructedTypes\Jagged\class04\class04.exe
 WorkingDir=JIT\Generics\Arrays\ConstructedTypes\Jagged\class04
@@ -18155,7 +18155,7 @@ WorkingDir=JIT\jit64\regress\vsw\539509\test1
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS;ISSUE_3104;LONG_RUNNING
+Categories=JIT;UNSTABLE;ISSUE_3104
 [_il_reli_vfld.exe_3903]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_reli_vfld\_il_reli_vfld.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_reli_vfld
@@ -18337,7 +18337,7 @@ WorkingDir=CoreMangLib\cti\system\array\ArraySetValue2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_3104;LONG_RUNNING
+Categories=RT;UNSTABLE;ISSUE_3104
 [obsoleteattributemessage.exe_1587]
 RelativePath=CoreMangLib\cti\system\obsoleteattribute\ObsoleteAttributeMessage\ObsoleteAttributeMessage.exe
 WorkingDir=CoreMangLib\cti\system\obsoleteattribute\ObsoleteAttributeMessage
@@ -19177,7 +19177,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_do
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987;REL_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2987;ISSUE_2988
 [_il_relconv_i8_i.exe_3892]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i\_il_relconv_i8_i.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_relconv_i8_i
@@ -19226,7 +19226,7 @@ WorkingDir=JIT\Regression\VS-ia64-JIT\V2.0-RTM\b539509\b539509
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3104;NEED_TRIAGE
+Categories=JIT;UNSTABLE;ISSUE_3104;NEED_TRIAGE
 [_il_dbgptr.exe_3877]
 RelativePath=JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgptr\_il_dbgptr.exe
 WorkingDir=JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgptr
@@ -20409,14 +20409,14 @@ WorkingDir=JIT\Methodical\VT\port\_dbglcs_gcref
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [_speed_dbglcs_ulong.exe_4062]
 RelativePath=JIT\Methodical\int64\arrays\_speed_dbglcs_ulong\_speed_dbglcs_ulong.exe
 WorkingDir=JIT\Methodical\int64\arrays\_speed_dbglcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [_dbgbox.exe_4066]
 RelativePath=JIT\Methodical\int64\misc\_dbgbox\_dbgbox.exe
 WorkingDir=JIT\Methodical\int64\misc\_dbgbox
@@ -20654,7 +20654,7 @@ WorkingDir=JIT\Methodical\Invoke\25params\25param2a_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2988;ISSUE_2987;REL_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_2987;ISSUE_2988
 [weakreferenceisaliveb_psc.exe_2559]
 RelativePath=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC\WeakReferenceIsAliveb_PSC.exe
 WorkingDir=CoreMangLib\cti\system\weakreference\WeakReferenceIsAliveb_PSC
@@ -21165,7 +21165,7 @@ WorkingDir=CoreMangLib\cti\system\string\StringConcat4
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;LONG_RUNNING
+Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;LONG_RUNNING;REL_PASS
 [inattributector.exe_2085]
 RelativePath=CoreMangLib\cti\system\runtime\interopservices\inattribute\InAttributeCtor\InAttributeCtor.exe
 WorkingDir=CoreMangLib\cti\system\runtime\interopservices\inattribute\InAttributeCtor
@@ -21935,7 +21935,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_rellcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [listienumerablegetenumerator2.exe_637]
 RelativePath=CoreMangLib\cti\system\collections\generic\list\ListIEnumerableGetEnumerator2\ListIEnumerableGetEnumerator2.exe
 WorkingDir=CoreMangLib\cti\system\collections\generic\list\ListIEnumerableGetEnumerator2
@@ -22971,7 +22971,7 @@ WorkingDir=CoreMangLib\cti\system\convert\ConvertToUInt6413
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;NEED_TRIAGE;DBG_PASS
+Categories=RT;UNSTABLE
 [b59947.exe_5317]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b59947\b59947\b59947.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b59947\b59947
@@ -23489,7 +23489,7 @@ WorkingDir=JIT\Methodical\VT\port\_speed_rellcs_gcref
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [arraysort12.exe_331]
 RelativePath=CoreMangLib\cti\system\array\ArraySort12\ArraySort12.exe
 WorkingDir=CoreMangLib\cti\system\array\ArraySort12
@@ -23713,7 +23713,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41621\b41621
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS;ISSUE_2989
+Categories=JIT;EXPECTED_FAIL;ISSUE_2989;REL_PASS;DBG_PASS
 [b30892.exe_4962]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30892\b30892\b30892.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30892\b30892
@@ -24273,7 +24273,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_speed_rellcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [b62498.exe_5333]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b62498\b62498\b62498.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b62498\b62498
@@ -26114,7 +26114,7 @@ WorkingDir=JIT\jit64\opt\rngchk\RngchkStress2_o
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [b64026.exe_5343]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b64026\b64026\b64026.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b64026\b64026
@@ -28494,7 +28494,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_relhugedim
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [regression_dev10_624201.exe_2565]
 RelativePath=CoreMangLib\system\collections\generic\hashset\Regression_Dev10_624201\Regression_Dev10_624201.exe
 WorkingDir=CoreMangLib\system\collections\generic\hashset\Regression_Dev10_624201
@@ -29579,7 +29579,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_il_dbghugedim
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [icomparercompare.exe_693]
 RelativePath=CoreMangLib\cti\system\collections\icomparer\IComparerCompare\IComparerCompare.exe
 WorkingDir=CoreMangLib\cti\system\collections\icomparer\IComparerCompare
@@ -30006,7 +30006,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_rellcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [stringinfoctor1.exe_1206]
 RelativePath=CoreMangLib\cti\system\globalization\stringinfo\StringInfoCtor1\StringInfoCtor1.exe
 WorkingDir=CoreMangLib\cti\system\globalization\stringinfo\StringInfoCtor1
@@ -30272,7 +30272,7 @@ WorkingDir=baseservices\threading\generics\threadstart\GThread22
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_2823;DBG_FAIL;ASSERT_ONLY
+Categories=RT;EXPECTED_PASS;ISSUE_2823
 [converttouint648.exe_927]
 RelativePath=CoreMangLib\cti\system\convert\ConvertToUInt648\ConvertToUInt648.exe
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToUInt648
@@ -32708,7 +32708,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\ovflrem2_il_d
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [try1_d.exe_2952]
 RelativePath=JIT\Directed\leave\try1_d\try1_d.exe
 WorkingDir=JIT\Directed\leave\try1_d
@@ -34234,7 +34234,7 @@ WorkingDir=JIT\Directed\StructPromote\SP2a
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_3151;REL_PASS
+Categories=JIT;EXPECTED_PASS;ISSUE_3151;REL_PASS
 [b15222.exe_4865]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15222\b15222\b15222.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15222\b15222
@@ -35116,7 +35116,7 @@ WorkingDir=CoreMangLib\cti\system\datetime\DateTimeParseExact3
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_FAIL;ISSUE_3104;NEED_TRIAGE
+Categories=RT;UNSTABLE;ISSUE_3104;NEED_TRIAGE
 [arraysort1.exe_328]
 RelativePath=CoreMangLib\cti\system\array\ArraySort1\ArraySort1.exe
 WorkingDir=CoreMangLib\cti\system\array\ArraySort1
@@ -37090,7 +37090,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_dbglcs_ulong
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [converttoint64_7.exe_818]
 RelativePath=CoreMangLib\cti\system\convert\ConvertToInt64_7\ConvertToInt64_7.exe
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToInt64_7
@@ -37223,7 +37223,7 @@ WorkingDir=JIT\Methodical\Arrays\huge_struct
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [byte_cs_d.exe_4348]
 RelativePath=JIT\Methodical\MDArray\DataTypes\byte_cs_d\byte_cs_d.exe
 WorkingDir=JIT\Methodical\MDArray\DataTypes\byte_cs_d
@@ -37349,7 +37349,7 @@ WorkingDir=JIT\Directed\coverage\oldtests\33objref_cs_ro
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [_il_dbgrefloc_o2.exe_3938]
 RelativePath=JIT\Methodical\explicit\basic\_il_dbgrefloc_o2\_il_dbgrefloc_o2.exe
 WorkingDir=JIT\Methodical\explicit\basic\_il_dbgrefloc_o2
@@ -38224,7 +38224,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_dbglcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE
+Categories=JIT;UNSTABLE;ISSUE_3515
 [_dbgaccum.exe_4667]
 RelativePath=JIT\Methodical\VT\identity\_dbgaccum\_dbgaccum.exe
 WorkingDir=JIT\Methodical\VT\identity\_dbgaccum
@@ -38798,7 +38798,7 @@ WorkingDir=baseservices\threading\generics\threadstart\GThread23
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;EXPECTED_PASS;ISSUE_2823;DBG_FAIL;ASSERT_ONLY
+Categories=RT;EXPECTED_PASS;ISSUE_2823
 [vsw405223.exe_5795]
 RelativePath=Loader\classloader\regressions\405223\vsw405223\vsw405223.exe
 WorkingDir=Loader\classloader\regressions\405223\vsw405223
@@ -38910,7 +38910,7 @@ WorkingDir=CoreMangLib\cti\system\array\ArrayGetValue2
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=RT;UNSTABLE;REL_FAIL
+Categories=RT;UNSTABLE
 [_il_dbgjumper4.exe_4610]
 RelativePath=JIT\Methodical\VT\callconv\_il_dbgjumper4\_il_dbgjumper4.exe
 WorkingDir=JIT\Methodical\VT\callconv\_il_dbgjumper4
@@ -39190,7 +39190,7 @@ WorkingDir=JIT\Methodical\int64\arrays\_speed_dbglcs_long
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_PASS
+Categories=JIT;UNSTABLE;ISSUE_3515
 [b48797.exe_5164]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b48797\b48797\b48797.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b48797\b48797
@@ -39911,7 +39911,7 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-M01\b02345\b02345
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;UNSTABLE;REL_FAIL
+Categories=JIT;UNSTABLE
 [booleantruestring.exe_395]
 RelativePath=CoreMangLib\cti\system\boolean\BooleanTrueString\BooleanTrueString.exe
 WorkingDir=CoreMangLib\cti\system\boolean\BooleanTrueString
@@ -40163,7 +40163,7 @@ WorkingDir=JIT\Methodical\tailcall_v4\tailcall_AV
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2987
+Categories=JIT;EXPECTED_PASS;ISSUE_2987
 [compilation.exe_5808]
 RelativePath=managed\Compilation\Compilation\Compilation.exe
 WorkingDir=managed\Compilation\Compilation
