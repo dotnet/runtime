@@ -16,5 +16,23 @@ namespace System.Globalization.Tests
         {
             Assert.Equal(expected, new CultureInfo(name).NumberFormat.CurrencySymbol);
         }
+
+        [Theory]
+        [InlineData("string")]
+        [InlineData("   ")]
+        [InlineData("")]
+        public void CurrencySymbol_Set(string newCurrencySymbol)
+        {
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.CurrencySymbol = newCurrencySymbol;
+            Assert.Equal(newCurrencySymbol, format.CurrencySymbol);
+        }
+
+        [Fact]
+        public void CurrencySymbol_Set_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("CurrencySymbol", () => new NumberFormatInfo().CurrencySymbol = null);
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencySymbol = "");
+        }
     }
 }
