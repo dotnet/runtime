@@ -29,15 +29,15 @@ Abstract:
 #include <exception>
     
 #if HAVE_LIBUNWIND_H
-#ifndef __LINUX__
+#ifndef __linux__
 #define UNW_LOCAL_ONLY
-#endif // !__LINUX__       
+#endif // !__linux__       
 #include <libunwind.h>
-#ifdef __LINUX__
+#ifdef __linux__
 #ifdef HAVE_LIBUNWIND_PTRACE
 #include <libunwind-ptrace.h>
 #endif // HAVE_LIBUNWIND_PTRACE
-#endif // __LINUX__    
+#endif // __linux__    
 #endif // HAVE_LIBUNWIND_H
 
 
