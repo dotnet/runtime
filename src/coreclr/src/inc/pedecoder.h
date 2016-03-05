@@ -96,7 +96,7 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x4644
 #elif defined(__FreeBSD__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0xADC4
-#elif defined(__LINUX__)
+#elif defined(__linux__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x7B79
 #elif defined(__NetBSD__)
 #define IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE 0x1993
