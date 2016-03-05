@@ -60,6 +60,7 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAMDesignator.cs" />
+    <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoCalendar.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoClone.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoData.cs" />

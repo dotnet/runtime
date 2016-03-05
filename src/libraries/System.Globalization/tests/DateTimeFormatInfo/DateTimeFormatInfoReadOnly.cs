@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -29,9 +27,9 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void ReadOnly_Invalid()
+        public void ReadOnly_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => DateTimeFormatInfo.ReadOnly(null)); // Dtfi is null
+            Assert.Throws<ArgumentNullException>("dtfi", () => DateTimeFormatInfo.ReadOnly(null)); // Dtfi is null
         }
     }
 }

@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -40,7 +38,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void LongTimePattern_Set_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DateTimeFormatInfo().LongTimePattern = null); // Value is null
+            Assert.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().LongTimePattern = null); // Value is null
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -37,10 +34,18 @@ namespace System.Globalization.Tests
             Assert.Equal(newCalendarWeekRule, format.CalendarWeekRule);
         }
 
-        [Fact]
-        public void CalendarWeekRule_Set_Invalid()
+        [Theory]
+        [InlineData(CalendarWeekRule.FirstDay - 1)]
+        [InlineData(CalendarWeekRule.FirstFourDayWeek + 1)]
+        public void CalendarWeekRule_Set_Invalid_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DateTimeFormatInfo().CalendarWeekRule = (CalendarWeekRule)(-1)); // Value is invalid
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().CalendarWeekRule = value);
+        }
+
+        [Fact]
+        public void CalendarWeekRule_Set_ReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }
