@@ -6,47 +6,38 @@ namespace System.Globalization.Tests
 {
     internal static class NumberFormatInfoData
     {
-        public static int[] GetNumberGroupSizes(string localeName)
+        public static int[] UrINNumberGroupSizes()
         {
-            if (string.Equals(localeName, "en-US", StringComparison.OrdinalIgnoreCase))
+            if ((PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
+                ||
+                (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0)))
             {
                 return new int[] { 3 };
             }
-            if (string.Equals(localeName, "ur-IN", StringComparison.OrdinalIgnoreCase))
+            else
             {
-                if ((PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
-                    ||
-                    (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0)))
-                {
-                    return new int[] { 3 };
-                }
-                else
-                {
-                    return new int[] { 3, 2 };
-                }
+                return new int[] { 3, 2 };
             }
-
-            throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
         }
 
-        internal static string GetNegativeInfinitySymbol(string localeName)
+        internal static string GetPositiveInfinitySymbol(string localeName)
         {
             if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
                 if (string.Equals(localeName, "en-US", StringComparison.OrdinalIgnoreCase))
                 {
-                    return "-Infinity";
+                    return "Infinity";
                 }
                 if (string.Equals(localeName, "fr-FR", StringComparison.OrdinalIgnoreCase))
                 {
-                    return "-Infini";
+                    return "Infini";
                 }
 
                 throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
             }
             else
             {
-                return "-\u221E";
+                return "\u221E";
             }
         }
 

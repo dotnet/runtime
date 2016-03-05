@@ -12,12 +12,12 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> NumberGroupSizes_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, NumberFormatInfoData.GetNumberGroupSizes("en-US") };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
 
             // TODO: when dotnet/corefx#2103 is addressed, we should also check fr-FR
             if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsWindows7)
             {
-                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.GetNumberGroupSizes("ur-IN") };
+                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes() };
             }
         }
 
@@ -31,6 +31,8 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 2, 3, 4 })]
+        [InlineData(new int[] { 2, 3, 4, 0 })]
+        [InlineData(new int[] { 0 })]
         public void NumberGroupSizes_Set(int[] newNumberGroupSizes)
         {
             NumberFormatInfo format = new NumberFormatInfo();
@@ -39,7 +41,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NumberGroupSizes_Set()
+        public void NumberGroupSizes_Set_Invalid()
         {
             Assert.Throws<ArgumentNullException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = null);
 
