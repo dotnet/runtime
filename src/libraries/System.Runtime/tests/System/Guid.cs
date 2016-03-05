@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using Xunit;
 
 public static class GuidTests
@@ -18,11 +17,19 @@ public static class GuidTests
         Assert.Equal(new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }), Guid.Empty);
     }
 
-    [Fact]
-    public static void TestCtor_ByteArray()
+    public static IEnumerable<object[]> Ctor_ByteArray_TestData()
     {
-        var guid = new Guid(s_testGuid.ToByteArray());
-        Assert.Equal(s_testGuid, guid);
+        yield return new object[] { new byte[16], Guid.Empty };
+        yield return new object[] { new byte[] { 0x44, 0x33, 0x22, 0x11, 0x66, 0x55, 0x88, 0x77, 0x99, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF }, new Guid("11223344-5566-7788-9900-aabbccddeeff") };
+        yield return new object[] { new byte[] { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF }, new Guid("44332211-6655-8877-9900-aabbccddeeff") };
+        yield return new object[] { s_testGuid.ToByteArray(), s_testGuid };
+    }
+
+    [Theory]
+    [MemberData(nameof(Ctor_ByteArray_TestData))]
+    public static void TestCtor_ByteArray(byte[] b, Guid expected)
+    {
+        Assert.Equal(expected, new Guid(b));
     }
 
     [Fact]
@@ -47,11 +54,19 @@ public static class GuidTests
         Assert.Throws(exceptionType, () => new Guid(value));
     }
 
-    [Fact]
-    public static void TestCtor_Int_Short_Short_ByteArray()
+    public static IEnumerable<object[]> Ctor_Int_Short_Short_ByteArray_TestData()
     {
-        var guid = new Guid(unchecked((int)0xa8a110d5), unchecked((short)0xfc49), 0x43c5, new byte[] { 0xbf, 0x46, 0x80, 0x2d, 0xb8, 0xf8, 0x43, 0xff });
-        Assert.Equal(s_testGuid, guid);
+        yield return new object[] { unchecked((int)0xa8a110d5), unchecked((short)0xfc49), 0x43c5, new byte[] { 0xbf, 0x46, 0x80, 0x2d, 0xb8, 0xf8, 0x43, 0xff }, s_testGuid };
+        yield return new object[] { 1, 2, 3, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }, new Guid("00000001-0002-0003-0001-020304050607") };
+        yield return new object[] { 2147483647, 32767, 32767, new byte[] { 0xA, 0xB, 0xC, 0xD, 0xE, 0xF, 0xAA, 0xBB }, new Guid("7fffffff-7fff-7fff-0a0b-0c0d0e0faabb") };
+    }
+
+    [Theory]
+    [MemberData(nameof(Ctor_Int_Short_Short_ByteArray_TestData))]
+    public static void TestCtor_Int_Short_Short_ByteArray(int a, short b, short c, byte[] d, Guid expected)
+    {
+        Assert.Equal(expected, new Guid(a, b, c, d));
+        Assert.Equal(expected, new Guid(a, b, c, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]));
     }
 
     [Fact]
@@ -60,13 +75,6 @@ public static class GuidTests
         Assert.Throws<ArgumentNullException>("d", () => new Guid(0, 0, 0, null)); // Byte array is null
         Assert.Throws<ArgumentException>(null, () => new Guid(0, 0, 0, new byte[7])); // Byte array is not 8 bytes long
         Assert.Throws<ArgumentException>(null, () => new Guid(0, 0, 0, new byte[9])); // Byte array is not 8 bytes long
-    }
-
-    [Fact]
-    public static void TestCtor_Int_Short_Short_Byte_Byte_Byte_Byte_Byte_Byte_Byte_Byte()
-    {
-        var guid = new Guid(unchecked((int)0xa8a110d5), unchecked((short)0xfc49), 0x43c5, 0xbf, 0x46, 0x80, 0x2d, 0xb8, 0xf8, 0x43, 0xff);
-        Assert.Equal(s_testGuid, guid);
     }
 
     [Fact]
