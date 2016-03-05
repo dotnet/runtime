@@ -464,7 +464,7 @@ void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut)
         assert(varNum < lvaCount);
         LclVarDsc* varDsc = &lvaTable[varNum];
 
-        // At this point any TYP_STRUCT LclVar must be a 16-byte pass by valeu argument
+        // At this point any TYP_STRUCT LclVar must be a 16-byte pass by value argument
         assert(varDsc->lvSize() == 2 * TARGET_POINTER_SIZE);
 
         gcPtrsOut[0] = varDsc->lvGcLayout[0];
