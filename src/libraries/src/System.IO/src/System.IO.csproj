@@ -16,12 +16,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Release|AnyCPU'" />
 
   <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'  or '$(TargetGroup)' == 'netstandard13aot'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
@@ -41,7 +43,7 @@
     <Compile Include="System\IO\InvalidDataException.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' or '$(TargetGroup)' == 'netstandard13aot'">
     <Compile Include="System\IO\BinaryReader.cs" />
     <Compile Include="System\IO\BinaryWriter.cs" />
     <Compile Include="System\IO\EndOfStreamException.cs" />
@@ -61,8 +63,11 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
+    <Compile Include="$(Commonpath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot'">
       <Link>Common\System\SR.Core.cs</Link>
+    </Compile>
+    <Compile Include="$(Commonpath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)' == 'netstandard13aot'"> 
+      <Link>Common\System\SR.CoreRT.cs</Link>
     </Compile>
   </ItemGroup>
 
@@ -78,6 +83,11 @@
 
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard13aot'">
+    <TargetingPackReference Include="System.Private.Interop" />
+    <ValidateIgnoreReference Include="@(TargetingPackReference)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
