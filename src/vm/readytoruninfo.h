@@ -21,22 +21,23 @@ class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
 
-    PTR_Module                  m_pModule;
+    PTR_Module                      m_pModule;
 
-    PTR_PEImageLayout           m_pLayout;
-    PTR_READYTORUN_HEADER       m_pHeader;
+    PTR_PEImageLayout               m_pLayout;
+    PTR_READYTORUN_HEADER           m_pHeader;
 
-    PTR_RUNTIME_FUNCTION        m_pRuntimeFunctions;
-    DWORD                       m_nRuntimeFunctions;
+    PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
+    DWORD                           m_nRuntimeFunctions;
 
-    PTR_CORCOMPILE_IMPORT_SECTION m_pImportSections;
-    DWORD                       m_nImportSections;
+    PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
+    DWORD                           m_nImportSections;
 
-    NativeFormat::NativeReader  m_nativeReader;
-    NativeFormat::NativeArray   m_methodDefEntryPoints;
+    NativeFormat::NativeReader      m_nativeReader;
+    NativeFormat::NativeArray       m_methodDefEntryPoints;
+    NativeFormat::NativeHashtable   m_availableTypesHashtable;
 
-    Crst                        m_Crst;
-    PtrHashMap                  m_entryPointToMethodDescMap;
+    Crst                            m_Crst;
+    PtrHashMap                      m_entryPointToMethodDescMap;
 
     ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader);
 
@@ -48,6 +49,9 @@ public:
     PCODE GetEntryPoint(MethodDesc * pMD, BOOL fFixups = TRUE);
 
     MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
+
+    BOOL HasHashtableOfTypes();
+    BOOL TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFoundTypeToken);
 
     BOOL SkipTypeValidation()
     {
@@ -111,6 +115,11 @@ public:
     };
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
+
+private:
+    BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
+    BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
+    BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
 };
 
 class DynamicHelpers
