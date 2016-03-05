@@ -208,6 +208,19 @@ isMSBuildOnNETCoreSupported()
         elif [ "$__BuildOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
+    elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm64" ] ; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ "$__DistroName" == "ubuntu" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            elif [ "$__DistroName" == "rhel" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            elif [ "$__DistroName" == "debian" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            fi
+        elif [ "$__BuildOS" == "OSX" ]; then
+            __isMSBuildOnNETCoreSupported=1
+        fi
+
     fi
 }
 
