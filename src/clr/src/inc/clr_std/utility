@@ -24,13 +24,22 @@
 namespace std
 {
     //-----------------------------------------------------------------------------------------
+    // TEMPLATE FUNCTION move
+    template<class T> inline
+    typename remove_reference<T>::type&&
+    move(T&& arg)
+    {   // forward _Arg as movable
+        return ((typename remove_reference<T>::type&&)arg);
+    }
+
+    //-----------------------------------------------------------------------------------------
     // TEMPLATE FUNCTION swap (from <algorithm>)
     template<class T> inline
     void swap(T& left, T& right)
     {   // exchange values stored at left and right
-        T tmp = move(left);
-        left = move(right);
-        right = move(tmp);
+        T tmp = std::move(left);
+        left = std::move(right);
+        right = std::move(tmp);
     }
 
     //-----------------------------------------------------------------------------------------
@@ -40,15 +49,6 @@ namespace std
     forward(typename identity<T>::type& _Arg)
     {   // forward _Arg, given explicitly specified type parameter
         return ((T&&)_Arg);
-    }
-
-    //-----------------------------------------------------------------------------------------
-    // TEMPLATE FUNCTION move
-    template<class T> inline
-    typename remove_reference<T>::type&&
-    move(T&& arg)
-    {   // forward _Arg as movable
-        return ((typename remove_reference<T>::type&&)arg);
     }
 }
 
