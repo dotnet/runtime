@@ -37,6 +37,7 @@ public class UIntPtrGetHashCode
         retVal = PosTest1() && retVal;
         retVal = PosTest2() && retVal;
         retVal = PosTest3() && retVal;
+        retVal = PosTest4() && retVal;
 
         return retVal;
     }
@@ -135,7 +136,7 @@ public class UIntPtrGetHashCode
         {
             UInt32 ui = (UInt32)Int32.MaxValue + (UInt32)TestLibrary.Generator.GetInt32(-55);
             uiPtr = new UIntPtr(ui);
-            expectedValue = unchecked((Int32)((Int64)ui)) & 0x7fffffff;
+            expectedValue = unchecked((Int32)((Int64)ui));
 
             actualValue = uiPtr.GetHashCode();
 
@@ -155,6 +156,42 @@ public class UIntPtrGetHashCode
             retVal = false;
         }
 
+        return retVal;
+    }
+    
+    public bool PosTest4()
+    {
+        bool retValue = true;
+        try
+        {
+            long addressOne = 0x123456FFFFFFFFL;
+            long addressTwo = 0x654321FFFFFFFFL;
+            System.UIntPtr ipOne = new UIntPtr(addressOne);
+            System.UIntPtr ipTwo = new UIntPtr(addressTwo);
+            if (ipOne.GetHashCode() == ipTwo.GetHashCode())
+            {
+                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.")
+                retVal = false;
+            }
+        }
+        catch (System.OverflowException ex)
+        {
+            if (System.IntPtr.Size == 4)
+            {
+                // ok, that's what it should be
+                return retVal;
+            }
+            else
+		   	{
+                TestLibrary.TestFramework.LogError(id, String.Format("IntPtr should not have thrown an OverflowException for value {0}: ", i) + ex.ToString());
+                retVal = false;
+		   	}
+        }
+        catch (Exception e)
+        {
+            TestLibrary.TestFramework.LogError("004", "Unexpected exception: " + e);
+            retVal = false;
+        }
         return retVal;
     }
 }
