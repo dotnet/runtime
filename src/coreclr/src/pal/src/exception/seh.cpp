@@ -201,7 +201,7 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#elif __LINUX__ || defined(__FreeBSD__) || defined(__NetBSD__)
+#elif __linux__ || defined(__FreeBSD__) || defined(__NetBSD__)
     // TODO: This needs to be implemented. Cannot put an ASSERT here
     // because it will make other parts of PAL fail.
     return NO_ERROR;
@@ -230,7 +230,7 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
     return pthrCurrent->DisableMachExceptions();
     // TODO: This needs to be implemented. Cannot put an ASSERT here
     // because it will make other parts of PAL fail.
-#elif __LINUX__ || defined(__FreeBSD__) || defined(__NetBSD__)
+#elif __linux__ || defined(__FreeBSD__) || defined(__NetBSD__)
     return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
 #error not yet implemented
