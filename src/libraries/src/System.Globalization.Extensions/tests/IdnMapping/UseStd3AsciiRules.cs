@@ -23,7 +23,30 @@ namespace System.Globalization.Tests
     {
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-        private void VerifyStd3AsciiRules(string unicode, bool containsInvalidHyphen)
+        [Fact]
+        public void UseStd3AsciiRules_IsFalseByDefault()
+        {
+            Assert.False(new IdnMapping().UseStd3AsciiRules);
+        }
+
+        [Theory]
+        [InlineData("\u0020\u0061\u0062", false)]
+        [InlineData("\u0061\u002F\u0062", false)]
+        [InlineData("\u0061\u0062\u003D", false)]
+        [InlineData("\u0061\u0062\u005D", false)]
+        [InlineData("\u007E\u0061\u0062", false)]
+        [InlineData("\u0020\u002E\u003D\u005D\u007E", false)]
+        [InlineData("\u007E\u002E\u0061", false)]
+        [InlineData("\u0061\u002E\u007E", false)]
+        [InlineData("\u002D\u0061\u0062", true)] // Leading hyphen minus
+        [InlineData("\u002D\u0061\u0062\u002E\u0063\u0064", true)] // Leading hyphen minus in first label
+        [InlineData("\u0061\u0062\u002E\u002D\u0063\u0064", true)] // Leading hyphen minus in second label
+        [InlineData("\u0061\u0062\u002D", true)] // Trailing hyphen minus
+        [InlineData("\u0061\u0062\u002D\u002E\u0063\u0064", true)] // Trailing hyphen minus in first label
+        [InlineData("\u0061\u0062\u002E\u0063\u0064\u002D", true)] // Trailing hyphen minus in second label
+        [InlineData("\u002D", true)] // Leading and trailing hyphen minus
+        [InlineData("\u002D\u0062\u002D", true)] // Leading and trailing hyphen minus
+        public void UseStd3AsciiRules_ChangesGetAsciiBehavior(string unicode, bool containsInvalidHyphen)
         {
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
             var idnStd3True = new IdnMapping { UseStd3AsciiRules = true };
@@ -31,83 +54,21 @@ namespace System.Globalization.Tests
             if (containsInvalidHyphen && !s_isWindows)
             {
                 // ICU always fails on leading/trailing hyphens regardless of the Std3 rules option.
-                Assert.Throws<ArgumentException>(() => idnStd3False.GetAscii(unicode));
+                Assert.Throws<ArgumentException>("unicode", () => idnStd3False.GetAscii(unicode));
             }
             else
             {
                 Assert.Equal(unicode, idnStd3False.GetAscii(unicode));
             }
 
-            Assert.Throws<ArgumentException>(() => idnStd3True.GetAscii(unicode));
+            Assert.Throws<ArgumentException>("unicode", () => idnStd3True.GetAscii(unicode));
         }
 
         [Fact]
-        public void DefaultIsFalse()
-        {
-            Assert.False(new IdnMapping().UseStd3AsciiRules);
-        }
-
-        [Fact]
-        public void SanityCheck()
-        {
-            VerifyStd3AsciiRules("\u0020\u0061\u0062", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u0061\u002F\u0062", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u0061\u0062\u003D", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u0061\u0062\u005D", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u007E\u0061\u0062", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u0020\u002E\u003D\u005D\u007E", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u007E\u002E\u0061", containsInvalidHyphen: false);
-            VerifyStd3AsciiRules("\u0061\u002E\u007E", containsInvalidHyphen: false);
-        }
-
-        [Fact]
-        public void LeadingHyphenMinus()
-        {
-            VerifyStd3AsciiRules("\u002D\u0061\u0062", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void LeadingHyphenMinusInFirstLabel()
-        {
-            VerifyStd3AsciiRules("\u002D\u0061\u0062\u002E\u0063\u0064", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void LeadingHyphenMinusInSecondLabel()
-        {
-            VerifyStd3AsciiRules("\u0061\u0062\u002E\u002D\u0063\u0064", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void TrailingHyphenMinus()
-        {
-            VerifyStd3AsciiRules("\u0061\u0062\u002D", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void TrailingHyphenMinusInFirstLabel()
-        {
-            VerifyStd3AsciiRules("\u0061\u0062\u002D\u002E\u0063\u0064", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void TrailingHyphenMinusInSecondLabel()
-        {
-            VerifyStd3AsciiRules("\u0061\u0062\u002E\u0063\u0064\u002D", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void LeadingAndTrailingHyphenMinus()
-        {
-            VerifyStd3AsciiRules("\u002D", containsInvalidHyphen: true);
-            VerifyStd3AsciiRules("\u002D\u0062\u002D", containsInvalidHyphen: true);
-        }
-
-        [Fact]
-        public void NonLDH_ASCII_Codepoint()
+        public void UseStd3AsciiRules_NonLDH_ASCII_Codepoint()
         {
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
-            var unicode = "\u0030\u002D\u0045\u007A";
+            string unicode = "\u0030\u002D\u0045\u007A";
 
             Assert.Equal(unicode, idnStd3False.GetAscii(unicode), ignoreCase: true);
         }
