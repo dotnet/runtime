@@ -584,7 +584,7 @@ public:
     };
 
     // Check if "vn" is "new [] (type handle, size)"
-    bool IsVNNewArr(ValueNum vn);
+    bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
     // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
     int GetNewArrSize(ValueNum vn);
