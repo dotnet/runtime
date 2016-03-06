@@ -170,9 +170,10 @@ namespace System.Net
                     int index = value.IndexOfAny(s_htmlEntityEndingChars, i + 1);
                     if (index > 0 && value[index] == ';')
                     {
-                        string entity = value.Substring(i + 1, index - i - 1);
+                        int entityOffset = i + 1;
+                        int entityLength = index - entityOffset;
 
-                        if (entity.Length > 1 && entity[0] == '#')
+                        if (entityLength > 1 && value[entityOffset] == '#')
                         {
                             // The # syntax can be in decimal or hex, e.g.
                             //      &#229;  --> decimal
@@ -181,13 +182,13 @@ namespace System.Net
 
                             bool parsedSuccessfully;
                             uint parsedValue;
-                            if (entity[1] == 'x' || entity[1] == 'X')
+                            if (value[entityOffset + 1] == 'x' || value[entityOffset + 1] == 'X')
                             {
-                                parsedSuccessfully = UInt32.TryParse(entity.Substring(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out parsedValue);
+                                parsedSuccessfully = uint.TryParse(value.Substring(entityOffset + 2, entityLength - 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out parsedValue);
                             }
                             else
                             {
-                                parsedSuccessfully = UInt32.TryParse(entity.Substring(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedValue);
+                                parsedSuccessfully = uint.TryParse(value.Substring(entityOffset + 1, entityLength - 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedValue);
                             }
 
                             if (parsedSuccessfully)
@@ -218,6 +219,7 @@ namespace System.Net
                         }
                         else
                         {
+                            string entity = value.Substring(entityOffset, entityLength);
                             i = index; // already looked at everything until semicolon
 
                             char entityChar = HtmlEntities.Lookup(entity);
