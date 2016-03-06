@@ -57,8 +57,8 @@ public static class GCTests
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default)); // Generation < 0
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Default - 1)); // Invalid collection mode
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Optimized + 1)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Default - 1)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Optimized + 1)); // Invalid collection mode
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public static class GCTests
     {
         Assert.Throws<ArgumentOutOfRangeException>("generation", () => GC.Collect(-1, GCCollectionMode.Default, false)); // Generation < 0
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Default - 1, false)); // Invalid collection mode
-        Assert.Throws<ArgumentOutOfRangeException>(() => GC.Collect(2, GCCollectionMode.Optimized + 1, false)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Default - 1, false)); // Invalid collection mode
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => GC.Collect(2, GCCollectionMode.Optimized + 1, false)); // Invalid collection mode
     }
 
     [Fact]
