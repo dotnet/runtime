@@ -11,19 +11,16 @@ namespace System.Globalization.Tests
     /// For more information, see the files within Data\[Unicode version].  This tests positive
     /// and negative test cases for both GetASCII and GetUnicode methods.
     /// </summary>
-    public class IdnaConformanceTests
+    public class IdnMappingIdnaConformanceTests
     {
-        /// <summary>
-        /// Tests positive cases for GetAscii.
-        /// </summary>
         [Fact]
-        public void TestAsciiPositive()
+        public void GetAscii_Success()
         {
             foreach (var entry in Factory.GetDataset())
             {
                 if (entry.GetASCIIResult.Success)
                 {
-                    var map = new System.Globalization.IdnMapping();
+                    var map = new IdnMapping();
                     var asciiResult = map.GetAscii(entry.Source);
                     Assert.Equal(entry.GetASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
@@ -37,7 +34,7 @@ namespace System.Globalization.Tests
         /// There are some others that failed which have been commented out and marked in the dataset as "GETUNICODE DOES FAILS ON WINDOWS 8.1"
         /// </summary>
         [Fact]
-        public void TestUnicodePositive()
+        public void GetUnicode_Succes()
         {
             foreach (var entry in Factory.GetDataset())
             {
@@ -45,7 +42,7 @@ namespace System.Globalization.Tests
                 {
                     try
                     {
-                        var map = new System.Globalization.IdnMapping { UseStd3AsciiRules = true, AllowUnassigned = true };
+                        var map = new IdnMapping { UseStd3AsciiRules = true, AllowUnassigned = true };
                         var unicodeResult = map.GetUnicode(entry.Source);
 
                         Assert.Equal(entry.GetUnicodeResult.Value, unicodeResult, StringComparer.OrdinalIgnoreCase);
@@ -66,13 +63,13 @@ namespace System.Globalization.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
         /// </remarks>
         [Fact]
-        public void TestAsciiNegative()
+        public void GetAscii_Invalid()
         {
             foreach (var entry in Factory.GetDataset())
             {
                 if (!entry.GetASCIIResult.Success)
                 {
-                    var map = new System.Globalization.IdnMapping();
+                    var map = new IdnMapping();
                     Assert.Throws<ArgumentException>(() => map.GetAscii(entry.Source));
                 }
             }
@@ -86,13 +83,13 @@ namespace System.Globalization.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETUNICODE DOES NOT FAIL ON WINDOWS 8.1"
         /// </remarks>
         [Fact]
-        public void TestUnicodeNegative()
+        public void GetUnicode_Invalid()
         {
             foreach (var entry in Factory.GetDataset())
             {
                 if (!entry.GetUnicodeResult.Success)
                 {
-                    var map = new System.Globalization.IdnMapping();
+                    var map = new IdnMapping();
                     Assert.Throws<ArgumentException>(() => map.GetUnicode(entry.Source));
                 }
             }
@@ -103,7 +100,7 @@ namespace System.Globalization.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void TestEquals(bool allowUnassigned, bool useStd3AsciiRules)
+        public static void Equals(bool allowUnassigned, bool useStd3AsciiRules)
         {
             // first check for equals
             IdnMapping original = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };
