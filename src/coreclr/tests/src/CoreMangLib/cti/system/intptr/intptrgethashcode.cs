@@ -104,7 +104,7 @@ public class IntPtrGetHashCode
     
     public bool PosTest4()
     {
-        bool retValue = true;
+        bool retVal = true;
         try
         {
             long addressOne = 0x123456FFFFFFFFL;
@@ -126,7 +126,7 @@ public class IntPtrGetHashCode
             }
             else
 		   	{
-                TestLibrary.TestFramework.LogError(id, String.Format("IntPtr should not have thrown an OverflowException for value {0}: ", i) + ex.ToString());
+                TestLibrary.TestFramework.LogError("004", "IntPtr should not have thrown an OverflowException: " + ex.ToString());
                 retVal = false;
 		   	}
         }

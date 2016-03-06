@@ -161,11 +161,11 @@ public class UIntPtrGetHashCode
     
     public bool PosTest4()
     {
-        bool retValue = true;
+        bool retVal = true;
         try
         {
-            long addressOne = 0x123456FFFFFFFFL;
-            long addressTwo = 0x654321FFFFFFFFL;
+            ulong addressOne = 0x123456FFFFFFFFUL;
+            ulong addressTwo = 0x654321FFFFFFFFUL;
             System.UIntPtr ipOne = new UIntPtr(addressOne);
             System.UIntPtr ipTwo = new UIntPtr(addressTwo);
             if (ipOne.GetHashCode() == ipTwo.GetHashCode())
@@ -183,7 +183,7 @@ public class UIntPtrGetHashCode
             }
             else
 		   	{
-                TestLibrary.TestFramework.LogError(id, String.Format("IntPtr should not have thrown an OverflowException for value {0}: ", i) + ex.ToString());
+                TestLibrary.TestFramework.LogError("004", "IntPtr should not have thrown an OverflowException: " + ex.ToString());
                 retVal = false;
 		   	}
         }
