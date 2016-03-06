@@ -249,6 +249,47 @@ class Program
         new MyClass().GetType().ToString();
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestStaticBaseCSE()
+    {
+        // There should be just one call to CORINFO_HELP_READYTORUN_STATIC_BASE
+        // in the generated code.
+        s++;
+        s++;
+        Assert.AreEqual(s, 2);
+        s = 0;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestIsInstCSE()
+    {
+        // There should be just one call to CORINFO_HELP_READYTORUN_ISINSTANCEOF
+        // in the generated code.
+        object o1 = (s < 1) ? (object)"foo" : (object)1;
+        Assert.AreEqual(o1 is string, true);
+        Assert.AreEqual(o1 is string, true);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestCastClassCSE()
+    {
+        // There should be just one call to CORINFO_HELP_READYTORUN_CHKCAST
+        // in the generated code.
+        object o1 = (s < 1) ? (object)"foo" : (object)1;
+        string str1 = (string)o1;
+        string str2 = (string)o1;
+        Assert.AreEqual(str1, str2);
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestRangeCheckElimination()
+    {
+        // Range checks for array accesses should be eliminated by the compiler.
+        int[] array = new int[5];
+        array[2] = 2;
+        Assert.AreEqual(array[2], 2);
+    }
+
 #if CORECLR
     class MyLoadContext : AssemblyLoadContext
     {
@@ -331,6 +372,14 @@ class Program
 #endif
 
         TestFieldLayoutNGenMixAndMatch();
+
+        TestStaticBaseCSE();
+
+        TestIsInstCSE();
+
+        TestCastClassCSE();
+
+        TestRangeCheckElimination();
     }
 
     static int Main()
@@ -353,4 +402,6 @@ class Program
     }
 
     static bool LLILCJitEnabled;
+
+    static int s;
 }
