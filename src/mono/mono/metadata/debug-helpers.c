@@ -333,6 +333,7 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	MonoMethodDesc *result;
 	char *class_name, *class_nspace, *method_name, *use_args, *end;
 	int use_namespace;
+	int generic_delim_stack;
 	
 	class_nspace = g_strdup (name);
 	use_args = strchr (class_nspace, '(');
@@ -379,8 +380,14 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 		end = use_args;
 		if (*end)
 			result->num_args = 1;
+		generic_delim_stack = 0;
 		while (*end) {
-			if (*end == ',')
+			if (*end == '<')
+				generic_delim_stack++;
+			else if (*end == '>')
+				generic_delim_stack--;
+
+			if (*end == ',' && generic_delim_stack == 0)
 				result->num_args++;
 			++end;
 		}
