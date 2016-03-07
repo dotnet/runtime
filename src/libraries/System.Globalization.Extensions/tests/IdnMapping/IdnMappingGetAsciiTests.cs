@@ -60,10 +60,12 @@ namespace System.Globalization.Tests
         {
             // Unicode is null
             yield return new object[] { null, 0, 0, typeof(ArgumentNullException) };
+            yield return new object[] { null, -5, -10, typeof(ArgumentNullException) };
 
             // Index or count are invalid
             yield return new object[] { "abc", -1, 0, typeof(ArgumentOutOfRangeException) };
             yield return new object[] { "abc", 0, -1, typeof(ArgumentOutOfRangeException) };
+            yield return new object[] { "abc", -5, -10, typeof(ArgumentOutOfRangeException) };
             yield return new object[] { "abc", 2, 2, typeof(ArgumentOutOfRangeException) };
             yield return new object[] { "abc", 4, 99, typeof(ArgumentOutOfRangeException) };
             yield return new object[] { "abc", 3, 0, typeof(ArgumentException) };
@@ -98,14 +100,13 @@ namespace System.Globalization.Tests
 
         public static void GetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
         {
-            if (index + count == (unicode?.Length ?? 0))
+            if (unicode == null || index + count == unicode.Length)
             {
-                if (index == 0)
+                if (unicode == null || index == 0)
                 {
                     Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode));
-
-                    Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index));
                 }
+                Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index));
             }
             Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index, count));
         }
