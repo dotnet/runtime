@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
@@ -9,8 +9,8 @@
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.Tasks.Parallel": "4.0.0",
-    "System.Threading.Thread": "4.0.0-rc3-23901",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23901",
+    "System.Threading.Thread": "4.0.0-rc3-23907",
+    "System.Threading.ThreadPool": "4.0.10-rc3-23907",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
