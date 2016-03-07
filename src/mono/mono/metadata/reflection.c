@@ -12604,9 +12604,9 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 }
 
 static MonoMethod*
-mono_reflection_method_get_handle (MonoObject *method)
+mono_reflection_method_get_handle (MonoObject *method, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	MonoClass *klass = mono_object_class (method);
 	if (is_sr_mono_method (klass) || is_sr_mono_generic_method (klass)) {
 		MonoReflectionMethod *sr_method = (MonoReflectionMethod*)method;
@@ -12621,11 +12621,10 @@ mono_reflection_method_get_handle (MonoObject *method)
 		MonoMethod *result;
 		/*FIXME move this to a proper method and unify with resolve_object*/
 		if (m->method_args) {
-			result = mono_reflection_method_on_tb_inst_get_handle (m, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			result = mono_reflection_method_on_tb_inst_get_handle (m, error);
 		} else {
-			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)m->inst, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)m->inst, error);
+			return_val_if_nok (error, NULL);
 			MonoClass *inflated_klass = mono_class_from_mono_type (type);
 			MonoMethod *mono_method;
 
@@ -12648,6 +12647,7 @@ mono_reflection_method_get_handle (MonoObject *method)
 void
 mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
 {
+	MonoError error;
 	MonoReflectionTypeBuilder *tb;
 	int i, j, onum;
 	MonoReflectionMethod *m;
@@ -12685,7 +12685,8 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 				for (j = 0; j < mono_array_length (mb->override_methods); ++j) {
 					m = mono_array_get (mb->override_methods, MonoReflectionMethod*, j);
 
-					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m);
+					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m, &error);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
 					(*overrides) [onum * 2 + 1] = mb->mhandle;
 
 					g_assert (mb->mhandle);
