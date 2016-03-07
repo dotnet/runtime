@@ -7,10 +7,10 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NormalizationAll
+    public class StringNormalizationAllTests
     {
         [Fact]
-        public void NormalizeTest()
+        public void Normalize()
         {
             for (int i = 0; i < s_normalizationData.Length; i++)
             {
@@ -51,88 +51,78 @@ namespace System.Globalization.Tests
         private static void VerifyConformanceInvariant(NormalizationForm normForm, string c1, string c2, string c3, string c4, string c5)
         {
             string normalized1 = c1.Normalize(normForm);
-            bool isNormalized1 = c1.IsNormalized(normForm);
-
             string normalized2 = c2.Normalize(normForm);
-            bool isNormalized2 = c2.IsNormalized(normForm);
-
             string normalized3 = c3.Normalize(normForm);
-            bool isNormalized3 = c3.IsNormalized(normForm);
-
             string normalized4 = c4.Normalize(normForm);
-            bool isNormalized4 = c4.IsNormalized(normForm);
-
             string normalized5 = c5.Normalize(normForm);
-            bool isNormalized5 = c5.IsNormalized(normForm);
-
-            // Verify conformance invariants particular to <normForm>
+            
             switch (normForm)
             {
                 case NormalizationForm.FormC:
                     // c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
-                    CheckFailue(c2, normalized1);
-                    CheckFailue(c2, normalized2);
-                    CheckFailue(c2, normalized3);
+                    AssertEqualsForm(c2, normalized1);
+                    AssertEqualsForm(c2, normalized2);
+                    AssertEqualsForm(c2, normalized3);
 
                     // c4 ==  NFC(c4) ==  NFC(c5)
-                    CheckFailue(c4, normalized4);
-                    CheckFailue(c4, normalized5);
+                    AssertEqualsForm(c4, normalized4);
+                    AssertEqualsForm(c4, normalized5);
 
                     // c2 is normalized to Form C
-                    Assert.True(isNormalized2, string.Format("'{0}' is marked as not normalized with form {1}", c2, normForm));
+                    Assert.True(c2.IsNormalized(normForm), $"'{c2}' is marked as not normalized with form {normForm}");
 
                     // c4 is normalized to Form C
-                    Assert.True(isNormalized4, string.Format("'{0}' is marked as not normalized with form {1}", c4, normForm));
+                    Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormD:
                     // c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
-                    CheckFailue(c3, normalized1);
-                    CheckFailue(c3, normalized2);
-                    CheckFailue(c3, normalized3);
+                    AssertEqualsForm(c3, normalized1);
+                    AssertEqualsForm(c3, normalized2);
+                    AssertEqualsForm(c3, normalized3);
 
                     // c5 ==  NFD(c4) ==  NFD(c5)
-                    CheckFailue(c5, normalized4);
-                    CheckFailue(c5, normalized5);
+                    AssertEqualsForm(c5, normalized4);
+                    AssertEqualsForm(c5, normalized5);
 
                     // c3 is normalized to Form D
-                    Assert.True(isNormalized3, string.Format("'{0}' is marked as not normalized with form {1}", c3, normForm));
+                    Assert.True(c3.IsNormalized(normForm), $"'{c3}' is marked as not normalized with form {normForm}");
 
                     // c5 is normalized to Form D
-                    Assert.True(isNormalized5, string.Format("'{0}' is marked as not normalized with form {1}", c5, normForm));
+                    Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKC:
                     // c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) 
                     //    == NFKC(c5)
-                    CheckFailue(c4, normalized1);
-                    CheckFailue(c4, normalized2);
-                    CheckFailue(c4, normalized3);
-                    CheckFailue(c4, normalized4);
-                    CheckFailue(c4, normalized5);
+                    AssertEqualsForm(c4, normalized1);
+                    AssertEqualsForm(c4, normalized2);
+                    AssertEqualsForm(c4, normalized3);
+                    AssertEqualsForm(c4, normalized4);
+                    AssertEqualsForm(c4, normalized5);
 
                     // c4 is normalized to Form KC
-                    Assert.True(isNormalized4, string.Format("'{0}' is marked as not normalized with form {1}", c4, normForm));
+                    Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKD:
                     // c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) 
                     //    == NFKD(c5)
-                    CheckFailue(c5, normalized1);
-                    CheckFailue(c5, normalized2);
-                    CheckFailue(c5, normalized3);
-                    CheckFailue(c5, normalized4);
-                    CheckFailue(c5, normalized5);
+                    AssertEqualsForm(c5, normalized1);
+                    AssertEqualsForm(c5, normalized2);
+                    AssertEqualsForm(c5, normalized3);
+                    AssertEqualsForm(c5, normalized4);
+                    AssertEqualsForm(c5, normalized5);
 
                     // c5 is normalized to Form KD
-                    Assert.True(isNormalized5, string.Format("'{0}' is marked as not normalized with form {1}", c5, normForm));
+                    Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
                     break;
             }
         }
 
-        private static void CheckFailue(string c, string cForm)
+        private static void AssertEqualsForm(string c, string cForm)
         {
-            Assert.True(c.Equals(cForm), string.Format("'{0}' is not matched with the normalized form '{1} with {2} normalization", DumpStringAsCodepoints(c), DumpStringAsCodepoints(cForm), cForm));
+            Assert.True(c.Equals(cForm), $"'{DumpStringAsCodepoints(c)}' is not matched with the normalized form '{DumpStringAsCodepoints(cForm)} with {cForm} normalization");
         }
 
         private static string DumpStringAsCodepoints(string s)
