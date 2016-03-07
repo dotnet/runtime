@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>BestFitMappingTest</AssemblyName>
+    <AssemblyName>BestFitMapping</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{F1E66554-8C8E-4141-85CF-D0CD6A0CD0B0}</ProjectGuid>
     <OutputType>exe</OutputType>
