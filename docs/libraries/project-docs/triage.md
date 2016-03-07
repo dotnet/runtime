@@ -67,6 +67,6 @@ Here are some of the factors that are considered:
  
 Generally, all changes are expected to be tracked as GitHub issues. We are going to introduce the following three labels on GitHub to track and report progress around porting:
 
-* **netfx-consider**: A given issue should be considered for inclusion in the .NET Framework. Once an issue has this label, the team will consider it for inclusion in the .NET Framework.
-* **netfx-approve**: If the proposed change is shown to add value and not introduce unmitigated risk then the issue will be checked in and ship in a future release of the .NET Framework. Marking an issue with this label does not imply that it will ship in the next release or any specific release of the .NET Framework.
-* **netfx-decline**: If the proposed change does not align with our business goals or introduces unmitigated risk, the issue will not be included in the .NET Framework. In the event of this scenario, we will add a comment on the issue.
+* **netfx-port-consider**: A given issue should be considered for inclusion in the .NET Framework. Once an issue has this label, the team will consider it for inclusion in the .NET Framework.
+* **netfx-port-approve**: If the proposed change is shown to add value and not introduce unmitigated risk then the issue will be checked in and ship in a future release of the .NET Framework. Marking an issue with this label does not imply that it will ship in the next release or any specific release of the .NET Framework.
+* **netfx-port-decline**: If the proposed change does not align with our business goals or introduces unmitigated risk, the issue will not be included in the .NET Framework. In the event of this scenario, we will add a comment on the issue.
