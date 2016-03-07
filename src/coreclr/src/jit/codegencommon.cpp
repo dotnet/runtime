@@ -3035,11 +3035,9 @@ void                CodeGen::genGenerateCode(void * * codePtr,
     {
         // Use COMPLUS_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
         // especially that caused by enabling JIT stress.
-        static ConfigDWORD fJitNoForceFallback;
-        if (!fJitNoForceFallback.val(CLRConfig::INTERNAL_JitNoForceFallback))
+        if (!JitConfig.JitNoForceFallback())
         {
-            static ConfigDWORD fJitForceFallback;
-            if (fJitForceFallback.val(CLRConfig::INTERNAL_JitForceFallback) ||
+            if (JitConfig.JitForceFallback() ||
                 compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5) )
             {
                 NO_WAY_NOASSERT("Stress failure");
