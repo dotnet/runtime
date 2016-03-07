@@ -178,8 +178,7 @@ RegSet::rsStressRegsType    RegSet::rsStressRegs()
 #ifndef LEGACY_BACKEND
     return RS_STRESS_NONE;
 #else // LEGACY_BACKEND
-    static ConfigDWORD fJitStressRegs;
-    rsStressRegsType val = (rsStressRegsType) fJitStressRegs.val(CLRConfig::INTERNAL_JitStressRegs);
+    rsStressRegsType val = (rsStressRegsType) JitConfig.JitStressRegs();
     if (val == RS_STRESS_NONE && m_rsCompiler->compStressCompile(Compiler::STRESS_REGS, 15)) val = RS_PICK_BAD_REG;
     return val;
 #endif // LEGACY_BACKEND

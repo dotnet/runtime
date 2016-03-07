@@ -333,10 +333,7 @@ double LegacyPolicy::determineMultiplier()
 
     if (inlHasSimd)
     {
-        static ConfigDWORD fJitInlineSIMDMultiplier;
-        int simdMultiplier = fJitInlineSIMDMultiplier.val(CLRConfig::INTERNAL_JitInlineSIMDMultiplier);
-
-        multiplier += simdMultiplier;
+        multiplier += JitConfig.JitInlineSIMDMultiplier();
         JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.", multiplier);
     }
 
