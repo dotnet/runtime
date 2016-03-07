@@ -343,17 +343,17 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
         try {                                                                                   
 
 // Uninstall trap that catches unhandled managed exception and dumps its stack
-#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                          \
-        }                                                                                   \
-        catch (PAL_SEHException& ex)                                                        \
-        {                                                                                   \
-            DefaultCatchHandler(NULL /*pExceptionInfo*/,                                    \
-                                NULL /*Throwable*/,                                         \
-                                TRUE /*useLastThrownObject*/,                               \
-                                TRUE /*isTerminating*/,                                     \
-                                FALSE /*isThreadBaseFIlter*/,                               \
-                                FALSE /*sendAppDomainEvents*/);                             \
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);                             \
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                                  \
+        }                                                                                           \
+        catch (PAL_SEHException& ex)                                                                \
+        {                                                                                           \
+            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))           \
+            {                                                                                       \
+                LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);  \
+                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);                                 \
+            }                                                                                       \
+            TerminateProcess(GetCurrentProcess(), 1);                                               \
+            UNREACHABLE();                                                                          \
         }
 
 #else
