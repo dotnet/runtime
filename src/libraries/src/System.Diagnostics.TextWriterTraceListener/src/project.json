@@ -2,9 +2,9 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
         "System.Diagnostics.Tools": "4.0.0",
-        "System.Diagnostics.TraceSource": "4.0.0-rc3-23901",
+        "System.Diagnostics.TraceSource": "4.0.0-rc3-23907",
         "System.Globalization": "4.0.10",
         "System.IO": "4.0.10",
         "System.Resources.ResourceManager": "4.0.0",

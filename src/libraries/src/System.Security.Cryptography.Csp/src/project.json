@@ -2,7 +2,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.IO": "4.0.10",
@@ -10,8 +10,8 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23901",
-        "System.Security.Cryptography.Encoding": "4.0.0-rc3-23901",
+        "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23907",
+        "System.Security.Cryptography.Encoding": "4.0.0-rc3-23907",
         "System.Text.Encoding": "4.0.10",
         "System.Threading": "4.0.10"
       }
