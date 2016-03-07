@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
     "System.IO": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Xml.ReaderWriter": "4.0.10",

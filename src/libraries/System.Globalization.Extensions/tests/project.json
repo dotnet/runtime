@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
-    "System.Console": "4.0.0-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
+    "System.Console": "4.0.0-rc3-23907",
     "System.Globalization.Extensions": "4.0.0",
     "System.IO": "4.0.10",
     "System.Reflection": "4.0.10",
