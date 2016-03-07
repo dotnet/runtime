@@ -12402,20 +12402,21 @@ mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
 }
 
 static void
-fix_partial_generic_class (MonoClass *klass)
+fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
 	MonoClass *gklass = klass->generic_class->container_class;
 	MonoDynamicGenericClass *dgclass;
 	int i;
+
+	mono_error_init (error);
 
 	if (klass->wastypebuilder)
 		return;
 
 	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
 	if (klass->parent != gklass->parent) {
-		MonoError error;
-		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &klass->generic_class->context, &error);
-		if (mono_error_ok (&error)) {
+		MonoType *parent_type = mono_class_inflate_generic_type_checked (&gklass->parent->byval_arg, &klass->generic_class->context, error);
+		if (mono_error_ok (error)) {
 			MonoClass *parent = mono_class_from_mono_type (parent_type);
 			mono_metadata_free_type (parent_type);
 			if (parent != klass->parent) {
@@ -12425,7 +12426,7 @@ fix_partial_generic_class (MonoClass *klass)
 			}
 		} else {
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 			if (gklass->wastypebuilder)
 				klass->wastypebuilder = TRUE;
 			return;
@@ -12440,10 +12441,9 @@ fix_partial_generic_class (MonoClass *klass)
 		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * (klass->method.count + 1));
 
 		for (i = 0; i < klass->method.count; i++) {
-			MonoError error;
 			klass->methods [i] = mono_class_inflate_generic_method_full_checked (
-				gklass->methods [i], klass, mono_class_get_context (klass), &error);
-			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+				gklass->methods [i], klass, mono_class_get_context (klass), error);
+			mono_error_assert_ok (error);
 		}
 	}
 
@@ -12453,15 +12453,14 @@ fix_partial_generic_class (MonoClass *klass)
 		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
 
 		for (i = 0; i < gklass->interface_count; ++i) {
-			MonoError error;
-			MonoType *iface_type = mono_class_inflate_generic_type_checked (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass), &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoType *iface_type = mono_class_inflate_generic_type_checked (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass), error);
+			return_if_nok (error);
 
 			klass->interfaces [i] = mono_class_from_mono_type (iface_type);
 			mono_metadata_free_type (iface_type);
 
-			ensure_runtime_vtable (klass->interfaces [i], &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			ensure_runtime_vtable (klass->interfaces [i], error);
+			return_if_nok (error);
 		}
 		klass->interfaces_inited = 1;
 	}
@@ -12471,11 +12470,10 @@ fix_partial_generic_class (MonoClass *klass)
 		klass->fields = image_g_new0 (klass->image, MonoClassField, klass->field.count);
 
 		for (i = 0; i < klass->field.count; i++) {
-			MonoError error;
 			klass->fields [i] = gklass->fields [i];
 			klass->fields [i].parent = klass;
-			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), error);
+			return_if_nok (error);
 		}
 	}
 
@@ -12503,7 +12501,8 @@ ensure_generic_class_runtime_vtable (MonoClass *klass, MonoError *error)
 	if (!ensure_runtime_vtable (gklass, error))
 		return FALSE;
 
-	fix_partial_generic_class (klass);
+	fix_partial_generic_class (klass, error);
+	return_val_if_nok (error, FALSE);
 
 	return TRUE;
 }
@@ -12927,11 +12926,13 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 						  gpointer value,
 						  gpointer user_data)
 {
+	MonoError error;
 	MonoType *type = (MonoType*)key;
 	MonoClass *klass = (MonoClass*)user_data;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
-		fix_partial_generic_class (mono_class_from_mono_type (type)); //Ensure it's safe to use it.
+		fix_partial_generic_class (mono_class_from_mono_type (type), &error); //Ensure it's safe to use it.
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		return TRUE;
 	} else
 		return FALSE;
