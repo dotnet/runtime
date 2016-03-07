@@ -8,6 +8,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")] // We are providing the implementation for 3DES not consuming it
     public abstract class TripleDES : SymmetricAlgorithm
     {
         protected TripleDES()

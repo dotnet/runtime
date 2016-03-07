@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")]
     internal sealed partial class TripleDesImplementation : TripleDES
     {
         private const int BitsPerByte = 8;
