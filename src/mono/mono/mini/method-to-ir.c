@@ -661,6 +661,24 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 	return -1;
 }
 
+static gboolean
+ip_in_finally_clause (MonoCompile *cfg, int offset)
+{
+	MonoMethodHeader *header = cfg->header;
+	MonoExceptionClause *clause;
+	int i;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
+			continue;
+
+		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static GList*
 mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *target, int type)
 {
@@ -12268,6 +12286,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE ("throw");
 			break;
 		case CEE_ENDFINALLY:
+			if (!ip_in_finally_clause (cfg, ip - header->code))
+				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
 				emit_seq_point (cfg, method, ip, FALSE, FALSE);
