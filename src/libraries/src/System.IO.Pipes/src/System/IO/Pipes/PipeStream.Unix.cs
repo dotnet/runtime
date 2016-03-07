@@ -26,7 +26,7 @@ namespace System.IO.Pipes
             if (serverName != "." && serverName != Interop.Sys.GetHostName())
             {
                 // Cross-machine pipes are not supported.
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_RemotePipes);
             }
 
             if (pipeName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
@@ -34,7 +34,7 @@ namespace System.IO.Pipes
                 // Since pipes are stored as files in the file system, we don't support
                 // pipe names that are actually paths or that otherwise have invalid
                 // filename characters in them.
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupproted_InvalidNameChars);
             }
 
             // Return the pipe path
@@ -194,7 +194,7 @@ namespace System.IO.Pipes
 
                 if (value != PipeTransmissionMode.Byte) // Unix pipes are only byte-based, not message-based
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_MessageTransmissionMode);
                 }
 
                 // nop, since it's already the only valid value

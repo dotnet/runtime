@@ -267,4 +267,13 @@
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
+  <data name="PlatformNotSupported_MessageTransmissionMode" xml:space="preserve">
+    <value>Message transmission mode is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_RemotePipes" xml:space="preserve">
+    <value>Access to remote named pipes is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupproted_InvalidNameChars" xml:space="preserve">
+    <value>The name of a pipe on this platform must only include characters valid in file names.</value>
+  </data>
 </root>
