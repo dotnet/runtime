@@ -14520,12 +14520,13 @@ mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDe
 }
 
 gboolean
-mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass)
+mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, MonoError *error)
 {
-	MonoError error;
 	MonoObject *res, *exc;
 	void *params [1];
 	static MonoMethod *method = NULL;
+
+	mono_error_init (error);
 
 	if (method == NULL) {
 		method = mono_class_get_method_from_name (mono_class_get_type_builder_class (), "IsAssignableTo", 1);
@@ -14539,13 +14540,13 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass)
 	g_assert (mono_class_get_ref_info (klass));
 	g_assert (!strcmp (((MonoObject*)(mono_class_get_ref_info (klass)))->vtable->klass->name, "TypeBuilder"));
 
-	params [0] = mono_type_get_object_checked (mono_domain_get (), &oklass->byval_arg, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	params [0] = mono_type_get_object_checked (mono_domain_get (), &oklass->byval_arg, error);
+	return_val_if_nok (error, FALSE);
 
-	res = mono_runtime_try_invoke (method, (MonoObject*)(mono_class_get_ref_info (klass)), params, &exc, &error);
+	res = mono_runtime_try_invoke (method, (MonoObject*)(mono_class_get_ref_info (klass)), params, &exc, error);
 
-	if (exc || !mono_error_ok (&error)) {
-		mono_error_cleanup (&error);
+	if (exc || !mono_error_ok (error)) {
+		mono_error_cleanup (error);
 		return FALSE;
 	} else
 		return *(MonoBoolean*)mono_object_unbox (res);
