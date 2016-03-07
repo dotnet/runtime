@@ -208,6 +208,7 @@ namespace System.Security.Cryptography
             throw new CryptographicException(NTE_BAD_ALGID);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351")] // We are providing the implementations for these algorithms
         private static HashAlgorithm GetHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
             if (hashAlgorithm == HashAlgorithmName.MD5)
