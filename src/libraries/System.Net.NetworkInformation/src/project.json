@@ -7,7 +7,6 @@
         "System.Linq": "4.0.0",
         "System.Net.Primitives": "4.0.10",
         "System.Net.Sockets": "4.1.0-rc3-23907",
-        "System.Runtime": "4.1.0-rc3-23907",
         "System.Security.Principal.Windows": "4.0.0-rc3-23907",
         "System.Threading": "4.0.10",
         "System.Threading.Thread": "4.0.0-rc3-23907",

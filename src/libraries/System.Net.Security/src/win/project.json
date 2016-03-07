@@ -6,7 +6,6 @@
         "System.Collections.Specialized": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Net.Primitives": "4.0.10",
-        "System.Runtime": "4.1.0-rc3-23907",
         "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23907",
         "System.Security.Principal": "4.0.0",
         "System.Security.Principal.Windows": "4.0.0-rc3-23907",
