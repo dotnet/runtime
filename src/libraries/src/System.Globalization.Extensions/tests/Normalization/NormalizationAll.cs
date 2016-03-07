@@ -2,204 +2,127 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
 using System.Text;
-using System.Globalization;
+using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class NormalizationAll
+    public class StringNormalizationAllTests
     {
         [Fact]
-        public void NormalizeTest()
+        public void Normalize()
         {
-            bool failed = false;
-
             for (int i = 0; i < s_normalizationData.Length; i++)
             {
-                NormalizationForm form = NormalizationForm.FormC;
-                try
-                {
-                    form = NormalizationForm.FormC;
-                    // Form C
-                    failed |= VerifyConformanceInvariant(NormalizationForm.FormC, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
-
-                    form = NormalizationForm.FormD;
-                    // Form D
-                    failed |= VerifyConformanceInvariant(NormalizationForm.FormD, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
-
-                    form = NormalizationForm.FormKC;
-
-                    // Form KC
-                    failed |= VerifyConformanceInvariant(NormalizationForm.FormKC, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
-
-                    form = NormalizationForm.FormKD;
-                    // Form KD
-                    failed |= VerifyConformanceInvariant(NormalizationForm.FormKD, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
-                }
-                catch
-                {
-                    Console.WriteLine("Wrong index: {0} length = {1} form = {2}", i, s_normalizationData[i].Length, form);
-                    for (int j = 0; j < s_normalizationData[i].Length; j++ )
-                    {
-                        Console.WriteLine("'{0}'", DumpStringAsCodepoints(s_normalizationData[i][j]));
-                    }
-                    throw;
-                }
+                // Form C
+                VerifyConformanceInvariant(NormalizationForm.FormC, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
+                
+                // Form D
+                VerifyConformanceInvariant(NormalizationForm.FormD, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
+                
+                // Form KC
+                VerifyConformanceInvariant(NormalizationForm.FormKC, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
+                
+                // Form KD
+                VerifyConformanceInvariant(NormalizationForm.FormKD, s_normalizationData[i][0], s_normalizationData[i][1], s_normalizationData[i][2], s_normalizationData[i][3], s_normalizationData[i][4]);
             }
-
-            Assert.False(failed);
         }
 
-        // ------------------------------------------------------------------------
-        // VerifyConformanceInvariant() 
-        //
-        // Verifies the first normalization conformance invariant for the
-        // specified normalization form, where the rule as defined for all
-        // Unicode normalization forms is as follows:
-        //
-        // 1. The following invariants must be true for all conformant 
-        //    implementations:
-        //
-        //    NFC
-        //      c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
-        //      c4 ==  NFC(c4) ==  NFC(c5)
-        //
-        //    NFD
-        //      c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
-        //      c5 ==  NFD(c4) ==  NFD(c5)
-        //
-        //    NFKC
-        //      c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) == NFKC(c5)
-        //
-        //    NFKD
-        //      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
-        //
-        // NOTE: The <platform> argument defines whether the results should
-        // be taken from NLS (via NLS_PLATFORM) or NLS+ (via NLS_PLUS_PLATFORM)
-        // ------------------------------------------------------------------------
-
-        private static bool VerifyConformanceInvariant(
-            NormalizationForm normForm,
-            string c1,
-            string c2,
-            string c3,
-            string c4,
-            string c5
-            )
+        /// <summary>
+        /// Verifies the first normalization conformance invariant for the
+        /// specified normalization form, where the rule as defined for all
+        /// Unicode normalization forms is as follows:
+        ///  1. The following invariants must be true for all conformant 
+        ///    implementations:
+        ///    NFC
+        ///      c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
+        ///      c4 ==  NFC(c4) ==  NFC(c5)
+        ///
+        ///    NFD
+        ///      c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
+        ///      c5 ==  NFD(c4) ==  NFD(c5)
+        ///
+        ///    NFKC
+        ///      c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) == NFKC(c5)
+        ///
+        ///    NFKD
+        ///      c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) == NFKD(c5)
+        /// </summary>
+        private static void VerifyConformanceInvariant(NormalizationForm normForm, string c1, string c2, string c3, string c4, string c5)
         {
-            bool failed = false;
-            // Initialize variables according to <platform>
-            string strNFc1 = c1.Normalize(normForm);
-            bool bNFc1 = c1.IsNormalized(normForm);
-            string strNFc2 = c2.Normalize(normForm);
-            bool bNFc2 = c2.IsNormalized(normForm);
-            string strNFc3 = c3.Normalize(normForm);
-            bool bNFc3 = c3.IsNormalized(normForm);
-            string strNFc4 = c4.Normalize(normForm);
-            bool bNFc4 = c4.IsNormalized(normForm);
-            string strNFc5 = c5.Normalize(normForm);
-            bool bNFc5 = c5.IsNormalized(normForm);
-
-            // Verify conformance invariants particular to <normForm>
+            string normalized1 = c1.Normalize(normForm);
+            string normalized2 = c2.Normalize(normForm);
+            string normalized3 = c3.Normalize(normForm);
+            string normalized4 = c4.Normalize(normForm);
+            string normalized5 = c5.Normalize(normForm);
+            
             switch (normForm)
             {
                 case NormalizationForm.FormC:
                     // c2 ==  NFC(c1) ==  NFC(c2) ==  NFC(c3)
-                    failed |= CheckFailue(normForm, c2, strNFc1);
-                    failed |= CheckFailue(normForm, c2, strNFc2);
-                    failed |= CheckFailue(normForm, c2, strNFc3);
+                    AssertEqualsForm(c2, normalized1);
+                    AssertEqualsForm(c2, normalized2);
+                    AssertEqualsForm(c2, normalized3);
 
                     // c4 ==  NFC(c4) ==  NFC(c5)
-                    failed |= CheckFailue(normForm, c4, strNFc4);
-                    failed |= CheckFailue(normForm, c4, strNFc5);
+                    AssertEqualsForm(c4, normalized4);
+                    AssertEqualsForm(c4, normalized5);
 
                     // c2 is normalized to Form C
-                    if (!bNFc2)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c2, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c2.IsNormalized(normForm), $"'{c2}' is marked as not normalized with form {normForm}");
 
                     // c4 is normalized to Form C
-                    if (!bNFc4)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c4, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormD:
                     // c3 ==  NFD(c1) ==  NFD(c2) ==  NFD(c3)
-                    failed |= CheckFailue(normForm, c3, strNFc1);
-                    failed |= CheckFailue(normForm, c3, strNFc2);
-                    failed |= CheckFailue(normForm, c3, strNFc3);
+                    AssertEqualsForm(c3, normalized1);
+                    AssertEqualsForm(c3, normalized2);
+                    AssertEqualsForm(c3, normalized3);
 
                     // c5 ==  NFD(c4) ==  NFD(c5)
-                    failed |= CheckFailue(normForm, c5, strNFc4);
-                    failed |= CheckFailue(normForm, c5, strNFc5);
+                    AssertEqualsForm(c5, normalized4);
+                    AssertEqualsForm(c5, normalized5);
 
                     // c3 is normalized to Form D
-                    if (!bNFc3)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c3, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c3.IsNormalized(normForm), $"'{c3}' is marked as not normalized with form {normForm}");
+
                     // c5 is normalized to Form D
-                    if (!bNFc5)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c5, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKC:
                     // c4 == NFKC(c1) == NFKC(c2) == NFKC(c3) == NFKC(c4) 
                     //    == NFKC(c5)
-                    failed |= CheckFailue(normForm, c4, strNFc1);
-                    failed |= CheckFailue(normForm, c4, strNFc2);
-                    failed |= CheckFailue(normForm, c4, strNFc3);
-                    failed |= CheckFailue(normForm, c4, strNFc4);
-                    failed |= CheckFailue(normForm, c4, strNFc5);
+                    AssertEqualsForm(c4, normalized1);
+                    AssertEqualsForm(c4, normalized2);
+                    AssertEqualsForm(c4, normalized3);
+                    AssertEqualsForm(c4, normalized4);
+                    AssertEqualsForm(c4, normalized5);
 
                     // c4 is normalized to Form KC
-                    if (!bNFc4)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c4, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c4.IsNormalized(normForm), $"'{c4}' is marked as not normalized with form {normForm}");
                     break;
 
                 case NormalizationForm.FormKD:
                     // c5 == NFKD(c1) == NFKD(c2) == NFKD(c3) == NFKD(c4) 
                     //    == NFKD(c5)
-                    failed |= CheckFailue(normForm, c5, strNFc1);
-                    failed |= CheckFailue(normForm, c5, strNFc2);
-                    failed |= CheckFailue(normForm, c5, strNFc3);
-                    failed |= CheckFailue(normForm, c5, strNFc4);
-                    failed |= CheckFailue(normForm, c5, strNFc5);
+                    AssertEqualsForm(c5, normalized1);
+                    AssertEqualsForm(c5, normalized2);
+                    AssertEqualsForm(c5, normalized3);
+                    AssertEqualsForm(c5, normalized4);
+                    AssertEqualsForm(c5, normalized5);
 
                     // c5 is normalized to Form KD
-                    if (!bNFc5)
-                    {
-                        Console.WriteLine("'{0}' is marked as not normalized with form {1}", c5, normForm);
-                        failed = true;
-                    }
+                    Assert.True(c5.IsNormalized(normForm), $"'{c5}' is marked as not normalized with form {normForm}");
                     break;
             }
-            return failed;
         }
 
-        private static bool CheckFailue(NormalizationForm normForm, string c, string cForm)
+        private static void AssertEqualsForm(string c, string cForm)
         {
-            if (!c.Equals(cForm))
-            {
-                Console.WriteLine("'{0}' is not matched with the normalized form '{1} with {2} normalization", DumpStringAsCodepoints(c), DumpStringAsCodepoints(cForm), cForm);
-                return true;
-            }
-
-            return false;
+            Assert.True(c.Equals(cForm), $"'{DumpStringAsCodepoints(c)}' is not matched with the normalized form '{DumpStringAsCodepoints(cForm)} with {cForm} normalization");
         }
 
         private static string DumpStringAsCodepoints(string s)
@@ -213,52 +136,51 @@ namespace System.Globalization.Tests
             return sb.ToString();
         }
 
-/*
+        #region TestData
+        /*
+        The Unicode data here came from:
+        http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 
 
-The Unicode data here came from:
-http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 
+        Copyright: http://www.unicode.org/copyright.html
 
-Copyright: http://www.unicode.org/copyright.html
+        COPYRIGHT AND PERMISSION NOTICE
 
-COPYRIGHT AND PERMISSION NOTICE
+        Copyright © 1991-2015 Unicode, Inc. All rights reserved.
+        Distributed under the Terms of Use in 
+        http://www.unicode.org/copyright.html.
 
-Copyright © 1991-2015 Unicode, Inc. All rights reserved.
-Distributed under the Terms of Use in 
-http://www.unicode.org/copyright.html.
+        Permission is hereby granted, free of charge, to any person obtaining
+        a copy of the Unicode data files and any associated documentation
+        (the "Data Files") or Unicode software and any associated documentation
+        (the "Software") to deal in the Data Files or Software
+        without restriction, including without limitation the rights to use,
+        copy, modify, merge, publish, distribute, and/or sell copies of
+        the Data Files or Software, and to permit persons to whom the Data Files
+        or Software are furnished to do so, provided that
+        (a) this copyright and permission notice appear with all copies 
+        of the Data Files or Software,
+        (b) this copyright and permission notice appear in associated 
+        documentation, and
+        (c) there is clear notice in each modified Data File or in the Software
+        as well as in the documentation associated with the Data File(s) or
+        Software that the data or software has been modified.
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Unicode data files and any associated documentation
-(the "Data Files") or Unicode software and any associated documentation
-(the "Software") to deal in the Data Files or Software
-without restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, and/or sell copies of
-the Data Files or Software, and to permit persons to whom the Data Files
-or Software are furnished to do so, provided that
-(a) this copyright and permission notice appear with all copies 
-of the Data Files or Software,
-(b) this copyright and permission notice appear in associated 
-documentation, and
-(c) there is clear notice in each modified Data File or in the Software
-as well as in the documentation associated with the Data File(s) or
-Software that the data or software has been modified.
+        THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
+        ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+        WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+        NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+        IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
+        NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
+        DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+        DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+        TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+        PERFORMANCE OF THE DATA FILES OR SOFTWARE.
 
-THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
-ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT OF THIRD PARTY RIGHTS.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS
-NOTICE BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL
-DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
-DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
-TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THE DATA FILES OR SOFTWARE.
-
-Except as contained in this notice, the name of a copyright holder
-shall not be used in advertising or otherwise to promote the sale,
-use or other dealings in these Data Files or Software without prior
-written authorization of the copyright holder.
-
-*/
+        Except as contained in this notice, the name of a copyright holder
+        shall not be used in advertising or otherwise to promote the sale,
+        use or other dealings in these Data Files or Software without prior
+        written authorization of the copyright holder.
+        */
 
         private static string [][] s_normalizationData = new string [][] {
             new string [] { "\u1E0A", "\u1E0A", "\u0044\u0307", "\u1E0A", "\u0044\u0307" },
@@ -18394,5 +18316,7 @@ written authorization of the copyright holder.
             new string [] { "\uD6FC\u0334\u11AE", "\uD6FC\u0334\u11AE", "\u1112\u1170\u0334\u11AE", "\uD6FC\u0334\u11AE", "\u1112\u1170\u0334\u11AE" },
             new string [] { "\uD750\u0334\u11B5", "\uD750\u0334\u11B5", "\u1112\u1173\u0334\u11B5", "\uD750\u0334\u11B5", "\u1112\u1173\u0334\u11B5" }
         };
-   }
+
+        #endregion
+    }
 }
