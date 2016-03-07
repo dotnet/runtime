@@ -104,6 +104,27 @@ namespace System
             return keyInfo;
         }
 
+        public static bool TreatControlCAsInput
+        {
+            get
+            {
+                if (Console.IsInputRedirected)
+                    return false;
+
+                EnsureInitialized();
+                return !Interop.Sys.GetSignalForBreak();
+            }
+            set
+            {
+                if (!Console.IsInputRedirected)
+                {
+                    EnsureInitialized();
+                    if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                }
+            }
+        }
+
         private const ConsoleColor UnknownColor = (ConsoleColor)(-1);
         private static ConsoleColor s_trackedForegroundColor = UnknownColor;
         private static ConsoleColor s_trackedBackgroundColor = UnknownColor;

@@ -221,6 +221,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RegisterForCtrlC.cs">
       <Link>Common\Interop\Unix\Interop.RegisterForCtrlC.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetSignalForBreak.cs">
+      <Link>Common\Interop\Unix\Interop.SetSignalForBreak.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SNPrintF.cs">
       <Link>Common\Interop\Unix\Interop.SNPrintF.cs</Link>
     </Compile>

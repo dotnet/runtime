@@ -70,9 +70,30 @@ extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString)
     WriteKeypadXmit();
 }
 
-static bool g_terminalAttrsChanged = false; // tracks whether a read is currently in progress, such that attributes have been changed
-static struct termios g_origTermios = {}; // the original attributes captured before a read; valid if g_terminalAttrsChanged is true
-static struct termios g_currTermios = {}; // the current attributes set during a read; valid if g_terminalAttrsChanged is true
+static bool g_readInProgress = false;        // tracks whether a read is currently in progress, such that attributes have been changed
+static bool g_signalForBreak = true;        // tracks whether the terminal should send signals for breaks
+static bool g_haveInitTermios = false;       // whether g_initTermios has been initialized
+static struct termios g_initTermios = {};    // the initial attributes captured when Console was initialized
+static struct termios g_preReadTermios = {}; // the original attributes captured before a read; valid if g_readInProgress is true
+static struct termios g_currTermios = {};    // the current attributes set during a read; valid if g_readInProgress is true
+
+static void UninitializeConsole()
+{
+    // Put the attributes back to what they were when the console was initially initialized
+    if (g_haveInitTermios)
+        tcsetattr(STDIN_FILENO, TCSANOW, &g_initTermios); // ignore any failure
+}
+
+static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
+{
+    assert(termios != nullptr);
+    assert(signalForBreak == 0 || signalForBreak == 1);
+
+    if (signalForBreak)
+        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
+    else
+        termios->c_lflag |= static_cast<uint32_t>(ISIG);
+}
 
 // In order to support Console.ReadKey(intecept: true), we need to disable echo and canonical mode.
 // We have two main choices: do so for the entire app, or do so only while in the Console.ReadKey(true).
@@ -86,45 +107,44 @@ static struct termios g_currTermios = {}; // the current attributes set during a
 // and then UninitializeConsoleAfterRead is called.
 extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-#if HAVE_TCGETATTR && HAVE_TCSETATTR && HAVE_ECHO && HAVE_ICANON && HAVE_TCSANOW
-    struct termios newTermios = {};
+    struct termios newTermios;
     if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
     {
-        if (!g_terminalAttrsChanged)
+        if (!g_readInProgress)
         {
             // Store the original settings, but only if we didn't already.  This function
             // may be called when the process is resumed after being suspended, and if
             // that happens during a read, we'll call this function to reset the attrs.
-            g_origTermios = newTermios;
+            g_preReadTermios = newTermios;
         }
 
-        newTermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON | IEXTEN | IXON | IXOFF));
+        newTermios.c_iflag &= static_cast<uint32_t>(~(IXON | IXOFF));
+        newTermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON | IEXTEN));
         newTermios.c_cc[VMIN] = minChars;
         newTermios.c_cc[VTIME] = decisecondsTimeout;
+        IncorporateBreak(&newTermios, g_signalForBreak);
 
         if (tcsetattr(STDIN_FILENO, TCSANOW, &newTermios) >= 0)
         {
             g_currTermios = newTermios;
-            g_terminalAttrsChanged = true;
+            g_readInProgress = true;
         }
     }
-#endif
 }
 
 extern "C" void SystemNative_UninitializeConsoleAfterRead()
 {
-#if HAVE_TCSETATTR && HAVE_TCSANOW
-    if (g_terminalAttrsChanged)
+    if (g_readInProgress)
     {
-        g_terminalAttrsChanged = false;
+        g_readInProgress = false;
 
         int tmpErrno = errno; // preserve any errors from before uninitializing
-        int ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_origTermios);
+        IncorporateBreak(&g_preReadTermios, g_signalForBreak);
+        int ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_preReadTermios);
         assert(ret >= 0); // shouldn't fail, but if it does we don't want to fail in release
         (void)ret;
         errno = tmpErrno;
     }
-#endif
 }
 
 static int TranslatePalControlCharacterName(int name)
@@ -203,7 +223,6 @@ extern "C" void SystemNative_GetControlCharacters(
 
     memset(controlCharacterValues, *posixDisableValue, sizeof(uint8_t) * UnsignedCast(controlCharacterLength));
 
-#if HAVE_TCGETATTR
     if (controlCharacterLength > 0)
     {
         struct termios newTermios = {};
@@ -219,7 +238,6 @@ extern "C" void SystemNative_GetControlCharacters(
             }
         }
     }
-#endif
 }
 
 extern "C" int32_t SystemNative_StdinReady()
@@ -236,7 +254,7 @@ extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);
 
-    if (bufferSize < 0)
+     if (bufferSize < 0)
     {
         errno = EINVAL;
         return -1;
@@ -245,6 +263,29 @@ extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
     ssize_t count;
     while (CheckInterrupted(count = read(STDIN_FILENO, buffer, UnsignedCast(bufferSize))));
     return static_cast<int32_t>(count);
+}
+
+extern "C" int32_t SystemNative_GetSignalForBreak()
+{
+    return g_signalForBreak;
+}
+
+extern "C" int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
+{
+    assert(signalForBreak == 0 || signalForBreak == 1);
+
+    struct termios current;
+    if (tcgetattr(STDIN_FILENO, &current) >= 0)
+    {
+        IncorporateBreak(&current, signalForBreak);
+        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &current) >= 0)
+        {
+            g_signalForBreak = signalForBreak;
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers for ctrl handling
@@ -281,8 +322,9 @@ static void HandleSignalForReinitialize(int sig, siginfo_t* siginfo, void* conte
     // If the process was suspended while reading, we need to
     // re-initialize the console for the read, as the attributes
     // previously set were likely overwritten.
-    if (g_terminalAttrsChanged)
+    if (g_readInProgress)
     {
+        IncorporateBreak(&g_currTermios, g_signalForBreak);
         tcsetattr(STDIN_FILENO, TCSANOW, &g_currTermios);
     }
 
@@ -352,7 +394,7 @@ void* SignalHandlerLoop(void* arg)
             {
                 if (reinterpret_cast<void*>(g_origSigIntHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
                 {
-                    SystemNative_UninitializeConsoleAfterRead();
+                    UninitializeConsole();
                     sigaction(SIGINT, &g_origSigIntHandler, NULL);
                     kill(getpid(), SIGINT);
                 }
@@ -361,7 +403,7 @@ void* SignalHandlerLoop(void* arg)
             {
                 if (reinterpret_cast<void*>(g_origSigQuitHandler.sa_sigaction) != reinterpret_cast<void*>(SIG_IGN))
                 {
-                    SystemNative_UninitializeConsoleAfterRead();
+                    UninitializeConsole();
                     sigaction(SIGQUIT, &g_origSigQuitHandler, NULL);
                     kill(getpid(), SIGQUIT);
                 }
@@ -450,15 +492,18 @@ extern "C" void SystemNative_UnregisterForCtrl()
     g_ctrlCallback = nullptr;
 }
 
-static void UninitializeConsole()
-{
-    // Make sure that if the program is exited while we've changed
-    // terminal attributes that we change them back.
-    SystemNative_UninitializeConsoleAfterRead();
-}
-
 extern "C" int32_t SystemNative_InitializeConsole()
 {
+    if (tcgetattr(STDIN_FILENO, &g_initTermios) >= 0)
+    {
+        g_haveInitTermios = true;
+        g_signalForBreak = (g_initTermios.c_lflag & ISIG) == 0;
+    }
+    else
+    {
+        g_haveInitTermios = false;
+        g_signalForBreak = true;
+    }
     atexit(UninitializeConsole);
 
     // Do all initialization needed for the console.  Right now that's just
