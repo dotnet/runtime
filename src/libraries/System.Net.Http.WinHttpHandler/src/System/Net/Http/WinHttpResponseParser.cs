@@ -51,6 +51,10 @@ namespace System.Net.Http
             {
                 response.ReasonPhrase = GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength);
             }
+            else
+            {
+                response.ReasonPhrase = string.Empty;
+            }
 
             // Create response stream and wrap it in a StreamContent object.
             var responseStream = new WinHttpResponseStream(requestHandle, state);

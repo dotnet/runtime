@@ -696,20 +696,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task GetAsync_CallMethod_ExpectedStatusLine()
+        [Theory]
+        [InlineData(HttpStatusCode.MethodNotAllowed, "Custom description")]
+        [InlineData(HttpStatusCode.MethodNotAllowed, "")]
+        public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
         {
-            HttpStatusCode expectedStatusCode = HttpStatusCode.MethodNotAllowed;
-            string expectedReasonPhrase = "Custom descrption";
             using (var client = new HttpClient())
             {
                 using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.StatusCodeUri(
                     false,
-                    (int)expectedStatusCode,
-                    expectedReasonPhrase)))
+                    (int)statusCode,
+                    reasonPhrase)))
                 {
-                    Assert.Equal(expectedStatusCode, response.StatusCode);
-                    Assert.Equal(expectedReasonPhrase, response.ReasonPhrase);
+                    Assert.Equal(statusCode, response.StatusCode);
+                    Assert.Equal(reasonPhrase, response.ReasonPhrase);
                 }
             }
         }
