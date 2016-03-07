@@ -183,6 +183,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 ""runtimeTargets"": {
                     ""lib/win7/System.Banana.dll"": { ""assetType"": ""runtime"", ""rid"": ""win7-x64""},
                     ""lib/win7/Banana.dll"": { ""assetType"": ""native"", ""rid"": ""win7-x64""}
+                },
+                ""resources"": {
+                    ""System.Banana.resources.dll"": { ""locale"": ""en-US"" }
                 }
             }
         }
@@ -211,6 +214,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
             package.Assemblies.Should().Contain(a => a.Path == "lib/dotnet5.4/System.Banana.dll");
+            package.ResourceAssemblies.Should().Contain(a => a.Path == "System.Banana.resources.dll")
+                .Subject.Locale.Should().Be("en-US");
 
             var target = package.RuntimeTargets.Should().Contain(t => t.Runtime == "win7-x64").Subject;
             target.Assemblies.Should().Contain(a => a.Path == "lib/win7/System.Banana.dll");
