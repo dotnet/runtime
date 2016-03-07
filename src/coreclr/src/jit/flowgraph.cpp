@@ -4214,11 +4214,19 @@ void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
     // Keep track of constants and args on the stack.
     fgStack pushedStack;
 
+    // Observe force inline state and code size.
+    bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+
+    if (compInlineResult != nullptr)
+    {
+        compInlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+        compInlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
+    }
+
     // Determine whether to start the state machine to estimate the size of the
     // native code for this method.
     bool useSm = false;
-    if ((codeSize > ALWAYS_INLINE_SIZE) &&
-        !(info.compFlags & CORINFO_FLG_FORCEINLINE))
+    if ((codeSize > ALWAYS_INLINE_SIZE) && !isForceInline)
     {
         // The size of the native code for this method matters for inlining
         // decisions.
@@ -4873,16 +4881,6 @@ TOO_FAR:
             }
         }
     }
-    else 
-    {
-       if (compIsForInlining()) 
-       {
-           // This method's IL was small enough that we didn't use the size model to estimate
-           // inlinability. Note that as the latest candidate reason.
-           compInlineResult->noteCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
-       }
-    }
-
 
     if (!compIsForInlining() && // None of the local vars in the inlinee should have address taken or been written to.
                                 // Therefore we should NOT need to enter this "if" statement.
