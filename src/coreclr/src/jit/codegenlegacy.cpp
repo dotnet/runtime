@@ -6209,8 +6209,7 @@ bool                CodeGen::genCodeForQmarkWithCMOV(GenTreePtr tree,
     noway_assert(colon->gtOper == GT_COLON);
 
 #ifdef DEBUG
-    static ConfigDWORD fJitNoCMOV;
-    if (fJitNoCMOV.val(CLRConfig::INTERNAL_JitNoCMOV))
+    if (JitConfig.JitNoCMOV())
     {
         return false;
     }
@@ -12254,8 +12253,7 @@ void                CodeGen::genCodeForTreeSpecialOp(GenTreePtr tree,
 #ifdef FEATURE_ENABLE_NO_RANGE_CHECKS
             // MUST NEVER CHECK-IN WITH THIS ENABLED.
             // This is just for convenience in doing performance investigations and requires x86ret builds
-            static ConfigDWORD fJitNoRngChk;
-            if (!fJitNoRngChk.val(CLRConfig::PRIVATE_JitNoRangeChks))
+            if (!JitConfig.JitNoRngChk())
 #endif
                 genRangeCheck(tree);
         }

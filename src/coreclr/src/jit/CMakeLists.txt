@@ -37,6 +37,7 @@ set( JIT_SOURCES
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
+  jitconfig.cpp
   jiteh.cpp
   jittelemetry.cpp
   lclvars.cpp
