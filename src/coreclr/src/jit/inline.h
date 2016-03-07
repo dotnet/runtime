@@ -208,7 +208,7 @@ class InlinePolicy
 public:
 
     // Factory method for getting policies
-    static InlinePolicy* getPolicy(Compiler* compiler);
+    static InlinePolicy* getPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Obligatory virtual dtor
     virtual ~InlinePolicy() {}
@@ -220,9 +220,8 @@ public:
     InlineObservation getObservation() const { return inlObservation; }
 
     // Policy observations
-    virtual void noteCandidate(InlineObservation obs) = 0;
     virtual void noteSuccess() = 0;
-    virtual void note(InlineObservation obs) = 0;
+    virtual void noteBool(InlineObservation obs, bool value) = 0;
     virtual void noteFatal(InlineObservation obs) = 0;
     virtual void noteInt(InlineObservation obs, int value) = 0;
     virtual void noteDouble(InlineObservation obs, double value) = 0;
@@ -240,9 +239,10 @@ public:
 
 protected:
 
-    InlinePolicy()
+    InlinePolicy(bool isPrejitRoot)
         : inlDecision(InlineDecision::UNDECIDED)
         , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+        , inlIsPrejitRoot(isPrejitRoot)
     {
         // empty
     }
@@ -255,8 +255,9 @@ private:
 
 protected:
 
-    InlineDecision inlDecision;
+    InlineDecision    inlDecision;
     InlineObservation inlObservation;
+    bool              inlIsPrejitRoot;
 };
 
 // InlineResult summarizes what is known about the viability of a
@@ -309,24 +310,6 @@ public:
         return inlDecisionIsDecided(inlPolicy->getDecision());
     }
 
-    // noteCandidate indicates the prospective inline has passed at least
-    // some of the correctness checks and is still a viable inline
-    // candidate, but no decision has been made yet.
-    //
-    // This may be called multiple times as various tests are performed
-    // and the candidate gets closer and closer to actually getting
-    // inlined.
-    void noteCandidate(InlineObservation obs)
-    {
-        assert(!isDecided());
-
-        // Check the impact, it should be INFORMATION
-        InlineImpact impact = inlGetImpact(obs);
-        assert(impact == InlineImpact::INFORMATION);
-
-        inlPolicy->noteCandidate(obs);
-    }
-
     // noteSuccess means the all the various checks have passed and
     // the inline can happen.
     void noteSuccess()
@@ -335,13 +318,24 @@ public:
         inlPolicy->noteSuccess();
     }
 
-    // Make an observation, and update internal state appropriately.
+    // Make a true observation, and update internal state
+    // appropriately.
     //
     // Caller is expected to call isFailure after this to see whether
     // more observation is desired.
     void note(InlineObservation obs)
     {
-        inlPolicy->note(obs);
+        inlPolicy->noteBool(obs, true);
+    }
+
+    // Make a boolean observation, and update internal state
+    // appropriately.
+    //
+    // Caller is expected to call isFailure after this to see whether
+    // more observation is desired.
+    void noteBool(InlineObservation obs, bool value)
+    {
+        inlPolicy->noteBool(obs, value);
     }
 
     // Make an observation that must lead to immediate failure.
