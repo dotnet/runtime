@@ -16,7 +16,7 @@
          This can be removed after we add back the RID to restict this to Unix. 
          https://github.com/dotnet/corefx/issues/2953 --> 
     <NotSupportedOnTargetFramework Include="netcore50" /> 
-    <NotSupportedOnTargetFramework Include="net46" /> 
+    <NotSupportedOnTargetFramework Include="net461" /> 
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
