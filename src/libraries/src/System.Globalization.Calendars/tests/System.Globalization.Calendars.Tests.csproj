@@ -9,12 +9,13 @@
     <AssemblyName>System.Globalization.Calendars.Tests</AssemblyName>
     <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
   </PropertyGroup>
-   <!-- Default configurations to help VS understand the configurations -->
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddMonths.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddYears.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarEras.cs" />
@@ -41,7 +42,7 @@
     <Compile Include="JapaneseCalendar\JapaneseCalendarMaxSupportedDateTime.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarMinSupportedDateTime.cs" />
     <Compile Include="JapaneseCalendar\JapaneseCalendarTwoDigitYearMax.cs" />
-    <Compile Include="KoreanCalendar\KoreanCalendarToDateTime.cs" />    
+    <Compile Include="KoreanCalendar\KoreanCalendarToDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddMonths.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddYears.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarCtor.cs" />
@@ -62,10 +63,10 @@
     <Compile Include="KoreanCalendar\KoreanCalendarMaxSupportedDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarMinSupportedDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarToFourDigitYear.cs" />
-    <Compile Include="KoreanCalendar\KoreanCalendarTwoDigitYearMax.cs" />    
+    <Compile Include="KoreanCalendar\KoreanCalendarTwoDigitYearMax.cs" />
     <Compile Include="Misc\MiscCalendars.cs" />
     <Compile Include="Misc\Calendars.cs" />
-    <Compile Include="PersianCalendar\PersianCalendarTest.cs" />    
+    <Compile Include="PersianCalendar\PersianCalendarTest.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddMonths.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddYears.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarDaysAndMonths.cs" />
@@ -94,7 +95,7 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDayOfMonth.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDayOfWeek.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDayOfYear.cs" />
-    <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDaysInMonth.cs" />    
+    <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDaysInMonth.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetDaysInYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetEra.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetMonth.cs" />
@@ -102,7 +103,7 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetWeekOfYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarGetYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarIsLeapDay.cs" />
-    <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarIsLeapMonth.cs" />    
+    <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarIsLeapMonth.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarIsLeapYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarMaxSupportedDateTime.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarMinSupportedDateTime.cs" />
