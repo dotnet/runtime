@@ -98,12 +98,6 @@ namespace System.Globalization.CalendarsTests
             }
         }
         #endregion
-
-        [Fact]
-        public void ToDateTime_Invalid()
-        {
-            CalendarHelpers.ToDateTime_Invalid(new ThaiBuddhistCalendar());
-        }
         
         #region Helper Methods        
         private bool IsLeapYear(int year)

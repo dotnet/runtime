@@ -112,12 +112,6 @@ namespace System.Globalization.CalendarsTests
             VerificationHelper(dt, i);
         }
         #endregion
-        
-        [Fact]
-        public void AddYears_Invalid()
-        {
-            CalendarHelpers.AddYears_Invalid(new ThaiBuddhistCalendar());
-        }
 
         #region Helper Methods
         private bool IsLeapYear(int i)
