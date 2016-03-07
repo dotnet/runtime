@@ -2,8 +2,14 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0\System.Security.Cryptography.X509Certificates.csproj">
+      <SupportedFramework>net46</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Security.Cryptography.X509Certificates.csproj">
       <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
       <AdditionalProperties>TargetGroup=net461</AdditionalProperties>
