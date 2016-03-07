@@ -104,6 +104,20 @@ extern "C" void SystemNative_UninitializeConsoleAfterRead();
  */
 extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
 
+/**
+ * Gets the terminal's break mode.
+ */
+extern "C" int32_t SystemNative_GetSignalForBreak();
+
+/**
+ * Configures the terminal's break mode.
+ *
+ * signalForBreak should be 1 to treat break as signals, or 0 to treat break as input.
+ *
+ * Returns 1 on success, 0 on failure, in which case errno is set.
+ */
+extern "C" int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
+
 enum CtrlCode : int32_t
 {
     Interrupt = 0,
