@@ -13527,15 +13527,15 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
  * dynamic types.
  */
 static void
-ensure_complete_type (MonoClass *klass)
+ensure_complete_type (MonoClass *klass, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 
 	if (image_is_dynamic (klass->image) && !klass->wastypebuilder && mono_class_get_ref_info (klass)) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mono_class_get_ref_info (klass);
 
-		mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_domain_try_type_resolve_checked (mono_domain_get (), NULL, (MonoObject*)tb, error);
+		return_if_nok (error);
 
 		// Asserting here could break a lot of code
 		//g_assert (klass->wastypebuilder);
@@ -13546,7 +13546,8 @@ ensure_complete_type (MonoClass *klass)
 		int i;
 
 		for (i = 0; i < inst->type_argc; ++i) {
-			ensure_complete_type (mono_class_from_mono_type (inst->type_argv [i]));
+			ensure_complete_type (mono_class_from_mono_type (inst->type_argv [i]), error);
+			return_if_nok (error);
 		}
 	}
 }
@@ -13638,7 +13639,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 	} else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
 		MonoClassField *field = ((MonoReflectionField*)obj)->field;
 
-		ensure_complete_type (field->parent);
+		ensure_complete_type (field->parent, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		if (context) {
 			MonoType *inflated = mono_class_inflate_generic_type_checked (&field->parent->byval_arg, context, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
@@ -13780,7 +13783,9 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		inflated = mono_class_from_mono_type (type);
 
 		result = field = mono_class_get_field_from_name (inflated, mono_field_get_name (field));
-		ensure_complete_type (field->parent);
+		ensure_complete_type (field->parent, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 		g_assert (result);
 		mono_metadata_free_type (type);
 		*handle_class = mono_defaults.fieldhandle_class;
