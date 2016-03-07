@@ -2701,10 +2701,12 @@ ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 		types [i] = t->type;
 	}
 
-	geninst = mono_reflection_bind_generic_parameters (type, count, types);
+	geninst = mono_reflection_bind_generic_parameters (type, count, types, &error);
 	g_free (types);
-	if (!geninst)
+	if (!geninst) {
+		mono_error_set_pending_exception (&error);
 		return NULL;
+	}
 
 	klass = mono_class_from_mono_type (geninst);
 

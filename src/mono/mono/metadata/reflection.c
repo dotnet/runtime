@@ -8571,7 +8571,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			return NULL;
 
 		instance = mono_reflection_bind_generic_parameters (
-			the_type, info->type_arguments->len, type_args);
+			the_type, info->type_arguments->len, type_args, error);
 
 		g_free (type_args);
 		if (!instance)
@@ -10663,7 +10663,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 			}
 		}
 
-		res = mono_reflection_bind_generic_parameters (gclass->generic_type, count, types);
+		res = mono_reflection_bind_generic_parameters (gclass->generic_type, count, types, error);
 		g_free (types);
 		g_assert (res);
 		gclass->type.type = res;
@@ -12060,15 +12060,26 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 #endif
 
+/**
+ * mono_reflection_bind_generic_parameters:
+ * @type: a managed type object (which should be some kind of generic (instance? definition?))
+ * @type_args: the number of type arguments to bind
+ * @types: array of type arguments
+ * @error: set on error
+ *
+ * Given a managed type object for a generic type instance, binds each of its arguments to the specified types.
+ * Returns the MonoType* for the resulting type instantiation.  On failure returns NULL and sets @error.
+ */
 MonoType*
-mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types)
+mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc, MonoType **types, MonoError *error)
 {
-	MonoError error;
 	MonoClass *klass;
 	MonoReflectionTypeBuilder *tb = NULL;
 	gboolean is_dynamic = FALSE;
 	MonoClass *geninst;
 
+	mono_error_init (error);
+	
 	mono_loader_lock ();
 
 	if (is_sre_type_builder (mono_object_class (type))) {
@@ -12089,12 +12100,16 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	if (tb && tb->generic_container)
 		mono_reflection_create_generic_class (tb);
 
-	MonoType *t = mono_reflection_type_get_handle (type, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoType *t = mono_reflection_type_get_handle (type, error);
+	if (!is_ok (error)) {
+		mono_loader_unlock ();
+		return NULL;
+	}
 
 	klass = mono_class_from_mono_type (t);
 	if (!klass->generic_container) {
 		mono_loader_unlock ();
+		mono_error_set_type_load_class (error, klass, "Cannot bind generic parameters of a non-generic type");
 		return NULL;
 	}
 
