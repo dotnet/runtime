@@ -39,7 +39,7 @@
     <Compile Include="Internal\ConcurrentQueue.cs" />
     <Compile Include="Internal\EnumerableDebugView.cs" />
     <Compile Include="Internal\IDebuggerDisplay.cs" />
-    <Compile Include="Internal\ImmutableList.cs" />
+    <Compile Include="Internal\ImmutableArray.cs" />
     <Compile Include="Internal\IProducerConsumerCollection.cs" />
     <Compile Include="Internal\Padding.cs" />
     <Compile Include="Internal\ProducerConsumerQueues.cs" />

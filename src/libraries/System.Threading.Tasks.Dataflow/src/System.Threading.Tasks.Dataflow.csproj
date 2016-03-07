@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -47,7 +47,7 @@
     <Compile Include="Internal\DataflowEtwProvider.cs" />
     <Compile Include="Internal\EnumerableDebugView.cs" />
     <Compile Include="Internal\IDebuggerDisplay.cs" />
-    <Compile Include="Internal\ImmutableList.cs" />
+    <Compile Include="Internal\ImmutableArray.cs" />
     <Compile Include="Internal\Padding.cs" />
     <Compile Include="Internal\ProducerConsumerQueues.cs" />
     <Compile Include="Internal\QueuedMap.cs" />
