@@ -802,6 +802,8 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
 
     if (s_FinalizerThreadOK)
     {
+        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
 #ifdef _DEBUG       // The only purpose of this try/finally is to trigger an assertion
         EE_TRY_FOR_FINALLY(void *, unused, NULL)
         {
@@ -915,6 +917,7 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
         }
         EE_END_FINALLY;
 #endif
+        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
     }
     // finalizer should always park in default domain
     _ASSERTE(GetThread()->GetDomain()->IsDefaultDomain());
