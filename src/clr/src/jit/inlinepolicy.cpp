@@ -13,7 +13,8 @@
 // getPolicy: Factory method for getting an InlinePolicy
 //
 // Arguments:
-//    compiler - the compiler instance that will evaluate inlines
+//    compiler     - the compiler instance that will evaluate inlines
+//    isPrejitRoot - true if this policy is evaluating a prejit root
 //
 // Return Value:
 //    InlinePolicy to use in evaluating the inlines
@@ -22,44 +23,12 @@
 //    Determines which of the various policies should apply,
 //    and creates (or reuses) a policy instance to use.
 
-InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler)
+InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler, bool isPrejitRoot)
 {
     // For now, always create a Legacy policy.
-    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler);
+    InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
 
     return policy;
-}
-
-//------------------------------------------------------------------------
-// noteCandidate: handle passing a set of inlining checks successfully
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::noteCandidate(InlineObservation obs)
-{
-    assert(!inlDecisionIsDecided(inlDecision));
-
-    // Check the impact, it should be INFORMATION
-    InlineImpact impact = inlGetImpact(obs);
-    assert(impact == InlineImpact::INFORMATION);
-
-    switch (inlDecision)
-    {
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        // Candidate observations overwrite one another
-        inlDecision = InlineDecision::CANDIDATE;
-        inlObservation = obs;
-        break;
-    default:
-        // SUCCESS or NEVER or FAILURE or ??
-        assert(!"Unexpected inlDecision");
-        unreached();
-    }
-
-    // Now fall through to the general handling.
-    note(obs);
 }
 
 //------------------------------------------------------------------------
@@ -76,8 +45,9 @@ void LegacyPolicy::noteSuccess()
 //
 // Arguments:
 //    obs      - the current obsevation
+//    value    - the value of the observation
 
-void LegacyPolicy::note(InlineObservation obs)
+void LegacyPolicy::noteBool(InlineObservation obs, bool value)
 {
     // Check the impact
     InlineImpact impact = inlGetImpact(obs);
@@ -95,35 +65,43 @@ void LegacyPolicy::note(InlineObservation obs)
         switch (obs)
         {
         case InlineObservation::CALLEE_IS_FORCE_INLINE:
-            inlIsForceInline = true;
+            // We may make the force-inline observation more than
+            // once.  All observations should agree.
+            assert(!inlIsForceInlineKnown || (inlIsForceInline == value));
+            inlIsForceInline = value;
+            inlIsForceInlineKnown = true;
             break;
         case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
-            inlIsInstanceCtor = true;
+            inlIsInstanceCtor = value;
             break;
         case InlineObservation::CALLEE_CLASS_PROMOTABLE:
-            inlIsFromPromotableValueClass = true;
+            inlIsFromPromotableValueClass = value;
             break;
         case InlineObservation::CALLEE_HAS_SIMD:
-            inlHasSimd = true;
+            inlHasSimd = value;
             break;
         case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-            inlLooksLikeWrapperMethod = true;
+            inlLooksLikeWrapperMethod = value;
             break;
         case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-            inlArgFeedsConstantTest = true;
+            inlArgFeedsConstantTest = value;
             break;
         case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-            inlArgFeedsRangeCheck = true;
+            inlArgFeedsRangeCheck = value;
             break;
         case InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE:
-            inlMethodIsMostlyLoadStore = true;
+            inlMethodIsMostlyLoadStore = value;
             break;
         case InlineObservation::CALLEE_HAS_SWITCH:
             // Pass this one on, it should cause inlining to fail.
             propagate = true;
             break;
         case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-            inlConstantFeedsConstantTest = true;
+            inlConstantFeedsConstantTest = value;
+            break;
+        case InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK:
+            // Passed the profitability screen. Update candidacy.
+            setCandidate(obs);
             break;
         default:
             // Ignore the remainder for now
@@ -165,6 +143,8 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
     {
     case InlineObservation::CALLEE_MAXSTACK:
         {
+            assert(inlIsForceInlineKnown);
+
             unsigned calleeMaxStack = static_cast<unsigned>(value);
 
             if (!inlIsForceInline && (calleeMaxStack > SMALL_STACK_SIZE))
@@ -177,6 +157,7 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
         {
+            assert(inlIsForceInlineKnown);
             assert(value != 0);
 
             unsigned basicBlockCount = static_cast<unsigned>(value);
@@ -189,14 +170,32 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
             break;
         }
 
-    case InlineObservation::CALLEE_NUMBER_OF_IL_BYTES:
+    case InlineObservation::CALLEE_IL_CODE_SIZE:
         {
+            assert(inlIsForceInlineKnown);
             assert(value != 0);
-
             unsigned ilByteSize = static_cast<unsigned>(value);
 
-            if (!inlIsForceInline && (ilByteSize > inlCompiler->getImpInlineSize()))
+            // Now that we know size and forceinline state,
+            // update candidacy.
+            if (ilByteSize <= ALWAYS_INLINE_SIZE)
             {
+                // Candidate based on small size
+                setCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            }
+            else if (inlIsForceInline)
+            {
+                // Candidate based on force inline
+                setCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else if (ilByteSize <= inlCompiler->getImpInlineSize())
+            {
+                // Candidate, pending profitability evaluation
+                setCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+            else
+            {
+                // Callee too big, not a candidate
                 setNever(InlineObservation::CALLEE_TOO_MUCH_IL);
             }
 
@@ -205,7 +204,6 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
     default:
         // Ignore all other information
-        note(obs);
         break;
     }
 }
@@ -219,8 +217,9 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
 void LegacyPolicy::noteDouble(InlineObservation obs, double value)
 {
+    // Ignore for now...
     (void) value;
-    note(obs);
+    (void) obs;
 }
 
 //------------------------------------------------------------------------
@@ -259,8 +258,8 @@ void LegacyPolicy::setFailure(InlineObservation obs)
     switch (inlDecision)
     {
     case InlineDecision::FAILURE:
-        // Repeated failure only ok if in prejit scan
-        assert(isPrejitScan());
+        // Repeated failure only ok if evaluating a prejit root
+        assert(inlIsPrejitRoot);
         break;
     case InlineDecision::UNDECIDED:
     case InlineDecision::CANDIDATE:
@@ -288,8 +287,8 @@ void LegacyPolicy::setNever(InlineObservation obs)
     switch (inlDecision)
     {
     case InlineDecision::NEVER:
-        // Repeated never only ok if in prejit scan
-        assert(isPrejitScan());
+        // Repeated never only ok if evaluating a prejit root
+        assert(inlIsPrejitRoot);
         break;
     case InlineDecision::UNDECIDED:
     case InlineDecision::CANDIDATE:
@@ -301,6 +300,33 @@ void LegacyPolicy::setNever(InlineObservation obs)
         assert(!"Unexpected inlDecision");
         unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// setCandidate: helper updating candidacy
+//
+// Arguments:
+//    obs      - the current obsevation
+//
+// Note:
+//    Candidate observations are handled here. If the inline has already
+//    failed, they're ignored. If there's already a candidate reason,
+//    this new reason trumps it.
+
+void LegacyPolicy::setCandidate(InlineObservation obs)
+{
+    // Ignore if this inline is going to fail.
+    if (inlDecisionIsFailure(inlDecision))
+    {
+        return;
+    }
+
+    // We should not have declared success yet.
+    assert(!inlDecisionIsSuccess(inlDecision));
+
+    // Update, overriding any previous candidacy.
+    inlDecision = InlineDecision::CANDIDATE;
+    inlObservation = obs;
 }
 
 //------------------------------------------------------------------------
