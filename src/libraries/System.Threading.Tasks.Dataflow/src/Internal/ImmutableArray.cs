@@ -17,6 +17,10 @@ using System.Diagnostics;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
+    // NOTE: We use a very simple ImmutableArray implementation rather than taking a dependency
+    // on the full System.Collections.Immutable.dll, which contains much more than we need
+    // for such a simple purpose.
+
     /// <summary>Provides a simple, immutable array.</summary>
     /// <typeparam name="T">Specifies the type of the data stored in the array.</typeparam>
     [DebuggerDisplay("Count={Count}")]
