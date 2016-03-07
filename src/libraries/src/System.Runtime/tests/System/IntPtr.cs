@@ -139,6 +139,14 @@ public static class IntPtrTests
         Assert.Throws<OverflowException>(() => (int)ptr);
     }
 
+    [ConditionalFact(nameof(Is64Bit))]
+    public static void TestGetHashCodeRespectAllBits()
+    {
+        var ptr1 = new IntPtr(0x123456FFFFFFFF);
+        var ptr2 = new IntPtr(0x654321FFFFFFFF);
+        Assert.NotEqual(ptr1.GetHashCode(), ptr2.GetHashCode());
+    }
+
     private static void VerifyPointer(IntPtr ptr, long expected)
     {
         Assert.Equal(expected, ptr.ToInt64());
