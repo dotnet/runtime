@@ -1,14 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeTarget
     {
-        public RuntimeTarget(string runtime, IReadOnlyList<RuntimeAssembly> assemblies, IReadOnlyList<string> nativeLibraries)
+        public RuntimeTarget(string runtime, IEnumerable<RuntimeAssembly> assemblies, IEnumerable<string> nativeLibraries)
         {
             Runtime = runtime;
-            Assemblies = assemblies;
-            NativeLibraries = nativeLibraries;
+            Assemblies = assemblies.ToArray();
+            NativeLibraries = nativeLibraries.ToArray();
         }
 
         public string Runtime { get; }
