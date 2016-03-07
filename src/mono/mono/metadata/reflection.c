@@ -13685,8 +13685,9 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 }
 
 MonoType*
-mono_reflection_type_get_handle (MonoReflectionType* ref)
+mono_reflection_type_get_handle (MonoReflectionType* ref, MonoError *error)
 {
+	mono_error_init (error);
 	if (!ref)
 		return NULL;
 	return ref->type;
