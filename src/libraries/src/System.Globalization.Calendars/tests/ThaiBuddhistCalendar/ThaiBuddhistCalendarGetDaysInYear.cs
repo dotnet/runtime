@@ -86,12 +86,6 @@ namespace System.Globalization.CalendarsTests
             }
         }
         #endregion
-        
-        [Fact]
-        public void GetDaysInYear_Invalid()
-        {
-            CalendarHelpers.GetDaysInYear_Invalid(new ThaiBuddhistCalendar());
-        }
 
         #region Helper Methods
         private bool IsLeapYear(int i)
