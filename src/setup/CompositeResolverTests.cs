@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyModel;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Moq;
@@ -54,7 +55,14 @@ namespace StreamForwarderTests
                 failTwo.Object
             };
 
-            var library = new CompilationLibrary(string.Empty, string.Empty, string.Empty, string.Empty, null, null, false);
+            var library = new CompilationLibrary(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                Enumerable.Empty<string>(),
+                Enumerable.Empty<Dependency>(),
+                false);
 
             var resolver = new CompositeCompilationAssemblyResolver(resolvers);
             var result = resolver.TryResolveAssemblyPaths(library, null);
@@ -82,7 +90,14 @@ namespace StreamForwarderTests
             };
 
             var assemblies = new List<string>();
-            var library = new CompilationLibrary(string.Empty, string.Empty, string.Empty, string.Empty, null, null, false);
+            var library = new CompilationLibrary(
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                Enumerable.Empty<string>(),
+                Enumerable.Empty<Dependency>(),
+                false);
 
             var resolver = new CompositeCompilationAssemblyResolver(resolvers);
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
