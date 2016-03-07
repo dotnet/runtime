@@ -4946,8 +4946,8 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		/* load pointer to returned value type */
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+		g_assert (m->vtaddr_var);
+		mono_mb_emit_ldloc (mb, m->vtaddr_var);
 		/* store the address of the source into local variable 0 */
 		mono_mb_emit_stloc (mb, 0);
 		/* set dst_ptr */
@@ -5027,8 +5027,8 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 			
 		/* load pointer to returned value type */
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+		g_assert (m->vtaddr_var);
+		mono_mb_emit_ldloc (mb, m->vtaddr_var);
 			
 		/* store the address of the source into local variable 0 */
 		mono_mb_emit_stloc (mb, 0);
@@ -7257,7 +7257,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	if (!MONO_TYPE_IS_VOID(sig->ret)) {
+	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		/* allocate local 3 to store the return value */
 		mono_mb_add_local (mb, sig->ret);
 	}
@@ -7268,6 +7268,9 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		/* local 5, the local to be used when calling the suspend funcs */
 		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	}
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		m.vtaddr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
 		/* Return type custom marshaling */
@@ -7346,6 +7349,17 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 #endif
 	}		
 
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		MonoClass *klass = mono_class_from_mono_type (sig->ret);
+		mono_class_init (klass);
+		if (!(((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
+			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			mono_mb_emit_stloc (mb, m.vtaddr_var);
+		}
+	}
+
 	if (mono_threads_is_coop_enabled ()) {
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
@@ -7360,7 +7374,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
 		} else {
-
 		handle_enum:
 			switch (type) {
 			case MONO_TYPE_VOID:
@@ -7879,6 +7892,9 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		mono_mb_add_local (mb, sig->ret);
 	}
 
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		m->vtaddr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
 	/*
 	 * try {
 	 *   mono_jit_attach ();
@@ -7970,6 +7986,17 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	/* ret = method (...) */
 	mono_mb_emit_managed_call (mb, method, NULL);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		MonoClass *klass = mono_class_from_mono_type (sig->ret);
+		mono_class_init (klass);
+		if (!(((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable)) {
+			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			mono_mb_emit_stloc (mb, m->vtaddr_var);
+		}
+	}
 
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
 		emit_marshal (m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
