@@ -171,7 +171,7 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'x86':
-            baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = architecture.toLowerCase() + '_lb_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         default:
             println("Unknown architecture: ${architecture}");
@@ -604,7 +604,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             // For windows, x86 runs by default
             if (os == 'Windows_NT') {
                 if (configuration != 'Checked') {
-                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Legacy Backend Build and Test")
                 }
             }
             else {
@@ -800,8 +800,11 @@ combinedScenarios.each { scenario ->
                                                 buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
-                                        else if (architecture == 'x64' || !isPR) {
+                                        else if (architecture == 'x64') {
                                             buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                        }
+                                        else if (architecture == 'x86') {
+                                            buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} Exclude0 x86_legacy_backend_issues.targets"
                                         }
                                     }
 
