@@ -284,9 +284,6 @@ namespace System.Net
 
         #region UrlEncode implementation
 
-        // *** Source: alm/tfs_core/Framework/Common/UriUtility/HttpUtility.cs
-        // This specific code was copied from above ASP.NET codebase.
-
         private static byte[] UrlEncode(byte[] bytes, int offset, int count, bool alwaysCreateNewReturnValue)
         {
             byte[] encoded = UrlEncode(bytes, offset, count);
@@ -356,8 +353,8 @@ namespace System.Net
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         public static string UrlEncode(string value)
         {
-            if (value == null)
-                return null;
+            if (string.IsNullOrEmpty(value))
+                return value;
 
             byte[] bytes = Encoding.UTF8.GetBytes(value);
             byte[] encodedBytes = UrlEncode(bytes, 0, bytes.Length, false /* alwaysCreateNewReturnValue */);
@@ -373,15 +370,11 @@ namespace System.Net
 
         #region UrlDecode implementation
 
-        // *** Source: alm/tfs_core/Framework/Common/UriUtility/HttpUtility.cs
-        // This specific code was copied from above ASP.NET codebase.
-        // Changes done - Removed the logic to handle %Uxxxx as it is not standards compliant.
-
         private static string UrlDecodeInternal(string value, Encoding encoding)
         {
-            if (value == null)
+            if (string.IsNullOrEmpty(value))
             {
-                return null;
+                return value;
             }
 
             int count = value.Length;
@@ -603,13 +596,8 @@ namespace System.Net
 
         #endregion
 
-        #region UrlDecoder nested class
-
-        // *** Source: alm/tfs_core/Framework/Common/UriUtility/HttpUtility.cs
-        // This specific code was copied from above ASP.NET codebase.
-
-        // Internal class to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
-        private class UrlDecoder
+        // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
+        private struct UrlDecoder
         {
             private int _bufferSize;
 
@@ -639,7 +627,10 @@ namespace System.Net
                 _encoding = encoding;
 
                 _charBuffer = new char[bufferSize];
-                // byte buffer created on demand
+                
+                _numChars = 0;
+                _numBytes = 0;
+                _byteBuffer = null; // byte buffer created on demand
             }
 
             internal void AddChar(char ch)
@@ -669,10 +660,6 @@ namespace System.Net
                     return String.Empty;
             }
         }
-
-        #endregion
-
-        #region HtmlEntities nested class
 
         // helper class for lookup of HTML encoding entities
         private static class HtmlEntities
@@ -956,6 +943,5 @@ namespace System.Net
                 return theChar;
             }
         }
-#endregion
     }
 }
