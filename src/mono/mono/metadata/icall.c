@@ -1256,6 +1256,15 @@ ves_icall_System_Reflection_Emit_AssemblyBuilder_InternalAddModule (MonoReflecti
 	return result;
 }
 
+ICALL_EXPORT MonoArray*
+ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues)
+{
+	MonoError error;
+	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
 static gboolean
 get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {

@@ -11234,7 +11234,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	*retbuffer = buffer;
 }
 
-/*
+/**
  * mono_reflection_get_custom_attrs_blob:
  * @ctor: custom attribute constructor
  * @ctorArgs: arguments o the constructor
@@ -11251,20 +11251,42 @@ MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
 {
 	MonoError error;
+	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
+	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	return result;
+}
+
+/**
+ * mono_reflection_get_custom_attrs_blob_checked:
+ * @ctor: custom attribute constructor
+ * @ctorArgs: arguments o the constructor
+ * @properties:
+ * @propValues:
+ * @fields:
+ * @fieldValues:
+ * @error: set on error
+ * 
+ * Creates the blob of data that needs to be saved in the metadata and that represents
+ * the custom attributed described by @ctor, @ctorArgs etc.
+ * Returns: a Byte array representing the blob of data.  On failure returns NULL and sets @error.
+ */
+MonoArray*
+mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error) 
+{
 	MonoArray *result = NULL;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
 	char *buffer, *p;
 	guint32 buflen, i;
 
-	mono_error_init (&error);
+	mono_error_init (error);
 
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 		/* sig is freed later so allocate it in the heap */
-		sig = ctor_builder_to_signature (NULL, (MonoReflectionCtorBuilder*)ctor, &error);
-		if (!is_ok (&error)) {
+		sig = ctor_builder_to_signature (NULL, (MonoReflectionCtorBuilder*)ctor, error);
+		if (!is_ok (error)) {
 			g_free (sig);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 	} else {
 		sig = mono_method_signature (((MonoReflectionMethod*)ctor)->method);
@@ -11278,8 +11300,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
 		arg = mono_array_get (ctorArgs, MonoObject*, i);
-		encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, sig->params [i], arg, NULL, &error);
-		if (!is_ok (&error)) goto leave;
+		encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, sig->params [i], arg, NULL, error);
+		if (!is_ok (error)) goto leave;
 	}
 	i = 0;
 	if (properties)
@@ -11295,12 +11317,12 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			char *pname;
 
 			prop = (MonoObject *)mono_array_get (properties, gpointer, i);
-			get_prop_name_and_type (prop, &pname, &ptype, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			get_prop_name_and_type (prop, &pname, &ptype, error);
+			if (!is_ok (error)) goto leave;
 			*p++ = 0x54; /* PROPERTY signature */
-			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i), &error);
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i), error);
 			g_free (pname);
-			if (!is_ok (&error)) goto leave;
+			if (!is_ok (error)) goto leave;
 		}
 	}
 
@@ -11311,12 +11333,12 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 			char *fname;
 
 			field = (MonoObject *)mono_array_get (fields, gpointer, i);
-			get_field_name_and_type (field, &fname, &ftype, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			get_field_name_and_type (field, &fname, &ftype, error);
+			if (!is_ok (error)) goto leave;
 			*p++ = 0x53; /* FIELD signature */
-			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i), &error);
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i), error);
 			g_free (fname);
-			if (!is_ok (&error)) goto leave;
+			if (!is_ok (error)) goto leave;
 		}
 	}
 
@@ -11329,7 +11351,6 @@ leave:
 	g_free (buffer);
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod"))
 		g_free (sig);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return result;
 }
 
