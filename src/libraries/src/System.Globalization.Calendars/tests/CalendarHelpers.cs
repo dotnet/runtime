@@ -8,23 +8,10 @@ namespace System.Globalization.Tests
 {
     public static class CalendarHelpers
     {
-        private static int MaxEra(Calendar calendar)
-        {
-            return 1;
-        }
+        private static int MaxEra(Calendar calendar) => calendar.GetEra(calendar.MaxSupportedDateTime);
+        private static int MinEra(Calendar calendar) => calendar.GetEra(calendar.MinSupportedDateTime);
 
-        private static int YearOffset(Calendar calendar)
-        {
-            if (calendar is KoreanCalendar)
-            {
-                return 2333;
-            }
-            if (calendar is ThaiBuddhistCalendar)
-            {
-                return 543;
-            }
-            return 0;
-        }
+        private static int YearOffset(Calendar calendar) => calendar.GetYear(calendar.MinSupportedDateTime) - 1;
 
         public static void AddYears_Invalid(Calendar calendar)
         {
@@ -44,50 +31,57 @@ namespace System.Globalization.Tests
         public static void GetDaysInYear_Invalid(Calendar calendar)
         {
             int yearOffset = YearOffset(calendar);
+            int minEra = MinEra(calendar);
+            int maxEra = MaxEra(calendar);
 
             // Year is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(calendar.MinSupportedDateTime.Year + yearOffset - 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(calendar.MaxSupportedDateTime.Year + yearOffset + 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(-1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(calendar.MinSupportedDateTime.Year + yearOffset - 1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInYear(calendar.MaxSupportedDateTime.Year + yearOffset + 1, maxEra));
 
             // Era is outside supported range
             Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInYear(yearOffset + 1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInYear(yearOffset + 1, MaxEra(calendar) + 1));
+            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInYear(yearOffset + 1, maxEra + 1));
         }
 
         public static void GetDaysInMonth_Invalid(Calendar calendar)
         {
             int yearOffset = YearOffset(calendar);
+            int minEra = MinEra(calendar);
+            int maxEra = MaxEra(calendar);
+            int currentEra = calendar.GetEra(calendar.ToDateTime(yearOffset + 1, 1, 1, 1, 1, 1, 1));
 
             // Year is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(-1, 10, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(0, 10, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(calendar.MinSupportedDateTime.Year + yearOffset - 1, 10, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(calendar.MaxSupportedDateTime.Year + yearOffset + 1, 10, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(-1, 10, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(0, 10, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(calendar.MinSupportedDateTime.Year + yearOffset - 1, 10, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetDaysInMonth(calendar.MaxSupportedDateTime.Year + yearOffset + 1, 10, maxEra));
 
             // Month is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, -1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, calendar.MinSupportedDateTime.Month - 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, calendar.MaxSupportedDateTime.Month + 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, -1, currentEra));
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, calendar.MinSupportedDateTime.Month - 1, currentEra));
+            Assert.Throws<ArgumentOutOfRangeException>("month", () => calendar.GetDaysInMonth(yearOffset + 1, calendar.MaxSupportedDateTime.Month + 1, currentEra));
 
             // Era is outside supported range
             Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInMonth(yearOffset + 1, 10, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInMonth(yearOffset + 1, 10, MaxEra(calendar) + 1));
+            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetDaysInMonth(yearOffset + 1, 10, maxEra + 1));
         }
 
         public static void GetMonthsInYear_Invalid(Calendar calendar)
         {
             int yearOffset = YearOffset(calendar);
+            int minEra = MinEra(calendar);
+            int maxEra = MaxEra(calendar);
 
             // Year is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(-1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(0, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(calendar.MinSupportedDateTime.Year + yearOffset - 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(calendar.MaxSupportedDateTime.Year + yearOffset + 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(-1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(0, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(calendar.MinSupportedDateTime.Year + yearOffset - 1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.GetMonthsInYear(calendar.MaxSupportedDateTime.Year + yearOffset + 1, maxEra));
             
             // Era is outside supported range
             Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetMonthsInYear(yearOffset + 1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetMonthsInYear(yearOffset + 1, MaxEra(calendar) + 1));
+            Assert.Throws<ArgumentOutOfRangeException>("era", () => calendar.GetMonthsInYear(yearOffset + 1, maxEra + 1));
         }
 
         public static void GetWeekOfYear_Invalid(Calendar calendar)
@@ -105,42 +99,67 @@ namespace System.Globalization.Tests
         {
             int yearOffset = YearOffset(calendar);
 
-            DateTime maxDate = new ThaiBuddhistCalendar().MaxSupportedDateTime;
-            DateTime minDate = new ThaiBuddhistCalendar().MinSupportedDateTime;
+            DateTime maxDate = calendar.MaxSupportedDateTime;
+            DateTime minDate = calendar.MinSupportedDateTime;
+
+            int maxEra = MinEra(calendar);
+            int minEra = MaxEra(calendar);
+
+            DateTime currentDate = DateTime.Now;
 
             // Year is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => new ThaiBuddhistCalendar().ToDateTime(-1, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => new ThaiBuddhistCalendar().ToDateTime(0, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => new ThaiBuddhistCalendar().ToDateTime(minDate.Year + yearOffset - 1, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("year", () => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year + yearOffset + 1, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToDateTime(-1, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToDateTime(0, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToDateTime(minDate.Year + yearOffset - 1, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => calendar.ToDateTime(maxDate.Year + yearOffset + 1, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, maxEra));
 
             // Month is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month - 1, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month + 1, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month - 1, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month + 1, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, -1, currentDate.Day, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, 0, currentDate.Day, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, 13, currentDate.Day, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, maxEra));
 
             // Day is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day - 1, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day + 1, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day - 1, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day + 1, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, -1, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, maxEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, 0, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, maxEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, 32, currentDate.Hour, currentDate.Minute, currentDate.Second, currentDate.Millisecond, maxEra));
 
             // Hour is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour - 1, minDate.Minute, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour + 1, maxDate.Minute, maxDate.Second, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour - 1, minDate.Minute, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour + 1, maxDate.Minute, maxDate.Second, maxDate.Millisecond, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, -1, currentDate.Minute, currentDate.Second, currentDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, 60, currentDate.Minute, currentDate.Second, currentDate.Millisecond, maxEra));
 
             // Minute is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute - 1, minDate.Second, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute + 1, maxDate.Second, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute - 1, minDate.Second, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute + 1, maxDate.Second, maxDate.Millisecond, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, -1, currentDate.Second, currentDate.Millisecond, maxEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, 60, currentDate.Second, currentDate.Millisecond, maxEra));
 
             // Second is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second - 1, minDate.Millisecond, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second + 1, maxDate.Millisecond, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second - 1, minDate.Millisecond, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second + 1, maxDate.Millisecond, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, -1, currentDate.Millisecond, maxEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 60, currentDate.Millisecond, maxEra));
 
             // Millisecond is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond - 1, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond + 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond - 1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond + 1, maxEra));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, currentDate.Second, -1, minEra));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, currentDate.Second, 1000, maxEra));
 
             // Era is outside supported range
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ThaiBuddhistCalendar().ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, MaxEra(calendar)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(maxDate.Year, maxDate.Month, maxDate.Day, maxDate.Hour, maxDate.Minute, maxDate.Second, maxDate.Millisecond, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(minDate.Year, minDate.Month, minDate.Day, minDate.Hour, minDate.Minute, minDate.Second, minDate.Millisecond, MaxEra(calendar) + 1));
         }
 
         public static void ToFourDigitYear_Invalid(Calendar calendar)
