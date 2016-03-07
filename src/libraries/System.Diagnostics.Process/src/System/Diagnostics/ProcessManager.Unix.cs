@@ -75,7 +75,7 @@ namespace System.Diagnostics
         {
             if (IsRemoteMachine(machineName))
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.RemoteMachinesNotSupported);
             }
         }
 

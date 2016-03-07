@@ -37,7 +37,7 @@ namespace System.IO.Pipes
 
             if (transmissionMode == PipeTransmissionMode.Message)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_MessageTransmissionMode);
             }
 
             // NOTE: We don't have a good way to enforce maxNumberOfServerInstances, and don't currently try.
