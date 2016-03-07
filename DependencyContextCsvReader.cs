@@ -46,9 +46,10 @@ namespace Microsoft.Extensions.DependencyModel
                     name: identity.Item2,
                     version: identity.Item3,
                     hash: identity.Item4,
-                    assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)).ToArray(),
-                    subTargets: new RuntimeTarget[0],
-                    dependencies: new Dependency[] { },
+                    assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)),
+                    resourceAssemblies: Enumerable.Empty<ResourceAssembly>(),
+                    subTargets: Enumerable.Empty<RuntimeTarget>(),
+                    dependencies: Enumerable.Empty<Dependency>(),
                     serviceable: false
                     ));
             }
@@ -58,9 +59,9 @@ namespace Microsoft.Extensions.DependencyModel
                 runtime: string.Empty,
                 isPortable: false,
                 compilationOptions: CompilationOptions.Default,
-                compileLibraries: new CompilationLibrary[] {},
+                compileLibraries: Enumerable.Empty<CompilationLibrary>(),
                 runtimeLibraries: runtimeLibraries.ToArray(),
-                runtimeGraph: new KeyValuePair<string, string[]>[0]);
+                runtimeGraph: Enumerable.Empty<KeyValuePair<string, string[]>>());
         }
 
         private Tuple<string, string, string, string> PackageIdentity(DepsFileLine line)

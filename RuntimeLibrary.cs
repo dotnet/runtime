@@ -13,17 +13,21 @@ namespace Microsoft.Extensions.DependencyModel
             string name,
             string version,
             string hash,
-            RuntimeAssembly[] assemblies,
-            RuntimeTarget[] subTargets,
-            Dependency[] dependencies,
+            IEnumerable<RuntimeAssembly> assemblies,
+            IEnumerable<ResourceAssembly> resourceAssemblies,
+            IEnumerable<RuntimeTarget> subTargets,
+            IEnumerable<Dependency> dependencies,
             bool serviceable)
             : base(type, name, version, hash, dependencies, serviceable)
         {
-            Assemblies = assemblies;
-            RuntimeTargets = subTargets;
+            Assemblies = assemblies.ToArray();
+            ResourceAssemblies = resourceAssemblies.ToArray();
+            RuntimeTargets = subTargets.ToArray();
         }
 
         public IReadOnlyList<RuntimeAssembly> Assemblies { get; }
+
+        public IReadOnlyList<ResourceAssembly> ResourceAssemblies { get; }
 
         public IReadOnlyList<RuntimeTarget> RuntimeTargets { get; }
     }

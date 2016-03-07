@@ -1,19 +1,20 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyModel
 {
     public class Library
     {
-        public Library(string type, string name, string version, string hash, Dependency[] dependencies, bool serviceable)
+        public Library(string type, string name, string version, string hash, IEnumerable<Dependency> dependencies, bool serviceable)
         {
             Type = type;
             Name = name;
             Version = version;
             Hash = hash;
-            Dependencies = dependencies;
+            Dependencies = dependencies.ToArray();
             Serviceable = serviceable;
         }
 

@@ -173,12 +173,38 @@ namespace Microsoft.Extensions.DependencyModel
                     .Select(RuntimeAssembly.Create)
                     .ToArray();
 
-                return new RuntimeLibrary(stub.Type, name, version, stub.Hash, assemblies, runtimeTargets.ToArray(), dependencies, stub.Serviceable);
+                var resourceAssemblies = ReadResourceAssemblies((JObject)libraryObject[DependencyContextStrings.ResourceAssembliesPropertyName]);
+
+                return new RuntimeLibrary(
+                    type: stub.Type,
+                    name: name,
+                    version: version,
+                    hash: stub.Hash,
+                    assemblies: assemblies,
+                    resourceAssemblies: resourceAssemblies,
+                    subTargets: runtimeTargets.ToArray(),
+                    dependencies: dependencies,
+                    serviceable: stub.Serviceable);
             }
             else
             {
                 var assemblies = ReadAssemblies(libraryObject, DependencyContextStrings.CompileTimeAssembliesKey);
                 return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
+            }
+        }
+
+        private IEnumerable<ResourceAssembly> ReadResourceAssemblies(JObject resourcesObject)
+        {
+            if (resourcesObject == null)
+            {
+                yield break;
+            }
+            foreach (var resourceProperty in resourcesObject)
+            {
+                yield return new ResourceAssembly(
+                    locale: resourceProperty.Value[DependencyContextStrings.LocalePropertyName]?.Value<string>(),
+                    path: resourceProperty.Key
+                    );
             }
         }
 
