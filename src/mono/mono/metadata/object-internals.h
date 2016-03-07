@@ -1411,7 +1411,7 @@ void        mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb
 
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
-void        mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides);
+void        mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides, MonoError *error);
 
 void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
 void mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb);

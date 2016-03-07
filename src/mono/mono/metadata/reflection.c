@@ -12645,13 +12645,13 @@ mono_reflection_method_get_handle (MonoObject *method, MonoError *error)
 }
 
 void
-mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
+mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides, MonoError *error)
 {
-	MonoError error;
 	MonoReflectionTypeBuilder *tb;
 	int i, j, onum;
 	MonoReflectionMethod *m;
 
+	mono_error_init (error);
 	*overrides = NULL;
 	*num_overrides = 0;
 
@@ -12685,8 +12685,8 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 				for (j = 0; j < mono_array_length (mb->override_methods); ++j) {
 					m = mono_array_get (mb->override_methods, MonoReflectionMethod*, j);
 
-					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m, &error);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m, error);
+					return_if_nok (error);
 					(*overrides) [onum * 2 + 1] = mb->mhandle;
 
 					g_assert (mb->mhandle);
@@ -13977,8 +13977,9 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 }
 
 void
-mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
+mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides, MonoError *error)
 {
+	mono_error_init (error);
 	*overrides = NULL;
 	*num_overrides = 0;
 }
