@@ -104,9 +104,24 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             LibraryType.ReferenceAssembly,
                             LibraryDependencyType.Default)
                     }),
+                    resourceAssemblies: new[]
+                    {
+                        new LibraryResourceAssembly(
+                            new LibraryAsset("Dll", "en-US/Pack.Age.resources.dll", ""),
+                            "en-US"
+                            )
+                    },
                     runtimeAssemblies: new[]
                     {
                         new LibraryAsset("Dll", "lib/Pack.Age.dll", ""),
+                    },
+                    runtimeTargets: new []
+                    {
+                        new LibraryRuntimeTarget(
+                            "win8-x64",
+                            new [] { new LibraryAsset("Dll", "win8-x64/Pack.Age.dll", "") },
+                            new [] { new LibraryAsset("Dll", "win8-x64/Pack.Age.native.dll", "") }
+                            )
                     }
                     ),
                 Export(ReferenceAssemblyDescription("System.Collections",
@@ -126,6 +141,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             lib.Version.Should().Be("1.2.3");
             lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
             lib.Assemblies.Should().OnlyContain(l => l.Path == "lib/Pack.Age.dll");
+            lib.ResourceAssemblies.Should().OnlyContain(l => l.Path == "en-US/Pack.Age.resources.dll" && l.Locale == "en-US");
+
+            var target = lib.RuntimeTargets.Should().Contain(t => t.Runtime == "win8-x64").Subject;
+            target.Assemblies.Should().OnlyContain(l => l.Path == "win8-x64/Pack.Age.dll");
+            target.NativeLibraries.Should().OnlyContain(l => l == "win8-x64/Pack.Age.native.dll");
 
             var asm = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Collections").Subject;
             asm.Type.Should().Be("referenceassembly");
@@ -204,7 +224,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void SkipsBuildDependencies()
         {
             var context = Build(compilationExports: new[]
-           {
+            {
                 Export(PackageDescription("Pack.Age",
                     dependencies: new[]
                     {
@@ -225,18 +245,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private LibraryExport Export(
             LibraryDescription description,
             IEnumerable<LibraryAsset> compilationAssemblies = null,
-            IEnumerable<LibraryAsset> runtimeAssemblies = null)
+            IEnumerable<LibraryAsset> runtimeAssemblies = null,
+            IEnumerable<LibraryRuntimeTarget> runtimeTargets = null,
+            IEnumerable<LibraryResourceAssembly> resourceAssemblies = null)
         {
-            return new LibraryExport(
-                description,
-                compilationAssemblies ?? Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                runtimeAssemblies ?? Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<LibraryAsset>(),
-                Enumerable.Empty<AnalyzerReference>()
-            );
+            return LibraryExportBuilder.Create(description)
+                .WithCompilationAssemblies(compilationAssemblies)
+                .WithRuntimeAssemblies(runtimeAssemblies)
+                .WithRuntimeTargets(runtimeTargets)
+                .WithResourceAssemblies(resourceAssemblies)
+                .Build();
         }
 
         private PackageDescription PackageDescription(
