@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
     "System.Diagnostics.Tools": "4.0.0",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"

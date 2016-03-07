@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23901",
-    "Microsoft.Win32.Registry": "4.0.0-rc3-23901",
-    "System.Diagnostics.Process": "4.1.0-rc3-23901",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
+    "Microsoft.Win32.Registry": "4.0.0-rc3-23907",
+    "System.Diagnostics.Process": "4.1.0-rc3-23907",
     "System.Runtime": "4.0.20",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23901",
+    "System.Security.Principal.Windows": "4.0.0-rc3-23907",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
