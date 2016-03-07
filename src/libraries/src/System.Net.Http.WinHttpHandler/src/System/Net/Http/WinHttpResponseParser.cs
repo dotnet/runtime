@@ -47,14 +47,9 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_QUERY_STATUS_CODE);
 
             int reasonPhraseLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_STATUS_TEXT, buffer);
-            if (reasonPhraseLength > 0)
-            {
-                response.ReasonPhrase = GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength);
-            }
-            else
-            {
-                response.ReasonPhrase = string.Empty;
-            }
+            response.ReasonPhrase = reasonPhraseLength > 0 ?
+                GetReasonPhrase(response.StatusCode, buffer, reasonPhraseLength) :
+                string.Empty;
 
             // Create response stream and wrap it in a StreamContent object.
             var responseStream = new WinHttpResponseStream(requestHandle, state);
