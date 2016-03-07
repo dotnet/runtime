@@ -963,12 +963,15 @@ namespace System.Net
 
     internal struct PathList
     {
+        // Usage of PathList depends on it being shallowly immutable;
+        // adding any mutable fields to it would result in breaks.
         private readonly SortedList<string, CookieCollection> _list;
 
         public static PathList Create() => new PathList(new SortedList<string, CookieCollection>(PathListComparer.StaticInstance));
 
         private PathList(SortedList<string, CookieCollection> list)
         {
+            Debug.Assert(list != null, $"{nameof(list)} must not be null.");
             _list = list;
         }
 
@@ -1030,7 +1033,7 @@ namespace System.Net
         {
             get
             {
-                Debug.Assert(_list != null);
+                Debug.Assert(_list != null, $"{nameof(PathList)} should never be default initialized and only ever created with {nameof(Create)}.");
                 return _list;
             }
         }
