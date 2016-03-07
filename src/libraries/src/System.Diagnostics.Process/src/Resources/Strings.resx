@@ -276,4 +276,7 @@
   <data name="ProcessInformationUnavailable" xml:space="preserve">
     <value>Unable to retrieve the specified information about the process or thread.  It may have exited or may be privileged.</value>
   </data>
+  <data name="RemoteMachinesNotSupported" xml:space="preserve">
+    <value>Access to processes on remote machines is not supported on this platform.</value>
+  </data>
 </root>
