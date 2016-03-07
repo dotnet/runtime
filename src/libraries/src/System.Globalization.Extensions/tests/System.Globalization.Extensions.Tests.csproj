@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -18,16 +18,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GlobalizationExtensionsTests.cs" />
-    <Compile Include="IdnMapping\IdnaConformanceTests.cs" />
+    <Compile Include="GetStringComparerTests.cs" />
+    <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
     <Compile Include="IdnMapping\Data\Factory.cs" />
     <Compile Include="IdnMapping\Data\ConformanceIdnaTestResult.cs" />
     <Compile Include="IdnMapping\Data\Unicode_6_0\Unicode_6_0_IdnaTest.cs" />
     <Compile Include="IdnMapping\Data\IConformanceIdnaTest.cs" />
-    <Compile Include="IdnMapping\GetAsciiTests.cs" />
-    <Compile Include="IdnMapping\IdnMappingThrows.cs" />
-    <Compile Include="IdnMapping\UseStd3AsciiRules.cs" />
-    <Compile Include="Normalization\Normalization.cs" />
+    <Compile Include="IdnMapping\IdnMappingGetAsciiTests.cs" />
+    <Compile Include="IdnMapping\IdnMappingGetUnicodeTests.cs" />
+    <Compile Include="IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs" />
+    <Compile Include="Normalization\StringNormalizationTests.cs" />
     <Compile Include="Normalization\NormalizationAll.cs" />
   </ItemGroup>
   <ItemGroup>
