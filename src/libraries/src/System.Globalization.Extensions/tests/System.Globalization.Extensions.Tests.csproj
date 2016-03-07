@@ -26,7 +26,7 @@
     <Compile Include="IdnMapping\Data\IConformanceIdnaTest.cs" />
     <Compile Include="IdnMapping\IdnMappingGetAsciiTests.cs" />
     <Compile Include="IdnMapping\IdnMappingGetUnicodeTests.cs" />
-    <Compile Include="IdnMapping\UseStd3AsciiRules.cs" />
+    <Compile Include="IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs" />
     <Compile Include="Normalization\StringNormalizationTests.cs" />
     <Compile Include="Normalization\NormalizationAll.cs" />
   </ItemGroup>
