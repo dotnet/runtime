@@ -5135,7 +5135,7 @@ WorkingDir=JIT\Methodical\VT\port\_speed_dbglcs
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [largeobjectalloc.exe_2577]
 RelativePath=GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.exe
 WorkingDir=GC\Coverage\LargeObjectAlloc
@@ -7578,7 +7578,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_speed_rellcs
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [opcodesclt.exe_1700]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt\OpCodesClt.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt
@@ -19457,7 +19457,7 @@ WorkingDir=JIT\Methodical\Arrays\misc\_speed_dbggcarr
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [arraysort1b.exe_334]
 RelativePath=CoreMangLib\cti\system\array\ArraySort1b\ArraySort1b.exe
 WorkingDir=CoreMangLib\cti\system\array\ArraySort1b
@@ -23384,7 +23384,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_speed_dbglcs
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PAS
 [iconvertibletoint16.exe_1282]
 RelativePath=CoreMangLib\cti\system\iconvertible\IConvertibleToInt16\IConvertibleToInt16.exe
 WorkingDir=CoreMangLib\cti\system\iconvertible\IConvertibleToInt16
@@ -24497,7 +24497,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_il_dbglcs_ldlen
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [converttostring1.exe_840]
 RelativePath=CoreMangLib\cti\system\convert\ConvertToString1\ConvertToString1.exe
 WorkingDir=CoreMangLib\cti\system\convert\ConvertToString1
@@ -28529,7 +28529,7 @@ WorkingDir=JIT\Methodical\Arrays\misc\_speed_relgcarr
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=JIT;EXPECTED_PASS
 [threadstartcast_2.exe_185]
 RelativePath=baseservices\threading\paramthreadstart\ThreadStartCast_2\ThreadStartCast_2.exe
 WorkingDir=baseservices\threading\paramthreadstart\ThreadStartCast_2
@@ -32351,7 +32351,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_speed_dbglcsbas
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [cgrecurseaca_ro.exe_3451]
 RelativePath=JIT\jit64\opt\cg\CGRecurse\CGRecurseACA_ro\CGRecurseACA_ro.exe
 WorkingDir=JIT\jit64\opt\cg\CGRecurse\CGRecurseACA_ro
@@ -35088,7 +35088,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_speed_rellcsbas
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [b56349.exe_5292]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b56349\b56349\b56349.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b56349\b56349
@@ -37433,7 +37433,7 @@ WorkingDir=JIT\Methodical\Arrays\lcs\_il_rellcs_ldlen
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [initobj.exe_2990]
 RelativePath=JIT\Directed\PREFIX\unaligned\2\initobj\initobj.exe
 WorkingDir=JIT\Directed\PREFIX\unaligned\2\initobj
@@ -39414,7 +39414,7 @@ WorkingDir=JIT\Methodical\VT\port\_speed_rellcs
 MaxAllowedDurationSeconds=600
 HostStyle=Any
 Expected=100
-Categories=JIT;EXPECTED_FAIL;ISSUE_2731
+Categories=JIT;EXPECTED_PASS
 [opcodescgt.exe_1697]
 RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt\OpCodesCgt.exe
 WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt
