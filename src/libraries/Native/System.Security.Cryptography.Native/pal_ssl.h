@@ -68,6 +68,7 @@ enum class ExchangeAlgorithmType : int32_t
     // ExchangeAlgorithm constants which are not present in the managed ExchangeAlgorithmType enum.
     SSL_ECDH = 43525,
     SSL_ECDSA = 41475,
+    SSL_ECDHE = 44550,
     SSL_kPSK = 229390,
     SSL_kGOST = 229391,
     SSL_kSRP = 229392,
