@@ -39,6 +39,7 @@ typedef struct {
 	MonoMethodPInvoke *piinfo;
 	int *orig_conv_args; /* Locals containing the original values of byref args */
 	int retobj_var;
+	int vtaddr_var;
 	MonoClass *retobj_class;
 	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
 	MonoImage *image; /* The image to use for looking up custom marshallers */
