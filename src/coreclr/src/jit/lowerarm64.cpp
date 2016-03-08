@@ -349,8 +349,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_MUL:
             if (tree->gtOverflow())
             {
-                // Need a register different from target reg to check
-                // for signed overflow.
+                // Need a register different from target reg to check for overflow.
                 info->internalIntCount = 2;
             }
             __fallthrough;
