@@ -932,7 +932,7 @@ namespace System.Net.Security
                 int offset = 0;
                 SecurityStatusPal status = PrivateDecryptData(buffer, ref offset, ref count);
 
-                if (status == SecurityStatusPal.OK)
+                if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
                 {
                     Exception e = EnqueueOldKeyDecryptedData(buffer, offset, count);
                     if (e != null)
@@ -945,7 +945,7 @@ namespace System.Net.Security
                     StartReceiveBlob(buffer, asyncRequest);
                     return;
                 }
-                else if (status != SecurityStatusPal.Renegotiate)
+                else if (status.ErrorCode != SecurityStatusPalErrorCode.Renegotiate)
                 {
                     // Fail re-handshake.
                     ProtocolToken message = new ProtocolToken(null, status);

@@ -805,9 +805,9 @@ namespace System.Net.Security
             }
 
             byte[] nextmsg = null;
-            SecurityStatusPal errorCode = GenerateToken(incoming, offset, count, ref nextmsg);
+            SecurityStatusPal status = GenerateToken(incoming, offset, count, ref nextmsg);
 
-            if (!_serverMode && errorCode == SecurityStatusPal.CredentialsNeeded)
+            if (!_serverMode && status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
             {
                 if (GlobalLog.IsEnabled)
                 {
@@ -815,10 +815,10 @@ namespace System.Net.Security
                 }
 
                 SetRefreshCredentialNeeded();
-                errorCode = GenerateToken(incoming, offset, count, ref nextmsg);
+                status = GenerateToken(incoming, offset, count, ref nextmsg);
             }
 
-            ProtocolToken token = new ProtocolToken(nextmsg, errorCode);
+            ProtocolToken token = new ProtocolToken(nextmsg, status);
             if (GlobalLog.IsEnabled)
             {
                 GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::NextMessage", token.ToString());
@@ -839,7 +839,7 @@ namespace System.Net.Security
                 output - ref to byte [], what we will send to the
                     server in response
             Return:
-                errorCode - an SSPI error code
+                status - error information
         --*/
         private SecurityStatusPal GenerateToken(byte[] input, int offset, int count, ref byte[] output)
         {
@@ -887,7 +887,7 @@ namespace System.Net.Security
 
             SecurityBuffer outgoingSecurity = new SecurityBuffer(null, SecurityBufferType.Token);
 
-            SecurityStatusPal errorCode = 0;
+            SecurityStatusPal status = default(SecurityStatusPal);
 
             bool cachedCreds = false;
             byte[] thumbPrint = null;
@@ -910,7 +910,7 @@ namespace System.Net.Security
 
                     if (_serverMode)
                     {
-                        errorCode = SslStreamPal.AcceptSecurityContext(
+                        status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle,
                                       ref _securityContext,
                                       incomingSecurity,
@@ -921,7 +921,7 @@ namespace System.Net.Security
                     {
                         if (incomingSecurity == null)
                         {
-                            errorCode = SslStreamPal.InitializeSecurityContext(
+                            status = SslStreamPal.InitializeSecurityContext(
                                            ref _credentialsHandle,
                                            ref _securityContext,
                                            _destination,
@@ -930,7 +930,7 @@ namespace System.Net.Security
                         }
                         else
                         {
-                            errorCode = SslStreamPal.InitializeSecurityContext(
+                            status = SslStreamPal.InitializeSecurityContext(
                                            _credentialsHandle,
                                            ref _securityContext,
                                            _destination,
@@ -974,7 +974,7 @@ namespace System.Net.Security
                 GlobalLog.Leave("SecureChannel#" + LoggingHash.HashString(this) + "::GenerateToken()", Interop.MapSecurityStatus((uint)errorCode));
             }
 #endif
-            return (SecurityStatusPal)errorCode;
+            return status;
         }
 
         /*++
@@ -1092,7 +1092,7 @@ namespace System.Net.Security
 
             SecurityStatusPal secStatus = SslStreamPal.EncryptMessage(_securityContext, writeBuffer, size, _headerSize, _trailerSize, out resultSize);
 
-            if (secStatus != SecurityStatusPal.OK)
+            if (secStatus.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
                 if (GlobalLog.IsEnabled)
                 {
@@ -1302,7 +1302,7 @@ namespace System.Net.Security
         {
             get
             {
-                return ((Status != SecurityStatusPal.OK) && (Status != SecurityStatusPal.ContinueNeeded));
+                return ((Status.ErrorCode != SecurityStatusPalErrorCode.OK) && (Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded));
             }
         }
 
@@ -1310,7 +1310,7 @@ namespace System.Net.Security
         {
             get
             {
-                return (Status == SecurityStatusPal.OK);
+                return (Status.ErrorCode == SecurityStatusPalErrorCode.OK);
             }
         }
 
@@ -1318,7 +1318,7 @@ namespace System.Net.Security
         {
             get
             {
-                return (Status == SecurityStatusPal.Renegotiate);
+                return (Status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate);
             }
         }
 
@@ -1326,13 +1326,13 @@ namespace System.Net.Security
         {
             get
             {
-                return (Status == SecurityStatusPal.ContextExpired);
+                return (Status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired);
             }
         }
 
-        internal ProtocolToken(byte[] data, SecurityStatusPal errorCode)
+        internal ProtocolToken(byte[] data, SecurityStatusPal status)
         {
-            Status = errorCode;
+            Status = status;
             Payload = data;
             Size = data != null ? data.Length : 0;
         }

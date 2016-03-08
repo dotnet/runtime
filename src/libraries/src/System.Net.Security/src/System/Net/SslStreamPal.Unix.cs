@@ -18,7 +18,7 @@ namespace System.Net
 
         public static Exception GetException(SecurityStatusPal status)
         {
-            return new Interop.OpenSsl.SslException((int)status);
+            return status.Exception ?? new Interop.OpenSsl.SslException((int)status.ErrorCode);
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
@@ -62,7 +62,8 @@ namespace System.Net
         {
             int resultSize;
             SecurityStatusPal retVal = EncryptDecryptHelper(securityContext, buffer, offset, count, 0, 0, false, out resultSize);
-            if (SecurityStatusPal.OK == retVal || SecurityStatusPal.Renegotiate == retVal)
+            if (retVal.ErrorCode == SecurityStatusPalErrorCode.OK || 
+                retVal.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
             {
                 count = resultSize;
             }
@@ -115,13 +116,11 @@ namespace System.Net
                 outputBuffer.offset = 0;
                 outputBuffer.token = outputSize > 0 ? output : null;
 
-                return done ? SecurityStatusPal.OK : SecurityStatusPal.ContinueNeeded;
+                return new SecurityStatusPal(done ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded);
             }
-            catch
+            catch (Exception exc)
             {
-                // TODO: This Debug.Fail is triggering on Linux in many test cases #4317
-                // Debug.Fail("Exception Caught. - " + ex);
-                return SecurityStatusPal.InternalError;             
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);     
             }
         }
 
@@ -146,20 +145,19 @@ namespace System.Net
                 switch (errorCode)
                 {
                     case Interop.Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE:
-                        return SecurityStatusPal.Renegotiate;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.Renegotiate);
                     case Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
-                        return SecurityStatusPal.ContextExpired;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.ContextExpired);
                     case Interop.Ssl.SslErrorCode.SSL_ERROR_NONE:
                     case Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
-                        return SecurityStatusPal.OK;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
                     default:
-                        return SecurityStatusPal.InternalError;
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, new Interop.OpenSsl.SslException((int)errorCode));
                 }
             }
             catch (Exception ex)
             {
-                Debug.Fail("Exception Caught. - " + ex);
-                return SecurityStatusPal.InternalError;
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, ex);
             }
         }
     }
