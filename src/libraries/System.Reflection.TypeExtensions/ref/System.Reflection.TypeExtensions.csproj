@@ -11,15 +11,6 @@
     <Compile Include="System.Reflection.TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj">
-      <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
-      <Name>System.Reflection</Name>
-      <!-- Don't copy the reference assembly to output -->
-      <Private>false</Private>
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
