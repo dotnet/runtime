@@ -1699,6 +1699,9 @@ mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror
 MonoString *
 mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
 
+gboolean
+mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
+
 MonoObject*
 mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 

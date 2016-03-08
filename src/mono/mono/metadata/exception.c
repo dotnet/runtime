@@ -68,11 +68,13 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 	klass = mono_class_load_from_name (image, name_space, name);
 
 	o = mono_object_new_checked (domain, klass, &error);
-	g_assert (o != NULL && mono_error_ok (&error)); /* FIXME don't swallow the error */
+	mono_error_assert_ok (&error);
 
 	if (domain != caller_domain)
 		mono_domain_set_internal (domain);
-	mono_runtime_object_init (o);
+	mono_runtime_object_init_checked (o, &error);
+	mono_error_assert_ok (&error);
+
 	if (domain != caller_domain)
 		mono_domain_set_internal (caller_domain);
 
@@ -97,12 +99,13 @@ mono_exception_from_token (MonoImage *image, guint32 token)
 	MonoObject *o;
 
 	klass = mono_class_get_checked (image, token, &error);
-	g_assert (mono_error_ok (&error)); /* FIXME handle the error. */
+	mono_error_assert_ok (&error);
 
 	o = mono_object_new_checked (mono_domain_get (), klass, &error);
-	g_assert (o != NULL && mono_error_ok (&error)); /* FIXME don't swallow the error */
+	mono_error_assert_ok (&error);
 	
-	mono_runtime_object_init (o);
+	mono_runtime_object_init_checked (o, &error);
+	mono_error_assert_ok (&error);
 
 	return (MonoException *)o;
 }

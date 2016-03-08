@@ -72,15 +72,39 @@ static GENERATE_GET_CLASS_WITH_CACHE (activation_services, System.Runtime.Remoti
 #define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
 
+/**
+ * mono_runtime_object_init:
+ * @this_obj: the object to initialize
+ *
+ * This function calls the zero-argument constructor (which must
+ * exist) for the given object.
+ */
 void
 mono_runtime_object_init (MonoObject *this_obj)
 {
+	MonoError error;
+	mono_runtime_object_init_checked (this_obj, &error);
+	mono_error_assert_ok (&error);
+}
+
+/**
+ * mono_runtime_object_init_checked:
+ * @this_obj: the object to initialize
+ * @error: set on error.
+ *
+ * This function calls the zero-argument constructor (which must
+ * exist) for the given object and returns TRUE on success, or FALSE
+ * on error and sets @error.
+ */
+gboolean
+mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoMethod *method = NULL;
 	MonoClass *klass = this_obj->vtable->klass;
 
+	mono_error_init (error);
 	method = mono_class_get_method_from_name (klass, ".ctor", 0);
 	if (!method)
 		g_error ("Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
@@ -88,8 +112,8 @@ mono_runtime_object_init (MonoObject *this_obj)
 	if (method->klass->valuetype)
 		this_obj = (MonoObject *)mono_object_unbox (this_obj);
 
-	mono_runtime_invoke_checked (method, this_obj, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_runtime_invoke_checked (method, this_obj, NULL, error);
+	return is_ok (error);
 }
 
 /* The pseudo algorithm for type initialization from the spec
