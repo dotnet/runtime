@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
-    "System.IO.Compression": "4.1.0-rc3-23907",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+    "System.IO.Compression": "4.1.0-rc3-23908",
     "System.Net.Http": "4.0.0",
-    "System.Net.Primitives": "4.0.11-rc3-23907",
-    "System.Net.Requests": "4.0.11-rc3-23907",
+    "System.Net.Primitives": "4.0.11-rc3-23908",
+    "System.Net.Requests": "4.0.11-rc3-23908",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
