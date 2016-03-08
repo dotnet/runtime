@@ -136,6 +136,14 @@ public static class UIntPtrTests
         Assert.Throws<OverflowException>(() => (uint)ptr);
     }
 
+    [ConditionalFact(nameof(Is64Bit))]
+    public static void TestGetHashCodeRespectAllBits()
+    {
+        var ptr1 = new UIntPtr(0x123456FFFFFFFF);
+        var ptr2 = new UIntPtr(0x654321FFFFFFFF);
+        Assert.NotEqual(ptr1.GetHashCode(), ptr2.GetHashCode());
+    }
+
     private static void VerifyPointer(UIntPtr ptr, ulong expected)
     {
         Assert.Equal(expected, ptr.ToUInt64());
