@@ -3,8 +3,7 @@
     "System.Net.Http": "4.0.0",
     "System.Net.Primitives": "4.0.10",
     "System.Runtime": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23907",
-    "System.Security.Cryptography.Encoding": "4.0.0-rc3-23907",
+    "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23908",
     "System.Threading.Tasks": "4.0.0"
   },
   "frameworks": {
