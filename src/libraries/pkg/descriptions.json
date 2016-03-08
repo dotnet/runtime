@@ -472,7 +472,7 @@
     },
     {
         "Name": "System.Drawing.Primitives",
-        "Description": "Provides access to GDI+ basic graphics functionality that should be used in place of the corresponding types in System.Drawing.dll.",
+        "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
         "CommonTypes": [
             "System.Drawing.Point",
             "System.Drawing.PointF",
