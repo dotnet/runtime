@@ -170,35 +170,45 @@ extern "C" int32_t CryptoNative_SslSessionReused(SSL* ssl)
     return SSL_session_reused(ssl) == 1;
 }
 
+static bool StringSpanEquals(const char* lhs, const char* rhs, size_t lhsLength)
+{
+    if (lhsLength != strlen(rhs))
+    {
+        return false;
+    }
+
+    return strncmp(lhs, rhs, lhsLength) == 0;
+}
+
 static CipherAlgorithmType MapCipherAlgorithmType(const char* encryption, size_t encryptionLength)
 {
-    if (strncmp(encryption, "DES(56)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "DES(56)", encryptionLength))
         return CipherAlgorithmType::Des;
-    if (strncmp(encryption, "3DES(168)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "3DES(168)", encryptionLength))
         return CipherAlgorithmType::TripleDes;
-    if (strncmp(encryption, "RC4(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "RC4(128)", encryptionLength))
         return CipherAlgorithmType::Rc4;
-    if (strncmp(encryption, "RC2(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "RC2(128)", encryptionLength))
         return CipherAlgorithmType::Rc2;
-    if (strncmp(encryption, "None", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "None", encryptionLength))
         return CipherAlgorithmType::Null;
-    if (strncmp(encryption, "IDEA(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "IDEA(128)", encryptionLength))
         return CipherAlgorithmType::SSL_IDEA;
-    if (strncmp(encryption, "SEED(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "SEED(128)", encryptionLength))
         return CipherAlgorithmType::SSL_SEED;
-    if (strncmp(encryption, "AES(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "AES(128)", encryptionLength))
         return CipherAlgorithmType::Aes128;
-    if (strncmp(encryption, "AES(256)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "AES(256)", encryptionLength))
         return CipherAlgorithmType::Aes256;
-    if (strncmp(encryption, "Camellia(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "Camellia(128)", encryptionLength))
         return CipherAlgorithmType::SSL_CAMELLIA128;
-    if (strncmp(encryption, "Camellia(256)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "Camellia(256)", encryptionLength))
         return CipherAlgorithmType::SSL_CAMELLIA256;
-    if (strncmp(encryption, "GOST89(256)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "GOST89(256)", encryptionLength))
         return CipherAlgorithmType::SSL_eGOST2814789CNT;
-    if (strncmp(encryption, "AESGCM(128)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "AESGCM(128)", encryptionLength))
         return CipherAlgorithmType::Aes128;
-    if (strncmp(encryption, "AESGCM(256)", encryptionLength) == 0)
+    if (StringSpanEquals(encryption, "AESGCM(256)", encryptionLength))
         return CipherAlgorithmType::Aes256;
 
     return CipherAlgorithmType::None;
@@ -206,27 +216,27 @@ static CipherAlgorithmType MapCipherAlgorithmType(const char* encryption, size_t
 
 static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, size_t keyExchangeLength)
 {
-    if (strncmp(keyExchange, "RSA", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "RSA", keyExchangeLength))
         return ExchangeAlgorithmType::RsaKeyX;
-    if (strncmp(keyExchange, "DH/RSA", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "DH/RSA", keyExchangeLength))
         return ExchangeAlgorithmType::DiffieHellman;
-    if (strncmp(keyExchange, "DH/DSS", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "DH/DSS", keyExchangeLength))
         return ExchangeAlgorithmType::DiffieHellman;
-    if (strncmp(keyExchange, "DH", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "DH", keyExchangeLength))
         return ExchangeAlgorithmType::DiffieHellman;
-    if (strncmp(keyExchange, "KRB5", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "KRB5", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_kKRB5;
-    if (strncmp(keyExchange, "ECDH/RSA", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "ECDH", keyExchangeLength))
+        return ExchangeAlgorithmType::SSL_ECDHE;
+    if (StringSpanEquals(keyExchange, "ECDH/RSA", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_ECDH;
-    if (strncmp(keyExchange, "ECDH/ECDSA", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "ECDH/ECDSA", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_ECDSA;
-    if (strncmp(keyExchange, "ECDH", keyExchangeLength) == 0)
-        return ExchangeAlgorithmType::SSL_ECDSA;
-    if (strncmp(keyExchange, "PSK", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "PSK", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_kPSK;
-    if (strncmp(keyExchange, "GOST", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "GOST", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_kGOST;
-    if (strncmp(keyExchange, "SRP", keyExchangeLength) == 0)
+    if (StringSpanEquals(keyExchange, "SRP", keyExchangeLength))
         return ExchangeAlgorithmType::SSL_kSRP;
 
     return ExchangeAlgorithmType::None;
@@ -234,43 +244,43 @@ static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, s
 
 static void GetHashAlgorithmTypeAndSize(const char* mac, size_t macLength, HashAlgorithmType& dataHashAlg, DataHashSize& hashKeySize)
 {
-    if (strncmp(mac, "MD5", macLength) == 0)
+    if (StringSpanEquals(mac, "MD5", macLength))
     {
         dataHashAlg = HashAlgorithmType::Md5;
         hashKeySize = DataHashSize::MD5_HashKeySize;
         return;
     }
-    if (strncmp(mac, "SHA1", macLength) == 0)
+    if (StringSpanEquals(mac, "SHA1", macLength))
     {
         dataHashAlg = HashAlgorithmType::Sha1;
         hashKeySize = DataHashSize::SHA1_HashKeySize;
         return;
     }
-    if (strncmp(mac, "GOST94", macLength) == 0)
+    if (StringSpanEquals(mac, "GOST94", macLength))
     {
         dataHashAlg = HashAlgorithmType::SSL_GOST94;
         hashKeySize = DataHashSize::GOST_HashKeySize;
         return;
     }
-    if (strncmp(mac, "GOST89", macLength) == 0)
+    if (StringSpanEquals(mac, "GOST89", macLength))
     {
         dataHashAlg = HashAlgorithmType::SSL_GOST89;
         hashKeySize = DataHashSize::GOST_HashKeySize;
         return;
     }
-    if (strncmp(mac, "SHA256", macLength) == 0)
+    if (StringSpanEquals(mac, "SHA256", macLength))
     {
         dataHashAlg = HashAlgorithmType::SSL_SHA256;
         hashKeySize = DataHashSize::SHA256_HashKeySize;
         return;
     }
-    if (strncmp(mac, "SHA384", macLength) == 0)
+    if (StringSpanEquals(mac, "SHA384", macLength))
     {
         dataHashAlg = HashAlgorithmType::SSL_SHA384;
         hashKeySize = DataHashSize::SHA384_HashKeySize;
         return;
     }
-    if (strncmp(mac, "AEAD", macLength) == 0)
+    if (StringSpanEquals(mac, "AEAD", macLength))
     {
         dataHashAlg = HashAlgorithmType::SSL_AEAD;
         hashKeySize = DataHashSize::Default;
