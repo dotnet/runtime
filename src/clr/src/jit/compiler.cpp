@@ -4869,7 +4869,8 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                     assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
 
                     // Estimate the call site impact
-                    int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);
+                    int callsiteNativeSizeEstimate =
+                        prejitResult.determineCallsiteNativeSizeEstimate(methodInfo);
 
                     // See if we're willing to pay for inlining this method
                     impCanInlineNative(callsiteNativeSizeEstimate,
