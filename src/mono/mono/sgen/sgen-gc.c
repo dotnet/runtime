@@ -1767,6 +1767,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 
 	major_collector.init_to_space ();
 
+	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 	/*
 	 * The concurrent collector doesn't move objects, neither on
 	 * the major heap nor in the nursery, so we can mark even
@@ -1774,7 +1775,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * collector we start the workers after pinning.
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
