@@ -432,7 +432,13 @@ private:
     // Hence the "SmallFPSet" has 5 elements.
 
 #if defined(_TARGET_AMD64_)
-    static const regMaskTP  LsraLimitSmallIntSet = RBM_LOWINT;
+#ifdef UNIX_AMD64_ABI
+    // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
+    static const regMaskTP  LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
+#else // !UNIX_AMD64_ABI
+    // On Windows Amd64 use the RDI and RSI as callee saved registers.
+    static const regMaskTP  LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
+#endif // !UNIX_AMD64_ABI
     static const regMaskTP  LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7 );
 #elif defined(_TARGET_ARM_)
     static const regMaskTP  LsraLimitSmallIntSet = (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4);
