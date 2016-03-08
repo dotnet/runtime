@@ -67,9 +67,25 @@ public class IntPtrGetHashCode
         {
             byte* mem = stackalloc byte[1024];
             System.IntPtr ip = new IntPtr((void*)mem);
-            if (ip.GetHashCode() != (int)mem)
+            if (System.IntPtr.Size == 4)
             {
-                TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address");
+                if (ip.GetHashCode() != (int)mem)
+                {
+                    TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address");
+                    retVal = false;
+                }
+            }
+            else if (System.IntPtr.Size == 8)
+            {
+                if (ip.GetHashCode() != ((int)mem ^ (int)((long)mem >> 32)))
+                {
+                    TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address xor halves");
+                    retVal = false;
+                }
+            }
+            else
+            {
+                TestLibrary.TestFramework.LogError("002", "Unexpected IntPtr.Size: " + System.IntPtr.Size);
                 retVal = false;
             }
         }
