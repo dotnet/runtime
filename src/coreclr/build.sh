@@ -245,14 +245,16 @@ build_mscorlib()
         exit 1
     fi
 
-    if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
-        echo "Generating native image for mscorlib."
-        $__BinDir/crossgen $__BinDir/mscorlib.dll
-        if [ $? -ne 0 ]; then
-            echo "Failed to generate native image for mscorlib."
-            exit 1
-        fi
-    fi
+    if [ $__CrossBuild != 1 ]; then
+       if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
+           echo "Generating native image for mscorlib."
+           $__BinDir/crossgen $__BinDir/mscorlib.dll
+           if [ $? -ne 0 ]; then
+               echo "Failed to generate native image for mscorlib."
+               exit 1
+           fi
+       fi
+    fi 
 }
 
 generate_NugetPackages()
