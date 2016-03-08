@@ -1376,25 +1376,35 @@ test-oom: $(OOM_TESTS)
 if HOST_WIN32
 test-unhandled-exception-2:
 else
-test-unhandled-exception-2: test-unhandled-exception-2-1 test-unhandled-exception-2-2 test-unhandled-exception-2-3 test-unhandled-exception-2-4	\
-		 test-unhandled-exception-2-5 test-unhandled-exception-2-6 test-unhandled-exception-2-7 test-unhandled-exception-2-8
 
-test-unhandled-exception-2-1: unhandled-exception-1.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 1 $<
-test-unhandled-exception-2-2: unhandled-exception-2.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-3: unhandled-exception-3.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-4: unhandled-exception-4.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-5: unhandled-exception-5.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-6: unhandled-exception-6.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-7: unhandled-exception-7.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-8: unhandled-exception-8.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 3 $<
+# tests that expect a 1 exit code
+UNHANDLED_EXCEPTION_1_TESTS =	\
+	unhandled-exception-1.exe
+
+# tests that expect a 255 exit code
+UNHANDLED_EXCEPTION_255_TESTS =	\
+	unhandled-exception-2.exe	\
+	unhandled-exception-3.exe	\
+	unhandled-exception-4.exe	\
+	unhandled-exception-5.exe	\
+	unhandled-exception-6.exe	\
+	unhandled-exception-7.exe
+
+test-unhandled-exception-2: $(UNHANDLED_EXCEPTION_1_TESTS) $(UNHANDLED_EXCEPTION_255_TESTS)
+	$(MAKE) test-unhandled-exception-2-1-with-managed-handler
+	$(MAKE) test-unhandled-exception-2-1-without-managed-handler
+	$(MAKE) test-unhandled-exception-2-255-with-managed-handler
+	$(MAKE) test-unhandled-exception-2-255-without-managed-handler
+
+test-unhandled-exception-2-1-with-managed-handler: $(UNHANDLED_EXCEPTION_1_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 1 $(UNHANDLED_EXCEPTION_1_TESTS)
+test-unhandled-exception-2-1-without-managed-handler: $(UNHANDLED_EXCEPTION_1_TESTS) test-runner.exe
+	TEST_UNHANDLED_EXCEPTION_HANDLER=1 $(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 1 $(UNHANDLED_EXCEPTION_1_TESTS)
+test-unhandled-exception-2-255-with-managed-handler: $(UNHANDLED_EXCEPTION_255_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 255 $(UNHANDLED_EXCEPTION_255_TESTS)
+test-unhandled-exception-2-255-without-managed-handler: $(UNHANDLED_EXCEPTION_255_TESTS) test-runner.exe
+	TEST_UNHANDLED_EXCEPTION_HANDLER=1 $(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 255 $(UNHANDLED_EXCEPTION_255_TESTS)
+
 endif
 
 EXTRA_DIST += appdomain-loader.cs appdomain-tester.cs

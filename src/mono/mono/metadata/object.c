@@ -4346,20 +4346,20 @@ mono_unhandled_exception (MonoObject *exc)
 	if (current_domain != root_domain)
 		current_appdomain_delegate = mono_field_get_value_object (current_domain, field, (MonoObject*) current_domain->domain);
 
-	/* set exitcode only if we will abort the process */
 	if (!current_appdomain_delegate && !root_appdomain_delegate) {
-		if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
-		     || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
-		{
-			mono_environment_exitcode_set (1);
-		}
-
 		mono_print_unhandled_exception (exc);
 	} else {
 		if (root_appdomain_delegate)
 			call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
 		if (current_appdomain_delegate)
 			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
+	}
+
+	/* set exitcode only if we will abort the process */
+	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
+		 || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
+	{
+		mono_environment_exitcode_set (1);
 	}
 }
 
