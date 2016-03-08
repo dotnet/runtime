@@ -1230,12 +1230,15 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 
 BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 {
-    BOOL retval;
-    COUNT_T size  = MAX_LONGPATH;     //Retry once the PAL Api is fixed to return the correct size 
-    WCHAR* buffer = pbuffer.OpenUnicodeBuffer(size - 1);
+    BOOL retval = FALSE;
+    COUNT_T size  = MAX_LONGPATH;
 
-    retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), size);
-    size   = (COUNT_T)wcslen(buffer);
+    if(!(retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size)))
+    {
+        pbuffer.CloseBuffer(0);
+        retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size);
+    }
+
     pbuffer.CloseBuffer(size);
 
     return retval;

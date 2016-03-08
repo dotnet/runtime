@@ -30,11 +30,6 @@ using namespace CorUnix;
 /* ------------------- Definitions ------------------------------*/
 SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 
-enum
-{
-    c_cchMaxEvent = MAX_LONGPATH + 1
-};
-
 CObjectType CorUnix::otManualResetEvent(
                 otiManualResetEvent,
                 NULL,   // No cleanup routine
