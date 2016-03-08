@@ -38,10 +38,7 @@ inline
 bool                 getInlinePInvokeEnabled()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITPInvokeEnabled;
-    static ConfigDWORD fStressCOMCall;
-
-    return fJITPInvokeEnabled.val(CLRConfig::INTERNAL_JITPInvokeEnabled) && !fStressCOMCall.val(CLRConfig::INTERNAL_StressCOMCall);
+    return JitConfig.JitPInvokeEnabled() && !JitConfig.StressCOMCall();
 #else
     return true;
 #endif
@@ -51,8 +48,7 @@ inline
 bool                 getInlinePInvokeCheckEnabled()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITPInvokeCheckEnabled;
-    return fJITPInvokeCheckEnabled.val(CLRConfig::INTERNAL_JITPInvokeCheckEnabled) != 0;
+    return JitConfig.JitPInvokeCheckEnabled() != 0;
 #else
     return false;
 #endif
@@ -89,8 +85,7 @@ inline
 RoundLevel          getRoundFloatLevel()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITRoundFloat;
-    return (RoundLevel) fJITRoundFloat.val_DontUse_(CLRConfig::INTERNAL_JITRoundFloat, DEFAULT_ROUND_LEVEL);
+    return (RoundLevel) JitConfig.JitRoundFloat();
 #else
     return DEFAULT_ROUND_LEVEL;
 #endif
@@ -3092,15 +3087,13 @@ void                Compiler::tmpDone()
 inline
 bool                Compiler::shouldUseVerboseTrees()
 {
-    static ConfigDWORD fVerboseTrees;
-    return (fVerboseTrees.val(CLRConfig::INTERNAL_JitDumpVerboseTrees) == 1);
+    return (JitConfig.JitDumpVerboseTrees() == 1);
 }
 
 inline
 bool                Compiler::shouldUseVerboseSsa()
 {
-    static ConfigDWORD fVerboseSsa;
-    return (fVerboseSsa.val(CLRConfig::INTERNAL_JitDumpVerboseSsa) == 1);
+    return (JitConfig.JitDumpVerboseSsa() == 1);
 }
 
 //------------------------------------------------------------------------
@@ -3112,8 +3105,7 @@ bool                Compiler::shouldUseVerboseSsa()
 inline
 bool                Compiler::shouldDumpASCIITrees()
 {
-    static ConfigDWORD fASCIITrees;
-    return (fASCIITrees.val(CLRConfig::INTERNAL_JitDumpASCII) == 1);
+    return (JitConfig.JitDumpASCII() == 1);
 }
 
 /*****************************************************************************
@@ -3126,8 +3118,7 @@ bool                Compiler::shouldDumpASCIITrees()
 inline
 DWORD               getJitStressLevel()
 {
-    static ConfigDWORD fJitStress;
-    return fJitStress.val(CLRConfig::INTERNAL_JitStress);
+    return JitConfig.JitStress();
 }
 
 /*****************************************************************************
@@ -3137,9 +3128,7 @@ DWORD               getJitStressLevel()
 inline
 DWORD               StrictCheckForNonVirtualCallToVirtualMethod()
 {
-    static ConfigDWORD fJitStrictCheckForNonVirtualCallToVirtualMethod;
-    return fJitStrictCheckForNonVirtualCallToVirtualMethod.val(
-           CLRConfig::INTERNAL_JitStrictCheckForNonVirtualCallToVirtualMethod) == 1;
+    return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
 }
 
 #endif // DEBUG

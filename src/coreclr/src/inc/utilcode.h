@@ -1189,6 +1189,8 @@ void    SplitPath(__in SString const &path,
                   __inout_opt SString *fname,
                   __inout_opt SString *ext);
 
+#if !defined(NO_CLRCONFIG)
+
 //*****************************************************************************
 //
 // **** REGUTIL - Static helper functions for reading/writing to Windows registry.
@@ -1522,6 +1524,8 @@ public:
 private:
     LPWSTR m_wszString;
 };
+
+#endif // defined(NO_CLRCONFIG)
 
 #include "ostype.h"
 
@@ -4175,6 +4179,8 @@ public:
     }
 };
 
+#if !defined(NO_CLRCONFIG)
+
 /**************************************************************************/
 /* simple wrappers around the REGUTIL and MethodNameList routines that make
    the lookup lazy */
@@ -4280,6 +4286,8 @@ private:
 
     BYTE m_inited;
 };
+
+#endif // !defined(NO_CLRCONFIG)
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
