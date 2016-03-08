@@ -211,7 +211,7 @@
 //
 
 
-#if !defined(__FCall_h__) && !defined(CLR_STANDALONE_BINDER)
+#ifndef __FCall_h__
 #define __FCall_h__
 
 #include "gms.h"
