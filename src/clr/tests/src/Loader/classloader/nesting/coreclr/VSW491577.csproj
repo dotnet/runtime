@@ -16,7 +16,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferenceLocalMscorlib>false</ReferenceLocalMscorlib>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <CLRTestPriority>2</CLRTestPriority>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
