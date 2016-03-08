@@ -466,7 +466,7 @@ namespace System.Globalization
                     return (m_EraInfo[i].era);
                 }
             }
-            throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Era);
+            throw new ArgumentOutOfRangeException("time", SR.ArgumentOutOfRange_Era);
         }
 
 
