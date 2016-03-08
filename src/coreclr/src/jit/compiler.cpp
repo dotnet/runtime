@@ -4951,11 +4951,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 
         if (compIsForInlining())
         {
-            if (forceInline)
-            {
-                compInlineResult->noteCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-            }
-
             compInlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS, fgBBcount);
 
             if (compInlineResult->isFailure())

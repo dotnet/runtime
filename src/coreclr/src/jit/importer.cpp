@@ -15702,8 +15702,8 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
                  calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
                  threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
 
-       // Still a viable candidate....update status
-       inlineResult->noteCandidate(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
+       // Candidate has passed the profitability screen, update candidacy.
+       inlineResult->note(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
     }
 
 #undef NATIVE_CALL_SIZE_MULTIPLIER
@@ -15747,11 +15747,6 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
-    if (forceInline)
-    {
-        inlineResult->noteCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-    }
-
     // Reject if it has too many locals.
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
@@ -15776,9 +15771,13 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
-    // Reject large functions
+    // Note force inline state
 
-    inlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_IL_BYTES, codeSize);
+    inlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, forceInline);
+
+    // Note IL code size
+
+    inlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
     if (inlineResult->isFailure())
     {
@@ -15793,9 +15792,6 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     {
         return;
     }
-
-    // Still a viable candidate...
-    inlineResult->noteCandidate(InlineObservation::CALLEE_CAN_INLINE_IL);
 }
 
 /*****************************************************************************
@@ -15979,8 +15975,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         pInfo->initClassResult = initClassResult;
 
         *(pParam->ppInlineCandidateInfo) = pInfo;
-
-        pParam->result->noteCandidate(InlineObservation::CALLEE_CHECK_CAN_INLINE_IL);
   
 _exit:
         ;
@@ -16086,14 +16080,6 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
         printf("\n");
     }
 #endif
-
-    //
-    // The current arg does not prevent inlining.
-    //
-    // This doesn't mean that other information or other args
-    // will not prevent inlining of this method.
-    //
-    inlineResult->noteCandidate(InlineObservation::CALLSITE_ARGS_OK);
 }
 
 /*****************************************************************************
@@ -16438,7 +16424,6 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
 
-    inlineResult->noteCandidate(InlineObservation::CALLSITE_LOCALS_OK);
 }
 
 
