@@ -55,7 +55,6 @@
   <PropertyGroup>
     <CLRTestKind Condition="'$(CLRTestKind)' == ' '">BuildAndRun</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
-    <_CLRTestInServiceOfHigherPriority Condition="'$(_CLRTestInServiceOfHigherPriority)' == ''">false</_CLRTestInServiceOfHigherPriority>
   </PropertyGroup>
 
 </Project>
