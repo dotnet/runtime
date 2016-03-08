@@ -27,9 +27,277 @@
 #include "simplerhash.h"
 #endif
 
+#ifdef MEASURE_GCINFO
+#define GCINFO_WRITE(writer, val, numBits, counter) \
+    {                                               \
+        writer.Write(val, numBits);                 \
+        m_CurrentMethodSize.counter += numBits;     \
+        m_CurrentMethodSize.TotalSize += numBits;   \
+    }
+#define GCINFO_WRITE_VARL_U(writer, val, base, counter) \
+    {                                               \
+        size_t __temp =                             \
+         writer.EncodeVarLengthUnsigned(val, base); \
+        m_CurrentMethodSize.counter += __temp;      \
+        m_CurrentMethodSize.TotalSize += __temp;    \
+    }
+#define GCINFO_WRITE_VARL_S(writer, val, base, counter) \
+    {                                               \
+        size_t __temp =                             \
+         writer.EncodeVarLengthSigned(val, base);   \
+        m_CurrentMethodSize.counter += __temp;      \
+        m_CurrentMethodSize.TotalSize += __temp;    \
+    }
+#define GCINFO_WRITE_VECTOR(writer, vector, counter)   \
+    {                                               \
+        WriteSlotStateVector(writer, vector);       \
+        for(UINT32 i = 0; i < m_NumSlots; i++)      \
+        {                                           \
+            if(!m_SlotTable[i].IsDeleted() &&       \
+               !m_SlotTable[i].IsUntracked())       \
+            {                                       \
+                m_CurrentMethodSize.counter++;      \
+                m_CurrentMethodSize.TotalSize++;    \
+            }                                       \
+        }                                           \
+    }
+#define GCINFO_WRITE_VAR_VECTOR(writer, vector, baseSkip, baseRun, counter)   \
+    {                                                                         \
+        size_t __temp =                                                       \
+           WriteSlotStateVarLengthVector(writer, vector, baseSkip, baseRun);  \
+        m_CurrentMethodSize.counter += __temp;                                \
+        m_CurrentMethodSize.TotalSize += __temp;                              \
+    }
+#else
+#define GCINFO_WRITE(writer, val, numBits, counter) \
+        writer.Write(val, numBits);
+
+#define GCINFO_WRITE_VARL_U(writer, val, base, counter) \
+        writer.EncodeVarLengthUnsigned(val, base);
+
+#define GCINFO_WRITE_VARL_S(writer, val, base, counter) \
+        writer.EncodeVarLengthSigned(val, base);
+
+#define GCINFO_WRITE_VECTOR(writer, vector, counter)   \
+        WriteSlotStateVector(writer, vector);
+
+#define GCINFO_WRITE_VAR_VECTOR(writer, vector, baseSkip, baseRun, counter)   \
+        WriteSlotStateVarLengthVector(writer, vector, baseSkip, baseRun);
+#endif
+
+#define LOG_GCSLOTDESC_FMT "%s%c%d%s%s%s"
+#define LOG_GCSLOTDESC_ARGS(pDesc) (pDesc)->IsRegister() ? "register"                                          \
+                                        : GcStackSlotBaseNames[(pDesc)->Slot.Stack.Base],                      \
+                                   (pDesc)->IsRegister() ? ' ' : (pDesc)->Slot.Stack.SpOffset < 0 ? '-' : '+', \
+                                   (pDesc)->IsRegister() ? (pDesc)->Slot.RegisterNumber                        \
+                                        : ((pDesc)->Slot.Stack.SpOffset),                                      \
+                                   (pDesc)->IsPinned() ? " pinned" : "",                                       \
+                                   (pDesc)->IsInterior() ? " interior" : "",                                   \
+                                   (pDesc)->IsUntracked() ? " untracked" : ""
+
+#define LOG_REGTRANSITION_FMT "register %u%s%s"
+#define LOG_REGTRANSITION_ARGS(RegisterNumber, Flags)           \
+                RegisterNumber,                                 \
+                (Flags & GC_SLOT_PINNED)   ? " pinned"   : "",  \
+                (Flags & GC_SLOT_INTERIOR) ? " interior" : ""
+
+#define LOG_STACKTRANSITION_FMT "%s%c%d%s%s%s"
+#define LOG_STACKTRANSITION_ARGS(BaseRegister, StackOffset, Flags)  \
+        GcStackSlotBaseNames[BaseRegister],                         \
+        ((StackOffset) < 0) ? '-' : '+',                            \
+        ((StackOffset) >= 0) ? (StackOffset)                        \
+                             : -(StackOffset),                      \
+                (Flags & GC_SLOT_PINNED)   ? " pinned"   : "",      \
+                (Flags & GC_SLOT_INTERIOR) ? " interior" : "",      \
+                (Flags & GC_SLOT_UNTRACKED) ? " untracked" : ""
+
+class BitArray
+{
+    friend class BitArrayIterator;
+public:
+    BitArray(IAllocator* pJitAllocator, size_t size_tCount)
+    {
+        m_pData = (size_t*)pJitAllocator->Alloc(size_tCount*sizeof(size_t));
+        m_pEndData = m_pData + size_tCount;
+#ifdef MUST_CALL_IALLOCATOR_FREE
+        m_pJitAllocator = pJitAllocator;
+#endif
+    }
+
+    inline size_t* DataPtr()
+    {
+        return m_pData;
+    }
+    
+    inline void SetBit( size_t pos )
+    {
+        size_t element = pos / BITS_PER_SIZE_T;
+        int bpos = (int)(pos % BITS_PER_SIZE_T);
+        m_pData[element] |= ((size_t)1 << bpos);
+    }
+
+    inline void ClearBit( size_t pos )
+    {
+        size_t element = pos / BITS_PER_SIZE_T;
+        int bpos = (int)(pos % BITS_PER_SIZE_T);
+        m_pData[element] &= ~((size_t)1 << bpos);
+    }
+
+    inline void SetAll()
+    {
+        size_t* ptr = m_pData;
+        while(ptr < m_pEndData)
+            *(ptr++) = (size_t)(SSIZE_T)(-1);
+    }
+    
+    inline void ClearAll()
+    {
+        size_t* ptr = m_pData;
+        while(ptr < m_pEndData)
+            *(ptr++) = (size_t) 0;
+    }
+    
+    inline void WriteBit( size_t pos, BOOL val)
+    {
+        if(val)
+            SetBit(pos);
+        else
+            ClearBit(pos);
+    }
+    
+    inline size_t ReadBit( size_t pos ) const
+    {
+        size_t element = pos / BITS_PER_SIZE_T;
+        int bpos = (int)(pos % BITS_PER_SIZE_T);
+        return (m_pData[element] & ((size_t)1 << bpos));
+    }
+
+    inline bool operator==(const BitArray &other) const
+    {
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        size_t* dest = m_pData;
+        size_t* src = other.m_pData;
+        return 0 == memcmp(dest, src, (m_pEndData - m_pData) * sizeof(*m_pData));
+    }
+
+    inline int GetHashCode() const
+    {
+        const int* src = (const int*)m_pData;
+        int result = *src++;
+        while(src < (const int*)m_pEndData)
+            result = _rotr(result, 5) ^ *src++;
+            
+        return result;
+    }
+
+    inline BitArray& operator=(const BitArray &other)
+    {
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        size_t* dest = m_pData;
+        size_t* src = other.m_pData;
+        while(dest < m_pEndData)
+            *(dest++) = *(src++);
+            
+        return *this;
+    }
+    
+    inline BitArray& operator|=(const BitArray &other)
+    {
+        _ASSERTE(other.m_pEndData - other.m_pData == m_pEndData - m_pData);
+        size_t* dest = m_pData;
+        size_t* src = other.m_pData;
+        while(dest < m_pEndData)
+            *(dest++) |= *(src++);
+            
+        return *this;
+    }
+    
+#ifdef MUST_CALL_IALLOCATOR_FREE
+    ~BitArray()
+    {
+        m_pAllocator->Free( m_pData );
+    }    
+#endif
+
+private:
+    size_t * m_pData;
+    size_t * m_pEndData;
+#ifdef MUST_CALL_IALLOCATOR_FREE
+    IAllocator* m_pJitAllocator;
+#endif
+};
+
+
+class BitArrayIterator
+{
+public:
+    BitArrayIterator(BitArray* bitArray)
+    {
+        m_pCurData = (unsigned *)bitArray->m_pData;
+        m_pEndData = (unsigned *)bitArray->m_pEndData;
+        m_curBits = *m_pCurData;
+        m_curBit = 0;
+        m_curBase = 0;
+        GetNext();
+    }
+    void operator++(int dummy) //int dummy is c++ for "this is postfix ++"
+    {
+        GetNext();
+    }
+
+    void operator++() // prefix ++
+    {
+        GetNext();
+    }
+    void GetNext()
+    {
+        m_curBits -= m_curBit;
+        while (m_curBits == 0)
+        {
+            m_pCurData++;
+            m_curBase += 32;
+            if (m_pCurData == m_pEndData)
+                break;
+            m_curBits = *m_pCurData;
+        }
+        m_curBit = (unsigned)((int)m_curBits & -(int)m_curBits);
+    }
+    unsigned operator*()
+    {
+        assert(!end() && (m_curBit != 0));
+        unsigned bitPosition = BitPosition(m_curBit);
+        return bitPosition + m_curBase;
+    }
+    bool end()
+    {
+        return (m_pCurData == m_pEndData);
+    }
+private:
+    unsigned*   m_pCurData;
+    unsigned*   m_pEndData;
+    unsigned    m_curBits;
+    unsigned    m_curBit;
+    unsigned    m_curBase;
+};
+
+
 #ifdef MDIL
 #define MUST_CALL_JITALLOCATOR_FREE 1
 #endif 
+
+class LiveStateFuncs
+{
+public:
+    static int GetHashCode(const BitArray * key)
+    {
+        return key->GetHashCode();
+    }
+
+    static bool Equals(const BitArray * k1, const BitArray * k2)
+    {
+        return *k1 == *k2;
+    }
+};
 
 typedef SimplerHashTable< const BitArray *, LiveStateFuncs, UINT32, DefaultSimplerHashBehavior > LiveStateHashTable;
 
@@ -39,6 +307,53 @@ typedef SimplerHashTable< const BitArray *, LiveStateFuncs, UINT32, DefaultSimpl
 GcInfoSize g_FiGcInfoSize;
 GcInfoSize g_PiGcInfoSize;
 
+GcInfoSize::GcInfoSize()
+{
+    memset(this, 0, sizeof(*this));
+}
+
+GcInfoSize& operator+=(const GcInfoSize& other)
+{
+    TotalSize += other.TotalSize;
+
+    NumMethods += other.NumMethods;
+    NumCallSites += other.NumCallSites;
+    NumRanges += other.NumRanges;
+    NumRegs += other.NumRegs;
+    NumStack += other.NumStack;
+    NumEh += other.NumEh;
+    NumTransitions += other.NumTransitions;
+    SizeOfCode += other.SizeOfCode;
+    
+    FlagsSize += other.FlagsSize;
+    CodeLengthSize += other.CodeLengthSize;
+    ProEpilogSize += other.ProEpilogSize;
+    SecObjSize += other.SecObjSize;
+    GsCookieSize += other.GsCookieSize;
+    GenericsCtxSize += other.GenericsCtxSize;
+    PspSymSize += other.PspSymSize;
+    StackBaseSize += other.StackBaseSize;
+    FrameMarkerSize += other.FrameMarkerSize;
+    FixedAreaSize += other.FixedAreaSize;
+    NumCallSitesSize += other.NumCallSitesSize;
+    NumRangesSize += other.NumRangesSize;
+    CallSitePosSize += other.CallSitePosSize;
+    RangeSize += other.RangeSize;
+    NumRegsSize += other.NumRegsSize;
+    NumStackSize += other.NumStackSize;
+    RegSlotSize += other.RegSlotSize;
+    StackSlotSize += other.StackSlotSize;
+    CallSiteStateSize += other.CallSiteStateSize;
+    NumEhSize += other.NumEhSize;
+    EhPosSize += other.EhPosSize;
+    EhStateSize += other.EhStateSize;
+    ChunkPtrSize += other.ChunkPtrSize;
+    ChunkMaskSize += other.ChunkMaskSize;
+    ChunkFinalStateSize += other.ChunkFinalStateSize;
+    ChunkTransitionSize += other.ChunkTransitionSize;
+
+    return *this;
+}
 
 void GcInfoSize::Log(DWORD level, const char * header)
 {
@@ -168,6 +483,28 @@ GcInfoEncoder::GcInfoEncoder(
 #endif //_DEBUG
 }
 
+#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+void GcInfoEncoder::DefineCallSites(UINT32* pCallSites, BYTE* pCallSiteSizes, UINT32 numCallSites)
+{
+    m_pCallSites = pCallSites;
+    m_pCallSiteSizes = pCallSiteSizes;
+    m_NumCallSites = numCallSites;
+#ifdef _DEBUG
+    for(UINT32 i=0; i<numCallSites; i++)
+    {
+        _ASSERTE(pCallSiteSizes[i] > 0);
+        _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(pCallSites[i])) == pCallSites[i]);
+        if(i > 0)
+        {
+            UINT32 prevEnd = pCallSites[i-1] + pCallSiteSizes[i-1];
+            UINT32 curStart = pCallSites[i];
+            _ASSERTE(curStart >= prevEnd);
+        }
+    }
+#endif
+}
+#endif
+
 GcSlotId GcInfoEncoder::GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags )
 {
     // We could lookup an existing identical slot in the slot table (via some hashtable mechanism).
@@ -247,6 +584,17 @@ void GcInfoEncoder::GrowSlotTable()
 #endif
 
     m_SlotTable = newSlotTable;
+}
+
+void GcInfoEncoder::WriteSlotStateVector(BitStreamWriter &writer, const BitArray& vector)
+{
+    for(UINT32 i = 0; i < m_NumSlots && !m_SlotTable[i].IsUntracked(); i++)
+    {
+        if(!m_SlotTable[i].IsDeleted())
+            writer.Write(vector.ReadBit(i) ? 1 : 0, 1);
+        else
+            _ASSERTE(vector.ReadBit(i) == 0);
+    }
 }
 
 void GcInfoEncoder::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
@@ -2382,5 +2730,72 @@ void BitStreamWriter::Dispose()
         m_pAllocator->Free( pMemBlockDesc );
     }
 #endif
+}
+
+int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
+{
+    // If a value gets so big we are probably doing something wrong
+    _ASSERTE(((INT32)(UINT32)n) >= 0);
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
+    size_t numEncodings = 1 << base;
+    int bitsUsed;
+    for(bitsUsed = base+1; ; bitsUsed += base+1)
+    {
+        if( n < numEncodings )
+        {
+            return bitsUsed;
+        }
+        else
+        {
+            n >>= base;
+        }
+    }
+    return bitsUsed;
+}
+
+int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)
+{
+    // If a value gets so big we are probably doing something wrong
+    _ASSERTE(((INT32)(UINT32)n) >= 0);
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
+    size_t numEncodings = 1 << base;
+    int bitsUsed;
+    for(bitsUsed = base+1; ; bitsUsed += base+1)
+    {
+        if( n < numEncodings )
+        {
+            Write( n, base+1 ); // This sets the extension bit to zero
+            return bitsUsed;
+        }
+        else
+        {
+            size_t currentChunk = n & (numEncodings-1);
+            Write( currentChunk | numEncodings, base+1 );
+            n >>= base;
+        }
+    }
+    return bitsUsed;
+}
+
+int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
+{
+    _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
+    size_t numEncodings = 1 << base;
+    for(int bitsUsed = base+1; ; bitsUsed += base+1)
+    {
+        size_t currentChunk = ((size_t) n) & (numEncodings-1);
+        size_t topmostBit = currentChunk & (numEncodings >> 1);
+        n >>= base; // signed arithmetic shift
+        if((topmostBit && (n == (SSIZE_T)-1)) || (!topmostBit && (n == 0)))
+        {
+            // The topmost bit correctly represents the sign
+            Write( currentChunk, base+1 ); // This sets the extension bit to zero
+            return bitsUsed;
+        }
+        else
+        {
+            Write( currentChunk | numEncodings, base+1 );
+        }
+    }
 }
 
