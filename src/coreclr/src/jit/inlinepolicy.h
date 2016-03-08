@@ -36,10 +36,11 @@ class LegacyPolicy : public InlinePolicy
 public:
 
     // Construct a LegacyPolicy
-    LegacyPolicy(Compiler* compiler)
-        : InlinePolicy()
+    LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
+        : InlinePolicy(isPrejitRoot)
         , inlCompiler(compiler)
         , inlIsForceInline(false)
+        , inlIsForceInlineKnown(false)
         , inlIsInstanceCtor(false)
         , inlIsFromPromotableValueClass(false)
         , inlHasSimd(false)
@@ -53,10 +54,9 @@ public:
     }
 
     // Policy observations
-    void noteCandidate(InlineObservation obs) override;
     void noteSuccess() override;
-    void note(InlineObservation obs) override;
     void noteFatal(InlineObservation obs) override;
+    void noteBool(InlineObservation obs, bool value) override;
     void noteInt(InlineObservation obs, int value) override;
     void noteDouble(InlineObservation obs, double value) override;
 
@@ -74,15 +74,9 @@ private:
 
     // Helper methods
     void noteInternal(InlineObservation obs);
+    void setCandidate(InlineObservation obs);
     void setFailure(InlineObservation obs);
     void setNever(InlineObservation obs);
-
-    // True if this policy is being used to scan a method during
-    // prejitting.
-    bool isPrejitScan() const 
-    { 
-        return !inlCompiler->compIsForInlining(); 
-    }
 
     // Constants
     const unsigned MAX_BASIC_BLOCKS = 5;
@@ -90,6 +84,7 @@ private:
     // Data members
     Compiler* inlCompiler;
     bool      inlIsForceInline :1;
+    bool      inlIsForceInlineKnown :1;
     bool      inlIsInstanceCtor :1;
     bool      inlIsFromPromotableValueClass :1;
     bool      inlHasSimd :1;
