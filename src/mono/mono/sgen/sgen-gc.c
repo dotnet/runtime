@@ -245,6 +245,8 @@ static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
 static gboolean enable_nursery_canaries = FALSE;
 
+static gboolean precleaning_enabled = TRUE;
+
 #ifdef HEAVY_STATISTICS
 guint64 stat_objects_alloced_degraded = 0;
 guint64 stat_bytes_alloced_degraded = 0;
@@ -1788,11 +1790,15 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * collector we start the workers after pinning.
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		ScanJob *sj;
-		/* Mod union preclean job */
-		sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
-		sj->ops = object_ops;
-		sgen_workers_start_all_workers (object_ops, &sj->job);
+		if (precleaning_enabled) {
+			ScanJob *sj;
+			/* Mod union preclean job */
+			sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
+			sj->ops = object_ops;
+			sgen_workers_start_all_workers (object_ops, &sj->job);
+		} else {
+			sgen_workers_start_all_workers (object_ops, NULL);
+		}
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		if (sgen_workers_have_idle_work ()) {
@@ -2945,6 +2951,15 @@ sgen_gc_init (void)
 			}
 			if (!strcmp (opt, "no-cementing")) {
 				cement_enabled = FALSE;
+				continue;
+			}
+
+			if (!strcmp (opt, "precleaning")) {
+				precleaning_enabled = TRUE;
+				continue;
+			}
+			if (!strcmp (opt, "no-precleaning")) {
+				precleaning_enabled = FALSE;
 				continue;
 			}
 
