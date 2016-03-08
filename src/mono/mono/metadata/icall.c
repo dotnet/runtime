@@ -1739,9 +1739,12 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 ICALL_EXPORT MonoArray*
 ves_icall_get_parameter_info (MonoMethod *method, MonoReflectionMethod *member)
 {
+	MonoError error;
 	MonoDomain *domain = mono_domain_get (); 
 
-	return mono_param_get_objects_internal (domain, method, member->reftype ? mono_class_from_mono_type (member->reftype->type) : NULL);
+	MonoArray *result = mono_param_get_objects_internal (domain, method, member->reftype ? mono_class_from_mono_type (member->reftype->type) : NULL, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionMarshalAsAttribute*
@@ -7768,6 +7771,7 @@ mono_type_from_blob_type (MonoType *type, MonoTypeEnum blob_type, MonoType *real
 ICALL_EXPORT MonoObject*
 property_info_get_default_value (MonoReflectionProperty *property)
 {
+	MonoError error;
 	MonoType blob_type;
 	MonoProperty *prop = property->property;
 	MonoType *type = get_property_type (prop);
@@ -7786,8 +7790,9 @@ property_info_get_default_value (MonoReflectionProperty *property)
 	def_value = mono_class_get_property_default_value (prop, &def_type);
 
 	mono_type_from_blob_type (&blob_type, def_type, type);
-	o = mono_get_object_from_blob (domain, &blob_type, def_value);
+	o = mono_get_object_from_blob (domain, &blob_type, def_value, &error);
 
+	mono_error_set_pending_exception (&error);
 	return o;
 }
 

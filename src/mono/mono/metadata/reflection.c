@@ -7450,11 +7450,10 @@ get_reflection_missing (MonoDomain *domain, MonoObject **reflection_missing)
  * in the method @method.
  */
 MonoArray*
-mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
+mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
 	static MonoClass *System_Reflection_ParameterInfo_array;
-	MonoError error;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
@@ -7469,7 +7468,7 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	MonoReflectionType *rt;
 	int i;
 
-	mono_error_init (&error);
+	mono_error_init (error);
 	
 	if (!System_Reflection_ParameterInfo_array) {
 		MonoClass *klass;
@@ -7485,12 +7484,12 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 		System_Reflection_ParameterInfo_array = klass;
 	}
 
-	sig = mono_method_signature_checked (method, &error);
-	if (!mono_error_ok (&error))
+	sig = mono_method_signature_checked (method, error);
+	if (!mono_error_ok (error))
 		goto leave;
 
 	if (!sig->param_count) {
-		res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), 0, &error);
+		res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), 0, error);
 		if (!res)
 			goto leave;
 
@@ -7502,7 +7501,7 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	 */
 	CHECK_OBJECT (MonoArray*, &(method->signature), refclass);
 
-	member = mono_method_get_object_checked (domain, method, refclass, &error);
+	member = mono_method_get_object_checked (domain, method, refclass, error);
 	if (!member)
 		goto leave;
 	names = g_new (char *, sig->param_count);
@@ -7511,17 +7510,17 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), sig->param_count, &error);
+	res = mono_array_new_specific_checked (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), sig->param_count, error);
 	if (!res)
 		goto leave;
 
 	pinfo_vtable = mono_class_vtable (domain, System_Reflection_ParameterInfo);
 	for (i = 0; i < sig->param_count; ++i) {
-		param = (MonoReflectionParameter *) mono_object_new_specific_checked (pinfo_vtable, &error);
+		param = (MonoReflectionParameter *) mono_object_new_specific_checked (pinfo_vtable, error);
 		if (!param)
 			goto leave;
 
-		rt = mono_type_get_object_checked (domain, sig->params [i], &error);
+		rt = mono_type_get_object_checked (domain, sig->params [i], error);
 		if (!rt)
 			goto leave;
 
@@ -7562,7 +7561,10 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 			} else
 				type->data.klass = mono_class_from_mono_type (type);
 
-			MONO_OBJECT_SETREF (param, DefaultValueImpl, mono_get_object_from_blob (domain, type, blobs [i]));
+			MonoObject *default_val_obj = mono_get_object_from_blob (domain, type, blobs [i], error);
+			if (!is_ok (error))
+				goto leave;
+			MONO_OBJECT_SETREF (param, DefaultValueImpl, default_val_obj);
 
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
 			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) {
@@ -7576,7 +7578,7 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 
 		if (mspecs [i + 1]) {
 			MonoReflectionMarshalAsAttribute* mobj;
-			mobj = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [i + 1], &error);
+			mobj = mono_reflection_marshal_as_attribute_from_marshal_spec (domain, method->klass, mspecs [i + 1], error);
 			if (!mobj)
 				goto leave;
 			MONO_OBJECT_SETREF (param, MarshalAsImpl, (MonoObject*)mobj);
@@ -7599,7 +7601,8 @@ leave:
 	}
 	g_free (mspecs);
 
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (error))
+		return NULL;
 	
 	CACHE_OBJECT (MonoArray *, &(method->signature), res, refclass);
 }
@@ -7607,7 +7610,10 @@ leave:
 MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
-	return mono_param_get_objects_internal (domain, method, NULL);
+	MonoError error;
+	MonoArray *result = mono_param_get_objects_internal (domain, method, NULL, &error);
+	mono_error_assert_ok (&error);
+	return result;
 }
 
 /*
@@ -7816,21 +7822,22 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 }
 
 MonoObject *
-mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
+mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob, MonoError *error)
 {
-	MonoError error;
 	void *retval;
 	MonoClass *klass;
 	MonoObject *object;
 	MonoType *basetype = type;
+
+	mono_error_init (error);
 
 	if (!blob)
 		return NULL;
 	
 	klass = mono_class_from_mono_type (type);
 	if (klass->valuetype) {
-		object = mono_object_new_checked (domain, klass, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		object = mono_object_new_checked (domain, klass, error);
+		return_val_if_nok (error, NULL);
 		retval = ((gchar *) object + sizeof (MonoObject));
 		if (klass->enumtype)
 			basetype = mono_class_enum_basetype (klass);
