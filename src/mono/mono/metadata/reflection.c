@@ -169,7 +169,7 @@ static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static void    encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf);
 static void get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t, MonoError *error);
-static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
+static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error);
 static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *error);
 static gboolean is_sre_array (MonoClass *klass);
 static gboolean is_sre_byref (MonoClass *klass);
@@ -8258,11 +8258,13 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 }
 
 static MonoType*
-_mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, gboolean ignorecase)
+_mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, gboolean ignorecase, MonoError *error)
 {
 	gboolean type_resolve = FALSE;
 	MonoType *type;
 	MonoImage *rootimage = image;
+
+	mono_error_init (error);
 
 	if (info->assembly.name) {
 		MonoAssembly *assembly = mono_assembly_loaded (&info->assembly);
@@ -8283,10 +8285,11 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 		image = mono_defaults.corlib;
 	}
 
-	type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve);
+	type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve, error);
 	if (type == NULL && !info->assembly.name && image != mono_defaults.corlib) {
+		mono_error_cleanup (error);
 		image = mono_defaults.corlib;
-		type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve);
+		type = mono_reflection_get_type_with_rootimage (rootimage, image, info, ignorecase, &type_resolve, error);
 	}
 
 	return type;
@@ -8389,7 +8392,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		for (i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
-			type_args [i] = _mono_reflection_get_type_from_info (subinfo, rootimage, ignorecase);
+			type_args [i] = _mono_reflection_get_type_from_info (subinfo, rootimage, ignorecase, error);
 			if (!type_args [i]) {
 				g_free (type_args);
 				return NULL;
@@ -8439,7 +8442,10 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
-	return mono_reflection_get_type_with_rootimage(image, image, info, ignorecase, type_resolve);
+	MonoError error;
+	MonoType *result = mono_reflection_get_type_with_rootimage(image, image, info, ignorecase, type_resolve, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return result;
 }
 
 static MonoType*
@@ -8484,21 +8490,21 @@ mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *a
 }
 	
 MonoType*
-mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
+mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error)
 {
-	MonoError error;
 	MonoType *type;
 	MonoReflectionAssembly *assembly;
 	GString *fullName;
 	GList *mod;
 
+	mono_error_init (error);
+
 	if (image && image_is_dynamic (image))
-		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase, &error);
+		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase, error);
 	else {
-		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase, &error);
+		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase, error);
 	}
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return_val_if_nok (error, NULL);
 
 	if (type)
 		return type;
@@ -8521,20 +8527,22 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	for (mod = info->nested; mod; mod = mod->next)
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
-	assembly = mono_domain_try_type_resolve_checked ( mono_domain_get (), fullName->str, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	assembly = mono_domain_try_type_resolve_checked ( mono_domain_get (), fullName->str, NULL, error);
+	if (!is_ok (error)) {
+		g_string_free (fullName, TRUE);
+		return NULL;
+	}
 
 	if (assembly) {
 		if (assembly_is_dynamic (assembly->assembly))
 			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly,
-									  info, ignorecase, &error);
+									  info, ignorecase, error);
 		else
 			type = mono_reflection_get_type_internal (rootimage, assembly->assembly->image, 
-								  info, ignorecase, &error);
+								  info, ignorecase, error);
 	}
 	g_string_free (fullName, TRUE);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return_val_if_nok (error, NULL);
 	return type;
 }
 
@@ -8572,16 +8580,42 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
+	MonoError error;
+	MonoType  *result = mono_reflection_type_from_name_checked (name, image, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_reflection_type_from_name_checked:
+ * @name: type name.
+ * @image: a metadata context (can be NULL).
+ * @error: set on errror.
+ *
+ * Retrieves a MonoType from its @name. If the name is not fully qualified,
+ * it defaults to get the type from @image or, if @image is NULL or loading
+ * from it fails, uses corlib.  On failure returns NULL and sets @error.
+ * 
+ */
+MonoType*
+mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error)
+{
 	MonoType *type = NULL;
 	MonoTypeNameParse info;
 	char *tmp;
 
+	mono_error_init (error);
 	/* Make a copy since parse_type modifies its argument */
 	tmp = g_strdup (name);
 	
 	/*g_print ("requested type %s\n", str);*/
 	if (mono_reflection_parse_type (tmp, &info)) {
-		type = _mono_reflection_get_type_from_info (&info, image, FALSE);
+		type = _mono_reflection_get_type_from_info (&info, image, FALSE, error);
+		if (!is_ok (error)) {
+			g_free (tmp);
+			mono_reflection_free_type_info (&info);
+			return NULL;
+		}
 	}
 
 	g_free (tmp);
@@ -8695,11 +8729,13 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoErr
 
 	n = (char *)g_memdup (p, slen + 1);
 	n [slen] = 0;
-	t = mono_reflection_type_from_name (n, image);
+	t = mono_reflection_type_from_name_checked (n, image, error);
 	if (!t) {
-		/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+		char *msg = g_strdup (mono_error_get_message (error));
+		mono_error_cleanup (error);
 		/* We don't free n, it's consumed by mono_error */
-		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute", n);
+		mono_error_set_type_load_name (error, n, NULL, "Could not load enum type %s while decoding custom attribute: %s", n, msg);
+		g_free (msg);
 		return NULL;
 	}
 	g_free (n);
@@ -8800,11 +8836,13 @@ handle_type:
 		slen = mono_metadata_decode_value (p, &p);
 		n = (char *)g_memdup (p, slen + 1);
 		n [slen] = 0;
-		t = mono_reflection_type_from_name (n, image);
+		t = mono_reflection_type_from_name_checked (n, image, error);
 		if (!t) {
-			/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+			char *msg = g_strdup (mono_error_get_message (error));
+			mono_error_cleanup (error);
 			/* We don't free n, it's consumed by mono_error */
-			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+			mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %msg", n, msg);
+			g_free (msg);
 			return NULL;
 		}
 		g_free (n);
@@ -8853,11 +8891,13 @@ handle_type:
 			slen = mono_metadata_decode_value (p, &p);
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
-			t = mono_reflection_type_from_name (n, image);
+			t = mono_reflection_type_from_name_checked (n, image, error);
 			if (!t) {
-				/* FIXME the error should come from mono_reflection_type_from_name as it will have type/assembly names split */
+				char *msg = g_strdup (mono_error_get_message (error));
+				mono_error_cleanup (error);
 				/* We don't free n, it's consumed by mono_error */
-				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute", n);
+				mono_error_set_type_load_name (error, n, NULL, "Could not load type %s while decoding custom attribute: %s", n, msg);
+				g_free (msg);
 				return NULL;
 			}
 			g_free (n);
@@ -11381,7 +11421,9 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 
 	case MONO_NATIVE_CUSTOM:
 		if (spec->data.custom_data.custom_name) {
-			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, klass->image);
+			mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, klass->image, error);
+			return_val_if_nok  (error, NULL);
+
 			if (mtype) {
 				rt = mono_type_get_object_checked (domain, mtype, error);
 				if (!rt)

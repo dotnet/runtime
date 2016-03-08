@@ -4417,6 +4417,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 	return conv_arg;
 #else
+	MonoError error;
 	MonoType *mtype;
 	MonoClass *mklass;
 	static MonoClass *ICustomMarshaler = NULL;
@@ -4449,10 +4450,11 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	if (spec->data.custom_data.image)
-		mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, spec->data.custom_data.image);
+		mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, spec->data.custom_data.image, &error);
 	else
-		mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, m->image);
+		mtype = mono_reflection_type_from_name_checked (spec->data.custom_data.custom_name, m->image, &error);
 	g_assert (mtype != NULL);
+	mono_error_assert_ok (&error);
 	mklass = mono_class_from_mono_type (mtype);
 	g_assert (mklass != NULL);
 
