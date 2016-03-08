@@ -14,6 +14,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+#endif
 
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -187,7 +190,7 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 			*error = MONO_PROCESS_ERROR_NOT_FOUND;
 		return NULL;
 	}
-	while ((s = fgets (buf, blen, f))) {
+	while ((s = fgets (buf, sizeof (buf), f))) {
 		if (*item != *buf)
 			continue;
 		if (strncmp (buf, item, len))
@@ -638,6 +641,13 @@ mono_cpu_count (void)
 		close (present);
 	if (count > 0)
 		return count + 1;
+#endif
+#ifdef HAVE_SCHED_GETAFFINITY
+	{
+		cpu_set_t set;
+		if (sched_getaffinity (mono_process_current_pid (), sizeof (set), &set) == 0)
+			return CPU_COUNT (&set);
+	}
 #endif
 #ifdef _SC_NPROCESSORS_CONF
 	count = sysconf (_SC_NPROCESSORS_CONF);

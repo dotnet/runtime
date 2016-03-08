@@ -238,6 +238,16 @@ class Tests
 		public static T GetValue<T>(Nullable<T> value) where T : struct {
 			return value.Value;
 		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static Nullable<T> Get<T>(T t) where T : struct {
+			return t;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static Nullable<T> GetNull<T>() where T : struct {
+			return null;
+		}
 	}
 
 	[Category ("DYNCALL")]
@@ -259,6 +269,14 @@ class Tests
 		var res = (int)typeof (NullableMethods).GetMethod ("GetValue").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { v });
 		if (res != 42)
 			return 3;
+
+		NullableMethods.Get (42);
+		var res2 = (int?)typeof (NullableMethods).GetMethod ("Get").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { 42 });
+		if (res2 != 42)
+			return 4;
+		res2 = (int?)typeof (NullableMethods).GetMethod ("GetNull").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { });
+		if (res2.HasValue)
+			return 5;
 		return 0;
 	}
 
@@ -399,6 +417,62 @@ class Tests
 		bool b2 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { null });
 		if (b2)
 			return 2;
+		return 0;
+	}
+
+	struct FpStruct {
+		public float a, b, c;
+	}
+
+	struct LargeStruct2 {
+		public FpStruct x;
+		public int a, b, c, d, e, f, g, h;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int pass_hfa_on_stack (FpStruct s1, FpStruct s2, FpStruct s3) {
+		return (int)s3.c;
+	}
+
+	public static int test_10_arm64_hfa_on_stack_llvm () {
+		var arr = new LargeStruct2 [10, 10];
+		for (int i = 0; i < 10; ++i)
+			for (int j = 0; j < 10; ++j)
+				arr [i, j].x = new FpStruct ();
+
+		var s1 = new FpStruct () { a = 1, b = 1, c = 10 };
+		return pass_hfa_on_stack (s1, s1, s1);
+	}
+
+	public static int test_0_get_current_method () {
+		var m = MethodBase.GetCurrentMethod ();
+#if __MOBILE__
+		var m2 = typeof (AotTests).GetMethod ("test_0_get_current_method");
+#else
+		var m2 = typeof (Tests).GetMethod ("test_0_get_current_method");
+#endif
+		return m == m2 ? 0 : 1;
+	}
+
+	class GetCurrentMethodClass<T> {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public MethodBase get_current () {
+			return MethodBase.GetCurrentMethod ();
+		}
+	}
+
+	public static int test_0_get_current_method_generic () {
+		var c = new GetCurrentMethodClass<string> ();
+		var m = c.get_current ();
+		var m2 = typeof (GetCurrentMethodClass<>).GetMethod ("get_current");
+		return m == m2 ? 0 : 1;
+	}
+
+	public static int test_0_array_wrappers_runtime_invoke () {
+		string[][] arr = new string [10][];
+		IEnumerable<string[]> iface = arr;
+		var m = typeof(IEnumerable<string[]>).GetMethod ("GetEnumerator");
+		m.Invoke (arr, null);
 		return 0;
 	}
 }

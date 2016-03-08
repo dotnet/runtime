@@ -19,6 +19,7 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/remoting.h>
+#include <mono/utils/mono-error.h>
 
 #define mono_marshal_find_bitfield_offset(type, elem, byte_offset, bitmask) \
 	do { \
@@ -38,6 +39,7 @@ typedef struct {
 	MonoMethodPInvoke *piinfo;
 	int *orig_conv_args; /* Locals containing the original values of byref args */
 	int retobj_var;
+	int vtaddr_var;
 	MonoClass *retobj_class;
 	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
 	MonoImage *image; /* The image to use for looking up custom marshallers */
@@ -115,7 +117,10 @@ typedef enum {
 	WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER,
 	/* Subtypes of MONO_WRAPPER_DELEGATE_INVOKE */
 	WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL,
-	WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND
+	WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND,
+	/* Subtypes of MONO_WRAPPER_UNKNOWN */
+	WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG,
+	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
 } WrapperSubtype;
 
 typedef struct {
@@ -139,7 +144,6 @@ typedef struct {
 	MonoMethod *method;
 	/* For WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL */
 	MonoMethodSignature *sig;
-	gboolean pass_rgctx;
 } RuntimeInvokeWrapperInfo;
 
 typedef struct {
@@ -183,6 +187,10 @@ typedef struct {
 	MonoMethod *method;
 } RemotingWrapperInfo;
 
+typedef struct {
+	MonoMethodSignature *sig;
+} GsharedvtWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -221,6 +229,8 @@ typedef struct {
 		UnboxWrapperInfo unbox;
 		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
 		RemotingWrapperInfo remoting;
+		/* GSHAREDVT_IN_SIG/GSHAREDVT_OUT_SIG */
+		GsharedvtWrapperInfo gsharedvt;
 	} d;
 } WrapperInfo;
 
@@ -256,54 +266,15 @@ int
 mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 
 gpointer
-mono_array_to_savearray (MonoArray *array);
-
-gpointer
-mono_array_to_lparray (MonoArray *array);
-
-void
-mono_free_lparray (MonoArray *array, gpointer* nativeArray);
-
-void
-mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
-
-void
-mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
-
-gchar*
-mono_string_builder_to_utf8 (MonoStringBuilder *sb);
-
-gunichar2*
-mono_string_builder_to_utf16 (MonoStringBuilder *sb);
-
-gpointer
 mono_string_to_ansibstr (MonoString *string_obj);
 
 gpointer
 mono_string_to_bstr (MonoString *string_obj);
 
-void
-mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
-
-void
-mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
-
-gpointer
-mono_delegate_to_ftnptr (MonoDelegate *delegate);
-
-MonoDelegate*
-mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
-
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
 void
 mono_marshal_set_last_error (void);
-
-gpointer
-mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
-
-void
-mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
 
 guint
 mono_type_to_ldind (MonoType *type);
@@ -338,10 +309,13 @@ MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method);
 
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual, gboolean pass_rgctx);
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual);
 
 MonoMethod*
 mono_marshal_get_runtime_invoke_dynamic (void);
+
+MonoMethod *
+mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig);
 
 MonoMethodSignature*
 mono_marshal_get_string_ctor_signature (MonoMethod *method);
@@ -431,7 +405,7 @@ mono_marshal_unlock_internal (void);
 /* marshaling internal calls */
 
 void * 
-mono_marshal_alloc (gulong size);
+mono_marshal_alloc (gulong size, MonoError *error);
 
 void 
 mono_marshal_free (gpointer ptr);
@@ -527,6 +501,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 
 MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type);
+
+gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegate *delegate);
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk);

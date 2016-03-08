@@ -221,6 +221,7 @@ static void
 do_console_cancel_event (void)
 {
 	static MonoClassField *cancel_handler_field;
+	MonoError error;
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *klass;
 	MonoDelegate *load_value;
@@ -231,7 +232,7 @@ do_console_cancel_event (void)
 	if (!domain->domain)
 		return;
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "Console");
+	klass = mono_class_try_load_from_name (mono_defaults.corlib, "System", "Console");
 	if (klass == NULL)
 		return;
 
@@ -240,9 +241,11 @@ do_console_cancel_event (void)
 		g_assert (cancel_handler_field);
 	}
 
-	vtable = mono_class_vtable_full (domain, klass, FALSE);
-	if (vtable == NULL)
+	vtable = mono_class_vtable_full (domain, klass, &error);
+	if (vtable == NULL || !is_ok (&error)) {
+		mono_error_cleanup (&error);
 		return;
+	}
 	mono_field_static_get_value (vtable, cancel_handler_field, &load_value);
 	if (load_value == NULL)
 		return;
@@ -345,19 +348,19 @@ console_set_signal_handlers ()
 	
 	// Continuing
 	sigcont.sa_handler = (void (*)(int)) sigcont_handler;
-	sigcont.sa_flags = 0;
+	sigcont.sa_flags = SA_RESTART;
 	sigemptyset (&sigcont.sa_mask);
 	sigaction (SIGCONT, &sigcont, &save_sigcont);
 	
 	// Interrupt handler
 	sigint.sa_handler = (void (*)(int)) sigint_handler;
-	sigint.sa_flags = 0;
+	sigint.sa_flags = SA_RESTART;
 	sigemptyset (&sigint.sa_mask);
 	sigaction (SIGINT, &sigint, &save_sigint);
 
 	// Window size changed
 	sigwinch.sa_handler = (void (*)(int)) sigwinch_handler;
-	sigwinch.sa_flags = 0;
+	sigwinch.sa_flags = SA_RESTART;
 	sigemptyset (&sigwinch.sa_mask);
 	sigaction (SIGWINCH, &sigwinch, &save_sigwinch);
 #endif

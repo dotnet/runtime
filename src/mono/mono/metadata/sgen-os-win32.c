@@ -1,6 +1,6 @@
 #include "config.h"
 
-#if defined(HAVE_SGEN_GC) && defined(HOST_WIN32)
+#if defined(HAVE_SGEN_GC) && !defined(USE_COOP_GC) && defined(HOST_WIN32)
 
 #include "io-layer/io-layer.h"
 
@@ -123,12 +123,11 @@ sgen_wait_for_suspend_ack (int count)
 int
 sgen_thread_handshake (BOOL suspend)
 {
-	SgenThreadInfo *info;
 	SgenThreadInfo *current = mono_thread_info_current ();
 	int count = 0;
 
 	current->client_info.suspend_done = TRUE;
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		if (info == current)
 			continue;
 		info->client_info.suspend_done = FALSE;
@@ -142,7 +141,7 @@ sgen_thread_handshake (BOOL suspend)
 				continue;
 		}
 		++count;
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_END
 	return count;
 }
 

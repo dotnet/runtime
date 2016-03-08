@@ -390,7 +390,7 @@ mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
 /*
  * mono_type_is_enum_type:
  * 
- * Returns TRUE if @type is an enum type. 
+ * Returns: TRUE if @type is an enum type. 
  */
 static gboolean
 mono_type_is_enum_type (MonoType *type)
@@ -405,7 +405,7 @@ mono_type_is_enum_type (MonoType *type)
 /*
  * mono_type_is_value_type:
  * 
- * Returns TRUE if @type is named after @namespace.@name.
+ * Returns: TRUE if @type is named after @namespace.@name.
  * 
  */
 static gboolean
@@ -466,7 +466,7 @@ mono_class_has_default_constructor (MonoClass *klass)
 	int i;
 
 	mono_class_setup_methods (klass);
-	if (klass->exception_type)
+	if (mono_class_has_failure (klass))
 		return FALSE;
 
 	for (i = 0; i < klass->method.count; ++i) {
@@ -639,8 +639,10 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 	return TRUE;
 }
 
-/*
- * Return true if @candidate is constraint compatible with @target.
+/**
+ * mono_generic_param_is_constraint_compatible:
+ *
+ * Returns: TRUE if @candidate is constraint compatible with @target.
  * 
  * This means that @candidate constraints are a super set of @target constaints
  */
@@ -882,7 +884,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 
 	klass = mono_class_from_mono_type (type);
 	mono_class_init (klass);
-	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
+	if (mono_loader_get_last_error () || mono_class_has_failure (klass)) {
 		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (NULL, klass))
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
@@ -891,7 +893,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 		return FALSE;
 	}
 
-	if (klass->generic_class && klass->generic_class->container_class->exception_type != MONO_EXCEPTION_NONE) {
+	if (klass->generic_class && mono_class_has_failure (klass->generic_class->container_class)) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
@@ -1875,8 +1877,12 @@ dump_stack_state (ILCodeDesc *state)
 }
 #endif
 
-/*Returns TRUE if candidate array type can be assigned to target.
- *Both parameters MUST be of type MONO_TYPE_ARRAY (target->type == MONO_TYPE_ARRAY)
+/**
+ * is_array_type_compatible:
+ *
+ * Returns TRUE if candidate array type can be assigned to target.
+ *
+ * Both parameters MUST be of type MONO_TYPE_ARRAY (target->type == MONO_TYPE_ARRAY)
  */
 static gboolean
 is_array_type_compatible (MonoType *target, MonoType *candidate)
@@ -2072,49 +2078,35 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	if (mono_type_is_generic_argument (type))
 		code->stack->stype |= BOXED_MASK;
 }
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (ienumerable, System.Collections.Generic, IEnumerable`1)
+static GENERATE_GET_CLASS_WITH_CACHE (icollection, System.Collections.Generic, ICollection`1)
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_list, System.Collections.Generic, IReadOnlyList`1)
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_collection, System.Collections.Generic, IReadOnlyCollection`1)
+
 
 static MonoClass*
 get_ienumerable_class (void)
 {
-	static MonoClass* generic_ienumerable_class = NULL;
-
-	if (generic_ienumerable_class == NULL)
-		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IEnumerable`1");
-		return generic_ienumerable_class;
+	return mono_class_get_ienumerable_class ();
 }
 
 static MonoClass*
 get_icollection_class (void)
 {
-	static MonoClass* generic_icollection_class = NULL;
-
-	if (generic_icollection_class == NULL)
-		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "ICollection`1");
-		return generic_icollection_class;
+	return mono_class_get_icollection_class ();
 }
 
 static MonoClass*
 get_ireadonlylist_class (void)
 {
-	static MonoClass* generic_ireadonlylist_class = NULL;
-
-	if (generic_ireadonlylist_class == NULL)
-		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IReadOnlyList`1");
-	return generic_ireadonlylist_class;
+	return mono_class_get_ireadonly_list_class ();
 }
 
 static MonoClass*
 get_ireadonlycollection_class (void)
 {
-	static MonoClass* generic_ireadonlycollection_class = NULL;
-
-	if (generic_ireadonlycollection_class == NULL)
-		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IReadOnlyCollection`1");
-	return generic_ireadonlycollection_class;
+	return mono_class_get_ireadonly_collection_class ();
 }
 
 static MonoClass*
@@ -2455,10 +2447,10 @@ recursive_boxed_constraint_type_check (VerifyContext *ctx, MonoType *type, MonoC
 	return FALSE;
 }
 
-/*
+/** 
  * is_compatible_boxed_valuetype:
  * 
- * Returns TRUE if @candidate / @stack is a valid boxed valuetype. 
+ * Returns: TRUE if @candidate / @stack is a valid boxed valuetype. 
  * 
  * @type The source type. It it tested to be of the proper type.    
  * @candidate type of the boxed valuetype.
@@ -4711,7 +4703,7 @@ end_verify:
 #define HANDLER_START(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER ? (clause)->data.filter_offset : clause->handler_offset)
 #define IS_CATCH_OR_FILTER(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER || (clause)->flags == MONO_EXCEPTION_CLAUSE_NONE)
 
-/*
+/**
  * is_clause_in_range :
  * 
  * Returns TRUE if either the protected block or the handler of @clause is in the @start - @end range.  
@@ -4726,7 +4718,7 @@ is_clause_in_range (MonoExceptionClause *clause, guint32 start, guint32 end)
 	return FALSE;
 }
 
-/*
+/**
  * is_clause_inside_range :
  * 
  * Returns TRUE if @clause lies completely inside the @start - @end range.  
@@ -4741,7 +4733,7 @@ is_clause_inside_range (MonoExceptionClause *clause, guint32 start, guint32 end)
 	return TRUE;
 }
 
-/*
+/**
  * is_clause_nested :
  * 
  * Returns TRUE if @nested is nested in @clause.   
@@ -4862,9 +4854,10 @@ mono_method_verify (MonoMethod *method, int level)
 		return ctx.list;
 	}
 
-	ctx.header = mono_method_get_header (method);
+	ctx.header = mono_method_get_header_checked (method, &error);
 	if (!ctx.header) {
-		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header"));
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method header due to %s", mono_error_get_message (&error)));
+		mono_error_cleanup (&error);
 		finish_collect_stats ();
 		return ctx.list;
 	}
@@ -5967,7 +5960,7 @@ mono_method_verify (MonoMethod *method, int level)
 	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class) {
 		char *method_name = mono_method_full_name (ctx.method, TRUE);
 		char *type = mono_type_get_full_name (ctx.method->klass);
-		if (ctx.method->klass->parent && ctx.method->klass->parent->exception_type != MONO_EXCEPTION_NONE)
+		if (ctx.method->klass->parent && mono_class_has_failure (ctx.method->klass->parent))
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor %s for type %s not calling base type ctor due to a TypeLoadException on base type.", method_name, type));
 		else
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor %s for type %s not calling base type ctor.", method_name, type));
@@ -6020,8 +6013,11 @@ mono_verify_corlib ()
 	return NULL;
 }
 
-/*
- * Returns true if @method needs to be verified.
+/**
+ * mono_verifier_is_enabled_for_method:
+ * @method: the method to probe
+ *
+ * Returns TRUE if @method needs to be verified.
  * 
  */
 gboolean
@@ -6030,8 +6026,11 @@ mono_verifier_is_enabled_for_method (MonoMethod *method)
 	return mono_verifier_is_enabled_for_class (method->klass) && (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
 }
 
-/*
- * Returns true if @klass need to be verified.
+/**
+ * mono_verifier_is_enabled_for_class:
+ * @klass: The `MonoClass` to probe
+ *
+ * Returns TRUE if @klass need to be verified.
  * 
  */
 gboolean

@@ -13,6 +13,7 @@
 #include <glib.h>
 
 #include "object.h"
+#include "object-internals.h"
 #include "rand.h"
 #include "utils/mono-rand.h"
 
@@ -32,8 +33,10 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 gpointer
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry)
 {
+	MonoError error;
 	g_assert (arry);
-	mono_rand_try_get_bytes (&handle, mono_array_addr (arry, guchar, 0), mono_array_length (arry));
+	mono_rand_try_get_bytes (&handle, mono_array_addr (arry, guchar, 0), mono_array_length (arry), &error);
+	mono_error_set_pending_exception (&error);
 	return handle;
 }
 

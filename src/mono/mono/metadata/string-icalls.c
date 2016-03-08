@@ -36,17 +36,22 @@ ves_icall_System_String_ctor_RedirectToCreateString (void)
 MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length)
 {
-	return mono_string_new_size(mono_domain_get (), length);
+	MonoError error;
+	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, &error);
+	mono_error_raise_exception (&error);
+
+	return str;
 }
 
 MonoString  *
 ves_icall_System_String_InternalIntern (MonoString *str)
 {
+	MonoError error;
 	MonoString *res;
 
-	res = mono_string_intern(str);
+	res = mono_string_intern_checked (str, &error);
 	if (!res) {
-		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
+		mono_error_set_pending_exception (&error);
 		return NULL;
 	}
 	return res;
@@ -55,7 +60,7 @@ ves_icall_System_String_InternalIntern (MonoString *str)
 MonoString * 
 ves_icall_System_String_InternalIsInterned (MonoString *str)
 {
-	return mono_string_is_interned(str);
+	return mono_string_is_interned (str);
 }
 
 int

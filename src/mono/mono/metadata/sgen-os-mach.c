@@ -112,12 +112,11 @@ sgen_thread_handshake (BOOL suspend)
 {
 	SgenThreadInfo *cur_thread = mono_thread_info_current ();
 	kern_return_t ret;
-	SgenThreadInfo *info;
 
 	int count = 0;
 
 	cur_thread->client_info.suspend_done = TRUE;
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		if (info == cur_thread || sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info)))
 			continue;
 
@@ -134,7 +133,7 @@ sgen_thread_handshake (BOOL suspend)
 				continue;
 		}
 		count ++;
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_END
 	return count;
 }
 

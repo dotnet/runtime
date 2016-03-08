@@ -505,7 +505,6 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 {
 #ifndef SGEN_WITHOUT_MONO
 	int j;
-	SgenThreadInfo *info;
 	char *endobj = obj + size;
 
 	FOREACH_THREAD (info) {
@@ -527,8 +526,8 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 
 			if (w >= (mword)obj && w < (mword)obj + size)
 				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
-		} END_FOREACH_THREAD
-	}
+		}
+	} FOREACH_THREAD_END
 #endif
 }
 

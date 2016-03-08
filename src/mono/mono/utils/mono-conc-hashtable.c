@@ -56,7 +56,7 @@ conc_table_free (gpointer ptr)
 static void
 conc_table_lf_free (conc_table *table)
 {
-	mono_thread_hazardous_free_or_queue (table, conc_table_free, TRUE, FALSE);
+	mono_thread_hazardous_free_or_queue (table, conc_table_free, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 }
 
 

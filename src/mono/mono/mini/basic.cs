@@ -1276,6 +1276,105 @@ class Tests
 		return 0;
 	}
 
+	public static int test_0_udiv_opt () {
+		uint i;
+
+		// Avoid cfolding this
+		i = 0;
+		for (int j = 0; j < 567; ++j)
+			i ++;
+		i += 1234000;
+		if ((i / 2) != 617283)
+			return 1;
+		if ((i / 4) != 308641)
+			return 2;
+		if ((i / 8) != 154320)
+			return 3;
+		if ((i / 16) != 77160)
+			return 4;
+
+		return 0;
+	}
+
+	public static int test_0_signed_ct_div () {
+		int n = 2147483647;
+		bool divide_by_zero = false;
+		bool overflow = false;
+
+		if ((n / 2147483647) != 1)
+			return 1;
+		if ((n / -2147483647) != -1)
+			return 2;
+		n = -n;
+		if ((n / 2147483647) != -1)
+			return 3;
+		n--; /* MinValue */
+		if ((n / -2147483648) != 1)
+			return 4;
+		if ((n / 2147483647) != -1)
+			return 5;
+		if ((n / 1) != n)
+			return 6;
+
+		try {
+			int r = n / (-1);
+		} catch (OverflowException) {
+			overflow = true;
+		}
+		if (!overflow)
+			return 7;
+
+		try {
+			int r = n / 0;
+		} catch (DivideByZeroException) {
+			divide_by_zero = true;
+		}
+		if (!divide_by_zero)
+			return 8;
+
+		if ((n / 35) != -61356675)
+			return 9;
+		if ((n / -35) != 61356675)
+			return 10;
+		n = -(n + 1);  /* MaxValue */
+		if ((n / 35) != 61356675)
+			return 11;
+		if ((n / -35) != -61356675)
+			return 12;
+
+		return 0;
+	}
+
+	public static int test_0_unsigned_ct_div () {
+		uint n = 4294967295;
+		bool divide_by_zero = false;
+
+		if ((n / 4294967295) != 1)
+			return 1;
+		n--;
+		if ((n / 4294967295) != 0)
+			return 2;
+		n++;
+		if ((n / 4294967294) != 1)
+			return 3;
+		if ((n / 1) != n)
+			return 4;
+
+		try {
+			uint a = n / 0;
+		} catch (DivideByZeroException) {
+			divide_by_zero = true;
+		}
+
+		if (!divide_by_zero)
+			return 5;
+
+		if ((n / 35) != 122713351)
+			return 9;
+
+		return 0;
+	}
+
 	public static int test_0_rem_opt () {
 		int i;
 

@@ -26,6 +26,7 @@
 #include "mini.h"
 #include "mini-x86.h"
 #include "debugger-agent.h"
+#include "jit-icalls.h"
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -222,7 +223,7 @@ guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	char *tramp_name;
-	guint8 *buf, *code, *tramp;
+	guint8 *buf, *code, *tramp, *br_ex_check;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 	int i, offset, frame_size, regarray_offset, lmf_offset, caller_ip_offset, arg_offset;
@@ -376,19 +377,60 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	x86_mov_membase_reg (code, X86_EBP, arg_offset, X86_EAX, 4);
 
-	/* Check for interruptions */
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
-		x86_call_reg (code, X86_EAX);
-	} else {
-		x86_call_code (code, (guint8*)mono_thread_force_interruption_checkpoint);
-	}
-
 	/* Restore LMF */
 	x86_mov_reg_membase (code, X86_EAX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sizeof (mgreg_t));
 	x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sizeof (mgreg_t));
 	x86_alu_reg_imm (code, X86_SUB, X86_ECX, 1);
 	x86_mov_membase_reg (code, X86_EAX, 0, X86_ECX, sizeof (mgreg_t));
+
+	/* Check for interruptions */
+	if (aot) {
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint_noraise");
+		x86_call_reg (code, X86_EAX);
+	} else {
+		x86_call_code (code, (guint8*)mono_thread_force_interruption_checkpoint_noraise);
+	}
+
+	x86_test_reg_reg (code, X86_EAX, X86_EAX);
+	br_ex_check = code;
+	x86_branch8 (code, X86_CC_Z, -1, 1);
+
+	/*
+	 * Exception case:
+	 * We have an exception we want to throw in the caller's frame, so pop
+	 * the trampoline frame and throw from the caller.
+	 */
+	x86_leave (code);
+	/*
+	 * The exception is in eax.
+	 * We are calling the throw trampoline used by OP_THROW, so we have to setup the
+	 * stack to look the same.
+	 * The stack contains the ret addr, and the trampoline argument, the throw trampoline
+	 * expects it to contain the ret addr and the exception. It also needs to be aligned
+	 * after the exception is pushed.
+	 */
+	/* Align stack */
+	x86_push_reg (code, X86_EAX);
+	/* Push the exception */
+	x86_push_reg (code, X86_EAX);
+	//x86_breakpoint (code);
+	/* Push the original return value */
+	x86_push_membase (code, X86_ESP, 3 * 4);
+	/*
+	 * EH is initialized after trampolines, so get the address of the variable
+	 * which contains throw_exception, and load it from there.
+	 */
+	if (aot) {
+		/* Not really a jit icall */
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+	} else {
+		x86_mov_reg_imm (code, X86_ECX, (guint8*)mono_get_throw_exception_addr ());
+	}
+	x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof(gpointer));
+	x86_jump_reg (code, X86_ECX);
+
+	/* Normal case */
+	mono_x86_patch (br_ex_check, code);
 
 	/* Restore registers */
 	for (i = X86_EAX; i <= X86_EDI; ++i) {

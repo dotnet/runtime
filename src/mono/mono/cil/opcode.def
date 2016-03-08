@@ -316,6 +316,7 @@ OPDEF(CEE_MONO_LDPTR_INT_REQ_FLAG, "mono_ldptr_int_req_flag", Pop0, PushI, Inlin
 OPDEF(CEE_MONO_LDPTR_CARD_TABLE, "mono_ldptr_card_table", Pop0, PushI, InlineNone, X, 2, 0xF0, 0x15, NEXT)
 OPDEF(CEE_MONO_LDPTR_NURSERY_START, "mono_ldptr_nursery_start", Pop0, PushI, InlineNone, X, 2, 0xF0, 0x16, NEXT)
 OPDEF(CEE_MONO_LDPTR_NURSERY_BITS, "mono_ldptr_nursery_bits", Pop0, PushI, InlineNone, X, 2, 0xF0, 0x17, NEXT)
+OPDEF(CEE_MONO_CALLI_EXTRA_ARG, "mono_calli_extra_arg", VarPop, VarPush, InlineSig, X, 2, 0xF0, 0x18, CALL)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

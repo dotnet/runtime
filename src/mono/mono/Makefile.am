@@ -6,7 +6,7 @@ if CROSS_COMPILING
 SUBDIRS = arch utils io-layer cil metadata $(sgen_dirs) mini dis profiler
 else
 if INSTALL_MONOTOUCH
-SUBDIRS = utils io-layer metadata arch $(sgen_dirs) mini profiler
+SUBDIRS = arch utils io-layer metadata $(sgen_dirs) mini profiler
 
 monotouch-do-build:
 	@list='$(SUBDIRS)'; for subdir in $$list; do \

@@ -660,6 +660,46 @@ sgen_client_binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpoin
 {
 }
 
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_major_card_table_scan_start (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_major_card_table_scan_end (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_los_card_table_scan_start (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_los_card_table_scan_end (long long timestamp, gboolean mod_union)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_finish_gray_stack_start (long long timestamp, int generation)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_finish_gray_stack_end (long long timestamp, int generation)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_worker_finish (long long timestamp, gboolean forced)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_evacuating_blocks (size_t block_size)
+{
+}
+
 int sgen_thread_handshake (BOOL suspend);
 gboolean sgen_suspend_thread (SgenThreadInfo *info);
 gboolean sgen_resume_thread (SgenThreadInfo *info);
@@ -675,8 +715,6 @@ extern MonoNativeTlsKey thread_info_key;
 #define IN_CRITICAL_REGION (__thread_info__->client_info.in_critical_region)
 #endif
 
-#ifndef DISABLE_CRITICAL_REGION
-
 #ifdef HAVE_KW_THREAD
 #define IN_CRITICAL_REGION sgen_thread_info->client_info.in_critical_region
 #else
@@ -690,8 +728,6 @@ extern MonoNativeTlsKey thread_info_key;
  * We don't need to emit a full barrier since we
  */
 #define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
-
-#endif
 
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()

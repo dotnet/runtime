@@ -451,7 +451,7 @@ add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entri
 				 * This seems like a good value.  Determined by timing
 				 * sgen-weakref-stress.exe.
 				 */
-				g_usleep (200);
+				mono_thread_info_usleep (200);
 				HEAVY_STAT (++stat_wait_for_processing);
 			}
 			continue;

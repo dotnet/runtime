@@ -23,6 +23,7 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "debugger-agent.h"
+#include "jit-icalls.h"
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -183,11 +184,10 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #ifdef USE_JUMP_TABLES
 	gpointer *load_get_lmf_addr = NULL, *load_trampoline = NULL;
 #else
-        guint8 *load_get_lmf_addr  = NULL, *load_trampoline  = NULL;
+	guint8 *load_get_lmf_addr  = NULL, *load_trampoline  = NULL;
 	gpointer *constants;
 #endif
-
-	int cfa_offset, regsave_size, lr_offset;
+	int i, cfa_offset, regsave_size, lr_offset;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 	int buf_len;
@@ -223,6 +223,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, cfa_offset);
 	// PC saved at sp+LR_OFFSET
 	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, -4);
+	/* Callee saved regs */
+	for (i = 0; i < 8; ++i)
+		mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_R4 + i, -regsave_size + ((4 + i) * 4));
 
 	if (aot) {
 		/* 
@@ -377,7 +380,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
 	 */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
+		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_interruption_checkpoint_from_trampoline");
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
@@ -387,11 +390,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #ifdef USE_JUMP_TABLES
 		gpointer *jte = mono_jumptable_add_entry ();
 		code = mono_arm_load_jumptable_entry (code, jte, ARMREG_IP);
-		jte [0] = mono_thread_force_interruption_checkpoint;
+		jte [0] = mono_interruption_checkpoint_from_trampoline;
 #else
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
-		*(gpointer*)code = mono_thread_force_interruption_checkpoint;
+		*(gpointer*)code = mono_interruption_checkpoint_from_trampoline;
 		code += 4;
 #endif
 	}

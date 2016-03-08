@@ -1,6 +1,7 @@
 SUBDIRS = assemblyresolve gc-descriptors
 
-check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform test-process-exit test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload rm-empty-logs
+check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform	\
+		 test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload test-process-stress rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -363,6 +364,7 @@ BASE_TEST_CS_SRC=		\
 	bug-324535.cs	\
 	modules.cs	\
 	bug-81673.cs	\
+	bug-36848.cs    \
 	bug-81691.cs	\
 	bug-80307.cs	\
 	bug-415577.cs	\
@@ -397,6 +399,8 @@ BASE_TEST_CS_SRC=		\
 	bug-389886-3.cs \
 	monitor.cs	\
 	monitor-resurrection.cs	\
+	monitor-wait-abort.cs	\
+	monitor-abort.cs	\
 	dynamic-method-resurrection.cs	\
 	bug-666008.cs	\
 	bug-685908.cs	\
@@ -868,11 +872,11 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 
 runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
-	$(RUNTIME) ./test-runner.exe -j a --testsuite-name "runtime" --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+	$(RUNTIME) --debug ./test-runner.exe -j a --testsuite-name "runtime" --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 runtest-managed-serial: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@if [ "x$$CI" = "x1" ]; then disabled_tests="$(DISABLED_TESTS_WRENCH)"; else disabled_tests="$(DISABLED_TESTS)"; fi; \
-	$(RUNTIME) ./test-runner.exe -j 1 --testsuite-name "runtime" --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+	$(RUNTIME) --debug ./test-runner.exe -j 1 --testsuite-name "runtime" --disabled "$${disabled_tests}" $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
 	@if test x$(M) != x0; then $(MAKE) runtest-managed; else $(MAKE) runtest; fi
@@ -957,10 +961,13 @@ debug-casts:
 EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-bridge-major-fragmentation.cs sgen-domain-unload.cs sgen-weakref-stress.cs sgen-cementing-stress.cs sgen-case-23400.cs 	finalizer-wait.cs critical-finalizers.cs sgen-domain-unload-2.cs sgen-suspend.cs sgen-new-threads-dont-join-stw.cs sgen-bridge-xref.cs bug-17590.cs sgen-toggleref.cs
 
 
-#those are actually configurations, eg plain_sgen-descriptors.exe
-#DISABLE_SGEN_TESTS =
+sgen-tests:
+	$(MAKE) sgen-regular-tests
+	$(MAKE) sgen-toggleref-tests
+	$(MAKE) sgen-bridge-tests
+	$(MAKE) sgen-bridge2-tests
 
-SGEN_TESTS =	\
+SGEN_REGULAR_TESTS =	\
 	finalizer-wait.exe	\
 	critical-finalizers.exe	\
 	sgen-descriptors.exe	\
@@ -974,132 +981,123 @@ SGEN_TESTS =	\
 	gc-graystack-stress.exe	\
 	bug-17590.exe
 
-SGEN_CONFIGURATIONS =	\
-	"|plain"	\
-	"major=marksweep-conc|ms-conc"	\
-	"major=marksweep-conc,minor=split|ms-conc-split"	\
-	"minor=split|ms-split"	\
-	"minor=split,alloc-ratio=95|ms-split-95"	\
-	"|plain-clear-at-gc|clear-at-gc"	\
-	"major=marksweep-conc|ms-conc-clear-at-gc|clear-at-gc"	\
-	"minor=split|ms-split-clear-at-gc|clear-at-gc"
+sgen-regular-tests: $(SGEN_REGULAR_TESTS)
+	$(MAKE) sgen-regular-tests-plain
+	$(MAKE) sgen-regular-tests-ms-conc
+	$(MAKE) sgen-regular-tests-ms-conc-split
+	$(MAKE) sgen-regular-tests-ms-split
+	$(MAKE) sgen-regular-tests-ms-split-95
+	$(MAKE) sgen-regular-tests-plain-clear-at-gc
+	$(MAKE) sgen-regular-tests-ms-conc-clear-at-gc
+	$(MAKE) sgen-regular-tests-ms-split-clear-at-gc
 
+sgen-regular-tests-plain: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-conc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-conc-split: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="major=marksweep-conc,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-split: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-split-95: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="minor=split,alloc-ratio=95" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-plain-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-conc-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
+sgen-regular-tests-ms-split-clear-at-gc: $(SGEN_REGULAR_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_REGULAR_TESTS)
 
-#FIXME We should move to use SGEN_CONFIGURATIONS once sgen supports trailling commas or its argument list.
-SGEN_BRIDGE_CONFIGURATIONS =	\
-	"|plain"	\
-	",major=marksweep-conc|ms-conc"	\
-	"minor=split|ms-split"	\
-	"bridge-implementation=new|plain-new-bridge"	\
-	"bridge-implementation=new,major=marksweep-conc|ms-conc-new-bridge"	\
-	"bridge-implementation=new,minor=split|ms-split-new-bridge"	\
-	"bridge-implementation=tarjan|plain-tarjan-bridge"	\
-	"bridge-implementation=tarjan,minor=split|ms-split-tarjan-bridge"
+SGEN_TOGGLEREF_TESTS=	\
+	sgen-toggleref.exe
 
-sgen-regular-tests: $(SGEN_TESTS)
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	for test in $+; do	\
-		echo "...$$test";	\
-		for conf in $(SGEN_CONFIGURATIONS); do 	\
-			name=`echo $$conf | cut -d\| -f 2`;	\
-			params=`echo $$conf | cut -d\| -f 1`;	\
-			debug_opt=`echo $$conf | cut -d\| -f 3`;	\
-			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="$$debug_opt" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
-			then \
-				passed=`expr $${passed} + 1`; \
-			else \
-				if [ $$? = 2 ]; then break; fi; \
-				failed=`expr $${failed} + 1`; \
-				failed_tests="$${failed_tests} $$test_name"; \
-			fi \
-		done	\
-	done;	\
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+sgen-toggleref-tests: $(SGEN_TOGGLEREF_TESTS)
+	$(MAKE) sgen-toggleref-tests-plain
+	$(MAKE) sgen-toggleref-tests-ms-conc
+	$(MAKE) sgen-toggleref-tests-ms-conc-split
+	$(MAKE) sgen-toggleref-tests-ms-split
+	$(MAKE) sgen-toggleref-tests-ms-split-95
+	$(MAKE) sgen-toggleref-tests-plain-clear-at-gc
+	$(MAKE) sgen-toggleref-tests-ms-conc-clear-at-gc
+	$(MAKE) sgen-toggleref-tests-ms-split-clear-at-gc
 
-sgen-bridge-tests1: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	for test in $+; do	\
-		echo "...$$test";	\
-		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
-			name=`echo $$conf | cut -d\| -f 2`;	\
-			params=`echo $$conf | cut -d\| -f 1`;	\
-			test_name="$${test}|$${name}";	\
-			if MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
-			then \
-				passed=`expr $${passed} + 1`; \
-			else \
-				if [ $$? = 2 ]; then break; fi; \
-				failed=`expr $${failed} + 1`; \
-				failed_tests="$${failed_tests} $$test_name"; \
-			fi \
-		done	\
-	done;	\
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+sgen-toggleref-tests-plain: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="toggleref-test" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-conc: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="toggleref-test,major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-conc-split: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="toggleref-test,major=marksweep-conc,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-split: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="toggleref-test,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-split-95: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="" MONO_GC_PARAMS="toggleref-test,minor=split,alloc-ratio=95" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-plain-clear-at-gc: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="toggleref-test" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-conc-clear-at-gc: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="toggleref-test,major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
+sgen-toggleref-tests-ms-split-clear-at-gc: $(SGEN_TOGGLEREF_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="clear-at-gc" MONO_GC_PARAMS="toggleref-test,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_TOGGLEREF_TESTS)
 
-sgen-bridge-tests2: sgen-bridge-xref.exe
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	for test in $+; do	\
-		echo "...$$test";	\
-		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
-			name=`echo $$conf | cut -d\| -f 2`;	\
-			params=`echo $$conf | cut -d\| -f 1`;	\
-			test_name="$${test}|$${name}";	\
-			if MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
-			then \
-				passed=`expr $${passed} + 1`; \
-			else \
-				if [ $$? = 2 ]; then break; fi; \
-				failed=`expr $${failed} + 1`; \
-				failed_tests="$${failed_tests} $$test_name"; \
-			fi \
-		done	\
-	done;	\
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+SGEN_BRIDGE_TESTS=	\
+	sgen-bridge.exe	\
+	sgen-bridge-major-fragmentation.exe
 
-sgen-toggleref-tests: sgen-toggleref.exe
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
-	for test in $+; do	\
-		echo "...$$test";	\
-		for conf in $(SGEN_CONFIGURATIONS); do 	\
-			name=`echo $$conf | cut -d\| -f 2`;	\
-			params=`echo $$conf | cut -d\| -f 1`;	\
-			test_name="$${test}|$${name}";	\
-			if MONO_GC_PARAMS="toggleref-test,$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" "$${dump_action}" $(RUNTIME_ARGS);	\
-			then \
-				passed=`expr $${passed} + 1`; \
-			else \
-				if [ $$? = 2 ]; then break; fi; \
-				failed=`expr $${failed} + 1`; \
-				failed_tests="$${failed_tests} $$test_name"; \
-			fi \
-		done	\
-	done;	\
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+sgen-bridge-tests: $(SGEN_BRIDGE_TESTS)
+	$(MAKE) sgen-bridge-tests-plain
+	$(MAKE) sgen-bridge-tests-ms-conc
+	$(MAKE) sgen-bridge-tests-ms-split
+	$(MAKE) sgen-bridge-tests-plain-new-bridge
+	$(MAKE) sgen-bridge-tests-ms-conc-new-bridge
+	$(MAKE) sgen-bridge-tests-ms-split-new-bridge
+	$(MAKE) sgen-bridge-tests-plain-tarjan-bridge
+	$(MAKE) sgen-bridge-tests-ms-split-tarjan-bridge
 
-sgen-bridge-tests: sgen-bridge-tests1 sgen-bridge-tests2
+sgen-bridge-tests-plain: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-ms-conc: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-ms-split: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-plain-new-bridge: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="bridge-implementation=new" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-ms-conc-new-bridge: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="bridge-implementation=new,major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-ms-split-new-bridge: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="bridge-implementation=new,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-plain-tarjan-bridge: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
+sgen-bridge-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE_TESTS)
 
-sgen-tests: sgen-regular-tests sgen-bridge-tests sgen-toggleref-tests
+SGEN_BRIDGE2_TESTS=	\
+	sgen-bridge-xref.exe
+
+sgen-bridge2-tests: $(SGEN_BRIDGE2_TESTS)
+	$(MAKE) sgen-bridge2-tests-plain
+	$(MAKE) sgen-bridge2-tests-ms-conc
+	$(MAKE) sgen-bridge2-tests-ms-split
+	$(MAKE) sgen-bridge2-tests-plain-new-bridge
+	$(MAKE) sgen-bridge2-tests-ms-conc-new-bridge
+	$(MAKE) sgen-bridge2-tests-ms-split-new-bridge
+	$(MAKE) sgen-bridge2-tests-plain-tarjan-bridge
+	$(MAKE) sgen-bridge2-tests-ms-split-tarjan-bridge
+
+sgen-bridge2-tests-plain: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-ms-conc: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-ms-split: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-plain-new-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=new" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-ms-conc-new-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=new,major=marksweep-conc" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-ms-split-new-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=new,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-plain-tarjan-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
+sgen-bridge2-tests-ms-split-tarjan-bridge: $(SGEN_BRIDGE2_TESTS) test-runner.exe
+	MONO_ENV_OPTIONS="--gc=sgen" MONO_GC_DEBUG="bridge=2Bridge" MONO_GC_PARAMS="bridge-implementation=tarjan,minor=split" $(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 900 $(SGEN_BRIDGE2_TESTS)
 
 AOT_CONFIGURATIONS=	\
 	"|regular"	\
@@ -1197,6 +1195,12 @@ bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-8167
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
+
+EXTRA_DIST += bug-36848-a.cs
+bug-36848.exe bug-36848-a.dll: $(srcdir)/bug-36848.cs $(srcdir)/bug-36848-a.cs
+	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs
+	$(MCS) -r:bug-36848-a.dll -out:bug-36848.exe $(srcdir)/bug-36848.cs
+	$(MCS) -target:library -out:bug-36848-a.dll $(srcdir)/bug-36848-a.cs /define:WITH_STOP
 
 EXTRA_DIST += bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
@@ -1372,25 +1376,35 @@ test-oom: $(OOM_TESTS)
 if HOST_WIN32
 test-unhandled-exception-2:
 else
-test-unhandled-exception-2: test-unhandled-exception-2-1 test-unhandled-exception-2-2 test-unhandled-exception-2-3 test-unhandled-exception-2-4	\
-		 test-unhandled-exception-2-5 test-unhandled-exception-2-6 test-unhandled-exception-2-7 test-unhandled-exception-2-8
 
-test-unhandled-exception-2-1: unhandled-exception-1.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 1 $<
-test-unhandled-exception-2-2: unhandled-exception-2.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-3: unhandled-exception-3.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-4: unhandled-exception-4.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-5: unhandled-exception-5.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
-test-unhandled-exception-2-6: unhandled-exception-6.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-7: unhandled-exception-7.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
-test-unhandled-exception-2-8: unhandled-exception-8.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 3 $<
+# tests that expect a 1 exit code
+UNHANDLED_EXCEPTION_1_TESTS =	\
+	unhandled-exception-1.exe
+
+# tests that expect a 255 exit code
+UNHANDLED_EXCEPTION_255_TESTS =	\
+	unhandled-exception-2.exe	\
+	unhandled-exception-3.exe	\
+	unhandled-exception-4.exe	\
+	unhandled-exception-5.exe	\
+	unhandled-exception-6.exe	\
+	unhandled-exception-7.exe
+
+test-unhandled-exception-2: $(UNHANDLED_EXCEPTION_1_TESTS) $(UNHANDLED_EXCEPTION_255_TESTS)
+	$(MAKE) test-unhandled-exception-2-1-with-managed-handler
+	$(MAKE) test-unhandled-exception-2-1-without-managed-handler
+	$(MAKE) test-unhandled-exception-2-255-with-managed-handler
+	$(MAKE) test-unhandled-exception-2-255-without-managed-handler
+
+test-unhandled-exception-2-1-with-managed-handler: $(UNHANDLED_EXCEPTION_1_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 1 $(UNHANDLED_EXCEPTION_1_TESTS)
+test-unhandled-exception-2-1-without-managed-handler: $(UNHANDLED_EXCEPTION_1_TESTS) test-runner.exe
+	TEST_UNHANDLED_EXCEPTION_HANDLER=1 $(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 1 $(UNHANDLED_EXCEPTION_1_TESTS)
+test-unhandled-exception-2-255-with-managed-handler: $(UNHANDLED_EXCEPTION_255_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 255 $(UNHANDLED_EXCEPTION_255_TESTS)
+test-unhandled-exception-2-255-without-managed-handler: $(UNHANDLED_EXCEPTION_255_TESTS) test-runner.exe
+	TEST_UNHANDLED_EXCEPTION_HANDLER=1 $(RUNTIME) ./test-runner.exe -j a --testsuite-name $@ --expected-exit-code 255 $(UNHANDLED_EXCEPTION_255_TESTS)
+
 endif
 
 EXTRA_DIST += appdomain-loader.cs appdomain-tester.cs
@@ -1399,6 +1413,21 @@ test-appdomain-unload: appdomain-loader.exe appdomain-tester.exe
 	$(RUNTIME) appdomain-loader.exe > appdomain-loader.exe.2.stdout || exit 1;
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) -O=gshared appdomain-loader.exe > appdomain-loader.exe.3.stdout || exit 1;
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) appdomain-loader.exe > appdomain-loader.exe.4.stdout || exit 1;
+
+EXTRA_DIST += console-output.cs console-output.exe.stderr.expected console-output.exe.stdout.expected
+test-console-output: console-output.exe
+	@$(RUNTIME) console-output.exe 1>console-output.exe.stdout
+	@$(RUNTIME) console-output.exe 2>console-output.exe.stderr
+	@diff -w console-output.exe.stdout $(srcdir)/console-output.exe.stdout.expected \
+		&& diff -w console-output.exe.stderr $(srcdir)/console-output.exe.stderr.expected
+
+PROCESS_STRESS_TESTS=	\
+		process-stress-1.exe	\
+		process-stress-2.exe	\
+		process-stress-3.exe
+
+test-process-stress: $(PROCESS_STRESS_TESTS) test-runner.exe
+	$(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 600 $(PROCESS_STRESS_TESTS)
 
 coreclr-gcstress:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress

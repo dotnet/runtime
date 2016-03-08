@@ -25,26 +25,16 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
+#include <mono/io-layer/io-trace.h>
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-once.h>
+#include <mono/utils/mono-logger-internals.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
-#endif
-
-#if 0
-#define DEBUG(...) g_message(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
-
-#if 0
-#define WAIT_DEBUG(code) do { code } while (0)
-#else
-#define WAIT_DEBUG(code) do { } while (0)
 #endif
 
 struct _WapiHandleOps _wapi_thread_ops = {
@@ -55,6 +45,14 @@ struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* special_wait */
 	NULL				/* prewait */
 };
+ 
+typedef enum {
+	THREAD_PRIORITY_LOWEST = -2,
+	THREAD_PRIORITY_BELOW_NORMAL = -1,
+	THREAD_PRIORITY_NORMAL = 0,
+	THREAD_PRIORITY_ABOVE_NORMAL = 1,
+	THREAD_PRIORITY_HIGHEST = 2
+} WapiThreadPriority;
 
 static mono_once_t thread_ops_once = MONO_ONCE_INIT;
 
@@ -118,11 +116,11 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 		return;
 	}
 
-	DEBUG ("%s: Thread %p terminating", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p terminating", __func__, handle);
 
 	thread_handle = lookup_thread (handle);
 
-	DEBUG ("%s: Thread %p abandoning held mutexes", __func__, handle);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Thread %p abandoning held mutexes", __func__, handle);
 
 	for (i = 0; i < thread_handle->owned_mutexes->len; i++) {
 		gpointer mutex = g_ptr_array_index (thread_handle->owned_mutexes, i);
@@ -140,7 +138,7 @@ wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus)
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
-	DEBUG("%s: Recording thread handle %p id %ld status as %d",
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Recording thread handle %p id %ld status as %d",
 		  __func__, handle, thread_handle->id, exitstatus);
 	
 	/* The thread is no longer active, so unref it */
@@ -180,7 +178,7 @@ wapi_create_thread_handle (void)
 	 */
 	_wapi_handle_ref (handle);
 
-	DEBUG ("%s: started thread id %ld", __func__, thread->id);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: started thread id %ld", __func__, thread->id);
 	
 	return handle;
 }
@@ -225,6 +223,203 @@ _wapi_thread_disown_mutex (gpointer mutex)
 	_wapi_handle_unref (mutex);
 	
 	g_ptr_array_remove (thread->owned_mutexes, mutex);
+}
+
+/**
+ * _wapi_thread_posix_priority_to_priority:
+ *
+ *   Convert a POSIX priority to a WapiThreadPriority.
+ * sched_priority is a POSIX priority,
+ * policy is the current scheduling policy
+ */
+static WapiThreadPriority 
+_wapi_thread_posix_priority_to_priority (int sched_priority, int policy)
+{
+/* Necessary to get valid priority range */
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	int max,
+	    min,
+	    i,
+	    priority,
+	    chunk;
+	WapiThreadPriority priorities[] = {
+		THREAD_PRIORITY_LOWEST,
+		THREAD_PRIORITY_LOWEST,
+		THREAD_PRIORITY_BELOW_NORMAL,
+		THREAD_PRIORITY_NORMAL,
+		THREAD_PRIORITY_ABOVE_NORMAL,
+		THREAD_PRIORITY_HIGHEST,
+		THREAD_PRIORITY_HIGHEST
+	};
+	    
+	max = sched_get_priority_max (policy);
+	min = sched_get_priority_min (policy);
+	
+	/* Partition priority range linearly, 
+	   assign each partition a thread priority */
+	if (max != min && 0 <= max && 0 <= min) {
+		for (i=1, priority=min, chunk=(max-min)/7; 
+		     i<6 && sched_priority > priority;
+		     ++i) {
+			priority += chunk;
+		}
+		
+		if (max <= priority)
+		{
+			return (THREAD_PRIORITY_HIGHEST);
+		}
+		else
+		{
+			return (priorities[i-1]);
+		}
+	}
+#endif
+
+	return (THREAD_PRIORITY_NORMAL);
+}
+
+/**
+ * _wapi_thread_priority_to_posix_priority:
+ *
+ *   Convert a WapiThreadPriority to a POSIX priority.
+ * priority is a WapiThreadPriority,
+ * policy is the current scheduling policy
+ */
+static int 
+_wapi_thread_priority_to_posix_priority (WapiThreadPriority priority, int policy)
+{
+/* Necessary to get valid priority range */
+#ifdef _POSIX_PRIORITY_SCHEDULING
+	int max,
+	    min,
+	    posix_priority,
+	    i;
+	WapiThreadPriority priorities[] = {
+		THREAD_PRIORITY_LOWEST,
+		THREAD_PRIORITY_LOWEST,
+		THREAD_PRIORITY_BELOW_NORMAL,
+		THREAD_PRIORITY_NORMAL,
+		THREAD_PRIORITY_ABOVE_NORMAL,
+		THREAD_PRIORITY_HIGHEST,
+		THREAD_PRIORITY_HIGHEST
+	};
+	
+	max = sched_get_priority_max (policy);
+	min = sched_get_priority_min (policy);
+
+	/* Partition priority range linearly, 
+	   numerically approximate matching ThreadPriority */
+	if (max != min && 0 <= max && 0 <= min) {
+		for (i=0; i<7; ++i) {
+			if (priorities[i] == priority) {
+				posix_priority = min + ((max-min)/7) * i;
+				if (max < posix_priority)
+				{
+					return max;
+				}
+				else {
+					return posix_priority;
+				}
+			}
+		}
+	}
+#endif
+
+	switch (policy) {
+		case SCHED_FIFO:
+		case SCHED_RR:
+			return 50;
+#ifdef SCHED_BATCH
+		case SCHED_BATCH:
+#endif
+		case SCHED_OTHER:
+			return 0;
+		default:
+			return -1;
+	}
+}
+
+/**
+ * GetThreadPriority:
+ * @param handle: The thread handle to query.
+ *
+ * Gets the priority of the given thread.
+ * @return: A MonoThreadPriority approximating the current POSIX 
+ * thread priority, or THREAD_PRIORITY_NORMAL on error.
+ */
+gint32 
+GetThreadPriority (gpointer handle)
+{
+	struct _WapiHandle_thread *thread_handle;
+	int policy;
+	struct sched_param param;
+	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread_handle);
+				  
+	if (ok == FALSE) {
+		return (THREAD_PRIORITY_NORMAL);
+	}
+	
+	switch (pthread_getschedparam (thread_handle->id, &policy, &param)) {
+		case 0:
+			return (_wapi_thread_posix_priority_to_priority (param.sched_priority, policy));
+		case ESRCH:
+			g_warning ("pthread_getschedparam: error looking up thread id %x", (gsize)thread_handle->id);
+	}
+	
+	return (THREAD_PRIORITY_NORMAL);
+}
+
+/**
+ * SetThreadPriority:
+ * @param handle: The thread handle to query.
+ * @param priority: The priority to give to the thread.
+ *
+ * Sets the priority of the given thread.
+ * @return: TRUE on success, FALSE on failure or error.
+ */
+gboolean 
+SetThreadPriority (gpointer handle, gint32 priority)
+{
+	struct _WapiHandle_thread *thread_handle;
+	int policy,
+	    posix_priority,
+	    rv;
+	struct sched_param param;
+	gboolean ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread_handle);
+				  
+	if (ok == FALSE) {
+		return ok;
+	}
+	
+	rv = pthread_getschedparam (thread_handle->id, &policy, &param);
+	if (rv) {
+		if (ESRCH == rv)
+			g_warning ("pthread_getschedparam: error looking up thread id %x", (gsize)thread_handle->id);
+		return FALSE;
+	}
+	
+	posix_priority =  _wapi_thread_priority_to_posix_priority (priority, policy);
+	if (0 > posix_priority)
+		return FALSE;
+		
+	param.sched_priority = posix_priority;
+	switch (pthread_setschedparam (thread_handle->id, policy, &param)) {
+		case 0:
+			return TRUE;
+		case ESRCH:
+			g_warning ("pthread_setschedparam: error looking up thread id %x", (gsize)thread_handle->id);
+			break;
+		case ENOTSUP:
+			g_warning ("%s: priority %d not supported", __func__, priority);
+			break;
+		case EPERM:
+			g_warning ("%s: permission denied", __func__);
+			break;
+	}
+	
+	return FALSE;
 }
 
 char*

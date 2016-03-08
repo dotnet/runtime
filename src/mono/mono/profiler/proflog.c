@@ -33,6 +33,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 #if defined(HOST_WIN32) || defined(DISABLE_SOCKETS)
@@ -80,9 +83,10 @@
 
 #include <unistd.h>
 #include <sys/syscall.h>
-#include "perf_event.h"
 
 #ifdef ENABLE_PERF_EVENTS
+#include <linux/perf_event.h>
+
 #define USE_PERF_EVENTS 1
 
 static int read_perf_mmap (MonoProfiler* prof, int cpu);
@@ -2512,6 +2516,13 @@ mono_cpu_count (void)
 	if (count > 0)
 		return count + 1;
 #endif
+#ifdef HAVE_SCHED_GETAFFINITY
+	{
+		cpu_set_t set;
+		if (sched_getaffinity (getpid (), sizeof (set), &set) == 0)
+			return CPU_COUNT (&set);
+	}
+#endif
 #ifdef _SC_NPROCESSORS_ONLN
 	count = sysconf (_SC_NPROCESSORS_ONLN);
 	if (count > 0)
@@ -3580,6 +3591,7 @@ create_method_node (MonoMethod *method)
 static gboolean
 coverage_filter (MonoProfiler *prof, MonoMethod *method)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoImage *image;
 	MonoAssembly *assembly;
@@ -3690,7 +3702,8 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	}
 
 	COVERAGE_DEBUG(fprintf (stderr, "   Handling coverage for %s\n", mono_method_get_name (method));)
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_cleanup (&error);
 
 	mono_method_header_get_code (header, &code_size, NULL);
 

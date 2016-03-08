@@ -221,8 +221,7 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 	gpointer addr;
 	MonoClass *exc_class;
 
-	exc_class = mono_class_from_name (mono_defaults.corlib, "System", name);
-	g_assert (exc_class);
+	exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", name);
 
 	mips_load_const (code, mips_a0, exc_class->type_token);
 	addr = mono_get_throw_corlib_exception ();
@@ -1742,13 +1741,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 1;
+				ins->sreg1 = MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ls_word_idx, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 2;
+				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + ms_word_idx, FALSE);
 			} else
@@ -1967,8 +1966,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			MonoInst *ins;
 
 			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
+			ins->sreg1 = MONO_LVREG_LS (val->dreg);
+			ins->sreg2 = MONO_LVREG_MS (val->dreg);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return;
 		}
@@ -2616,6 +2615,8 @@ map_to_reg_reg_op (int op)
 	case OP_STOREI8_MEMBASE_IMM:
 		return OP_STOREI8_MEMBASE_REG;
 	}
+	if (mono_op_imm_to_op (op) == -1)
+		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (op));
 	return mono_op_imm_to_op (op);
 }
 
@@ -4631,7 +4632,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_bne (code, mips_at, mips_zero, 0);
 			mips_nop (code);
 
-			EMIT_SYSTEM_EXCEPTION_NAME("ArithmeticException");
+			EMIT_SYSTEM_EXCEPTION_NAME("OverflowException");
 			mips_patch (branch_patch, (guint32)code);
 			mips_fmovd (code, ins->dreg, ins->sreg1);
 			break;
@@ -4673,6 +4674,7 @@ void
 mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
+	MonoError error;
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
@@ -4706,7 +4708,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			/* from OP_AOTCONST : lui + addiu */
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
+			mono_error_raise_exception (&error); /* FIXME: don't raise here */
 			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
 			continue;
 #if 0
@@ -4719,7 +4722,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 			/* everything is dealt with at epilog output time */
 			continue;
 		default:
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
+			mono_error_raise_exception (&error); /* FIXME: don't raise here */
 			mips_patch ((guint32 *)(void *)ip, (guint32)target);
 			break;
 		}

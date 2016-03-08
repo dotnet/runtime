@@ -262,7 +262,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 			continue;
 #endif
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && i != AMD64_RBP)
-			amd64_mov_reg_membase (code, AMD64_RBX, AMD64_ARG_REG1, gregs_offset + (i * 8), 8);
+			amd64_mov_reg_membase (code, i, AMD64_ARG_REG1, gregs_offset + (i * 8), 8);
 	}
 	/* load exc register */
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1,  gregs_offset + (AMD64_RAX * 8), 8);

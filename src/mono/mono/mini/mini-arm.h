@@ -306,7 +306,7 @@ typedef struct MonoCompileArch {
 #endif
 
 #define MONO_ARCH_HAVE_TLS_GET (mono_arm_have_tls_get ())
-// #define MONO_ARCH_HAVE_TLS_GET_REG 1
+#define MONO_ARCH_HAVE_TLS_GET_REG 1
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5

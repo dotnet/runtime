@@ -50,6 +50,7 @@
 #include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
+#include "mono/utils/mono-logger-internals.h"
 
 #include "mini.h"
 #include "jit.h"
@@ -60,6 +61,9 @@
 #include <locale.h>
 #include "version.h"
 #include "debugger-agent.h"
+#if TARGET_OSX
+#   include <sys/resource.h>
+#endif
 
 static FILE *mini_stats_fd;
 
@@ -147,7 +151,7 @@ extern char *nacl_mono_path;
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT | MONO_OPT_FLOAT32)
 
 static guint32
-parse_optimizations (guint32 opt, const char* p)
+parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 {
 	guint32 exclude = 0;
 	const char *n;
@@ -157,8 +161,10 @@ parse_optimizations (guint32 opt, const char* p)
 	mono_hwcap_init ();
 
 	/* call out to cpu detection code here that sets the defaults ... */
-	opt |= mono_arch_cpu_optimizations (&exclude);
-	opt &= ~exclude;
+	if (cpu_opts) {
+		opt |= mono_arch_cpu_optimizations (&exclude);
+		opt &= ~exclude;
+	}
 	if (!p)
 		return opt;
 
@@ -284,12 +290,12 @@ mono_parse_default_optimizations (const char* p)
 {
 	guint32 opt;
 
-	opt = parse_optimizations (DEFAULT_OPTIMIZATIONS, p);
+	opt = parse_optimizations (DEFAULT_OPTIMIZATIONS, p, TRUE);
 	return opt;
 }
 
-static char*
-opt_descr (guint32 flags) {
+char*
+mono_opt_descr (guint32 flags) {
 	GString *str = g_string_new ("");
 	int i, need_comma;
 
@@ -358,7 +364,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	int i;
 
 	mono_set_defaults (verbose, opt_flags);
-	n = opt_descr (opt_flags);
+	n = mono_opt_descr (opt_flags);
 	g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
 	g_free (n);
 	cfailed = failed = run = code_size = 0;
@@ -376,9 +382,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	if (mini_stats_fd)
 		fprintf (mini_stats_fd, "[");
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		MonoMethod *method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-		if (!method)
+		MonoError error;
+		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			continue;
+		}
 		if (strncmp (method->name, "test_", 5) == 0) {
 			MonoCompile *cfg;
 
@@ -452,7 +461,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
 			guint32 opt_flags = opt_sets [opt];
-			n = opt_descr (opt_flags);
+			n = mono_opt_descr (opt_flags);
 			if (!n [0])
 				n = (char *)"none";
 			if (opt)
@@ -469,9 +478,12 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 
 	/* load the metadata */
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
-		if (!method)
+		MonoError error;
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error);
 			continue;
+		}
 		mono_class_init (method->klass);
 
 		if (!strncmp (method->name, "test_", 5) && mini_stats_fd) {
@@ -899,15 +911,18 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 	int i, count = 0, fail_count = 0;
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoError error;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoMethodSignature *sig;
 
 		if (mono_metadata_has_generic_params (image, token))
 			continue;
 
-		method = mono_get_method (image, token, NULL);
-		if (!method)
+		method = mono_get_method_checked (image, token, NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			continue;
+		}
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -984,6 +999,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 int 
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
+	MonoError error;
 	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
@@ -995,14 +1011,28 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		return 1;
 	}
 
-	method = mono_get_method (image, entry, NULL);
+	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL){
-		g_print ("The entry point method could not be loaded\n");
+		g_print ("The entry point method could not be loaded due to %s\n", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
 		mono_environment_exitcode_set (1);
 		return 1;
 	}
 	
-	return mono_runtime_run_main (method, argc, argv, NULL);
+	if (mono_llvm_only) {
+		MonoObject *exc;
+		int res;
+
+		res = mono_runtime_run_main (method, argc, argv, &exc);
+		if (exc) {
+			mono_unhandled_exception (exc);
+			mono_invoke_unhandled_exception_hook (exc);
+			return 1;
+		}
+		return res;
+	} else {
+		return mono_runtime_run_main (method, argc, argv, NULL);
+	}
 }
 
 typedef struct 
@@ -1068,6 +1098,7 @@ static void main_thread_handler (gpointer user_data)
 static int
 load_agent (MonoDomain *domain, char *desc)
 {
+	MonoError error;
 	char* col = strchr (desc, ':');	
 	char *agent, *args;
 	MonoAssembly *agent_assembly;
@@ -1106,9 +1137,10 @@ load_agent (MonoDomain *domain, char *desc)
 		return 1;
 	}
 
-	method = mono_get_method (image, entry, NULL);
+	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL){
-		g_print ("The entry point method of assembly '%s' could not be loaded\n", agent);
+		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, &error);
+		mono_error_cleanup (&error);
 		g_free (agent);
 		return 1;
 	}
@@ -1126,7 +1158,8 @@ load_agent (MonoDomain *domain, char *desc)
 
 	pa [0] = main_args;
 	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
-	mono_runtime_invoke (method, NULL, pa, NULL);
+	mono_runtime_invoke_checked (method, NULL, pa, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return 0;
 }
@@ -1371,10 +1404,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			opt->soft_breakpoints = TRUE;
 			opt->explicit_null_checks = TRUE;
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 			mono_set_optimizations (opt);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3, TRUE);
 			mono_set_optimizations (opt);
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
@@ -1470,6 +1503,22 @@ switch_gc (char* argv[], const char* target_gc)
 
 #ifdef TARGET_OSX
 
+/*
+ * tries to increase the minimum number of files, if the number is below 1024
+ */
+static void
+darwin_change_default_file_handles ()
+{
+	struct rlimit limit;
+	
+	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
+		if (limit.rlim_cur < 1024){
+			limit.rlim_cur = MAX(1024,limit.rlim_cur);
+			setrlimit (RLIMIT_NOFILE, &limit);
+		}
+	}
+}
+
 static void
 switch_arch (char* argv[], const char* target_arch)
 {
@@ -1550,6 +1599,10 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
+#if TARGET_OSX
+	darwin_change_default_file_handles ();
+#endif
+
 	if (g_getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
 	
@@ -1566,7 +1619,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
 			char *full_opts = g_strdup_printf ("-all,%s", argv [i] + 16);
 			action = DO_SINGLE_METHOD_REGRESSION;
-			mono_single_method_regression_opt = parse_optimizations (opt, full_opts);
+			mono_single_method_regression_opt = parse_optimizations (opt, full_opts, TRUE);
 			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
@@ -1616,9 +1669,20 @@ mono_main (int argc, char* argv[])
 			}
 			mini_stats_fd = fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3, TRUE);
+		} else if (strncmp (argv [i], "--bisect=", 9) == 0) {
+			char *param = argv [i] + 9;
+			char *sep = strchr (param, ':');
+			if (!sep) {
+				fprintf (stderr, "Error: --bisect requires OPT:FILENAME\n");
+				return 1;
+			}
+			char *opt_string = g_strndup (param, sep - param);
+			guint32 opt = parse_optimizations (0, opt_string, FALSE);
+			g_free (opt_string);
+			mono_set_bisect_methods (opt, sep + 1);
 		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
@@ -1859,6 +1923,14 @@ mono_main (int argc, char* argv[])
 		nacl_align_byte = -1; /* 0xff */
 	}
 	if (!nacl_null_checks_off) {
+		MonoDebugOptions *opt = mini_get_debug_options ();
+		opt->explicit_null_checks = TRUE;
+	}
+#endif
+
+#ifdef DISABLE_HW_TRAPS
+	// Signal handlers not available
+	{
 		MonoDebugOptions *opt = mini_get_debug_options ();
 		opt->explicit_null_checks = TRUE;
 	}
@@ -2135,7 +2207,7 @@ mono_main (int argc, char* argv[])
 			fprintf (mini_stats_fd, "[");
 			for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) {
 				opt = opt_sets [i];
-				n = opt_descr (opt);
+				n = mono_opt_descr (opt);
 				if (!n [0])
 					n = "none";
 				fprintf (mini_stats_fd, "\"%s\",", n);
@@ -2204,8 +2276,9 @@ mono_jit_init (const char *file)
  * (since Mono does not support having more than one mscorlib runtime
  * loaded at once).
  *
- * The @runtime_version can be one of these strings: "v1.1.4322" for
- * the 1.1 runtime or "v2.0.50727"  for the 2.0 runtime. 
+ * The @runtime_version can be one of these strings: "v4.0.30319" for
+ * desktop, "mobile" for mobile or "moonlight" for Silverlight compat.
+ * If an unrecognized string is input, the vm will default to desktop.
  *
  * Returns: the MonoDomain representing the domain where the assembly
  * was loaded.
@@ -2234,8 +2307,10 @@ void
 mono_jit_set_aot_mode (MonoAotMode mode)
 {
 	mono_aot_mode = mode;
-	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY)
+	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY) {
+		mono_aot_only = TRUE;
 		mono_llvm_only = TRUE;
+	}
 }
 
 /**

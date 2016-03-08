@@ -7,6 +7,7 @@
  * (C) 2015 Xamarin
  */
 #include <config.h>
+
 #ifdef CHECKED_BUILD
 
 #include <mono/utils/checked-build.h>
@@ -19,13 +20,43 @@
 #include <mono/metadata/reflection-internals.h>
 #include <glib.h>
 
+#ifdef HAVE_BACKTRACE_SYMBOLS
+#include <execinfo.h>
+#endif
+
+typedef struct {
+	GPtrArray *transitions;
+	guint32 in_gc_critical_region;
+} CheckState;
+
+static MonoNativeTlsKey thread_status;
+
+void
+checked_build_init (void)
+{
+	mono_native_tls_alloc (&thread_status, NULL);
+}
+
+static CheckState*
+get_state (void)
+{
+	CheckState *state = mono_native_tls_get_value (thread_status);
+	if (!state) {
+		state = g_new0 (CheckState, 1);
+		state->transitions = g_ptr_array_new ();
+		mono_native_tls_set_value (thread_status, state);
+	}
+
+	return state;
+}
+
+#if !defined(DISABLE_CHECKED_BUILD_THREAD)
+
 #define MAX_NATIVE_BT 6
 #define MAX_NATIVE_BT_PROBE (MAX_NATIVE_BT + 5)
 #define MAX_TRANSITIONS 3
 
-
 #ifdef HAVE_BACKTRACE_SYMBOLS
-#include <execinfo.h>
 
 //XXX We should collect just the IPs and lazily symbolificate them.
 static int
@@ -78,37 +109,11 @@ translate_backtrace (gpointer native_trace[], int size)
 
 #endif
 
-
-typedef struct {
-	GPtrArray *transitions;
-} CheckState;
-
 typedef struct {
 	const char *name;
 	int from_state, next_state, suspend_count, suspend_count_delta, size;
 	gpointer backtrace [MAX_NATIVE_BT_PROBE];
 } ThreadTransition;
-
-static MonoNativeTlsKey thread_status;
-
-void
-checked_build_init (void)
-{
-	mono_native_tls_alloc (&thread_status, NULL);
-}
-
-static CheckState*
-get_state (void)
-{
-	CheckState *state = mono_native_tls_get_value (thread_status);
-	if (!state) {
-		state = g_new0 (CheckState, 1);
-		state->transitions = g_ptr_array_new ();
-		mono_native_tls_set_value (thread_status, state);
-	}
-
-	return state;
-}
 
 static void
 free_transition (ThreadTransition *t)
@@ -137,6 +142,10 @@ checked_build_thread_transition (const char *transition, void *info, int from_st
 	t->size = collect_backtrace (t->backtrace);
 	g_ptr_array_add (state->transitions, t);
 }
+
+#endif /* !defined(DISABLE_CHECKED_BUILD_THREAD) */
+
+#if !defined(DISABLE_CHECKED_BUILD_GC)
 
 static void
 assertion_fail (const char *msg, ...)
@@ -229,6 +238,44 @@ assert_gc_neutral_mode (void)
 		assertion_fail ("Expected GC Neutral mode but was in %s state", mono_thread_state_name (state));
 	}
 }
+
+void *
+critical_gc_region_begin(void)
+{
+	CheckState *state = get_state ();
+	state->in_gc_critical_region++;
+	return state;
+}
+
+
+void
+critical_gc_region_end(void* token)
+{
+	CheckState *state = get_state();
+	g_assert (state == token);
+	state->in_gc_critical_region--;
+}
+
+void
+assert_not_in_gc_critical_region(void)
+{
+	CheckState *state = get_state();
+	if (state->in_gc_critical_region > 0) {
+		assertion_fail("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name (mono_thread_info_current_state (mono_thread_info_current ())));
+	}
+}
+
+void
+assert_in_gc_critical_region (void)
+{
+	CheckState *state = get_state();
+	if (state->in_gc_critical_region == 0)
+		assertion_fail("Expected GC critical region");
+}
+
+#endif /* !defined(DISABLE_CHECKED_BUILD_GC) */
+
+#if !defined(DISABLE_CHECKED_BUILD_METADATA)
 
 // check_metadata_store et al: The goal of these functions is to verify that if there is a pointer from one mempool into
 // another, that the pointed-to memory is protected by the reference count mechanism for MonoImages.
@@ -403,6 +450,12 @@ check_image_set_may_reference_image_set (MonoImageSet *from, MonoImageSet *to)
 	{
 		gboolean seen = FALSE;
 
+		// If TO set includes corlib, the FROM set may
+		// implicitly reference corlib, even if it's not
+		// present in the set explicitly.
+		if (to->images[to_idx] == mono_defaults.corlib)
+			seen = TRUE;
+
 		// For each item in to->images, scan over from->images looking for it.
 		for (from_idx = 0; !seen && from_idx < from->nimages; from_idx++)
 		{
@@ -556,5 +609,7 @@ check_metadata_store_local (void *from, void *to)
 {
     check_mempool_may_reference_mempool (from, to, TRUE);
 }
+
+#endif /* !defined(DISABLE_CHECKED_BUILD_METADATA) */
 
 #endif /* CHECKED_BUILD */

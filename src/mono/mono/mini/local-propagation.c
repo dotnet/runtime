@@ -42,6 +42,154 @@ mono_bitset_mp_new_noinit (MonoMemPool *mp,  guint32 max_size)
 }
 
 /*
+ * Replaces ins with optimized opcodes.
+ *
+ * We can emit to cbb the equivalent instructions which will be used as
+ * replacement for ins, or simply change the fields of ins. Spec needs to
+ * be updated if we silently change the opcode of ins.
+ *
+ * Returns TRUE if additional vregs were allocated.
+ */
+static gboolean
+mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
+{
+	gboolean allocated_vregs = FALSE;
+
+	/* FIXME: Add long/float */
+	switch (ins->opcode) {
+	case OP_MOVE:
+	case OP_XMOVE:
+		if (ins->dreg == ins->sreg1) {
+			NULLIFY_INS (ins);
+		}
+		break;
+	case OP_ADD_IMM:
+	case OP_IADD_IMM:
+	case OP_SUB_IMM:
+	case OP_ISUB_IMM:
+#if SIZEOF_REGISTER == 8
+	case OP_LADD_IMM:
+	case OP_LSUB_IMM:
+#endif
+		if (ins->inst_imm == 0) {
+			ins->opcode = OP_MOVE;
+		}
+		break;
+	case OP_MUL_IMM:
+	case OP_IMUL_IMM:
+#if SIZEOF_REGISTER == 8
+	case OP_LMUL_IMM:
+#endif
+		if (ins->inst_imm == 0) {
+			ins->opcode = (ins->opcode == OP_LMUL_IMM) ? OP_I8CONST : OP_ICONST;
+			ins->inst_c0 = 0;
+			ins->sreg1 = -1;
+		} else if (ins->inst_imm == 1) {
+			ins->opcode = OP_MOVE;
+		} else if ((ins->opcode == OP_IMUL_IMM) && (ins->inst_imm == -1)) {
+			ins->opcode = OP_INEG;
+		} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
+			ins->opcode = OP_LNEG;
+		} else {
+			int power2 = mono_is_power_of_two (ins->inst_imm);
+			if (power2 >= 0) {
+				ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
+				ins->inst_imm = power2;
+			}
+		}
+		break;
+	case OP_IREM_UN_IMM:
+	case OP_IDIV_UN_IMM: {
+		int c = ins->inst_imm;
+		int power2 = mono_is_power_of_two (c);
+
+		if (power2 >= 0) {
+			if (ins->opcode == OP_IREM_UN_IMM) {
+				ins->opcode = OP_IAND_IMM;
+				ins->sreg2 = -1;
+				ins->inst_imm = (1 << power2) - 1;
+			} else if (ins->opcode == OP_IDIV_UN_IMM) {
+				ins->opcode = OP_ISHR_UN_IMM;
+				ins->sreg2 = -1;
+				ins->inst_imm = power2;
+			}
+		}
+		break;
+	}
+	case OP_IDIV_IMM: {
+		int c = ins->inst_imm;
+		int power2 = mono_is_power_of_two (c);
+
+		if (power2 == 1) {
+			int r1 = mono_alloc_ireg (cfg);
+
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, r1, ins->sreg1, 31);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IADD, r1, r1, ins->sreg1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, ins->dreg, r1, 1);
+
+			allocated_vregs = TRUE;
+		} else if (power2 > 0 && power2 < 31) {
+			int r1 = mono_alloc_ireg (cfg);
+
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, r1, ins->sreg1, 31);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, r1, r1, (32 - power2));
+			MONO_EMIT_NEW_BIALU (cfg, OP_IADD, r1, r1, ins->sreg1);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, ins->dreg, r1, power2);
+
+			allocated_vregs = TRUE;
+		}
+		break;
+	}
+#if SIZEOF_REGISTER == 8
+	case OP_LREM_IMM:
+#endif
+	case OP_IREM_IMM: {
+		int power = mono_is_power_of_two (ins->inst_imm);
+		if (ins->inst_imm == 1) {
+			ins->opcode = OP_ICONST;
+			MONO_INST_NULLIFY_SREGS (ins);
+			ins->inst_c0 = 0;
+#if __s390__
+		}
+#else
+		} else if ((ins->inst_imm > 0) && (ins->inst_imm < (1LL << 32)) && (power != -1)) {
+			gboolean is_long = ins->opcode == OP_LREM_IMM;
+			int compensator_reg = alloc_ireg (cfg);
+			int intermediate_reg;
+
+			/* Based on gcc code */
+
+			/* Add compensation for negative numerators */
+
+			if (power > 1) {
+				intermediate_reg = compensator_reg;
+				MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_IMM : OP_ISHR_IMM, intermediate_reg, ins->sreg1, is_long ? 63 : 31);
+			} else {
+				intermediate_reg = ins->sreg1;
+			}
+
+			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LSHR_UN_IMM : OP_ISHR_UN_IMM, compensator_reg, intermediate_reg, (is_long ? 64 : 32) - power);
+			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LADD : OP_IADD, ins->dreg, ins->sreg1, compensator_reg);
+			/* Compute remainder */
+			MONO_EMIT_NEW_BIALU_IMM (cfg, is_long ? OP_LAND_IMM : OP_AND_IMM, ins->dreg, ins->dreg, (1 << power) - 1);
+			/* Remove compensation */
+			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LSUB : OP_ISUB, ins->dreg, ins->dreg, compensator_reg);
+
+			allocated_vregs = TRUE;
+		}
+#endif
+		break;
+	}
+
+	default:
+		break;
+	}
+
+	*spec = INS_INFO (ins->opcode);
+	return allocated_vregs;
+}
+
+/*
  * mono_local_cprop:
  *
  *  A combined local copy and constant propagation pass.
@@ -49,17 +197,17 @@ mono_bitset_mp_new_noinit (MonoMemPool *mp,  guint32 max_size)
 void
 mono_local_cprop (MonoCompile *cfg)
 {
-	MonoBasicBlock *bb;
+	MonoBasicBlock *bb, *bb_opt;
 	MonoInst **defs;
 	gint32 *def_index;
 	int max;
 	int filter = FILTER_IL_SEQ_POINT;
-
-restart:
+	int initial_max_vregs = cfg->next_vreg;
 
 	max = cfg->next_vreg;
-	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + 1));
-	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * (cfg->next_vreg + 1));
+	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
+	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * cfg->next_vreg);
+	cfg->cbb = bb_opt = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
@@ -71,22 +219,28 @@ restart:
 			int sregs [MONO_MAX_SRC_REGS];
 			int num_sregs, i;
 
-			if ((ins->dreg != -1) && (ins->dreg < max)) {
-				defs [ins->dreg] = NULL;
+			if (ins->dreg != -1) {
 #if SIZEOF_REGISTER == 4
-				defs [ins->dreg + 1] = NULL;
+				const char *spec = INS_INFO (ins->opcode);
+				if (spec [MONO_INST_DEST] == 'l') {
+					defs [ins->dreg + 1] = NULL;
+					defs [ins->dreg + 2] = NULL;
+				}
 #endif
+				defs [ins->dreg] = NULL;
 			}
 
 			num_sregs = mono_inst_get_src_registers (ins, sregs);
 			for (i = 0; i < num_sregs; ++i) {
 				int sreg = sregs [i];
-				if (sreg < max) {
-					defs [sreg] = NULL;
 #if SIZEOF_REGISTER == 4
+				const char *spec = INS_INFO (ins->opcode);
+				if (spec [MONO_INST_SRC1 + i] == 'l') {
 					defs [sreg + 1] = NULL;
-#endif
+					defs [sreg + 2] = NULL;
 				}
+#endif
+				defs [sreg] = NULL;
 			}
 		}
 
@@ -276,116 +430,52 @@ restart:
 						   (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg]))) {
 					/* Avoid needless sign extension */
 					ins->sreg1 = def->sreg1;
+				} else if (ins->opcode == OP_COMPARE_IMM && def->opcode == OP_LDADDR && ins->inst_imm == 0) {
+					MonoInst dummy_arg1;
+
+					memset (&dummy_arg1, 0, sizeof (MonoInst));
+					dummy_arg1.opcode = OP_ICONST;
+					dummy_arg1.inst_c0 = 1;
+
+					mono_constant_fold_ins (cfg, ins, &dummy_arg1, NULL, TRUE);
 				}
 			}
 
+			g_assert (cfg->cbb == bb_opt);
+			g_assert (!bb_opt->code);
 			/* Do strength reduction here */
-			/* FIXME: Add long/float */
-			switch (ins->opcode) {
-			case OP_MOVE:
-			case OP_XMOVE:
-				if (ins->dreg == ins->sreg1) {
-					MONO_DELETE_INS (bb, ins);
-					spec = INS_INFO (ins->opcode);
-				}
-				break;
-			case OP_ADD_IMM:
-			case OP_IADD_IMM:
-			case OP_SUB_IMM:
-			case OP_ISUB_IMM:
-#if SIZEOF_REGISTER == 8
-			case OP_LADD_IMM:
-			case OP_LSUB_IMM:
-#endif
-				if (ins->inst_imm == 0) {
-					ins->opcode = OP_MOVE;
-					spec = INS_INFO (ins->opcode);
-				}
-				break;
-			case OP_MUL_IMM:
-			case OP_IMUL_IMM:
-#if SIZEOF_REGISTER == 8
-			case OP_LMUL_IMM:
-#endif
-				if (ins->inst_imm == 0) {
-					ins->opcode = (ins->opcode == OP_LMUL_IMM) ? OP_I8CONST : OP_ICONST;
-					ins->inst_c0 = 0;
-					ins->sreg1 = -1;
-				} else if (ins->inst_imm == 1) {
-					ins->opcode = OP_MOVE;
-				} else if ((ins->opcode == OP_IMUL_IMM) && (ins->inst_imm == -1)) {
-					ins->opcode = OP_INEG;
-				} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
-					ins->opcode = OP_LNEG;
-				} else {
-					int power2 = mono_is_power_of_two (ins->inst_imm);
-					if (power2 >= 0) {
-						ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
-						ins->inst_imm = power2;
-					}
-				}
-				spec = INS_INFO (ins->opcode);
-				break;
-			case OP_IREM_UN_IMM:
-			case OP_IDIV_UN_IMM: {
-				int c = ins->inst_imm;
-				int power2 = mono_is_power_of_two (c);
+			if (mono_strength_reduction_ins (cfg, ins, &spec) && max < cfg->next_vreg) {
+				MonoInst **defs_prev = defs;
+				gint32 *def_index_prev = def_index;
+				guint32 prev_max = max;
+				guint32 additional_vregs = cfg->next_vreg - initial_max_vregs;
 
-				if (power2 >= 0) {
-					if (ins->opcode == OP_IREM_UN_IMM) {
-						ins->opcode = OP_IAND_IMM;
-						ins->sreg2 = -1;
-						ins->inst_imm = (1 << power2) - 1;
-					} else if (ins->opcode == OP_IDIV_UN_IMM) {
-						ins->opcode = OP_ISHR_UN_IMM;
-						ins->sreg2 = -1;
-						ins->inst_imm = power2;
-					}
-				}
-				spec = INS_INFO (ins->opcode);
-				break;
+				/* We have more vregs so we need to reallocate defs and def_index arrays */
+				max  = initial_max_vregs + additional_vregs * 2;
+				defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * max);
+				def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * max);
+
+				/* Keep the entries for the previous vregs, zero the rest */
+				memcpy (defs, defs_prev, sizeof (MonoInst*) * prev_max);
+				memset (defs + prev_max, 0, sizeof (MonoInst*) * (max - prev_max));
+				memcpy (def_index, def_index_prev, sizeof (guint32) * prev_max);
+				memset (def_index + prev_max, 0, sizeof (guint32) * (max - prev_max));
 			}
-			case OP_IDIV_IMM: {
-				int c = ins->inst_imm;
-				int power2 = mono_is_power_of_two (c);
-				MonoInst *tmp1, *tmp2, *tmp3, *tmp4;
 
-				/* FIXME: Move this elsewhere cause its hard to implement it here */
-				if (power2 == 1) {
-					int r1 = mono_alloc_ireg (cfg);
+			if (cfg->cbb->code || (cfg->cbb != bb_opt)) {
+				MonoInst *saved_prev = ins->prev;
 
-					NEW_BIALU_IMM (cfg, tmp1, OP_ISHR_UN_IMM, r1, ins->sreg1, 31);
-					mono_bblock_insert_after_ins (bb, ins, tmp1);
-					NEW_BIALU (cfg, tmp2, OP_IADD, r1, r1, ins->sreg1);
-					mono_bblock_insert_after_ins (bb, tmp1, tmp2);
-					NEW_BIALU_IMM (cfg, tmp3, OP_ISHR_IMM, ins->dreg, r1, 1);
-					mono_bblock_insert_after_ins (bb, tmp2, tmp3);
+				/* If we have code in cbb, we need to replace ins with the decomposition */
+				mono_replace_ins (cfg, bb, ins, &ins->prev, bb_opt, cfg->cbb);
+				bb_opt->code = bb_opt->last_ins = NULL;
+				bb_opt->in_count = bb_opt->out_count = 0;
+				cfg->cbb = bb_opt;
 
-					NULLIFY_INS (ins);
-
-					// We allocated a new vreg, so need to restart
-					goto restart;
-				} else if (power2 > 0) {
-					int r1 = mono_alloc_ireg (cfg);
-
-					NEW_BIALU_IMM (cfg, tmp1, OP_ISHR_IMM, r1, ins->sreg1, 31);
-					mono_bblock_insert_after_ins (bb, ins, tmp1);
-					NEW_BIALU_IMM (cfg, tmp2, OP_ISHR_UN_IMM, r1, r1, (32 - power2));
-					mono_bblock_insert_after_ins (bb, tmp1, tmp2);
-					NEW_BIALU (cfg, tmp3, OP_IADD, r1, r1, ins->sreg1);
-					mono_bblock_insert_after_ins (bb, tmp2, tmp3);
-					NEW_BIALU_IMM (cfg, tmp4, OP_ISHR_IMM, ins->dreg, r1, power2);
-					mono_bblock_insert_after_ins (bb, tmp3, tmp4);
-
-					NULLIFY_INS (ins);
-
-					// We allocated a new vreg, so need to restart
-					goto restart;
-				}
-				break;
+				/* ins is hanging, continue scanning the emitted code */
+				ins = saved_prev;
+				continue;
 			}
-			}
-			
+
 			if (spec [MONO_INST_DEST] != ' ') {
 				MonoInst *def = defs [ins->dreg];
 

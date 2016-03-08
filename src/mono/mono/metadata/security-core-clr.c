@@ -122,30 +122,21 @@ mono_security_core_clr_is_platform_image (MonoImage *image)
 
 #ifndef DISABLE_SECURITY
 
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (security_critical, System.Security, SecurityCriticalAttribute)
+static GENERATE_GET_CLASS_WITH_CACHE (security_safe_critical, System.Security, SecuritySafeCriticalAttribute)
+
 static MonoClass*
 security_critical_attribute (void)
 {
-	static MonoClass *klass = NULL;
-
-	if (!klass) {
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Security", 
-			"SecurityCriticalAttribute");
-	}
-	g_assert (klass);
-	return klass;
+	return mono_class_get_security_critical_class ();
 }
 
 static MonoClass*
 security_safe_critical_attribute (void)
 {
-	static MonoClass *klass = NULL;
+	return mono_class_get_security_safe_critical_class ();
 
-	if (!klass) {
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Security", 
-			"SecuritySafeCriticalAttribute");
-	}
-	g_assert (klass);
-	return klass;
 }
 
 /* sometime we get a NULL (not found) caller (e.g. get_reflection_caller) */

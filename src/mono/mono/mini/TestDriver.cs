@@ -32,6 +32,7 @@ public class TestDriver {
 
 		var exclude = new Dictionary<string, string> ();
 		List<string> run_only = new List<string> ();
+		List<string> exclude_test = new List<string> ();
 		if (args != null && args.Length > 0) {
 			for (j = 0; j < args.Length;) {
 				if (args [j] == "--time") {
@@ -50,6 +51,9 @@ public class TestDriver {
 					j += 1;
 				} else if (args [j] == "--exclude") {
 					exclude [args [j + 1]] = args [j + 1];
+					j += 2;
+				} else if (args [j] == "--exclude-test") {
+					exclude_test.Add (args [j + 1]);
 					j += 2;
 				} else if (args [j] == "--run-only") {
 					run_only.Add (args [j + 1]);
@@ -78,9 +82,15 @@ public class TestDriver {
 					if (!found)
 						continue;
 				}
-				if (exclude.Count > 0) {
+				if (exclude.Count > 0 || exclude_test.Count > 0) {
 					var attrs = methods [i].GetCustomAttributes (typeof (CategoryAttribute), false);
 					bool skip = false;
+					for (j = 0; j < exclude_test.Count; j++) {
+						if (name.EndsWith (exclude_test [j])) {
+							skip = true;
+							break;
+						}
+					}
 					foreach (CategoryAttribute attr in attrs) {
 						if (exclude.ContainsKey (attr.Category))
 							skip = true;

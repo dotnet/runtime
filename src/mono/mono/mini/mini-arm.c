@@ -29,7 +29,7 @@
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
-#if defined(HAVE_KW_THREAD) && defined(__linux__) \
+#if (defined(HAVE_KW_THREAD) && defined(__linux__) && defined(__ARM_EABI__)) \
 	|| defined(TARGET_ANDROID) \
 	|| (defined(TARGET_IOS) && !defined(TARGET_WATCHOS))
 #define HAVE_FAST_TLS
@@ -645,30 +645,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 
 #endif /* #ifndef DISABLE_JIT */
 
-#ifndef MONO_CROSS_COMPILE
-static gboolean
-mono_arm_have_fast_tls (void)
-{
-	if (mini_get_debug_options ()->arm_use_fallback_tls)
-		return FALSE;
-#if (defined(HAVE_KW_THREAD) && defined(__linux__)) \
-	|| defined(TARGET_ANDROID)
-	guint32* kuser_get_tls = (void*)0xffff0fe0;
-	guint32 expected [] = {0xee1d0f70, 0xe12fff1e};
-
-	/* Expecting mrc + bx lr in the kuser_get_tls kernel helper */
-	return memcmp (kuser_get_tls, expected, 8) == 0;
-#elif defined(TARGET_IOS)
-	guint32 expected [] = {0x1f70ee1d, 0x0103f021, 0x0020f851, 0xbf004770};
-	/* Discard thumb bit */
-	guint32* pthread_getspecific_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
-	return memcmp ((void*)pthread_getspecific_addr, expected, 16) == 0;
-#else
-	return FALSE;
-#endif
-}
-#endif
-
 /*
  * mono_arm_have_tls_get:
  *
@@ -678,7 +654,6 @@ mono_arm_have_fast_tls (void)
 gboolean
 mono_arm_have_tls_get (void)
 {
-	return FALSE;
 #ifdef HAVE_FAST_TLS
 	return TRUE;
 #else
@@ -2378,13 +2353,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 1;
+				ins->sreg1 = MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 2;
+				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + 1, FALSE);
 			} else if (!t->byref && ((t->type == MONO_TYPE_R8) || (t->type == MONO_TYPE_R4))) {
@@ -2481,10 +2456,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		case RegTypeBaseGen:
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, (G_BYTE_ORDER == G_BIG_ENDIAN) ? in->dreg + 1 : in->dreg + 2);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ARMREG_SP, ainfo->offset, (G_BYTE_ORDER == G_BIG_ENDIAN) ? MONO_LVREG_LS (in->dreg) : MONO_LVREG_MS (in->dreg));
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN ? in->dreg + 2 : in->dreg + 1;
+				ins->sreg1 = G_BYTE_ORDER == G_BIG_ENDIAN ? MONO_LVREG_MS (in->dreg) : MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ARMREG_R3, FALSE);
 			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
@@ -2682,8 +2657,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_SETLRET);
-				ins->sreg1 = val->dreg + 1;
-				ins->sreg2 = val->dreg + 2;
+				ins->sreg1 = MONO_LVREG_LS (val->dreg);
+				ins->sreg2 = MONO_LVREG_MS (val->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			return;
@@ -3488,11 +3463,14 @@ loop_start:
 		case OP_IOR_IMM:
 		case OP_IXOR_IMM:
 			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_imm, &rot_amount)) < 0) {
+				int opcode2 = mono_op_imm_to_op (ins->opcode);
 				ADD_NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
-				ins->opcode = mono_op_imm_to_op (ins->opcode);
+				if (opcode2 == -1)
+					g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+				ins->opcode = opcode2;
 			}
 			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
 				goto loop_start;
@@ -3532,13 +3510,17 @@ loop_start:
 		case OP_IDIV_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_IMM:
-		case OP_IREM_UN_IMM:
+		case OP_IREM_UN_IMM: {
+			int opcode2 = mono_op_imm_to_op (ins->opcode);
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			if (opcode2 == -1)
+				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+			ins->opcode = opcode2;
 			break;
+		}
 		case OP_LOCALLOC_IMM:
 			ADD_NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
@@ -3715,8 +3697,8 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, ins->dreg + 1, ins->sreg1 + 1, 0);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 0);
 		NULLIFY_INS (ins);
 	}
 }
@@ -5127,13 +5109,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (IS_HARD_FLOAT)
 				code = emit_float_args (cfg, call, code, &max_len, &offset);
-			if (!arm_is_imm12 (ins->inst_offset))
+			if (!arm_is_imm12 (ins->inst_offset)) {
+				/* sreg1 might be IP */
+				ARM_MOV_REG_REG (code, ARMREG_LR, ins->sreg1);
 				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_offset);
-			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-			if (!arm_is_imm12 (ins->inst_offset))
-				ARM_LDR_REG_REG (code, ARMREG_PC, ins->sreg1, ARMREG_IP);
-			else
+				ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, ARMREG_LR);
+				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+			} else {
+				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
+			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
@@ -5813,10 +5799,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 				ARM_CMPD (code, vfp_scratch2, vfp_scratch1);
 				ARM_FMSTAT (code);
-				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "ArithmeticException");
+				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "OverflowException");
 				ARM_CMPD (code, ins->sreg1, ins->sreg1);
 				ARM_FMSTAT (code);
-				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, "ArithmeticException");
+				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, "OverflowException");
 				ARM_CPYD (code, ins->dreg, ins->sreg1);
 
 				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
@@ -5992,15 +5978,17 @@ mono_arch_register_lowlevel_calls (void)
 
 #ifndef MONO_CROSS_COMPILE
 	if (mono_arm_have_tls_get ()) {
-		if (mono_arm_have_fast_tls ()) {
-			mono_register_jit_icall (mono_fast_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
-			mono_register_jit_icall (mono_fast_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+		MonoTlsImplementation tls_imp = mono_arm_get_tls_implementation ();
 
+		mono_register_jit_icall (tls_imp.get_tls_thunk, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
+		mono_register_jit_icall (tls_imp.set_tls_thunk, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
+
+		if (tls_imp.get_tls_thunk_end) {
 			mono_tramp_info_register (
 				mono_tramp_info_create (
 					"mono_get_tls_key",
-					(guint8*)mono_fast_get_tls_key,
-					(guint8*)mono_fast_get_tls_key_end - (guint8*)mono_fast_get_tls_key,
+					(guint8*)tls_imp.get_tls_thunk,
+					(guint8*)tls_imp.get_tls_thunk_end - (guint8*)tls_imp.get_tls_thunk,
 					NULL,
 					mono_arch_get_cie_program ()
 					),
@@ -6009,17 +5997,13 @@ mono_arch_register_lowlevel_calls (void)
 			mono_tramp_info_register (
 				mono_tramp_info_create (
 					"mono_set_tls_key",
-					(guint8*)mono_fast_set_tls_key,
-					(guint8*)mono_fast_set_tls_key_end - (guint8*)mono_fast_set_tls_key,
+					(guint8*)tls_imp.set_tls_thunk,
+					(guint8*)tls_imp.set_tls_thunk_end - (guint8*)tls_imp.set_tls_thunk,
 					NULL,
 					mono_arch_get_cie_program ()
 					),
 				NULL
 				);
-		} else {
-			g_warning ("No fast tls on device. Using fallbacks.");
-			mono_register_jit_icall (mono_fallback_get_tls_key, "mono_get_tls_key", mono_create_icall_signature ("ptr ptr"), TRUE);
-			mono_register_jit_icall (mono_fallback_set_tls_key, "mono_set_tls_key", mono_create_icall_signature ("void ptr ptr"), TRUE);
 		}
 	}
 #endif
@@ -6818,8 +6802,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			}
 			arm_patch (ip, code);
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			g_assert (exc_class);
+			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 
 			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR);
 #ifdef USE_JUMP_TABLES

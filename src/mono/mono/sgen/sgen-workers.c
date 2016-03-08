@@ -123,6 +123,8 @@ worker_try_finish (void)
 
 		/* We are the last thread to go to sleep. */
 	} while (!set_state (old_state, STATE_NOT_WORKING));
+
+	binary_protocol_worker_finish (sgen_timestamp (), forced_stop);
 }
 
 void

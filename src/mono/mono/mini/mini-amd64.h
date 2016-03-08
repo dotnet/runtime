@@ -215,12 +215,39 @@ typedef struct MonoCompileArch {
 
 #ifdef TARGET_WIN32
 #define PARAM_REGS 4
+#define FLOAT_PARAM_REGS 4
+
+static AMD64_Reg_No param_regs [] = { AMD64_RCX, AMD64_RDX, AMD64_R8, AMD64_R9 };
+
+static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
 #else
 #define PARAM_REGS 6
+#define FLOAT_PARAM_REGS 8
+
+static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
+
+static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
 #endif
 
 typedef struct {
-	int dummy;
+	/* Method address to call */
+	gpointer addr;
+	/* The trampoline reads this, so keep the size explicit */
+	int ret_marshal;
+	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 (used in out case) */
+	/* Equivalent of vret_arg_slot in the x86 implementation. */
+	int vret_arg_reg;
+	/* The stack slot where the return value will be stored (used in in case) */
+	int vret_slot;
+	int stack_usage, map_count;
+	/* If not -1, then make a virtual call using this vtable offset */
+	int vcall_offset;
+	/* If 1, make an indirect call to the address in the rgctx reg */
+	int calli;
+	/* Whenever this is a in or an out call */
+	int gsharedvt_in;
+	/* Maps stack slots/registers in the caller to the stack slots/registers in the callee */
+	int map [MONO_ZERO_LEN_ARRAY];
 } GSharedVtCallInfo;
 
 /* Structure used by the sequence points in AOTed code */
@@ -233,6 +260,9 @@ typedef struct {
 	mgreg_t regs [PARAM_REGS];
 	mgreg_t res;
 	guint8 *ret;
+	double fregs [8];
+	mgreg_t has_fp;
+	guint8 buffer [256];
 } DynCallArgs;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->gregs [AMD64_RAX] = (gsize)exc; } while (0)
@@ -349,6 +379,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK 1
+#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
@@ -399,6 +430,9 @@ void
 mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 						  guint64 dummy5, guint64 dummy6,
 						  MonoContext *mctx, guint32 dummy7, gint64 dummy8);
+
+gpointer
+mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg);
 
 guint64
 mono_amd64_get_original_ip (void);

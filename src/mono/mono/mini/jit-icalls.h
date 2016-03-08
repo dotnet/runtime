@@ -184,7 +184,12 @@ MonoObject*
 mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *cache);
 
 void
+ves_icall_runtime_class_init (MonoVTable *vtable);
+
+void
 mono_generic_class_init (MonoVTable *vtable);
+
+void mono_interruption_checkpoint_from_trampoline (void);
 
 MonoObject*
 mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
@@ -195,15 +200,23 @@ gpointer mono_fill_class_rgctx (MonoVTable *vtable, int index);
 
 gpointer mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index);
 
-gpointer mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg);
+gpointer mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg);
 
-gpointer mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method);
+gpointer mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg);
 
-void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+MonoFtnDesc* mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method);
 
-void mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+MonoFtnDesc* mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *imt_method);
+
+gpointer mono_init_vtable_slot (MonoVTable *vtable, int slot);
+
+void mono_llvmonly_init_delegate (MonoDelegate *del);
+
+void mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
 MonoObject* mono_get_assembly_object (MonoImage *image);
+
+MonoObject* mono_get_method_object (MonoMethod *method);
 
 double mono_ckfinite (double d);
 

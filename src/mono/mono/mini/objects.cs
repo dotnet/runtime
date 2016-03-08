@@ -874,6 +874,32 @@ class Tests {
 		return 2;
 	}
 
+	interface IFaceVirtualDel {
+		int return_field ();
+	}
+
+	struct VtypeVirtualDelStruct : IFaceVirtualDel {
+		public int f;
+		public int return_field_nonvirt () {
+			return f;
+		}
+		public int return_field () {
+			return f;
+		}
+	}
+
+	public static int test_42_vtype_delegate () {
+		var s = new VtypeVirtualDelStruct () { f = 42 };
+		Func<int> f = s.return_field_nonvirt;
+		return f ();
+	}
+
+	public static int test_42_vtype_virtual_delegate () {
+		IFaceVirtualDel s = new VtypeVirtualDelStruct () { f = 42 };
+		Func<int> f = s.return_field;
+		return f ();
+	}
+
 	public static int test_1_store_decimal () {
 		decimal[,] a = {{1}};
 
@@ -1707,6 +1733,37 @@ ncells ) {
 
 	public static int test_42_pass_16byte_struct_split () {
 		return pass_struct16 (null, null, null, null, null, new Struct16 () { a = 42 });
+	}
+
+	public interface IComparer2
+	{
+		Type foo<T> ();
+	}
+
+	public class AClass : IComparer2 {
+		public Type foo<T> () {
+			return typeof(T);
+		}
+	}
+
+	public static int test_0_delegate_to_virtual_generic_on_ifaces () {
+		IComparer2 c = new AClass ();
+
+		Func<Type> f = c.foo<string>;
+		return f () == typeof(string) ? 0 : 1;
+	}
+
+	public enum ByteEnum2 : byte {
+		High = 142
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int enum_arg_zero_extend (ByteEnum2 b) {
+		return (int)b;
+	}
+
+	public static int test_142_byte_enum_arg_zero_extend () {
+		return enum_arg_zero_extend (ByteEnum2.High);
 	}
 }
 

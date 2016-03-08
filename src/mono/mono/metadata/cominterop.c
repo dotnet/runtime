@@ -35,6 +35,8 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/strenc.h"
 #include "mono/utils/atomic.h"
+#include "mono/utils/mono-error.h"
+#include "mono/utils/mono-error-internals.h"
 #include <string.h>
 #include <errno.h>
 
@@ -92,6 +94,10 @@ GENERATE_GET_CLASS_WITH_CACHE (iunknown,      Mono.Interop, IUnknown)
 
 GENERATE_GET_CLASS_WITH_CACHE (com_object, System, __ComObject)
 GENERATE_GET_CLASS_WITH_CACHE (variant,    System, Variant)
+
+static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, System.Runtime.InteropServices, InterfaceTypeAttribute)
+static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, System.Runtime.InteropServices, GuidAttribute)
+static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, System.Runtime.InteropServices, ComVisibleAttribute)
 
 /* Upon creation of a CCW, only allocate a weak handle and set the
  * reference count to 0. If the unmanaged client code decides to addref and
@@ -167,6 +173,22 @@ mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpointer
 
 static void
 mono_marshal_safearray_free_indices (gpointer indices);
+
+MonoClass*
+mono_class_try_get_com_object_class (void)
+{
+	static MonoClass *tmp_class;
+	static gboolean inited;
+	MonoClass *klass;
+	if (!inited) {
+		klass = mono_class_load_from_name (mono_defaults.corlib, "System", "__ComObject");
+		mono_memory_barrier ();
+		tmp_class = klass;
+		mono_memory_barrier ();
+		inited = TRUE;
+	}
+	return tmp_class;
+}
 
 /**
  * cominterop_method_signature:
@@ -278,16 +300,14 @@ cominterop_object_is_rcw (MonoObject *obj)
 static int
 cominterop_get_com_slot_begin (MonoClass* klass)
 {
-	static MonoClass *interface_type_attribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo = NULL;
 	MonoInterfaceTypeAttribute* itf_attr = NULL; 
 
-	if (!interface_type_attribute)
-		interface_type_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "InterfaceTypeAttribute");
-	cinfo = mono_custom_attrs_from_class (klass);
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
-		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr_checked (cinfo, interface_type_attribute, &error);
+		itf_attr = (MonoInterfaceTypeAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_interface_type_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
@@ -386,17 +406,13 @@ cominterop_mono_string_to_guid (MonoString* string, guint8 *guid);
 static gboolean
 cominterop_class_guid (MonoClass* klass, guint8* guid)
 {
-	static MonoClass *GuidAttribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 
-	/* Handle the GuidAttribute */
-	if (!GuidAttribute)
-		GuidAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "GuidAttribute");
-
-	cinfo = mono_custom_attrs_from_class (klass);	
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
-		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, GuidAttribute, &error);
+		MonoReflectionGuidAttribute *attr = (MonoReflectionGuidAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
 		if (!attr)
@@ -413,20 +429,15 @@ cominterop_class_guid (MonoClass* klass, guint8* guid)
 static gboolean
 cominterop_com_visible (MonoClass* klass)
 {
-	static MonoClass *ComVisibleAttribute = NULL;
 	MonoError error;
 	MonoCustomAttrInfo *cinfo;
 	GPtrArray *ifaces;
 	MonoBoolean visible = 1;
 
-	/* Handle the ComVisibleAttribute */
-	if (!ComVisibleAttribute)
-		ComVisibleAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ComVisibleAttribute");
-
-	cinfo = mono_custom_attrs_from_class (klass);
+	cinfo = mono_custom_attrs_from_class_checked (klass, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
-		MonoError error;
-		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr_checked (cinfo, ComVisibleAttribute, &error);
+		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr_checked (cinfo, mono_class_get_guid_attribute_class (), &error);
 		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 
 		if (attr)
@@ -457,11 +468,16 @@ cominterop_com_visible (MonoClass* klass)
 static void cominterop_raise_hr_exception (int hr)
 {
 	static MonoMethod* throw_exception_for_hr = NULL;
+	MonoError error;
 	MonoException* ex;
 	void* params[1] = {&hr};
+
 	if (!throw_exception_for_hr)
 		throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
-	ex = (MonoException*)mono_runtime_invoke (throw_exception_for_hr, NULL, params, NULL);
+
+	ex = (MonoException*)mono_runtime_invoke_checked (throw_exception_for_hr, NULL, params, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
 	mono_raise_exception (ex);
 }
 
@@ -520,11 +536,17 @@ cominterop_get_hresult_for_exception (MonoException* exc)
 static MonoReflectionType *
 cominterop_type_from_handle (MonoType *handle)
 {
+	MonoError error;
+	MonoReflectionType *ret;
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *klass = mono_class_from_mono_type (handle);
 
 	mono_class_init (klass);
-	return mono_type_get_object (domain, handle);
+
+	ret = mono_type_get_object_checked (domain, handle, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+
+	return ret;
 }
 
 void
@@ -589,7 +611,6 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
 	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN:
 	case MONO_MARSHAL_CONV_OBJECT_IDISPATCH: {
-		static MonoClass* com_interop_proxy_class = NULL;
 		static MonoMethod* com_interop_proxy_get_proxy = NULL;
 		static MonoMethod* get_transparent_proxy = NULL;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
@@ -614,16 +635,14 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 		mono_mb_emit_icall (mb, cominterop_get_ccw_object);
 		pos_ccw = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-		if (!com_interop_proxy_class)
-			com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
 		if (!com_interop_proxy_get_proxy)
-			com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (com_interop_proxy_class, "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
+			com_interop_proxy_get_proxy = mono_class_get_method_from_name_flags (mono_class_get_interop_proxy_class (), "GetProxy", 2, METHOD_ATTRIBUTE_PRIVATE);
 #ifndef DISABLE_REMOTING
 		if (!get_transparent_proxy)
 			get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
 #endif
 
-		mono_mb_add_local (mb, &com_interop_proxy_class->byval_arg);
+		mono_mb_add_local (mb, &mono_class_get_interop_proxy_class ()->byval_arg);
 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -882,7 +901,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 	
 	if (!method->klass->methods)
 		mono_class_setup_methods (method->klass);
-	g_assert (!method->klass->exception_type); /*FIXME do proper error handling*/
+	g_assert (!mono_class_has_failure (method->klass)); /*FIXME do proper error handling*/
 
 	sig = mono_method_signature (method);
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
@@ -1025,13 +1044,10 @@ mono_cominterop_get_invoke (MonoMethod *method)
 	}
 
 	if (!strcmp(method->name, ".ctor"))	{
-		static MonoClass *com_interop_proxy_class = NULL;
 		static MonoMethod *cache_proxy = NULL;
 
-		if (!com_interop_proxy_class)
-			com_interop_proxy_class = mono_class_from_name (mono_defaults.corlib, "Mono.Interop", "ComInteropProxy");
 		if (!cache_proxy)
-			cache_proxy = mono_class_get_method_from_name (com_interop_proxy_class, "CacheProxy", 0);
+			cache_proxy = mono_class_get_method_from_name (mono_class_get_interop_proxy_class (), "CacheProxy", 0);
 
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
@@ -1600,6 +1616,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal
 MonoObject *
 ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 {
+	MonoError error;
 	MonoClass *klass;
 	MonoDomain *domain;
 	MonoObject *obj;
@@ -1607,13 +1624,17 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
 
-	/* call mono_object_new_alloc_specific instead of mono_object_new
+	/* call mono_object_new_alloc_specific_checked instead of mono_object_new
 	 * because we want to actually create object. mono_object_new checks
 	 * to see if type is import and creates transparent proxy. this method
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	*/
-	obj = mono_object_new_alloc_specific (mono_class_vtable_full (domain, klass, TRUE));
+	MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
+	mono_error_raise_exception (&error);
+	obj = mono_object_new_alloc_specific_checked (vtable, &error);
+	mono_error_raise_exception (&error);
+
 	return obj;
 }
 
@@ -1815,6 +1836,7 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 static gpointer
 cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 {
+	MonoError error;
 	int i;
 	MonoCCW *ccw = NULL;
 	MonoCCWInterface* ccw_entry = NULL;
@@ -1886,14 +1908,16 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		mono_cominterop_unlock ();
 		/* register for finalization to clean up ccw */
-		mono_object_register_finalizer (object);
+		mono_object_register_finalizer (object, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 
-	cinfo = mono_custom_attrs_from_class (itf);
+	cinfo = mono_custom_attrs_from_class_checked (itf, &error);
+	mono_error_assert_ok (&error);
 	if (cinfo) {
 		static MonoClass* coclass_attribute = NULL;
 		if (!coclass_attribute)
-			coclass_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
+			coclass_attribute = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
 		if (mono_custom_attrs_has_attr (cinfo, coclass_attribute)) {
 			g_assert(itf->interface_count && itf->interfaces[0]);
 			itf = itf->interfaces[0];
@@ -2427,6 +2451,7 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 											 guint32 lcid, gint32 *rgDispId)
 {
 	static MonoClass *ComDispIdAttribute = NULL;
+	MonoError error;
 	MonoCustomAttrInfo *cinfo = NULL;
 	int i,ret = MONO_S_OK;
 	MonoMethod* method;
@@ -2437,7 +2462,7 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 
 	/* Handle DispIdAttribute */
 	if (!ComDispIdAttribute)
-		ComDispIdAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "DispIdAttribute");
+		ComDispIdAttribute = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "DispIdAttribute");
 
 	g_assert (object);
 	klass = mono_object_class (object);
@@ -2450,9 +2475,9 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 
 		method = mono_class_get_method_from_name(klass, methodname, -1);
 		if (method) {
-			cinfo = mono_custom_attrs_from_method (method);
+			cinfo = mono_custom_attrs_from_method_checked (method, &error);
+			mono_error_assert_ok (&error); /* FIXME what's reasonable to do here */
 			if (cinfo) {
-				MonoError error;
 				MonoObject *result = mono_custom_attrs_get_attr_checked (cinfo, ComDispIdAttribute, &error);
 				g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/;
 
@@ -2649,27 +2674,32 @@ mono_string_to_bstr (MonoString *string_obj)
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
+	MonoError error;
+	MonoString * res = NULL;
+	
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
-		return mono_string_new_utf16 (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
+		res = mono_string_new_utf16_checked (mono_domain_get (), (const mono_unichar2 *)bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		MonoString* str = NULL;
 		glong written = 0;
 		gunichar2* utf16 = NULL;
 
 		utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		str = mono_string_new_utf16 (mono_domain_get (), utf16, written);
+		str = mono_string_new_utf16_checked (mono_domain_get (), utf16, written, &error);
 		g_free (utf16);
-		return str;
+		res = str;
 	} else {
 		g_assert_not_reached ();
 	}
 
 #endif
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return res;
 }
 
 void
@@ -2991,6 +3021,7 @@ int mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUboun
 static gboolean
 mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *indices, gpointer empty, gpointer parameter, gboolean allocateNewArray)
 {
+	MonoError error;
 	int dim;
 	uintptr_t *sizes;
 	intptr_t *bounds;
@@ -3049,7 +3080,8 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 			if (allocateNewArray) {
 				aklass = mono_bounded_array_class_get (mono_defaults.object_class, dim, bounded);
-				*result = mono_array_new_full (mono_domain_get (), aklass, sizes, bounds);
+				*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, bounds, &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
 			} else {
 				*result = (MonoArray *)parameter;
 			}
@@ -3257,13 +3289,17 @@ mono_string_to_bstr (MonoString *string_obj)
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
+	MonoString *res = NULL;
+	MonoError error;
 	if (!bstr)
 		return NULL;
 #ifdef HOST_WIN32
-	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, SysStringLen (bstr), &error);
 #else
-	return mono_string_new_utf16 (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
+	res = mono_string_new_utf16_checked (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2), &error);
 #endif
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return res;
 }
 
 void

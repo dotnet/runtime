@@ -18,8 +18,18 @@ typedef struct {
 
 typedef void (*MonoHazardousFreeFunc) (gpointer p);
 
+typedef enum {
+	HAZARD_FREE_MAY_LOCK,
+	HAZARD_FREE_NO_LOCK,
+} HazardFreeLocking;
+
+typedef enum {
+	HAZARD_FREE_SAFE_CTX,
+	HAZARD_FREE_ASYNC_CTX,
+} HazardFreeContext;
+
 void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-		gboolean free_func_might_lock, gboolean lock_free_context);
+                                          HazardFreeLocking locking, HazardFreeContext context);
 void mono_thread_hazardous_try_free_all (void);
 void mono_thread_hazardous_try_free_some (void);
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);
@@ -36,6 +46,7 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 
 #define mono_hazard_pointer_clear(hp,i)	\
 	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
+		mono_memory_write_barrier (); \
 		(hp)->hazard_pointers [(i)] = NULL; \
 	} while (0)
 

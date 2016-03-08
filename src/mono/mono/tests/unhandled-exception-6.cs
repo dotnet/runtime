@@ -2,40 +2,35 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Remoting.Messaging;
 
 class CustomException : Exception
 {
 }
 
-class CustomException2 : Exception
-{
-}
-
 class Driver
 {
-	/* expected exit code: 0 */
+	/* expected exit code: 255 */
 	static void Main (string[] args)
 	{
-		ManualResetEvent mre = new ManualResetEvent (false);
-		ManualResetEvent mre2 = new ManualResetEvent (false);
+		if (Environment.GetEnvironmentVariable ("TEST_UNHANDLED_EXCEPTION_HANDLER") != null)
+			AppDomain.CurrentDomain.UnhandledException += (s, e) => {};
 
-		var a = new Action (() => { try { throw new CustomException (); } finally { mre.Set (); } });
-		var ares = a.BeginInvoke (_ => { mre2.Set (); throw new CustomException2 (); }, null);
+		var action = new Action (Delegate);
+		var ares = action.BeginInvoke (Callback, null);
 
-		if (!mre.WaitOne (5000))
-			Environment.Exit (2);
-		if (!mre2.WaitOne (5000))
-			Environment.Exit (22);
+		Thread.Sleep (5000);
 
-		try {
-			a.EndInvoke (ares);
-			Environment.Exit (4);
-		} catch (CustomException) {
-		} catch (Exception ex) {
-			Console.WriteLine (ex);
-			Environment.Exit (3);
-		}
+		Environment.Exit (1);
+	}
 
-		Environment.Exit (0);
+	static void Delegate ()
+	{
+		throw new CustomException ();
+	}
+
+	static void Callback (IAsyncResult iares)
+	{
+		((Action) ((AsyncResult) iares).AsyncDelegate).EndInvoke (iares);
 	}
 }

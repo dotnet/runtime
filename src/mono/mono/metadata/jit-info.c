@@ -125,18 +125,15 @@ mono_jit_info_table_free (MonoJitInfoTable *table)
 
 	for (i = 0; i < num_chunks; ++i) {
 		MonoJitInfoTableChunk *chunk = table->chunks [i];
-		int num_elements;
-		int j;
+		MonoJitInfo *tombstone;
 
 		if (--chunk->refcount > 0)
 			continue;
 
-		num_elements = chunk->num_elements;
-		for (j = 0; j < num_elements; ++j) {
-			MonoJitInfo *ji = chunk->data [j];
-
-			if (IS_JIT_INFO_TOMBSTONE (ji))
-				g_free (ji);
+		for (tombstone = chunk->next_tombstone; tombstone; ) {
+			MonoJitInfo *next = tombstone->n.next_tombstone;
+			g_free (tombstone);
+			tombstone = next;
 		}
 
 		g_free (chunk);
@@ -314,6 +311,21 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	return ji;
 }
 
+/**
+ * mono_jit_info_table_find:
+ * @domain: Domain that you want to look up
+ * @addr: Points to an address with JITed code.
+ *
+ * Use this function to obtain a `MonoJitInfo*` object that can be used to get
+ * some statistics.   You should provide both the @domain on which you will be
+ * performing the probe, and an address.   Since application domains can share code
+ * the same address can be in use by multiple domains at once.
+ *
+ * This does not return any results for trampolines.
+ *
+ * Returns: NULL if the address does not belong to JITed code (it might be native
+ * code or a trampoline) or a valid pointer to a `MonoJitInfo*`.
+ */
 MonoJitInfo*
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
@@ -601,7 +613,7 @@ jit_info_table_add (MonoDomain *domain, MonoJitInfoTable *volatile *table_ptr, M
 		*table_ptr = new_table;
 		mono_memory_barrier ();
 		domain->num_jit_info_tables++;
-		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)mono_jit_info_table_free, TRUE, FALSE);
+		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)mono_jit_info_table_free, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 		table = new_table;
 
 		goto restart;
@@ -657,13 +669,15 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 }
 
 static MonoJitInfo*
-mono_jit_info_make_tombstone (MonoJitInfo *ji)
+mono_jit_info_make_tombstone (MonoJitInfoTableChunk *chunk, MonoJitInfo *ji)
 {
 	MonoJitInfo *tombstone = g_new0 (MonoJitInfo, 1);
 
 	tombstone->code_start = ji->code_start;
 	tombstone->code_size = ji->code_size;
 	tombstone->d.method = JIT_INFO_TOMBSTONE_MARKER;
+	tombstone->n.next_tombstone = chunk->next_tombstone;
+	chunk->next_tombstone = tombstone;
 
 	return tombstone;
 }
@@ -677,7 +691,7 @@ mono_jit_info_free_or_queue (MonoDomain *domain, MonoJitInfo *ji)
 	if (domain->num_jit_info_tables <= 1) {
 		/* Can it actually happen that we only have one table
 		   but ji is still hazardous? */
-		mono_thread_hazardous_free_or_queue (ji, g_free, TRUE, FALSE);
+		mono_thread_hazardous_free_or_queue (ji, g_free, HAZARD_FREE_MAY_LOCK, HAZARD_FREE_SAFE_CTX);
 	} else {
 		domain->jit_info_free_queue = g_slist_prepend (domain->jit_info_free_queue, ji);
 	}
@@ -716,7 +730,7 @@ jit_info_table_remove (MonoJitInfoTable *table, MonoJitInfo *ji)
  found:
 	g_assert (chunk->data [pos] == ji);
 
-	chunk->data [pos] = mono_jit_info_make_tombstone (ji);
+	chunk->data [pos] = mono_jit_info_make_tombstone (chunk, ji);
 
 	/* Debugging code, should be removed. */
 	//jit_info_table_check (table);
@@ -807,18 +821,48 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 		ji->has_thunk_info = 1;
 }
 
+/**
+ * mono_jit_info_get_code_start:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the starting address for the method described by
+ * the @ji object.  You can use this plus the `mono_jit_info_get_code_size`
+ * to determine the start and end of the native code.
+ *
+ * Returns: Starting address with the native code.
+ */
 gpointer
 mono_jit_info_get_code_start (MonoJitInfo* ji)
 {
 	return ji->code_start;
 }
 
+/**
+ * mono_jit_info_get_code_size:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the code size for the method described by
+ * the @ji object.   You can use this plus the `mono_jit_info_get_code_start`
+ * to determine the start and end of the native code.
+ *
+ * Returns: Starting address with the native code.
+ */
 int
 mono_jit_info_get_code_size (MonoJitInfo* ji)
 {
 	return ji->code_size;
 }
 
+/**
+ * mono_jit_info_get_method:
+ * @ji: the JIT information handle
+ *
+ * Use this function to get the `MonoMethod *` that backs
+ * the @ji object.
+ *
+ * Returns: The MonoMethod that represents the code tracked
+ * by @ji.
+ */
 MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji)
 {
@@ -840,7 +884,7 @@ jit_info_next_value (gpointer value)
 {
 	MonoJitInfo *info = (MonoJitInfo*)value;
 
-	return (gpointer*)&info->next_jit_code_hash;
+	return (gpointer*)&info->n.next_jit_code_hash;
 }
 
 void

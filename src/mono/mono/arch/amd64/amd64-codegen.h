@@ -16,6 +16,21 @@
 #ifndef AMD64_H
 #define AMD64_H
 
+// Conventions in this file:
+
+// body: implementation. other macros call this one
+// disp: displacement
+// inst: instruction
+// is_half: short if true, byte if false (then why is it named is_half...?)
+// imm: immediate
+// mem: read from (immediate-supplied address?)
+// membase: read from address in a base register plus a displacement
+// memindex: SIP addressing: (address in base register) + (displacement in index register)<<(shift)
+// reg: register, encode modR/M bits 00
+// regp: register, encode modR/M bits 11
+// size: Expected 1,2,4 or 8
+// widen: extends from 1 or 2 bytes
+
 #include <glib.h>
 
 typedef enum {

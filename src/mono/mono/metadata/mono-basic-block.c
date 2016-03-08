@@ -516,14 +516,16 @@ mono_basic_block_free (MonoSimpleBasicBlock *bb)
 MonoSimpleBasicBlock*
 mono_basic_block_split (MonoMethod *method, MonoError *error)
 {
+	MonoError inner_error;
 	MonoSimpleBasicBlock *bb, *root;
 	const unsigned char *start, *end;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &inner_error);
 
 	mono_error_init (error);
 
 	if (!header) {
-		mono_error_set_not_verifiable (error, method, "Could not decode header");
+		mono_error_set_not_verifiable (error, method, "Could not decode header due to %s", mono_error_get_message (&inner_error));
+		mono_error_cleanup (&inner_error);
 		return NULL;
 	}
 

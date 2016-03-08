@@ -1,7 +1,8 @@
 using System;
 using System.Threading;
 
-public class Test {
+public class ThreadPoolTest
+{
 
 	static int csum = 0;
 	

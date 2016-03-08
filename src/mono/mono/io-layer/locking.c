@@ -16,12 +16,8 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
-
-#if 0
-// #define DEBUG(...) g_message(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
+#include <mono/io-layer/io-trace.h>
+#include <mono/utils/mono-logger-internals.h>
 
 gboolean
 _wapi_lock_file_region (int fd, off_t offset, off_t length)
@@ -48,7 +44,7 @@ _wapi_lock_file_region (int fd, off_t offset, off_t length)
 		ret = fcntl (fd, F_SETLK, &lock_data);
 	} while(ret == -1 && errno == EINTR);
 	
-	DEBUG ("%s: fcntl returns %d", __func__, ret);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fcntl returns %d", __func__, ret);
 
 	if (ret == -1) {
 		/*
@@ -93,7 +89,7 @@ _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 		ret = fcntl (fd, F_SETLK, &lock_data);
 	} while(ret == -1 && errno == EINTR);
 	
-	DEBUG ("%s: fcntl returns %d", __func__, ret);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: fcntl returns %d", __func__, ret);
 	
 	if (ret == -1) {
 		/*
@@ -140,7 +136,7 @@ LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 	if (!(file_handle->fileaccess & GENERIC_READ) &&
 	    !(file_handle->fileaccess & GENERIC_WRITE) &&
 	    !(file_handle->fileaccess & GENERIC_ALL)) {
-		DEBUG ("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
@@ -149,7 +145,7 @@ LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 	offset = ((gint64)offset_high << 32) | offset_low;
 	length = ((gint64)length_high << 32) | length_low;
 
-	DEBUG ("%s: Locking handle %p, offset %lld, length %lld", __func__, handle, offset, length);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Locking handle %p, offset %lld, length %lld", __func__, handle, offset, length);
 #else
 	if (offset_high > 0 || length_high > 0) {
 		SetLastError (ERROR_INVALID_PARAMETER);
@@ -158,7 +154,7 @@ LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
 	offset = offset_low;
 	length = length_low;
 
-	DEBUG ("%s: Locking handle %p, offset %ld, length %ld", __func__,
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Locking handle %p, offset %ld, length %ld", __func__,
 		   handle, offset, length);
 #endif
 
@@ -187,7 +183,7 @@ UnlockFile (gpointer handle, guint32 offset_low,
 	if (!(file_handle->fileaccess & GENERIC_READ) &&
 	    !(file_handle->fileaccess & GENERIC_WRITE) &&
 	    !(file_handle->fileaccess & GENERIC_ALL)) {
-		DEBUG ("%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
+		MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: handle %p doesn't have GENERIC_READ or GENERIC_WRITE access: %u", __func__, handle, file_handle->fileaccess);
 		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
@@ -196,12 +192,12 @@ UnlockFile (gpointer handle, guint32 offset_low,
 	offset = ((gint64)offset_high << 32) | offset_low;
 	length = ((gint64)length_high << 32) | length_low;
 
-	DEBUG ("%s: Unlocking handle %p, offset %lld, length %lld", __func__, handle, offset, length);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Unlocking handle %p, offset %lld, length %lld", __func__, handle, offset, length);
 #else
 	offset = offset_low;
 	length = length_low;
 
-	DEBUG ("%s: Unlocking handle %p, offset %ld, length %ld", __func__, handle, offset, length);
+	MONO_TRACE (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Unlocking handle %p, offset %ld, length %ld", __func__, handle, offset, length);
 #endif
 
 	return(_wapi_unlock_file_region (fd, offset, length));

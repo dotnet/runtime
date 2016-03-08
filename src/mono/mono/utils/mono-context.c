@@ -47,7 +47,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->eip = 0xDEADBEEF;
 #elif MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif defined(MONO_SIGNAL_USE_SIGACTION)
+#elif defined(MONO_SIGNAL_USE_UCONTEXT_T)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
 	mctx->eax = UCONTEXT_REG_EAX (ctx);
@@ -93,7 +93,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	printf("WARNING: mono_arch_monoctx_to_sigctx() called!\n");
 #elif MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif defined(MONO_SIGNAL_USE_SIGACTION)
+#elif defined(MONO_SIGNAL_USE_UCONTEXT_T)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_EAX (ctx) = mctx->eax;
@@ -149,7 +149,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif defined(UCONTEXT_REG_RAX)
+#elif defined(MONO_SIGNAL_USE_UCONTEXT_T)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	mctx->gregs [AMD64_RAX] = UCONTEXT_REG_RAX (ctx);
@@ -203,7 +203,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
-#elif defined(UCONTEXT_REG_RAX)
+#elif defined(MONO_SIGNAL_USE_UCONTEXT_T)
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
 	UCONTEXT_REG_RAX (ctx) = mctx->gregs [AMD64_RAX];

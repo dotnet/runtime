@@ -16,4 +16,4 @@ endif
 endif
 endif
 
-EXTRA_DIST = autogen.sh README NEWS AUTHORS ChangeLog winconfig.h
+EXTRA_DIST = autogen.sh README NEWS AUTHORS winconfig.h

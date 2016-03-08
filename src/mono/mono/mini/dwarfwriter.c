@@ -1429,10 +1429,14 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_NEWOBJ:
 	case CEE_CALL:
 	case CEE_CALLVIRT:
-		if (method->wrapper_type)
+		if (method->wrapper_type) {
 			cmethod = (MonoMethod *)data;
-		else
-			cmethod = mono_get_method_full (method->klass->image, token, NULL, NULL);
+		} else {
+			MonoError error;
+			cmethod = mono_get_method_checked (method->klass->image, token, NULL, NULL, &error);
+			if (!cmethod)
+				g_error ("Could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);
 		g_free (desc);
@@ -1478,9 +1482,11 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 static char*
 disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 {
+	MonoError error;
 	char *dis;
 	MonoDisHelper dh;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 	memset (&dh, 0, sizeof (dh));
 	dh.newline = "";
@@ -1595,17 +1601,20 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 					   guint8 *code, guint32 code_size,
 					   MonoDebugMethodJitInfo *debug_info)
 {
+	MonoError error;
 	guint32 prev_line = 0;
 	guint32 prev_native_offset = 0;
 	int i, file_index, il_offset, prev_il_offset;
 	gboolean first = TRUE;
 	MonoDebugSourceLocation *loc;
 	char *prev_file_name = NULL;
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLineNumberEntry *ln_array;
 	int *native_to_il_offset = NULL;
 	
+	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 	if (!w->emit_line) {
 		mono_metadata_free_mh (header);
 		return;
@@ -1854,6 +1863,7 @@ void
 mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, char *linkage_name,
 							   guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info)
 {
+	MonoError error;
 	char *name;
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -1868,7 +1878,8 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_section_change (w, ".debug_info", 0);
 
 	sig = mono_method_signature (method);
-	header = mono_method_get_header (method);
+	header = mono_method_get_header_checked (method, &error);
+	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 	/* Parameter types */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {

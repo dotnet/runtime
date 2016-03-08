@@ -289,10 +289,12 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 MonoString*
 ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token)
 {
+	MonoError error;
 	MonoString *result = NULL;
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
+	mono_error_init (&error);
 #ifdef HOST_WIN32
 	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
 	if (size > 0) {
@@ -313,7 +315,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 #endif /* HOST_WIN32 */
 
 	if (size > 0) {
-		result = mono_string_new_utf16 (mono_domain_get (), uniname, size);
+		result = mono_string_new_utf16_checked (mono_domain_get (), uniname, size, &error);
 	}
 	else
 		result = mono_string_new (mono_domain_get (), "");
@@ -321,6 +323,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	if (uniname)
 		g_free (uniname);
 
+	mono_error_set_pending_exception (&error);
 	return result;
 }
 
@@ -390,6 +393,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 	MonoArray *array = NULL;
 	MonoDomain *domain = mono_domain_get (); 
 #ifdef HOST_WIN32
+	MonoError error;
 	gint32 size = 0;
 
 	GetTokenInformation (token, TokenGroups, NULL, size, (PDWORD)&size);
@@ -406,7 +410,13 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 				gunichar2 *uniname = GetSidName (NULL, tg->Groups [i].Sid, &size);
 
 				if (uniname) {
-					MonoString *str = mono_string_new_utf16 (domain, uniname, size);
+					MonoString *str = mono_string_new_utf16_checked (domain, uniname, size, &error);
+					if (!is_ok (&error)) {
+						g_free (uniname);
+						g_free (tg);
+						mono_error_set_pending_exception (&error);
+						return NULL;
+					}
 					mono_array_setref (array, i, str);
 					g_free (uniname);
 				}
@@ -926,20 +936,26 @@ static MonoImage *system_security_assembly = NULL;
 void
 ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope)
 {
-	invoke_protected_memory_method (data, scope, FALSE);
+	MonoError error;
+	invoke_protected_memory_method (data, scope, FALSE, &error);
+	mono_error_set_pending_exception (&error);
 }
 void
 ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObject *scope)
 {
-	invoke_protected_memory_method (data, scope, TRUE);
+	MonoError error;
+	invoke_protected_memory_method (data, scope, TRUE, &error);
+	mono_error_set_pending_exception (&error);
 }
 
-void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt)
+void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error)
 {
 	MonoClass *klass;
 	MonoMethod *method;
 	void *params [2];
 
+	mono_error_init (error);
+	
 	if (system_security_assembly == NULL) {
 		system_security_assembly = mono_image_loaded ("System.Security");
 		if (!system_security_assembly) {
@@ -950,10 +966,11 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 		}
 	}
 
-	klass = mono_class_from_name (system_security_assembly,
+	klass = mono_class_load_from_name (system_security_assembly,
 								  "System.Security.Cryptography", "ProtectedMemory");
 	method = mono_class_get_method_from_name (klass, encrypt ? "Protect" : "Unprotect", 2);
 	params [0] = data;
 	params [1] = scope; /* MemoryProtectionScope.SameProcess */
-	mono_runtime_invoke (method, NULL, params, NULL);
+
+	mono_runtime_invoke_checked (method, NULL, params, error);
 }

@@ -340,7 +340,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
 		(cfg)->has_indirection = TRUE;	\
 			  if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((var)->inst_vtype)) { handle_gsharedvt_ldaddr ((cfg)); } \
-		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
+		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, MONO_LVREG_LS ((var)->dreg)); MonoInst *var2 = get_vreg_to_inst (cfg, MONO_LVREG_MS ((var)->dreg)); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
 
 #define NEW_VARSTORE(cfg,dest,var,vartype,inst) do {	\

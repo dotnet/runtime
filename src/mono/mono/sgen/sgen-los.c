@@ -204,14 +204,33 @@ get_from_size_list (LOSFreeChunks **list, size_t size)
 }
 
 static LOSObject*
+randomize_los_object_start (gpointer addr, size_t obj_size, size_t alloced_size, size_t addr_alignment)
+{
+	size_t offset = 0;
+	if (alloced_size != obj_size) {
+		/*
+		 * We want to get a random offset between 0 and (alloced_size - obj_size)
+		 * We do a prime multiplication to avoid usage of functions which might not
+		 * be thread/signal safe (like rand ()). We subtract 1 to avoid common
+		 * power by 2 factors.
+		 */
+		offset = SGEN_ALIGN_DOWN ((((size_t)addr - 1) * 2654435761u) % (alloced_size - obj_size));
+	}
+	SGEN_ASSERT (0, (alloced_size - obj_size) < addr_alignment, "Why are we wasting one entire chunk for a los object ?");
+	/* Randomize the location within the reserved chunks to improve cache performance */
+	return (LOSObject*)((guint8*)addr + offset);
+
+}
+
+static LOSObject*
 get_los_section_memory (size_t size)
 {
 	LOSSection *section;
 	LOSFreeChunks *free_chunks;
 	size_t num_chunks;
+	size_t obj_size = size;
 
-	size += LOS_CHUNK_SIZE - 1;
-	size &= ~(LOS_CHUNK_SIZE - 1);
+	size = SGEN_ALIGN_UP_TO (size, LOS_CHUNK_SIZE);
 
 	num_chunks = size >> LOS_CHUNK_BITS;
 
@@ -232,8 +251,9 @@ get_los_section_memory (size_t size)
 			free_chunks = get_from_size_list (&los_fast_free_lists [0], size);
 	}
 
-	if (free_chunks)
-		return (LOSObject*)free_chunks;
+	if (free_chunks) {
+		return randomize_los_object_start (free_chunks, obj_size, size, LOS_CHUNK_SIZE);
+	}
 
 	if (!sgen_memgov_try_alloc_space (LOS_SECTION_SIZE, SPACE_LOS))
 		return NULL;
@@ -269,8 +289,7 @@ free_los_section_memory (LOSObject *obj, size_t size)
 	LOSSection *section = LOS_SECTION_FOR_OBJ (obj);
 	size_t num_chunks, i, start_index;
 
-	size += LOS_CHUNK_SIZE - 1;
-	size &= ~(LOS_CHUNK_SIZE - 1);
+	size = SGEN_ALIGN_UP_TO (size, LOS_CHUNK_SIZE);
 
 	num_chunks = size >> LOS_CHUNK_BITS;
 
@@ -292,10 +311,8 @@ free_los_section_memory (LOSObject *obj, size_t size)
 		section->free_chunk_map [i] = 1;
 	}
 
-	add_free_chunk ((LOSFreeChunks*)obj, size);
+	add_free_chunk ((LOSFreeChunks*)SGEN_ALIGN_DOWN_TO ((mword)obj, LOS_CHUNK_SIZE), size);
 }
-
-static int pagesize;
 
 void
 sgen_los_free_object (LOSObject *obj)
@@ -314,12 +331,10 @@ sgen_los_free_object (LOSObject *obj)
 	free (obj);
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
-		if (!pagesize)
-			pagesize = mono_pagesize ();
+		int pagesize = mono_pagesize ();
 		size += sizeof (LOSObject);
-		size += pagesize - 1;
-		size &= ~(pagesize - 1);
-		sgen_free_os_memory (obj, size, SGEN_ALLOC_HEAP);
+		size = SGEN_ALIGN_UP_TO (size, pagesize);
+		sgen_free_os_memory ((gpointer)SGEN_ALIGN_DOWN_TO ((mword)obj, pagesize), size, SGEN_ALLOC_HEAP);
 		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
@@ -365,21 +380,20 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	los_segment_index += size + sizeof (LOSObject);
 	g_assert (los_segment_index <= LOS_SEGMENT_SIZE);
 #else
-	sgen_ensure_free_space (size);
+	sgen_ensure_free_space (size, GENERATION_OLD);
 
 #ifdef USE_MALLOC
 	obj = malloc (size + sizeof (LOSObject));
 	memset (obj, 0, size + sizeof (LOSObject));
 #else
 	if (size > LOS_SECTION_OBJECT_LIMIT) {
-		size_t alloc_size = size;
-		if (!pagesize)
-			pagesize = mono_pagesize ();
-		alloc_size += sizeof (LOSObject);
-		alloc_size += pagesize - 1;
-		alloc_size &= ~(pagesize - 1);
+		size_t obj_size = size + sizeof (LOSObject);
+		int pagesize = mono_pagesize ();
+		size_t alloc_size = SGEN_ALIGN_UP_TO (obj_size, pagesize);
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
 			obj = (LOSObject *)sgen_alloc_os_memory (alloc_size, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL);
+			if (obj)
+				obj = randomize_los_object_start (obj, obj_size, alloc_size, pagesize);
 		}
 	} else {
 		obj = get_los_section_memory (size + sizeof (LOSObject));
@@ -607,6 +621,7 @@ sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 {
 	LOSObject *obj;
 
+	binary_protocol_los_card_table_scan_start (sgen_timestamp (), mod_union);
 	for (obj = los_object_list; obj; obj = obj->next) {
 		guint8 *cards;
 
@@ -625,6 +640,7 @@ sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 
 		sgen_cardtable_scan_object (obj->data, sgen_los_object_size (obj), cards, mod_union, ctx);
 	}
+	binary_protocol_los_card_table_scan_end (sgen_timestamp (), mod_union);
 }
 
 void
@@ -704,9 +720,9 @@ sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr)
 {
 	LOSObject *obj = sgen_los_header_for_object (mono_obj);
 	guint8 *mod_union = get_cardtable_mod_union_for_object (obj);
-	size_t offset = sgen_card_table_get_card_offset ((char*)ptr, (char*)sgen_card_table_align_pointer ((char*)obj));
+	/* The LOSObject structure is not represented within the card space */
+	size_t offset = sgen_card_table_get_card_offset ((char*)ptr, (char*)sgen_card_table_align_pointer((char*)mono_obj));
 	SGEN_ASSERT (0, mod_union, "FIXME: optionally allocate the mod union if it's not here and CAS it in.");
-	SGEN_ASSERT (0, (char*)obj == (char*)sgen_card_table_align_pointer ((char*)obj), "Why are LOS objects not card aligned?");
 	mod_union [offset] = 1;
 }
 

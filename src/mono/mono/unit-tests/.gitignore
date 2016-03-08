@@ -9,3 +9,4 @@
 /test-mono-linked-list-set
 /test-sgen-qsort
 /test-conc-hashtable
+/test-mono-handle

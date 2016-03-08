@@ -335,6 +335,19 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 					dest->inst_c0 = res;
 				}
 				break;
+			case OP_COND_EXC_EQ:
+				res = arg1->inst_c0 == arg2->inst_c0;
+				if (!res) {
+					if (overwrite) {
+						NULLIFY_INS (ins);
+						NULLIFY_INS (next);
+					} else {
+						ALLOC_DEST (cfg, dest, ins);
+						dest->opcode = OP_ICONST;
+						dest->inst_c0 = res;
+					}
+				}
+				break;
 			case OP_NOP:
 			case OP_BR:
 				/* This happens when a conditional branch is eliminated */

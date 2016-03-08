@@ -111,6 +111,27 @@ mono_llvm_set_unhandled_exception_handler (void);
 void
 default_mono_llvm_unhandled_exception (void);
 
+void*
+mono_llvm_create_di_builder (LLVMModuleRef module);
+
+void*
+mono_llvm_di_create_function (void *di_builder, void *cu, const char *name, const char *mangled_name, const char *dir, const char *file, int line);
+
+void*
+mono_llvm_di_create_compile_unit (void *di_builder, const char *cu_name, const char *dir, const char *producer);
+
+void*
+mono_llvm_di_create_file (void *di_builder, const char *dir, const char *file);
+
+void*
+mono_llvm_di_create_location (void *di_builder, void *scope, int row, int column);
+
+void
+mono_llvm_di_builder_finalize (void *di_builder);
+
+void
+mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

@@ -464,6 +464,21 @@ public class Tests
 		return 0;
 	}
 
+	class DelClass {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static T return_t<T> (T t) {
+			return t;
+		}
+	}
+
+	public static int test_0_gsharedvt_in_delegates_reflection () {
+		var m = typeof(DelClass).GetMethod ("return_t").MakeGenericMethod (new Type [] { typeof (int) });
+		Func<int, int> f = (Func<int, int>)Delegate.CreateDelegate (typeof (Func<int,int>), null, m, false);
+		if (f (42) != 42)
+			return 1;
+		return 0;
+	}
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static T return2_t<T> (T t) {
 		return return_t (t);
@@ -717,8 +732,29 @@ public class Tests
 	}
 
 	public static int test_0_gsharedvt_ginstvt_constructed_arg () {
+		{
+			// AOT: Force a instantiation of use_kvp<long>
+			long a = 1;
+			var t = make_kvp (a, a);
+			var z = use_kvp (t);
+		}
+
 		IFaceKVP c = new ClassKVP ();
 		if (c.do_kvp<long> (1) != 1)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_gsharedvt_ginstvt_constructed_arg_float () {
+		{
+			// AOT: Force a instantiation of use_kvp<double>
+			double a = 1;
+			var t = make_kvp (a, a);
+			var z = use_kvp (t);
+		}
+
+		IFaceKVP c = new ClassKVP ();
+		if (c.do_kvp<double> (1) != 1)
 			return 1;
 		return 0;
 	}
@@ -1744,6 +1780,115 @@ public class Tests
 		IFaceConstrainedIFace obj = new ConstrainedIFace ();
 		IFaceTest t = new ClassTest ();
 		return obj.foo<IFaceTest, int> (ref t);
+	}
+
+	// Sign extension tests
+	// 0x55   == 85    == 01010101
+	// 0xAA   == 170   == 10101010
+	// 0x5555 == 21845 == 0101010101010101
+	// 0xAAAA == 43690 == 1010101010101010
+	// 0x55555555 == 1431655765
+	// 0xAAAAAAAA == 2863311530
+	// 0x5555555555555555 == 6148914691236517205
+	// 0xAAAAAAAAAAAAAAAA == 12297829382473034410
+
+	public interface SEFace<T> {
+		T Copy (int a, int b, int c, int d, T t);
+	}
+
+	class SEClass<T> : SEFace<T> {
+		public T Copy (int a, int b, int c, int d, T t) {
+			return t;
+		}
+	}
+
+	// Test extension
+	static int test_20_signextension_sbyte () {
+		Type t = typeof (sbyte);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<sbyte>)o;
+
+		long zz = i.Copy (1,2,3,4,(sbyte)(-0x55));
+
+		bool success = zz == -0x55;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_byte () {
+		Type t = typeof (byte);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<byte>)o;
+
+		ulong zz = i.Copy (1,2,3,4,(byte)(0xAA));
+
+		bool success = zz == 0xAA;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_short () {
+		Type t = typeof (short);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<short>)o;
+
+		long zz = i.Copy (1,2,3,4,(short)(-0x5555));
+
+		bool success = zz == -0x5555;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_ushort () {
+		Type t = typeof (ushort);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<ushort>)o;
+
+		ulong zz = i.Copy (1,2,3,4,(ushort)(0xAAAA));
+
+		bool success = zz == 0xAAAA;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_int () {
+		Type t = typeof (int);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<int>)o;
+
+		long zz = i.Copy (1,2,3,4,(int)(-0x55555555));
+
+		bool success = zz == -0x55555555;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_uint () {
+		Type t = typeof (uint);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<uint>)o;
+
+		ulong zz = i.Copy (1,2,3,4,(uint)(0xAAAAAAAA));
+
+		bool success = zz == 0xAAAAAAAA;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_long () {
+		Type t = typeof (long);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<long>)o;
+
+		long zz = i.Copy (1,2,3,4,(long)(-0x5555555555555555));
+
+		bool success = zz == -0x5555555555555555;
+		return success ? 20 : 1;
+	}
+
+	static int test_20_signextension_ulong () {
+		Type t = typeof (ulong);
+		object o = Activator.CreateInstance (typeof (SEClass<>).MakeGenericType (new Type[] { t }));
+		var i = (SEFace<ulong>)o;
+
+		ulong zz = i.Copy (1,2,3,4,(ulong)(0xAAAAAAAAAAAAAAAA));
+
+		bool success = zz == 0xAAAAAAAAAAAAAAAA;
+		return success ? 20 : 1;
 	}
 }
 

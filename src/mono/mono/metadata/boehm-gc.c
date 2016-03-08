@@ -190,7 +190,6 @@ mono_gc_base_init (void)
 
 	GC_init ();
 
-	GC_oom_fn = mono_gc_out_of_memory;
 	GC_set_warn_proc (mono_gc_warning);
 	GC_finalize_on_demand = 1;
 	GC_finalizer_notifier = mono_gc_finalize_notify;
@@ -630,6 +629,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoObject *)GC_MALLOC_ATOMIC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->vtable = vtable;
 		obj->synchronisation = NULL;
@@ -637,8 +638,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoObject *)GC_GCJ_MALLOC (size, vtable);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 	} else {
 		obj = (MonoObject *)GC_MALLOC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->vtable = vtable;
 	}
@@ -656,6 +661,8 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->obj.vtable = vtable;
 		obj->obj.synchronisation = NULL;
@@ -663,8 +670,12 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoArray *)GC_GCJ_MALLOC (size, vtable);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 	} else {
 		obj = (MonoArray *)GC_MALLOC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->obj.vtable = vtable;
 	}
@@ -684,6 +695,8 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 
 	if (!vtable->klass->has_references) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->obj.vtable = vtable;
 		obj->obj.synchronisation = NULL;
@@ -691,8 +704,12 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		obj = (MonoArray *)GC_GCJ_MALLOC (size, vtable);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 	} else {
 		obj = (MonoArray *)GC_MALLOC (size);
+		if (G_UNLIKELY (!obj))
+			return NULL;
 
 		obj->obj.vtable = vtable;
 	}
@@ -712,6 +729,8 @@ void *
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 {
 	MonoString *obj = (MonoString *)GC_MALLOC_ATOMIC (size);
+	if (G_UNLIKELY (!obj))
+		return NULL;
 
 	obj->object.vtable = vtable;
 	obj->object.synchronisation = NULL;
@@ -722,6 +741,18 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 		mono_profiler_allocation (&obj->object);
 
 	return obj;
+}
+
+void*
+mono_gc_alloc_mature (MonoVTable *vtable, size_t size)
+{
+	return mono_gc_alloc_obj (vtable, size);
+}
+
+void*
+mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
+{
+	return mono_gc_alloc_obj (vtable, size);
 }
 
 int
@@ -1037,10 +1068,10 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
  always_slowpath:
 	if (atype == ATYPE_STRING) {
 		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_icall (mb, mono_string_alloc);
+		mono_mb_emit_icall (mb, ves_icall_string_alloc);
 	} else {
 		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_icall (mb, mono_object_new_specific);
+		mono_mb_emit_icall (mb, ves_icall_object_new_specific);
 	}
 
 	mono_mb_emit_byte (mb, MONO_CEE_RET);
@@ -1048,10 +1079,10 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	info->d.alloc.gc_name = "boehm";
 	info->d.alloc.alloc_type = atype;
+	mb->init_locals = FALSE;
 
 	res = mono_mb_create (mb, csig, 8, info);
 	mono_mb_free (mb);
-	mono_method_get_header (res)->init_locals = FALSE;
 
 	return res;
 }
@@ -1665,7 +1696,7 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
 /**
  * mono_gchandle_new_weakref:
  * @obj: managed object to get a handle for
- * @pinned: whether the object should be pinned
+ * @track_resurrection: Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
  *
  * This returns a weak handle that wraps the object, this is used to
  * keep a reference to a managed object from the unmanaged world.
@@ -1673,10 +1704,12 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
  * 
- * If @pinned is false the address of the object can not be obtained, if it is
- * true the address of the object can be obtained.  This will also pin the
- * object so it will not be possible by a moving garbage collector to move the
- * object. 
+ * If @track_resurrection is TRUE the object will be tracked through
+ * finalization and if the object is resurrected during the execution
+ * of the finalizer, then the returned weakref will continue to hold
+ * a reference to the object.   If @track_resurrection is FALSE, then
+ * the weak reference's target will become NULL as soon as the object
+ * is passed on to the finalizer.
  * 
  * Returns: a handle that can be used to access the object from
  * unmanaged code.
@@ -1691,10 +1724,10 @@ mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
  * mono_gchandle_get_target:
  * @gchandle: a GCHandle's handle.
  *
- * The handle was previously created by calling mono_gchandle_new or
- * mono_gchandle_new_weakref. 
+ * The handle was previously created by calling `mono_gchandle_new` or
+ * `mono_gchandle_new_weakref`.
  *
- * Returns a pointer to the MonoObject represented by the handle or
+ * Returns: A pointer to the `MonoObject*` represented by the handle or
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
@@ -1751,19 +1784,22 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	unlock_handles (handles);
 }
 
-/**
- * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
- *
- * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
- */
 gboolean
 mono_gc_is_null (void)
 {
 	return FALSE;
 }
 
+/**
+ * mono_gchandle_is_in_domain:
+ * @gchandle: a GCHandle's handle.
+ * @domain: An application domain.
+ *
+ * Use this function to determine if the @gchandle points to an
+ * object allocated in the specified @domain.
+ *
+ * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
+ */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 {

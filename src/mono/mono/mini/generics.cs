@@ -990,6 +990,19 @@ class Tests
 		return 0;
 	}
 
+	class AClass {
+	}
+
+	class BClass : AClass {
+	}
+
+	public static int test_0_fullaot_variant_iface () {
+		var arr = new BClass [10];
+		var enumerable = (IEnumerable<AClass>)arr;
+		enumerable.GetEnumerator ();
+		return 0;
+	}
+
 	struct Record : Foo2<Record>.IRecord {
 		int counter;
 		int Foo2<Record>.IRecord.DoSomething () {
@@ -1231,6 +1244,34 @@ class Tests
 		test("a", "b", "c", "d", "e", "f", "g", "h");
 		return delegate_8_args_res == "h" ? 0 : 1;
 	}
+
+	static void throw_catch_t<T> () where T: Exception {
+		try {
+			throw new NotSupportedException ();
+		} catch (T) {
+		}
+	}
+
+	public static int test_0_gshared_catch_open_type () {
+		throw_catch_t<NotSupportedException> ();
+		return 0;
+	}
+
+	class ThrowClass<T> where T: Exception {
+		public void throw_catch_t () {
+			try {
+				throw new NotSupportedException ();
+			} catch (T) {
+			}
+		}
+	}
+
+	public static int test_0_gshared_catch_open_type_instance () {
+		var c = new ThrowClass<NotSupportedException> ();
+		c.throw_catch_t ();
+		return 0;
+	}
+
 }
 
 #if !__MOBILE__

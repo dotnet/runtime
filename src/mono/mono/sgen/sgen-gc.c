@@ -1056,6 +1056,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	char *end_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_end () : (char*)-1;
 	SgenGrayQueue *queue = ctx.queue;
 
+	binary_protocol_finish_gray_stack_start (sgen_timestamp (), generation);
 	/*
 	 * We copied all the reachable objects. Now it's the time to copy
 	 * the objects that were not referenced by the roots, but by the copied objects.
@@ -1189,6 +1190,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 
 	sgen_gray_object_queue_trim_free_list (queue);
+	binary_protocol_finish_gray_stack_end (sgen_timestamp (), generation);
 }
 
 void
@@ -1547,11 +1549,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %ld usecs", sgen_get_pinned_count (), TV_ELAPSED (btv, atv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
 
-	/*
-	 * FIXME: When we finish a concurrent collection we do a nursery collection first,
-	 * as part of which we scan the card table.  Then, later, we scan the mod union
-	 * cardtable.  We should only have to do one.
-	 */
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
 	sj->ops = object_ops;
 	sgen_workers_enqueue_job (&sj->job, FALSE);
@@ -1562,8 +1559,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	SGEN_LOG (2, "Old generation scan: %ld usecs", TV_ELAPSED (atv, btv));
 
 	sgen_pin_stats_print_class_stats ();
-
-	sgen_drain_gray_stack (ctx);
 
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
 	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
@@ -1977,6 +1972,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	time_major_fragment_creation += TV_ELAPSED (atv, btv);
 
 	binary_protocol_sweep_begin (GENERATION_OLD, !major_collector.sweeps_lazily);
+	sgen_memgov_major_pre_sweep ();
 
 	TV_GETTIME (atv);
 	time_major_free_bigobjs += TV_ELAPSED (btv, atv);
@@ -2157,12 +2153,12 @@ major_finish_concurrent_collection (gboolean forced)
  * LOCKING: The GC lock MUST be held.
  */
 void
-sgen_ensure_free_space (size_t size)
+sgen_ensure_free_space (size_t size, int generation)
 {
 	int generation_to_collect = -1;
 	const char *reason = NULL;
 
-	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
+	if (generation == GENERATION_OLD) {
 		if (sgen_need_major_collection (size)) {
 			reason = "LOS overflow";
 			generation_to_collect = GENERATION_OLD;
@@ -2764,7 +2760,7 @@ sgen_gc_init (void)
 			return;
 		case -1:
 			/* being inited by another thread */
-			g_usleep (1000);
+			mono_thread_info_usleep (1000);
 			break;
 		case 0:
 			/* we will init it */
@@ -3193,7 +3189,7 @@ sgen_stop_world (int generation)
 
 	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
 
-	binary_protocol_world_stopping (generation, sgen_timestamp (), (gpointer)mono_native_thread_id_get ());
+	binary_protocol_world_stopping (generation, sgen_timestamp (), (gpointer) (gsize) mono_native_thread_id_get ());
 
 	sgen_client_stop_world (generation);
 

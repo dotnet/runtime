@@ -21,7 +21,7 @@ public class Tests
 			Thread[] threads = new Thread [nthreads];
 			for (int i = 0; i < nthreads; ++i) {
 				threads [i] = new Thread (delegate () {
-						foreach (string s in Directory.GetFiles ("/usr/local/lib/mono/2.0", "*.dll")) {
+						foreach (string s in Directory.GetFiles ("/usr/local/lib/mono/4.5", "*.dll")) {
 							AssemblyName.GetAssemblyName (s);
 						}
 					});

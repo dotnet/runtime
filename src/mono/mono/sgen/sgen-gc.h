@@ -146,12 +146,16 @@ extern int current_collection_generation;
 
 extern unsigned int sgen_global_stop_count;
 
+#define SGEN_ALIGN_UP_TO(val,align)	(((val) + (align - 1)) & ~(align - 1))
+#define SGEN_ALIGN_DOWN_TO(val,align)	((val) & ~(align - 1))
+
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
 /* s must be non-negative */
 #define SGEN_CAN_ALIGN_UP(s)		((s) <= SIZE_MAX - (SGEN_ALLOC_ALIGN - 1))
-#define SGEN_ALIGN_UP(s)		(((s)+(SGEN_ALLOC_ALIGN-1)) & ~(SGEN_ALLOC_ALIGN-1))
+#define SGEN_ALIGN_UP(s)		SGEN_ALIGN_UP_TO(s, SGEN_ALLOC_ALIGN)
+#define SGEN_ALIGN_DOWN(s)		SGEN_ALIGN_DOWN_TO(s, SGEN_ALLOC_ALIGN)
 
 #if SIZEOF_VOID_P == 4
 #define ONE_P 1
@@ -798,7 +802,7 @@ enum {
 void sgen_pin_object (GCObject *object, SgenGrayQueue *queue);
 void sgen_set_pinned_from_failed_allocation (mword objsize);
 
-void sgen_ensure_free_space (size_t size);
+void sgen_ensure_free_space (size_t size, int generation);
 void sgen_gc_collect (int generation);
 void sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean wait_to_finish);
 

@@ -8,7 +8,8 @@
 #include <glib.h>
 
 #define MONO_ABI_ALIGNOF(type) MONO_ALIGN_ ## type
-#define MONO_CURRENT_ABI_ALIGNOF(type) ((int)G_STRUCT_OFFSET(struct { char c; type x; }, x))
+#define MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(type) typedef struct { char c; type x; } Mono_Align_Struct_ ##type;
+#define MONO_CURRENT_ABI_ALIGNOF(type) ((int)G_STRUCT_OFFSET(Mono_Align_Struct_ ##type, x))
 #define MONO_ABI_SIZEOF(type) MONO_SIZEOF_ ## type
 #define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
 
@@ -20,6 +21,15 @@
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = MONO_CURRENT_ABI_SIZEOF (type),
 #define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
+
+/* Needed by MONO_CURRENT_ABI_ALIGNOF */
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint8)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint16)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint32)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gint64)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(float)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(double)
+MONO_CURRENT_ABI_ALIGNOF_TYPEDEF(gpointer)
 
 enum {
 #include "object-offsets.h"

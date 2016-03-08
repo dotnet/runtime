@@ -326,7 +326,6 @@ per_thread_profiler_hit (void *ctx)
 
 MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
-	MonoThreadInfo *info;
 	int old_errno = errno;
 	int hp_save_index;
 	MONO_SIG_HANDLER_GET_CONTEXT;
@@ -342,12 +341,13 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 	/* If we can't consume a profiling request it means we're the initiator. */
 	if (!(mono_threads_consume_async_jobs () & MONO_SERVICE_REQUEST_SAMPLE)) {
 		FOREACH_THREAD_SAFE (info) {
-			if (mono_thread_info_get_tid (info) == mono_native_thread_id_get ())
+			if (mono_thread_info_get_tid (info) == mono_native_thread_id_get () ||
+			    !mono_thread_info_is_live (info))
 				continue;
 
 			mono_threads_add_async_job (info, MONO_SERVICE_REQUEST_SAMPLE);
 			mono_threads_pthread_kill (info, profiling_signal_in_use);
-		} END_FOREACH_THREAD_SAFE;
+		} FOREACH_THREAD_SAFE_END
 	}
 
 	mono_thread_info_set_is_async_context (TRUE);
@@ -387,7 +387,7 @@ MONO_SIG_HANDLER_FUNC (static, sigusr2_signal_handler)
 }
 
 static void
-add_signal_handler (int signo, gpointer handler)
+add_signal_handler (int signo, gpointer handler, int flags)
 {
 	struct sigaction sa;
 	struct sigaction previous_sa;
@@ -395,7 +395,7 @@ add_signal_handler (int signo, gpointer handler)
 #ifdef MONO_ARCH_USE_SIGACTION
 	sa.sa_sigaction = (void (*)(int, siginfo_t *, void *))handler;
 	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
+	sa.sa_flags = SA_SIGINFO | flags;
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 /*Apple likes to deliver SIGBUS for *0 */
@@ -426,7 +426,7 @@ add_signal_handler (int signo, gpointer handler)
 #else
 	sa.sa_handler = handler;
 	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
+	sa.sa_flags = flags;
 #endif
 	g_assert (sigaction (signo, &sa, &previous_sa) != -1);
 
@@ -464,14 +464,14 @@ mono_runtime_posix_install_handlers (void)
 	sigset_t signal_set;
 
 	if (mini_get_debug_options ()->handle_sigint)
-		add_signal_handler (SIGINT, mono_sigint_signal_handler);
+		add_signal_handler (SIGINT, mono_sigint_signal_handler, SA_RESTART);
 
-	add_signal_handler (SIGFPE, mono_sigfpe_signal_handler);
-	add_signal_handler (SIGQUIT, sigquit_signal_handler);
-	add_signal_handler (SIGILL, mono_sigill_signal_handler);
-	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler);
+	add_signal_handler (SIGFPE, mono_sigfpe_signal_handler, 0);
+	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
+	add_signal_handler (SIGILL, mono_sigill_signal_handler, 0);
+	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
 	if (mono_jit_trace_calls != NULL)
-		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
+		add_signal_handler (SIGUSR2, sigusr2_signal_handler, SA_RESTART);
 
 	/* it seems to have become a common bug for some programs that run as parents
 	 * of many processes to block signal delivery for real time signals.
@@ -487,10 +487,10 @@ mono_runtime_posix_install_handlers (void)
 
 	signal (SIGPIPE, SIG_IGN);
 
-	add_signal_handler (SIGABRT, sigabrt_signal_handler);
+	add_signal_handler (SIGABRT, sigabrt_signal_handler, 0);
 
 	/* catch SIGSEGV */
-	add_signal_handler (SIGSEGV, mono_sigsegv_signal_handler);
+	add_signal_handler (SIGSEGV, mono_sigsegv_signal_handler, 0);
 }
 
 #ifndef PLATFORM_MACOSX
@@ -602,7 +602,7 @@ mono_runtime_setup_stat_profiler (void)
 			return;
 		}
 		profiling_signal_in_use = SIGPROF;
-		add_signal_handler (profiling_signal_in_use, sigprof_signal_handler);
+		add_signal_handler (profiling_signal_in_use, sigprof_signal_handler, SA_RESTART);
 		if (ioctl (rtc_fd, RTC_IRQP_SET, freq) == -1) {
 			perror ("set rtc freq");
 			return;
@@ -633,7 +633,7 @@ mono_runtime_setup_stat_profiler (void)
 		return;
 	inited = 1;
 	profiling_signal_in_use = get_itimer_signal ();
-	add_signal_handler (profiling_signal_in_use, sigprof_signal_handler);
+	add_signal_handler (profiling_signal_in_use, sigprof_signal_handler, SA_RESTART);
 	setitimer (get_itimer_mode (), &itval, NULL);
 #endif
 }

@@ -136,13 +136,14 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 /* Called by ntdll.dll reagardless of entry point after _CorValidateImage. */
 __int32 STDMETHODCALLTYPE _CorExeMain(void)
 {
+	MonoError error;
 	MonoDomain* domain;
 	MonoAssembly* assembly;
 	MonoImage* image;
 	MonoMethod* method;
 	guint32 entry;
 	gchar* file_name;
-	gchar* error;
+	gchar* corlib_version_error;
 	int argc;
 	gunichar2** argvw;
 	gchar** argv;
@@ -152,9 +153,9 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	init_from_coree = TRUE;
 	domain = mono_runtime_load (file_name, NULL);
 
-	error = (gchar*) mono_check_corlib_version ();
-	if (error) {
-		g_free (error);
+	corlib_version_error = (gchar*) mono_check_corlib_version ();
+	if (corlib_version_error) {
+		g_free (corlib_version_error);
 		g_free (file_name);
 		MessageBox (NULL, L"Corlib not in sync with this runtime.", NULL, MB_ICONERROR);
 		mono_runtime_quit ();
@@ -179,9 +180,10 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 		ExitProcess (1);
 	}
 
-	method = mono_get_method (image, entry, NULL);
+	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL) {
 		g_free (file_name);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		MessageBox (NULL, L"The entry point method could not be loaded.", NULL, MB_ICONERROR);
 		mono_runtime_quit ();
 		ExitProcess (1);

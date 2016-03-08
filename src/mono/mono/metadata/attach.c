@@ -265,6 +265,7 @@ mono_attach_cleanup (void)
 static int
 mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject **exc)
 {
+	MonoError error;
 	MonoAssembly *agent_assembly;
 	MonoImage *image;
 	MonoMethod *method;
@@ -292,9 +293,10 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 		return 1;
 	}
 
-	method = mono_get_method (image, entry, NULL);
+	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL){
-		g_print ("The entry point method of assembly '%s' could not be loaded\n", agent);
+		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
 		g_free (agent);
 		return 1;
 	}
@@ -309,7 +311,8 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	g_free (agent);
 
 	pa [0] = main_args;
-	mono_runtime_invoke (method, NULL, pa, exc);
+	mono_runtime_try_invoke (method, NULL, pa, exc, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return 0;
 }

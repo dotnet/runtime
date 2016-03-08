@@ -28,6 +28,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/DIBuilder.h>
 
 #include "mini-llvm-cpp.h"
 
@@ -216,3 +217,62 @@ mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
 {
 	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
 }
+
+#if LLVM_API_VERSION > 100
+
+void*
+mono_llvm_create_di_builder (LLVMModuleRef module)
+{
+	return new DIBuilder (*unwrap(module));
+}
+
+void*
+mono_llvm_di_create_compile_unit (void *di_builder, const char *cu_name, const char *dir, const char *producer)
+{
+	DIBuilder *builder = (DIBuilder*)di_builder;
+
+	return builder->createCompileUnit (dwarf::DW_LANG_C99, cu_name, dir, producer, true, "", 0);
+}
+
+void*
+mono_llvm_di_create_function (void *di_builder, void *cu, const char *name, const char *mangled_name, const char *dir, const char *file, int line)
+{
+	DIBuilder *builder = (DIBuilder*)di_builder;
+	DIFile *di_file;
+	DISubroutineType *type;
+
+	// FIXME: Share DIFile
+	di_file = builder->createFile (file, dir);
+	type = builder->createSubroutineType (builder->getOrCreateTypeArray (ArrayRef<Metadata*> ()));
+	return builder->createFunction (di_file, name, mangled_name, di_file, line, type, true, true, 0);
+}
+
+void*
+mono_llvm_di_create_file (void *di_builder, const char *dir, const char *file)
+{
+	DIBuilder *builder = (DIBuilder*)di_builder;
+
+	return builder->createFile (file, dir);
+}
+
+void*
+mono_llvm_di_create_location (void *di_builder, void *scope, int row, int column)
+{
+	return DILocation::get (*unwrap(LLVMGetGlobalContext ()), row, column, (Metadata*)scope);
+}
+
+void
+mono_llvm_di_set_location (LLVMBuilderRef builder, void *loc_md)
+{
+	unwrap(builder)->SetCurrentDebugLocation ((DILocation*)loc_md);
+}
+
+void
+mono_llvm_di_builder_finalize (void *di_builder)
+{
+	DIBuilder *builder = (DIBuilder*)di_builder;
+
+	builder->finalize ();
+}
+
+#endif /* #if LLVM_API_VERSION > 100 */

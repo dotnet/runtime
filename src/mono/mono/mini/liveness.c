@@ -103,8 +103,8 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 				/* Make the component vregs volatile as well (#612206) */
-				get_vreg_to_inst (cfg, var->dreg + 1)->flags |= MONO_INST_VOLATILE;
-				get_vreg_to_inst (cfg, var->dreg + 2)->flags |= MONO_INST_VOLATILE;
+				get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
+				get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 			}
 		}
 			
@@ -122,8 +122,8 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 					/* Make the component vregs volatile as well (#612206) */
-					get_vreg_to_inst (cfg, var->dreg + 1)->flags |= MONO_INST_VOLATILE;
-					get_vreg_to_inst (cfg, var->dreg + 2)->flags |= MONO_INST_VOLATILE;
+					get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
+					get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				}
 			}
 		}

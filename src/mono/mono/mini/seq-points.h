@@ -25,7 +25,4 @@ mono_find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, M
 void
 mono_bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb);
 
-void
-mono_image_get_aot_seq_point_path (MonoImage *image, char **str);
-
 #endif /* __MONO_SEQ_POINTS_H__ */

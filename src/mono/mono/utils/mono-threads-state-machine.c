@@ -202,6 +202,7 @@ Returns one of the following values:
 - AsyncSuspendInitSuspend: Thread suspend requested, async suspend needs to be done.
 - AsyncSuspendAlreadySuspended: Thread already suspended, nothing to do.
 - AsyncSuspendWait: Self suspend in progress, asked it to notify us. Caller must add target to the notification set.
+- AsyncSuspendBlocking: Thread in blocking state
 */
 MonoRequestAsyncSuspendResult
 mono_threads_transition_request_async_suspension (MonoThreadInfo *info)
@@ -241,7 +242,7 @@ retry_state_change:
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, cur_state, 1);
-		return AsyncSuspendAlreadySuspended; //A thread in the blocking state has its state saved so we can treat it as suspended.
+		return AsyncSuspendBlocking; //A thread in the blocking state has its state saved so we can treat it as suspended.
 
 /*
 

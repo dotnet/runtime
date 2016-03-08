@@ -250,6 +250,9 @@ typedef struct {
 	void *jit_data;
 
 	MonoThreadInfoInterruptToken *interrupt_token;
+
+	/* MonoHandleArena for coop handles */
+	gpointer handle_arena;
 } MonoThreadInfo;
 
 typedef struct {
@@ -297,14 +300,20 @@ mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
 /*
 Requires the world to be stoped
 */
-#define FOREACH_THREAD(thread) MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
-#define END_FOREACH_THREAD MONO_LLS_END_FOREACH
+#define FOREACH_THREAD(thread) \
+	MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+
+#define FOREACH_THREAD_END \
+	MONO_LLS_FOREACH_END
 
 /*
 Snapshot iteration.
 */
-#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
-#define END_FOREACH_THREAD_SAFE MONO_LLS_END_FOREACH_SAFE
+#define FOREACH_THREAD_SAFE(thread) \
+	MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+
+#define FOREACH_THREAD_SAFE_END \
+	MONO_LLS_FOREACH_SAFE_END
 
 static inline MonoNativeThreadId
 mono_thread_info_get_tid (THREAD_INFO_TYPE *info)
@@ -358,9 +367,6 @@ mono_thread_info_list_head (void);
 THREAD_INFO_TYPE*
 mono_thread_info_lookup (MonoNativeThreadId id);
 
-THREAD_INFO_TYPE*
-mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel);
-
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
@@ -408,6 +414,9 @@ mono_thread_info_yield (void);
 
 gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
+
+gint
+mono_thread_info_usleep (guint64 us);
 
 gpointer
 mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
@@ -586,6 +595,7 @@ typedef enum {
 	AsyncSuspendAlreadySuspended,
 	AsyncSuspendWait,
 	AsyncSuspendInitSuspend,
+	AsyncSuspendBlocking,
 } MonoRequestAsyncSuspendResult;
 
 typedef enum {
@@ -632,7 +642,7 @@ int mono_thread_info_current_state (THREAD_INFO_TYPE *info);
 const char* mono_thread_state_name (int state);
 
 gboolean mono_thread_info_in_critical_location (THREAD_INFO_TYPE *info);
-gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
 
 gboolean

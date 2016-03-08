@@ -473,6 +473,7 @@ mono_install_assembly_preload_hook
 mono_install_assembly_refonly_preload_hook
 mono_install_assembly_refonly_search_hook
 mono_install_assembly_search_hook
+mono_install_load_aot_data_hook
 mono_install_runtime_cleanup
 mono_install_unhandled_exception_hook
 mono_is_debugger_attached
@@ -487,9 +488,9 @@ mono_jit_init_version
 mono_jit_parse_options
 mono_jit_set_aot_mode
 mono_jit_set_aot_only
-mono_jit_set_domain
 mono_jit_set_trace_options
 mono_jit_thread_attach
+mono_jit_thread_detach
 mono_ldstr
 mono_ldtoken
 mono_load_remote_field
@@ -571,7 +572,6 @@ mono_metadata_parse_mh_full
 mono_metadata_parse_param
 mono_metadata_parse_signature
 mono_metadata_parse_type
-mono_metadata_parse_type_full
 mono_metadata_parse_typedef_or_ref
 mono_metadata_properties_from_typedef
 mono_metadata_signature_alloc
@@ -600,6 +600,7 @@ mono_method_get_class
 mono_method_get_flags
 mono_method_get_generic_container
 mono_method_get_header
+mono_method_get_header_checked
 mono_method_get_index
 mono_method_get_last_managed
 mono_method_get_marshal_info
@@ -826,6 +827,8 @@ mono_thread_detach
 mono_thread_detach_if_exiting
 mono_thread_exit
 mono_thread_get_main
+mono_thread_get_managed_id
+mono_thread_get_name_utf8
 mono_thread_get_undeniable_exception
 mono_thread_init
 mono_thread_is_foreign
@@ -834,8 +837,12 @@ mono_thread_new_init
 mono_thread_set_main
 mono_thread_set_manage_callback
 mono_thread_stop
+mono_threads_assert_gc_safe_region
+mono_threads_assert_gc_unsafe_region
 mono_threads_attach_tools_thread
+mono_threads_enter_gc_safe_region
 mono_threads_enter_gc_unsafe_region
+mono_threads_exit_gc_safe_region
 mono_threads_exit_gc_unsafe_region
 mono_threads_get_default_stacksize
 mono_threads_request_thread_dump

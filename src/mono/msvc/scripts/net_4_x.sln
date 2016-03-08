@@ -173,6 +173,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.Http.SelfHost-ne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.Http.WebHost-net_4_x", "..\..\mcs\class/System.Web.Http.WebHost\System.Web.Http.WebHost-net_4_x.csproj", "{2AF7E697-07BA-439E-89BF-076AEE4AE04C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Providers.NewSystemSource-net_4_x", "..\..\mcs\class/Mono.Security.Providers.NewSystemSource\Mono.Security.Providers.NewSystemSource-net_4_x.csproj", "{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Providers.NewTls-net_4_x", "..\..\mcs\class/Mono.Security.Providers.NewTls\Mono.Security.Providers.NewTls-net_4_x.csproj", "{C8B8E524-BB3A-44E2-8C22-E3313E9F477C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Build.Framework-net_4_x", "..\..\mcs\class/Microsoft.Build.Framework\Microsoft.Build.Framework-net_4_x.csproj", "{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Build.Utilities-net_4_x", "..\..\mcs\class/Microsoft.Build.Utilities\Microsoft.Build.Utilities-net_4_x.csproj", "{8E5728E0-CEAF-431F-963E-EB1DEE15C506}"
@@ -278,8 +282,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Providers.DotNet-net_4_x", "..\..\mcs\class/Mono.Security.Providers.DotNet\Mono.Security.Providers.DotNet-net_4_x.csproj", "{391EDD2B-85AC-4FCA-B607-AAD6C51E6799}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Providers.OldTls-net_4_x", "..\..\mcs\class/Mono.Security.Providers.OldTls\Mono.Security.Providers.OldTls-net_4_x.csproj", "{E485E885-59B1-4081-BC66-56AAAFD8771A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Security.Providers.NewSystemSource-net_4_x", "..\..\mcs\class/Mono.Security.Providers.NewSystemSource\Mono.Security.Providers.NewSystemSource-net_4_x.csproj", "{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Protocols-net_4_x", "..\..\mcs\class/System.DirectoryServices.Protocols\System.DirectoryServices.Protocols-net_4_x.csproj", "{EF08F249-31A1-4E62-8391-ECBA5227B686}"
 EndProject
@@ -639,6 +641,14 @@ Global
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AF7E697-07BA-439E-89BF-076AEE4AE04C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8B8E524-BB3A-44E2-8C22-E3313E9F477C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8B8E524-BB3A-44E2-8C22-E3313E9F477C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8B8E524-BB3A-44E2-8C22-E3313E9F477C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8B8E524-BB3A-44E2-8C22-E3313E9F477C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E39A911-F4E6-4B4B-B8AC-111BB1DD80C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -851,10 +861,6 @@ Global
 		{E485E885-59B1-4081-BC66-56AAAFD8771A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E485E885-59B1-4081-BC66-56AAAFD8771A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E485E885-59B1-4081-BC66-56AAAFD8771A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0BB4541F-9B1A-4CBC-BEB1-00B31B37F74E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EF08F249-31A1-4E62-8391-ECBA5227B686}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EF08F249-31A1-4E62-8391-ECBA5227B686}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF08F249-31A1-4E62-8391-ECBA5227B686}.Release|Any CPU.ActiveCfg = Release|Any CPU

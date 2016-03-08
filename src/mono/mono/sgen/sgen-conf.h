@@ -191,12 +191,6 @@ typedef mword SgenDescriptor;
 #define SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO 0.33
 
 /*
- * How much more we allow the heap to grow, relative to the allowance, while doing
- * a concurrent collection, before forcing its finish.
- */
-#define SGEN_DEFAULT_CONCURRENT_HEAP_ALLOWANCE_RATIO 0.25
-
-/*
  * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
  *
  * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.

@@ -16,7 +16,7 @@ tmp_file () {
 }
 
 clean_aot () {
-	rm -rf *.exe..so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
 }
 
 # The test compares the generated native code size between a compilation with and without seq points.
@@ -89,7 +89,7 @@ while read line; do
 	fi
 done < $TMP_FILE
 
-TESTRESULT_FILE=TestResult-op_il_seq_point.xml
+TESTRESULT_FILE=TestResult-op_il_seq_point.tmp
 
 echo -n "              <test-case name=\"MonoTests.op_il_seq_point.${TEST_FILE}${USE_AOT}\" executed=\"True\" time=\"0\" asserts=\"0\" success=\"" >> $TESTRESULT_FILE
 

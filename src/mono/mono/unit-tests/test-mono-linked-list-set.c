@@ -74,11 +74,11 @@ worker (void *arg)
 			break;
 		case STATE_OUT:
 			if (InterlockedCompareExchange (&nodes [i].state, STATE_BUSY, STATE_OUT) == STATE_OUT) {
-				result = mono_lls_find (&lls, hp, i);
+				result = mono_lls_find (&lls, hp, i, HAZARD_FREE_SAFE_CTX);
 				assert (!result);
 				mono_hazard_pointer_clear_all (hp, -1);
 
-				result = mono_lls_insert (&lls, hp, &nodes [i].node);
+				result = mono_lls_insert (&lls, hp, &nodes [i].node, HAZARD_FREE_SAFE_CTX);
 				mono_hazard_pointer_clear_all (hp, -1);
 
 				assert (nodes [i].state == STATE_BUSY);
@@ -89,12 +89,12 @@ worker (void *arg)
 			break;
 		case STATE_IN:
 			if (InterlockedCompareExchange (&nodes [i].state, STATE_BUSY, STATE_IN) == STATE_IN) {
-				result = mono_lls_find (&lls, hp, i);
+				result = mono_lls_find (&lls, hp, i, HAZARD_FREE_SAFE_CTX);
 				assert (result);
 				assert (mono_hazard_pointer_get_val (hp, 1) == &nodes [i].node);
 				mono_hazard_pointer_clear_all (hp, -1);
 
-				result = mono_lls_remove (&lls, hp, &nodes [i].node);
+				result = mono_lls_remove (&lls, hp, &nodes [i].node, HAZARD_FREE_SAFE_CTX);
 				mono_hazard_pointer_clear_all (hp, -1);
 
 				++thread_data->num_removes;
@@ -126,7 +126,7 @@ main (int argc, char *argv [])
 
 	mono_threads_init (&thread_callbacks, 0);
 
-	mono_lls_init (&lls, free_node);
+	mono_lls_init (&lls, free_node, HAZARD_FREE_NO_LOCK);
 
 	for (i = 0; i < N; ++i) {
 		nodes [i].node.key = i;

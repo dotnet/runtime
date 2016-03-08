@@ -113,7 +113,6 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 static int
 restart_threads_until_none_in_managed_allocator (void)
 {
-	SgenThreadInfo *info;
 	int num_threads_died = 0;
 	int sleep_duration = -1;
 
@@ -121,7 +120,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		int restart_count = 0, restarted_count = 0;
 		/* restart all threads that stopped in the
 		   allocator */
-		FOREACH_THREAD_SAFE (info) {
+		FOREACH_THREAD (info) {
 			gboolean result;
 			if (info->client_info.skip || info->client_info.gc_disabled || info->client_info.suspend_done)
 				continue;
@@ -146,7 +145,7 @@ restart_threads_until_none_in_managed_allocator (void)
 				info->client_info.stopped_domain = NULL;
 				info->client_info.suspend_done = TRUE;
 			}
-		} END_FOREACH_THREAD_SAFE
+		} FOREACH_THREAD_END
 		/* if no threads were restarted, we're done */
 		if (restart_count == 0)
 			break;
@@ -174,7 +173,7 @@ restart_threads_until_none_in_managed_allocator (void)
 			} else {
 				info->client_info.skip = 1;
 			}
-		} END_FOREACH_THREAD
+		} FOREACH_THREAD_END
 		/* some threads might have died */
 		num_threads_died += restart_count - restarted_count;
 		/* wait for the threads to signal their suspension
@@ -224,7 +223,7 @@ sgen_client_stop_world (int generation)
 	update_current_thread_stack (&generation);
 
 	sgen_global_stop_count++;
-	SGEN_LOG (3, "stopping world n %d from %p %p", sgen_global_stop_count, mono_thread_info_current (), (gpointer)mono_native_thread_id_get ());
+	SGEN_LOG (3, "stopping world n %d from %p %p", sgen_global_stop_count, mono_thread_info_current (), (gpointer) (gsize) mono_native_thread_id_get ());
 	TV_GETTIME (stop_world_time);
 
 	if (mono_thread_info_unified_management_enabled ()) {
@@ -251,7 +250,6 @@ sgen_client_stop_world (int generation)
 void
 sgen_client_restart_world (int generation, GGTimingInfo *timing)
 {
-	SgenThreadInfo *info;
 	TV_DECLARE (end_sw);
 	TV_DECLARE (start_handshake);
 	TV_DECLARE (end_bridge);
@@ -269,7 +267,7 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 #else
 		memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
 #endif
-	} END_FOREACH_THREAD
+	} FOREACH_THREAD_END
 
 	TV_GETTIME (start_handshake);
 
@@ -387,29 +385,28 @@ static void
 sgen_unified_suspend_stop_world (void)
 {
 	int restart_counter;
-	SgenThreadInfo *info;
 	int sleep_duration = -1;
 
 	mono_threads_begin_global_suspend ();
 	THREADS_STW_DEBUG ("[GC-STW-BEGIN] *** BEGIN SUSPEND *** \n");
 
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		info->client_info.skip = FALSE;
 		info->client_info.suspend_done = FALSE;
 		if (sgen_is_thread_in_current_stw (info)) {
-			info->client_info.skip = !mono_thread_info_begin_suspend (info, FALSE);
+			info->client_info.skip = !mono_thread_info_begin_suspend (info);
 			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), info->client_info.skip);
 		} else {
 			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] IGNORE thread %p skip %d\n", mono_thread_info_get_tid (info), info->client_info.skip);
 		}
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_END
 
 	mono_thread_info_current ()->client_info.suspend_done = TRUE;
 	mono_threads_wait_pending_operations ();
 
 	for (;;) {
 		restart_counter = 0;
-		FOREACH_THREAD_SAFE (info) {
+		FOREACH_THREAD (info) {
 			if (info->client_info.suspend_done || !sgen_is_thread_in_current_stw (info)) {
 				THREADS_STW_DEBUG ("[GC-STW-RESTART] IGNORE thread %p not been processed done %d current %d\n", mono_thread_info_get_tid (info), info->client_info.suspend_done, !sgen_is_thread_in_current_stw (info));
 				continue;
@@ -438,7 +435,7 @@ sgen_unified_suspend_stop_world (void)
 				g_assert (!info->client_info.in_critical_region);
 				info->client_info.suspend_done = TRUE;
 			}
-		} END_FOREACH_THREAD_SAFE
+		} FOREACH_THREAD_END
 
 		if (restart_counter == 0)
 			break;
@@ -456,19 +453,19 @@ sgen_unified_suspend_stop_world (void)
 			sleep_duration += 10;
 		}
 
-		FOREACH_THREAD_SAFE (info) {
+		FOREACH_THREAD (info) {
 			if (sgen_is_thread_in_current_stw (info) && mono_thread_info_is_running (info)) {
-				gboolean res = mono_thread_info_begin_suspend (info, FALSE);
+				gboolean res = mono_thread_info_begin_suspend (info);
 				THREADS_STW_DEBUG ("[GC-STW-RESTART] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), res);
 				if (!res)
 					info->client_info.skip = TRUE;
 			}
-		} END_FOREACH_THREAD_SAFE
+		} FOREACH_THREAD_END
 
 		mono_threads_wait_pending_operations ();
 	}
 
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		if (sgen_is_thread_in_current_stw (info)) {
 			THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended\n", mono_thread_info_get_tid (info));
 			g_assert (info->client_info.suspend_done);
@@ -476,23 +473,21 @@ sgen_unified_suspend_stop_world (void)
 		} else {
 			g_assert (!info->client_info.suspend_done || info == mono_thread_info_current ());
 		}
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_END
 }
 
 static void
 sgen_unified_suspend_restart_world (void)
 {
-	SgenThreadInfo *info;
-
 	THREADS_STW_DEBUG ("[GC-STW-END] *** BEGIN RESUME ***\n");
-	FOREACH_THREAD_SAFE (info) {
+	FOREACH_THREAD (info) {
 		if (sgen_is_thread_in_current_stw (info)) {
 			g_assert (mono_thread_info_begin_resume (info));
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] RESUME thread %p\n", mono_thread_info_get_tid (info));
 		} else {
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] IGNORE thread %p\n", mono_thread_info_get_tid (info));
 		}
-	} END_FOREACH_THREAD_SAFE
+	} FOREACH_THREAD_END
 
 	mono_threads_wait_pending_operations ();
 	mono_threads_end_global_suspend ();

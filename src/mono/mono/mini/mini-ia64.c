@@ -1586,6 +1586,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
+			if (mono_op_imm_to_op (ins->opcode) == -1)
+				g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
 			ins->opcode = mono_op_imm_to_op (ins->opcode);
 
 			if (ins->inst_imm == 0)
@@ -2688,16 +2690,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CKFINITE:
 			/* Quiet NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Signaling NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x040);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Positive infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x021);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Negative infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x022);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			break;
 
 		/* Calls */
@@ -3782,8 +3784,10 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		const unsigned char *target;
+		MonoError error;
 
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
+		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		if (patch_info->type == MONO_PATCH_INFO_NONE)
 			continue;
@@ -4184,8 +4188,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			guint8* buf;
 			guint64 exc_token_index;
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			g_assert (exc_class);
+			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 			exc_token_index = mono_metadata_token_index (exc_class->type_token);
 			throw_ip = cfg->native_code + patch_info->ip.i;
 

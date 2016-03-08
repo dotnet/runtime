@@ -17,16 +17,7 @@ void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNA
 void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
 MONO_API void mono_personality              (void);
 int      mono_llvm_load                     (const char* bpath);
-void     mono_llvm_rethrow_exception (MonoObject *ex);
-void     mono_llvm_throw_exception (MonoObject *ex);
-void     mono_llvm_throw_corlib_exception (guint32 ex_token_index);
-void     mono_llvm_resume_exception (void);
-gint32   mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end);
-void     mono_llvm_clear_exception (void);
-MonoObject *mono_llvm_load_exception (void);
-void     mono_llvm_reset_exception (void);
-void     mono_llvm_raise_exception (MonoException *e);
-void     mono_llvm_create_vars (MonoCompile *cfg);
+void     mono_llvm_create_vars (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 
 gboolean mini_llvm_init                     (void);
 

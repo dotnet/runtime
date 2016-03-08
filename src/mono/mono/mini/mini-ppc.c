@@ -904,6 +904,87 @@ typedef struct {
 
 #define DEBUG(a)
 
+
+#if PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS
+//
+// Test if a structure is completely composed of either float XOR double fields and has fewer than
+// PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTER members.
+// If this is true the structure can be returned directly via float registers instead of by a hidden parameter
+// pointing to where the return value should be stored.
+// This is as per the ELF ABI v2.
+//
+static gboolean
+is_float_struct_returnable_via_regs  (MonoType *type, int* member_cnt, int* member_size)
+{
+	int local_member_cnt, local_member_size;         
+	if (!member_cnt) {
+		member_cnt = &local_member_cnt;
+	}
+	if (!member_size) {
+		member_size = &local_member_size;
+	}
+
+	gboolean is_all_floats = mini_type_is_hfa(type, member_cnt, member_size);
+	return is_all_floats && (*member_cnt <= PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS);
+}
+#else
+
+#define is_float_struct_returnable_via_regs(a,b,c) (FALSE)
+
+#endif
+
+#if PPC_RETURN_SMALL_STRUCTS_IN_REGS
+//
+// Test if a structure is smaller in size than 2 doublewords (PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS) and is
+// completely composed of fields all of basic types.
+// If this is true the structure can be returned directly via registers r3/r4 instead of by a hidden parameter
+// pointing to where the return value should be stored.
+// This is as per the ELF ABI v2.
+//
+static gboolean
+is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke)
+{
+  	gboolean has_a_field = FALSE;
+	int size = 0;
+	if (klass) {
+		gpointer iter = NULL;
+		MonoClassField *f;
+		if (is_pinvoke)
+			size = mono_type_native_stack_size (&klass->byval_arg, 0);
+		else
+			size = mini_type_stack_size (&klass->byval_arg, 0);
+		if (size == 0)
+			return TRUE;
+		if (size > PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS)
+			return FALSE;
+		while ((f = mono_class_get_fields (klass, &iter))) {
+			if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+				// TBD: Is there a better way to check for the basic types?
+				if (f->type->byref) {
+					return FALSE;
+				} else if ((f->type->type >= MONO_TYPE_BOOLEAN) && (f->type->type <= MONO_TYPE_R8)) {
+					has_a_field = TRUE;
+				} else if (MONO_TYPE_ISSTRUCT (f->type)) {
+					MonoClass *klass = mono_class_from_mono_type (f->type);
+					if (is_struct_returnable_via_regs(klass, is_pinvoke)) {
+						has_a_field = TRUE;
+					} else {
+						return FALSE;
+					}
+				} else {
+					return FALSE;
+				}
+			}
+		}
+	}
+	return has_a_field;
+}
+#else
+
+#define is_struct_returnable_via_regs(a,b) (FALSE)
+
+#endif
+
 static void inline
 add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
@@ -1126,16 +1207,15 @@ get_call_info (MonoMethodSignature *sig)
 #if PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS
 				int mbr_cnt = 0;
 				int mbr_size = 0;
-				gboolean is_all_floats = mini_type_is_hfa (sig->params [i], &mbr_cnt, &mbr_size);
+				gboolean is_all_floats = is_float_struct_returnable_via_regs (sig->params [i], &mbr_cnt, &mbr_size);
 
-				if (is_all_floats && (mbr_cnt <= 8)) {
+				if (is_all_floats) {
 					rest = PPC_LAST_FPARG_REG - fr + 1;
 				}
 				// Pass small (<= 8 member) structures entirely made up of either float or double members
 				// in FR registers.  There have to be at least mbr_cnt registers left.
 				if (is_all_floats &&
-					 (rest >= mbr_cnt) &&
-					 (mbr_cnt <= 8)) {
+					 (rest >= mbr_cnt)) {
 					nregs = mbr_cnt;
 					n_in_regs = MIN (rest, nregs);
 					cinfo->args [n].regtype = RegTypeFPStructByVal;
@@ -1601,13 +1681,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 1;
+				ins->sreg1 = MONO_LVREG_LS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg + 1, FALSE);
 
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg + 2;
+				ins->sreg1 = MONO_LVREG_MS (in->dreg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 			} else
@@ -1824,15 +1904,14 @@ void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature (method)->ret);
-
 	if (!ret->byref) {
 #ifndef __mono_ppc64__
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
 
 			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
+			ins->sreg1 = MONO_LVREG_LS (val->dreg);
+			ins->sreg2 = MONO_LVREG_MS (val->dreg);
 			MONO_ADD_INS (cfg->cbb, ins);
 			return;
 		}
@@ -2318,8 +2397,11 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		else
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, ins->dreg, result_shifted_reg, 32);
 		ins->opcode = OP_NOP;
+		break;
 	}
 #endif
+	default:
+		break;
 	}
 }
 
@@ -2329,32 +2411,32 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	switch (ins->opcode) {
 	case OP_LADD_OVF:
 		/* ADC sets the condition code */
-		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), MONO_LVREG_LS (ins->sreg2));
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_CARRY, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), MONO_LVREG_MS (ins->sreg2));
 		NULLIFY_INS (ins);
 		break;
 	case OP_LADD_OVF_UN:
 		/* ADC sets the condition code */
-		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), MONO_LVREG_LS (ins->sreg2));
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_UN_CARRY, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), MONO_LVREG_MS (ins->sreg2));
 		NULLIFY_INS (ins);
 		break;
 	case OP_LSUB_OVF:
 		/* SBB sets the condition code */
-		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), MONO_LVREG_LS (ins->sreg2));
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_CARRY, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), MONO_LVREG_MS (ins->sreg2));
 		NULLIFY_INS (ins);
 		break;
 	case OP_LSUB_OVF_UN:
 		/* SBB sets the condition code */
-		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
-		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), MONO_LVREG_LS (ins->sreg2));
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_UN_CARRY, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), MONO_LVREG_MS (ins->sreg2));
 		NULLIFY_INS (ins);
 		break;
 	case OP_LNEG:
 		/* From gcc generated code */
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PPC_SUBFIC, ins->dreg + 1, ins->sreg1 + 1, 0);
-		MONO_EMIT_NEW_UNALU (cfg, OP_PPC_SUBFZE, ins->dreg + 2, ins->sreg1 + 2);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_PPC_SUBFIC, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1), 0);
+		MONO_EMIT_NEW_UNALU (cfg, OP_PPC_SUBFZE, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1));
 		NULLIFY_INS (ins);
 		break;
 	default:
@@ -2486,6 +2568,8 @@ map_to_reg_reg_op (int op)
 	case OP_STOREI8_MEMBASE_IMM:
 		return OP_STOREI8_MEMBASE_REG;
 	}
+	if (mono_op_imm_to_op (op) == -1)
+		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (op));
 	return mono_op_imm_to_op (op);
 }
 
@@ -4663,13 +4747,15 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 {
 	MonoJumpInfo *patch_info;
 	gboolean compile_aot = !run_cctors;
+	MonoError error;
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		unsigned char *target;
 		gboolean is_fd = FALSE;
 
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
+		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, &error);
+		mono_error_raise_exception (&error); /* FIXME: don't raise here */
 
 		if (compile_aot) {
 			switch (patch_info->type) {
@@ -5535,8 +5621,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				exc_throw_pos [i] = code;
 			}
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			g_assert (exc_class);
+			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 
 			ppc_patch (ip, code);
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/

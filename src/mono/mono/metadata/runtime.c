@@ -81,11 +81,14 @@ mono_runtime_fire_process_exit_event (void)
 }
 
 
-/*
+/**
+ * mono_runtime_try_shutdown:
+ *
  * Try to initialize runtime shutdown.
+ *
  * After this call completes the thread pool will stop accepting new jobs and no further threads will be created.
  *
- * @return true if shutdown was initiated by this call or false is other thread beat this one
+ * Returns: TRUE if shutdown was initiated by this call or false is other thread beat this one.
  */
 gboolean
 mono_runtime_try_shutdown (void)

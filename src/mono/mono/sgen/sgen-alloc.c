@@ -101,7 +101,7 @@ alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 	if (!for_mature) {
 		sgen_client_degraded_allocation (size);
 		SGEN_ATOMIC_ADD_P (degraded_mode, size);
-		sgen_ensure_free_space (size);
+		sgen_ensure_free_space (size, GENERATION_OLD);
 	} else {
 		if (sgen_need_major_collection (size))
 			sgen_perform_collection (size, GENERATION_OLD, "mature allocation failure", !for_mature);
@@ -271,7 +271,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 					 * always loop we will loop endlessly in the case of
 					 * OOM).
 					 */
-					sgen_ensure_free_space (real_size);
+					sgen_ensure_free_space (real_size, GENERATION_NURSERY);
 					if (!degraded_mode)
 						p = (void **)sgen_nursery_alloc (size);
 				}
@@ -288,7 +288,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 				p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				if (!p) {
 					/* See comment above in similar case. */
-					sgen_ensure_free_space (tlab_size);
+					sgen_ensure_free_space (tlab_size, GENERATION_NURSERY);
 					if (!degraded_mode)
 						p = (void **)sgen_nursery_alloc_range (tlab_size, size, &alloc_size);
 				}
@@ -426,8 +426,6 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
 
-#ifndef DISABLE_CRITICAL_REGION
-
 	if (G_UNLIKELY (has_per_allocation_action)) {
 		static int alloc_count;
 		int current_alloc = InterlockedIncrement (&alloc_count);
@@ -452,12 +450,10 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
 		return res;
 	}
 	EXIT_CRITICAL_REGION;
-#endif
+
 	LOCK_GC;
 	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
-	if (G_UNLIKELY (!res))
-		sgen_client_out_of_memory (size);
 	return res;
 }
 
@@ -530,15 +526,13 @@ sgen_init_tlab_info (SgenThreadInfo* info)
 void
 sgen_clear_tlabs (void)
 {
-	SgenThreadInfo *info;
-
 	FOREACH_THREAD (info) {
 		/* A new TLAB will be allocated when the thread does its first allocation */
 		*info->tlab_start_addr = NULL;
 		*info->tlab_next_addr = NULL;
 		*info->tlab_temp_end_addr = NULL;
 		*info->tlab_real_end_addr = NULL;
-	} END_FOREACH_THREAD
+	} FOREACH_THREAD_END
 }
 
 void
@@ -554,9 +548,6 @@ sgen_init_allocator (void)
 
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_NEXT_ADDR, tlab_next_addr_offset);
 	mono_tls_key_set_offset (TLS_KEY_SGEN_TLAB_TEMP_END, tlab_temp_end_offset);
-
-	g_assert (tlab_next_addr_offset != -1);
-	g_assert (tlab_temp_end_offset != -1);
 #endif
 
 #ifdef HEAVY_STATISTICS

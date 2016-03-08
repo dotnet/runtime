@@ -82,22 +82,22 @@ setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
 call: dest:a clob:c len:20
 call_reg: dest:a src1:i len:8 clob:c
-call_membase: dest:a src1:b len:24 clob:c
+call_membase: dest:a src1:b len:30 clob:c
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:8 clob:c
-voidcall_membase: src1:b len:16 clob:c
+voidcall_membase: src1:b len:24 clob:c
 fcall: dest:g len:28 clob:c
 fcall_reg: dest:g src1:i len:16 clob:c
-fcall_membase: dest:g src1:b len:24 clob:c
+fcall_membase: dest:g src1:b len:30 clob:c
 rcall: dest:g len:28 clob:c
 rcall_reg: dest:g src1:i len:16 clob:c
-rcall_membase: dest:g src1:b len:24 clob:c
+rcall_membase: dest:g src1:b len:30 clob:c
 lcall: dest:l len:20 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
-lcall_membase: dest:l src1:b len:16 clob:c
+lcall_membase: dest:l src1:b len:24 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
-vcall_membase: src1:b len:64 clob:c
+vcall_membase: src1:b len:70 clob:c
 tailcall: len:160 clob:c
 iconst: dest:i len:16
 r4const: dest:f len:24

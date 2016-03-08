@@ -315,4 +315,6 @@
 <opcode name="mono_ldptr_int_req_flag" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x14" flow="next" />
 <opcode name="mono_ldptr_card_table" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x15" flow="next" />
 <opcode name="mono_ldptr_nursery_start" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x16" flow="next" />
+<opcode name="mono_ldptr_nursery_bits" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x17" flow="next" />
+<opcode name="mono_calli_extra_arg" input="VarPop" output="VarPush" args="InlineSig" o1="0xF0" o2="0x18" flow="call" />
 </opdesc>

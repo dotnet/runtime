@@ -35,9 +35,14 @@ test_conc_hashtable_CFLAGS = $(test_cflags)
 test_conc_hashtable_LDADD = $(test_ldadd)
 test_conc_hashtable_LDFLAGS = $(test_ldflags)
 
-noinst_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable
+test_mono_handle_SOURCES = test-mono-handle.c
+test_mono_handle_CFLAGS = $(test_cflags)
+test_mono_handle_LDADD = $(test_ldadd)
+test_mono_handle_LDFLAGS = $(test_ldflags)
 
-TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable
+noinst_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle
+
+TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle
 
 .NOTPARALLEL:
 

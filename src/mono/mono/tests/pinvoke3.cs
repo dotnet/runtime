@@ -191,6 +191,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate_ref_delegate")]
 	public static extern int mono_test_marshal_delegate_ref_delegate (DelegateByrefDelegate del);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_virtual_delegate")]
+	public static extern int mono_test_marshal_virtual_delegate (VirtualDelegate del);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -214,6 +217,8 @@ public class Tests {
 	public delegate return_int_delegate ReturnDelegateDelegate ();
 
 	public delegate int DelegateByrefDelegate (ref return_int_delegate del);
+
+	public delegate int VirtualDelegate (int i);
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -1134,4 +1139,26 @@ public class Tests {
 			return 0;
 		}
     }
+
+	class Base {
+		public VirtualDelegate get_del () {
+			return delegate_test;
+		}
+
+		public virtual int delegate_test (int i) {
+			return i;
+		}
+	}
+
+	class Derived : Base {
+		public override int delegate_test (int i) {
+			return i + 1;
+		}
+	}
+
+	public static int test_43_virtual () {
+		Base b = new Derived ();
+
+		return mono_test_marshal_virtual_delegate (b.get_del ());
+	}
 }

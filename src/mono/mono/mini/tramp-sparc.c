@@ -18,6 +18,7 @@
 
 #include "mini.h"
 #include "mini-sparc.h"
+#include "jit-icalls.h"
 
 /*
  * mono_arch_get_unbox_trampoline:
@@ -170,7 +171,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	sparc_sti_imm (code, sparc_o0, sparc_sp, MONO_SPARC_STACK_BIAS + 304);
 
 	/* Check for thread interruption */
-	sparc_set (code, (guint8*)mono_thread_force_interruption_checkpoint, sparc_o7);
+	sparc_set (code, (guint8*)mono_interruption_checkpoint_from_trampoline, sparc_o7);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_o7);
 	sparc_nop (code);
 

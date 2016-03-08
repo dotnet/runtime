@@ -536,8 +536,9 @@ ves_icall_System_IO_MonoIO_FindClose (gpointer handle)
 }
 
 MonoString *
-ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *io_error)
 {
+	MonoError error;
 	MonoString *result;
 	gunichar2 *buf;
 	int len, res_len;
@@ -545,7 +546,8 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 	len = MAX_PATH + 1; /*FIXME this is too smal under most unix systems.*/
 	buf = g_new (gunichar2, len);
 	
-	*error=ERROR_SUCCESS;
+	mono_error_init (&error);
+	*io_error=ERROR_SUCCESS;
 	result = NULL;
 
 	res_len = GetCurrentDirectory (len, buf);
@@ -561,12 +563,13 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 		while (buf [len])
 			++ len;
 
-		result = mono_string_new_utf16 (mono_domain_get (), buf, len);
+		result = mono_string_new_utf16_checked (mono_domain_get (), buf, len, &error);
 	} else {
-		*error=GetLastError ();
+		*io_error=GetLastError ();
 	}
 
 	g_free (buf);
+	mono_error_raise_exception (&error);
 	return result;
 }
 

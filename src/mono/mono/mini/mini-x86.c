@@ -1096,8 +1096,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	offsets = mono_allocate_stack_slots (cfg, TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 		char *mname = mono_method_full_name (cfg->method, TRUE);
-		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
-		cfg->exception_message = g_strdup_printf ("Method %s stack is too big.", mname);
+		mono_cfg_set_exception_invalid_program (cfg, g_strdup_printf ("Method %s stack is too big.", mname));
 		g_free (mname);
 		return;
 	}
@@ -1537,8 +1536,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg);
 						argsize = 8;
 					} else if (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8) {
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset + 4, in->dreg + 2);
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg + 1);
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset + 4, MONO_LVREG_MS (in->dreg));
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, MONO_LVREG_LS (in->dreg));
 						argsize = 4;
 					} else {
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, X86_ESP, ainfo->offset, in->dreg);
@@ -1674,8 +1673,8 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
 			else {
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
-				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, MONO_LVREG_LS (val->dreg));
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, MONO_LVREG_MS (val->dreg));
 			}
 			return;
 		}
@@ -4233,7 +4232,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_branch8 (code, X86_CC_NE, 0, FALSE);
 
 			x86_fstp (code, 0);			
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 
 			x86_patch (br1, code);
 			break;
@@ -5131,9 +5130,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_BB:
 	case MONO_PATCH_INFO_LABEL:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_MONITOR_ENTER:
-	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 #if defined(__native_client_codegen__) && defined(__native_client__)
 		if (nacl_is_code_address (code)) {
@@ -5668,8 +5664,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			x86_patch (patch_info->ip.i + cfg->native_code, code);
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			g_assert (exc_class);
+			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 			throw_ip = patch_info->ip.i;
 
 			/* Find a throw sequence for the same exception class */
@@ -6486,9 +6481,9 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 
 	if (long_ins->opcode == OP_LNEG) {
 		ins = long_ins;
-		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 1, ins->sreg1 + 1);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
-		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 2, ins->dreg + 2);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, MONO_LVREG_LS (ins->dreg), MONO_LVREG_LS (ins->sreg1));
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->sreg1), 0);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, MONO_LVREG_MS (ins->dreg), MONO_LVREG_MS (ins->dreg));
 		NULLIFY_INS (ins);
 		return;
 	}
@@ -6517,7 +6512,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		ins->klass = mono_defaults.int32_class;
 		ins->sreg1 = vreg;
 		ins->type = STACK_I4;
-		ins->dreg = long_ins->dreg + 1;
+		ins->dreg = MONO_LVREG_LS (long_ins->dreg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
@@ -6532,7 +6527,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		ins->klass = mono_defaults.int32_class;
 		ins->sreg1 = vreg;
 		ins->type = STACK_I4;
-		ins->dreg = long_ins->dreg + 2;
+		ins->dreg = MONO_LVREG_MS (long_ins->dreg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	
 		long_ins->opcode = OP_NOP;
@@ -6541,14 +6536,14 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg2 + 1;
+		ins->sreg2 = MONO_LVREG_LS (long_ins->sreg2);
 		ins->inst_c0 = long_ins->inst_c0 * 2;
 		MONO_ADD_INS (cfg->cbb, ins);
 
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg2 + 2;
+		ins->sreg2 = MONO_LVREG_MS (long_ins->sreg2);
 		ins->inst_c0 = long_ins->inst_c0 * 2 + 1;
 		MONO_ADD_INS (cfg->cbb, ins);
 
@@ -6557,7 +6552,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 	case OP_EXPAND_I8:
 		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_X);
 		ins->dreg = long_ins->dreg;
-		ins->sreg1 = long_ins->sreg1 + 1;
+		ins->sreg1 = MONO_LVREG_LS (long_ins->sreg1);
 		ins->klass = long_ins->klass;
 		ins->type = STACK_VTYPE;
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -6565,7 +6560,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
 		ins->dreg = long_ins->dreg;
 		ins->sreg1 = long_ins->dreg;
-		ins->sreg2 = long_ins->sreg1 + 2;
+		ins->sreg2 = MONO_LVREG_MS (long_ins->sreg1);
 		ins->inst_c0 = 1;
 		ins->klass = long_ins->klass;
 		ins->type = STACK_VTYPE;

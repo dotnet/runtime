@@ -2,12 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Remoting.Messaging;
 
 class CustomException : Exception
-{
-}
-
-class CustomException2 : Exception
 {
 }
 
@@ -31,25 +28,31 @@ class CrossDomain : MarshalByRefObject
 
 class Driver
 {
-	/* expected exit code: 0 */
+	/* expected exit code: 255 */
 	static void Main (string[] args)
 	{
+		if (Environment.GetEnvironmentVariable ("TEST_UNHANDLED_EXCEPTION_HANDLER") != null)
+			AppDomain.CurrentDomain.UnhandledException += (s, e) => {};
+
 		ManualResetEvent mre = new ManualResetEvent (false);
 
-		var cd = (CrossDomain) AppDomain.CreateDomain ("ad").CreateInstanceAndUnwrap (typeof(CrossDomain).Assembly.FullName, "CrossDomain");
+		var ad = AppDomain.CreateDomain ("ad");
 
-		var a = cd.NewDelegateWithoutTarget ();
-		var ares = a.BeginInvoke (delegate { throw new CustomException2 (); }, null);
+		if (Environment.GetEnvironmentVariable ("TEST_UNHANDLED_EXCEPTION_HANDLER") != null)
+			ad.UnhandledException += (s, e) => {};
 
-		try {
-			a.EndInvoke (ares);
-			Environment.Exit (4);
-		} catch (CustomException) {
-		} catch (Exception ex) {
-			Console.WriteLine (ex);
-			Environment.Exit (3);
-		}
+		var cd = (CrossDomain) ad.CreateInstanceAndUnwrap (typeof(CrossDomain).Assembly.FullName, "CrossDomain");
 
-		Environment.Exit (0);
+		var action = cd.NewDelegateWithoutTarget ();
+		var ares = action.BeginInvoke (Callback, null);
+
+		Thread.Sleep (5000);
+
+		Environment.Exit (1);
+	}
+
+	static void Callback (IAsyncResult iares)
+	{
+		((Action) ((AsyncResult) iares).AsyncDelegate).EndInvoke (iares);
 	}
 }

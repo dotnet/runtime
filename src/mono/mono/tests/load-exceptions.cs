@@ -339,8 +339,18 @@ public class Tests : LoadMissing {
 		return 2;
 	}
 
+	public static int test_0_reflection_on_field_with_missing_custom_attr () {
+		var t = typeof (BadOverridesDriver).Assembly.GetType ("FieldWithMissingCustomAttribute");
+		try {
+			Console.WriteLine (t.GetFields ()[0].CustomAttributes);
+			return 1;
+		} catch (FileNotFoundException) {
+			return 0;
+		}
+		return 2;
+	}
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 }
