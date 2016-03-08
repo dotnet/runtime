@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
     "System.Runtime": "4.0.20",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",

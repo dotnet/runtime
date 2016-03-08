@@ -2,11 +2,11 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23907",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.IO": "4.0.10",
-        "System.IO.Compression": "4.1.0-rc3-23907",
+        "System.IO.Compression": "4.1.0-rc3-23908",
         "System.Net.Http": "4.0.0",
         "System.Net.Primitives": "4.0.10",
         "System.Net.WebHeaderCollection": "4.0.0",
