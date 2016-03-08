@@ -49,8 +49,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5557, PlatformID.Linux)]
-        [Fact]
+        [ConditionalFact(nameof(SupportsNullEncryption))]
         public async Task ServerNoEncryption_ClientAllowNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(
@@ -73,8 +72,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5557, PlatformID.Linux)]
-        [Fact]
+        [ConditionalFact(nameof(SupportsNullEncryption))]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(
@@ -95,5 +93,7 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+
+        private static bool SupportsNullEncryption => TestConfiguration.SupportsNullEncryption;
     }
 }
