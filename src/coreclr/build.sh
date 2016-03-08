@@ -199,7 +199,10 @@ isMSBuildOnNETCoreSupported()
     if [ "$__BuildArch" == "x64" ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             if [ "$__DistroName" == "ubuntu" ]; then
-                __isMSBuildOnNETCoreSupported=1
+                __OSVersion=$(lsb_release -rs)
+                if [ "$__OSVersion" == "14.04" ]; then
+                    __isMSBuildOnNETCoreSupported=1
+                fi
             elif [ "$__DistroName" == "rhel" ]; then
                 __isMSBuildOnNETCoreSupported=1
             elif [ "$__DistroName" == "debian" ]; then
