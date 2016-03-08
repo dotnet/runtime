@@ -243,10 +243,11 @@
         },
 
         "ubuntu": {
-            "#import": [ "linux" ]
+            "#import": [ "debian" ]
         },
+
         "ubuntu-x64": {
-            "#import": [ "ubuntu", "linux-x64" ]
+            "#import": [ "ubuntu", "debian-x64" ]
         },
 
         "ubuntu.14.04": {
