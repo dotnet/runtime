@@ -30,9 +30,13 @@ extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method()
 
 extern "C" const SSL_METHOD* CryptoNative_SslV3Method()
 {
+#ifdef OPENSSL_NO_SSL3_METHOD
+    return nullptr;
+#else
     const SSL_METHOD* method = SSLv3_method();
     assert(method != nullptr);
     return method;
+#endif
 }
 
 extern "C" const SSL_METHOD* CryptoNative_TlsV1Method()
@@ -86,10 +90,12 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
     {
         protocolOptions |= SSL_OP_NO_SSLv2;
     }
+#ifndef OPENSSL_NO_SSL3
     if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
     {
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
+#endif
     if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)
     {
         protocolOptions |= SSL_OP_NO_TLSv1;
