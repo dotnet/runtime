@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23907",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23908",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       },
       "imports": [
