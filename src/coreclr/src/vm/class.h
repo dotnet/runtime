@@ -36,7 +36,6 @@
 /*
  *  Include Files
  */
-#ifndef BINDER
 #include "eecontract.h"
 #include "argslot.h"
 #include "vars.hpp"
@@ -58,25 +57,13 @@
 #include "eeconfig.h"
 #include "typectxt.h"
 #include "iterator_util.h"
-#endif // BINDER
 
 #ifdef FEATURE_COMINTEROP
 #include "..\md\winmd\inc\adapter.h"
 #endif
 #include "packedfields.inl"
 #include "array.h"
-#ifndef BINDER
 #define IBCLOG(x) g_IBCLogger.##x
-#else
-#include "gcdesc.h"
-#define IBCLOG(x)
-#define COUNTER_ONLY(x) 
-class PrestubMethodFrame;
-#endif
-
-#ifdef MDIL
-#include "compactlayoutwriter.h"
-#endif
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 
@@ -255,9 +242,6 @@ class ExplicitFieldTrustHolder : private ExplicitFieldTrust
 #endif
 };
 
-#ifdef BINDER
-class InterfaceImplEnum;
-#else
 //*******************************************************************************
 // Enumerator to traverse the interface declarations of a type, automatically building
 // a substitution chain on the stack.
@@ -299,7 +283,6 @@ public:
     const Substitution *CurrentSubst() const { LIMITED_METHOD_CONTRACT; return &m_CurrSubst; }
     mdTypeDef CurrentToken() const { LIMITED_METHOD_CONTRACT; return m_CurrTok; }
 };
-#endif // BINDER
 
 #ifdef FEATURE_COMINTEROP
 //
@@ -399,10 +382,6 @@ class EEClassLayoutInfo
     friend class MethodTableBuilder;
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
-#endif
-#ifdef BINDER
-    friend class CompactTypeBuilder;
-    friend class MdilModule;
 #endif
 
     private:
@@ -687,11 +666,6 @@ class EEClassOptionalFields
     friend class NativeImageDumper;
 #endif
 
-#ifdef BINDER
-    friend class MdilModule;
-    friend class CompactTypeBuilder;
-#endif
-
     //
     // GENERICS RELATED FIELDS. 
     //
@@ -850,10 +824,6 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
-#ifdef BINDER
-    friend class MdilModule;
-    friend class CompactTypeBuilder;
-#endif
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
@@ -1033,19 +1003,6 @@ public:
 #endif // FEATURE_COMINTEROP
 
 public:
-#ifndef DACCESS_COMPILE 
-#ifdef MDIL
-    void WriteCompactLayout(ICompactLayoutWriter *, ZapImage *);
-    HRESULT WriteCompactLayoutHelper(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutInterfaces(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutInterfaceImpls(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutFields(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutMethods(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutMethodImpls(ICompactLayoutWriter *);
-    HRESULT WriteCompactLayoutTypeFlags(ICompactLayoutWriter *pICLW);
-    HRESULT WriteCompactLayoutSpecialType(ICompactLayoutWriter *pICLW);
-#endif // MDIL
-#endif
     /*
      * Maintain back pointer to statcally hot portion of EEClass.
      * For an EEClass representing multiple instantiations of a generic type, this is the method table
@@ -2022,7 +1979,6 @@ public:
         GetOptionalFields()->m_pVarianceInfo = pVarianceInfo;
     }
 
-#ifndef BINDER
     // Check that a signature blob uses type parameters correctly
     // in accordance with the variance annotations specified by this class
     // The position parameter indicates the variance of the context we're in
@@ -2035,8 +1991,6 @@ public:
         Module * pModule,
         SigPointer sp,
         CorGenericParamAttr position);
-#endif
-
 
 #if defined(CHECK_APP_DOMAIN_LEAKS) || defined(_DEBUG)
 public:
@@ -2515,9 +2469,6 @@ public:
 
 typedef DPTR(ArrayClass) PTR_ArrayClass;
 
-#ifdef BINDER
-class MdilModule;
-#endif
 
 // Dynamically generated array class structure
 class ArrayClass : public EEClass
@@ -2526,11 +2477,8 @@ class ArrayClass : public EEClass
     friend void EEClass::Fixup(DataImage *image, MethodTable *pMethodTable);
 #endif
 
-#ifndef BINDER
-	friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
-#else
-    friend MdilModule;
-#endif
+    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
+
 #ifndef DACCESS_COMPILE
     ArrayClass() : EEClass(sizeof(ArrayClass)) { LIMITED_METHOD_CONTRACT; }
 #else

@@ -22,17 +22,12 @@
 #include "strongnameholders.h"
 
 //=====================================================================================================================
-#ifndef CLR_STANDALONE_BINDER
 #define STANDARD_BIND_CONTRACT  \
     CONTRACTL {                 \
         NOTHROW;                \
         GC_TRIGGERS;            \
         MODE_PREEMPTIVE;        \
     } CONTRACTL_END
-#else
-#define MODE_ANY
-#define STANDARD_BIND_CONTRACT
-#endif
 
 //=====================================================================================================================
 // Forward declarations
@@ -94,7 +89,6 @@ namespace CLRPrivBinderUtil
     }
 
     //=====================================================================================================================
-#ifndef CLR_STANDALONE_BINDER
 #ifdef FEATURE_FUSION
     class CLRPrivAssemblyBindResultWrapper :
         public IUnknownCommon<
@@ -214,7 +208,6 @@ namespace CLRPrivBinderUtil
         Crst m_lock;
     };  // class CLRPrivAssemblyBindResultWrapper
 #endif // FEATURE_FUSION
-#endif // !CLR_STANDALONE_BINDER
 
     //=================================================================================================================
     // Used to create an identity-only ICLRPrivAssembly from an ICLRPrivBinder. This is currently used when
@@ -858,7 +851,6 @@ namespace CLRPrivBinderUtil
     };  // class HSTRINGArrayHolder
     
 #endif // FEATURE_COMINTEROP
-#ifndef CLR_STANDALONE_BINDER
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     ///// ----------------------------- Questionable stuff  -------------------------------------------
@@ -875,7 +867,6 @@ namespace CLRPrivBinderUtil
     BOOL CompareHostBinderSpecs(AssemblySpec* a1, AssemblySpec* a2);
 
     /** PLACEHOLDER - the same issue as  CompareHostBinderSpecs applies to hashing assemblyspecs  **/
-#endif // !CLR_STANDALONE_BINDER
 } // namespace CLRPrivBinderUtil
 
 #endif // __CLRPRIVBINDERUTIL_H__

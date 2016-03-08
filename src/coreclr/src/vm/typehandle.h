@@ -460,11 +460,7 @@ public:
     // The module where this type lives for the purposes of loading and prejitting
     // Note: NGen time result might differ from runtime result for parametrized types (generics, arrays, etc.)
     // See code:ClassLoader::ComputeLoaderModule or file:clsload.hpp#LoaderModule for more information
-#ifndef BINDER
     PTR_Module GetLoaderModule() const;
-#else
-    MdilModule* GetLoaderModule() const;
-#endif
 
     // The assembly that defined this type (== GetModule()->GetAssembly())
     Assembly * GetAssembly() const;
