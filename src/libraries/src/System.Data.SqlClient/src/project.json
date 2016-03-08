@@ -1,6 +1,7 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
+      "imports":  "dotnet5.4",
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
         "Microsoft.Win32.Primitives": "4.0.0",
@@ -26,6 +27,7 @@
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23908",
+        "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23908",
         "System.Security.Principal.Windows": "4.0.0-rc3-23908",
         "System.Text.Encoding": "4.0.10",
         "System.Text.Encoding.CodePages": "4.0.0",

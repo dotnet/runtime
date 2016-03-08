@@ -12,6 +12,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <UsePackageTargetRuntimeDefaults Condition="'$(TargetGroup)' == ''">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
@@ -171,16 +172,6 @@
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <!-- Remove when updating to CoreFx packages 23908 or later -->
-    <!-- https://github.com/dotnet/corefx/issues/6718 -->
-    <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\4.0\System.Security.Cryptography.X509Certificates.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\ref\4.0\System.Security.Cryptography.Algorithms.csproj">
-      <UndefineProperties>OSGroup</UndefineProperties>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <TargetingPackReference Include="mscorlib" />
