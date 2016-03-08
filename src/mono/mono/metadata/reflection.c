@@ -6522,10 +6522,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 #ifndef DISABLE_REFLECTION_EMIT
 
 MonoReflectionModule *
-mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
+mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName, MonoError *error)
 {
-	MonoError error;
-	MonoReflectionModule *result = NULL;
 	char *name;
 	MonoImage *image;
 	MonoImageOpenStatus status;
@@ -6534,17 +6532,18 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 	MonoImage **new_modules;
 	gboolean *new_modules_loaded;
 	
+	mono_error_init (error);
+	
 	name = mono_string_to_utf8 (fileName);
 
 	image = mono_image_open (name, &status);
 	if (!image) {
-		MonoException *exc;
 		if (status == MONO_IMAGE_ERROR_ERRNO)
-			exc = mono_get_exception_file_not_found (fileName);
+			mono_error_set_exception_instance (error, mono_get_exception_file_not_found (fileName));
 		else
-			exc = mono_get_exception_bad_image_format (name);
+			mono_error_set_bad_image_name (error, name, NULL);
 		g_free (name);
-		mono_raise_exception (exc);
+		return NULL;
 	}
 
 	g_free (name);
@@ -6572,12 +6571,11 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 	mono_assembly_load_references (image, &status);
 	if (status) {
 		mono_image_close (image);
-		mono_raise_exception (mono_get_exception_file_not_found (fileName));
+		mono_error_set_exception_instance (error, mono_get_exception_file_not_found (fileName));
+		return NULL;
 	}
 
-	result = mono_module_get_object_checked (mono_domain_get (), image, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return result;
+	return mono_module_get_object_checked (mono_domain_get (), image, error);
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */
@@ -13642,7 +13640,7 @@ mono_image_set_wrappers_type (MonoReflectionModuleBuilder *moduleb, MonoReflecti
 }
 
 MonoReflectionModule *
-mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
+mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;
