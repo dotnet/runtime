@@ -7227,7 +7227,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	int i, argnum, *tmp_locals;
 	int type, param_shift = 0;
 	static MonoMethodSignature *get_last_error_sig = NULL;
-	int coop_gc_stack_dummy, coop_gc_var;
+	int coop_gc_stack_dummy, coop_gc_var, coop_unblocked_var;
 	int leave_pos;
 
 	memset (&m, 0, sizeof (m));
@@ -7271,6 +7271,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* local 5, the local to be used when calling the suspend funcs */
 		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		coop_unblocked_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
 		clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
@@ -7369,21 +7370,13 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		}
 	}
 
+	/* Unblock before converting the result, since that can involve calls into the runtime */
 	if (mono_threads_is_coop_enabled ()) {
-		leave_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
-
-		clause->try_len = mono_mb_get_label (mb) - clause->try_offset;
-		clause->handler_offset = mono_mb_get_label (mb);
-
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
-
-		mono_mb_emit_byte (mb, CEE_ENDFINALLY);
-
-		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
-
-		mono_mb_patch_branch (mb, leave_pos);
+		mono_mb_emit_icon (mb, 1);
+		mono_mb_emit_stloc (mb, coop_unblocked_var);
 	}
 
 	/* convert the result */
@@ -7438,6 +7431,31 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		}
 	} else {
 		mono_mb_emit_stloc (mb, 3);
+	}
+
+	if (mono_threads_is_coop_enabled ()) {
+		int pos;
+
+		leave_pos = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+		clause->try_len = mono_mb_get_label (mb) - clause->try_offset;
+		clause->handler_offset = mono_mb_get_label (mb);
+
+		mono_mb_emit_ldloc (mb, coop_unblocked_var);
+		mono_mb_emit_icon (mb, 1);
+		pos = mono_mb_emit_branch (mb, CEE_BEQ);
+
+		mono_mb_emit_ldloc (mb, coop_gc_var);
+		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
+		mono_mb_emit_icall (mb, mono_threads_finish_blocking);
+
+		mono_mb_patch_branch (mb, pos);
+
+		mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+		mono_mb_patch_branch (mb, leave_pos);
 	}
 
 	/* 
