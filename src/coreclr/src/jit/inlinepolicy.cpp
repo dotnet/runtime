@@ -259,7 +259,11 @@ void LegacyPolicy::setFailure(InlineObservation obs)
     {
     case InlineDecision::FAILURE:
         // Repeated failure only ok if evaluating a prejit root
-        assert(inlIsPrejitRoot);
+        // (since we can't fail fast because we're not inlining)
+        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
+        // (since we can't fail fast from lvaGrabTemp).
+        assert(inlIsPrejitRoot ||
+               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
         break;
     case InlineDecision::UNDECIDED:
     case InlineDecision::CANDIDATE:
