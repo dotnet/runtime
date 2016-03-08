@@ -7298,7 +7298,16 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		tmp_locals [i] = emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_CONV_IN);
 	}
 
+	// In coop mode need to register blocking state during native call
 	if (mono_threads_is_coop_enabled ()) {
+		// Perform an extra, early lookup of the function address, so any exceptions
+		// potentially resulting from the lookup occur before entering blocking mode.
+		if (!func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass) && aot) {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
+			mono_mb_emit_byte (mb, CEE_POP); // Result not needed yet
+		}
+
 		clause->try_offset = mono_mb_get_label (mb);
 
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
