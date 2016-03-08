@@ -79,9 +79,9 @@ mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format,
 	}
 
 	if (logCallback.opener == NULL) {
-                logCallback.opener = mono_log_open_logfile;
-                logCallback.writer = mono_log_write_logfile;
-                logCallback.closer = mono_log_close_logfile;
+		logCallback.opener = mono_log_open_logfile;
+		logCallback.writer = mono_log_write_logfile;
+		logCallback.closer = mono_log_close_logfile;
 		logCallback.opener(NULL, NULL);
 	}
 	logCallback.writer(mono_log_domain, level, format, args);
