@@ -11609,10 +11609,11 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 static MonoMarshalSpec*
 mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
-								MonoReflectionMarshal *minfo)
+				MonoReflectionMarshal *minfo, MonoError *error)
 {
-	MonoError error;
 	MonoMarshalSpec *res;
+
+	mono_error_init (error);
 
 	res = image_g_new0 (image, MonoMarshalSpec, 1);
 	res->native = (MonoMarshalNative)minfo->type;
@@ -11639,8 +11640,11 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 
 	case MONO_NATIVE_CUSTOM:
 		if (minfo->marshaltyperef) {
-			MonoType *marshaltyperef = mono_reflection_type_get_handle ((MonoReflectionType*)minfo->marshaltyperef, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			MonoType *marshaltyperef = mono_reflection_type_get_handle ((MonoReflectionType*)minfo->marshaltyperef, error);
+			if (!is_ok (error)) {
+				image_g_free (image, res);
+				return NULL;
+			}
 			res->data.custom_data.custom_name =
 				type_get_fully_qualified_name (marshaltyperef);
 		}
@@ -11961,7 +11965,12 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					if (specs == NULL)
 						specs = image_g_new0 (image, MonoMarshalSpec*, sig->param_count + 1);
 					specs [pb->position] = 
-						mono_marshal_spec_from_builder (image, klass->image->assembly, pb->marshal_info);
+						mono_marshal_spec_from_builder (image, klass->image->assembly, pb->marshal_info, &error);
+					if (!is_ok (&error)) {
+						mono_loader_unlock ();
+						image_g_free (image, specs);
+						mono_error_raise_exception (&error); /* FIXME don't raise here */
+					}
 				}
 			}
 		}
