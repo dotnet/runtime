@@ -978,7 +978,6 @@ PAL_BindResources(IN LPCSTR lpDomain)
     }
     DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, len, coreCLRDirectoryPath);
     coreCLRDirectoryPathPS.CloseBuffer(size);
-    _ASSERTE(size <= MAX_LONGPATH);
 
     LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
 
