@@ -23,7 +23,7 @@ Revision History:
 #define _PAL_FILE_HPP_
 
 #include "corunix.hpp"
-
+#include "pal/stackstring.hpp"
 #include <sys/types.h>
 #include <sys/param.h>
 #include <dirent.h>
@@ -165,6 +165,8 @@ namespace CorUnix
         OUT LPFILETIME lpLastWriteTime
         );
 
+    BOOL
+    RealPathHelper(LPCSTR lpUnixPath, PathCharString& lpBuffer);
     /*++
       InternalCanonicalizeRealPath
       Wraps realpath() to hide platform differences. See the man page for
@@ -173,15 +175,11 @@ namespace CorUnix
       On systems on which realpath() allows the last path component to not
       exist, this is a straight thunk through to realpath(). On other
       systems, we remove the last path component, then call realpath().
-
-      cch is the size of lpBuffer and has to be atleast PATH_MAX (since 
-      realpath() requires the buffer to be atleast PATH_MAX).
       --*/
     PAL_ERROR
     InternalCanonicalizeRealPath(
         LPCSTR lpUnixPath,
-        LPSTR lpBuffer,
-        DWORD cch
+        PathCharString& lpBuffer
         );
 
     /*++
@@ -365,12 +363,11 @@ Input paramters:
 source  = path to the file on input, path to the file with all 
           symbolic links traversed on return
 
-Note: Assumes the maximum size of the source is MAX_LONGPATH
 
 Return value:
     TRUE on success, FALSE on failure
+BOOL FILEGetFileNameFromSymLink(PathCharString& source);
 --*/
-BOOL FILEGetFileNameFromSymLink(char *source);
 
 /*++
 
@@ -383,7 +380,7 @@ Windows behavoir.
     IN LPSTR lpPath - The path to check.
     LPDWORD lpErrorCode - The error to set.
 */
-void FILEGetProperNotFoundError( LPSTR lpPath, LPDWORD lpErrorCode );
+void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode );
 
 }
 

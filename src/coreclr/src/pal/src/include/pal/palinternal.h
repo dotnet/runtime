@@ -325,6 +325,7 @@ function_name() to call the system's implementation
 #define FILE PAL_FILE
 
 #include "pal.h"
+#include "palprivate.h"
 
 #include "mbusafecrt.h"
 
