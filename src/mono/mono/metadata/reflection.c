@@ -12044,39 +12044,40 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb,
 }
 
 static MonoClassField*
-fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* fb)
+fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* fb, MonoError *error)
 {
 	MonoClassField *field;
 	MonoType *custom;
-	MonoError error;
+
+	mono_error_init (error);
 
 	field = g_new0 (MonoClassField, 1);
 
-	field->name = mono_string_to_utf8_image (klass->image, fb->name, &error);
-	g_assert (mono_error_ok (&error));
+	field->name = mono_string_to_utf8_image (klass->image, fb->name, error);
+	mono_error_assert_ok (error);
 	if (fb->attrs || fb->modreq || fb->modopt) {
-		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, &error);
-		if (!is_ok (&error)) {
+		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
+		if (!is_ok (error)) {
 			g_free (field);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 		field->type = mono_metadata_type_dup (NULL, type);
 		field->type->attrs = fb->attrs;
 
 		g_assert (image_is_dynamic (klass->image));
-		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt, &error);
+		custom = add_custom_modifiers ((MonoDynamicImage*)klass->image, field->type, fb->modreq, fb->modopt, error);
 		g_free (field->type);
-		if (!is_ok (&error)) {
+		if (!is_ok (error)) {
 			g_free (field);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 		field->type = mono_metadata_type_dup (klass->image, custom);
 		g_free (custom);
 	} else {
-		field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, &error);
-		if (!is_ok (&error)) {
+		field->type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
+		if (!is_ok (error)) {
 			g_free (field);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return NULL;
 		}
 	}
 	if (fb->offset != -1)
@@ -12386,9 +12387,10 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		MonoObject *obj = (MonoObject *)mono_array_get (fields, gpointer, i);
 		MonoClassField *field, *inflated_field = NULL;
 
-		if (!strcmp (obj->vtable->klass->name, "FieldBuilder"))
-			inflated_field = field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
-		else if (!strcmp (obj->vtable->klass->name, "MonoField"))
+		if (!strcmp (obj->vtable->klass->name, "FieldBuilder")) {
+			inflated_field = field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		} else if (!strcmp (obj->vtable->klass->name, "MonoField"))
 			field = ((MonoReflectionField *) obj)->field;
 		else {
 			field = NULL; /* prevent compiler warning */
