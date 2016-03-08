@@ -130,13 +130,26 @@ extern guint64 stat_objects_copied_major;
 
 #define SGEN_LOG(level, format, ...) do {      \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
+		time_t t;									\
+		struct tm tod;									\
+		char logTime[80];								\
+		time(&t);									\
+		localtime_r(&t, &tod);								\
+		strftime(logTime, sizeof(logTime), "%F-%T", &tod);				\
+		mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		if (cond)	\
-			mono_gc_printf (gc_debug_file, format "\n", ##__VA_ARGS__);	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {		\
+		if (cond) {										\
+			time_t t;									\
+			struct tm tod;									\
+			char logTime[80];								\
+			time(&t);									\
+			localtime_r(&t,&tod);								\
+			strftime(logTime, sizeof(logTime), "%F-%T", &tod);				\
+			mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+		}											\
 } } while (0)
 
 extern int gc_debug_level;
