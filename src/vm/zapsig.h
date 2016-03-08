@@ -18,17 +18,9 @@
 
 #include "common.h"
 
-#ifdef BINDER
-#include "typehandle.h"
-#endif
-
 //define function pointer type: EncodeModuleCallback
 //
-#ifdef BINDER
-typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, MdilModule *pReferencedModule);
-#else
 typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, Module *pReferencedModule);
-#endif
 enum {
     // return value when EncodeModule fails
     ENCODE_MODULE_FAILED         = 0xffffffff,
@@ -36,11 +28,7 @@ enum {
 
 //define function pointer type: TokenDefinitionCallback
 //
-#ifdef BINDER
-typedef void (*TokenDefinitionCallback)(void* pModuleContext, MdilModule *pReferencedModule, DWORD index, mdToken* refToken);
-#else
 typedef void (*TokenDefinitionCallback)(void* pModuleContext, Module *pReferencedModule, DWORD index, mdToken* refToken);
-#endif
 
 class ZapSig
 {
@@ -54,11 +42,7 @@ public:
     
     struct Context
     {
-#ifdef BINDER
-        MdilModule *   pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule         
-#else
         Module *        pInfoModule;              // The tokens in this ZapSig are expressed relative to context.pInfoModule         
-#endif
         void *          pModuleContext;           // This is a code:Module* when we are resolving Ngen fixups or doing an Ibc Profiling run
                                                   // and is a code:ZapImportTable* when we are running ngen      
         ExternalTokens  externalTokens;           // When we see a ELEMENT_TYPE_MODULE_ZAPSIG this tells us what type of token follows.
@@ -66,11 +50,7 @@ public:
         Module * GetZapSigModule() const        { return (Module*) pModuleContext; }
         
         Context(
-#ifdef BINDER
-                MdilModule* _pInfoModule,
-#else
                 Module* _pInfoModule,
-#endif
                 void* _pModuleContext, ExternalTokens _externalTokens)
             : pInfoModule(_pInfoModule),
               pModuleContext(_pModuleContext),
@@ -78,11 +58,7 @@ public:
         { LIMITED_METHOD_CONTRACT; _ASSERTE(externalTokens != IllegalValue); }
 
         Context(
-#ifdef BINDER
-                MdilModule* _pInfoModule,
-#else
                 Module* _pInfoModule,
-#endif
                 Module* _pZapSigModule)
             : pInfoModule(_pInfoModule),
               pModuleContext((void*) _pZapSigModule),
@@ -93,11 +69,7 @@ public:
 public:
 
     ZapSig(
-#ifdef BINDER
-           MdilModule *            _pInfoModule, 
-#else
            Module *                _pInfoModule, 
-#endif
            void *                  _pModuleContext,
            ExternalTokens          _externalTokens,
            EncodeModuleCallback    _pfnEncodeModule,
@@ -129,11 +101,7 @@ public:
     // Compare a type handle with a signature whose tokens are resolved with respect to pModule
     // pZapSigContext is used to resolve ELEMENT_TYPE_MODULE_ZAPSIG encodings
     static BOOL CompareSignatureToTypeHandle(PCCOR_SIGNATURE  pSig,   
-#ifdef BINDER
-                                             MdilModule*      pModule, 
-#else
                                              Module*          pModule, 
-#endif
                                              TypeHandle       handle,
                                      const ZapSig::Context *  pZapSigContext);
 

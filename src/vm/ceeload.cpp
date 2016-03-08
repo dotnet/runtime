@@ -1865,8 +1865,6 @@ PTR_Module Module::ComputePreferredZapModule(Module * pDefinitionModule,
 // Is pModule likely a dependency of pOtherModule? Heuristic used by preffered zap module algorithm.
 // It can return both false positives and negatives.
 //
-// Keep in sync with tools\mdilbind\mdilmodule.cpp
-//
 static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
 {
     CONTRACTL
@@ -9199,26 +9197,11 @@ void Module::ExpandAll(DataImage *image)
     mdToken tk;
     DWORD assemblyFlags = GetAssembly()->GetFlags();
 
-    // construct a compact layout writer if necessary
-#ifdef MDIL
-    ICompactLayoutWriter *pCompactLayoutWriter = NULL;
-    if (!GetAppDomain()->IsNoMDILCompilationDomain())
-    {
-        pCompactLayoutWriter = ICompactLayoutWriter::MakeCompactLayoutWriter(this, image->m_pZapImage);
-    }
-#endif //MDIL
     //
     // Explicitly load the global class.
     //
 
     MethodTable *pGlobalMT = GetGlobalMethodTable();
-#ifdef MDIL
-    if (pCompactLayoutWriter != NULL && pGlobalMT != NULL)
-    {
-        EEClass *pGlocalClass = pGlobalMT->GetClass();
-        pGlocalClass->WriteCompactLayout(pCompactLayoutWriter, image->m_pZapImage);
-    }
-#endif //MDIL
 
     //
     // Load all classes.  This also fills out the
@@ -9264,15 +9247,6 @@ void Module::ExpandAll(DataImage *image)
             
             if (t.IsNull()) // Skip this type
                 continue; 
-
-#ifdef MDIL
-            if (pCompactLayoutWriter != NULL)
-            {
-                MethodTable *pMT = t.AsMethodTable();
-                EEClass *pClass = pMT->GetClass();
-                pClass->WriteCompactLayout(pCompactLayoutWriter, image->m_pZapImage);
-            }
-#endif // MDIL
 
             if (!t.HasInstantiation())
             {
@@ -9526,12 +9500,6 @@ void Module::ExpandAll(DataImage *image)
         m_pBinder->BindAll();
     }
 
-#ifdef MDIL
-    if (pCompactLayoutWriter)
-    {
-        pCompactLayoutWriter->Flush();
-    }
-#endif // MDIL
 } // Module::ExpandAll
 
 /* static */

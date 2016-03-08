@@ -66,7 +66,6 @@ enum DictionaryEntryKind
     DeclaringTypeHandleSlot = 7,
 };
 
-#ifndef BINDER
 class DictionaryEntryLayout
 {
 public:
@@ -156,7 +155,6 @@ public:
 #endif // FEATURE_PREJIT
 
 };
-#endif // BINDER
 
 
 // The type of dictionaries. This is just an abstraction around an open-ended array
@@ -264,7 +262,6 @@ class Dictionary
 
   public:
 
-#ifndef BINDER
 #ifdef FEATURE_PREJIT
 
     // Fixup the dictionary entries, including the type arguments
@@ -295,7 +292,6 @@ class Dictionary
                              DWORD numGenericArgs);
     void Restore(DWORD numGenericArgs, ClassLoadLevel level);
 #endif // FEATURE_PREJIT
-#endif // BINDER
 };
 
 #endif

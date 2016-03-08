@@ -192,7 +192,7 @@ class CrossDomainOptimizationInfo
         return &(m_rmi[0]);
     }
 };
-#ifndef BINDER
+
 class CrossDomainTypeMap
 {
     class MTMapEntry
@@ -269,4 +269,4 @@ private:
 };
 
 #endif
-#endif // !BINDER
+

@@ -22,7 +22,6 @@
 #ifndef __threadstatics_h__
 #define __threadstatics_h__
 
-#ifndef BINDER
 #include "vars.hpp"
 #include "util.hpp"
 
@@ -30,7 +29,6 @@
 #include "field.h"
 #include "methodtable.h"
 #include "threads.h"
-#endif
 
 // Defines ObjectHandeList type
 #include "specialstatics.h"
@@ -53,7 +51,7 @@ struct ThreadLocalModule
         SIZE_T          m_padding;
 #endif
         BYTE            m_pDataBlob[0];
-#ifndef BINDER
+
         inline PTR_BYTE GetGCStaticsBasePointer()
         {
             CONTRACTL
@@ -70,7 +68,6 @@ struct ThreadLocalModule
 
             return dac_cast<PTR_BYTE>((PTR_OBJECTREF)((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr());
         }
-#endif
         inline PTR_BYTE GetGCStaticsBaseHandle()
         {
             LIMITED_METHOD_CONTRACT;
@@ -114,7 +111,6 @@ struct ThreadLocalModule
     static SIZE_T GetOffsetOfDataBlob() { return offsetof(ThreadLocalModule, m_pDataBlob); }
     static SIZE_T GetOffsetOfGCStaticHandle() { return offsetof(ThreadLocalModule, m_pGCStatics); }
 
-#ifndef BINDER
     inline PTR_OBJECTREF GetPrecomputedGCStaticsBasePointer()
     {
         CONTRACTL
@@ -131,7 +127,6 @@ struct ThreadLocalModule
 
         return (PTR_OBJECTREF)((PTRARRAYREF)ObjectFromHandle(m_pGCStatics))->GetDataPtr();
     }
-#endif
 
     inline OBJECTHANDLE GetPrecomputedGCStaticsBaseHandle()
     {
@@ -159,7 +154,6 @@ struct ThreadLocalModule
         return &m_pGCStatics;
     }
 
-#ifndef BINDER
     // Returns bytes so we can add offsets
     inline PTR_BYTE GetGCStaticsBasePointer(MethodTable * pMT)
     {
@@ -181,7 +175,6 @@ struct ThreadLocalModule
             return dac_cast<PTR_BYTE>(GetPrecomputedGCStaticsBasePointer());
         }
     }
-#endif
 
     inline PTR_BYTE GetNonGCStaticsBasePointer(MethodTable * pMT)
     {
@@ -214,7 +207,6 @@ struct ThreadLocalModule
         return pEntry;
     }
 
-#ifndef BINDER
     // These helpers can now return null, as the debugger may do queries on a type
     // before the calls to PopulateClass happen
     inline PTR_BYTE GetDynamicEntryGCStaticsBasePointer(DWORD n)
@@ -241,7 +233,6 @@ struct ThreadLocalModule
 
         return pEntry->GetGCStaticsBasePointer();
     }
-#endif
 
     inline PTR_BYTE GetDynamicEntryNonGCStaticsBasePointer(DWORD n)
     {
@@ -267,7 +258,7 @@ struct ThreadLocalModule
 
         return pEntry->GetNonGCStaticsBasePointer();
     }
-#ifndef BINDER
+
     FORCEINLINE PTR_DynamicClassInfo GetDynamicClassInfoIfInitialized(DWORD n)
     {
         WRAPPER_NO_CONTRACT;
@@ -366,7 +357,7 @@ struct ThreadLocalModule
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
-#endif
+
     static DWORD OffsetOfDataBlob()
     {
         LIMITED_METHOD_CONTRACT;
@@ -394,7 +385,6 @@ private:
     //              Non GC Statics
 
 public:
-#ifndef BINDER
     inline PTR_BYTE GetPrecomputedStaticsClassData()
     {
         LIMITED_METHOD_CONTRACT
@@ -447,12 +437,9 @@ public:
     }
 
 #endif
-#endif
 };  // struct ThreadLocalModule
 
 
-
-#ifndef BINDER
 
 typedef DPTR(struct TLMTableEntry) PTR_TLMTableEntry;
 
@@ -682,7 +669,6 @@ class ThreadStatics
 #endif
 
 };
-#endif
 
 
 #endif

@@ -81,7 +81,6 @@ void CreateModuleIndependentSignature(LoaderHeap* pCreationHeap,
     *pcbNewSig = cbNewSig;
 }
 
-#ifndef CLR_STANDALONE_BINDER
 // static
 MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllocator, MethodTable* pMT, DWORD dwStubFlags, 
                                              Module* pSigModule, PCCOR_SIGNATURE pSig, DWORD cbSig, SigTypeContext *pTypeContext,
@@ -137,7 +136,6 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
     RETURN pStubMD;
 
 }
-#endif
 
 // static
 MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTable* pMT, DWORD dwStubFlags, 
