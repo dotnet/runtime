@@ -2,20 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*************************** Red-Black Tree ************************************************
+/*************************** Left Leaning Red-Black Tree *************************************
 
- Rule 0: Binary Tree useful for data storage
- Rule 1: Every node has value (key) greater than left-child & less than the right-child value
- Rule 2: Every node is "red" or "black" (color)
- Rule 3: Root is black
- Rule 4: Leaf is red
- Rule 5. Red node which is not a leaf has black children(consecutive red nodes not allowed)
- Rule 6: Every path from root to leaf contains same no. of black nodes(black-height of the tree)
- Rule 7: Every node has a rank(0 to max) where root has max. rank..called height of the tree
- Rule 8: If a black node has rank "r", it's parent will have rank "r+1"
- Rule 9: If a red node had rank "r", it's parent will have rank "r"
- Rule 10: Readjustment of the tree is by rotation
-
+ * An Implementation of Left Leaning Red Black trees based on 
+        Robert Sedgewick's paper:
+          http://www.cs.princeton.edu/~rs/talks/LLRB/LLRB.pdf
 **********************************************************************************************/
 
 
@@ -34,11 +25,11 @@ public enum Child
     None
 }
 
+[System.Diagnostics.DebuggerDisplay("key={key};l={left.key};r={right.key};p={parent.key}")]
 public class Node
 {
     public int key;
     public Color color;
-    public int rank;
     public Node left;
     public Node right;
     public Node parent;
@@ -51,10 +42,6 @@ public class Tree
 
     public static int Seed = (int)DateTime.Now.Ticks;
     public static Random Rand = new Random(Seed);
-
-    public static int MaxDepth = 15;
-    private int _curDepth = 0;
-    private int _curDepth2 = 0;
 
     private int _nodes;
     private Node _root;
@@ -70,13 +57,141 @@ public class Tree
         {
             bool result = InsertNode();
             if (result == false) return;
-
-            //PrintTree(root);
+#if DEBUG
             TestLibrary.Logging.WriteLine("RedBlack tree now has {0} nodes", i);
+#endif 
             GC.Collect();
         }
+#if DEBUG
         TestLibrary.Logging.WriteLine("Final Red Black Tree Constructed");
-        //PrintTree(root);
+#endif
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    public void CheckTree(bool expectBalanced)
+    {
+#if DEBUG
+        CheckTreeRecursive(expectBalanced, _root, null, -1, _nodes + 1, false);
+#endif
+    }
+
+    private int CheckTreeRecursive(bool expectBalanced, Node curr, Node parent, int min, int max, bool notRed)
+    {
+        if (curr == null) return 0;
+
+        if(expectBalanced && notRed && curr.color == Color.Red)
+            TestLibrary.TestFramework.LogError("", "Rule 5: Red node, with red child, or red right child");
+        if (curr.parent != parent) 
+            TestLibrary.TestFramework.LogError("","Parent pointer has become corrupt.");
+
+        if(curr.left == null && curr.right != null)
+            TestLibrary.TestFramework.LogError("", "Not left leaning.");
+
+        if (curr.key > max && curr.key < min) 
+            TestLibrary.TestFramework.LogError("", "Rule 1: Tree is not sorted");
+
+        var leftRank = CheckTreeRecursive(expectBalanced, curr.left, curr, min, curr.key, curr.color == Color.Red);
+        var rightRank = CheckTreeRecursive(expectBalanced, curr.right, curr, curr.key, max, true);
+
+        if (expectBalanced && leftRank!=rightRank) 
+            TestLibrary.TestFramework.LogError("", "Rule 6: Tree is not balanced");
+
+        var currRank = curr.color == Color.Black ? leftRank + 1 : leftRank;
+
+        return currRank;
+    }
+    private void RotateLeft(ref Node x)
+    {
+        //Swing pointers around for rotation
+        var r = x.right;
+        x.right = r.left;
+        r.left = x;
+
+        //patch parent pointers
+        r.parent = x.parent;
+        if (x.right != null) x.right.parent = x;
+        x.parent = r;
+
+        //Fix colors
+        var c = x.color;
+        x.color = r.color;
+        r.color = c;
+
+        //Update incoming reference
+        x = r;
+    }
+    private void RotateRight(ref Node x)
+    {
+        //Swing pointers around for rotation
+        Node l = x.left;
+        x.left = l.right;
+        l.right = x;
+
+        //patch parent pointers
+        l.parent = x.parent;
+        x.parent = l;
+        if (x.left != null) x.left.parent = x;
+
+        //Fix colors
+        var c = x.color;
+        x.color = l.color;
+        l.color = c;
+
+        //Update incoming reference
+        x = l;
+    }
+
+    private bool IsRed(Node x)
+    {
+        return x != null && x.color == Color.Red;
+    }
+
+    private void Flip(ref Color c)
+    {
+        if (c == Color.Red)
+            c = Color.Black;
+        else
+            c = Color.Red;
+    }
+
+    private void ColorFlip(Node curr)
+    {
+        Flip(ref curr.left.color);
+        Flip(ref curr.right.color);
+        Flip(ref curr.color);
+    }
+
+    private void Fixup(ref Node curr)
+    {
+        if (IsRed(curr.right))
+            RotateLeft(ref curr);
+
+        if (IsRed(curr.left) && IsRed(curr.left.left))
+            RotateRight(ref curr);
+
+        if (IsRed(curr.left) && IsRed(curr.right))
+        {
+            ColorFlip(curr);
+        }
+    }
+
+    public void InsertNode(ref Node curr, Node newNode, Node parent) {
+        if (curr == null)
+        {
+            curr = newNode;
+            newNode.parent = parent;
+            return;
+        }
+        if (newNode.key < curr.key)
+        {
+            InsertNode(ref curr.left, newNode, curr);
+        }
+        else if (newNode.key > curr.key)
+        {
+            InsertNode(ref curr.right, newNode, curr);
+        }
+
+        Fixup(ref curr);
     }
 
     public bool InsertNode()
@@ -85,56 +200,13 @@ public class Tree
 
         if (n == null) return false;
 
-        if (_root == null)
-        {
-            _root = n;
-            _root.color = Color.Black;
-            return true;
-        }
-
-        //Rule 1: Every node has value (key) greater than left-child & less than the right-child value
-        // so traverse tree to find it's place
-
-        Node temp = _root;
-        while ((temp.left != null) || (temp.right != null))
-        {
-            if (n.key < temp.key)
-            {
-                if (temp.left != null)
-                {
-                    temp = temp.left;
-                    continue;
-                }
-                else
-                {
-                    temp.left = n;
-                    n.parent = temp;
-                    return true;
-                }
-            }
-            else if (n.key > temp.key)
-            {
-                if (temp.right != null)
-                {
-                    temp = temp.right;
-                    continue;
-                }
-                else
-                {
-                    temp.right = n;
-                    n.parent = temp;
-                    return true;
-                }
-            }
-        }
-        if (n.key < temp.key)
-            temp.left = n;
-        else if (n.key > temp.key)
-            temp.right = n;
-        n.parent = temp;
+        InsertNode(ref _root, n, null);
 
         // Adjust tree after insertion
-        AdjustTree(n);
+        if(_root.color != Color.Black) 
+            _root.color = Color.Black;
+        
+        CheckTree(true);
         return true;
     }
 
@@ -175,300 +247,138 @@ public class Tree
         }
     }
 
-    public void AdjustTree(Node x)
-    {
-        //Rule 10: Readjustment of the tree is by rotation
-        RotateTree(x);
-
-        //Rule 3: Root is black
-        _root.color = Color.Black;
-
-        //Rule 4: Leaf is red...automatically as we have all nodes as red to begin with
-
-        //Rule 5. Red node which is not a leaf has black children(consecutive red nodes not allowed)
-        //SetNodeColor(root);
-    }
-
-    public void RotateTree(Node x)
-    {
-        Node uncle = null;
-        Node sibling = null;
-
-        if (x.parent.color == Color.Red)
-        {
-            if (WhichChild(x.parent) == Child.Left)    // uncle is the right child
-                uncle = (x.parent).parent.right;
-            else if (WhichChild(x.parent) == Child.Right)  // uncle is the left child
-                uncle = (x.parent).parent.left;
-
-            if (WhichChild(x) == Child.Left) // x is left child
-                sibling = x.parent.right;
-            else  //x is right child
-                sibling = x.parent.left;
-        }
-        else return;
-
-        //Rotation Type 1 : x is red, p[x] is red and uncle=null, sibling=null
-        if ((uncle == null) && (sibling == null))
-        {
-            //Different orientation...Works!
-
-            if (WhichChild(x) != WhichChild(x.parent))
-            {
-                int temp = x.key;
-                x.key = x.parent.key;
-                x.parent.key = temp;
-
-                // reverse orientations
-                if (WhichChild(x) == Child.Left)
-                {
-                    x.parent.right = x;
-                    x.parent.left = null;
-                }
-                else
-                {
-                    x.parent.left = x;
-                    x.parent.right = null;
-                }
-                RotateTree(x);
-            }
-
-            // Same orientation..Works!
-
-            else
-            {
-                Node newGrandparent = null;
-                if (x.parent.parent != _root)
-                {
-                    if (WhichChild(x.parent.parent) == Child.Left)
-                        x.parent.parent.parent.left = x.parent;
-                    else x.parent.parent.parent.right = x.parent;
-                    newGrandparent = x.parent.parent.parent;
-                }
-
-                else _root = x.parent;
-
-                if (WhichChild(x) == Child.Left)
-                {
-                    (x.parent).right = (x.parent).parent;
-
-                    ((x.parent).right).parent = x.parent;
-
-                    x.parent.parent.left = null;
-                    x.parent.right.color = Color.Red;
-                }
-                else
-                {
-                    x.parent.left = x.parent.parent;
-                    x.parent.left.parent = x.parent;
-                    if (WhichChild(x.parent) == Child.Left) x.parent.left.left = null;
-                    else x.parent.left.right = null;
-                    x.parent.left.color = Color.Red;
-                }
-
-                x.parent.parent = newGrandparent;
-                x.parent.color = Color.Black;
-            }
-        }  // end of Rotation Type 1
-
-        //Rotation Type 2: depending on uncle's color
-        else
-        {
-            switch (uncle.color)
-            {
-                case Color.Red:
-                    if (WhichChild(uncle) == Child.Left) x.parent.parent.left.color = Color.Black;   //u[x] = black
-                    else x.parent.parent.right.color = Color.Black;
-                    x.parent.color = Color.Black;     //p[x] = black
-                    x.parent.parent.color = Color.Red;    //p(p[x]) = red
-                    break;
-                case Color.Black:
-                    if (WhichChild(x) == Child.Right)
-                    {
-                        x.parent.color = Color.Black;
-                        x.parent.left.color = Color.Red;
-                    }
-                    break;
-            }
-        }
-    }
-
-    public Child WhichChild(Node n)
-    {
-        if (n == _root) return Child.None;
-        if (n == n.parent.left) return Child.Left;
-        else return Child.Right;
-    }
-
-    public void SetNodeColor(Node n)
-    {
-        //Rule 5. Red node which is not a leaf has black children(consecutive red nodes not allowed)
-
-        if (n.color == Color.Red)
-        {   //set child color as black
-            if (n.left != null) n.left.color = Color.Black;
-            if (n.right != null) n.right.color = Color.Black;
-        }
-
-        if (n.left != null) SetNodeColor(n.left);
-        if (n.right != null) SetNodeColor(n.right);
-    }
-
     public void DeleteTree()
     {
-        Node node = null;
         int n;
         //Choose random number of nodes to delete
         int num = Rand.Next(1, _nodes);
+#if DEBUG
         TestLibrary.Logging.WriteLine("Deleting {0} nodes...", num);
+#endif
 
         for (int i = 0; i < num; i++)
         {
             n = Rand.Next(0, _nodes);
-            TestLibrary.Logging.WriteLine("Deleting node no. {0}", i);
-            _curDepth = 0;
-            node = FindNode(_root, n);
-            _curDepth = 0;
-            if (node != null) DeleteNode(node);
+#if DEBUG
+            TestLibrary.Logging.WriteLine("Deleting node no. {0} with key {1}", i, n);
+#endif
+            DeleteNode(ref _root, n);
+            if (_root.color != Color.Black)
+                _root.color = Color.Black;
+            CheckTree(true);
         }
+#if DEBUG
         TestLibrary.Logging.WriteLine("Final Tree after deletion");
-        //PrintTree(root);
+        PrintTree(_root);
+#endif
     }
 
-    public Node FindNode(Node r, int k)
+    void MoveRedRight(ref Node curr)
     {
-        if (_curDepth == MaxDepth)
+        ColorFlip(curr);
+        if (IsRed(curr.left.left))
         {
-            _curDepth = 0;
-            return null;
-        }
-
-        _curDepth++;
-
-
-        if (k == r.key) return r;
-
-        else if (k < r.key)
-        {
-            if (r.left != null) return (FindNode(r.left, k));
-            else return null; // skip this node
-        }
-        else
-        {
-            if (r.right != null) return (FindNode(r.right, k));
-            else return null;
+            RotateRight(ref curr);
+            ColorFlip(curr);
         }
     }
 
-    public void DeleteNode(Node n)
+    void MoveRedLeft(ref Node curr)
     {
-        TestLibrary.Logging.WriteLine("In DeleteNode()");
-
-        if (_curDepth == MaxDepth)
+        ColorFlip(curr);
+        if (IsRed(curr.right.left))
         {
-            _curDepth = 0;
-            return;
+            RotateRight(ref curr.right);
+            RotateLeft(ref curr);
+            ColorFlip(curr);
+        }
+    }
+
+    public bool DeleteNode(ref Node n, int key)
+    {
+        
+        if (n.key != key && n.left == null && n.right == null)
+        {
+            Fixup(ref n);
+            return false;
         }
 
-        _curDepth++;
-
-
-        Node onlychild;
-        // Deleting the node as in a BST
-
-        // Case 1: n is a leaf..just delete n
-        if ((n.left == null && n.right == null))
-        {
-            if (WhichChild(n) == Child.Left)
-            {
-                if (n.parent != null)
-                    n.parent.left = null;
+        var result = false;
+        if (n.key > key) { 
+            if(!IsRed(n.left) && !IsRed(n.left.left)) {
+                MoveRedLeft(ref n);
             }
-            else
-            {
-                if (n.parent != null)
-                    n.parent.right = null;
-            }
+            result = DeleteNode(ref n.left, key);
+        } else {
+            if (IsRed(n.left)) RotateRight(ref n);
 
-            //reassign root
-            if (n == _root) _root = null;
-            n = null;
-        }
-        // Case 2: n has 1 child
-        else if (n.left == null || n.right == null)
-        {
-            if (n.left != null) onlychild = n.left;
-            else onlychild = n.right;
-
-            //replace n with child node
-
-            if (WhichChild(n) == Child.Left)
+            if (n.right == null)
             {
-                n.parent.left = onlychild;
-                onlychild.parent = n.parent;
-            }
-            else if (WhichChild(n) == Child.Right)
-            {
-                n.parent.right = onlychild;
-                onlychild.parent = n.parent;
-            }
-            else
-            {  // n is root
-                if (n.left != null)
+                if (n.key == key)
                 {
-                    _root = n.left;
-                    n.left.parent = null;
+                    n = null;
+                    return true;
                 }
                 else
-                {
-                    _root = n.right;
-                    n.right.parent = null;
-                }
+                    return false;
             }
-            n = null;
-        }
-        // Case 3: n has 2 children
-        else
-        {
-            _curDepth2 = 0;
-            Node largestleft = FindLargestInLeftSubTree(n.left, n.left.key);
 
-            int temp = largestleft.key;
-            largestleft.key = n.key;
-            n.key = temp;
-            DeleteNode(largestleft);
+            if (!IsRed(n.right) && !IsRed(n.right.left))
+                MoveRedRight(ref n);
+
+            if (n.key == key)
+            {
+                var minRight = DeleteMin(ref n.right);
+                n.key = minRight.key;
+                n.array = minRight.array;
+                result = true;
+            }
+            else
+                result = DeleteNode(ref n.right, key);
         }
+
+        Fixup(ref n);
+
+        return result;
     }
 
-    public Node FindLargestInLeftSubTree(Node x, int max)
+    Node DeleteMin(ref Node curr)
     {
-        if (_curDepth2 == MaxDepth)
+        Node min;
+        if (curr.left == null)
         {
-            _curDepth2 = 0;
-            return x;
+            min = curr;// Left leaning, so no left child means no child.
+            curr = null;
+            return min;
         }
 
-        _curDepth2++;
-
-        if (x.key > max) max = x.key;
-
-        if (x.right == null && x.key == max) return x;
-
-        if (x.key <= max)
+        if (!IsRed(curr.left) && !IsRed(curr.left.left))
         {
-            if (x.right != null) return FindLargestInLeftSubTree(x.right, max);
-            else return x;
+            MoveRedLeft(ref curr);
         }
-        else return x;
+
+        min = DeleteMin(ref curr.left);
+
+        Fixup(ref curr);
+
+        return min;
     }
+
 
     public void PrintTree(Node r)
     {
-        if (r == null) return;
+        PrintTree(r, "");
+    }
 
-        TestLibrary.Logging.WriteLine("{0}, {1}", r.key, r.color);
-        if (r.left != null) PrintTree(r.left);
-        if (r.right != null) PrintTree(r.right);
+    public void PrintTree(Node r, String offset)
+    {
+        if (r == null) return;
+        
+        offset = offset + " ";
+
+        if (r.left != null) PrintTree(r.left, offset);
+        TestLibrary.Logging.WriteLine("{0}{1}, {2}", offset, r.key, r.color);
+        if (r.right != null) PrintTree(r.right, offset);
     }
 }
 
