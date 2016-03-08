@@ -33,11 +33,7 @@ public:
 
     void Resolve()
     {
-        if (
-#ifdef BINDER
-            !IsPlaced() && 
-#endif
-             m_pBase->IsPlaced())
+        if (m_pBase->IsPlaced())
         {
             SetRVA(m_pBase->GetRVA() + GetOffset());
         }
@@ -47,14 +43,6 @@ public:
     {
         return ZapNodeType_InnerPtr;
     }
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return m_pBase->IsThumb2Code();
-    }
-#endif
-
 };
 
 class ZapInnerPtrTable

@@ -53,7 +53,6 @@ private:
 
 // --------------------------------------------------------
 // This is used to encode a bitstream encoding
-#ifndef BINDER
 class Encoder
 {
 public:
@@ -75,5 +74,4 @@ private:
     BOOL signedNumbers;
     unsigned index;
 };
-#endif // !BINDER
 #endif // __DECODEMD_H__

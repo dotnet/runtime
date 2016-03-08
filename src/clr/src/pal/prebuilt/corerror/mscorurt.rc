@@ -653,7 +653,6 @@ BEGIN
 	MSG_FOR_URT_HR(COR_E_PLATFORMNOTSUPPORTED) "Operation is not supported on this platform."
 	MSG_FOR_URT_HR(COR_E_INVALIDPROGRAM) "Invalid IL or CLR metadata."
 	MSG_FOR_URT_HR(COR_E_OPERATIONCANCELED) "The operation was cancelled."
-	MSG_FOR_URT_HR(COR_E_UNSUPPORTEDMDIL) "Valid IL which cannot be compiled into MDIL."
 	MSG_FOR_URT_HR(COR_E_DEVICESNOTSUPPORTED) "Devices not supported."
 	MSG_FOR_URT_HR(COR_E_DATAMISALIGNED) "A datatype misalignment was detected in a load or store instruction."
 	MSG_FOR_URT_HR(COR_E_CODECONTRACTFAILED) "A managed code contract (ie, precondition, postcondition, invariant, or assert) failed."
