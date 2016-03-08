@@ -47,6 +47,14 @@ download_and_install_last_version(){
 	install_last_version
 }
 
+delete_last_version(){
+        rm -f "$DIR/last_version.deb"
+}
+
+cleanup(){
+        delete_last_version
+}
+
 @test "package install + removal test" {
 	install_package
 	remove_package
@@ -68,5 +76,6 @@ download_and_install_last_version(){
 		remove_package
 		install_package
 		purge_package
+                cleanup
 	fi
 }
