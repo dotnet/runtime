@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -162,7 +163,7 @@ namespace System.Net.Security.Tests
                     }
                     catch (AggregateException ex)
                     {
-                        throw ex.InnerException;
+                        ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                     }
 
                     if (!serverAuthenticationCompleted)
