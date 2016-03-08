@@ -2496,7 +2496,6 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 static int
 mono_cpu_count (void)
 {
-	int count = 0;
 #ifdef PLATFORM_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
@@ -2516,6 +2515,22 @@ mono_cpu_count (void)
 	if (count > 0)
 		return count + 1;
 #endif
+
+#if defined(HOST_ARM) || defined (HOST_ARM64)
+
+	/* ARM platforms tries really hard to save power by powering off CPUs on SMP phones which
+	 * means the normal way to query cpu count returns a wrong value with userspace API. */
+
+#ifdef _SC_NPROCESSORS_CONF
+	{
+		int count = sysconf (_SC_NPROCESSORS_CONF);
+		if (count > 0)
+			return count;
+	}
+#endif
+
+#else
+
 #ifdef HAVE_SCHED_GETAFFINITY
 	{
 		cpu_set_t set;
@@ -2524,12 +2539,18 @@ mono_cpu_count (void)
 	}
 #endif
 #ifdef _SC_NPROCESSORS_ONLN
-	count = sysconf (_SC_NPROCESSORS_ONLN);
-	if (count > 0)
-		return count;
+	{
+		int count = sysconf (_SC_NPROCESSORS_ONLN);
+		if (count > 0)
+			return count;
+	}
 #endif
+
+#endif /* defined(HOST_ARM) || defined (HOST_ARM64) */
+
 #ifdef USE_SYSCTL
 	{
+		int count;
 		int mib [2];
 		size_t len = sizeof (int);
 		mib [0] = CTL_HW;
