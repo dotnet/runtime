@@ -63,7 +63,7 @@ mapLogFileLevel(GLogLevelFlags level)
  * 	@userData - Not used
  */
 void
-mono_log_open_logfile(const char *ident, void *userData)
+mono_log_open_syslog(const char *ident, void *userData)
 {
 	logFile = fopen(logFileName, "w");
 	if (logFile == NULL) {
@@ -84,7 +84,7 @@ mono_log_open_logfile(const char *ident, void *userData)
  * 	@vargs - Variable argument list
  */
 void
-mono_log_write_logfile(const char *domain, GLogLevelFlags level, const char *format, va_list args)
+mono_log_write_syslog(const char *domain, GLogLevelFlags level, const char *format, va_list args)
 {
 	time_t t;
 	struct tm tod;
@@ -113,7 +113,7 @@ mono_log_write_logfile(const char *domain, GLogLevelFlags level, const char *for
  * 	Close the log file
  */
 void
-mono_log_close_logfile()
+mono_log_close_syslog()
 {
 	if (logFile) {
 		fclose(logFile);
