@@ -82,9 +82,9 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
     {
         auto depsfile_candidate = pal::string_t(args.app_argv[0]);
         
-        if (starts_with(depsfile_candidate, s_depsArgPrefix))
+        if (starts_with(depsfile_candidate, s_deps_arg_prefix, false))
         {
-            args.deps_path = depsfile_candidate.substr(s_depsArgPrefix.length());
+            args.deps_path = depsfile_candidate.substr(s_deps_arg_prefix.length());
             if (!pal::realpath(&args.deps_path))
             {
                 trace::error(_X("Failed to locate deps file: %s"), args.deps_path.c_str());
