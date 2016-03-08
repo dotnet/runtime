@@ -2,14 +2,17 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\4.0.0\System.Data.SqlClient.csproj">
+    <ProjectReference Include="..\ref\4.0\System.Data.SqlClient.csproj">
       <SupportedFramework>net45;</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
+      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.SqlClient.csproj">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </ProjectReference>
-    <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
-      <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
+    <ProjectReference Include="..\src\System.Data.SqlClient.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="win\System.Data.SqlClient.pkgproj">
       <PackageAlias>win.System.Data.SqlClient</PackageAlias>

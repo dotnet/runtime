@@ -11,6 +11,9 @@
     <Project Include="System.Data.SqlClient.csproj">
       <TargetGroup>net45</TargetGroup>
     </Project>
+    <Project Include="System.Data.SqlClient.csproj">
+      <TargetGroup>net46</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
