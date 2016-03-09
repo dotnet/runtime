@@ -460,7 +460,7 @@ namespace System.Globalization {
                     return (m_EraInfo[i].era);
                 }
             }
-            throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Era"));
+            throw new ArgumentOutOfRangeException("time", Environment.GetResourceString("ArgumentOutOfRange_Era"));
         }
 
 
