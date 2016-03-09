@@ -57,6 +57,7 @@ set __DoCrossgen=
 set __BuildSequential=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
+set __SignTypeReal=
 
 set __BuildAll=
 
@@ -114,6 +115,7 @@ if /i "%1" == "skipnative"          (set __SkipNativeBuild=1&shift&goto Arg_Loop
 if /i "%1" == "skiptests"           (set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "docrossgen"          (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
+if /i "%1" == "disableoss"          (set __SignTypeReal="/p:SignType=real"&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&set __PassThroughArgs=%__PassThroughArgs% %2&shift&shift&goto Arg_Loop)
 
 @REM For backwards compatibility, continue accepting "skiptestbuild", which was the original name of the option.
@@ -139,7 +141,7 @@ goto Usage
 :ArgsDone
 
 if defined __ConfigureOnly if defined __SkipConfigure (
-    echo "Error: option 'configureonly' is incompatible with 'skipconfigure'
+    echo "Error: option 'configureonly' is incompatible with 'skipconfigure'"
     goto Usage
 )
 
@@ -409,7 +411,7 @@ set __msbuildLogArgs=^
 /consoleloggerparameters:Summary ^
 /verbosity:minimal
 
-set __msbuildArgs="%__ProjectFilesDir%\build.proj" %__msbuildCommonArgs% %__msbuildLogArgs%
+set __msbuildArgs="%__ProjectFilesDir%\build.proj" %__msbuildCommonArgs% %__msbuildLogArgs% %__SignTypeReal%
 
 set __BuildNugetPackage=true
 if defined __MscorlibOnly       set __BuildNugetPackage=false
@@ -640,6 +642,7 @@ echo skipconfigure: skip CMake ^(default: CMake is run^)
 echo skipmscorlib: skip building mscorlib ^(default: mscorlib is built^).
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
+echo disableoss: Disable Open Source Signing for mscorlib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,
