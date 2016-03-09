@@ -558,7 +558,14 @@ public:
         return m_sfCallerOfActualHandlerFrame;
     }
 
-    StackFrame GetCallerOfCollapsedActualHandlingFrame()
+    StackFrame GetCallerOfEnclosingClause()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_EnclosingClauseInfoForGCReporting.GetEnclosingClauseCallerSP();
+    }
+
+    StackFrame GetCallerOfCollapsedEnclosingClause()
     {
         LIMITED_METHOD_CONTRACT;
 
