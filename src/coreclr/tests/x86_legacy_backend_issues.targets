@@ -486,5 +486,14 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+   <ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+   <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+   <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPTSTR\LPTSTRTest\LPTSTRTest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
