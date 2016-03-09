@@ -19,6 +19,7 @@ usage()
     echo "skipnative - do not build native components."
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
+    echo "disableoss - Disable Open Source Signing for mscorlib."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
 
     exit 1
@@ -238,7 +239,7 @@ build_mscorlib()
     echo "Commencing build of mscorlib components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false ${__SignTypeReal}
 
     if [ $? -ne 0 ]; then
         echo "Failed to build mscorlib."
@@ -384,6 +385,7 @@ __SkipCoreCLR=0
 __SkipMSCorLib=0
 __CleanBuild=0
 __VerboseBuild=0
+__SignTypeReal=""
 __CrossBuild=0
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -497,6 +499,10 @@ while :; do
 
         skiptests)
             __IncludeTests=
+            ;;
+
+        disableoss)
+            __SignTypeReal="/p:SignType=real"
             ;;
 
         cmakeargs)
