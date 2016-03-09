@@ -6,7 +6,6 @@
     	<SupportedFramework>netcore45;net45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Drawing.Primitives.builds">
-    	<SupportedFramework>netcore45;net45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
