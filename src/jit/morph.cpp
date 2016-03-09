@@ -502,34 +502,22 @@ GenTreePtr          Compiler::fgMorphCast(GenTreePtr tree)
         // it believes the variable is a GC variable at the begining of the
         // instruction group, but is not turned non-gc by the code generator
         // we fix this by copying the GC pointer to a non-gc pointer temp.
-        if (varTypeIsFloating(srcType) == varTypeIsFloating(dstType))
-        {
-            noway_assert(!varTypeIsGC(dstType) && "How can we have a cast to a GCRef here?");
+        noway_assert(!varTypeIsGC(dstType) && "How can we have a cast to a GCRef here?");
 
-            // We generate an assignment to an int and then do the cast from an int. With this we avoid
-            // the gc problem and we allow casts to bytes, longs,  etc...
-            var_types typInter;
-            typInter = TYP_I_IMPL;
+        // We generate an assignment to an int and then do the cast from an int. With this we avoid
+        // the gc problem and we allow casts to bytes, longs,  etc...
+        unsigned lclNum = lvaGrabTemp(true DEBUGARG("Cast away GC"));
+        oper->gtType = TYP_I_IMPL;
+        GenTreePtr asg = gtNewTempAssign(lclNum, oper);
+        oper->gtType = srcType;
 
-            unsigned lclNum = lvaGrabTemp(true DEBUGARG("Cast away GC"));
-            oper->gtType = typInter;
-            GenTreePtr asg  = gtNewTempAssign(lclNum, oper);
-            oper->gtType = srcType;
+        // do the real cast
+        GenTreePtr cast = gtNewCastNode(tree->TypeGet(), gtNewLclvNode(lclNum, TYP_I_IMPL), dstType);
 
-            // do the real cast
-            GenTreePtr cast = gtNewCastNode(tree->TypeGet(), gtNewLclvNode(lclNum, typInter), dstType);
+        // Generate the comma tree
+        oper = gtNewOperNode(GT_COMMA, tree->TypeGet(), asg, cast);
 
-            // Generate the comma tree
-            oper   = gtNewOperNode(GT_COMMA, tree->TypeGet(), asg, cast);
-
-            return fgMorphTree(oper);
-        }
-        else
-        {
-            tree->gtCast.CastOp() = fgMorphTree(oper);
-            tree->gtFlags |= (tree->gtCast.CastOp()->gtFlags & GTF_ALL_EFFECT);
-            return tree;
-        }
+        return fgMorphTree(oper);
     }
 
     // Look for narrowing casts ([u]long -> [u]int) and try to push them
@@ -2066,12 +2054,12 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
 #if FEATURE_MULTIREG_ARGS
 #ifdef _TARGET_ARM64_
             assert(varTypeIsStruct(type));
-            if (structSize <= MAX_PASS_MULTIREG_BYTES)
+            if (varDsc->lvIsMultiregStruct())
             {
-                assert(structSize > TARGET_POINTER_SIZE);  // structSize must be 9..16
                 // ToDo-ARM64: Consider using:  arg->ChangeOper(GT_LCL_FLD);
                 // as that is how FEATURE_UNIX_AMD64_STRUCT_PASSING works.
-                // Pass by value in two registers
+                // Create a GT_LDOBJ for the argument 
+                // This will be passed by value in two registers
                 arg = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
                 addrNode = arg;
 
@@ -4170,7 +4158,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
     // Update the flags
     call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
 }
-#endif // FEATURE_MULTIREG_ARGS
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 // Make a copy of a struct variable if necessary, to pass to a callee.
 // returns: tree that computes address of the outgoing arg
@@ -5670,7 +5658,10 @@ void        Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineR
 
 void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 {
-    if  (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
+    // Don't expect any surprises here.
+    assert(result->isCandidate());
+    
+    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
         // For now, attributing this to call site, though it's really
         // more of a budget issue (lvaCount currently includes all
@@ -12861,8 +12852,7 @@ GenTreePtr          Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac
 #ifdef DEBUG
     if (verbose)
     {
-        static ConfigDWORD fBreakOnMorphTree;
-        if (fBreakOnMorphTree.val(CLRConfig::INTERNAL_JitBreakMorphTree) == tree->gtTreeID)
+        if ((unsigned)JitConfig.JitBreakMorphTree() == tree->gtTreeID)
         {
             noway_assert(!"JitBreakMorphTree hit");
         }
@@ -14247,8 +14237,7 @@ void                Compiler::fgSetOptions()
     /* Should we force fully interruptible code ? */
 
 #ifdef DEBUG
-    static ConfigDWORD fJitFullyInt;
-    if (fJitFullyInt.val(CLRConfig::INTERNAL_JitFullyInt) ||
+    if (JitConfig.JitFullyInt() ||
         compStressCompile(STRESS_GENERIC_VARN, 30))
     {
         noway_assert(!codeGen->isGCTypeFixed());
@@ -15255,15 +15244,13 @@ void                Compiler::fgPromoteStructs()
 #endif // _TARGET_AMD64_ || _TARGET_ARM64_
 #if FEATURE_MULTIREG_ARGS
 #if defined(_TARGET_ARM64_)
-                // TODO-PERF - Only do this when the LclVar is used in an argument context
                 //
-                // For now we currently don't promote structs that can be passed in registers
+                // For now we currently don't promote structs that could be passed in registers
                 //
-                unsigned structSize = lvaLclExactSize(lclNum);
-                if ((structSize > TARGET_POINTER_SIZE) && (structSize <= MAX_PASS_MULTIREG_BYTES))
+                if (varDsc->lvIsMultiregStruct())
                 {
                     JITDUMP("Not promoting promotable struct local V%02u (size==%d): ",
-                            lclNum, structSize);
+                            lclNum, lvaLclExactSize(lclNum));
                     continue;
                 }
 #endif // _TARGET_ARM64_

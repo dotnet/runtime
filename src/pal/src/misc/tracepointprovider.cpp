@@ -22,6 +22,7 @@ Revision History:
 #include "pal/process.h"
 #include "pal/module.h"
 #include "pal/malloc.hpp"
+#include "pal/stackstring.hpp"
 
 #include <errno.h>
 #include <unistd.h> 
@@ -35,7 +36,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 Initialization logic for LTTng tracepoint providers.
 
 --*/
-#if defined(__LINUX__)
+#if defined(__linux__)
 
 static const char tpLibName[] = "libcoreclrtraceptprovider.so";
 
@@ -67,9 +68,8 @@ PAL_InitializeTracing(void)
     }
 
     // Copy the path and modify the shared object name to be the tracepoint provider.
-    char tpProvPath[MAX_LONGPATH];
+    PathCharString tpProvPath;
     int pathLen = strlen(info.dli_fname);
-    int tpLibNameLen = strlen(tpLibName);
 
     // Find the length of the full path without the shared object name, including the trailing slash.
     int lastTrailingSlashLen = -1;
@@ -87,22 +87,19 @@ PAL_InitializeTracing(void)
     {
         return;
     }
+    
+    SIZE_T tpLibNameLen = strlen(tpLibName);
 
-    // Make sure that the final path is shorter than MAX_PATH.
-    // +1 ensures that the string can be NULL-terminated.
-    if((lastTrailingSlashLen + tpLibNameLen + 1) > MAX_LONGPATH)
+    if( !tpProvPath.Reserve(tpLibNameLen + lastTrailingSlashLen) ||  
+    // Copy the path without the shared object name.
+        !tpProvPath.Append(info.dli_fname, lastTrailingSlashLen) ||
+    // Append the shared object name for the tracepoint provider.
+        !tpProvPath.Append(tpLibName, tpLibNameLen))
     {
         return;
     }
+    
 
-    // Copy the path without the shared object name.
-    memcpy(&tpProvPath, info.dli_fname, lastTrailingSlashLen);
-
-    // Append the shared object name for the tracepoint provider.
-    memcpy(&tpProvPath[lastTrailingSlashLen], &tpLibName, tpLibNameLen);
-
-    // NULL-terminate the string.
-    tpProvPath[lastTrailingSlashLen + tpLibNameLen] = '\0';
 
     // Load the tracepoint provider.
     // It's OK if this fails - that just means that tracing dependencies aren't available.

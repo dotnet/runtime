@@ -14,8 +14,6 @@ class Interval;
 class RefPosition;
 class LinearScan;
 class RegRecord;
-class LinearScanMemoryAllocatorInterval;
-class LinearScanMemoryAllocatorRefPosition;
 
 template<class T>
 class ArrayStack;
@@ -99,24 +97,48 @@ RefTypeIsDef(RefType refType) { return ((refType & RefTypeDef) == RefTypeDef); }
 
 typedef regNumber * VarToRegMap;
 
-typedef StructArrayList<Interval,    /* initial element count */ 32, /* multiplicative chunk size growth factor */ 2, LinearScanMemoryAllocatorInterval>    IntervalList;
-typedef StructArrayList<RefPosition, /* initial element count */ 64, /* multiplicative chunk size growth factor */ 2, LinearScanMemoryAllocatorRefPosition> RefPositionList;
-
-// Wrapper for ArenaAllocator
-class LinearScanMemoryAllocatorRefPosition
+template <typename ElementType, CompMemKind MemKind>
+class ListElementAllocator
 {
+private:
+    template <typename U, CompMemKind CMK>
+    friend class ListElementAllocator;
+
+    Compiler* m_compiler;
+
 public:
-    static void   * Alloc (void *context, SIZE_T cb);
-    static void     Free (void *context, void *pv)     {}
+    ListElementAllocator(Compiler* compiler)
+        : m_compiler(compiler)
+    {
+    }
+
+    template <typename U>
+    ListElementAllocator(const ListElementAllocator<U, MemKind>& other)
+        : m_compiler(other.m_compiler)
+    {
+    }
+
+    ElementType* allocate(size_t count)
+    {
+        return reinterpret_cast<ElementType*>(m_compiler->compGetMem(sizeof(ElementType) * count, MemKind));
+    }
+
+    void deallocate(ElementType* pointer, size_t count)
+    {
+    }
+
+    template <typename U>
+    struct rebind
+    {
+        typedef ListElementAllocator<U, MemKind> allocator;
+    };
 };
 
-class LinearScanMemoryAllocatorInterval
-{
-public:
-    static void   * Alloc (void *context, SIZE_T cb);
-    static void     Free (void *context, void *pv)     {}
-};
+typedef ListElementAllocator<Interval, CMK_LSRA_Interval> LinearScanMemoryAllocatorInterval;
+typedef ListElementAllocator<RefPosition, CMK_LSRA_RefPosition> LinearScanMemoryAllocatorRefPosition;
 
+typedef jitstd::list<Interval, LinearScanMemoryAllocatorInterval> IntervalList;
+typedef jitstd::list<RefPosition, LinearScanMemoryAllocatorRefPosition> RefPositionList;
 
 class Referenceable
 {
@@ -280,8 +302,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 class LinearScan : public LinearScanInterface
 {
-    friend class LinearScanMemoryAllocatorInterval;
-    friend class LinearScanMemoryAllocatorRefPosition;
     friend class RefPosition;
     friend class Interval;
     friend class Lowering;
@@ -432,7 +452,13 @@ private:
     // Hence the "SmallFPSet" has 5 elements.
 
 #if defined(_TARGET_AMD64_)
-    static const regMaskTP  LsraLimitSmallIntSet = RBM_LOWINT;
+#ifdef UNIX_AMD64_ABI
+    // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
+    static const regMaskTP  LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
+#else // !UNIX_AMD64_ABI
+    // On Windows Amd64 use the RDI and RSI as callee saved registers.
+    static const regMaskTP  LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
+#endif // !UNIX_AMD64_ABI
     static const regMaskTP  LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7 );
 #elif defined(_TARGET_ARM_)
     static const regMaskTP  LsraLimitSmallIntSet = (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4);

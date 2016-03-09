@@ -65,22 +65,32 @@ INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",     
 
 // ------ Callee Performance ------- 
 
-INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(LDFLD_STATIC_VALUECLASS,   bool,   "ldsfld of value class",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MANY_BASIC_BLOCKS,     bool,   "too many basic blocks",         PERFORMANCE, CALLEE)
 INLINE_OBSERVATION(TOO_MUCH_IL,               bool,   "too many il bytes",             PERFORMANCE, CALLEE)
 
 // ------ Callee Information ------- 
 
+INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant test",  INFORMATION, CALLEE)
+INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range check",    INFORMATION, CALLEE)
+INLINE_OBSERVATION(BEGIN_OPCODE_SCAN,         bool,   "prepare to look at opcodes",    INFORMATION, CALLEE)
 INLINE_OBSERVATION(BELOW_ALWAYS_INLINE_SIZE,  bool,   "below ALWAYS_INLINE size",      INFORMATION, CALLEE)
-INLINE_OBSERVATION(CAN_INLINE_IL,             bool,   "IL passes basic checks",        INFORMATION, CALLEE)
-INLINE_OBSERVATION(CHECK_CAN_INLINE_IL,       bool,   "IL passes detailed checks",     INFORMATION, CALLEE)
+INLINE_OBSERVATION(CLASS_PROMOTABLE,          bool,   "promotable value class",        INFORMATION, CALLEE)
+INLINE_OBSERVATION(END_OPCODE_SCAN,           bool,   "done looking at opcodes",       INFORMATION, CALLEE)
+INLINE_OBSERVATION(HAS_SIMD,                  bool,   "has SIMD arg, local, or ret",   INFORMATION, CALLEE)
+INLINE_OBSERVATION(HAS_SWITCH,                bool,   "has switch",                    INFORMATION, CALLEE)
+INLINE_OBSERVATION(IL_CODE_SIZE,              int,    "number of bytes of IL",         INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_DISCRETIONARY_INLINE,   bool,   "can inline, check heuristics",  INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_FORCE_INLINE,           bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_INSTANCE_CTOR,          bool,   "instance constructor",          INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_MOSTLY_LOAD_STORE,      bool,   "method is mostly load/store",   INFORMATION, CALLEE)
+INLINE_OBSERVATION(LOOKS_LIKE_WRAPPER,        bool,   "thin wrapper around a call",    INFORMATION, CALLEE)
 INLINE_OBSERVATION(MAXSTACK,                  int,    "maxstack",                      INFORMATION, CALLEE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLEE)
+INLINE_OBSERVATION(OPCODE,                    int,    "next opcode in IL stream",      INFORMATION, CALLEE)
+INLINE_OBSERVATION(OPCODE_NORMED,             int,    "next opcode in IL stream",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",           INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",        INFORMATION, CALLEE)
-INLINE_OBSERVATION(NUMBER_OF_IL_BYTES,        int,    "number of bytes of IL",         INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",              INFORMATION, CALLEE)
 
 // ------ Caller Corectness ------- 
@@ -134,10 +144,9 @@ INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",        
 
 // ------ Call Site Information ------- 
 
-INLINE_OBSERVATION(ARGS_OK,                   bool,   "arguments suitable",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(BENEFIT_MULTIPLIER,        double, "benefit multiplier",            INFORMATION, CALLSITE)
-INLINE_OBSERVATION(DEPTH,                     int,    "depth"             ,            INFORMATION, CALLSITE)
-INLINE_OBSERVATION(LOCALS_OK,                 bool,   "locals suitable",               INFORMATION, CALLSITE)
+INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",  INFORMATION, CALLSITE)
+INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLSITE)
 INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE_OK,   bool,   "native size estimate ok",       INFORMATION, CALLSITE)
 

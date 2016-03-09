@@ -31,8 +31,7 @@ void                Compiler::fgInit()
 
 #ifdef DEBUG
     fgInlinedCount               = 0;
-    static ConfigDWORD fJitPrintInlinedMethods;
-    fgPrintInlinedMethods = fJitPrintInlinedMethods.val(CLRConfig::EXTERNAL_JitPrintInlinedMethods) == 1;
+    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
@@ -163,12 +162,11 @@ void                Compiler::fgInit()
 #ifdef DEBUG
     if (!compIsForInlining())
     {
-         static ConfigDWORD fJitNoStructPromotion;
-         if ((fJitNoStructPromotion.val(CLRConfig::INTERNAL_JitNoStructPromotion) & 1) == 1)
+         if ((JitConfig.JitNoStructPromotion() & 1) == 1)
          {
              fgNoStructPromotion = true;
          }
-         if ((fJitNoStructPromotion.val(CLRConfig::INTERNAL_JitNoStructPromotion) & 2) == 2)
+         if ((JitConfig.JitNoStructPromotion() & 2) == 2)
          {
              fgNoStructParamPromotion = true;
          }
@@ -4184,82 +4182,53 @@ private:
     unsigned slot1;
     unsigned depth;
 };
+//------------------------------------------------------------------------
+// fgFindJumpTargets: walk the IL stream, determining jump target offsets
+//
+// Arguments:
+//    codeAddr   - base address of the IL code buffer
+//    codeSize   - number of bytes in the IL code buffer
+//    jumpTarget - [OUT] xxx yuuu
+//
+// Notes:
+//
+//    If inlining or prejitting the root, this method also makes
+//    various observations about the method that factor into inline
+//    decisions. It sets `compNativeSizeEstimate` as a side effect.
+//
+//    May throw an exception if the IL is malformed.
 
-void        Compiler::fgFindJumpTargets(const BYTE * codeAddr,
-                                        IL_OFFSET    codeSize,
-                                        BYTE *       jumpTarget)
+void Compiler::fgFindJumpTargets(const BYTE* codeAddr,
+                                 IL_OFFSET   codeSize,
+                                 BYTE*       jumpTarget)
 {
+    const BYTE* codeBegp     = codeAddr;
+    const BYTE* codeEndp     = codeAddr + codeSize;
+    unsigned    varNum;
+    bool        seenJump     = false;
+    var_types   varType      = DUMMY_INIT(TYP_UNDEF);  // TYP_ type
+    typeInfo    ti;                                // Verifier type.
+    bool        typeIsNormed = false;
+    unsigned    ldStCount    = 0; // Number of load/store instructions.
+    fgStack     pushedStack;      // Keep track of constants and args on the stack.
+    const bool  isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
 
-    const   BYTE *  codeBegp = codeAddr;
-    const   BYTE *  codeEndp = codeAddr + codeSize;
-    unsigned varNum;
-
-    bool    seenJump = false;
-
-    OPCODE  opcode;
-
-    var_types varType = DUMMY_INIT(TYP_UNDEF);  // TYP_ type
-    typeInfo  ti;                               // Verifier type.
-
-#ifndef DEBUG
-    CodeSeqSM   LocalSm;
-#endif
-
-    CodeSeqSM * pSm = NULL;
-
-    SM_OPCODE smOpcode = DUMMY_INIT((SM_OPCODE)0);
-
-    unsigned ldStCount = 0; //Number of load/store instructions.
-
-    // Keep track of constants and args on the stack.
-    fgStack pushedStack;
-
-    // Determine whether to start the state machine to estimate the size of the
-    // native code for this method.
-    bool useSm = false;
-    if ((codeSize > ALWAYS_INLINE_SIZE) &&
-        !(info.compFlags & CORINFO_FLG_FORCEINLINE))
+    if (compInlineResult != nullptr)
     {
-        // The size of the native code for this method matters for inlining
-        // decisions.
+        // Observe force inline state and code size.
+        compInlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+        compInlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
-        if (compIsForInlining())
-        {
-            // This method is being compiled as an inline candidate and will be
-            // rejected if its native code is too large.
-
-            useSm = true;
-        }
-        else if ((opts.eeFlags & CORJIT_FLG_PREJIT) &&
-                 (codeSize <= impInlineSize))
-        {
-            // This method isn't an inline candidate yet, but it's small enough
-            // to be considered for one in the future. Keep track of the
-            // estimated native code size; it will be used elsewhere later.
-
-            useSm = true;
-        }
-    }
-
-    if (useSm)
-    {
-
-#ifdef DEBUG
-        pSm = &fgCodeSeqSm;
-#else
-        pSm = &LocalSm;
-#endif
-
-        pSm->Start(this);
+        // note that we're starting to look at the opcodes.
+        compInlineResult->note(InlineObservation::CALLEE_BEGIN_OPCODE_SCAN);
     }
 
     while (codeAddr < codeEndp)
     {
-        unsigned    sz;
-
-        opcode = (OPCODE) getU1LittleEndian(codeAddr);
+        OPCODE opcode = (OPCODE) getU1LittleEndian(codeAddr);
         codeAddr += sizeof(__int8);
         opts.instrCount++;
+        typeIsNormed = false;
 
 DECODE_OPCODE:
 
@@ -4268,6 +4237,7 @@ DECODE_OPCODE:
         if (opcode >= CEE_COUNT)
             BADCODE3("Illegal opcode", ": %02X", (int) opcode);
 
+        // --- leave ldstcount for now, though it can be moved ---
         if ((opcode >= CEE_LDARG_0 && opcode <= CEE_STLOC_S) ||
             (opcode >= CEE_LDARG   && opcode <= CEE_STLOC))
         {
@@ -4293,12 +4263,7 @@ DECODE_OPCODE:
             ++ldStCount;
         }
 
-        sz = opcodeSizes[opcode];
-
-        if (pSm)
-        {
-            smOpcode = CodeSeqSM::MapToSMOpcode(opcode);
-        }
+        unsigned sz = opcodeSizes[opcode];
 
         switch (opcode)
         {
@@ -4335,10 +4300,7 @@ DECODE_OPCODE:
                 noway_assert(codeAddr < codeEndp - sz);
                 if ((OPCODE) getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlLooksLikeWrapperMethod);
-#ifdef DEBUG
-                    //printf("CALL->RET pattern found in %s\n", info.compFullName);
-#endif
+                    compInlineResult->note(InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER);
                 }
             }
             break;
@@ -4595,14 +4557,13 @@ INL_HANDLE_COMPARE:
                             unsigned slot0 = pushedStack.getSlot0();
                             if (fgStack::isArgument(slot0))
                             {
-                                compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                                compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                                 //Check for the double whammy of an incoming constant argument feeding a
                                 //constant test.
                                 varNum = fgStack::slotTypeToArgNum(slot0);
                                 if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                                 {
-                                    compInlineeHints = (InlineHints)(compInlineeHints
-                                                                        | InlIncomingConstFeedsCond);
+                                    compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                                 }
                             }
                         }
@@ -4617,13 +4578,13 @@ INL_HANDLE_COMPARE:
                 if ((fgStack::isConstant(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isConstant(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsConstantTest);
+                    compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST);
                 }
                 //Arg feeds range check
                 if ((fgStack::isArrayLen(slot0) && fgStack::isArgument(slot1))
                     ||(fgStack::isArrayLen(slot1) && fgStack::isArgument(slot0)))
                 {
-                    compInlineeHints = (InlineHints)(compInlineeHints | InlArgFeedsRngChk);
+                    compInlineResult->note(InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK);
                 }
 
                 //Check for an incoming arg that's a constant.
@@ -4632,7 +4593,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot0);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
                 }
                 if (fgStack::isArgument(slot1))
@@ -4640,7 +4601,7 @@ INL_HANDLE_COMPARE:
                     varNum = fgStack::slotTypeToArgNum(slot1);
                     if (impInlineInfo->inlArgInfo[varNum].argNode->OperIsConst())
                     {
-                        compInlineeHints = (InlineHints)(compInlineeHints | InlIncomingConstFeedsCond);
+                        compInlineResult->note(InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST);
                     }
                 }
             }
@@ -4701,11 +4662,8 @@ ADDR_TAKEN:
                     varNum = compMapILargNum(varNum); // account for possible hidden param
                 }
 
-                if (pSm)
-                {
-                    varType = (var_types)lvaTable[varNum].lvType;
-                    ti      = lvaTable[varNum].lvVerTypeInfo;
-                }
+                varType = (var_types)lvaTable[varNum].lvType;
+                ti      = lvaTable[varNum].lvVerTypeInfo;
 
                 if (!varTypeIsStruct(&lvaTable[varNum]) && // We will put structs in the stack anyway
                                                                 // And changing the addrTaken of a local
@@ -4742,21 +4700,7 @@ ADDR_TAKEN:
                 }
             } // compIsForInlining()
 
-            if (pSm                 &&
-                ti.IsValueClass()      &&
-                !varTypeIsStruct(varType))
-            {
-#ifdef DEBUG
-                if (verbose)
-                    printf("Loading address of normed V%02u at IL offset [0x%x]\n", varNum, codeAddr-codeBegp-1);
-#endif
-
-                if (smOpcode == SM_LDARGA_S)
-                    smOpcode = SM_LDARGA_S_NORMED;
-                else if (smOpcode == SM_LDLOCA_S)
-                    smOpcode = SM_LDLOCA_S_NORMED;
-            }
-
+            typeIsNormed = ti.IsValueClass() && !varTypeIsStruct(varType);
             break;
 
 ARG_WRITE:
@@ -4801,16 +4745,13 @@ ARG_WRITE:
 _SkipCodeAddrAdjustment:
         ;
 
-        if (pSm)
+        if (compInlineResult != nullptr)
         {
-            noway_assert(smOpcode<SM_COUNT);
-            noway_assert(smOpcode != SM_PREFIX_N);
-
-            pSm->Run(smOpcode DEBUGARG(0));
+            InlineObservation obs = typeIsNormed ?
+                InlineObservation::CALLEE_OPCODE_NORMED : InlineObservation::CALLEE_OPCODE;
+            compInlineResult->noteInt(obs, opcode);
         }
-
     }
-
 
     if  (codeAddr != codeEndp)
     {
@@ -4824,63 +4765,65 @@ TOO_FAR:
     //This allows for CALL, RET, and one more non-ld/st instruction.
     if ((opts.instrCount - ldStCount) < 4 || ((double)ldStCount/(double)opts.instrCount) > .90)
     {
-        compInlineeHints = (InlineHints)(compInlineeHints | InlMethodMostlyLdSt);
+        // Note this is the one and only case where we don't guard the
+        // observation with compIsForInlining(). The prejit root must
+        // also make this observation. We'll fix this eventually as we
+        // make the LegacyPolicy smarter about what observations it
+        // cares about, and when.
+        if (compInlineResult != nullptr)
+        {
+            compInlineResult->note(InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE);
+        }
     }
 
-    if (pSm)
+    if (compInlineResult != nullptr)
     {
-        pSm->End();
-        noway_assert(pSm->NativeSize != NATIVE_SIZE_INVALID);
-        compNativeSizeEstimate = pSm->NativeSize;
+        compInlineResult->note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-#ifdef DEBUG
-        if (verbose)
+        // If we were estimating native code size, grab that data now.
+        if (compInlineResult->hasNativeSizeEstimate())
         {
-            printf("\n\ncompNativeSizeEstimate=%d\n", compNativeSizeEstimate);
-        }
-#endif
+            compNativeSizeEstimate = compInlineResult->determineNativeSizeEstimate();
+            noway_assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
+            JITDUMP("\n\ncompNativeSizeEstimate=%d\n", compNativeSizeEstimate);
 
-        if (compIsForInlining())
-        {
-
-            // If the inlining decision was obvious from the size of the IL,
-            // it should have been made earlier.
-            noway_assert(codeSize > ALWAYS_INLINE_SIZE && codeSize <= impInlineSize);
-
-            // Make an inlining decision based on the estimated native size.
-            int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
-
-            impCanInlineNative(callsiteNativeSizeEstimate,
-                               compNativeSizeEstimate,
-                               compInlineeHints,
-                               impInlineInfo,
-                               compInlineResult);
-
-            if (compInlineResult->isFailure())
+            // If we're inlining, use the size estimate to do further
+            // screening.
+            //
+            // If we're in the prejit-root case we do something
+            // similar as part of the prejit screen over in
+            // compCompileHelper.
+            if (compIsForInlining())
             {
-#ifdef DEBUG
-                if (verbose)
+                // If the inlining decision was obvious from the size of the IL,
+                // it should have been made earlier.
+                InlineObservation obs = compInlineResult->getObservation();
+                noway_assert(obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+                // Make an inlining decision based on the estimated native size.
+                int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
+
+                impCanInlineNative(callsiteNativeSizeEstimate,
+                                   compNativeSizeEstimate,
+                                   impInlineInfo,
+                                   compInlineResult);
+
+                if (compInlineResult->isFailure())
                 {
-                    printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
-                       compInlineResult->resultString(),
-                       compInlineResult->reasonString());
-                }
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
+                               compInlineResult->resultString(),
+                               compInlineResult->reasonString());
+                    }
 #endif
 
-                return;
+                    return;
+                }
             }
         }
     }
-    else 
-    {
-       if (compIsForInlining()) 
-       {
-          // This method's IL was small enough that we didn't use the size model to estimate
-          // inlinability. Note that as the latest candidate reason.
-          compInlineResult->noteCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
-       }
-    }
-
 
     if (!compIsForInlining() && // None of the local vars in the inlinee should have address taken or been written to.
                                 // Therefore we should NOT need to enter this "if" statement.
@@ -10040,8 +9983,7 @@ void                Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNe
 #endif
 
 #if DEBUG
-    static ConfigDWORD fSlowDebugChecksEnabled;
-    if (fSlowDebugChecksEnabled.val(CLRConfig::INTERNAL_JitSlowDebugChecksEnabled) != 0)
+    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
     {
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -18905,21 +18847,15 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
 #ifdef DEBUG
     if (opts.eeFlags & CORJIT_FLG_PREJIT)
     {
-        static ConfigString sNgenDumpFg;
-        pattern = sNgenDumpFg.val(CLRConfig::INTERNAL_NgenDumpFg);
-        static ConfigString sNgenDumpFgFile;
-        filename = sNgenDumpFgFile.val(CLRConfig::INTERNAL_NgenDumpFgFile);
-        static ConfigString sNgenDumpFgDir;
-        pathname = sNgenDumpFgDir.val(CLRConfig::INTERNAL_NgenDumpFgDir);
+        pattern = JitConfig.NgenDumpFg();
+        filename = JitConfig.NgenDumpFgFile();
+        pathname = JitConfig.NgenDumpFgDir();
     }
     else
     {
-        static ConfigString sJitDumpFg;
-        pattern = sJitDumpFg.val(CLRConfig::INTERNAL_JitDumpFg);
-        static ConfigString sJitDumpFgFile;
-        filename = sJitDumpFgFile.val(CLRConfig::INTERNAL_JitDumpFgFile);
-        static ConfigString sJitDumpFgDir;
-        pathname = sJitDumpFgDir.val(CLRConfig::INTERNAL_JitDumpFgDir);
+        pattern = JitConfig.JitDumpFg();
+        filename = JitConfig.JitDumpFgFile();
+        pathname = JitConfig.JitDumpFgDir();
     }
 #endif // DEBUG
 
@@ -18932,8 +18868,7 @@ FILE*              Compiler::fgOpenFlowGraphFile(bool*  wbDontClose, Phases phas
     if (wcslen(pattern) == 0)
         return NULL;
 
-    static ConfigString sJitDumpFgPhase;
-    LPCWSTR phasePattern = sJitDumpFgPhase.val(CLRConfig::INTERNAL_JitDumpFgPhase);
+    LPCWSTR phasePattern = JitConfig.JitDumpFgPhase();
     LPCWSTR phaseName = PhaseShortNames[phase];
     if (phasePattern == 0)
     {
@@ -19195,9 +19130,8 @@ bool               Compiler::fgDumpFlowGraph(Phases phase)
 {
     bool    result    = false;
     bool    dontClose = false;
-    static ConfigDWORD fJitDumpFgDot;
     bool    createDotFile = false;
-    if (fJitDumpFgDot.val(CLRConfig::INTERNAL_JitDumpFgDot))
+    if (JitConfig.JitDumpFgDot())
     {
         createDotFile = true;
     }

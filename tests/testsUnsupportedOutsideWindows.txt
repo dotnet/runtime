@@ -1,3 +1,4 @@
+baseservices/threading/commitstackonlyasneeded/DefaultStackCommit/DefaultStackCommit.sh
 CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
 CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
 CoreMangLib/cti/system/datetime/DateTimeParseExact1/DateTimeParseExact1.sh

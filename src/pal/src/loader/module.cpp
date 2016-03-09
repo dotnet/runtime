@@ -54,7 +54,7 @@ Abstract:
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#if defined(__LINUX__)
+#if defined(__linux__)
 #include <gnu/lib-names.h>
 #endif
 
@@ -91,7 +91,6 @@ MODSTRUCT exe_module;
 MODSTRUCT *pal_module = nullptr;
 
 char * g_szCoreCLRPath = nullptr;
-size_t g_cbszCoreCLRPath = MAX_LONGPATH * sizeof(char);
 
 int MaxWCharToAcpLength = 3;
 
@@ -1270,14 +1269,9 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     if (*multibyteLibraryPathLengthRef == 0)
     {
         DWORD dwLastError = GetLastError();
-        if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
-        {
-            ERROR("wideLibraryPath converted to a multibyte string is longer than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-        }
+        
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
+        
         SetLastError(ERROR_INVALID_PARAMETER);
         return false;
     }
@@ -1705,20 +1699,22 @@ MODSTRUCT *LOADGetPalLibrary()
         // Make sure it's terminated with a slash.
         if (g_szCoreCLRPath == nullptr)
         {
-            g_szCoreCLRPath = (char*) InternalMalloc(g_cbszCoreCLRPath);
+            size_t  cbszCoreCLRPath = strlen(info.dli_fname) + 1;
+            g_szCoreCLRPath = (char*) InternalMalloc(cbszCoreCLRPath);
 
             if (g_szCoreCLRPath == nullptr)
             {
                 ERROR("LOADGetPalLibrary: InternalMalloc failed!");
                 goto exit;
             }
+
+            if (strcpy_s(g_szCoreCLRPath, cbszCoreCLRPath, info.dli_fname) != SAFECRT_SUCCESS)
+            {
+                ERROR("LOADGetPalLibrary: strcpy_s failed!");
+                goto exit;
+            }
         }
         
-        if (strcpy_s(g_szCoreCLRPath, g_cbszCoreCLRPath, info.dli_fname) != SAFECRT_SUCCESS)
-        {
-            ERROR("LOADGetPalLibrary: strcpy_s failed!");
-            goto exit;
-        }
         pal_module = (MODSTRUCT *)LOADLoadLibrary(info.dli_fname, FALSE);
     }
 

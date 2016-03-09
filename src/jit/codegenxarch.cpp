@@ -2676,12 +2676,8 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
 
         assert(structDesc.passedInRegisters);
 
-        // TODO-Amd64-Unix: Have Lubo Review this change
-        // Test case JIT.opt.ETW.TailCallCases.TailCallCases has eightByteCount == 1
-        // This occurs with a TYP_STRUCT that is 3 bytes in size
-        // commenting out this assert results in correct codegen
-        //
-        // assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+        // The type of LclVars of TYP_STRUCT with one eightbyte is normalized.
+        assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
         GenTreePtr op1 = treeNode->gtOp.gtOp1;
         genConsumeRegs(op1);
@@ -5803,8 +5799,6 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             }
             else
             {
-                GenTree* addr = target->gtGetOp1();
-                genConsumeAddress(addr);
                 genEmitCall(emitter::EC_INDIR_ARD,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
