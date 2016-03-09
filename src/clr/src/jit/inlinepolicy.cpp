@@ -8,6 +8,7 @@
 #endif
 
 #include "inlinepolicy.h"
+#include "sm.h"
 
 //------------------------------------------------------------------------
 // getPolicy: Factory method for getting an InlinePolicy
@@ -41,12 +42,11 @@ void LegacyPolicy::noteSuccess()
 }
 
 //------------------------------------------------------------------------
-// note: handle an observation with non-fatal impact
+// noteBool: handle a boolean observation with non-fatal impact
 //
 // Arguments:
 //    obs      - the current obsevation
 //    value    - the value of the observation
-
 void LegacyPolicy::noteBool(InlineObservation obs, bool value)
 {
     // Check the impact
@@ -103,6 +103,39 @@ void LegacyPolicy::noteBool(InlineObservation obs, bool value)
             // Passed the profitability screen. Update candidacy.
             setCandidate(obs);
             break;
+        case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
+            {
+                // Set up the state machine, if this inline is
+                // discretionary and is still a candidate.
+                if (inlDecisionIsCandidate(inlDecision)
+                    && (inlObservation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
+                {
+                    // Better not have a state machine already.
+                    assert(inlStateMachine == nullptr);
+                    inlStateMachine = new (inlCompiler, CMK_Inlining) CodeSeqSM;
+                    inlStateMachine->Start(inlCompiler);
+                }
+                break;
+            }
+
+        case InlineObservation::CALLEE_END_OPCODE_SCAN:
+            {
+                // We only expect to see this observation once, so the
+                // native size estimate should have its initial value.
+                assert(inlNativeSizeEstimate == NATIVE_SIZE_INVALID);
+
+                // If we were using the state machine, get it to kick
+                // out a size estimate.
+                if (inlStateMachine != nullptr)
+                {
+                    inlStateMachine->End();
+                    inlNativeSizeEstimate = inlStateMachine->NativeSize;
+                    assert(inlNativeSizeEstimate != NATIVE_SIZE_INVALID);
+                }
+
+                break;
+            }
+
         default:
             // Ignore the remainder for now
             break;
@@ -174,11 +207,11 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
         {
             assert(inlIsForceInlineKnown);
             assert(value != 0);
-            unsigned ilByteSize = static_cast<unsigned>(value);
+            inlCodeSize = static_cast<unsigned>(value);
 
             // Now that we know size and forceinline state,
             // update candidacy.
-            if (ilByteSize <= ALWAYS_INLINE_SIZE)
+            if (inlCodeSize <= ALWAYS_INLINE_SIZE)
             {
                 // Candidate based on small size
                 setCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
@@ -188,7 +221,7 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
                 // Candidate based on force inline
                 setCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (ilByteSize <= inlCompiler->getImpInlineSize())
+            else if (inlCodeSize <= inlCompiler->getImpInlineSize())
             {
                 // Candidate, pending profitability evaluation
                 setCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -199,6 +232,32 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
                 setNever(InlineObservation::CALLEE_TOO_MUCH_IL);
             }
 
+            break;
+        }
+
+    case InlineObservation::CALLEE_OPCODE_NORMED:
+    case InlineObservation::CALLEE_OPCODE:
+        {
+            if (inlStateMachine != nullptr)
+            {
+                OPCODE opcode = static_cast<OPCODE>(value);
+                SM_OPCODE smOpcode = CodeSeqSM::MapToSMOpcode(opcode);
+                noway_assert(smOpcode < SM_COUNT);
+                noway_assert(smOpcode != SM_PREFIX_N);
+                if (obs == InlineObservation::CALLEE_OPCODE_NORMED)
+                {
+                    if (smOpcode == SM_LDARGA_S)
+                    {
+                        smOpcode = SM_LDARGA_S_NORMED;
+                    }
+                    else if (smOpcode == SM_LDLOCA_S)
+                    {
+                        smOpcode = SM_LDLOCA_S_NORMED;
+                    }
+                }
+
+                inlStateMachine->Run(smOpcode DEBUGARG(0));
+            }
             break;
         }
 
@@ -400,4 +459,29 @@ double LegacyPolicy::determineMultiplier()
     }
 
     return multiplier;
+}
+
+//------------------------------------------------------------------------
+// hasNativeCodeSizeEstimate: did this policy estimate native code size
+//
+// Notes: 
+//    Temporary scaffolding for refactoring work.
+
+bool LegacyPolicy::hasNativeSizeEstimate()
+{
+    return (inlStateMachine != nullptr);
+}
+
+//------------------------------------------------------------------------
+// determineNativeCodeSizeEstimate: return estimated native code size for
+// this inline candidate.
+//
+// Notes: 
+//    Uses the results of a state machine model for discretionary
+//    candidates.  Should not be needed for forcded or always
+//    candidates.
+
+int LegacyPolicy::determineNativeSizeEstimate()
+{
+    return inlNativeSizeEstimate;
 }
