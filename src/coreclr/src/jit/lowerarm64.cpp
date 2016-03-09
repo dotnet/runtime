@@ -1038,16 +1038,21 @@ Lowering::TreeNodeInfoInitBlockStore(GenTreeBlkOp* blkNode)
             && initVal->IsCnsIntOrI())
         {
             ssize_t size = blockSize->gtIntCon.gtIconVal;
-            // Replace the integer constant in initVal 
-            // to fill an 8-byte word with the fill value of the InitBlk
-            assert(initVal->gtIntCon.gtIconVal == (initVal->gtIntCon.gtIconVal & 0xFF));
+            // The fill value of an initblk is interpreted to hold a
+            // value of (unsigned int8) however a constant of any size
+            // may practically reside on the evaluation stack. So extract
+            // the lower byte out of the initVal constant and replicate
+            // it to a larger constant whose size is sufficient to support
+            // the largest width store of the desired inline expansion.
+
+            ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
             if (size < REGSIZE_BYTES)
             {
-                initVal->gtIntCon.gtIconVal = 0x01010101 * initVal->gtIntCon.gtIconVal;
+                initVal->gtIntCon.gtIconVal = 0x01010101 * fill;
             }
             else
             {
-                initVal->gtIntCon.gtIconVal = 0x0101010101010101LL * initVal->gtIntCon.gtIconVal;
+                initVal->gtIntCon.gtIconVal = 0x0101010101010101LL * fill;
                 initVal->gtType = TYP_LONG;
             }
 
