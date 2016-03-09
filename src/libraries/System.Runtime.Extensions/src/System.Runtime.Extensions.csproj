@@ -17,6 +17,9 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">win7</PackageTargetRuntime >
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime >
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard13aot'">win-aot</PackageTargetRuntime >
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netstandard13aot'">unix-aot</PackageTargetRuntime >
+    <CoreClrOrCorRt Condition="'$(TargetGroup)' == '' Or '$(TargetGroup)' == 'netstandard13aot'">true</CoreClrOrCorRt>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->
@@ -32,8 +35,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Release|AnyCPU'" />
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard13aot'">
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
@@ -112,7 +117,7 @@
   </ItemGroup>
 
   <!-- WINDOWS: CoreCLR -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(CoreClrOrCorRt)' == 'true'">
     <Compile Include="System\IO\Path.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
@@ -162,15 +167,16 @@
   </ItemGroup>
 
   <!-- WINDOWS: .NET Native -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard13aot'">
     <Compile Include="System\Random.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
     <Compile Include="System\IO\LowLevelTextWriter.cs" />
     <Compile Include="System\IO\LowLevelStringWriter.cs" />
-    <Compile Include="System\IO\Path.WinRT.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs" />
+    <Compile Include="System\IO\Path.WinRT.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'"/>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'"/>
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)' == 'netcore50aot' And '$(TargetsWindows)'=='true'"/>
+    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)' == 'netstandard13aot' Or '$(TargetsUnix)'=='true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetGroup)' == ''">
@@ -183,14 +189,18 @@
     <TargetingPackReference Include="System" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot' Or '$(TargetGroup)' == 'netstandard13aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.CoreLib.InteropServices" />
     <TargetingPackReference Include="System.Private.Interop" />
     <TargetingPackReference Include="System.Private.Threading" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" Condition="'$(TargetGroup)' == 'netcore50aot'"/>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" >
+        <TargetGroup>netcore50aot</TargetGroup>
+    </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
+    <ValidateIgnoreReference Include="@(TargetingPackReference)" Condition="'$(TargetGroup)' == 'netstandard13aot'"/>
+    <ValidateIgnoreReference Include="System.Private.Uri" Condition="'$(TargetGroup)' == 'netstandard13aot'"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -15,6 +15,12 @@
         "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23908",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
+    },
+    "netstandard1.3": {
+      "imports": [ "netcore50" ],
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23908"
+      }
     }
   }
 }
