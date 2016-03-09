@@ -28,7 +28,7 @@ namespace System.Net
 
         public static Exception GetException(SecurityStatusPal status)
         {
-            int win32Code = (int)GetInteropFromSecurityStatusPal(status);
+            int win32Code = (int)GetInteropFromSecurityStatusPal(status.ErrorCode);
             return new Win32Exception(win32Code);
         }
 
@@ -184,7 +184,7 @@ namespace System.Net
                 }
             }
 
-            return GetSecurityStatusPalFromInterop(errorCode);
+            return new SecurityStatusPal(SecurityStatusPalErrorCodeFromInterop(errorCode));
         }
 
         public unsafe static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
@@ -303,181 +303,181 @@ namespace System.Net
 
         private static SecurityStatusPal GetSecurityStatusPalFromWin32Int(int win32SecurityStatus)
         {
-            return GetSecurityStatusPalFromInterop((Interop.SecurityStatus)win32SecurityStatus);
+            return new SecurityStatusPal(SecurityStatusPalErrorCodeFromInterop((Interop.SecurityStatus)win32SecurityStatus));
         }
 
-        private static SecurityStatusPal GetSecurityStatusPalFromInterop(Interop.SecurityStatus win32SecurityStatus)
+        private static SecurityStatusPalErrorCode SecurityStatusPalErrorCodeFromInterop(Interop.SecurityStatus win32SecurityStatus)
         {
             switch (win32SecurityStatus)
             {
                 case Interop.SecurityStatus.OK:
-                    return SecurityStatusPal.OK;
+                    return SecurityStatusPalErrorCode.OK;
                 case Interop.SecurityStatus.ContinueNeeded:
-                    return SecurityStatusPal.ContinueNeeded;
+                    return SecurityStatusPalErrorCode.ContinueNeeded;
                 case Interop.SecurityStatus.CompleteNeeded:
-                    return SecurityStatusPal.CompleteNeeded;
+                    return SecurityStatusPalErrorCode.CompleteNeeded;
                 case Interop.SecurityStatus.CompAndContinue:
-                    return SecurityStatusPal.CompAndContinue;
+                    return SecurityStatusPalErrorCode.CompAndContinue;
                 case Interop.SecurityStatus.ContextExpired:
-                    return SecurityStatusPal.ContextExpired;
+                    return SecurityStatusPalErrorCode.ContextExpired;
                 case Interop.SecurityStatus.CredentialsNeeded:
-                    return SecurityStatusPal.CredentialsNeeded;
+                    return SecurityStatusPalErrorCode.CredentialsNeeded;
                 case Interop.SecurityStatus.Renegotiate:
-                    return SecurityStatusPal.Renegotiate;
+                    return SecurityStatusPalErrorCode.Renegotiate;
                 case Interop.SecurityStatus.OutOfMemory:
-                    return SecurityStatusPal.OutOfMemory;
+                    return SecurityStatusPalErrorCode.OutOfMemory;
                 case Interop.SecurityStatus.InvalidHandle:
-                    return SecurityStatusPal.InvalidHandle;
+                    return SecurityStatusPalErrorCode.InvalidHandle;
                 case Interop.SecurityStatus.Unsupported:
-                    return SecurityStatusPal.Unsupported;
+                    return SecurityStatusPalErrorCode.Unsupported;
                 case Interop.SecurityStatus.TargetUnknown:
-                    return SecurityStatusPal.TargetUnknown;
+                    return SecurityStatusPalErrorCode.TargetUnknown;
                 case Interop.SecurityStatus.InternalError:
-                    return SecurityStatusPal.InternalError;
+                    return SecurityStatusPalErrorCode.InternalError;
                 case Interop.SecurityStatus.PackageNotFound:
-                    return SecurityStatusPal.PackageNotFound;
+                    return SecurityStatusPalErrorCode.PackageNotFound;
                 case Interop.SecurityStatus.NotOwner:
-                    return SecurityStatusPal.NotOwner;
+                    return SecurityStatusPalErrorCode.NotOwner;
                 case Interop.SecurityStatus.CannotInstall:
-                    return SecurityStatusPal.CannotInstall;
+                    return SecurityStatusPalErrorCode.CannotInstall;
                 case Interop.SecurityStatus.InvalidToken:
-                    return SecurityStatusPal.InvalidToken;
+                    return SecurityStatusPalErrorCode.InvalidToken;
                 case Interop.SecurityStatus.CannotPack:
-                    return SecurityStatusPal.CannotPack;
+                    return SecurityStatusPalErrorCode.CannotPack;
                 case Interop.SecurityStatus.QopNotSupported:
-                    return SecurityStatusPal.QopNotSupported;
+                    return SecurityStatusPalErrorCode.QopNotSupported;
                 case Interop.SecurityStatus.NoImpersonation:
-                    return SecurityStatusPal.NoImpersonation;
+                    return SecurityStatusPalErrorCode.NoImpersonation;
                 case Interop.SecurityStatus.LogonDenied:
-                    return SecurityStatusPal.LogonDenied;
+                    return SecurityStatusPalErrorCode.LogonDenied;
                 case Interop.SecurityStatus.UnknownCredentials:
-                    return SecurityStatusPal.UnknownCredentials;
+                    return SecurityStatusPalErrorCode.UnknownCredentials;
                 case Interop.SecurityStatus.NoCredentials:
-                    return SecurityStatusPal.NoCredentials;
+                    return SecurityStatusPalErrorCode.NoCredentials;
                 case Interop.SecurityStatus.MessageAltered:
-                    return SecurityStatusPal.MessageAltered;
+                    return SecurityStatusPalErrorCode.MessageAltered;
                 case Interop.SecurityStatus.OutOfSequence:
-                    return SecurityStatusPal.OutOfSequence;
+                    return SecurityStatusPalErrorCode.OutOfSequence;
                 case Interop.SecurityStatus.NoAuthenticatingAuthority:
-                    return SecurityStatusPal.NoAuthenticatingAuthority;
+                    return SecurityStatusPalErrorCode.NoAuthenticatingAuthority;
                 case Interop.SecurityStatus.IncompleteMessage:
-                    return SecurityStatusPal.IncompleteMessage;
+                    return SecurityStatusPalErrorCode.IncompleteMessage;
                 case Interop.SecurityStatus.IncompleteCredentials:
-                    return SecurityStatusPal.IncompleteCredentials;
+                    return SecurityStatusPalErrorCode.IncompleteCredentials;
                 case Interop.SecurityStatus.BufferNotEnough:
-                    return SecurityStatusPal.BufferNotEnough;
+                    return SecurityStatusPalErrorCode.BufferNotEnough;
                 case Interop.SecurityStatus.WrongPrincipal:
-                    return SecurityStatusPal.WrongPrincipal;
+                    return SecurityStatusPalErrorCode.WrongPrincipal;
                 case Interop.SecurityStatus.TimeSkew:
-                    return SecurityStatusPal.TimeSkew;
+                    return SecurityStatusPalErrorCode.TimeSkew;
                 case Interop.SecurityStatus.UntrustedRoot:
-                    return SecurityStatusPal.UntrustedRoot;
+                    return SecurityStatusPalErrorCode.UntrustedRoot;
                 case Interop.SecurityStatus.IllegalMessage:
-                    return SecurityStatusPal.IllegalMessage;
+                    return SecurityStatusPalErrorCode.IllegalMessage;
                 case Interop.SecurityStatus.CertUnknown:
-                    return SecurityStatusPal.CertUnknown;
+                    return SecurityStatusPalErrorCode.CertUnknown;
                 case Interop.SecurityStatus.CertExpired:
-                    return SecurityStatusPal.CertExpired;
+                    return SecurityStatusPalErrorCode.CertExpired;
                 case Interop.SecurityStatus.AlgorithmMismatch:
-                    return SecurityStatusPal.AlgorithmMismatch;
+                    return SecurityStatusPalErrorCode.AlgorithmMismatch;
                 case Interop.SecurityStatus.SecurityQosFailed:
-                    return SecurityStatusPal.SecurityQosFailed;
+                    return SecurityStatusPalErrorCode.SecurityQosFailed;
                 case Interop.SecurityStatus.SmartcardLogonRequired:
-                    return SecurityStatusPal.SmartcardLogonRequired;
+                    return SecurityStatusPalErrorCode.SmartcardLogonRequired;
                 case Interop.SecurityStatus.UnsupportedPreauth:
-                    return SecurityStatusPal.UnsupportedPreauth;
+                    return SecurityStatusPalErrorCode.UnsupportedPreauth;
                 case Interop.SecurityStatus.BadBinding:
-                    return SecurityStatusPal.BadBinding;
+                    return SecurityStatusPalErrorCode.BadBinding;
                 default:
                     Debug.Fail("Unknown Interop.SecurityStatus value: " + win32SecurityStatus);
                     throw new InternalException();
             }
         }
 
-        private static Interop.SecurityStatus GetInteropFromSecurityStatusPal(SecurityStatusPal status)
+        private static Interop.SecurityStatus GetInteropFromSecurityStatusPal(SecurityStatusPalErrorCode status)
         {
             switch (status)
             {
-                case SecurityStatusPal.NotSet:
+                case SecurityStatusPalErrorCode.NotSet:
                     Debug.Fail("SecurityStatus NotSet");
                     throw new InternalException();
-                case SecurityStatusPal.OK:
+                case SecurityStatusPalErrorCode.OK:
                     return Interop.SecurityStatus.OK;
-                case SecurityStatusPal.ContinueNeeded:
+                case SecurityStatusPalErrorCode.ContinueNeeded:
                     return Interop.SecurityStatus.ContinueNeeded;
-                case SecurityStatusPal.CompleteNeeded:
+                case SecurityStatusPalErrorCode.CompleteNeeded:
                     return Interop.SecurityStatus.CompleteNeeded;
-                case SecurityStatusPal.CompAndContinue:
+                case SecurityStatusPalErrorCode.CompAndContinue:
                     return Interop.SecurityStatus.CompAndContinue;
-                case SecurityStatusPal.ContextExpired:
+                case SecurityStatusPalErrorCode.ContextExpired:
                     return Interop.SecurityStatus.ContextExpired;
-                case SecurityStatusPal.CredentialsNeeded:
+                case SecurityStatusPalErrorCode.CredentialsNeeded:
                     return Interop.SecurityStatus.CredentialsNeeded;
-                case SecurityStatusPal.Renegotiate:
+                case SecurityStatusPalErrorCode.Renegotiate:
                     return Interop.SecurityStatus.Renegotiate;
-                case SecurityStatusPal.OutOfMemory:
+                case SecurityStatusPalErrorCode.OutOfMemory:
                     return Interop.SecurityStatus.OutOfMemory;
-                case SecurityStatusPal.InvalidHandle:
+                case SecurityStatusPalErrorCode.InvalidHandle:
                     return Interop.SecurityStatus.InvalidHandle;
-                case SecurityStatusPal.Unsupported:
+                case SecurityStatusPalErrorCode.Unsupported:
                     return Interop.SecurityStatus.Unsupported;
-                case SecurityStatusPal.TargetUnknown:
+                case SecurityStatusPalErrorCode.TargetUnknown:
                     return Interop.SecurityStatus.TargetUnknown;
-                case SecurityStatusPal.InternalError:
+                case SecurityStatusPalErrorCode.InternalError:
                     return Interop.SecurityStatus.InternalError;
-                case SecurityStatusPal.PackageNotFound:
+                case SecurityStatusPalErrorCode.PackageNotFound:
                     return Interop.SecurityStatus.PackageNotFound;
-                case SecurityStatusPal.NotOwner:
+                case SecurityStatusPalErrorCode.NotOwner:
                     return Interop.SecurityStatus.NotOwner;
-                case SecurityStatusPal.CannotInstall:
+                case SecurityStatusPalErrorCode.CannotInstall:
                     return Interop.SecurityStatus.CannotInstall;
-                case SecurityStatusPal.InvalidToken:
+                case SecurityStatusPalErrorCode.InvalidToken:
                     return Interop.SecurityStatus.InvalidToken;
-                case SecurityStatusPal.CannotPack:
+                case SecurityStatusPalErrorCode.CannotPack:
                     return Interop.SecurityStatus.CannotPack;
-                case SecurityStatusPal.QopNotSupported:
+                case SecurityStatusPalErrorCode.QopNotSupported:
                     return Interop.SecurityStatus.QopNotSupported;
-                case SecurityStatusPal.NoImpersonation:
+                case SecurityStatusPalErrorCode.NoImpersonation:
                     return Interop.SecurityStatus.NoImpersonation;
-                case SecurityStatusPal.LogonDenied:
+                case SecurityStatusPalErrorCode.LogonDenied:
                     return Interop.SecurityStatus.LogonDenied;
-                case SecurityStatusPal.UnknownCredentials:
+                case SecurityStatusPalErrorCode.UnknownCredentials:
                     return Interop.SecurityStatus.UnknownCredentials;
-                case SecurityStatusPal.NoCredentials:
+                case SecurityStatusPalErrorCode.NoCredentials:
                     return Interop.SecurityStatus.NoCredentials;
-                case SecurityStatusPal.MessageAltered:
+                case SecurityStatusPalErrorCode.MessageAltered:
                     return Interop.SecurityStatus.MessageAltered;
-                case SecurityStatusPal.OutOfSequence:
+                case SecurityStatusPalErrorCode.OutOfSequence:
                     return Interop.SecurityStatus.OutOfSequence;
-                case SecurityStatusPal.NoAuthenticatingAuthority:
+                case SecurityStatusPalErrorCode.NoAuthenticatingAuthority:
                     return Interop.SecurityStatus.NoAuthenticatingAuthority;
-                case SecurityStatusPal.IncompleteMessage:
+                case SecurityStatusPalErrorCode.IncompleteMessage:
                     return Interop.SecurityStatus.IncompleteMessage;
-                case SecurityStatusPal.IncompleteCredentials:
+                case SecurityStatusPalErrorCode.IncompleteCredentials:
                     return Interop.SecurityStatus.IncompleteCredentials;
-                case SecurityStatusPal.BufferNotEnough:
+                case SecurityStatusPalErrorCode.BufferNotEnough:
                     return Interop.SecurityStatus.BufferNotEnough;
-                case SecurityStatusPal.WrongPrincipal:
+                case SecurityStatusPalErrorCode.WrongPrincipal:
                     return Interop.SecurityStatus.WrongPrincipal;
-                case SecurityStatusPal.TimeSkew:
+                case SecurityStatusPalErrorCode.TimeSkew:
                     return Interop.SecurityStatus.TimeSkew;
-                case SecurityStatusPal.UntrustedRoot:
+                case SecurityStatusPalErrorCode.UntrustedRoot:
                     return Interop.SecurityStatus.UntrustedRoot;
-                case SecurityStatusPal.IllegalMessage:
+                case SecurityStatusPalErrorCode.IllegalMessage:
                     return Interop.SecurityStatus.IllegalMessage;
-                case SecurityStatusPal.CertUnknown:
+                case SecurityStatusPalErrorCode.CertUnknown:
                     return Interop.SecurityStatus.CertUnknown;
-                case SecurityStatusPal.CertExpired:
+                case SecurityStatusPalErrorCode.CertExpired:
                     return Interop.SecurityStatus.CertExpired;
-                case SecurityStatusPal.AlgorithmMismatch:
+                case SecurityStatusPalErrorCode.AlgorithmMismatch:
                     return Interop.SecurityStatus.AlgorithmMismatch;
-                case SecurityStatusPal.SecurityQosFailed:
+                case SecurityStatusPalErrorCode.SecurityQosFailed:
                     return Interop.SecurityStatus.SecurityQosFailed;
-                case SecurityStatusPal.SmartcardLogonRequired:
+                case SecurityStatusPalErrorCode.SmartcardLogonRequired:
                     return Interop.SecurityStatus.SmartcardLogonRequired;
-                case SecurityStatusPal.UnsupportedPreauth:
+                case SecurityStatusPalErrorCode.UnsupportedPreauth:
                     return Interop.SecurityStatus.UnsupportedPreauth;
-                case SecurityStatusPal.BadBinding:
+                case SecurityStatusPalErrorCode.BadBinding:
                     return Interop.SecurityStatus.BadBinding;
                 default:
                     Debug.Fail("Unknown Interop.SecurityStatus value: " + status);
