@@ -5617,17 +5617,17 @@ void        Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineR
     fgMorphCallInlineHelper(call, inlineResult);
 
     // We should have made up our minds one way or another....
-    assert(inlineResult->isDecided());
+    assert(inlineResult->IsDecided());
 
     // If we failed to inline, we have a bit of work to do to cleanup
-    if (inlineResult->isFailure())
+    if (inlineResult->IsFailure())
     {
 
 #ifdef DEBUG
 
         // Before we do any cleanup, create a failing InlineContext to
         // capture details of the inlining attempt.
-        InlineContext::newFailure(this, fgMorphStmt, inlineResult);
+        InlineContext::NewFailure(this, fgMorphStmt, inlineResult);
 
 #endif
 
@@ -5659,7 +5659,7 @@ void        Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineR
 void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 {
     // Don't expect any surprises here.
-    assert(result->isCandidate());
+    assert(result->IsCandidate());
     
     if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
@@ -5668,13 +5668,13 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
         // caller and prospective callee locals). We still might be
         // able to inline other callees into this caller, or inline
         // this callee in other callers.
-        result->noteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+        result->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         return;
     }
 
     if (call->IsVirtual())
     {
-        result->noteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
+        result->NoteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
         return;
     }
 
@@ -5690,7 +5690,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 
     if (opts.compNeedSecurityCheck)
     {
-        result->noteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
+        result->NoteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
         return;
     }
     
@@ -5718,7 +5718,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     
     fgInvokeInlineeCompiler(call, result);
 
-    if (result->isFailure()) 
+    if (result->IsFailure()) 
     {
        // Undo some changes made in anticipation of inlining...
 
