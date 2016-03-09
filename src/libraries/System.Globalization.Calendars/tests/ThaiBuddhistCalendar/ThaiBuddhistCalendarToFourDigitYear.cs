@@ -63,11 +63,5 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(expectedYear, tbc.ToFourDigitYear(year));
         }
         #endregion
-
-        [Fact]
-        public void ToFourDigitYear_Invalid()
-        {
-            CalendarHelpers.ToFourDigitYear_Invalid(new ThaiBuddhistCalendar());
-        }
     }
 }

@@ -53,11 +53,5 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(tbc.TwoDigitYearMax, twoYearMax);
         }
         #endregion
-
-        [Fact]
-        public void TwoDigitYearMax_Invalid()
-        {
-            CalendarHelpers.TwoDigitYearMax_Invalid(new ThaiBuddhistCalendar());
-        }
     }
 }

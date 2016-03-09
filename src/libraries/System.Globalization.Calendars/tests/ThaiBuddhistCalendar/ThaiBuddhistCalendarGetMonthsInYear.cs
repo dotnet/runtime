@@ -60,11 +60,5 @@ namespace System.Globalization.CalendarsTests
             }
         }
         #endregion
-        
-        [Fact]
-        public void GetMonthsInYear_Invalid()
-        {
-            CalendarHelpers.GetMonthsInYear_Invalid(new ThaiBuddhistCalendar());
-        }
     }
 }
