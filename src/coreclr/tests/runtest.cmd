@@ -177,6 +177,15 @@ xcopy /s "%__BinDir%" "%CORE_ROOT%"
 
 :SkipCoreRootSetup
 
+:: Pull down dependent packages needed for testing
+setlocal
+if defined __TestEnv call %__TestEnv%
+if defined COMPlus_GCStress set __Result=true
+endlocal & set __IsGCTest=%__Result%
+if "%__IsGCTest%"=="true" (
+    call tests\setup-runtime-dependencies.cmd /outputdir %CORE_ROOT%
+)
+
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:NoBuild=true /clp:showcommandline
 
@@ -185,6 +194,7 @@ if errorlevel 1 (
     echo     Html report: %__TestRunHtmlLog%
     exit /b 1
 )
+
 
 REM =========================================================================================
 REM ===
