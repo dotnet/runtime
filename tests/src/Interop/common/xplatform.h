@@ -30,6 +30,11 @@
 // dllexport
 #if defined _WIN32
 #define DLL_EXPORT __declspec(dllexport)
+
+#ifndef snprintf
+#define snprintf _snprintf
+#endif //snprintf
+
 #else //!_Win32
 #if __GNUC__ >= 4    
 #define DLL_EXPORT __attribute__ ((visibility ("default")))

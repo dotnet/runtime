@@ -12,6 +12,23 @@ set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (WIN32)
     add_definitions(-DWINDOWS=1)
+
+    if (DEFINED ENV{__ToolsetDir})
+        # Hack for private Tool Set
+        # CMAKE_CXX_COMPILER will default to the compiler installed with
+        # Visual studio. Overwrite it to the compiler on the path.
+
+        find_program(PATH_CXX_COMPILER cl)
+        set(CMAKE_CXX_COMPILER ${PATH_CXX_COMPILER})
+
+        message("Overwriting the CMAKE_CXX_COMPILER.")
+        message("CMAKE_CXX_COMPILER found:${CMAKE_CXX_COMPILER}")
+      
+        # Temporary until cmake has VS generators for hacky toolsets [arm64]
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /machine:${CLR_CMAKE_TARGET_ARCH}")
+        set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /machine:${CLR_CMAKE_TARGET_ARCH}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /machine:${CLR_CMAKE_TARGET_ARCH}")
+    endif()
 endif()
 
 # Compile options

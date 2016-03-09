@@ -181,9 +181,6 @@ set "__TestRootDir=%__RootBinDir%\tests"
 set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
-:: Use this variable to locate dynamically generated files; the actual location though will be different.
-set "__GeneratedIntermediatesDir=%__IntermediatesDir%\Generated_latest"
-
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
@@ -278,28 +275,13 @@ echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__Build
 REM Use setlocal to restrict environment changes form vcvarsall.bat and more to just this native components build section.
 setlocal EnableDelayedExpansion EnableExtensions
 
-if /i not "%__BuildArch%" == "arm64" goto NotArm64Build
-
+if /i "%__BuildArch%" == "arm64" ( 
 rem arm64 builds currently use private toolset which has not been released yet
 REM TODO, remove once the toolset is open.
-
-if /i "%__ToolsetDir%" == "" (
-    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
-    exit /b 1
-)
-
-set PATH=%PATH%;%__ToolsetDir%\cpp\bin
-set LIB=%__ToolsetDir%\OS\lib;%__ToolsetDir%\cpp\lib
-set INCLUDE=^
-%__ToolsetDir%\cpp\inc;^
-%__ToolsetDir%\OS\inc\Windows;^
-%__ToolsetDir%\OS\inc\Windows\crt;^
-%__ToolsetDir%\cpp\inc\vc;^
-%__ToolsetDir%\OS\inc\win8
+call :PrivateToolSet
 
 goto GenVSSolution
-
-:NotArm64Build
+)
 
 :: Set the environment for the native build
 set __VCBuildArch=x86_amd64
@@ -509,6 +491,10 @@ if defined __TestPriority (
     set "__BuildtestArgs=%__BuildtestArgs% Priority %__TestPriority%"
 )
 
+rem arm64 builds currently use private toolset which has not been released yet
+REM TODO, remove once the toolset is open.
+if /i "%__BuildArch%" == "arm64" call :PrivateToolSet 
+
 call %__ProjectDir%\tests\buildtest.cmd %__BuildtestArgs%
 
 if errorlevel 1 (
@@ -676,3 +662,22 @@ echo Visual Studio Express does not include the DIA SDK. ^
 You need Visual Studio 2015+ (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
+
+:PrivateToolSet
+
+echo %__MsgPrefix% Setting Up the usage of __ToolsetDir:%__ToolsetDir%
+
+if /i "%__ToolsetDir%" == "" (
+    echo %__MsgPrefix%Error: A toolset directory is required for the Arm64 Windows build. Use the toolset_dir argument.
+    exit /b 1
+)
+
+set PATH=%PATH%;%__ToolsetDir%\cpp\bin
+set LIB=%__ToolsetDir%\OS\lib;%__ToolsetDir%\cpp\lib
+set INCLUDE=^
+%__ToolsetDir%\cpp\inc;^
+%__ToolsetDir%\OS\inc\Windows;^
+%__ToolsetDir%\OS\inc\Windows\crt;^
+%__ToolsetDir%\cpp\inc\vc;^
+%__ToolsetDir%\OS\inc\win8
+exit /b 0
