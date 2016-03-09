@@ -32,7 +32,10 @@ Param(
 
     # The directory that contains the .nuspec files that will be used to create the
     # cross-platform and combined packages.
-    [string]$nuspecDir
+    [string]$nuspecDir,
+
+    # The build number, if any.
+    [string]$buildNumber = $null
 )
 
 function Get-Latest-Blob-Name
@@ -162,10 +165,16 @@ $packages = @(
     "Microsoft.DotNet.RyuJit"
 )
 
+$packageVersion = "1.0.6-prerelease"
+if ($buildNumber)
+{
+    $packageVersion = $packageVersion + "-" + $buildNumber
+}
+
 # Note: nuget appears to exit with code 0 in every case, so there's no way to detect failure here
 #       other than looking at the output.
 foreach ($package in $packages) {
-    Invoke-Expression "$nugetPath pack $packageOutputDir\$package.nuspec -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory $packageOutputDir"
+    Invoke-Expression "$nugetPath pack $packageOutputDir\$package.nuspec -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory $packageOutputDir -Version $packageVersion"
     Invoke-Expression "$nugetPath push -NonInteractive $packageOutputDir\$package.nupkg -s $feed $apiKey"
 }
 
