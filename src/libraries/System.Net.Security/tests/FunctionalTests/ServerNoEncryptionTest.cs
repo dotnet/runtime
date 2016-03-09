@@ -49,8 +49,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5557, PlatformID.Linux)]
-        [Fact]
+        [ConditionalFact(nameof(SupportsNullEncryption))]
         public async Task ServerNoEncryption_ClientAllowNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(
@@ -73,7 +72,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5557, PlatformID.Linux)]
         [Fact]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
@@ -85,15 +83,25 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 {
-                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
-                    _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
-                        serverNoEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
+                    if (SupportsNullEncryption)
+                    {
+                        await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
+                        _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
+                            serverNoEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
 
-                    CipherAlgorithmType expected = CipherAlgorithmType.Null;
-                    Assert.Equal(expected, sslStream.CipherAlgorithm);
-                    Assert.Equal(0, sslStream.CipherStrength);
+                        CipherAlgorithmType expected = CipherAlgorithmType.Null;
+                        Assert.Equal(expected, sslStream.CipherAlgorithm);
+                        Assert.Equal(0, sslStream.CipherStrength);
+                    }
+                    else
+                    {
+                        var ae = await Assert.ThrowsAsync<AuthenticationException>(() => sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false));
+                        Assert.IsType<PlatformNotSupportedException>(ae.InnerException);
+                    }
                 }
             }
         }
+
+        private static bool SupportsNullEncryption => TestConfiguration.SupportsNullEncryption;
     }
 }

@@ -72,8 +72,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(5557, PlatformID.Linux)]
-        [Fact]
+        [ConditionalFact(nameof(SupportsNullEncryption))]
         public async Task ServerRequireEncryption_ClientNoEncryption_NoConnect()
         {
             using (var serverRequireEncryption = new DummyTcpServer(
@@ -88,5 +87,7 @@ namespace System.Net.Security.Tests
                 }
             }
         }
+
+        private static bool SupportsNullEncryption => TestConfiguration.SupportsNullEncryption;
     }
 }
