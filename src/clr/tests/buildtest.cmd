@@ -96,7 +96,7 @@ set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 if not defined __TestIntermediateDir (
     set "__TestIntermediateDir=tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 )
-set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDirDir%\Native"
+set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
@@ -181,6 +181,11 @@ setlocal EnableDelayedExpansion
 
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
 
+if defined __ToolsetDir (
+ echo %__MsgPrefix%ToolsetDir is defined to be :%__ToolsetDir%
+ goto GenVSSolution :: Private ToolSet is Defined
+)
+
 :: Set the environment for the native build
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" x86_amd64
@@ -192,7 +197,8 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-echo %__MsgPrefix%Regenerating the Visual Studio solution
+:GenVSSolution
+echo %__MsgPrefix%Regenerating the Visual Studio solution in %__NativeTestIntermediatesDir%
 
 pushd "%__NativeTestIntermediatesDir%"
 call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\" %__VSVersion% %__BuildArch%
@@ -204,10 +210,17 @@ if not exist "%__NativeTestIntermediatesDir%\install.vcxproj" (
     exit /b 1
 )
 
-set __BuildLogRootName=Tests_Native
-call :msbuild "%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildCleanBuildArgs% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch%
-if errorlevel 1 exit /b 1
+set __msbuildNativeArgs=%__msbuildCleanBuildArgs% /p:Configuration=%__BuildType%
 
+if defined __ToolsetDir (
+    set __msbuildNativeArgs=%__msbuildNativeArgs% /p:UseEnv=true
+) else (
+    set __msbuildNativeArgs=%__msbuildNativeArgs% /p:Platform=%__BuildArch%
+)
+
+set __BuildLogRootName=Tests_Native
+call :msbuild "%__NativeTestIntermediatesDir%\install.vcxproj" %__msbuildNativeArgs%
+if errorlevel 1 exit /b 1
 REM endlocal to rid us of environment changes from vcvarsall.bat
 endlocal
 
