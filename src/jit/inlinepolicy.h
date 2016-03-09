@@ -44,6 +44,7 @@ public:
         , inlStateMachine(nullptr)
         , inlCodeSize(0)
         , inlNativeSizeEstimate(NATIVE_SIZE_INVALID)
+        , inlCallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , inlIsForceInline(false)
         , inlIsForceInlineKnown(false)
         , inlIsInstanceCtor(false)
@@ -68,7 +69,7 @@ public:
     // Policy determinations
     double determineMultiplier() override;
     int determineNativeSizeEstimate() override;
-    bool hasNativeSizeEstimate() override;
+    int determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) override;
 
     // Policy policies
     bool propagateNeverToRuntime() const override { return true; }
@@ -89,20 +90,21 @@ private:
     const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
-    Compiler*  inlCompiler;
-    CodeSeqSM* inlStateMachine;
-    unsigned   inlCodeSize;
-    int        inlNativeSizeEstimate;
-    bool       inlIsForceInline :1;
-    bool       inlIsForceInlineKnown :1;
-    bool       inlIsInstanceCtor :1;
-    bool       inlIsFromPromotableValueClass :1;
-    bool       inlHasSimd :1;
-    bool       inlLooksLikeWrapperMethod :1;
-    bool       inlArgFeedsConstantTest :1;
-    bool       inlMethodIsMostlyLoadStore :1;
-    bool       inlArgFeedsRangeCheck :1;
-    bool       inlConstantFeedsConstantTest :1;
+    Compiler*               inlCompiler;
+    CodeSeqSM*              inlStateMachine;
+    unsigned                inlCodeSize;
+    int                     inlNativeSizeEstimate;
+    InlineCallsiteFrequency inlCallsiteFrequency;
+    bool                    inlIsForceInline :1;
+    bool                    inlIsForceInlineKnown :1;
+    bool                    inlIsInstanceCtor :1;
+    bool                    inlIsFromPromotableValueClass :1;
+    bool                    inlHasSimd :1;
+    bool                    inlLooksLikeWrapperMethod :1;
+    bool                    inlArgFeedsConstantTest :1;
+    bool                    inlMethodIsMostlyLoadStore :1;
+    bool                    inlArgFeedsRangeCheck :1;
+    bool                    inlConstantFeedsConstantTest :1;
 };
 
 #endif // _INLINE_POLICY_H_

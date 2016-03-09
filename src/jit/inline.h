@@ -9,6 +9,7 @@
 //
 // -- ENUMS --
 //
+// InlineCallFrequency - rough assessment of call site frequency
 // InlineDecision      - overall decision made about an inline
 // InlineTarget        - target of a particular observation
 // InlineImpact        - impact of a particular observation
@@ -100,6 +101,19 @@ const unsigned int   MAX_INL_LCLS =      8;
                                          CORJIT_FLG_DEBUG_EnC |                     \
                                          CORJIT_FLG_DEBUG_INFO                      \
                                         )
+
+// InlineCallsiteFrequency gives a rough classification of how
+// often a call site will be excuted at runtime.
+
+enum class InlineCallsiteFrequency
+{
+    UNUSED,    // n/a
+    RARE,      // once in a blue moon
+    BORING,    // normal call site
+    WARM,      // seen during profiling
+    LOOP,      // in a loop
+    HOT        // very frequent
+};
 
 // InlineDecision describes the various states the jit goes through when
 // evaluating an inline candidate. It is distinct from CorInfoInline
@@ -228,8 +242,8 @@ public:
 
     // Policy determinations
     virtual double determineMultiplier() = 0;
-    virtual bool hasNativeSizeEstimate() = 0;
     virtual int determineNativeSizeEstimate() = 0;
+    virtual int determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) = 0;
 
     // Policy policies
     virtual bool propagateNeverToRuntime() const = 0;
@@ -365,16 +379,16 @@ public:
         return inlPolicy->determineMultiplier();
     }
 
-    // Is there a native size estimate?
-    bool hasNativeSizeEstimate()
-    {
-        return inlPolicy->hasNativeSizeEstimate();
-    }
-    
     // Determine the native size estimate for this inline
     int determineNativeSizeEstimate()
     {
         return inlPolicy->determineNativeSizeEstimate();
+    }
+
+    // Determine the native size estimate for this call site
+    int determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo)
+    {
+        return inlPolicy->determineCallsiteNativeSizeEstimate(methodInfo);
     }
 
     // Ensure details of this inlining process are appropriately

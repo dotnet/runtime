@@ -4188,15 +4188,17 @@ private:
 // Arguments:
 //    codeAddr   - base address of the IL code buffer
 //    codeSize   - number of bytes in the IL code buffer
-//    jumpTarget - [OUT] xxx yuuu
+//    jumpTarget - [OUT] byte array for flagging jump targets
 //
 // Notes:
-//
 //    If inlining or prejitting the root, this method also makes
 //    various observations about the method that factor into inline
 //    decisions. It sets `compNativeSizeEstimate` as a side effect.
 //
 //    May throw an exception if the IL is malformed.
+//
+//    jumpTarget[N] is set to a JT_* value if IL offset N is a 
+//    jump target in the method.
 
 void Compiler::fgFindJumpTargets(const BYTE* codeAddr,
                                  IL_OFFSET   codeSize,
@@ -4780,8 +4782,10 @@ TOO_FAR:
     {
         compInlineResult->note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-        // If we were estimating native code size, grab that data now.
-        if (compInlineResult->hasNativeSizeEstimate())
+        // If the inline is viable and discretionary, we need to get
+        // an estimate for the callee native code size.
+        if (compInlineResult->isCandidate()
+            && (compInlineResult->getObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
         {
             compNativeSizeEstimate = compInlineResult->determineNativeSizeEstimate();
             noway_assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
@@ -4795,13 +4799,10 @@ TOO_FAR:
             // compCompileHelper.
             if (compIsForInlining())
             {
-                // If the inlining decision was obvious from the size of the IL,
-                // it should have been made earlier.
-                InlineObservation obs = compInlineResult->getObservation();
-                noway_assert(obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-
                 // Make an inlining decision based on the estimated native size.
-                int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(&impInlineInfo->inlineCandidateInfo->methInfo);
+                int callsiteNativeSizeEstimate =
+                    compInlineResult->determineCallsiteNativeSizeEstimate(
+                        &impInlineInfo->inlineCandidateInfo->methInfo);
 
                 impCanInlineNative(callsiteNativeSizeEstimate,
                                    compNativeSizeEstimate,
