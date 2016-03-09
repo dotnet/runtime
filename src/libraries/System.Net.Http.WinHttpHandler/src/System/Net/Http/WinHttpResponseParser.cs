@@ -132,6 +132,7 @@ namespace System.Net.Http
             Debug.Assert(buffer == null || (buffer != null && buffer.Length > StackLimit));
 
             int bufferLength;
+            uint originalIndex = index;
 
             if (buffer == null)
             {
@@ -166,6 +167,11 @@ namespace System.Net.Http
 
             if (lastError == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
             {
+                // WinHttpQueryHeaders may advance the index even when it fails due to insufficient buffer,
+                // so we set the index back to its original value so we can retry retrieving the same
+                // index again with a larger buffer.
+                index = originalIndex;
+
                 buffer = new char[bufferLength];
                 return GetResponseHeader(requestHandle, infoLevel, ref buffer, ref index, out headerValue);
             }

@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.IO;
-using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -462,6 +461,71 @@ namespace System.Net.Http.Functional.Tests
                     string responseText = await httpResponse.Content.ReadAsStringAsync();
                     Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, name, value));
                 }
+            }
+        }
+
+        private static KeyValuePair<string, string> GenerateCookie(string name, char repeat, int overallHeaderValueLength)
+        {
+            string emptyHeaderValue = $"{name}=; Path=/";
+
+            Debug.Assert(overallHeaderValueLength > emptyHeaderValue.Length);
+
+            int valueCount = overallHeaderValueLength - emptyHeaderValue.Length;
+            string value = new string(repeat, valueCount);
+
+            return new KeyValuePair<string, string>(name, value);
+        }
+
+        public static object[][] CookieNameValues =
+        {
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129) },
+
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256) },
+            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257) },
+
+            new object[]
+            {
+                new KeyValuePair<string, string>(
+                    ".AspNetCore.Antiforgery.Xam7_OeLcN4",
+                    "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM")
+            }
+        };
+
+        [Theory]
+        [MemberData(nameof(CookieNameValues))]
+        public async Task GetAsync_ResponseWithSetCookieHeaders_AllCookiesRead(KeyValuePair<string, string> cookie1)
+        {
+            var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
+            var cookie3 = new KeyValuePair<string, string>("name", "value");
+
+            string url = string.Format(
+                "http://httpbin.org/cookies/set?{0}={1}&{2}={3}&{4}={5}",
+                cookie1.Key,
+                cookie1.Value,
+                cookie2.Key,
+                cookie2.Value,
+                cookie3.Key,
+                cookie3.Value);
+
+            var handler = new HttpClientHandler()
+            {
+                AllowAutoRedirect = false
+            };
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(url))
+            {
+                CookieCollection cookies = handler.CookieContainer.GetCookies(new Uri(url));
+
+                Assert.Equal(3, handler.CookieContainer.Count);
+                Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
             }
         }
 
