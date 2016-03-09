@@ -87,3 +87,55 @@ Mono has implementations (though not necessarily complete) of WinForms, ASP.NET,
 ### Xamarin
 
 Xamarin is a commercial offering for building mobile applications targeting Android, iOS and Mac OS X Store. It's based on Mono, and on iOS and Android surfaces a different API profile, called the mobile profile. The subsetting was necessary to reduce the footprint, both by shipping smaller versions of the system libraries as well as making them more linker friendly. While Mono runs on Mac OS X without Xamarin, their linker is required make the app package for the Mac App Store.  Xamarin ships a full static compiler on iOS, as the platform does not support dynamic code generation.
+
+
+## Frameworks
+
+### Language-Integrated Query
+
+**Also referred to as**: LINQ
+
+Introduced in .NET Framework 3.5, Language-Integrated Query's (LINQ) goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods and Lambda functions (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
+
+A simple example of LINQ is
+
+```csharp
+var odds = source.Where(obj => obj.Id == 1).ToArray();
+```
+
+####IQueryable&lt;T&gt; and Expressions
+
+One of the big advantages of using LINQ over more common data processing patterns is that the function given to the LINQ function can be converted to an expression and then executed in some other form, like SQL or on another machine across the network. An expression is a in-memory representation of some logic to follow.
+
+For example, in the above sample `source` could actually be a database connection and the function call `Where(obj => obj.Id == 1)` would be conveted to a SQL WHERE clause: `WHERE ID = 1`, and then executed on the SQL server.
+
+####Parallel LINQ
+
+**Also referred to as**: PLINQ
+
+Also introduced in .NET Framework 3.5 Parallel LINQ. Parallel LINQ has a subset of the methods the LINQ does but may execute the iterations on different threads in any order. Generally to use Parallel LINQ you would just call the `AsParallel()` method on a collection implementing `IEnumerable`. And if at any point you wanted to return to "normal LINQ you can just call `AsSequential()`.
+
+### JSON.NET
+
+Released in June 2006 by [James Newton-King](https://twitter.com/JamesNK), JSON.NET has become the defacto standard for JSON serialization and deserialization in .NET. It is [open source](https://github.com/JamesNK/Newtonsoft.Json) and support almost every platform .NET code can run on (.NET Framework 2.0, 3.0, 3.5, 4.0, and 4.5; Mono; MonoTouch/Xamarin.iOS; MonoDroid/Xamarin.Android; Silverlight 3, 4, and 5; Windows Phone 8, 8, and 8.1; Windows 8 Store; .NET Core).  
+
+### Windows Forms
+
+**Also referred to as**: WinForms
+
+Windows Forms is an API provided by the .NET Framework (mostly in the `System.Windows.Forms` namespace) for creating desktop applications. Windows Forms provides an event-driven model for application development on top of the native loop-driven Win32 model. Mono [has an implementation](http://www.mono-project.com/docs/gui/winforms/) of Windows Forms, though it is not complete, since some parts of Windows Forms are tied to the Windows platform.
+
+Windows Forms is in maintenance mode now. That means new features will generally not be added.
+
+### Windows Presentation Foundation
+
+**Also referred to as**: WPF, Avalon
+
+Introduced in .NET Framework 3.0, Windows Presentation Foundation (WPF) was a new API for creating desktop applications. Like Windows Forms, WPF is event-driven. However, instead of using GDI/GDI+ for drawing applications, WPF used DirectX. Using DirectX allowed WPF applications to use the GPU for rendering, freeing the CPU for other tasks. WPF also introduced XAML, an XML-based language which allows a declarative way to describe user interfaces and data binding to models (XAML is used by Silverlight, UWP, and Xamarin as well).
+
+The .NET platform currently doesn't contain a cross-platform XAML-based UI stack. There are, however, various community projects in that space:
+
+* [CSHTML5](http://www.cshtml5.com/): A product to compile WPF/.NET Framework applications into HTML5/CSS3/ECMAScript5 applications.
+* [WPFLight](https://github.com/ronnycsharp/WPFLight): An OSS project to create WPF on top of XNA/MonoGame.
+* [Perspex](https://github.com/Perspex/Perspex): A cross-platform UI framework based on WPF.
+* [Granular](https://github.com/yuvaltz/Granular): A OSS project to allow WPF applications to run in the browser.
