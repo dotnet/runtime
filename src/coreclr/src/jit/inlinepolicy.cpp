@@ -261,6 +261,12 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
             break;
         }
 
+    case InlineObservation::CALLSITE_FREQUENCY:
+        assert(inlCallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+        inlCallsiteFrequency = static_cast<InlineCallsiteFrequency>(value);
+        assert(inlCallsiteFrequency != InlineCallsiteFrequency::UNUSED);
+        break;
+
     default:
         // Ignore all other information
         break;
@@ -458,30 +464,133 @@ double LegacyPolicy::determineMultiplier()
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
+    switch (inlCallsiteFrequency)
+    {
+    case InlineCallsiteFrequency::RARE:
+        // Note this one is not additive, it uses '=' instead of '+='
+        multiplier = 1.3;
+        JITDUMP("\nInline candidate callsite is rare.  Multiplier limited to %g.", multiplier);
+        break;
+    case InlineCallsiteFrequency::BORING:
+        multiplier += 1.3;
+        JITDUMP("\nInline candidate callsite is boring.  Multiplier increased to %g.", multiplier);
+        break;
+    case InlineCallsiteFrequency::WARM:
+        multiplier += 2.0;
+        JITDUMP("\nInline candidate callsite is warm.  Multiplier increased to %g.", multiplier);
+        break;
+    case InlineCallsiteFrequency::LOOP:
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate callsite is in a loop.  Multiplier increased to %g.", multiplier);
+        break;
+    case InlineCallsiteFrequency::HOT:
+        multiplier += 3.0;
+        JITDUMP("\nInline candidate callsite is hot.  Multiplier increased to %g.", multiplier);
+        break;
+    default:
+        assert(!"Unexpected callsite frequency");
+        break;
+    }
+
+#ifdef DEBUG
+
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
+
+    if (additionalMultiplier != 0)
+    {
+        multiplier += additionalMultiplier;
+        JITDUMP("\nmultiplier increased via JitInlineAdditonalMultiplier=%d to %g.", additionalMultiplier, multiplier);
+    }
+
+    if (inlCompiler->compInlineStress())
+    {
+        multiplier += 10;
+        JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
+    }
+
+#endif // DEBUG
+
     return multiplier;
-}
-
-//------------------------------------------------------------------------
-// hasNativeCodeSizeEstimate: did this policy estimate native code size
-//
-// Notes: 
-//    Temporary scaffolding for refactoring work.
-
-bool LegacyPolicy::hasNativeSizeEstimate()
-{
-    return (inlStateMachine != nullptr);
 }
 
 //------------------------------------------------------------------------
 // determineNativeCodeSizeEstimate: return estimated native code size for
 // this inline candidate.
 //
-// Notes: 
+// Notes:
 //    Uses the results of a state machine model for discretionary
-//    candidates.  Should not be needed for forcded or always
+//    candidates.  Should not be needed for forced or always
 //    candidates.
 
 int LegacyPolicy::determineNativeSizeEstimate()
 {
+    // Should be a discretionary candidate.
+    assert(inlObservation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+    // Should have a valid state machine estimate.
+    assert(inlNativeSizeEstimate != NATIVE_SIZE_INVALID);
+
     return inlNativeSizeEstimate;
+}
+
+//------------------------------------------------------------------------
+// determineNativeCallsiteSizeEstimate: estimate native size for the
+// callsite.
+//
+// Arguments:
+//    methInfo -- method info for the callee
+//
+// Notes:
+//    Estimates the native size (in bytes, scaled up by 10x) for the
+//    call site. While the quiality of the estimate here is questionable
+//    (especially for x64) it is being left as is for legacy compatibility.
+
+int LegacyPolicy::determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
+{
+    int callsiteSize = 55;   // Direct call take 5 native bytes; indirect call takes 6 native bytes.
+
+    bool hasThis = methInfo->args.hasThis();
+
+    if (hasThis)
+    {
+        callsiteSize += 30;  // "mov" or "lea"
+    }
+
+    CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
+    COMP_HANDLE comp = inlCompiler->info.compCompHnd;
+
+    for (unsigned i = (hasThis ? 1 : 0);
+         i < methInfo->args.totalILArgs();
+         i++, argLst = comp->getArgNext(argLst))
+    {
+        var_types sigType = (var_types) inlCompiler->eeGetArgType(argLst, &methInfo->args);
+
+        if (sigType == TYP_STRUCT)
+        {
+            typeInfo  verType  = inlCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
+
+            /*
+
+            IN0028: 00009B      lea     EAX, bword ptr [EBP-14H]
+            IN0029: 00009E      push    dword ptr [EAX+4]
+            IN002a: 0000A1      push    gword ptr [EAX]
+            IN002b: 0000A3      call    [MyStruct.staticGetX2(struct):int]
+
+            */
+
+            callsiteSize += 10; // "lea     EAX, bword ptr [EBP-14H]"
+
+            // NB sizeof (void*) fails to convey intent when cross-jitting.
+
+            unsigned opsz = (unsigned)(roundUp(comp->getClassSize(verType.GetClassHandle()), sizeof(void*)));
+            unsigned slots = opsz / sizeof(void*);
+
+            callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "
+        }
+        else
+        {
+            callsiteSize += 30; // push by average takes 3 bytes.
+        }
+    }
+
+    return callsiteSize;
 }
