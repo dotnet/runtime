@@ -129,5 +129,29 @@ void UTIL_SetLastErrorFromMach(kern_return_t MachReturn);
 #ifdef __cplusplus
 }
 #endif // __cplusplus
+class StringHolder
+   {
+       private:
+           LPSTR data;
+       public:
+        StringHolder() : data(NULL) { }
+        ~StringHolder()
+        { 
+            PAL_free( data); 
+        }
 
+        operator LPSTR () { return data;}
+
+        StringHolder& operator= (LPSTR value) 
+        {
+            data = value;
+            return *this;
+        }
+
+        BOOL IsNull()
+        {
+          return data == NULL;
+        }
+
+   };
 #endif /* _PAL_UTILS_H_ */

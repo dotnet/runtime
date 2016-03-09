@@ -71,8 +71,7 @@ void                Compiler::impInit()
 #ifndef DEBUG
     impInlineSize = DEFAULT_MAX_INLINE_SIZE;
 #else
-    static ConfigDWORD fJitInlineSize;
-    impInlineSize = fJitInlineSize.val_DontUse_(CLRConfig::INTERNAL_JITInlineSize, DEFAULT_MAX_INLINE_SIZE);
+    impInlineSize = JitConfig.JitInlineSize();
 
     if (compStressCompile(STRESS_INLINE, 50))
         impInlineSize *= 10;
@@ -191,8 +190,7 @@ inline void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) D
     const char* tail = strrchr(file, '\\');
     if (tail) file = tail+1;
 
-    static ConfigDWORD fJitBreakOnUnsafeCode;
-    if (fJitBreakOnUnsafeCode.val(CLRConfig::INTERNAL_JitBreakOnUnsafeCode))
+    if (JitConfig.JitBreakOnUnsafeCode())
         assert(!"Unsafe code detected");
 #endif
 
@@ -3462,8 +3460,7 @@ void    Compiler::verConvertBBToThrowVerificationException(BasicBlock* block
             printf("\n\nVerification failure: %s near IL %xh \n", info.compFullName, block->bbCodeOffs);
     }
 
-    static ConfigDWORD fDebugBreakOnVerificationFailure;
-    if (fDebugBreakOnVerificationFailure.val(CLRConfig::INTERNAL_DebugBreakOnVerificationFailure))
+    if (JitConfig.DebugBreakOnVerificationFailure())
     {
         DebugBreak();
     }
@@ -15522,7 +15519,6 @@ int   Compiler::impEstimateCallsiteNativeSize(CORINFO_METHOD_INFO *  methInfo)
 
 void             Compiler::impCanInlineNative(int           callsiteNativeEstimate,
                                               int           calleeNativeSizeEstimate,
-                                              InlineHints   inlineHints,
                                               InlineInfo*   pInlineInfo,     // NULL for static inlining hint for ngen.
                                               InlineResult* inlineResult)
 {
@@ -15546,116 +15542,36 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     }
 #endif 
 
-
-    //Compute all the static information first.
-    double multiplier = 0.0;
-
-    // Increase the multiplier for instance constructors.
+    // Note if this method is an instance constructor
     if ((info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0 &&
         (info.compFlags & CORINFO_FLG_STATIC)      == 0)
     {
-        multiplier += 1.5;
-
-#ifdef  DEBUG
-        if (verbose)
-        {
-            printf("\nmultiplier in instance constructors increased to %g.", (double)multiplier);
-        }
-#endif        
-        
+        inlineResult->note(InlineObservation::CALLEE_IS_INSTANCE_CTOR);
     }
 
-    // Bump up the multiplier for methods in promotable struct 
+    // Note if this method's class is a promotable struct
     if ((info.compClassAttr & CORINFO_FLG_VALUECLASS) != 0)        
     {        
         lvaStructPromotionInfo structPromotionInfo;
         lvaCanPromoteStructType(info.compClassHnd, &structPromotionInfo, false);
         if (structPromotionInfo.canPromote)
-        {        
-            multiplier += 3;                               
-
-#ifdef  DEBUG
-            if (verbose)
-            {
-                printf("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
-            }
-#endif        
+        {
+            inlineResult->note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
         }
     }               
 
-    //Check the rest of the static hints
-    if (inlineHints & InlLooksLikeWrapperMethod)
-    {
-        multiplier += 1.0;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate looks like a wrapper method.  Multipler increased to %g.", multiplier);
-#endif 
-    }
-    if (inlineHints & InlArgFeedsConstantTest)
-    {
-        multiplier += 1.0;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate has an arg that feeds a constant test.  Multipler increased to %g.", multiplier);
-#endif 
-    }
-    //Consider making this the same as "always inline"
-    if (inlineHints & InlMethodMostlyLdSt)
-    {
-        multiplier += 3.0;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate is mostly loads and stores.  Multipler increased to %g.", multiplier);
-#endif 
-    }
-#if 0
-    if (inlineHints & InlMethodContainsCondThrow)
-    {
-        multiplier += 1.5;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate contains a conditional throw.  Multipler increased to %g.", multiplier);
-#endif 
-    }
-#endif
-   
 #ifdef FEATURE_SIMD
+
+    // Note if this method is has SIMD args or return value
     if (pInlineInfo != nullptr && pInlineInfo->hasSIMDTypeArgLocalOrReturn)
     {
-        // The default value of the SIMD multiplier is set in clrconfigvalues.h.
-        // The current default value (3) addresses the inlining issues raised by the BepuPhysics benchmark
-        // (which required at least a value of 3), and appears to have a mild positive impact on ConsoleMandel
-        // (which only seemed to require a value of 1 to get the benefit).  For most of the benchmarks, the
-        // effect of different values was within the standard deviation.  This may be a place where future tuning
-        // (with additional benchmarks) would be valuable.
-
-        static ConfigDWORD fJitInlineSIMDMultiplier;
-        int simdMultiplier = fJitInlineSIMDMultiplier.val(CLRConfig::INTERNAL_JitInlineSIMDMultiplier);
-
-        multiplier += simdMultiplier;
-        JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multipler increased to %g.", multiplier);
+        inlineResult->note(InlineObservation::CALLEE_HAS_SIMD);
     }
+
 #endif // FEATURE_SIMD
 
-    if (inlineHints & InlArgFeedsRngChk)
-    {
-        multiplier += 0.5;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate has arg that feeds range check.  Multipler increased to %g.", multiplier);
-#endif 
-    }
-
-    //Handle the dynamic flags.
-    if (inlineHints & InlIncomingConstFeedsCond)
-    {
-        multiplier += 3;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nInline candidate has const arg that conditional.  Multipler increased to %g.", multiplier);
-#endif 
-    }
+    // Determine base multiplier given the various observations made so far.
+    double multiplier = inlineResult->determineMultiplier();
 
     //Because it is an if ... else if, keep them in sorted order by multiplier.  This ensures that we always
     //get the maximum multipler.  Also, pInlineInfo is null for static hints.  Make sure that the first case
@@ -15720,8 +15636,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     }
 
 #ifdef  DEBUG
-    static ConfigDWORD fJitInlineAdditionalMultiplier;
-    int additionalMultiplier = fJitInlineAdditionalMultiplier.val(CLRConfig::EXTERNAL_JitInlineAdditionalMultiplier);
+    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
 
     if (additionalMultiplier!=0)  
     {   
@@ -15787,8 +15702,8 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
                  calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
                  threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
 
-       // Still a viable candidate....update status
-       inlineResult->noteCandidate(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
+       // Candidate has passed the profitability screen, update candidacy.
+       inlineResult->note(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
     }
 
 #undef NATIVE_CALL_SIZE_MULTIPLIER
@@ -15832,11 +15747,6 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
-    if (forceInline)
-    {
-        inlineResult->noteCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-    }
-
     // Reject if it has too many locals.
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
@@ -15861,9 +15771,13 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
         return;
     }
 
-    // Reject large functions
+    // Note force inline state
 
-    inlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_IL_BYTES, codeSize);
+    inlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, forceInline);
+
+    // Note IL code size
+
+    inlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
     if (inlineResult->isFailure())
     {
@@ -15878,9 +15792,6 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     {
         return;
     }
-
-    // Still a viable candidate...
-    inlineResult->noteCandidate(InlineObservation::CALLEE_CAN_INLINE_IL);
 }
 
 /*****************************************************************************
@@ -15929,8 +15840,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         const char *     className;
         methodName = pParam->pThis->eeGetMethodName(pParam->fncHandle, &className);
 
-        static ConfigDWORD fJitNoInline;
-        if (fJitNoInline.val(CLRConfig::INTERNAL_JitNoInline))
+        if (JitConfig.JitNoInline())
         {
             pParam->result->noteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
             goto _exit;
@@ -16065,8 +15975,6 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         pInfo->initClassResult = initClassResult;
 
         *(pParam->ppInlineCandidateInfo) = pInfo;
-
-        pParam->result->noteCandidate(InlineObservation::CALLEE_CHECK_CAN_INLINE_IL);
   
 _exit:
         ;
@@ -16172,14 +16080,6 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
         printf("\n");
     }
 #endif
-
-    //
-    // The current arg does not prevent inlining.
-    //
-    // This doesn't mean that other information or other args
-    // will not prevent inlining of this method.
-    //
-    inlineResult->noteCandidate(InlineObservation::CALLSITE_ARGS_OK);
 }
 
 /*****************************************************************************
@@ -16524,7 +16424,6 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
 
-    inlineResult->noteCandidate(InlineObservation::CALLSITE_LOCALS_OK);
 }
 
 

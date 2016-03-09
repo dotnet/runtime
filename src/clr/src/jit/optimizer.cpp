@@ -17,8 +17,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning ( disable : 4701 )
 #endif
 
-static ConfigDWORD fCloneLoops;
-
 /*****************************************************************************/
 
 #if COUNT_RANGECHECKS
@@ -1855,7 +1853,7 @@ void                Compiler::optFindNaturalLoops()
                 loopsThisMethod++;
 
                 /* keep track of the number of exits */
-                loopExitCountTable.histoRec((unsigned)exitCount, 1);
+                loopExitCountTable.record(static_cast<unsigned>(exitCount));
 #endif // COUNT_LOOPS
             }
 
@@ -1865,7 +1863,7 @@ NO_LOOP: ;
     }
 
 #if COUNT_LOOPS
-    loopCountTable.histoRec(loopsThisMethod, 1);
+    loopCountTable.record(loopsThisMethod);
     if (maxLoopsPerMethod < loopsThisMethod)
     {
         maxLoopsPerMethod = loopsThisMethod;
@@ -2697,8 +2695,7 @@ void                Compiler::optUnrollLoops()
         return;
 
 #ifdef DEBUG
-    static ConfigDWORD fJitNoUnroll;
-    if (fJitNoUnroll.val(CLRConfig::INTERNAL_JitNoUnroll))
+    if (JitConfig.JitNoUnroll())
     {
         return;
     }
@@ -4089,8 +4086,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 //
 void                Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore)
 {
-    static ConfigDWORD fDebugLogLoopCloning;
-    if (fDebugLogLoopCloning.val(CLRConfig::INTERNAL_JitDebugLogLoopCloning) == 0)
+    if (JitConfig.JitDebugLogLoopCloning() == 0)
     {
         return;
     }
@@ -4165,7 +4161,7 @@ bool                Compiler::optCanCloneLoops()
     // Enabled for retail builds now.
     unsigned cloneLoopsFlag = 1;
 #ifdef DEBUG
-    cloneLoopsFlag = fCloneLoops.val(CLRConfig::INTERNAL_JitCloneLoops);
+    cloneLoopsFlag = JitConfig.JitCloneLoops();
 #endif
     return (cloneLoopsFlag != 0);
 }
@@ -5438,8 +5434,7 @@ void                    Compiler::optHoistLoopCode()
         return;
 
 #ifdef DEBUG
-    static ConfigDWORD fJitNoHoist;
-    unsigned jitNoHoist = fJitNoHoist.val(CLRConfig::INTERNAL_JitNoHoist);
+    unsigned jitNoHoist = JitConfig.JitNoHoist();
     if (jitNoHoist > 0)
     {
         return;

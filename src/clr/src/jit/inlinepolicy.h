@@ -17,6 +17,8 @@
 #include "jit.h"
 #include "inline.h"
 
+class CodeSeqSM;
+
 // LegacyPolicy implements the inlining policy used by the jit in its
 // initial release.
 //
@@ -36,23 +38,39 @@ class LegacyPolicy : public InlinePolicy
 public:
 
     // Construct a LegacyPolicy
-    LegacyPolicy(Compiler* compiler)
-        : InlinePolicy()
+    LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
+        : InlinePolicy(isPrejitRoot)
         , inlCompiler(compiler)
+        , inlStateMachine(nullptr)
+        , inlCodeSize(0)
+        , inlNativeSizeEstimate(NATIVE_SIZE_INVALID)
         , inlIsForceInline(false)
+        , inlIsForceInlineKnown(false)
+        , inlIsInstanceCtor(false)
+        , inlIsFromPromotableValueClass(false)
+        , inlHasSimd(false)
+        , inlLooksLikeWrapperMethod(false)
+        , inlArgFeedsConstantTest(false)
+        , inlMethodIsMostlyLoadStore(false)
+        , inlArgFeedsRangeCheck(false)
+        , inlConstantFeedsConstantTest(false)
     {
         // empty
     }
 
     // Policy observations
-    void noteCandidate(InlineObservation obs) override;
     void noteSuccess() override;
-    void note(InlineObservation obs) override;
+    void noteBool(InlineObservation obs, bool value) override;
     void noteFatal(InlineObservation obs) override;
     void noteInt(InlineObservation obs, int value) override;
     void noteDouble(InlineObservation obs, double value) override;
 
-    // Policy decisions
+    // Policy determinations
+    double determineMultiplier() override;
+    int determineNativeSizeEstimate() override;
+    bool hasNativeSizeEstimate() override;
+
+    // Policy policies
     bool propagateNeverToRuntime() const override { return true; }
 
 #ifdef DEBUG
@@ -62,23 +80,29 @@ public:
 private:
 
     // Helper methods
-    void noteInternal(InlineObservation obs, InlineImpact impact);
+    void noteInternal(InlineObservation obs);
+    void setCandidate(InlineObservation obs);
     void setFailure(InlineObservation obs);
     void setNever(InlineObservation obs);
-
-    // True if this policy is being used to scan a method during
-    // prejitting.
-    bool isPrejitScan() const 
-    { 
-        return !inlCompiler->compIsForInlining(); 
-    }
 
     // Constants
     const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
-    Compiler* inlCompiler;
-    bool      inlIsForceInline;
+    Compiler*  inlCompiler;
+    CodeSeqSM* inlStateMachine;
+    unsigned   inlCodeSize;
+    int        inlNativeSizeEstimate;
+    bool       inlIsForceInline :1;
+    bool       inlIsForceInlineKnown :1;
+    bool       inlIsInstanceCtor :1;
+    bool       inlIsFromPromotableValueClass :1;
+    bool       inlHasSimd :1;
+    bool       inlLooksLikeWrapperMethod :1;
+    bool       inlArgFeedsConstantTest :1;
+    bool       inlMethodIsMostlyLoadStore :1;
+    bool       inlArgFeedsRangeCheck :1;
+    bool       inlConstantFeedsConstantTest :1;
 };
 
 #endif // _INLINE_POLICY_H_

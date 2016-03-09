@@ -598,6 +598,20 @@ public:
         return (unsigned)(roundUp(lvExactSize, sizeof(void*)));
     }
 
+    bool                lvIsMultiregStruct()
+    {
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+        if ((TypeGet() == TYP_STRUCT) &&
+            (lvSize()  == 2 * TARGET_POINTER_SIZE))
+        {
+            return true;
+        }
+#endif  // _TARGET_ARM64_
+#endif  // FEATURE_MULTIREG_ARGS_OR_RET
+        return false;
+    }
+
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     unsigned            lvSlotNum;      // original slot # (if remapped)
 #endif
@@ -3098,7 +3112,6 @@ private:
 
     void                impCanInlineNative(int              callsiteNativeEstimate, 
                                            int              calleeNativeSizeEstimate,
-                                           InlineHints      inlineHints,
                                            InlineInfo*      pInlineInfo,
                                            InlineResult*    inlineResult);
 
@@ -4324,8 +4337,7 @@ protected :
     unsigned            fgStressBBProf()
     {
 #ifdef DEBUG
-        static ConfigDWORD fJitStressBBProf;
-        unsigned result = fJitStressBBProf.val(CLRConfig::INTERNAL_JitStressBBProf);
+        unsigned result = JitConfig.JitStressBBProf();
         if (result == 0)
         {
             if (compStressCompile(STRESS_BB_PROFILE, 15))
@@ -7550,6 +7562,7 @@ public :
         opts;
 
 #ifdef ALT_JIT
+    static bool s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
 #endif // ALT_JIT
 
@@ -7642,8 +7655,7 @@ public :
     bool                compTailCallStress()
     {
 #ifdef DEBUG
-        static ConfigDWORD fTailcallStress;
-        return (fTailcallStress.val(CLRConfig::INTERNAL_TailcallStress) !=0
+        return (JitConfig.TailcallStress() !=0
                || compStressCompile(STRESS_TAILCALL, 5)
                );
 #else
@@ -8555,11 +8567,7 @@ public:
 #define NATIVE_SIZE_INVALID  (-10000)                
 
     int                     compNativeSizeEstimate;     // The estimated native size of this method.
-    InlineHints             compInlineeHints;           // Inlining hints from the inline candidate.
 
-#ifdef DEBUG   
-    CodeSeqSM               fgCodeSeqSm;                // The code sequence state machine used in the inliner.
-#endif    
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
     JitTimer*                     pCompJitTimer;           // Timer data structure (by phases) for current compilation.
@@ -8853,8 +8861,8 @@ extern  size_t     gcPtrMapNSize;
  */
 
 #if COUNT_BASIC_BLOCKS
-extern  histo       bbCntTable;
-extern  histo       bbOneBBSizeTable;
+extern  Histogram   bbCntTable;
+extern  Histogram   bbOneBBSizeTable;
 #endif
 
 
@@ -8881,8 +8889,8 @@ extern unsigned    constIterLoopCount;          // counts the # of loops with a 
 extern bool        hasMethodLoops;              // flag to keep track if we already counted a method as having loops
 extern unsigned    loopsThisMethod;             // counts the number of loops in the current method
 extern bool        loopOverflowThisMethod;      // True if we exceeded the max # of loops in the method.
-extern histo       loopCountTable;              // Histogram of loop counts
-extern histo       loopExitCountTable;          // Histogram of loop exit counts
+extern Histogram   loopCountTable;              // Histogram of loop counts
+extern Histogram   loopExitCountTable;          // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
 
@@ -8920,8 +8928,8 @@ struct NodeSizeStats
 };
 extern NodeSizeStats genNodeSizeStats;          // Total node size stats
 extern NodeSizeStats genNodeSizeStatsPerFunc;   // Per-function node size stats
-extern histo genTreeNcntHist;
-extern histo genTreeNsizHist;
+extern Histogram genTreeNcntHist;
+extern Histogram genTreeNsizHist;
 #endif // MEASURE_NODE_SIZE
 
 /*****************************************************************************

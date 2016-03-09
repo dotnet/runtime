@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include "hostallocator.h"
 #include "instr.h"
 #include "emit.h"
 #include "codegen.h"
@@ -264,13 +265,13 @@ static  unsigned    totActualSize;
         unsigned    emitter::emitIFcounts[emitter::IF_COUNT];
 
 static  unsigned    emitSizeBuckets[] = { 100, 1024*1, 1024*2, 1024*3, 1024*4, 1024*5, 1024*10, 0 };
-static  histo       emitSizeTable(DefaultAllocator::Singleton(), emitSizeBuckets);
+static  Histogram   emitSizeTable(HostAllocator::getHostAllocator(), emitSizeBuckets);
 
 static  unsigned    GCrefsBuckets[] = { 0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0 };
-static  histo       GCrefsTable(DefaultAllocator::Singleton(), GCrefsBuckets);
+static  Histogram   GCrefsTable(HostAllocator::getHostAllocator(), GCrefsBuckets);
 
 static  unsigned    stkDepthBuckets[] = { 0, 1, 2, 5, 10, 16, 32, 128, 1024, 0 };
-static  histo       stkDepthTable(DefaultAllocator::Singleton(), stkDepthBuckets);
+static  Histogram   stkDepthTable(HostAllocator::getHostAllocator(), stkDepthBuckets);
 
 size_t              emitter::emitSizeMethod;
 
@@ -318,16 +319,16 @@ void                emitterStaticStats(FILE* fout)
 
     fprintf(fout, "\n");
     fprintf(fout, "insPlaceholderGroupData:\n");
-    fprintf(fout, "Offset of igPhNext                = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhNext          ));
-    fprintf(fout, "Offset of igPhBB                  = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhBB            ));
-    fprintf(fout, "Offset of igPhInitGCrefVars       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhInitGCrefVars ));
-    fprintf(fout, "Offset of igPhInitGCrefRegs       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhInitGCrefRegs ));
-    fprintf(fout, "Offset of igPhInitByrefRegs       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhInitByrefRegs ));
-    fprintf(fout, "Offset of igPhPrevGCrefVars       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhPrevGCrefVars ));
-    fprintf(fout, "Offset of igPhPrevGCrefRegs       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhPrevGCrefRegs ));
-    fprintf(fout, "Offset of igPhPrevByrefRegs       = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhPrevByrefRegs ));
-    fprintf(fout, "Offset of igPhType                = %2u\n", offsetof(emitter::insPlaceholderGroupData, igPhType          ));
-    fprintf(fout, "Size   of insPlaceholderGroupData = %u\n",  sizeof(  emitter::insPlaceholderGroupData                    ));
+    fprintf(fout, "Offset of igPhNext                = %2u\n", offsetof(insPlaceholderGroupData, igPhNext          ));
+    fprintf(fout, "Offset of igPhBB                  = %2u\n", offsetof(insPlaceholderGroupData, igPhBB            ));
+    fprintf(fout, "Offset of igPhInitGCrefVars       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitGCrefVars ));
+    fprintf(fout, "Offset of igPhInitGCrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitGCrefRegs ));
+    fprintf(fout, "Offset of igPhInitByrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhInitByrefRegs ));
+    fprintf(fout, "Offset of igPhPrevGCrefVars       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefVars ));
+    fprintf(fout, "Offset of igPhPrevGCrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevGCrefRegs ));
+    fprintf(fout, "Offset of igPhPrevByrefRegs       = %2u\n", offsetof(insPlaceholderGroupData, igPhPrevByrefRegs ));
+    fprintf(fout, "Offset of igPhType                = %2u\n", offsetof(insPlaceholderGroupData, igPhType          ));
+    fprintf(fout, "Size   of insPlaceholderGroupData = %u\n",  sizeof(  insPlaceholderGroupData                    ));
 
     fprintf(fout, "\n");
     fprintf(fout, "Size   of tinyID      = %2u\n", TINY_IDSC_SIZE);
@@ -421,15 +422,15 @@ void                emitterStats(FILE* fout)
     }
 
     fprintf(fout, "Descriptor size distribution:\n");
-    emitSizeTable.histoDsp(fout);
+    emitSizeTable.dump(fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "GC ref frame variable counts:\n");
-    GCrefsTable.histoDsp(fout);
+    GCrefsTable.dump(fout);
     fprintf(fout, "\n");
 
     fprintf(fout, "Max. stack depth distribution:\n");
-    stkDepthTable.histoDsp(fout);
+    stkDepthTable.dump(fout);
     fprintf(fout, "\n");
 
     int             i;
@@ -924,8 +925,7 @@ void                emitter::emitTmpSizeChanged(unsigned tmpSize)
 
 #ifdef DEBUG
     // Workaround for FP code
-    static ConfigDWORD fMaxTempAssert;
-    bool bAssert = fMaxTempAssert.val(CLRConfig::INTERNAL_JITMaxTempAssert)?true:false;
+    bool bAssert = JitConfig.JitMaxTempAssert()?true:false;
 
     if (tmpSize > emitMaxTmpSize && bAssert)
     {
@@ -4394,9 +4394,9 @@ unsigned            emitter::emitEndCodeGen(Compiler *comp,
     emitFullGCinfo = fullPtrMap;
 
 #if EMITTER_STATS
-      GCrefsTable.histoRec(emitGCrFrameOffsCnt, 1);
-    emitSizeTable.histoRec(emitSizeMethod     , 1);
-    stkDepthTable.histoRec(emitMaxStackDepth  , 1);
+    GCrefsTable.record(emitGCrFrameOffsCnt);
+    emitSizeTable.record(static_cast<unsigned>(emitSizeMethod));
+    stkDepthTable.record(emitMaxStackDepth);
 #endif // EMITTER_STATS
 
     // Default values, correct even if EMIT_TRACK_STACK_DEPTH is 0.

@@ -30,55 +30,12 @@ class IAllocator
     virtual void  Free(void* p) = 0;
 };
 
-// The "DefaultAllocator" class may be used by classes that wish to
-// provide the flexibility of using an "IAllocator" may avoid writing
-// conditionals at allocation sites about whether a non-default
-// "IAllocator" has been provided: if none is, they can simply set the
-// allocator to DefaultAllocator::Singleton().
-
-class DefaultAllocator: public IAllocator
-{
-    static DefaultAllocator s_singleton;
-
-  public:
-    void* Alloc(size_t sz)
-    {
-        return ::operator new(sz);
-    }
-
-    void* ArrayAlloc(size_t elemSize, size_t numElems)
-    {
-        ClrSafeInt<size_t> safeElemSize(elemSize);
-        ClrSafeInt<size_t> safeNumElems(numElems);
-        ClrSafeInt<size_t> sz = safeElemSize * safeNumElems;
-        if (sz.IsOverflow())
-        {
-            return NULL;
-        }
-        else
-        {
-            return ::operator new(sz.Value());
-        }
-    }
-
-    virtual void Free(void * p)
-    {
-        ::operator delete(p);
-    }
-
-    static DefaultAllocator* Singleton()
-    {
-        return &s_singleton;
-    }
-};
-
 // This class wraps an allocator that does not allow zero-length allocations,
-// producing one that does (every zero-length allocation produces a pointer to the same 
+// producing one that does (every zero-length allocation produces a pointer to the same
 // statically-allocated memory, and freeing that pointer is a no-op).
 class AllowZeroAllocator: public IAllocator
 {
-    static int s_zeroLenAllocTarg;
-
+    int m_zeroLenAllocTarg;
     IAllocator* m_alloc;
 
 public:
@@ -87,8 +44,8 @@ public:
     void* Alloc(size_t sz)
     {
         if (sz == 0)
-        { 
-            return (void*)(&s_zeroLenAllocTarg);
+        {
+            return (void*)(&m_zeroLenAllocTarg);
         }
         else
         {
@@ -99,8 +56,8 @@ public:
     void* ArrayAlloc(size_t elemSize, size_t numElems)
     {
         if (elemSize == 0 || numElems == 0)
-        { 
-            return (void*)(&s_zeroLenAllocTarg);
+        {
+            return (void*)(&m_zeroLenAllocTarg);
         }
         else
         {
@@ -110,58 +67,11 @@ public:
 
     virtual void Free(void * p)
     {
-        if (p != (void*)(&s_zeroLenAllocTarg))
+        if (p != (void*)(&m_zeroLenAllocTarg))
         {
             m_alloc->Free(p);
         }
     }
 };
 
-
-// ProcessHeapAllocator: This class implements an IAllocator that allocates and frees memory
-// from the process heap. This is similar to DefaultAllocator, but it can be used by the JIT
-// which doesn't allow the use of operator new/delete.
-
-class ProcessHeapAllocator: public IAllocator
-{
-    static ProcessHeapAllocator s_singleton;
-
-public:
-
-    virtual void* Alloc(size_t sz)
-    {
-        return ClrAllocInProcessHeap(0, S_SIZE_T(sz));
-    }
-
-    virtual void* ArrayAlloc(size_t elemSize, size_t numElems)
-    {
-        ClrSafeInt<size_t> safeElemSize(elemSize);
-        ClrSafeInt<size_t> safeNumElems(numElems);
-        ClrSafeInt<size_t> sz = safeElemSize * safeNumElems;
-        if (sz.IsOverflow())
-        {
-            return nullptr;
-        }
-        else
-        {
-            return ClrAllocInProcessHeap(0, S_SIZE_T(sz));
-        }
-    }
-
-    virtual void Free(void* p)
-    {
-        if (p != nullptr)
-        {
-            (void)ClrFreeInProcessHeap(0, p);
-        }
-    }
-
-    static ProcessHeapAllocator* Singleton()
-    {
-        return &s_singleton;
-    }
-};
-
 #endif // _IALLOCATOR_DEFINED_
-        
-

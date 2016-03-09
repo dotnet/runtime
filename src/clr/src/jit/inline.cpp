@@ -544,7 +544,8 @@ InlineResult::InlineResult(Compiler*    compiler,
     , inlReported(false)
 {
     // Set the policy
-    inlPolicy = InlinePolicy::getPolicy(compiler);
+    const bool isPrejitRoot = false;
+    inlPolicy = InlinePolicy::getPolicy(compiler, isPrejitRoot);
 
     // Get method handle for caller
     inlCaller = inlCompiler->info.compMethodHnd;
@@ -558,7 +559,7 @@ InlineResult::InlineResult(Compiler*    compiler,
 
 //------------------------------------------------------------------------
 // InlineResult: Construct an InlineResult to evaluate a particular
-// method as a possible inline candidate.
+// method as a possible inline candidate, while prejtting.
 //
 // Arguments:
 //    compiler - the compiler instance doing the prejitting
@@ -584,7 +585,8 @@ InlineResult::InlineResult(Compiler*              compiler,
     , inlReported(false)
 {
     // Set the policy
-    inlPolicy = InlinePolicy::getPolicy(compiler);
+    const bool isPrejitRoot = true;
+    inlPolicy = InlinePolicy::getPolicy(compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -660,7 +662,7 @@ void InlineResult::report()
             if (VERBOSE)
             {
                 const char* obsString = inlGetObservationString(obs);
-                JITDUMP("INLINER: Marking %s as NOINLINE because of %s", callee, obsString);
+                JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
 
 #endif  // DEBUG

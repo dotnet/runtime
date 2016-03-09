@@ -39,6 +39,7 @@ Abstract:
 #include "pal/debug.h"
 #include "pal/locale.h"
 #include "pal/init.h"
+#include "pal/stackstring.hpp"
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -670,7 +671,7 @@ BOOL
 PALAPI
 PAL_IsDebuggerPresent()
 {
-#if defined(__LINUX__)
+#if defined(__linux__)
     BOOL debugger_present = FALSE;
     char buf[2048];
 
@@ -1123,7 +1124,7 @@ Notes 2:
 static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 {
 #ifndef __APPLE__
-    CHAR real_path[PATH_MAX+1];
+    PathCharString real_path;
     LPSTR env_path;
     LPSTR path_ptr;
     LPSTR cur_dir;
@@ -1132,7 +1133,6 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
     LPWSTR return_value;
     INT return_size;
     struct stat theStats;
-
     /* if a path is specified, only search there */
     if (strchr(exe_name, '/'))
     {
@@ -1144,7 +1144,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 
         if ( UTIL_IsExecuteBitsSet( &theStats ) )
         {
-            if(!realpath(exe_name, real_path))
+            if (!CorUnix::RealPathHelper(exe_name, real_path))
             {
                 ERROR("realpath() failed!\n");
                 return NULL;
@@ -1174,7 +1174,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
                 }
                 else
                 {
-                    TRACE("full path to executable is %s\n", real_path);
+                    TRACE("full path to executable is %s\n", real_path.GetString());
                 }
             }
             return return_value;
@@ -1274,7 +1274,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
             if( UTIL_IsExecuteBitsSet( &theStats ) )
             {
                 /* generate canonical path */
-                if (!realpath(full_path, real_path))
+                if (!CorUnix::RealPathHelper(full_path, real_path))
                 {
                     ERROR("realpath() failed!\n");
                     InternalFree(full_path);
@@ -1309,7 +1309,7 @@ static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
                 else
                 {
                     TRACE("found %s in %s; real path is %s\n", exe_name,
-                          cur_dir,real_path);
+                          cur_dir,real_path.GetString());
                 }
 
                 InternalFree(env_path);
@@ -1334,7 +1334,7 @@ last_resort:
     {
         if ( UTIL_IsExecuteBitsSet( &theStats ) )
         {
-            if (!realpath(exe_name, real_path))
+            if (!CorUnix::RealPathHelper(exe_name, real_path))
             {
                 ERROR("realpath() failed!\n");
                 return NULL;
@@ -1364,7 +1364,7 @@ last_resort:
                 }
                 else
                 {
-                    TRACE("full path to executable is %s\n", real_path);
+                    TRACE("full path to executable is %s\n", real_path.GetString());
                 }
             }
 
@@ -1387,16 +1387,26 @@ last_resort:
 #else // !__APPLE__
     // On the Mac we can just directly ask the OS for the executable path.
 
-    CHAR exec_path[PATH_MAX+1];
     LPWSTR return_value;
     INT return_size;
 
-    uint32_t bufsize = sizeof(exec_path);
+    PathCharString exec_pathPS;
+    LPSTR  exec_path = exec_pathPS.OpenStringBuffer(MAX_PATH);
+    uint32_t bufsize = exec_pathPS.GetCount();
+
+    if (-1 == _NSGetExecutablePath(exec_path, &bufsize))
+    {
+        exec_pathPS.CloseBuffer(exec_pathPS.GetCount());
+        exec_path = exec_pathPS.OpenStringBuffer(bufsize);
+    }
+
     if (_NSGetExecutablePath(exec_path, &bufsize))
     {
         ASSERT("_NSGetExecutablePath failure\n");
         return NULL;
     }
+
+    exec_pathPS.CloseBuffer(bufsize);
 
     return_size = MultiByteToWideChar(CP_ACP,0,exec_path,-1,NULL,0);
     if (0 == return_size)
