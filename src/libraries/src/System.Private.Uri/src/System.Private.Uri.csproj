@@ -13,7 +13,7 @@
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <NoWarn>0436</NoWarn>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.0</PackageTargetFramework>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot'">true</SkipCommonResourcesIncludes>
+    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">true</SkipCommonResourcesIncludes>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -27,8 +27,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard13aot_Release|AnyCPU'"/>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
@@ -77,7 +79,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
       <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
@@ -97,7 +99,7 @@
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
       <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs" Condition="'$(TargetGroup)'!='netcore50aot' And '$(TargetGroup)'!='netstandard13aot'">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -146,19 +148,28 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
+    <Compile Include="$(CommonPath)\System\SR.Core.cs" Condition="'$(TargetGroup)'=='netcore50aot'">
       <Link>Common\System\SR.Core.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SR.CoreRT.cs" Condition="'$(TargetGroup)'=='netstandard13aot'">
+      <Link>Common\System\SR.CoreRT.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
       <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.cs">
-      <Link>Common\System\Runtime\InteropServices\Marshal.cs</Link>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Win32.cs"  Condition="'$(TargetsWindows)'=='true'">
+      <Link>Common\System\Runtime\InteropServices\Marshal.Win32.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Marshal.Unix.cs"  Condition="'$(TargetsUnix)'=='true'">
+      <Link>Common\System\Runtime\InteropServices\Marshal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\OperationCanceledException.cs"  Condition="'$(TargetsUnix)'=='true'">
+      <Link>Common\System\System\OperationCanceledException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs" Condition="'$(TargetsWindows)'=='true'">
       <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
     </Compile>
   </ItemGroup>
