@@ -34,6 +34,7 @@ public class IntPtrGetHashCode
         retVal = PosTest1() && retVal;
         retVal = PosTest2() && retVal;
         retVal = PosTest3() && retVal;
+        retVal = PosTest4() && retVal;
 
         return retVal;
     }
@@ -66,9 +67,25 @@ public class IntPtrGetHashCode
         {
             byte* mem = stackalloc byte[1024];
             System.IntPtr ip = new IntPtr((void*)mem);
-            if (ip.GetHashCode() != (int)mem)
+            if (System.IntPtr.Size == 4)
             {
-                TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address");
+                if (ip.GetHashCode() != (int)mem)
+                {
+                    TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address");
+                    retVal = false;
+                }
+            }
+            else if (System.IntPtr.Size == 8)
+            {
+                if (ip.GetHashCode() != ((int)mem ^ (int)((long)mem >> 32)))
+                {
+                    TestLibrary.TestFramework.LogError("002", "expect IntPtr.GetHashCode() equals the address xor halves");
+                    retVal = false;
+                }
+            }
+            else
+            {
+                TestLibrary.TestFramework.LogError("002", "Unexpected IntPtr.Size: " + System.IntPtr.Size);
                 retVal = false;
             }
         }
@@ -96,6 +113,42 @@ public class IntPtrGetHashCode
         catch (Exception e)
         {
             TestLibrary.TestFramework.LogError("003", "Unexpected exception: " + e);
+            retVal = false;
+        }
+        return retVal;
+    }
+    
+    public bool PosTest4()
+    {
+        bool retVal = true;
+        try
+        {
+            long addressOne = 0x123456FFFFFFFFL;
+            long addressTwo = 0x654321FFFFFFFFL;
+            System.IntPtr ipOne = new IntPtr(addressOne);
+            System.IntPtr ipTwo = new IntPtr(addressTwo);
+            if (ipOne.GetHashCode() == ipTwo.GetHashCode())
+            {
+                TestLibrary.TestFramework.LogError("004", "expect different hashcodes.");
+                retVal = false;
+            }
+        }
+        catch (System.OverflowException ex)
+        {
+            if (System.IntPtr.Size == 4)
+            {
+                // ok, that's what it should be
+                return retVal;
+            }
+            else
+		   	{
+                TestLibrary.TestFramework.LogError("004", "IntPtr should not have thrown an OverflowException: " + ex.ToString());
+                retVal = false;
+		   	}
+        }
+        catch (Exception e)
+        {
+            TestLibrary.TestFramework.LogError("004", "Unexpected exception: " + e);
             retVal = false;
         }
         return retVal;

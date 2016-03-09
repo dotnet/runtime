@@ -22,9 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if FEATURE_FP_REGALLOC
 Compiler::enumConfigRegisterFP Compiler::raConfigRegisterFP()
 {
-    static ConfigDWORD dwJitRegisterFP;
-
-    DWORD val = dwJitRegisterFP.val(CLRConfig::EXTERNAL_JitRegisterFP);
+    DWORD val = JitConfig.JitRegisterFP();
 
     return (enumConfigRegisterFP) (val & 0x3);
 }
@@ -63,8 +61,7 @@ DWORD Compiler::getCanDoubleAlign()
     if (compStressCompile(STRESS_DBL_ALN, 20))
         return MUST_DOUBLE_ALIGN;
 
-    static ConfigDWORD fJitDoubleAlign;
-    return fJitDoubleAlign.val_DontUse_(CLRConfig::INTERNAL_JitDoubleAlign, DEFAULT_DOUBLE_ALIGN);
+    return JitConfig.JitDoubleAlign();
 #else
     return DEFAULT_DOUBLE_ALIGN;
 #endif
@@ -679,6 +676,8 @@ regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *ar
 #ifdef _TARGET_ARM64_
     if ((argDsc->lvOtherArgReg != REG_STK) && (argDsc->lvOtherArgReg != REG_NA))
     {
+        assert(argDsc->lvIsMultiregStruct());
+
         regNumber secondArgReg = argDsc->lvOtherArgReg;
 
         noway_assert(regState->rsIsFloat == false);
@@ -6260,8 +6259,7 @@ void               Compiler::rpPredictRegUse()
 #endif
 
 #ifdef  DEBUG
-    static ConfigDWORD jitNoRegLoc;
-    BOOL fJitNoRegLoc = jitNoRegLoc.val(CLRConfig::INTERNAL_JitNoRegLoc);
+    BOOL fJitNoRegLoc = JitConfig.JitNoRegLoc();
     if (fJitNoRegLoc)
         regAvail = RBM_NONE;
 #endif
@@ -6395,8 +6393,7 @@ void               Compiler::rpPredictRegUse()
         }
 
 #ifdef DEBUG
-        static ConfigDWORD fJitMaxRegAllocPasses;
-        if (fJitMaxRegAllocPasses.val(CLRConfig::INTERNAL_JitAssertOnMaxRAPasses))
+        if (JitConfig.JitAssertOnMaxRAPasses())
         {
             noway_assert(rpPasses < rpPassesMax &&
                    "This may not a bug, but dev team should look and see what is happening");

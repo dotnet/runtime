@@ -52,6 +52,14 @@ if(WIN32)
         version.lib
         psapi.lib
     )
+
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        list(APPEND DBGSHIM_LIBRARIES 
+            ${STATIC_MT_VCRT_LIB}
+        )
+    endif()
+  
 else()
     list(APPEND DBGSHIM_LIBRARIES
         coreclrpal

@@ -60,6 +60,11 @@ else()
         ${STATIC_MT_CRT_LIB}
     )
 
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        target_link_libraries(crossgen ${STATIC_MT_VCRT_LIB})
+    endif()
+
     # We will generate PDB only for the debug configuration
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/crossgen.pdb DESTINATION PDB)
 

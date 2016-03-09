@@ -60,8 +60,7 @@ bool ArenaAllocator::bypassHostAllocator()
     // directly to the OS. This allows taking advantage of pageheap and other gflag
     // knobs for ensuring that we do not have buffer overruns in the JIT.
 
-    static ConfigDWORD s_jitDirectAlloc;
-    return s_jitDirectAlloc.val(CLRConfig::INTERNAL_JitDirectAlloc) != 0;
+    return JitConfig.JitDirectAlloc() != 0;
 #else // defined(DEBUG)
     return false;
 #endif // !defined(DEBUG)
@@ -333,8 +332,7 @@ void* ArenaAllocator::allocateMemory(size_t size)
     // Ensure that we always allocate in pointer sized increments.
     size = (size_t)roundUp(size, sizeof(size_t));
 
-    static ConfigDWORD s_shouldInjectFault;
-    if (s_shouldInjectFault.val(CLRConfig::INTERNAL_InjectFault) != 0)
+    if (JitConfig.ShouldInjectFault() != 0)
     {
         // Force the underlying memory allocator (either the OS or the CLR hoster) 
         // to allocate the memory. Any fault injection will kick in.

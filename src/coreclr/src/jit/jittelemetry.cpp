@@ -158,8 +158,7 @@ void JitTelemetry::Initialize(Compiler* c)
 /* static */
 bool JitTelemetry::IsTelemetryEnabled()
 {
-    static ConfigDWORD fJitTelemetry;
-    return fJitTelemetry.val(CLRConfig::EXTERNAL_JitTelemetry) != 0;
+    return JitConfig.JitTelemetry() != 0;
 }
 
 //------------------------------------------------------------------------

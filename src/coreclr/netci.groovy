@@ -39,7 +39,7 @@ class Constants {
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
     // the values are the environment variables
-    def static jitStressModeScenarios = ['minopts' : ['COMPlus_JitMinOpts' : '1'], 'forcerelocs' : ['COMPlus_ForceRelocs' : '1'],
+    def static jitStressModeScenarios = ['minopts' : ['COMPlus_JITMinOpts' : '1'], 'forcerelocs' : ['COMPlus_ForceRelocs' : '1'],
                'jitstress1' : ['COMPlus_JitStress' : '1'], 'jitstress2' : ['COMPlus_JitStress' : '2'],
                'jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
                'jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
@@ -52,14 +52,24 @@ class Constants {
                'jitstress2_jitstressregs8'    : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '8'],
                'jitstress2_jitstressregs0x10' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x10'],
                'jitstress2_jitstressregs0x80' : ['COMPlus_JitStress' : '2', 'COMPlus_JitStressRegs' : '0x80'],
-               'corefx_baseline' : ['' : ''], // corefx baseline
-               'corefx_minopts' : ['COMPlus_JitMinOpts' : '1'],
+               'corefx_baseline' : [ : ], // corefx baseline
+               'corefx_minopts' : ['COMPlus_JITMinOpts' : '1'],
                'corefx_jitstress1' : ['COMPlus_JitStress' : '1'], 
                'corefx_jitstress2' : ['COMPlus_JitStress' : '2'],
                'corefx_jitstressregs1' : ['COMPlus_JitStressRegs' : '1'], 'corefx_jitstressregs2' : ['COMPlus_JitStressRegs' : '2'],
                'corefx_jitstressregs3' : ['COMPlus_JitStressRegs' : '3'], 'corefx_jitstressregs4' : ['COMPlus_JitStressRegs' : '4'],
                'corefx_jitstressregs8' : ['COMPlus_JitStressRegs' : '8'], 'corefx_jitstressregs0x10' : ['COMPlus_JitStressRegs' : '0x10'],
-               'corefx_jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80']]
+               'corefx_jitstressregs0x80' : ['COMPlus_JitStressRegs' : '0x80'],
+               'gcstress0x3' : ['COMPlus_GCStress'  : '0x3'], 'gcstress0xc' : ['COMPlus_GCStress'  : '0xC'],
+               'zapdisable' : ['COMPlus_ZapDisable'  : '0xC'],
+               'heapverify1' : ['COMPlus_HeapVerify'  : '1'],
+               'gcstress0xc_zapdisable' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1'],
+               'gcstress0xc_zapdisable_jitstress2' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_zapdisable_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_ZapDisable'  : '1', 'COMPlus_HeapVerify'  : '1'],
+               'gcstress0xc_jitstress1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JitStress'  : '1'],
+               'gcstress0xc_jitstress2' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JitStress'  : '2'],
+               'gcstress0xc_minopts_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JITMinOpts'  : '1', 'COMPlus_HeapVerify'  : '1']
+               ]
     // This is the basic set of scenarios
     def static basicScenarios = ['default', 'pri1', 'ilrt']
     // This is the set of configurations
@@ -81,12 +91,37 @@ def static setMachineAffinity(def job, def os, def architecture) {
     }
 }
 
+def static isGCStressRelatedTesting(def scenario) {
+    def gcStressTestEnvVars = [ 'COMPlus_GCStress', 'COMPlus_ZapDisable', 'COMPlus_HeapVerify']
+    def scenarioName = scenario.toLowerCase()
+    def isGCStressTesting = false
+    Constants.jitStressModeScenarios[scenario].each{ k, v -> 
+        if (k in gcStressTestEnvVars) {
+            isGCStressTesting = true;
+        }
+    }   
+    return isGCStressTesting
+}
+
 def static isCorefxTesting(def scenario) {
     def corefx_prefix = 'corefx_'
     if (scenario.length() < corefx_prefix.length()) {
-        return
+        return false
     }
     return scenario.substring(0,corefx_prefix.length()) == corefx_prefix
+}
+
+def static setTestJobTimeOut(newJob, scenario) {
+    if (isGCStressRelatedTesting(scenario)) {
+        Utilities.setJobTimeout(newJob, 720)
+    }
+    else if (isCorefxTesting(scenario)) {
+        Utilities.setJobTimeout(newJob, 360)
+    }
+    else if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+        Utilities.setJobTimeout(newJob, 240)
+    }
+    // Non-test jobs use the default timeout value.
 }
 
 def static getStressModeDisplayName(def scenario) {
@@ -161,7 +196,7 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'x86':
-            baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            baseName = architecture.toLowerCase() + '_lb_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         default:
             println("Unknown architecture: ${architecture}");
@@ -266,6 +301,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'corefx_jitstressregs8':
             case 'corefx_jitstressregs0x10':
             case 'corefx_jitstressregs0x80':
+            case 'gcstress0x3':            
+            case 'gcstress0xc':
+            case 'zapdisable':
+            case 'heapverify1':
+            case 'gcstress0xc_zapdisable':
+            case 'gcstress0xc_zapdisable_jitstress2':
+            case 'gcstress0xc_zapdisable_heapverify1':
+            case 'gcstress0xc_jitstress1':
+            case 'gcstress0xc_jitstress2':
+            case 'gcstress0xc_minopts_heapverify1':         
                 if (os != 'CentOS7.1') {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     Utilities.addPeriodicTrigger(job, '@daily')
@@ -390,6 +435,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
+                        case 'gcstress0x3':
+                        case 'gcstress0xc':
+                        case 'zapdisable':
+                        case 'heapverify1':
+                        case 'gcstress0xc_zapdisable':
+                        case 'gcstress0xc_zapdisable_jitstress2':
+                        case 'gcstress0xc_zapdisable_heapverify1':
+                        case 'gcstress0xc_jitstress1':
+                        case 'gcstress0xc_jitstress2':
+                        case 'gcstress0xc_minopts_heapverify1':                                 
                             def displayStr = getStressModeDisplayName(scenario)  
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
@@ -506,6 +561,16 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                         case 'jitstress2_jitstressregs8':
                         case 'jitstress2_jitstressregs0x10':
                         case 'jitstress2_jitstressregs0x80':
+                        case 'gcstress0x3': 
+                        case 'gcstress0xc':
+                        case 'zapdisable':
+                        case 'heapverify1':
+                        case 'gcstress0xc_zapdisable':
+                        case 'gcstress0xc_zapdisable_jitstress2':
+                        case 'gcstress0xc_zapdisable_heapverify1':
+                        case 'gcstress0xc_jitstress1':
+                        case 'gcstress0xc_jitstress2':
+                        case 'gcstress0xc_minopts_heapverify1':                                 
                             def displayStr = getStressModeDisplayName(scenario)
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayStr})",
@@ -555,7 +620,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
                 case 'Windows_NT':
                     // Set up a private trigger
                     Utilities.addPrivateGithubPRTrigger(job, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}.*", null, ['jashook', 'RussKeldorph', 'gkhanna79', 'briansul', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
+                        "(?i).*test\\W+${os}\\W+${architecture}.*", null, ['erozenfeld', 'kyulee1', 'pgavlin', 'russellhadley', 'swaroop-sridhar', 'JosephTremoulet', 'jashook', 'RussKeldorph', 'gkhanna79', 'briansul', 'cmckinsey', 'jkotas', 'ramarag', 'markwilkie', 'rahku', 'tzwlai', 'weshaggard', 'LLITCHEV'])
                     break
             }
             break
@@ -564,7 +629,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             // For windows, x86 runs by default
             if (os == 'Windows_NT') {
                 if (configuration != 'Checked') {
-                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Build")
+                    Utilities.addGithubPRTrigger(job, "${os} ${architecture} ${configuration} Legacy Backend Build and Test")
                 }
             }
             else {
@@ -705,7 +770,7 @@ combinedScenarios.each { scenario ->
                                     
                                     if (scenario == 'default' || Constants.jitStressModeScenarios.containsKey(scenario)) {
                                         buildOpts = enableCorefxTesting ? 'skiptests' : ''
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} ${buildOpts}"
                                     }
 
                                     // For Pri 1 tests, we must shorten the output test binary path names.
@@ -719,7 +784,7 @@ combinedScenarios.each { scenario ->
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptestbuild and then build the tests with ilasm roundtrip
-                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
+                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} skiptestbuild"
                                         buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
                                     }
                                     else {
@@ -760,8 +825,11 @@ combinedScenarios.each { scenario ->
                                                 buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} TestEnv ${stepScriptLocation}"
                                             }                                            
                                         }
-                                        else if (architecture == 'x64' || !isPR) {
+                                        else if (architecture == 'x64') {
                                             buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture}"
+                                        }
+                                        else if (architecture == 'x86') {
+                                            buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${architecture} Exclude0 x86_legacy_backend_issues.targets"
                                         }
                                     }
 
@@ -783,6 +851,7 @@ combinedScenarios.each { scenario ->
                                             if (architecture == 'x64' || !isPR) {
                                                 Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
                                             }
+                                            setTestJobTimeOut(newJob, scenario)
                                         }
                                     }
                                     else {
@@ -790,8 +859,8 @@ combinedScenarios.each { scenario ->
                                         // For windows, pull full test results and test drops for x86/x64
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
                                         
-                                        // Set timeout to 240
-                                        Utilities.setJobTimeout(newJob, 240)
+                                        // Set timeout 
+                                        setTestJobTimeOut(newJob, scenario)
                                         
                                         if (architecture == 'x64' || !isPR) {
                                             Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
@@ -801,7 +870,7 @@ combinedScenarios.each { scenario ->
                                     break
                                 case 'arm64':
                                     assert scenario == 'default'
-                                    buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
+                                    buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} skiptestbuild /toolset_dir C:\\ats"
 
                                     if (lowerConfiguration == "release") {
                                        buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
@@ -840,6 +909,8 @@ combinedScenarios.each { scenario ->
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
                                     
+                                        // Set time out
+                                        setTestJobTimeOut(newJob, scenario)
                                         // Basic archiving of the build
                                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
                                         // And pal tests
@@ -859,21 +930,15 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                         
                                         // Set environment variable
-                                        def setEnvVar = ''
-                                        def envVars = Constants.jitStressModeScenarios[scenario]
-                                        envVars.each{ VarName, Value   ->
-                                            if (VarName != '') {
-                                                setEnvVar += " ${VarName}=${Value}"
-                                            }
-                                        }
+                                        def setEnvVar = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)                                        
                                                 
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
-                                        buildCommands += "cd fx; HOME=\$WORKSPACE/fx_home ${setEnvVar} ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        buildCommands += "${setEnvVar} cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
-                                        Utilities.setJobTimeout(newJob, 360)
+                                        setTestJobTimeOut(newJob, scenario)
                                         Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
                                     }
                                     break
@@ -1059,6 +1124,10 @@ combinedScenarios.each { scenario ->
                                 stressModeString = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)
                             }
                             
+                            if (isGCStressRelatedTesting(scenario)) {
+                                shell('init-tools.sh')
+                            }
+                            
                             shell("""${stressModeString}
         ./tests/runtest.sh \\
             --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
@@ -1070,11 +1139,11 @@ combinedScenarios.each { scenario ->
             ${serverGCString}""")
                         }
                     }
-                
+
                     setMachineAffinity(newJob, os, architecture)
                     Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
                     // Set timeouts to 240.
-                    Utilities.setJobTimeout(newJob, 240)
+                    setTestJobTimeOut(newJob, scenario)
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                 
                     // Create a build flow to join together the build and tests required to run this

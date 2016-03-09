@@ -2649,8 +2649,7 @@ struct GenTreeIndex: public GenTreeOp
         gtStructElemClass(nullptr)  // We always initialize this after construction.
         {
 #ifdef DEBUG
-            static ConfigDWORD fJitSkipArrayBoundCheck;
-            if (fJitSkipArrayBoundCheck.val(CLRConfig::INTERNAL_JitSkipArrayBoundCheck) == 1)
+            if (JitConfig.JitSkipArrayBoundCheck() == 1)
             {
                 // Skip bounds check
             }
