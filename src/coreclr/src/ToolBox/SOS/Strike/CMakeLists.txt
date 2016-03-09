@@ -83,6 +83,14 @@ if(WIN32)
     psapi.lib
     ntdll.lib
   )
+
+  # ARM64_TODO: Enable this for Windows Arm64
+  if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+      list(APPEND SOS_LIBRARY 
+        ${STATIC_MT_VCRT_LIB}
+      )
+  endif()
+    
 else(WIN32)
   add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
   add_definitions(-DPAL_STDCPP_COMPAT=1)

@@ -154,11 +154,11 @@ PROCGetProcessStatus(
     );
 
 static BOOL getFileName(LPCWSTR lpApplicationName, LPWSTR lpCommandLine,
-                        char *lpFileName);
-static char ** buildArgv(LPCWSTR lpCommandLine, LPSTR lpAppPath,
+                        PathCharString& lpFileName);
+static char ** buildArgv(LPCWSTR lpCommandLine, PathCharString& lpAppPath,
                          UINT *pnArg, BOOL prependLoader);
-static BOOL getPath(LPCSTR lpFileName, UINT iLen, LPSTR  lpPathFileName);
-static int checkFileType(char *lpFileName);
+static BOOL getPath(PathCharString& lpFileName, PathCharString& lpPathFileName);
+static int checkFileType(LPCSTR lpFileName);
 static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode,
                            BOOL bTerminateUnconditionally);
 
@@ -549,7 +549,6 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char * lpFileName;
     PathCharString lpFileNamePS;
     char **lppArgv = NULL;
     UINT nArg;
@@ -664,41 +663,31 @@ CorUnix::InternalCreateProcess(
         }
     }
 
-    lpFileName = lpFileNamePS.OpenStringBuffer(MAX_LONGPATH-1);
-    if (NULL == lpFileName)
-    {
-        palError = ERROR_NOT_ENOUGH_MEMORY;
-        goto InternalCreateProcessExit;
-    }
-    if (!getFileName(lpApplicationName, lpCommandLine, lpFileName))
+    if (!getFileName(lpApplicationName, lpCommandLine, lpFileNamePS))
     {
         ERROR("Can't find executable!\n");
         palError = ERROR_FILE_NOT_FOUND;
         goto InternalCreateProcessExit;
     }
     
-    lpFileNamePS.CloseBuffer(MAX_LONGPATH-1);
     /* check type of file */
-    iRet = checkFileType(lpFileName);
+    iRet = checkFileType(lpFileNamePS);
 
     switch (iRet)
     {
         case FILE_ERROR: /* file not found, or not an executable */
-            WARN ("File is not valid (%s)", lpFileName);
+            WARN ("File is not valid (%s)", lpFileNamePS.GetString());
             palError = ERROR_FILE_NOT_FOUND;
             goto InternalCreateProcessExit;
 
         case FILE_PE: /* PE/COFF file */
-            /*Get the path name where the PAL DLL was loaded from
-             * I am using MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1)
-             * as the length as I have to append the file name at the end */
-            if ( PAL_GetPALDirectoryA( lpFileName,
-                                      (MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
+            //Get the path name where the PAL DLL was loaded from
+            if ( PAL_GetPALDirectoryA( lpFileNamePS ))
             {
-                if ((strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), "/") != SAFECRT_SUCCESS) ||
-                    (strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
+                if (lpFileNamePS.Append("/", 1) == FALSE  ||
+                    lpFileNamePS.Append( PROCESS_PELOADER_FILENAME, strlen(PROCESS_PELOADER_FILENAME)) == FALSE)
                 {
-                    ERROR("strcpy_s/strcat_s failed!\n");
+                    ERROR("Append failed!\n");
                     palError = ERROR_INTERNAL_ERROR;
                     goto InternalCreateProcessExit;
                 }
@@ -717,7 +706,7 @@ CorUnix::InternalCreateProcess(
             break;  /* nothing to do */
 
         case FILE_DIR:/*Directory*/
-            WARN ("File is a Directory (%s)", lpFileName);
+            WARN ("File is a Directory (%s)", lpFileNamePS.GetString());
             palError = ERROR_ACCESS_DENIED;
             goto InternalCreateProcessExit;
             break;
@@ -730,7 +719,7 @@ CorUnix::InternalCreateProcess(
 
     /* build Argument list, lppArgv is allocated in buildArgv function and
        requires to be freed */
-    lppArgv = buildArgv(lpCommandLine, lpFileName, &nArg, iRet==1);
+    lppArgv = buildArgv(lpCommandLine, lpFileNamePS, &nArg, iRet==1);
 
     /* set the Environment variable */
     if (lpEnvironment != NULL)
@@ -972,11 +961,11 @@ CorUnix::InternalCreateProcess(
 
         if (EnvironmentArray)
         {
-            execve(lpFileName, lppArgv, EnvironmentArray);
+            execve(lpFileNamePS, lppArgv, EnvironmentArray);
         }
         else
         {
-            execve(lpFileName, lppArgv, palEnvironment);
+            execve(lpFileNamePS, lppArgv, palEnvironment);
         }
 
         /* if we get here, it means the execve function call failed so just exit */
@@ -1670,7 +1659,7 @@ public:
             }
         }
 
-        if (pe != NO_ERROR)
+        if (pe != NO_ERROR && !m_canceled)
         {
             SetLastError(pe);
             m_callback(NULL, NULL, m_parameter);
@@ -3593,7 +3582,7 @@ BOOL
 getFileName(
        LPCWSTR lpApplicationName,
        LPWSTR lpCommandLine,
-       char *lpPathFileName)
+       PathCharString& lpPathFileName)
 {
     LPWSTR lpEnd;
     WCHAR wcEnd;
@@ -3603,32 +3592,43 @@ getFileName(
 
     if (lpApplicationName)
     {
-        int path_size = MAX_LONGPATH;
-        lpTemp = lpPathFileName;
+        int length = WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
+                                            NULL, 0, NULL, NULL);
+
         /* if only a file name is specified, prefix it with "./" */
         if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
             (*lpApplicationName != '\\'))
         {
-            if (strcpy_s(lpPathFileName, MAX_LONGPATH, "./") != SAFECRT_SUCCESS)
+            length += 2;
+            lpTemp = lpPathFileName.OpenStringBuffer(length);
+
+            if (strcpy_s(lpTemp, length, "./") != SAFECRT_SUCCESS)
             {
                 ERROR("strcpy_s failed!\n");
                 return FALSE;
             }
-
             lpTemp+=2;
-            path_size -= 2;
+
+       }
+       else
+       {
+            lpTemp = lpPathFileName.OpenStringBuffer(length);
        }
 
         /* Convert to ASCII */
-        if (!WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
-                                 lpTemp, path_size, NULL, NULL))
+        length = WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
+                                     lpTemp, length, NULL, NULL);
+        if (length == 0)
         {
+            lpPathFileName.CloseBuffer(0);
             ASSERT("WideCharToMultiByte failure\n");
             return FALSE;
         }
+        
+        lpPathFileName.CloseBuffer(length -1);
 
         /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpPathFileName);
+        FILEDosToUnixPathA(lpTemp);
 
         return TRUE;
     }
@@ -3696,14 +3696,14 @@ getFileName(
             return FALSE;
         }
 
-        lpFileNamePS.CloseBuffer(size);
+        lpFileNamePS.CloseBuffer(size - 1);
         /* restore last character */
         *lpEnd = wcEnd;
 
         /* Replace '\' by '/' */
         FILEDosToUnixPathA(lpFileName);
 
-        if (!getPath(lpFileName, MAX_LONGPATH, lpPathFileName))
+        if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
             return FALSE;
@@ -3837,7 +3837,7 @@ Determines if the passed in file is a managed executable
 --*/
 static
 int
-isManagedExecutable(LPSTR lpFileName)
+isManagedExecutable(LPCSTR lpFileName)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     DWORD cbRead;
@@ -3907,7 +3907,7 @@ Return:
 --*/
 static
 int
-checkFileType( char *lpFileName)
+checkFileType( LPCSTR lpFileName)
 { 
     struct stat stat_data;
 
@@ -3981,7 +3981,7 @@ static
 char **
 buildArgv(
       LPCWSTR lpCommandLine,
-      LPSTR lpAppPath,
+      PathCharString& lpAppPath,
       UINT *pnArg,
       BOOL prependLoader)
 {
@@ -4005,7 +4005,7 @@ buildArgv(
 
     pThread = InternalGetCurrentThread();
     /* make sure to allocate enough space, up for the worst case scenario */
-    int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + strlen(lpAppPath) + 2);
+    int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + lpAppPath.GetCount() + 2);
     lpAsciiCmdLine = (char *) InternalMalloc(iLength);
 
     if (lpAsciiCmdLine == NULL)
@@ -4263,7 +4263,6 @@ Abstract:
 
 Parameters:
     IN  lpFileName: file name to search in the path
-    IN  iLen: length of lpPathFileName buffer
     OUT lpPathFileName: returned string containing the path and the filename
 
 Return:
@@ -4273,9 +4272,8 @@ Return:
 static
 BOOL
 getPath(
-      LPCSTR lpFileName,
-      UINT iLen,
-      LPSTR  lpPathFileName)
+      PathCharString& lpFileNameString,
+      PathCharString& lpPathFileName)
 {
     LPSTR lpPath;
     LPSTR lpNext;
@@ -4285,15 +4283,16 @@ getPath(
     INT nextLen;
     INT slashLen;
     CPalThread *pThread = NULL;
+    LPCSTR lpFileName = lpFileNameString.GetString();
 
     /* if a path is specified, only look there */
     if(strchr(lpFileName, '/'))
     {
         if (access (lpFileName, F_OK) == 0)
         {
-            if (strcpy_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS)
+            if (lpPathFileName.Set(lpFileNameString))
             {
-                TRACE("strcpy_s failed!\n");
+                TRACE("Set of StackString failed!\n");
                 return FALSE;
             }
 
@@ -4313,42 +4312,48 @@ getPath(
     if (lpwstr)
     {
         /* convert path to multibyte, check buffer size */
-        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPathFileName, iLen,
+        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, NULL, 0,
             NULL, NULL);
+        
+        if (!lpPathFileName.Reserve(n + lpFileNameString.GetCount() + 1 ))
+        {
+            ERROR("StackString Reserve failed!\n");
+            return FALSE;
+        }
+
+        lpPath = lpPathFileName.OpenStringBuffer(n);
+
+        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPath, n,
+            NULL, NULL);
+
         if (n == 0)
         {
+            lpPathFileName.CloseBuffer(0);
             ASSERT("WideCharToMultiByte failure!\n");
             return FALSE;
         }
+        
+        lpPathFileName.CloseBuffer(n - 1);
 
-        n += strlen(lpFileName) + 2;
-        if (n > (INT)iLen)
-        {
-            ERROR("Buffer too small for full path!\n");
-            return FALSE;
-        }
-
-        if ((strcat_s(lpPathFileName, iLen, "/") != SAFECRT_SUCCESS) ||
-            (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
-        {
-            ERROR("strcat_s failed!\n");
-            return FALSE;
-        }
+        lpPathFileName.Append("/", 1);
+        lpPathFileName.Append(lpFileNameString);
 
         if (access(lpPathFileName, F_OK) == 0)
         {
-            TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName);
+            TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName.GetString());
             return TRUE;
         }
     }
 
     /* then try the current directory */
-    if ((strcpy_s(lpPathFileName, iLen, "./") != SAFECRT_SUCCESS) ||
-        (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
+    if (!lpPathFileName.Reserve(lpFileNameString.GetCount()  + 2))
     {
-        ERROR("strcpy_s/strcat_s failed!\n");
+        ERROR("StackString Reserve failed!\n");
         return FALSE;
     }
+
+    lpPathFileName.Set("./", 2);
+    lpPathFileName.Append(lpFileNameString);
 
     if (access (lpPathFileName, R_OK) == 0)
     {
@@ -4389,25 +4394,24 @@ getPath(
         nextLen = strlen(lpNext);
         slashLen = (lpNext[nextLen-1] == '/') ? 0:1;
 
-        /* verify if the path fit in the OUT parameter */
-        if (slashLen + nextLen + strlen (lpFileName) >= iLen)
+        if (!lpPathFileName.Reserve(nextLen + lpFileNameString.GetCount() + 1))
         {
             InternalFree(lpPath);
-            ERROR("buffer too small for full path\n");
+            ERROR("StackString ran out of memory for full path\n");
             return FALSE;
         }
-
-        strcpy_s (lpPathFileName, iLen, lpNext);
-
-        /* append a '/' if there's no '/' at the end of the path */
-        if ( slashLen == 1 )
-        {
-            strcat_s (lpPathFileName, iLen, "/");
-        }
         
-        strcat_s (lpPathFileName, iLen, lpFileName);
+        lpPathFileName.Set(lpNext, nextLen);
+            
+        if( slashLen == 1)
+        {
+            /* append a '/' if there's no '/' at the end of the path */
+            lpPathFileName.Append("/", 1);
+        }
 
-        if (access (lpPathFileName, F_OK) == 0)
+        lpPathFileName.Append(lpFileNameString);
+
+        if ( access (lpPathFileName, F_OK) == 0)
         {
             TRACE("Found %s in $PATH element %s\n", lpFileName, lpNext);
             InternalFree(lpPath);

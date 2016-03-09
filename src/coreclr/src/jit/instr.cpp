@@ -3912,8 +3912,7 @@ void                CodeGen::instGen_Return(unsigned stkArgSize)
 void                CodeGen::instGen_MemoryBarrier()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJitNoMemoryBarriers;
-    if (fJitNoMemoryBarriers.val(CLRConfig::INTERNAL_JitNoMemoryBarriers) == 1)
+    if (JitConfig.JitNoMemoryBarriers() == 1)
         return;
 #endif // DEBUG
 

@@ -32,10 +32,12 @@ set( JIT_SOURCES
   gentree.cpp
   gschecks.cpp
   hashbv.cpp
+  hostallocator.cpp
   importer.cpp
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
+  jitconfig.cpp
   jiteh.cpp
   jittelemetry.cpp
   lclvars.cpp

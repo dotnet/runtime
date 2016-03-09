@@ -22,7 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-static ICorJitHost* g_jitHost = nullptr;
+ICorJitHost* g_jitHost = nullptr;
 static CILJit* ILJitter = 0;        // The one and only JITTER I return
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 HINSTANCE g_hInst = NULL;
@@ -51,6 +51,14 @@ extern "C"
 void __stdcall jitStartup(ICorJitHost* jitHost)
 {
     g_jitHost = jitHost;
+
+    // `jitStartup` may be called multiple times
+    // when pre-jitting. We should not reinitialize
+    // config values each time.
+    if (!JitConfig.isInitialized())
+    {
+        JitConfig.initialize(jitHost);
+    }
 
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
@@ -285,8 +293,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
         ((cpuCompileFlags & CORJIT_FLG_FEATURE_SIMD) != 0) &&
         ((cpuCompileFlags & CORJIT_FLG_USE_AVX2) != 0))
     {
-        static ConfigDWORD fEnableAVX;
-        if (fEnableAVX.val(CLRConfig::EXTERNAL_EnableAVX) != 0)
+        if (JitConfig.EnableAVX() != 0)
         {
             return 32;
         }

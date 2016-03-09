@@ -191,6 +191,8 @@ void CleanupEventCallbacks()
     }
 }
 
+bool g_Initialized = false;
+
 extern "C"
 HRESULT
 CALLBACK
@@ -202,7 +204,12 @@ DebugExtensionInitialize(PULONG Version, PULONG Flags)
 
     *Version = DEBUG_EXTENSION_VERSION(1, 0);
     *Flags = 0;
-    
+
+    if (g_Initialized)
+    {
+        return S_OK;
+    }
+    g_Initialized = true;
 
     if ((Hr = DebugCreate(__uuidof(IDebugClient),
                           (void **)&DebugClient)) != S_OK)

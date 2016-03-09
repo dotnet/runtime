@@ -525,7 +525,9 @@ typedef _W64 unsigned __int32 DWORD_PTR, *PDWORD_PTR;
 /* maximum unsigned 32 bit value */
 #define ULONG_PTR_MAX     0xffffffffUL
 
+#ifndef SIZE_MAX
 #define SIZE_MAX UINT_MAX
+#endif
 
 #define __int3264   __int32
 
@@ -569,7 +571,7 @@ typedef LONG_PTR SSIZE_T, *PSSIZE_T;
 #endif
 
 #ifndef PAL_STDCPP_COMPAT
-#if defined(__APPLE_CC__) || defined(__LINUX__)
+#if defined(__APPLE_CC__) || defined(__linux__)
 #ifdef BIT64
 typedef unsigned long size_t;
 typedef long ptrdiff_t;
@@ -606,7 +608,7 @@ typedef char16_t WCHAR;
 #else // PAL_STDCPP_COMPAT
 
 typedef wchar_t WCHAR;
-#if defined(__LINUX__) 
+#if defined(__linux__) 
 #ifdef BIT64
 typedef long int intptr_t;
 typedef unsigned long int uintptr_t;

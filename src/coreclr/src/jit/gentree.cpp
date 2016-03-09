@@ -4544,7 +4544,7 @@ GenTreePtr*         GenTree::gtGetChildPointer(GenTreePtr parent)
         break;
 
 #if !FEATURE_MULTIREG_ARGS
-        // Note that when FEATURE_MULTIREG__ARGS==1 
+        // Note that when FEATURE_MULTIREG_ARGS==1 
         //  a GT_LDOBJ node is handled above by the default case
     case GT_LDOBJ:
         // Any GT_LDOBJ with a field must be lowered before this point.

@@ -100,22 +100,6 @@ int __cdecl main(int argc, char *argv[])
 
 
     //
-    // find a file that is longer than MAX_LONGPATH characters
-    //
-    hFind = FindFirstFileA(szLongFindName, &findFileData);
-    if (hFind != INVALID_HANDLE_VALUE)
-    {
-        Fail ("FindFirstFileA: ERROR -> Found non-existent file longer than MAX_LONGPATH characters");
-    }
-    else if (GetLastError() != ERROR_FILENAME_EXCED_RANGE) 
-    {
-        // Confirm that the failure to find is due to long file name
-        Fail ("FindFirstFileA: ERROR -> Failed as expected on a non-existent "
-              "file longer than MAX_LONGPATH characters, but reporting some other "
-              "error: %d\n", GetLastError());
-    }
-
-    //
     // find a file that exists
     //
     pFile = fopen(szFindName, "w");

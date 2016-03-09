@@ -13,7 +13,6 @@
 // InlineTarget        - target of a particular observation
 // InlineImpact        - impact of a particular observation
 // InlineObservation   - facts observed when considering an inline
-// InlineHints         - alternative form of observations
 //
 // -- CLASSES --
 //
@@ -63,10 +62,10 @@
 // In DEBUG, the jit also searches for non-candidate calls to try
 // and get a complete picture of the set of failed inlines.
 //
-// 4 & 5. Prejit suitability screens (compCompileHelper)
+// 4. Prejit suitability screen (compCompileHelper)
 //
 // When prejitting, each method is scanned to see if it is a viable
-// inline candidate. The scanning happens in two stages.
+// inline candidate.
 //
 // A note on InlinePolicy
 //
@@ -209,7 +208,7 @@ class InlinePolicy
 public:
 
     // Factory method for getting policies
-    static InlinePolicy* getPolicy(Compiler* compiler);
+    static InlinePolicy* getPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Obligatory virtual dtor
     virtual ~InlinePolicy() {}
@@ -221,14 +220,18 @@ public:
     InlineObservation getObservation() const { return inlObservation; }
 
     // Policy observations
-    virtual void noteCandidate(InlineObservation obs) = 0;
     virtual void noteSuccess() = 0;
-    virtual void note(InlineObservation obs) = 0;
+    virtual void noteBool(InlineObservation obs, bool value) = 0;
     virtual void noteFatal(InlineObservation obs) = 0;
     virtual void noteInt(InlineObservation obs, int value) = 0;
     virtual void noteDouble(InlineObservation obs, double value) = 0;
 
-    // Policy decisions
+    // Policy determinations
+    virtual double determineMultiplier() = 0;
+    virtual bool hasNativeSizeEstimate() = 0;
+    virtual int determineNativeSizeEstimate() = 0;
+
+    // Policy policies
     virtual bool propagateNeverToRuntime() const = 0;
 
 #ifdef DEBUG
@@ -238,9 +241,10 @@ public:
 
 protected:
 
-    InlinePolicy()
+    InlinePolicy(bool isPrejitRoot)
         : inlDecision(InlineDecision::UNDECIDED)
         , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+        , inlIsPrejitRoot(isPrejitRoot)
     {
         // empty
     }
@@ -253,8 +257,9 @@ private:
 
 protected:
 
-    InlineDecision inlDecision;
+    InlineDecision    inlDecision;
     InlineObservation inlObservation;
+    bool              inlIsPrejitRoot;
 };
 
 // InlineResult summarizes what is known about the viability of a
@@ -307,24 +312,6 @@ public:
         return inlDecisionIsDecided(inlPolicy->getDecision());
     }
 
-    // noteCandidate indicates the prospective inline has passed at least
-    // some of the correctness checks and is still a viable inline
-    // candidate, but no decision has been made yet.
-    //
-    // This may be called multiple times as various tests are performed
-    // and the candidate gets closer and closer to actually getting
-    // inlined.
-    void noteCandidate(InlineObservation obs)
-    {
-        assert(!isDecided());
-
-        // Check the impact, it should be INFORMATION
-        InlineImpact impact = inlGetImpact(obs);
-        assert(impact == InlineImpact::INFORMATION);
-
-        inlPolicy->noteCandidate(obs);
-    }
-
     // noteSuccess means the all the various checks have passed and
     // the inline can happen.
     void noteSuccess()
@@ -333,13 +320,24 @@ public:
         inlPolicy->noteSuccess();
     }
 
-    // Make an observation, and update internal state appropriately.
+    // Make a true observation, and update internal state
+    // appropriately.
     //
     // Caller is expected to call isFailure after this to see whether
     // more observation is desired.
     void note(InlineObservation obs)
     {
-        inlPolicy->note(obs);
+        inlPolicy->noteBool(obs, true);
+    }
+
+    // Make a boolean observation, and update internal state
+    // appropriately.
+    //
+    // Caller is expected to call isFailure after this to see whether
+    // more observation is desired.
+    void noteBool(InlineObservation obs, bool value)
+    {
+        inlPolicy->noteBool(obs, value);
     }
 
     // Make an observation that must lead to immediate failure.
@@ -359,6 +357,24 @@ public:
     void noteDouble(InlineObservation obs, double value)
     {
         inlPolicy->noteDouble(obs, value);
+    }
+
+    // Determine the benfit multiplier for this inline.
+    double determineMultiplier()
+    {
+        return inlPolicy->determineMultiplier();
+    }
+
+    // Is there a native size estimate?
+    bool hasNativeSizeEstimate()
+    {
+        return inlPolicy->hasNativeSizeEstimate();
+    }
+    
+    // Determine the native size estimate for this inline
+    int determineNativeSizeEstimate()
+    {
+        return inlPolicy->determineNativeSizeEstimate();
     }
 
     // Ensure details of this inlining process are appropriately
@@ -469,29 +485,6 @@ struct InlLclVarInfo
     var_types       lclTypeInfo;
     typeInfo        lclVerTypeInfo;
     bool            lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
-};
-
-// InlineHints are a legacy form of observations.
-
-enum InlineHints
-{
-    //Static inline hints are here.
-    InlLooksLikeWrapperMethod = 0x0001,     // The inline candidate looks like it's a simple wrapper method.
-
-    InlArgFeedsConstantTest   = 0x0002,     // One or more of the incoming arguments feeds into a test
-                                            //against a constant.  This is a good candidate for assertion
-                                            //prop.
-
-    InlMethodMostlyLdSt       = 0x0004,     //This method is mostly loads and stores.
-
-    InlMethodContainsCondThrow= 0x0008,     //Method contains a conditional throw, so it does not bloat the
-                                            //code as much.
-    InlArgFeedsRngChk         = 0x0010,     //Incoming arg feeds an array bounds check.  A good assertion
-                                            //prop candidate.
-
-    //Dynamic inline hints are here.  Only put hints that add to the multiplier in here.
-    InlIncomingConstFeedsCond = 0x0100,     //Incoming argument is constant and feeds a conditional.
-    InlAllDynamicHints        = InlIncomingConstFeedsCond
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.

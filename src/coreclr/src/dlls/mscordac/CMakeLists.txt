@@ -87,6 +87,14 @@ if(WIN32)
         user32.lib
         ${STATIC_MT_CRT_LIB}
     )
+
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        list(APPEND COREDAC_LIBRARIES 
+          ${STATIC_MT_VCRT_LIB}
+        )
+    endif()
+
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug

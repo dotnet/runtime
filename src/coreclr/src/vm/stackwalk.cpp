@@ -789,14 +789,8 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 
         if (uControlPc == 0)
         {
-            // This displays the managed stack in case the unwind has walked out of the stack and
-            // a managed exception was being unwound.
-            DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-                                TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
-
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            break;
         }
-
 #endif // !FEATURE_PAL
     }
 
@@ -1689,8 +1683,6 @@ StackWalkAction StackFrameIterator::Filter(void)
 ProcessFuncletsForGCReporting:
                 do
                 {
-                    fRecheckCurrentFrame = false;
-                    
                     // When enumerating GC references for "liveness" reporting, depending upon the architecture,
                     // the responsibility of who reports what varies:
                     //
@@ -1751,7 +1743,7 @@ ProcessFuncletsForGCReporting:
                         // only source of evidence about it.
                         // This is different from Windows where the full stack is preserved until an exception is fully handled
                         // and so we can detect it just from walking the stack.
-                        if (!fSkippingFunclet && (pTracker != NULL))
+                        if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL))
                         {
                             // The stack walker is not skipping frames now, which means it didn't find a funclet frame that
                             // would require skipping the current frame. If we find a tracker with caller of actual handling
@@ -1764,14 +1756,14 @@ ProcessFuncletsForGCReporting:
                             {
                                 if (hasFuncletStarted)
                                 {
-                                    sfFuncletParent = pCurrTracker->GetCallerOfActualHandlingFrame();
+                                    sfFuncletParent = pCurrTracker->GetCallerOfEnclosingClause();
                                     if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
                                     {
                                         break;
                                     }
                                 }
 
-                                sfFuncletParent = pCurrTracker->GetCallerOfCollapsedActualHandlingFrame();
+                                sfFuncletParent = pCurrTracker->GetCallerOfCollapsedEnclosingClause();
                                 if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
                                 {
                                     break;
@@ -1793,9 +1785,12 @@ ProcessFuncletsForGCReporting:
                                 m_sfFuncletParent = sfFuncletParent;
                                 m_fProcessNonFilterFunclet = true;
                                 m_fDidFuncletReportGCReferences = false;
+                                fSkippingFunclet = true;
                             }
                         }
 #endif // FEATURE_PAL
+
+                        fRecheckCurrentFrame = false;
                         // Do we already have a reference to a funclet parent?
                         if (!m_sfFuncletParent.IsNull())
                         {
@@ -2000,6 +1995,7 @@ ProcessFuncletsForGCReporting:
                                         // Since we are in GC reference reporting mode,
                                         // then avoid code duplication and go to
                                         // funclet processing.
+                                        fRecheckCurrentFrame = true;
                                         goto ProcessFuncletsForGCReporting;
                                     }
                                 }
@@ -2105,6 +2101,7 @@ ProcessFuncletsForGCReporting:
                                 // If we are in GC reference reporting mode,
                                 // then avoid code duplication and go to
                                 // funclet processing.
+                                fRecheckCurrentFrame = true;
                                 goto ProcessFuncletsForGCReporting;
                             }
                             else
