@@ -73,7 +73,7 @@ void                Compiler::impInit()
 #else
     impInlineSize = JitConfig.JitInlineSize();
 
-    if (compStressCompile(STRESS_INLINE, 50))
+    if (compInlineStress())
         impInlineSize *= 10;
 
     if (impInlineSize > IMPLEMENTATION_MAX_INLINE_SIZE)
@@ -15467,53 +15467,6 @@ BOOL     Compiler::impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeO
     }
 }
 
-int   Compiler::impEstimateCallsiteNativeSize(CORINFO_METHOD_INFO *  methInfo)
-{        
-    int callsiteSize = 55;   // Direct call take 5 native bytes; indirect call takes 6 native bytes.
-
-    bool hasThis = methInfo->args.hasThis();
-
-    if  (hasThis)
-    {       
-        callsiteSize += 30;  // "mov" or "lea"
-    }
-        
-    CORINFO_ARG_LIST_HANDLE     argLst = methInfo->args.args;
-  
-    for (unsigned i = (hasThis ? 1 : 0); i < methInfo->args.totalILArgs(); i++, argLst = info.compCompHnd->getArgNext(argLst))
-    {
-        var_types sigType = (var_types) eeGetArgType(argLst, &methInfo->args);
-                      
-        if (sigType == TYP_STRUCT)
-        {      
-            typeInfo  verType  = verParseArgSigToTypeInfo(&methInfo->args, argLst);
-            
-            /*
-
-            IN0028: 00009B      lea     EAX, bword ptr [EBP-14H]
-            IN0029: 00009E      push    dword ptr [EAX+4]
-            IN002a: 0000A1      push    gword ptr [EAX]
-            IN002b: 0000A3      call    [MyStruct.staticGetX2(struct):int]
-
-            */
-            
-            callsiteSize += 10; // "lea     EAX, bword ptr [EBP-14H]"
-
-            unsigned opsz = (unsigned)(roundUp(info.compCompHnd->getClassSize(verType.GetClassHandle()), sizeof(void*)));
-            unsigned slots = opsz / sizeof(void*);
-                      
-            callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "
-        }
-        else
-        {
-            callsiteSize += 30; // push by average takes 3 bytes.
-        }
-    }
-  
-    return callsiteSize;        
-}
-
-
 /*****************************************************************************
  */
 
@@ -15532,15 +15485,9 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     // If this is a "forceinline" method, the JIT probably shouldn't have gone
     // to the trouble of estimating the native code size. Even if it did, it
     // shouldn't be relying on the result of this method.
-    assert(!(info.compFlags & CORINFO_FLG_FORCEINLINE));
+    assert(inlineResult->getObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
-#ifdef  DEBUG
-    if (verbose)
-    {
-        printf("\ncalleeNativeSizeEstimate=%d, callsiteNativeEstimate=%d.\n", 
-               calleeNativeSizeEstimate, callsiteNativeEstimate);
-    }
-#endif 
+    JITDUMP("\ncalleeNativeSizeEstimate=%d, callsiteNativeEstimate=%d.\n", calleeNativeSizeEstimate, callsiteNativeEstimate);
 
     // Note if this method is an instance constructor
     if ((info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0 &&
@@ -15570,23 +15517,12 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
 
 #endif // FEATURE_SIMD
 
-    // Determine base multiplier given the various observations made so far.
-    double multiplier = inlineResult->determineMultiplier();
+    // Roughly classify callsite frequency.
+    InlineCallsiteFrequency frequency = InlineCallsiteFrequency::UNUSED;
 
-    //Because it is an if ... else if, keep them in sorted order by multiplier.  This ensures that we always
-    //get the maximum multipler.  Also, pInlineInfo is null for static hints.  Make sure that the first case
-    //always checks pInlineInfo and falls into it.
-
-    //Now handle weight of calling block.
     if (!pInlineInfo || pInlineInfo->iciBlock->bbWeight >= BB_MAX_WEIGHT)
     {
-        //The calling block is very hot.  We should inline very aggressively.
-        //If we're computing the static hint, we should be most conservative (i.e. highest weight).
-        multiplier += 3.0;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nmultiplier in hottest block increased: %g.", multiplier);
-#endif        
+        frequency = InlineCallsiteFrequency::HOT;
     }
     //No training data.  Look for loop-like things.
     //We consider a recursive call loop-like.  Do not give the inlining boost to the method itself.
@@ -15594,84 +15530,37 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     else if ((pInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) &&
              (pInlineInfo->fncHandle != pInlineInfo->inlineCandidateInfo->ilCallerHandle))
     {
-        multiplier += 3.0;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nmultiplier in loop increased: %g.", multiplier);
-#endif        
+        frequency = InlineCallsiteFrequency::LOOP;
     }
     else if ((pInlineInfo->iciBlock->bbFlags & BBF_PROF_WEIGHT)
              && (pInlineInfo->iciBlock->bbWeight > BB_ZERO_WEIGHT))
     {
-        multiplier += 2.0;
-        //We hit this block while training.  Give it some importance.
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nmultiplier in hot block increased: %g.", multiplier);
-#endif        
-
+        frequency = InlineCallsiteFrequency::WARM;
     }
     //Now modify the multiplier based on where we're called from.
     else if (pInlineInfo->iciBlock->isRunRarely() ||
              ((info.compFlags & FLG_CCTOR) == FLG_CCTOR))
     {    
-        // Basically only allow inlining that will shrink the
-        // X86 code size, so things like empty methods, field accessors
-        // rebound calls, literal constants, ...
-
-        multiplier = 1.3;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nmultiplier for rare run blocks set to %g.", multiplier);
-#endif 
+        frequency = InlineCallsiteFrequency::RARE;
     }
     else
     {
-        multiplier += 1.3;
-#ifdef  DEBUG
-        if (verbose)
-            printf("\nmultiplier for boring block increased: %g.", multiplier);
-#endif 
-        
+        frequency = InlineCallsiteFrequency::BORING;
     }
 
-#ifdef  DEBUG
-    int additionalMultiplier = JitConfig.JitInlineAdditionalMultiplier();
+    inlineResult->noteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
 
-    if (additionalMultiplier!=0)  
-    {   
-        multiplier += additionalMultiplier;
-        if (verbose)
-        {
-            printf("\nmultiplier increased additionally by %d to %g.", additionalMultiplier, multiplier);
-        }
-    }
-
-    if (compStressCompile(STRESS_INLINE, 50))
-    {
-        multiplier += 10;        
-        if (verbose)
-        {
-            printf("\nmultiplier increased by 10 to %g due to the stress mode.", multiplier);
-        }
-    }
+    // Determine multiplier given the various observations.
+    double multiplier = inlineResult->determineMultiplier();
 
     // Note the various estimates we've obtained.
-
     inlineResult->noteInt(InlineObservation::CALLEE_NATIVE_SIZE_ESTIMATE, calleeNativeSizeEstimate);
     inlineResult->noteInt(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE, callsiteNativeEstimate);
     inlineResult->noteDouble(InlineObservation::CALLSITE_BENEFIT_MULTIPLIER, multiplier);
-    
-#endif      
 
     int threshold = (int)(callsiteNativeEstimate * multiplier);
 
-#ifdef  DEBUG
-    if (verbose)
-    {
-        printf("\ncalleeNativeSizeEstimate=%d, threshold=%d.\n", calleeNativeSizeEstimate, threshold);
-    }
-#endif     
+    JITDUMP("\ncalleeNativeSizeEstimate=%d, threshold=%d.\n", calleeNativeSizeEstimate, threshold);
         
 #define NATIVE_CALL_SIZE_MULTIPLIER (10.0)
     if (calleeNativeSizeEstimate > threshold)

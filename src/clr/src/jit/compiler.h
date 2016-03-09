@@ -3108,8 +3108,6 @@ private:
 
     static BOOL         impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeOut);
 
-    int                 impEstimateCallsiteNativeSize (CORINFO_METHOD_INFO *  methInfo);
-
     void                impCanInlineNative(int              callsiteNativeEstimate, 
                                            int              calleeNativeSizeEstimate,
                                            InlineInfo*      pInlineInfo,
@@ -7651,6 +7649,13 @@ public :
 
     bool                compStressCompile(compStressArea    stressArea,
                                           unsigned          weightPercentage);
+
+#ifdef DEBUG
+    bool                compInlineStress()
+    {
+        return compStressCompile(STRESS_INLINE, 50);
+    }
+#endif // DEBUG
 
     bool                compTailCallStress()
     {
