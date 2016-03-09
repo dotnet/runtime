@@ -12,10 +12,13 @@
     <AssemblyName>System.Net.Http</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.4</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime> 
     <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime> 
-    <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.4</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>unix/project.json</ProjectJson>

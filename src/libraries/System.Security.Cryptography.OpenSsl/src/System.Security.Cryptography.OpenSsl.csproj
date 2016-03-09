@@ -12,6 +12,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework>netstandard1.4</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <!-- Temporarily remove the RID from this package until we have a  
          cross platform API to use RSA https://github.com/dotnet/corefx/issues/2953 -->  
     <!-- PackageTargetRuntime>unix</PackageTargetRuntime -->  
