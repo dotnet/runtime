@@ -1597,7 +1597,7 @@ GenTreePtr          Compiler::impLookupToTree(CORINFO_LOOKUP *pLookup, unsigned 
     {
         // Don't import runtime lookups when inlining
         // Inlining has to be aborted in such a case
-        compInlineResult->noteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
         return nullptr;
     }
     else
@@ -1677,7 +1677,7 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
         {
             // Don't import runtime lookups when inlining
             // Inlining has to be aborted in such a case
-            compInlineResult->noteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+            compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
             return nullptr;
         }
 
@@ -5702,7 +5702,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 
             if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
                 return callRetTyp;
             }
 
@@ -5710,7 +5710,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 
             if (mflags & CORINFO_FLG_SECURITYCHECK)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
                 return callRetTyp;
             }
 
@@ -5718,7 +5718,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 
             if (mflags & CORINFO_FLG_DONT_INLINE_CALLER)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_STACK_CRAWL_MARK);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_STACK_CRAWL_MARK);
                 return callRetTyp;
             }
 
@@ -5726,26 +5726,26 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 
             if (mflags & CORINFO_FLG_DELEGATE_INVOKE)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_DELEGATE_INVOKE);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_DELEGATE_INVOKE);
                 return callRetTyp;
             }
 
             /* For now ignore varargs */
             if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_NATIVE_VARARGS);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NATIVE_VARARGS);
                 return callRetTyp;
             }
 
             if  ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
                 return callRetTyp;
             }
 
             if ((mflags & CORINFO_FLG_VIRTUAL) && (sig->sigInst.methInstCount != 0) && (opcode == CEE_CALLVIRT))
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_GENERIC_VIRTUAL);
                 return callRetTyp;
             }
         }
@@ -5873,7 +5873,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
                          * always have a handle lookup.  These lookups are safe intra-module, but we're just
                          * failing here.
                          */
-                        compInlineResult->noteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
+                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
                         return callRetTyp;
                     }                            
         
@@ -5950,7 +5950,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
             {
                 if (compIsForInlining())
                 {
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_CALL_VIA_LDVIRTFTN);
                     return callRetTyp;
                 }
                 
@@ -6227,7 +6227,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
             // Cannot handle this if the method being imported is an inlinee by itself.
             // Because inlinee method does not have its own frame.
 
-            compInlineResult->noteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
             return callRetTyp;
         }
         else
@@ -6285,7 +6285,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
             // so instead we fallback to JIT.
             if (compIsForInlining())
             {
-                compInlineResult->noteFatal(InlineObservation::CALLSITE_CANT_EMBED_PINVOKE_COOKIE);
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_PINVOKE_COOKIE);
             }
             else
             {
@@ -6336,7 +6336,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         void *          varCookie, *pVarCookie;
         if (!info.compCompHnd->canGetVarArgsHandle(sig))
         {
-            compInlineResult->noteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
+            compInlineResult->NoteFatal(InlineObservation::CALLSITE_CANT_EMBED_VARARGS_COOKIE);
             return callRetTyp;
         }
 
@@ -6416,7 +6416,7 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 
             if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
                 return callRetTyp;
             }
                             
@@ -8894,7 +8894,7 @@ PUSH_I4CON:
             {
                 if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_NO_CALLEE_LDSTR)
                 {                    
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_HAS_LDSTR_RESTRICTION);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_LDSTR_RESTRICTION);
                     return;
                 }
             }
@@ -9241,7 +9241,7 @@ _PopValue:
                 op1 = impInlineFetchArg(lclNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo);
                 if (op1->gtOper != GT_LCL_VAR)
                 {                    
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
                     return;
                 }
 
@@ -9322,7 +9322,7 @@ _PUSH_ADRVAR:
             if (compIsForInlining())
             {
                 assert(!"Shouldn't have exception handlers in the inliner!");
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_ENDFINALLY);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFINALLY);
                 return;
             }
             
@@ -9342,7 +9342,7 @@ _PUSH_ADRVAR:
             if (compIsForInlining())
             {
                 assert(!"Shouldn't have exception handlers in the inliner!");
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_ENDFILTER);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_ENDFILTER);
                 return;
             }
 
@@ -9642,7 +9642,7 @@ ARR_LD_POST_VERIFY:
             {                
                 if (op1->gtOper == GT_CNS_INT)
                 {
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NULL_FOR_LDELEM);
                     return;
                 }
             }
@@ -10159,7 +10159,7 @@ CEE_SH_OP2:
 
             if (compIsForInlining())
             {                
-                compInlineResult->noteFatal(InlineObservation::CALLEE_HAS_LEAVE);
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_HAS_LEAVE);
                 return;
             }
 
@@ -11088,7 +11088,7 @@ DO_LDFTN:
             {
                 if (mflags & (CORINFO_FLG_FINAL|CORINFO_FLG_STATIC) || !(mflags & CORINFO_FLG_VIRTUAL))
                 {
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_LDVIRTFN_ON_NON_VIRTUAL);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDVIRTFN_ON_NON_VIRTUAL);
                     return;
                 }
             }
@@ -11239,7 +11239,7 @@ DO_LDFTN:
                 if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
                 {
                     //Check to see if this call violates the boundary.
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
                     return;
                 }
             }
@@ -11305,7 +11305,7 @@ DO_LDFTN:
                 {
                     if (varTypeIsComposite(JITtype2varType(callInfo.sig.retType)) && callInfo.sig.retTypeClass == NULL)
                     {
-                        compInlineResult->noteFatal(InlineObservation::CALLEE_RETURN_TYPE_IS_COMPOSITE);
+                        compInlineResult->NoteFatal(InlineObservation::CALLEE_RETURN_TYPE_IS_COMPOSITE);
                         return;
                     }
                 }
@@ -11444,7 +11444,7 @@ DO_LDFTN:
                 //CALLI doesn't have a method handle, so assume the worst.
                 if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
                 {
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_CALLI);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_CALLI);
                     return;
                 }
             }
@@ -11692,13 +11692,13 @@ DO_LDFTN:
                 case CORINFO_FIELD_STATIC_ADDR_HELPER:
                 case CORINFO_FIELD_STATIC_TLS:
 
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
                     return;
 
                 case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
 
                     /* We may be able to inline the field accessors in specific instantiations of generic methods */
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
                     return;
 
                 default:
@@ -11715,9 +11715,9 @@ DO_LDFTN:
                     {
                         // Loading a static valuetype field usually will cause a JitHelper to be called
                         // for the static base. This will bloat the code.
-                        compInlineResult->note(InlineObservation::CALLEE_LDFLD_STATIC_VALUECLASS);
+                        compInlineResult->Note(InlineObservation::CALLEE_LDFLD_STATIC_VALUECLASS);
 
-                        if (compInlineResult->isFailure())
+                        if (compInlineResult->IsFailure())
                         {
                             return;
                         }
@@ -12036,13 +12036,13 @@ FIELD_DONE:
                 case CORINFO_FIELD_STATIC_ADDR_HELPER:
                 case CORINFO_FIELD_STATIC_TLS:
 
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_STFLD_NEEDS_HELPER);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_STFLD_NEEDS_HELPER);
                     return;
 
                 case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
 
                     /* We may be able to inline the field accessors in specific instantiations of generic methods */
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
                     return;
 
                 default:
@@ -12929,7 +12929,7 @@ FIELD_DONE:
                 {
                     /* if not, just don't inline the method */
 
-                    compInlineResult->noteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
                     return;
                 }
                 
@@ -12943,7 +12943,7 @@ FIELD_DONE:
      
                 if  (seenConditionalJump && (impInlineInfo->inlineCandidateInfo->fncRetType != TYP_VOID))
                 {
-                    compInlineResult->noteFatal(InlineObservation::CALLSITE_CONDITIONAL_THROW);
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_CONDITIONAL_THROW);
                     return;
                 }               
                 
@@ -13415,7 +13415,7 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
     {
         if (ilArgNum >= info.compArgsCount)
         {
-            compInlineResult->noteFatal(InlineObservation::CALLEE_BAD_ARGUMENT_NUMBER);
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_BAD_ARGUMENT_NUMBER);
             return;
         }
 
@@ -13457,7 +13457,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
     {
         if (ilLclNum >= info.compMethodInfo->locals.numArgs)
         {
-            compInlineResult->noteFatal(InlineObservation::CALLEE_BAD_LOCAL_NUMBER);
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_BAD_LOCAL_NUMBER);
             return;
         }
 
@@ -13662,7 +13662,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                    
             if (returnType != originalCallType)
             {
-                compInlineResult->noteFatal(InlineObservation::CALLSITE_RETURN_TYPE_MISMATCH);
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_RETURN_TYPE_MISMATCH);
                 return false;
             }
 
@@ -15485,7 +15485,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     // If this is a "forceinline" method, the JIT probably shouldn't have gone
     // to the trouble of estimating the native code size. Even if it did, it
     // shouldn't be relying on the result of this method.
-    assert(inlineResult->getObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+    assert(inlineResult->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
     JITDUMP("\ncalleeNativeSizeEstimate=%d, callsiteNativeEstimate=%d.\n", calleeNativeSizeEstimate, callsiteNativeEstimate);
 
@@ -15493,7 +15493,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     if ((info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0 &&
         (info.compFlags & CORINFO_FLG_STATIC)      == 0)
     {
-        inlineResult->note(InlineObservation::CALLEE_IS_INSTANCE_CTOR);
+        inlineResult->Note(InlineObservation::CALLEE_IS_INSTANCE_CTOR);
     }
 
     // Note if this method's class is a promotable struct
@@ -15503,7 +15503,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
         lvaCanPromoteStructType(info.compClassHnd, &structPromotionInfo, false);
         if (structPromotionInfo.canPromote)
         {
-            inlineResult->note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
+            inlineResult->Note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
         }
     }               
 
@@ -15512,7 +15512,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     // Note if this method is has SIMD args or return value
     if (pInlineInfo != nullptr && pInlineInfo->hasSIMDTypeArgLocalOrReturn)
     {
-        inlineResult->note(InlineObservation::CALLEE_HAS_SIMD);
+        inlineResult->Note(InlineObservation::CALLEE_HAS_SIMD);
     }
 
 #endif // FEATURE_SIMD
@@ -15548,15 +15548,15 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
         frequency = InlineCallsiteFrequency::BORING;
     }
 
-    inlineResult->noteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
+    inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
 
     // Determine multiplier given the various observations.
-    double multiplier = inlineResult->determineMultiplier();
+    double multiplier = inlineResult->DetermineMultiplier();
 
     // Note the various estimates we've obtained.
-    inlineResult->noteInt(InlineObservation::CALLEE_NATIVE_SIZE_ESTIMATE, calleeNativeSizeEstimate);
-    inlineResult->noteInt(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE, callsiteNativeEstimate);
-    inlineResult->noteDouble(InlineObservation::CALLSITE_BENEFIT_MULTIPLIER, multiplier);
+    inlineResult->NoteInt(InlineObservation::CALLEE_NATIVE_SIZE_ESTIMATE, calleeNativeSizeEstimate);
+    inlineResult->NoteInt(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE, callsiteNativeEstimate);
+    inlineResult->NoteDouble(InlineObservation::CALLSITE_BENEFIT_MULTIPLIER, multiplier);
 
     int threshold = (int)(callsiteNativeEstimate * multiplier);
 
@@ -15577,12 +15577,12 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
 
         if (pInlineInfo != nullptr) 
         {
-            inlineResult->noteFatal(InlineObservation::CALLSITE_EXCEEDS_THRESHOLD);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_EXCEEDS_THRESHOLD);
         }
         else 
         {
             // Static hint case.... here the "callee" is the function being assessed.
-            inlineResult->noteFatal(InlineObservation::CALLEE_EXCEEDS_THRESHOLD);
+            inlineResult->NoteFatal(InlineObservation::CALLEE_EXCEEDS_THRESHOLD);
         }
     }
     else 
@@ -15592,7 +15592,7 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
                  threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
 
        // Candidate has passed the profitability screen, update candidacy.
-       inlineResult->note(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
+       inlineResult->Note(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
     }
 
 #undef NATIVE_CALL_SIZE_MULTIPLIER
@@ -15614,17 +15614,17 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     unsigned codeSize = methInfo->ILCodeSize;
 
     // We shouldn't have made up our minds yet...
-    assert(!inlineResult->isDecided());
+    assert(!inlineResult->IsDecided());
 
     if (methInfo->EHcount)
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_HAS_EH);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_EH);
         return;
     }
 
     if ((methInfo->ILCode == 0) || (codeSize == 0))
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_NO_BODY);
         return;
     }
 
@@ -15632,7 +15632,7 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
 
     if (methInfo->args.isVarArg())
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_MANAGED_VARARGS);
         return;
     }
 
@@ -15640,11 +15640,11 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
 
-    inlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_LOCALS, methInfo->locals.numArgs);
+    inlineResult->NoteInt(InlineObservation::CALLEE_NUMBER_OF_LOCALS, methInfo->locals.numArgs);
 
     if (methInfo->locals.numArgs > MAX_INL_LCLS)
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_TOO_MANY_LOCALS);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_TOO_MANY_LOCALS);
         return;
     }
     
@@ -15652,32 +15652,32 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE    fncHandle,
     // This is currently an implementation limit due to fixed-size arrays in the
     // inline info, rather than a performance heuristic.
 
-    inlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_ARGUMENTS, methInfo->args.numArgs);
+    inlineResult->NoteInt(InlineObservation::CALLEE_NUMBER_OF_ARGUMENTS, methInfo->args.numArgs);
     
     if (methInfo->args.numArgs > MAX_INL_ARGS)
     {
-        inlineResult->noteFatal(InlineObservation::CALLEE_TOO_MANY_ARGUMENTS);
+        inlineResult->NoteFatal(InlineObservation::CALLEE_TOO_MANY_ARGUMENTS);
         return;
     }
 
     // Note force inline state
 
-    inlineResult->noteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, forceInline);
+    inlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, forceInline);
 
     // Note IL code size
 
-    inlineResult->noteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
+    inlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
-    if (inlineResult->isFailure())
+    if (inlineResult->IsFailure())
     {
         return;
     }
 
     // Make sure maxstack is not too big
 
-    inlineResult->noteInt(InlineObservation::CALLEE_MAXSTACK, methInfo->maxStack);
+    inlineResult->NoteInt(InlineObservation::CALLEE_MAXSTACK, methInfo->maxStack);
 
-    if (inlineResult->isFailure())
+    if (inlineResult->IsFailure())
     {
         return;
     }
@@ -15731,7 +15731,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
 
         if (JitConfig.JitNoInline())
         {
-            pParam->result->noteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
+            pParam->result->NoteFatal(InlineObservation::CALLEE_IS_JIT_NOINLINE);
             goto _exit;
         }
 #endif
@@ -15745,7 +15745,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
         CORINFO_METHOD_INFO methInfo;    
         if (!pParam->pThis->info.compCompHnd->getMethodInfo(pParam->fncHandle, &methInfo))
         {
-            pParam->result->noteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
+            pParam->result->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
             goto _exit;
         }
 
@@ -15757,9 +15757,9 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
                                       forceInline,
                                       pParam->result);
 
-        if (pParam->result->isFailure())
+        if (pParam->result->IsFailure())
         {
-            assert(pParam->result->isNever());
+            assert(pParam->result->IsNever());
             goto _exit;            
         }
 
@@ -15777,7 +15777,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
 
         if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
         {
-            pParam->result->noteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE_SPEC);
+            pParam->result->NoteFatal(InlineObservation::CALLSITE_CLASS_INIT_FAILURE_SPEC);
             goto _exit;
         }
 
@@ -15794,17 +15794,17 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
 
         if (vmResult == INLINE_FAIL) 
         {
-            pParam->result->noteFatal(InlineObservation::CALLSITE_IS_VM_NOINLINE);
+            pParam->result->NoteFatal(InlineObservation::CALLSITE_IS_VM_NOINLINE);
         } 
         else if (vmResult == INLINE_NEVER) 
         {
-            pParam->result->noteFatal(InlineObservation::CALLEE_IS_VM_NOINLINE);
+            pParam->result->NoteFatal(InlineObservation::CALLEE_IS_VM_NOINLINE);
         }
         
-        if (pParam->result->isFailure())
+        if (pParam->result->IsFailure())
         {
             // Make sure not to report this one.  It was already reported by the VM.
-            pParam->result->setReported();
+            pParam->result->SetReported();
             goto _exit;
         }
     
@@ -15818,7 +15818,7 @@ void  Compiler::impCheckCanInline(GenTreePtr                call,
             
             if (!pParam->pThis->impIsThis(thisArg))
             {
-                pParam->result->noteFatal(InlineObservation::CALLSITE_REQUIRES_SAME_THIS);
+                pParam->result->NoteFatal(InlineObservation::CALLSITE_REQUIRES_SAME_THIS);
                 goto _exit;
             }
         }
@@ -15870,7 +15870,7 @@ _exit:
     }
     impErrorTrap()
     {
-        param.result->noteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
+        param.result->NoteFatal(InlineObservation::CALLSITE_COMPILATION_ERROR);
     }
     endErrorTrap();
 }
@@ -15884,7 +15884,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
 
     if (curArgVal->gtOper == GT_MKREFANY)
     {
-        inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_IS_MKREFANY);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_IS_MKREFANY);
         return;
     }
 
@@ -15907,7 +15907,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
     {
         // Right now impInlineSpillLclRefs and impInlineSpillGlobEffects don't take
         // into account special side effects, so we disallow them during inlining.
-        inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_HAS_SIDE_EFFECT);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_SIDE_EFFECT);
         return;
     }
 
@@ -15934,7 +15934,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo *  pInlineInfo,
             (curArgVal->gtIntCon.gtIconVal == 0)  )
         {
             /* Abort, but do not mark as not inlinable */
-            inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
             return;
         }
     }
@@ -16006,7 +16006,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
         
         impInlineRecordArgInfo(pInlineInfo, thisArg, argCnt, inlineResult);
         
-        if (inlineResult->isFailure())
+        if (inlineResult->IsFailure())
         {
            return;
         }
@@ -16041,7 +16041,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 
         impInlineRecordArgInfo(pInlineInfo, argVal, argCnt,  inlineResult);
 
-        if (inlineResult->isFailure())
+        if (inlineResult->IsFailure())
         {
             return;
         }
@@ -16097,7 +16097,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
             if (sigType == TYP_REF)
             {
                 /* The argument cannot be bashed into a ref (see bug 750871) */
-                inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_REF);
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_REF);
                 return;
             }
 
@@ -16124,7 +16124,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                 else
                 {
                     /* Arguments 'int <- byref' cannot be bashed */
-                    inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
+                    inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
                     return;
                 }
             }
@@ -16180,7 +16180,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 
             if (!isPlausibleTypeMatch)
             {
-                inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_TYPES_INCOMPATIBLE);
+                inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_TYPES_INCOMPATIBLE);
                 return;
             }
 
@@ -16207,7 +16207,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
                     else
                     {
                         /* Arguments 'int <- byref' cannot be changed */
-                        inlineResult->noteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
+                        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
                         return;
                     }
                 }
@@ -16281,7 +16281,7 @@ void  Compiler::impInlineInitVars(InlineInfo * pInlineInfo)
 
         if (isPinned)
         {
-            inlineResult->noteFatal(InlineObservation::CALLEE_HAS_PINNED_LOCALS);
+            inlineResult->NoteFatal(InlineObservation::CALLEE_HAS_PINNED_LOCALS);
             return;
         }
 
@@ -16614,7 +16614,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     /* Don't inline if not optimized code */
     if  (opts.compDbgCode)
     {
-        inlineResult.noteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
+        inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
         return;
     }
 
@@ -16622,7 +16622,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     // Inlining takes precedence over implicit tail call optimization (if the call is not directly recursive).
     if (call->IsTailPrefixedCall())
     {
-        inlineResult.noteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
         return;
     }
 
@@ -16632,13 +16632,13 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     // as a fast tail call or turned into a loop.
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
-        inlineResult.noteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
         return;
     }
 
     if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
     {
-        inlineResult.noteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
         return;
     }
 
@@ -16646,14 +16646,14 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if  (call->gtCallType == CT_HELPER)
     {
-        inlineResult.noteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
         return;
     }
 
     /* Ignore indirect calls */
     if  (call->gtCallType == CT_INDIRECT)
     {
-        inlineResult.noteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
+        inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
         return;
     }
 
@@ -16693,7 +16693,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
             
 #endif
 
-            inlineResult.noteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
+            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
             return;
         }
 
@@ -16706,7 +16706,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
             }
 #endif
 
-            inlineResult.noteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
+            inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
             return;
         }
     }
@@ -16715,7 +16715,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if (opts.compNeedSecurityCheck)
     {
-        inlineResult.noteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
+        inlineResult.NoteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
         return;
     }
 
@@ -16723,7 +16723,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
-        inlineResult.noteFatal(InlineObservation::CALLEE_IS_NOINLINE);
+        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
         return;
     }
 
@@ -16731,13 +16731,13 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if  (methAttr & CORINFO_FLG_NATIVE)
     {
-        inlineResult.noteFatal(InlineObservation::CALLEE_IS_NATIVE);
+        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NATIVE);
         return;
     }
 
     if  (methAttr & CORINFO_FLG_SYNCH)
     {
-        inlineResult.noteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
+        inlineResult.NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
         return;
     }
 
@@ -16745,14 +16745,14 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     if (methAttr & CORINFO_FLG_SECURITYCHECK)
     {
-        inlineResult.noteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
+        inlineResult.NoteFatal(InlineObservation::CALLEE_NEEDS_SECURITY_CHECK);
         return;
     }
 
     InlineCandidateInfo * inlineCandidateInfo = nullptr;
     impCheckCanInline(call, fncHandle, methAttr, exactContextHnd, &inlineCandidateInfo, &inlineResult);
 
-    if (inlineResult.isFailure())
+    if (inlineResult.IsFailure())
     {
 #if defined(DEBUG) || MEASURE_INLINING
         ++Compiler::jitCheckCanInlineFailureCount;    // This is actually the number of methods that starts the inline attempt.
@@ -16775,7 +16775,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
 
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
-    inlineResult.setReported();
+    inlineResult.SetReported();
 }
 
 /******************************************************************************/
