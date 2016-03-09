@@ -51,7 +51,7 @@ delete_last_version(){
         rm -f "$DIR/last_version.deb"
 }
 
-cleanup(){
+teardown(){
         delete_last_version
 }
 
@@ -76,6 +76,5 @@ cleanup(){
 		remove_package
 		install_package
 		purge_package
-                cleanup
 	fi
 }
