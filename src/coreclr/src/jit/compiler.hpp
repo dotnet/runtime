@@ -1585,7 +1585,7 @@ inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
         if (pComp->lvaHaveManyLocals())
         {
             // Don't create more LclVar with inlining 
-            compInlineResult->noteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+            compInlineResult->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
@@ -4291,7 +4291,7 @@ bool                Compiler::compDonotInline()
     if (compIsForInlining())
     {
        assert(compInlineResult != nullptr);
-       return compInlineResult->isFailure();
+       return compInlineResult->IsFailure();
     }
     else
     {
