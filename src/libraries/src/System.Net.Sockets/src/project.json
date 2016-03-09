@@ -19,7 +19,6 @@
         "System.Runtime.InteropServices": "4.0.20",
         "System.Security.Principal.Windows": "4.0.0-rc3-23908",
         "System.Threading": "4.0.10",
-        "System.Threading.Overlapped": "4.0.0",
         "System.Threading.Tasks": "4.0.10",
         "System.Threading.ThreadPool": "4.0.10-rc3-23908"
       }

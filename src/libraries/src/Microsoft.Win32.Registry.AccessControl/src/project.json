@@ -18,5 +18,9 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }
