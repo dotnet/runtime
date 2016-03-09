@@ -1076,10 +1076,10 @@ namespace System.Net.Security
 
                 // Special case for an error notification.
                 object asyncState = asyncRequest.AsyncState;
-                Exception exception = asyncState as Exception;
+                ExceptionDispatchInfo exception = asyncState as ExceptionDispatchInfo;
                 if (exception != null)
                 {
-                    ExceptionDispatchInfo.Capture(exception).Throw();
+                    exception.Throw();
                 }
 
                 sslState.CheckCompletionBeforeNextReceive((ProtocolToken)asyncState, asyncRequest);
