@@ -28,7 +28,8 @@ namespace System.Xml.Serialization
 
         internal static string FromTime(DateTime value)
         {
-            return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffzzzzzz");
+            string dateFormat = value.Kind == DateTimeKind.Utc ? "HH:mm:ss.fffffffZ" : "HH:mm:ss.fffffffzzzzzz";
+            return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, dateFormat);
         }
 
         internal static string FromDateTime(DateTime value)
@@ -207,7 +208,7 @@ namespace System.Xml.Serialization
 
         internal static DateTime ToTime(string value)
         {
-            return DateTime.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite | DateTimeStyles.NoCurrentDateDefault);
+            return DateTime.ParseExact(value, s_allTimeFormats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite | DateTimeStyles.NoCurrentDateDefault | DateTimeStyles.RoundtripKind);
         }
 
         internal static char ToChar(string value)
