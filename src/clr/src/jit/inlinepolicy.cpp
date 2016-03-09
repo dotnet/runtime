@@ -24,7 +24,7 @@
 //    Determines which of the various policies should apply,
 //    and creates (or reuses) a policy instance to use.
 
-InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler, bool isPrejitRoot)
+InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
     // For now, always create a Legacy policy.
     InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
@@ -33,24 +33,24 @@ InlinePolicy* InlinePolicy::getPolicy(Compiler* compiler, bool isPrejitRoot)
 }
 
 //------------------------------------------------------------------------
-// noteSuccess: handle finishing all the inlining checks successfully
+// NoteSuccess: handle finishing all the inlining checks successfully
 
-void LegacyPolicy::noteSuccess()
+void LegacyPolicy::NoteSuccess()
 {
-    assert(inlDecisionIsCandidate(inlDecision));
-    inlDecision = InlineDecision::SUCCESS;
+    assert(InlDecisionIsCandidate(m_Decision));
+    m_Decision = InlineDecision::SUCCESS;
 }
 
 //------------------------------------------------------------------------
-// noteBool: handle a boolean observation with non-fatal impact
+// NoteBool: handle a boolean observation with non-fatal impact
 //
 // Arguments:
 //    obs      - the current obsevation
 //    value    - the value of the observation
-void LegacyPolicy::noteBool(InlineObservation obs, bool value)
+void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 {
     // Check the impact
-    InlineImpact impact = inlGetImpact(obs);
+    InlineImpact impact = InlGetImpact(obs);
 
     // As a safeguard, all fatal impact must be
     // reported via noteFatal.
@@ -67,53 +67,53 @@ void LegacyPolicy::noteBool(InlineObservation obs, bool value)
         case InlineObservation::CALLEE_IS_FORCE_INLINE:
             // We may make the force-inline observation more than
             // once.  All observations should agree.
-            assert(!inlIsForceInlineKnown || (inlIsForceInline == value));
-            inlIsForceInline = value;
-            inlIsForceInlineKnown = true;
+            assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
+            m_IsForceInline = value;
+            m_IsForceInlineKnown = true;
             break;
         case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
-            inlIsInstanceCtor = value;
+            m_IsInstanceCtor = value;
             break;
         case InlineObservation::CALLEE_CLASS_PROMOTABLE:
-            inlIsFromPromotableValueClass = value;
+            m_IsFromPromotableValueClass = value;
             break;
         case InlineObservation::CALLEE_HAS_SIMD:
-            inlHasSimd = value;
+            m_HasSimd = value;
             break;
         case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-            inlLooksLikeWrapperMethod = value;
+            m_LooksLikeWrapperMethod = value;
             break;
         case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-            inlArgFeedsConstantTest = value;
+            m_ArgFeedsConstantTest = value;
             break;
         case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-            inlArgFeedsRangeCheck = value;
+            m_ArgFeedsRangeCheck = value;
             break;
         case InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE:
-            inlMethodIsMostlyLoadStore = value;
+            m_MethodIsMostlyLoadStore = value;
             break;
         case InlineObservation::CALLEE_HAS_SWITCH:
             // Pass this one on, it should cause inlining to fail.
             propagate = true;
             break;
         case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
-            inlConstantFeedsConstantTest = value;
+            m_ConstantFeedsConstantTest = value;
             break;
         case InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK:
             // Passed the profitability screen. Update candidacy.
-            setCandidate(obs);
+            SetCandidate(obs);
             break;
         case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
             {
                 // Set up the state machine, if this inline is
                 // discretionary and is still a candidate.
-                if (inlDecisionIsCandidate(inlDecision)
-                    && (inlObservation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
+                if (InlDecisionIsCandidate(m_Decision)
+                    && (m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
                 {
                     // Better not have a state machine already.
-                    assert(inlStateMachine == nullptr);
-                    inlStateMachine = new (inlCompiler, CMK_Inlining) CodeSeqSM;
-                    inlStateMachine->Start(inlCompiler);
+                    assert(m_StateMachine == nullptr);
+                    m_StateMachine = new (m_Compiler, CMK_Inlining) CodeSeqSM;
+                    m_StateMachine->Start(m_Compiler);
                 }
                 break;
             }
@@ -122,15 +122,15 @@ void LegacyPolicy::noteBool(InlineObservation obs, bool value)
             {
                 // We only expect to see this observation once, so the
                 // native size estimate should have its initial value.
-                assert(inlNativeSizeEstimate == NATIVE_SIZE_INVALID);
+                assert(m_NativeSizeEstimate == NATIVE_SIZE_INVALID);
 
                 // If we were using the state machine, get it to kick
                 // out a size estimate.
-                if (inlStateMachine != nullptr)
+                if (m_StateMachine != nullptr)
                 {
-                    inlStateMachine->End();
-                    inlNativeSizeEstimate = inlStateMachine->NativeSize;
-                    assert(inlNativeSizeEstimate != NATIVE_SIZE_INVALID);
+                    m_StateMachine->End();
+                    m_NativeSizeEstimate = m_StateMachine->NativeSize;
+                    assert(m_NativeSizeEstimate != NATIVE_SIZE_INVALID);
                 }
 
                 break;
@@ -144,23 +144,23 @@ void LegacyPolicy::noteBool(InlineObservation obs, bool value)
 
     if (propagate)
     {
-        noteInternal(obs);
+        NoteInternal(obs);
     }
 }
 
 //------------------------------------------------------------------------
-// noteFatal: handle an observation with fatal impact
+// NoteFatal: handle an observation with fatal impact
 //
 // Arguments:
 //    obs      - the current obsevation
 
-void LegacyPolicy::noteFatal(InlineObservation obs)
+void LegacyPolicy::NoteFatal(InlineObservation obs)
 {
     // As a safeguard, all fatal impact must be
     // reported via noteFatal.
-    assert(inlGetImpact(obs) == InlineImpact::FATAL);
-    noteInternal(obs);
-    assert(inlDecisionIsFailure(inlDecision));
+    assert(InlGetImpact(obs) == InlineImpact::FATAL);
+    NoteInternal(obs);
+    assert(InlDecisionIsFailure(m_Decision));
 }
 
 //------------------------------------------------------------------------
@@ -170,19 +170,19 @@ void LegacyPolicy::noteFatal(InlineObservation obs)
 //    obs      - the current obsevation
 //    value    - the value being observed
 
-void LegacyPolicy::noteInt(InlineObservation obs, int value)
+void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 {
     switch (obs)
     {
     case InlineObservation::CALLEE_MAXSTACK:
         {
-            assert(inlIsForceInlineKnown);
+            assert(m_IsForceInlineKnown);
 
             unsigned calleeMaxStack = static_cast<unsigned>(value);
 
-            if (!inlIsForceInline && (calleeMaxStack > SMALL_STACK_SIZE))
+            if (!m_IsForceInline && (calleeMaxStack > SMALL_STACK_SIZE))
             {
-                setNever(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
+                SetNever(InlineObservation::CALLEE_MAXSTACK_TOO_BIG);
             }
 
             break;
@@ -190,14 +190,14 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
         {
-            assert(inlIsForceInlineKnown);
+            assert(m_IsForceInlineKnown);
             assert(value != 0);
 
             unsigned basicBlockCount = static_cast<unsigned>(value);
 
-            if (!inlIsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
+            if (!m_IsForceInline && (basicBlockCount > MAX_BASIC_BLOCKS))
             {
-                setNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+                SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
             }
 
             break;
@@ -205,31 +205,31 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLEE_IL_CODE_SIZE:
         {
-            assert(inlIsForceInlineKnown);
+            assert(m_IsForceInlineKnown);
             assert(value != 0);
-            inlCodeSize = static_cast<unsigned>(value);
+            m_CodeSize = static_cast<unsigned>(value);
 
             // Now that we know size and forceinline state,
             // update candidacy.
-            if (inlCodeSize <= ALWAYS_INLINE_SIZE)
+            if (m_CodeSize <= ALWAYS_INLINE_SIZE)
             {
                 // Candidate based on small size
-                setCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (inlIsForceInline)
+            else if (m_IsForceInline)
             {
                 // Candidate based on force inline
-                setCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (inlCodeSize <= inlCompiler->getImpInlineSize())
+            else if (m_CodeSize <= m_Compiler->getImpInlineSize())
             {
                 // Candidate, pending profitability evaluation
-                setCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
             }
             else
             {
                 // Callee too big, not a candidate
-                setNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+                SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
             }
 
             break;
@@ -238,7 +238,7 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
     case InlineObservation::CALLEE_OPCODE_NORMED:
     case InlineObservation::CALLEE_OPCODE:
         {
-            if (inlStateMachine != nullptr)
+            if (m_StateMachine != nullptr)
             {
                 OPCODE opcode = static_cast<OPCODE>(value);
                 SM_OPCODE smOpcode = CodeSeqSM::MapToSMOpcode(opcode);
@@ -256,15 +256,15 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
                     }
                 }
 
-                inlStateMachine->Run(smOpcode DEBUGARG(0));
+                m_StateMachine->Run(smOpcode DEBUGARG(0));
             }
             break;
         }
 
     case InlineObservation::CALLSITE_FREQUENCY:
-        assert(inlCallsiteFrequency == InlineCallsiteFrequency::UNUSED);
-        inlCallsiteFrequency = static_cast<InlineCallsiteFrequency>(value);
-        assert(inlCallsiteFrequency != InlineCallsiteFrequency::UNUSED);
+        assert(m_CallsiteFrequency == InlineCallsiteFrequency::UNUSED);
+        m_CallsiteFrequency = static_cast<InlineCallsiteFrequency>(value);
+        assert(m_CallsiteFrequency != InlineCallsiteFrequency::UNUSED);
         break;
 
     default:
@@ -274,13 +274,13 @@ void LegacyPolicy::noteInt(InlineObservation obs, int value)
 }
 
 //------------------------------------------------------------------------
-// noteDouble: handle an observed double value
+// NoteDouble: handle an observed double value
 //
 // Arguments:
 //    obs      - the current obsevation
 //    value    - the value being observed
 
-void LegacyPolicy::noteDouble(InlineObservation obs, double value)
+void LegacyPolicy::NoteDouble(InlineObservation obs, double value)
 {
     // Ignore for now...
     (void) value;
@@ -288,91 +288,91 @@ void LegacyPolicy::noteDouble(InlineObservation obs, double value)
 }
 
 //------------------------------------------------------------------------
-// noteInternal: helper for handling an observation
+// NoteInternal: helper for handling an observation
 //
 // Arguments:
 //    obs      - the current obsevation
 
-void LegacyPolicy::noteInternal(InlineObservation obs)
+void LegacyPolicy::NoteInternal(InlineObservation obs)
 {
     // Note any INFORMATION that reaches here will now cause failure.
     // Non-fatal INFORMATION observations must be handled higher up.
-    InlineTarget target = inlGetTarget(obs);
+    InlineTarget target = InlGetTarget(obs);
 
     if (target == InlineTarget::CALLEE)
     {
-        this->setNever(obs);
+        this->SetNever(obs);
     }
     else
     {
-        this->setFailure(obs);
+        this->SetFailure(obs);
     }
 }
 
 //------------------------------------------------------------------------
-// setFailure: helper for setting a failing decision
+// SetFailure: helper for setting a failing decision
 //
 // Arguments:
 //    obs      - the current obsevation
 
-void LegacyPolicy::setFailure(InlineObservation obs)
+void LegacyPolicy::SetFailure(InlineObservation obs)
 {
     // Expect a valid observation
-    assert(inlIsValidObservation(obs));
+    assert(InlIsValidObservation(obs));
 
-    switch (inlDecision)
+    switch (m_Decision)
     {
     case InlineDecision::FAILURE:
         // Repeated failure only ok if evaluating a prejit root
         // (since we can't fail fast because we're not inlining)
         // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
         // (since we can't fail fast from lvaGrabTemp).
-        assert(inlIsPrejitRoot ||
+        assert(m_IsPrejitRoot ||
                (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
         break;
     case InlineDecision::UNDECIDED:
     case InlineDecision::CANDIDATE:
-        inlDecision = InlineDecision::FAILURE;
-        inlObservation = obs;
+        m_Decision = InlineDecision::FAILURE;
+        m_Observation = obs;
         break;
     default:
         // SUCCESS, NEVER, or ??
-        assert(!"Unexpected inlDecision");
+        assert(!"Unexpected m_Decision");
         unreached();
     }
 }
 
 //------------------------------------------------------------------------
-// setNever: helper for setting a never decision
+// SetNever: helper for setting a never decision
 //
 // Arguments:
 //    obs      - the current obsevation
 
-void LegacyPolicy::setNever(InlineObservation obs)
+void LegacyPolicy::SetNever(InlineObservation obs)
 {
     // Expect a valid observation
-    assert(inlIsValidObservation(obs));
+    assert(InlIsValidObservation(obs));
 
-    switch (inlDecision)
+    switch (m_Decision)
     {
     case InlineDecision::NEVER:
         // Repeated never only ok if evaluating a prejit root
-        assert(inlIsPrejitRoot);
+        assert(m_IsPrejitRoot);
         break;
     case InlineDecision::UNDECIDED:
     case InlineDecision::CANDIDATE:
-        inlDecision = InlineDecision::NEVER;
-        inlObservation = obs;
+        m_Decision = InlineDecision::NEVER;
+        m_Observation = obs;
         break;
     default:
         // SUCCESS, FAILURE or ??
-        assert(!"Unexpected inlDecision");
+        assert(!"Unexpected m_Decision");
         unreached();
     }
 }
 
 //------------------------------------------------------------------------
-// setCandidate: helper updating candidacy
+// SetCandidate: helper updating candidacy
 //
 // Arguments:
 //    obs      - the current obsevation
@@ -382,35 +382,35 @@ void LegacyPolicy::setNever(InlineObservation obs)
 //    failed, they're ignored. If there's already a candidate reason,
 //    this new reason trumps it.
 
-void LegacyPolicy::setCandidate(InlineObservation obs)
+void LegacyPolicy::SetCandidate(InlineObservation obs)
 {
     // Ignore if this inline is going to fail.
-    if (inlDecisionIsFailure(inlDecision))
+    if (InlDecisionIsFailure(m_Decision))
     {
         return;
     }
 
     // We should not have declared success yet.
-    assert(!inlDecisionIsSuccess(inlDecision));
+    assert(!InlDecisionIsSuccess(m_Decision));
 
     // Update, overriding any previous candidacy.
-    inlDecision = InlineDecision::CANDIDATE;
-    inlObservation = obs;
+    m_Decision = InlineDecision::CANDIDATE;
+    m_Observation = obs;
 }
 
 //------------------------------------------------------------------------
-// determineMultiplier: determine benefit multiplier for this inline
+// DetermineMultiplier: determine benefit multiplier for this inline
 //
 // Notes: uses the accumulated set of observations to compute a
 // profitability boost for the inline candidate.
 
-double LegacyPolicy::determineMultiplier()
+double LegacyPolicy::DetermineMultiplier()
 {
     double multiplier = 0;
 
     // Bump up the multiplier for instance constructors
 
-    if (inlIsInstanceCtor)
+    if (m_IsInstanceCtor)
     {
         multiplier += 1.5;
         JITDUMP("\nmultiplier in instance constructors increased to %g.", multiplier);
@@ -418,7 +418,7 @@ double LegacyPolicy::determineMultiplier()
 
     // Bump up the multiplier for methods in promotable struct
 
-    if (inlIsFromPromotableValueClass)
+    if (m_IsFromPromotableValueClass)
     {
         multiplier += 3;
         JITDUMP("\nmultiplier in methods of promotable struct increased to %g.", multiplier);
@@ -426,7 +426,7 @@ double LegacyPolicy::determineMultiplier()
 
 #ifdef FEATURE_SIMD
 
-    if (inlHasSimd)
+    if (m_HasSimd)
     {
         multiplier += JitConfig.JitInlineSIMDMultiplier();
         JITDUMP("\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to %g.", multiplier);
@@ -434,37 +434,37 @@ double LegacyPolicy::determineMultiplier()
 
 #endif // FEATURE_SIMD
 
-    if (inlLooksLikeWrapperMethod)
+    if (m_LooksLikeWrapperMethod)
     {
         multiplier += 1.0;
         JITDUMP("\nInline candidate looks like a wrapper method.  Multiplier increased to %g.", multiplier);
     }
 
-    if (inlArgFeedsConstantTest)
+    if (m_ArgFeedsConstantTest)
     {
         multiplier += 1.0;
         JITDUMP("\nInline candidate has an arg that feeds a constant test.  Multiplier increased to %g.", multiplier);
     }
 
-    if (inlMethodIsMostlyLoadStore)
+    if (m_MethodIsMostlyLoadStore)
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate is mostly loads and stores.  Multiplier increased to %g.", multiplier);
     }
 
-    if (inlArgFeedsRangeCheck)
+    if (m_ArgFeedsRangeCheck)
     {
         multiplier += 0.5;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (inlConstantFeedsConstantTest)
+    if (m_ConstantFeedsConstantTest)
     {
         multiplier += 3.0;
         JITDUMP("\nInline candidate has const arg that feeds a conditional.  Multiplier increased to %g.", multiplier);
     }
 
-    switch (inlCallsiteFrequency)
+    switch (m_CallsiteFrequency)
     {
     case InlineCallsiteFrequency::RARE:
         // Note this one is not additive, it uses '=' instead of '+='
@@ -502,7 +502,7 @@ double LegacyPolicy::determineMultiplier()
         JITDUMP("\nmultiplier increased via JitInlineAdditonalMultiplier=%d to %g.", additionalMultiplier, multiplier);
     }
 
-    if (inlCompiler->compInlineStress())
+    if (m_Compiler->compInlineStress())
     {
         multiplier += 10;
         JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
@@ -514,7 +514,7 @@ double LegacyPolicy::determineMultiplier()
 }
 
 //------------------------------------------------------------------------
-// determineNativeCodeSizeEstimate: return estimated native code size for
+// DetermineNativeCodeSizeEstimate: return estimated native code size for
 // this inline candidate.
 //
 // Notes:
@@ -522,18 +522,18 @@ double LegacyPolicy::determineMultiplier()
 //    candidates.  Should not be needed for forced or always
 //    candidates.
 
-int LegacyPolicy::determineNativeSizeEstimate()
+int LegacyPolicy::DetermineNativeSizeEstimate()
 {
     // Should be a discretionary candidate.
-    assert(inlObservation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+    assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
     // Should have a valid state machine estimate.
-    assert(inlNativeSizeEstimate != NATIVE_SIZE_INVALID);
+    assert(m_NativeSizeEstimate != NATIVE_SIZE_INVALID);
 
-    return inlNativeSizeEstimate;
+    return m_NativeSizeEstimate;
 }
 
 //------------------------------------------------------------------------
-// determineNativeCallsiteSizeEstimate: estimate native size for the
+// DetermineNativeCallsiteSizeEstimate: estimate native size for the
 // callsite.
 //
 // Arguments:
@@ -544,7 +544,7 @@ int LegacyPolicy::determineNativeSizeEstimate()
 //    call site. While the quiality of the estimate here is questionable
 //    (especially for x64) it is being left as is for legacy compatibility.
 
-int LegacyPolicy::determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
+int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
 {
     int callsiteSize = 55;   // Direct call take 5 native bytes; indirect call takes 6 native bytes.
 
@@ -556,17 +556,17 @@ int LegacyPolicy::determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methI
     }
 
     CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
-    COMP_HANDLE comp = inlCompiler->info.compCompHnd;
+    COMP_HANDLE comp = m_Compiler->info.compCompHnd;
 
     for (unsigned i = (hasThis ? 1 : 0);
          i < methInfo->args.totalILArgs();
          i++, argLst = comp->getArgNext(argLst))
     {
-        var_types sigType = (var_types) inlCompiler->eeGetArgType(argLst, &methInfo->args);
+        var_types sigType = (var_types) m_Compiler->eeGetArgType(argLst, &methInfo->args);
 
         if (sigType == TYP_STRUCT)
         {
-            typeInfo  verType  = inlCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
+            typeInfo  verType  = m_Compiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
 
             /*
 
