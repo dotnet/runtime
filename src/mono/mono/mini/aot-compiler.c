@@ -153,8 +153,8 @@ typedef struct MonoAotStats {
 	int methods_without_got_slots, direct_calls, all_calls, llvm_count;
 	int got_slots, offsets_size;
 	int method_categories [METHOD_CAT_NUM];
-	int got_slot_types [MONO_PATCH_INFO_NONE];
-	int got_slot_info_sizes [MONO_PATCH_INFO_NONE];
+	int got_slot_types [MONO_PATCH_INFO_NUM];
+	int got_slot_info_sizes [MONO_PATCH_INFO_NUM];
 	int jit_time, gen_time, link_time;
 } MonoAotStats;
 
@@ -10476,7 +10476,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		int i;
 
 		aot_printf (acfg, "GOT slot distribution:\n");
-		for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
+		for (i = 0; i < MONO_PATCH_INFO_NUM; ++i)
 			if (acfg->stats.got_slot_types [i])
 				aot_printf (acfg, "\t%s: %d (%d)\n", get_patch_name (i), acfg->stats.got_slot_types [i], acfg->stats.got_slot_info_sizes [i]);
 		aot_printf (acfg, "\nMethod stats:\n");
