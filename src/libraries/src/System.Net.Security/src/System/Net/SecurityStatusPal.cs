@@ -4,7 +4,26 @@
 
 namespace System.Net
 {
-    internal enum SecurityStatusPal
+    internal struct SecurityStatusPal
+    {
+        public readonly SecurityStatusPalErrorCode ErrorCode;
+        public readonly Exception Exception;
+
+        public SecurityStatusPal(SecurityStatusPalErrorCode errorCode, Exception exception = null)
+        {
+            ErrorCode = errorCode;
+            Exception = exception;
+        }
+
+        public override string ToString()
+        {
+            return Exception == null ?
+                $"{nameof(ErrorCode)}={ErrorCode}" :
+                $"{nameof(ErrorCode)}={ErrorCode}, {nameof(Exception)}={Exception}";
+        }
+    }
+
+    internal enum SecurityStatusPalErrorCode
     {
         NotSet = 0,
         OK,
