@@ -54,7 +54,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             BasicConnectionPoolingTest(tcpConnectionString);
             ClearAllPoolsTest(tcpConnectionString);
-#if MANAGED_SNI
+#if MANAGED_SNI && DEBUG
             KillConnectionTest(tcpConnectionString);
 #endif
             ReclaimEmancipatedOnOpenTest(tcpConnectionString);
@@ -93,6 +93,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             connection4.Close();
         }
 
+#if MANAGED_SNI && DEBUG
         /// <summary>
         /// Tests if killing the connection using the InternalConnectionWrapper is working
         /// </summary>
@@ -124,6 +125,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Tests if clearing all of the pools does actually remove the pools
