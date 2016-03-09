@@ -47,6 +47,7 @@ Coding Guidelines
 - [Breaking Changes](coding-guidelines/breaking-changes.md)
 - [Breaking Change Definitions](coding-guidelines/breaking-change-definitions.md)
 - [Breaking Change Rules](coding-guidelines/breaking-change-rules.md)
+- [Project Guidelines](coding-guidelines/project-guidelines.md)
 
 Building from Source
 ====================
