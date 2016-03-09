@@ -76,6 +76,7 @@
     <Compile Include="SQL\TransactionTest\TransactionTest.cs" />
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
+    <Compile Include="XUnitAssemblyAttributes.cs" />
 
     <None Include="DDBasics\DataTypes\data.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -86,7 +87,6 @@
     <None Include="DataCommon\ConnectionString.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="App.config" />
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
