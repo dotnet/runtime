@@ -499,7 +499,7 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 #define SSL_TXT_Separator ":"
 #define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
 
-extern "C" void CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
+extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
     const char* cipherString = nullptr;
     switch (policy)
@@ -519,7 +519,7 @@ extern "C" void CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy 
 
     assert(cipherString != nullptr);
 
-    SSL_CTX_set_cipher_list(ctx, cipherString);
+    return SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
 extern "C" void CryptoNative_SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)

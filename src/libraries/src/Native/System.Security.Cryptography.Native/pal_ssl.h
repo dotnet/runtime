@@ -354,8 +354,9 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 
 /*
 Sets the specified encryption policy on the SSL_CTX.
+Returns 1 if any cipher could be selected, and 0 if none were available.
 */
-extern "C" void CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
 
 /*
 Shims the SSL_CTX_set_client_CA_list method.
