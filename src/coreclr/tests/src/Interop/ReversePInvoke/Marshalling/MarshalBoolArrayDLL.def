@@ -1,8 +1,0 @@
-EXPORTS	
-	DoCallBackIn
-	DoCallBackOut	
-	DoCallBackInOut
-
-	DoCallBackRefIn
-	DoCallBackRefOut
-	DoCallBackRefInOut
