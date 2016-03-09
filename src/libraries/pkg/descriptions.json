@@ -471,6 +471,18 @@
         ]
     },
     {
+        "Name": "System.Drawing.Primitives",
+        "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+        "CommonTypes": [
+            "System.Drawing.Point",
+            "System.Drawing.PointF",
+            "System.Drawing.Size",
+            "System.Drawing.SizeF",
+            "System.Drawing.Rectangle",
+            "System.Drawing.RectangleF"
+        ]
+    },
+    {
         "Name": "System.Dynamic.Runtime",
         "Description": "Provides classes and interfaces that support the Dynamic Language Runtime (DLR).",
         "CommonTypes": [
