@@ -10064,11 +10064,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
-	acfg->aot_opts.ntrampolines = 1024;
-	acfg->aot_opts.nrgctx_trampolines = 1024;
-	acfg->aot_opts.nimt_trampolines = 128;
+	acfg->aot_opts.ntrampolines = 4096;
+	acfg->aot_opts.nrgctx_trampolines = 4096;
+	acfg->aot_opts.nimt_trampolines = 512;
 	acfg->aot_opts.nrgctx_fetch_trampolines = 128;
-	acfg->aot_opts.ngsharedvt_arg_trampolines = 128;
+	acfg->aot_opts.ngsharedvt_arg_trampolines = 512;
 	acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
 #ifdef MONOTOUCH
