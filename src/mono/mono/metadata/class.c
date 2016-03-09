@@ -5717,22 +5717,6 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 	mono_error_set_type_load_class (error, klass, msg);
 }
 
-static void
-mono_class_set_failure_from_loader_error (MonoClass *klass, MonoError *error, char *msg)
-{
-	MonoLoaderError *lerror = mono_loader_get_last_error ();
-
-	if (lerror) {
-		set_failure_from_loader_error (klass, lerror);
-		mono_error_set_from_loader_error (error);
-		if (msg)
-			g_free (msg);
-	} else {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, msg);
-		mono_error_set_type_load_class (error, klass, msg);
-	}
-}
-
 /**
  * mono_class_create_from_typedef:
  * @image: image where the token is valid

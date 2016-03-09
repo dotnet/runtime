@@ -537,20 +537,6 @@ mono_release_type_locks (MonoInternalThread *thread)
 	mono_type_initialization_unlock ();
 }
 
-static gpointer
-default_trampoline (MonoMethod *method)
-{
-	return method;
-}
-
-static gpointer
-default_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
-{
-	g_assert_not_reached ();
-
-	return NULL;
-}
-
 #ifndef DISABLE_REMOTING
 
 static gpointer
