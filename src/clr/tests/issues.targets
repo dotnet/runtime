@@ -232,12 +232,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\test-tls\test-tls.cmd" >
              <Issue>2441</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\directed\ldloca_s_r4\ldloca_s_r4.cmd" >
-             <Issue>3517</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\IL_Conformance\Old\directed\ldloca_s_r8\ldloca_s_r8.cmd" >
-             <Issue>3517</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd" >
              <Issue>2441</Issue>
         </ExcludeList>
