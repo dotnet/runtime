@@ -24,6 +24,25 @@ the core tests for the project. Visual Studio Solution (.sln) files exist for
 related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
 
+### Building individual DLLs of the CoreFX
+
+Under the src directory is a set of directortories each of which reprsent a particular Assembly in the CoreFX.  
+For example the src\System.Diagnostics.DiagnosticsSource directory holds the source code for the System.Diagnostics.DiagnosticsSource.dll  assembly.   Each of these Directories has a .SLN solution 
+file that typically includes two projects, one for the DLL being built and one for the tests.   Thus
+you can build both the DLL and Tests for System.Diagnostics.DiagnosticsSource.dll by going to 
+src\System.Diagnostics.DiagnosticsSource and typing 
+
+    msbuild
+ 
+You can build just the System.Diagnostics.DiagnosticsSource.dll (without the tests) by going to the src\System.Diagnostics.DiagnosticsSource\src directory and again typing
+
+    msbuild
+
+The DLL ends up as  bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource\System.DiagnosticSource.dll 
+
+There is also a pkg directory and if you go to diretory and type msbuild, it will build the DLL (if needed)
+and the also build the Nuget package for it.   The Nuget package ends up in the bin\pkg directory.  
+
 By default building from the root will only build the libraries for the OS you are running on. One can
 build for another OS by specifying `/p:FilterToOSGroup=[Windows_NT|Linux|OSX|FreeBSD]` or build for all by specifying
 `/p:BuildAllOSGroups=true`.
