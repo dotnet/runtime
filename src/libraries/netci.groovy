@@ -308,6 +308,7 @@ branchList.each { branchName ->
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --outerloop
+                    sudo find . -name \"testResults.xml\" -exec chmod 777 {} \\;
                     """)
                 }
                 
