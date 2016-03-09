@@ -13,6 +13,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
     <PackageTargetRuntime Condition="'$(PackageTargetFramework)' == ''">win</PackageTargetRuntime> 
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->

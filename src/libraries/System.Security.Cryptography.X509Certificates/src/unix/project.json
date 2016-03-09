@@ -11,7 +11,7 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.0.0-rc3-23908",
+    "System.Security.Cryptography.Algorithms": "4.1.0-rc3-23908",
     "System.Security.Cryptography.Encoding": "4.0.0-rc3-23908",
     "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23908",
     "System.Security.Cryptography.Primitives": "4.0.0-rc3-23908",
@@ -19,7 +19,9 @@
     "System.Threading": "4.0.10"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netstandard1.4": {
+      "imports": [ "dotnet5.5" ]
+    }
   },
   "runtimes": {
     "ubuntu.14.04-x64": {},

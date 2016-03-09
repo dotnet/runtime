@@ -5,7 +5,7 @@
     "System.Net.Primitives": "4.0.10",
     "System.Net.Sockets": "4.1.0-rc3-23908",
     "System.Net.TestData": "1.0.0-prerelease",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23908",
+    "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23908",
     "System.Security.Principal": "4.0.0",
     "System.Security.Principal.Windows": "4.0.0-rc3-23908",
     "xunit": "2.1.0",
