@@ -47,6 +47,9 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);
 
+gpointer
+mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method);
+
 void
 mono_llvm_optimize_method (MonoEERef mono_ee, LLVMValueRef method);
 

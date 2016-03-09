@@ -17,7 +17,76 @@
 
 #include "mini-llvm-cpp.h"
 
-#if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 100
+#if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
+
+/*
+ * LLVM 3.9 uses the OrcJIT APIs
+ */
+
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#include "llvm/ExecutionEngine/Orc/LazyEmittingLayer.h"
+#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/Orc/OrcArchitectureSupport.h"
+
+using namespace llvm;
+using namespace llvm::orc;
+
+void
+mono_llvm_set_unhandled_exception_handler (void)
+{
+}
+
+static gboolean inited;
+
+static void
+init_llvm (void)
+{
+	if (inited)
+		return;
+
+	InitializeNativeTarget ();
+	InitializeNativeTargetAsmPrinter();
+}
+
+MonoEERef
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
+{
+	init_llvm ();
+
+	return NULL;
+}
+
+void
+mono_llvm_optimize_method (MonoEERef eeref, LLVMValueRef method)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_llvm_dispose_ee (MonoEERef *eeref)
+{
+}
+
+void
+LLVMAddGlobalMapping (LLVMExecutionEngineRef EE, LLVMValueRef Global,
+					  void* Addr)
+{
+}
+
+void*
+LLVMGetPointerToGlobal (LLVMExecutionEngineRef EE, LLVMValueRef Global)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#elif !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 100
 
 #include <stdint.h>
 
@@ -555,6 +624,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 void
 mono_llvm_optimize_method (MonoEERef eeref, LLVMValueRef method)
 {
+	g_assert_not_reached ();
 }
 
 void
