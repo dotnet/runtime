@@ -48,7 +48,7 @@ namespace System.Globalization.Tests
             {
                 return calendar.GetYear(calendar.MaxSupportedDateTime);
             }
-            return MinGregorianYearInEra(calendar, era + 1) - MinGregorianYearInEra(calendar, era) + 1;
+            return calendar.GetYear(calendar.ToDateTime(1, 1, 1, 0, 0, 0, 0, era + 1).AddDays(-1)) + 1;
         }
 
         private static int MaxGregorianYearInEra(Calendar calendar, int era)
@@ -59,7 +59,7 @@ namespace System.Globalization.Tests
             {
                 return calendar.MaxSupportedDateTime.Year;
             }
-            return MinGregorianYearInEra(calendar, era + 1);
+            return (calendar.ToDateTime(1, 1, 1, 0, 0, 0, 0, era + 1).AddDays(-1)).Year;
         }
 
         private static int MinGregorianYearInEra(Calendar calendar, int era)
@@ -70,7 +70,6 @@ namespace System.Globalization.Tests
             {
                 return calendar.MinSupportedDateTime.Year;
             }
-
             return calendar.ToDateTime(1, 1, 1, 0, 0, 0, 0, era).Year;
         }
 
@@ -82,8 +81,7 @@ namespace System.Globalization.Tests
             {
                 return calendar.GetYear(calendar.MinSupportedDateTime);
             }
-
-            return 1;
+            return calendar.GetYear(calendar.ToDateTime(1, 1, 1, 0, 0, 0, 0, era));
         }
 
         public static IEnumerable<object[]> Calendars_TestData()
