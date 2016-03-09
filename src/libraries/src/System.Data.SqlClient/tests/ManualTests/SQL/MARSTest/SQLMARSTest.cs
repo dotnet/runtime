@@ -13,6 +13,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         private static readonly string s_yukonConnectionString = (new SqlConnectionStringBuilder(DataTestClass.SQL2005_Northwind) { MultipleActiveResultSets = true }).ConnectionString;
 
+#if DEBUG
         [Fact]
         public static void MARSAsyncTimeoutTest()
         {
@@ -105,7 +106,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
         }
-
+#endif
 
         [Fact]
         public static void MARSSyncBusyReaderTest()
