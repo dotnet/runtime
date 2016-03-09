@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject WriteCompilationOptions(CompilationOptions compilationOptions)
         {
             var o = new JObject();
-            if (compilationOptions.Defines != null)
+            if (compilationOptions.Defines?.Any() == true)
             {
                 o[DependencyContextStrings.DefinesPropertyName] = new JArray(compilationOptions.Defines);
             }
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyModel
             AddPropertyIfNotNull(o, DependencyContextStrings.GenerateXmlDocumentationPropertyName, compilationOptions.GenerateXmlDocumentation);
             AddPropertyIfNotNull(o, DependencyContextStrings.DebugTypePropertyName, compilationOptions.DebugType);
             return o;
-            }
+        }
 
         private void AddPropertyIfNotNull<T>(JObject o, string name, T value)
             {
@@ -142,6 +142,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void AddCompilationAssemblies(JObject libraryObject, IEnumerable<string> compilationAssemblies)
         {
+            if (!compilationAssemblies.Any())
+            {
+                return;
+            }
             libraryObject.Add(new JProperty(DependencyContextStrings.CompileTimeAssembliesKey,
                  WriteAssemblies(compilationAssemblies))
              );
@@ -149,6 +153,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void AddRuntimeAssemblies(JObject libraryObject, IEnumerable<RuntimeAssembly> runtimeAssemblies)
         {
+            if (!runtimeAssemblies.Any())
+            {
+                return;
+            }
             libraryObject.Add(new JProperty(DependencyContextStrings.RuntimeAssembliesKey,
                        WriteAssemblies(runtimeAssemblies.Select(a => a.Path)))
                    );
@@ -156,6 +164,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void AddDependencies(JObject libraryObject, IEnumerable<Dependency> dependencies)
         {
+            if (!dependencies.Any())
+            {
+                return;
+            }
             libraryObject.Add(
                 new JProperty(DependencyContextStrings.DependenciesPropertyName,
                 new JObject(
@@ -165,6 +177,10 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void AddResourceAssemblies(JObject libraryObject, IEnumerable<ResourceAssembly> resourceAssemblies)
         {
+            if (!resourceAssemblies.Any())
+            {
+                return;
+            }
             libraryObject.Add(DependencyContextStrings.ResourceAssembliesPropertyName,
                 new JObject(resourceAssemblies.Select(a =>
                     new JProperty(a.Path, new JObject(new JProperty(DependencyContextStrings.LocalePropertyName, a.Locale))))
