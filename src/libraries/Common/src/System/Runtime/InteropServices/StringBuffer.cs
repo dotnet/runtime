@@ -28,20 +28,6 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Instantiate the buffer with a copy of the specified string.
-        /// </summary>
-        public unsafe StringBuffer(string initialContents)
-            : base(0)
-        {
-            // We don't pass the count of bytes to the base constructor, appending will
-            // initialize to the correct size for the specified initial contents.
-            if (initialContents != null)
-            {
-                Append(initialContents);
-            }
-        }
-
-        /// <summary>
         /// Get/set the character at the given index.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if attempting to index outside of the buffer length.</exception>
@@ -92,7 +78,7 @@ namespace System.Runtime.InteropServices
             get { return _length; }
             set
             {
-                if (value == uint.MaxValue) throw new ArgumentOutOfRangeException("Length");
+                if (value == uint.MaxValue) throw new ArgumentOutOfRangeException(nameof(Length));
 
                 // Null terminate
                 EnsureCharCapacity(value + 1);
