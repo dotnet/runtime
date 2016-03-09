@@ -83,15 +83,12 @@ echo {  \
     \"frameworks\": { \"dnxcore50\": { } } \
     } > $jsonFilePath
 
-# Find runtime id 
-rid=`$dotnetCmd --version | grep 'Runtime Id:' | sed 's/^ *Runtime Id: *//g'`
-
 # Download the package
 echo Downloading CoreDisTools package
-bash -c -x "$dotnetCmd restore $jsonFilePath --source https://dotnet.myget.org/F/dotnet-core/ --packages $packageDir --runtime $rid"
+bash -c -x "$dotnetCmd restore $jsonFilePath --source https://dotnet.myget.org/F/dotnet-core/ --packages $packageDir"
 
 # Get library path
-libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
+libPath=`find $packageDir | grep -m 1 libcoredistools`
 if [ ! -e $libPath ]; then
     echo 'Failed to locate the downloaded library'
     exit 1
