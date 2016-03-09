@@ -14,7 +14,7 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.InteropServices.WindowsRuntime": "4.0.0",
         "System.Runtime.WindowsRuntime": "4.0.0",
-        "System.Security.Cryptography.X509Certificates": "4.0.0-rc3-23908",
+        "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23908",
         "System.Threading": "4.0.10",
         "System.Threading.Tasks": "4.0.10"
       }

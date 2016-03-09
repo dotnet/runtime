@@ -10,7 +10,7 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
-    "System.Security.Cryptography.Cng": "4.0.0-rc3-23908",
+    "System.Security.Cryptography.Cng": "4.1.0-rc3-23908",
     "System.Security.Cryptography.Encoding": "4.0.0-rc3-23908",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
