@@ -90,9 +90,16 @@ namespace System.IO
 
                 bool possibleShortPath = false;
                 bool foundTilde = false;
-                bool possibleBadUnc = IsUnc(fullPath);
-                uint index = possibleBadUnc ? 2u : 0;
-                uint lastSeparator = possibleBadUnc ? 1u : 0;
+
+                // We can get UNCs as device paths through this code (e.g. \\.\UNC\), we won't validate them as there isn't
+                // an easy way to normalize without extensive cost (we'd have to hunt down the canonical name for any device
+                // path that contains UNC or  to see if the path was doing something like \\.\GLOBALROOT\Device\Mup\,
+                // \\.\GLOBAL\UNC\, \\.\GLOBALROOT\GLOBAL??\UNC\, etc.
+                bool specialPath = fullPath.Length > 1 && fullPath[0] == '\\' && fullPath[1] == '\\';
+                bool isDevice = PathInternal.IsDevice(fullPath);
+                bool possibleBadUnc = specialPath && !isDevice;
+                uint index = specialPath ? 2u : 0;
+                uint lastSeparator = specialPath ? 1u : 0;
                 uint segmentLength;
                 char* start = fullPath.CharPointer;
                 char current;
@@ -110,7 +117,7 @@ namespace System.IO
                             case '>':
                             case '<':
                             case '\"':
-                                if (checkInvalidCharacters) throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                                if (checkInvalidCharacters) throw new ArgumentException(SR.Argument_InvalidPathChars);
                                 foundTilde = false;
                                 break;
                             case '~':
@@ -119,7 +126,7 @@ namespace System.IO
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
                                 if (segmentLength > (uint)PathInternal.MaxComponentLength)
-                                    throw new PathTooLongException(SR.IO_PathTooLong);
+                                    throw new PathTooLongException(SR.IO_PathTooLong + fullPath.ToString());
                                 lastSeparator = index;
 
                                 if (foundTilde)
@@ -191,16 +198,16 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsUnc(StringBuffer buffer)
+        private static bool IsDosUnc(StringBuffer buffer)
         {
-            return buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
+            return !PathInternal.IsDevice(buffer) && buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
         }
 
         private static void GetFullPathName(string path, StringBuffer fullPath)
         {
             // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as
             // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
-            Debug.Assert(PathInternal.IsRelative(path) || !PathInternal.IsExtended(path));
+            Debug.Assert(PathInternal.IsPartiallyQualified(path) || !PathInternal.IsExtended(path));
 
             // Historically we would skip leading spaces *only* if the path started with a drive " C:" or a UNC " \\"
             int startIndex = PathInternal.PathStartSkip(path);
@@ -227,13 +234,14 @@ namespace System.IO
             }
         }
 
-        private static uint GetInputBuffer(StringBuffer content, bool isUnc, out StringBuffer buffer)
+        private static uint GetInputBuffer(StringBuffer content, bool isDosUnc, out StringBuffer buffer)
         {
             uint length = content.Length;
-            length += isUnc ? (uint)PathInternal.UncExtendedPrefixToInsert.Length : (uint)PathInternal.ExtendedPathPrefix.Length;
+
+            length += isDosUnc ? (uint)PathInternal.UncExtendedPrefixToInsert.Length : (uint)PathInternal.ExtendedPathPrefix.Length;
             buffer = new StringBuffer(length);
 
-            if (isUnc)
+            if (isDosUnc)
             {
                 buffer.CopyFrom(bufferIndex: 0, source: PathInternal.UncExtendedPathPrefix);
                 uint prefixDifference = (uint)(PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length);
@@ -254,15 +262,45 @@ namespace System.IO
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
             // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.
 
-            Debug.Assert(!PathInternal.IsRelative(outputBuffer), "should have resolved by now");
-            Debug.Assert(!PathInternal.IsExtended(outputBuffer), "expanding short names expects normal paths");
+            Debug.Assert(!PathInternal.IsPartiallyQualified(outputBuffer), "should have resolved by now");
+
+            // We'll have one of a few cases by now (the normalized path will have already:
+            //
+            //  1. Dos path (C:\)
+            //  2. Dos UNC (\\Server\Share)
+            //  3. Dos device path (\\.\C:\, \\?\C:\)
+            //
+            // We want to put the extended syntax on the front if it doesn't already have it, which may mean switching from \\.\.
+            //
+            // Note that we will never get \??\ here as GetFullPathName() does not recognize \??\ and will return it as C:\??\ (or whatever the current drive is).
+
+            uint rootLength = PathInternal.GetRootLength(outputBuffer);
+            bool isDevice = PathInternal.IsDevice(outputBuffer);
+
+            StringBuffer inputBuffer = null;
+            bool isDosUnc = false;
+            uint rootDifference = 0;
+            bool wasDotDevice = false;
 
             // Add the extended prefix before expanding to allow growth over MAX_PATH
-            StringBuffer inputBuffer = null;
-            uint rootLength = PathInternal.GetRootLength(outputBuffer);
-            bool isUnc = IsUnc(outputBuffer);
+            if (isDevice)
+            {
+                // We have one of the following (\\?\ or \\.\)
+                inputBuffer = new StringBuffer();
+                inputBuffer.Append(outputBuffer);
 
-            uint rootDifference = GetInputBuffer(outputBuffer, isUnc, out inputBuffer);
+                if (outputBuffer[2] == '.')
+                {
+                    wasDotDevice = true;
+                    inputBuffer[2] = '?';
+                }
+            }
+            else
+            {
+                isDosUnc = IsDosUnc(outputBuffer);
+                rootDifference = GetInputBuffer(outputBuffer, isDosUnc, out inputBuffer);
+            }
+
             rootLength += rootDifference;
             uint inputLength = inputBuffer.Length;
 
@@ -322,15 +360,19 @@ namespace System.IO
 
             // Strip out the prefix and return the string
             StringBuffer bufferToUse = success ? outputBuffer : inputBuffer;
+            if (wasDotDevice)
+                bufferToUse[2] = '.';
+
             string returnValue = null;
 
             int newLength = (int)(bufferToUse.Length - rootDifference);
-            if (isUnc)
+            if (isDosUnc)
             {
                 // Need to go from \\?\UNC\ to \\?\UN\\
                 bufferToUse[(uint)PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
             }
 
+            // We now need to strip out any added characters at the front of the string
             if (bufferToUse.SubstringEquals(originalPath, rootDifference, newLength))
             {
                 // Use the original path to avoid allocating
