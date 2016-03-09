@@ -37,7 +37,7 @@ static const InlineImpact InlineImpacts[] =
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// inlIsValidObservation: run a validity check on an inline observation
+// InlIsValidObservation: run a validity check on an inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -45,7 +45,7 @@ static const InlineImpact InlineImpacts[] =
 // Return Value:
 //    true if the observation is valid
 
-bool inlIsValidObservation(InlineObservation obs)
+bool InlIsValidObservation(InlineObservation obs)
 {
     return((obs > InlineObservation::CALLEE_UNUSED_INITIAL) &&
            (obs < InlineObservation::CALLEE_UNUSED_FINAL));
@@ -54,7 +54,7 @@ bool inlIsValidObservation(InlineObservation obs)
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// inlGetObservationString: get a string describing this inline observation
+// InlGetObservationString: get a string describing this inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -62,14 +62,14 @@ bool inlIsValidObservation(InlineObservation obs)
 // Return Value:
 //    string describing the observation
 
-const char* inlGetObservationString(InlineObservation obs)
+const char* InlGetObservationString(InlineObservation obs)
 {
-    assert(inlIsValidObservation(obs));
+    assert(InlIsValidObservation(obs));
     return InlineDescriptions[static_cast<int>(obs)];
 }
 
 //------------------------------------------------------------------------
-// inlGetTarget: get the target of an inline observation
+// InlGetTarget: get the target of an inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -77,14 +77,14 @@ const char* inlGetObservationString(InlineObservation obs)
 // Return Value:
 //    enum describing the target
 
-InlineTarget inlGetTarget(InlineObservation obs)
+InlineTarget InlGetTarget(InlineObservation obs)
 {
-    assert(inlIsValidObservation(obs));
+    assert(InlIsValidObservation(obs));
     return InlineTargets[static_cast<int>(obs)];
 }
 
 //------------------------------------------------------------------------
-// inlGetTargetString: get a string describing the target of an inline observation
+// InlGetTargetString: get a string describing the target of an inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -92,9 +92,9 @@ InlineTarget inlGetTarget(InlineObservation obs)
 // Return Value:
 //    string describing the target
 
-const char* inlGetTargetString(InlineObservation obs)
+const char* InlGetTargetString(InlineObservation obs)
 {
-    InlineTarget t = inlGetTarget(obs);
+    InlineTarget t = InlGetTarget(obs);
     switch (t)
     {
     case InlineTarget::CALLER:
@@ -109,7 +109,7 @@ const char* inlGetTargetString(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
-// inlGetImpact: get the impact of an inline observation
+// InlGetImpact: get the impact of an inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -117,14 +117,14 @@ const char* inlGetTargetString(InlineObservation obs)
 // Return Value:
 //    enum value describing the impact
 
-InlineImpact inlGetImpact(InlineObservation obs)
+InlineImpact InlGetImpact(InlineObservation obs)
 {
-    assert(inlIsValidObservation(obs));
+    assert(InlIsValidObservation(obs));
     return InlineImpacts[static_cast<int>(obs)];
 }
 
 //------------------------------------------------------------------------
-// inlGetImpactString: get a string describing the impact of an inline observation
+// InlGetImpactString: get a string describing the impact of an inline observation
 //
 // Arguments:
 //    obs - the observation in question
@@ -132,9 +132,9 @@ InlineImpact inlGetImpact(InlineObservation obs)
 // Return Value:
 //    string describing the impact
 
-const char* inlGetImpactString(InlineObservation obs)
+const char* InlGetImpactString(InlineObservation obs)
 {
-    InlineImpact i = inlGetImpact(obs);
+    InlineImpact i = InlGetImpact(obs);
     switch (i)
     {
     case InlineImpact::FATAL:
@@ -153,7 +153,7 @@ const char* inlGetImpactString(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
-// inlGetCorInfoInlineDecision: translate decision into a CorInfoInline
+// InlGetCorInfoInlineDecision: translate decision into a CorInfoInline
 //
 // Arguments:
 //    d - the decision in question
@@ -161,7 +161,7 @@ const char* inlGetImpactString(InlineObservation obs)
 // Return Value:
 //    CorInfoInline value representing the decision
 
-CorInfoInline inlGetCorInfoInlineDecision(InlineDecision d)
+CorInfoInline InlGetCorInfoInlineDecision(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::SUCCESS:
@@ -177,7 +177,7 @@ CorInfoInline inlGetCorInfoInlineDecision(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlGetDecisionString: get a string representing this decision
+// InlGetDecisionString: get a string representing this decision
 //
 // Arguments:
 //    d - the decision in question
@@ -185,7 +185,7 @@ CorInfoInline inlGetCorInfoInlineDecision(InlineDecision d)
 // Return Value:
 //    string representing the decision
 
-const char* inlGetDecisionString(InlineDecision d)
+const char* InlGetDecisionString(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::SUCCESS:
@@ -205,7 +205,7 @@ const char* inlGetDecisionString(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsFailure: check if this decision describes a failing inline
+// InlDecisionIsFailure: check if this decision describes a failing inline
 //
 // Arguments:
 //    d - the decision in question
@@ -213,7 +213,7 @@ const char* inlGetDecisionString(InlineDecision d)
 // Return Value:
 //    true if the inline is definitely a failure
 
-bool inlDecisionIsFailure(InlineDecision d)
+bool InlDecisionIsFailure(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::SUCCESS:
@@ -230,7 +230,7 @@ bool inlDecisionIsFailure(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsSuccess: check if this decision describes a sucessful inline
+// InlDecisionIsSuccess: check if this decision describes a sucessful inline
 //
 // Arguments:
 //    d - the decision in question
@@ -238,7 +238,7 @@ bool inlDecisionIsFailure(InlineDecision d)
 // Return Value:
 //    true if the inline is definitely a success
 
-bool inlDecisionIsSuccess(InlineDecision d)
+bool InlDecisionIsSuccess(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::SUCCESS:
@@ -255,7 +255,7 @@ bool inlDecisionIsSuccess(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsNever: check if this decision describes a never inline
+// InlDecisionIsNever: check if this decision describes a never inline
 //
 // Arguments:
 //    d - the decision in question
@@ -263,7 +263,7 @@ bool inlDecisionIsSuccess(InlineDecision d)
 // Return Value:
 //    true if the inline is a never inline case
 
-bool inlDecisionIsNever(InlineDecision d)
+bool InlDecisionIsNever(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::NEVER:
@@ -280,7 +280,7 @@ bool inlDecisionIsNever(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsCandidate: check if this decision describes a viable candidate
+// InlDecisionIsCandidate: check if this decision describes a viable candidate
 //
 // Arguments:
 //    d - the decision in question
@@ -288,13 +288,13 @@ bool inlDecisionIsNever(InlineDecision d)
 // Return Value:
 //    true if this inline still might happen
 
-bool inlDecisionIsCandidate(InlineDecision d)
+bool InlDecisionIsCandidate(InlineDecision d)
 {
-    return !inlDecisionIsFailure(d);
+    return !InlDecisionIsFailure(d);
 }
 
 //------------------------------------------------------------------------
-// inlDecisionIsDecided: check if this decision has been made
+// InlDecisionIsDecided: check if this decision has been made
 //
 // Arguments:
 //    d - the decision in question
@@ -302,7 +302,7 @@ bool inlDecisionIsCandidate(InlineDecision d)
 // Return Value:
 //    true if this inline has been decided one way or another
 
-bool inlDecisionIsDecided(InlineDecision d)
+bool InlDecisionIsDecided(InlineDecision d)
 {
     switch (d) {
     case InlineDecision::NEVER:
@@ -322,23 +322,23 @@ bool inlDecisionIsDecided(InlineDecision d)
 // InlineContext: default constructor
 
 InlineContext::InlineContext()
-    : inlParent(nullptr)
-    , inlChild(nullptr)
-    , inlSibling(nullptr)
-    , inlOffset(BAD_IL_OFFSET)
-    , inlCode(nullptr)
-    , inlObservation(InlineObservation::CALLEE_UNUSED_INITIAL)
+    : m_Parent(nullptr)
+    , m_Child(nullptr)
+    , m_Sibling(nullptr)
+    , m_Offset(BAD_IL_OFFSET)
+    , m_Code(nullptr)
+    , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
 #ifdef DEBUG
-    , inlCallee(nullptr)
-    , inlTreeID(0)
-    , inlSuccess(true)
+    , m_Callee(nullptr)
+    , m_TreeID(0)
+    , m_Success(true)
 #endif
 {
     // Empty
 }
 
 //------------------------------------------------------------------------
-// newRoot: construct an InlineContext for the root method
+// NewRoot: construct an InlineContext for the root method
 //
 // Arguments:
 //   compiler - compiler doing the inlining
@@ -351,19 +351,19 @@ InlineContext::InlineContext()
 //    address of the root method) to preserve existing behavior, which
 //    is to allow one recursive inline.
 
-InlineContext* InlineContext::newRoot(Compiler* compiler)
+InlineContext* InlineContext::NewRoot(Compiler* compiler)
 {
     InlineContext* rootContext = new (compiler, CMK_Inlining) InlineContext;
 
 #if defined(DEBUG)
-    rootContext->inlCallee = compiler->info.compMethodHnd;
+    rootContext->m_Callee = compiler->info.compMethodHnd;
 #endif
 
     return rootContext;
 }
 
 //------------------------------------------------------------------------
-// newSuccess: construct an InlineContext for a successful inline
+// NewSuccess: construct an InlineContext for a successful inline
 // and link it into the context tree
 //
 // Arguments:
@@ -375,7 +375,7 @@ InlineContext* InlineContext::newRoot(Compiler* compiler)
 //    A new InlineContext for statements brought into the method by
 //    this inline.
 
-InlineContext* InlineContext::newSuccess(Compiler*   compiler,
+InlineContext* InlineContext::NewSuccess(Compiler*   compiler,
                                          InlineInfo* inlineInfo)
 {
     InlineContext* calleeContext = new (compiler, CMK_Inlining) InlineContext;
@@ -386,18 +386,18 @@ InlineContext* InlineContext::newSuccess(Compiler*   compiler,
 
     noway_assert(parentContext != nullptr);
 
-    calleeContext->inlCode = calleeIL;
-    calleeContext->inlParent = parentContext;
+    calleeContext->m_Code = calleeIL;
+    calleeContext->m_Parent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
-    calleeContext->inlSibling = parentContext->inlChild;
-    parentContext->inlChild = calleeContext;
-    calleeContext->inlChild = nullptr;
-    calleeContext->inlOffset = stmt->AsStmt()->gtStmtILoffsx;
-    calleeContext->inlObservation = inlineInfo->inlineResult->getObservation();
+    calleeContext->m_Sibling = parentContext->m_Child;
+    parentContext->m_Child = calleeContext;
+    calleeContext->m_Child = nullptr;
+    calleeContext->m_Offset = stmt->AsStmt()->gtStmtILoffsx;
+    calleeContext->m_Observation = inlineInfo->inlineResult->GetObservation();
 #ifdef DEBUG
-    calleeContext->inlCallee = inlineInfo->fncHandle;
-    calleeContext->inlTreeID = inlineInfo->inlineResult->getCall()->gtTreeID;
+    calleeContext->m_Callee = inlineInfo->fncHandle;
+    calleeContext->m_TreeID = inlineInfo->inlineResult->GetCall()->gtTreeID;
 #endif
 
     return calleeContext;
@@ -406,7 +406,7 @@ InlineContext* InlineContext::newSuccess(Compiler*   compiler,
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// newFailure: construct an InlineContext for a failing inline
+// NewFailure: construct an InlineContext for a failing inline
 // and link it into the context tree
 //
 // Arguments:
@@ -415,11 +415,10 @@ InlineContext* InlineContext::newSuccess(Compiler*   compiler,
 //    inlineResult - inlineResult for the attempt
 //
 // Return Value:
-//
 //    A new InlineContext for diagnostic purposes, or nullptr if
 //    the desired context could not be created.
 
-InlineContext* InlineContext::newFailure(Compiler*     compiler,
+InlineContext* InlineContext::NewFailure(Compiler*     compiler,
                                          GenTree*      stmt,
                                          InlineResult* inlineResult)
 {
@@ -443,17 +442,17 @@ InlineContext* InlineContext::newFailure(Compiler*     compiler,
 
     InlineContext* failedContext = new (compiler, CMK_Inlining) InlineContext;
 
-    failedContext->inlParent = parentContext;
+    failedContext->m_Parent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
-    failedContext->inlSibling = parentContext->inlChild;
-    parentContext->inlChild = failedContext;
-    failedContext->inlChild = nullptr;
-    failedContext->inlOffset = stmt->AsStmt()->gtStmtILoffsx;
-    failedContext->inlObservation = inlineResult->getObservation();
-    failedContext->inlCallee = inlineResult->getCallee();
-    failedContext->inlSuccess = false;
-    failedContext->inlTreeID = inlineResult->getCall()->gtTreeID;
+    failedContext->m_Sibling = parentContext->m_Child;
+    parentContext->m_Child = failedContext;
+    failedContext->m_Child = nullptr;
+    failedContext->m_Offset = stmt->AsStmt()->gtStmtILoffsx;
+    failedContext->m_Observation = inlineResult->GetObservation();
+    failedContext->m_Callee = inlineResult->GetCallee();
+    failedContext->m_Success = false;
+    failedContext->m_TreeID = inlineResult->GetCall()->gtTreeID;
 
     return failedContext;
 }
@@ -468,26 +467,26 @@ InlineContext* InlineContext::newFailure(Compiler*     compiler,
 void InlineContext::Dump(Compiler* compiler, int indent)
 {
     // Handle fact that siblings are in reverse order.
-    if (inlSibling != nullptr)
+    if (m_Sibling != nullptr)
     {
-        inlSibling->Dump(compiler, indent);
+        m_Sibling->Dump(compiler, indent);
     }
 
     // We may not know callee name in some of the failing cases
     const char* calleeName = nullptr;
 
-    if (inlCallee == nullptr)
+    if (m_Callee == nullptr)
     {
-        assert(!inlSuccess);
+        assert(!m_Success);
         calleeName = "<unknown>";
     }
     else
     {
-        calleeName = compiler->eeGetMethodFullName(inlCallee);
+        calleeName = compiler->eeGetMethodFullName(m_Callee);
     }
 
     // Dump this node
-    if (inlParent == nullptr)
+    if (m_Parent == nullptr)
     {
         // Root method
         printf("Inlines into %s\n", calleeName);
@@ -495,29 +494,29 @@ void InlineContext::Dump(Compiler* compiler, int indent)
     else
     {
         // Inline attempt.
-        const char* inlineReason = inlGetObservationString(inlObservation);
-        const char* inlineResult = inlSuccess ? "" : "FAILED: ";
+        const char* inlineReason = InlGetObservationString(m_Observation);
+        const char* inlineResult = m_Success ? "" : "FAILED: ";
 
         for (int i = 0; i < indent; i++)
         {
             printf(" ");
         }
 
-        if (inlOffset == BAD_IL_OFFSET)
+        if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("[IL=???? TR=%06u] [%s%s] %s\n", inlTreeID, inlineResult, inlineReason, calleeName);
+            printf("[IL=???? TR=%06u] [%s%s] %s\n", m_TreeID, inlineResult, inlineReason, calleeName);
         }
         else
         {
-            IL_OFFSET offset = jitGetILoffs(inlOffset);
-            printf("[IL=%04d TR=%06u] [%s%s] %s\n", offset, inlTreeID, inlineResult, inlineReason, calleeName);
+            IL_OFFSET offset = jitGetILoffs(m_Offset);
+            printf("[IL=%04d TR=%06u] [%s%s] %s\n", offset, m_TreeID, inlineResult, inlineReason, calleeName);
         }
     }
 
     // Recurse to first child
-    if (inlChild != nullptr)
+    if (m_Child != nullptr)
     {
-        inlChild->Dump(compiler, indent + 2);
+        m_Child->Dump(compiler, indent + 2);
     }
 }
 
@@ -535,25 +534,25 @@ void InlineContext::Dump(Compiler* compiler, int indent)
 InlineResult::InlineResult(Compiler*    compiler,
                            GenTreeCall* call,
                            const char*  context)
-    : inlCompiler(compiler)
-    , inlPolicy(nullptr)
-    , inlCall(call)
-    , inlCaller(nullptr)
-    , inlCallee(nullptr)
-    , inlContext(context)
-    , inlReported(false)
+    : m_Compiler(compiler)
+    , m_Policy(nullptr)
+    , m_Call(call)
+    , m_Caller(nullptr)
+    , m_Callee(nullptr)
+    , m_Context(context)
+    , m_Reported(false)
 {
     // Set the policy
     const bool isPrejitRoot = false;
-    inlPolicy = InlinePolicy::getPolicy(compiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 
     // Get method handle for caller
-    inlCaller = inlCompiler->info.compMethodHnd;
+    m_Caller = m_Compiler->info.compMethodHnd;
 
     // Get method handle for callee, if known
-    if (inlCall->gtCall.gtCallType == CT_USER_FUNC)
+    if (m_Call->gtCall.gtCallType == CT_USER_FUNC)
     {
-        inlCallee = call->gtCall.gtCallMethHnd;
+        m_Callee = m_Call->gtCall.gtCallMethHnd;
     }
 }
 
@@ -576,21 +575,21 @@ InlineResult::InlineResult(Compiler*    compiler,
 InlineResult::InlineResult(Compiler*              compiler,
                            CORINFO_METHOD_HANDLE  method,
                            const char*            context)
-    : inlCompiler(compiler)
-    , inlPolicy(nullptr)
-    , inlCall(nullptr)
-    , inlCaller(nullptr)
-    , inlCallee(method)
-    , inlContext(context)
-    , inlReported(false)
+    : m_Compiler(compiler)
+    , m_Policy(nullptr)
+    , m_Call(nullptr)
+    , m_Caller(nullptr)
+    , m_Callee(method)
+    , m_Context(context)
+    , m_Reported(false)
 {
     // Set the policy
     const bool isPrejitRoot = true;
-    inlPolicy = InlinePolicy::getPolicy(compiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
-// report: Dump, log, and report information about an inline decision.
+// Report: Dump, log, and report information about an inline decision.
 //
 // Notes:
 //    Called (automatically via the InlineResult dtor) when the
@@ -604,15 +603,15 @@ InlineResult::InlineResult(Compiler*              compiler,
 //    All this can be suppressed if desired by calling setReported()
 //    before the InlineResult goes out of scope.
 
-void InlineResult::report()
+void InlineResult::Report()
 {
     // User may have suppressed reporting via setReported(). If so, do nothing.
-    if (inlReported)
+    if (m_Reported)
     {
         return;
     }
 
-    inlReported = true;
+    m_Reported = true;
 
 #ifdef DEBUG
 
@@ -622,21 +621,21 @@ void InlineResult::report()
     if (VERBOSE)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
-        const char* caller = (inlCaller == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCaller);
+        const char* caller = (m_Caller == nullptr) ? "n/a" : m_Compiler->eeGetMethodFullName(m_Caller);
 
-        callee = (inlCallee == nullptr) ? "n/a" : inlCompiler->eeGetMethodFullName(inlCallee);
+        callee = (m_Callee == nullptr) ? "n/a" : m_Compiler->eeGetMethodFullName(m_Callee);
 
-        JITDUMP(format, inlContext, resultString(), reasonString(), caller, callee);
+        JITDUMP(format, m_Context, ResultString(), ReasonString(), caller, callee);
     }
 
     // If the inline failed, leave information on the call so we can
     // later recover what observation lead to the failure.
-    if (isFailure() && (inlCall != nullptr))
+    if (IsFailure() && (m_Call != nullptr))
     {
         // compiler should have revoked candidacy on the call by now
-        assert((inlCall->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
 
-        inlCall->gtInlineObservation = inlPolicy->getObservation();
+        m_Call->gtInlineObservation = m_Policy->GetObservation();
     }
 
 #endif // DEBUG
@@ -644,7 +643,7 @@ void InlineResult::report()
     // Was the result NEVER? If so we might want to propagate this to
     // the runtime.
 
-    if (isNever() && inlPolicy->propagateNeverToRuntime())
+    if (IsNever() && m_Policy->PropagateNeverToRuntime())
     {
         // If we know the callee, and if the observation that got us
         // to this Never inline state is something *other* than
@@ -652,32 +651,32 @@ void InlineResult::report()
         // can't ever be inlined. Update the callee method attributes
         // so that future inline attempts for this callee fail faster.
 
-        InlineObservation obs = inlPolicy->getObservation();
+        InlineObservation obs = m_Policy->GetObservation();
 
-        if ((inlCallee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
+        if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
         {
 
 #ifdef DEBUG
 
             if (VERBOSE)
             {
-                const char* obsString = inlGetObservationString(obs);
+                const char* obsString = InlGetObservationString(obs);
                 JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
 
 #endif  // DEBUG
 
-            COMP_HANDLE comp = inlCompiler->info.compCompHnd;
-            comp->setMethodAttribs(inlCallee, CORINFO_FLG_BAD_INLINEE);
+            COMP_HANDLE comp = m_Compiler->info.compCompHnd;
+            comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
         }
     }
 
 
-    if (isDecided())
+    if (IsDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
-        JITLOG_THIS(inlCompiler, (LL_INFO100000, format, inlContext, resultString(), reasonString()));
-        COMP_HANDLE comp = inlCompiler->info.compCompHnd;
-        comp->reportInliningDecision(inlCaller, inlCallee, result(), reasonString());
+        JITLOG_THIS(m_Compiler, (LL_INFO100000, format, m_Context, ResultString(), ReasonString()));
+        COMP_HANDLE comp = m_Compiler->info.compCompHnd;
+        comp->reportInliningDecision(m_Caller, m_Callee, Result(), ReasonString());
     }
 }

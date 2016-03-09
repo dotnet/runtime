@@ -40,71 +40,71 @@ public:
     // Construct a LegacyPolicy
     LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
         : InlinePolicy(isPrejitRoot)
-        , inlCompiler(compiler)
-        , inlStateMachine(nullptr)
-        , inlCodeSize(0)
-        , inlNativeSizeEstimate(NATIVE_SIZE_INVALID)
-        , inlCallsiteFrequency(InlineCallsiteFrequency::UNUSED)
-        , inlIsForceInline(false)
-        , inlIsForceInlineKnown(false)
-        , inlIsInstanceCtor(false)
-        , inlIsFromPromotableValueClass(false)
-        , inlHasSimd(false)
-        , inlLooksLikeWrapperMethod(false)
-        , inlArgFeedsConstantTest(false)
-        , inlMethodIsMostlyLoadStore(false)
-        , inlArgFeedsRangeCheck(false)
-        , inlConstantFeedsConstantTest(false)
+        , m_Compiler(compiler)
+        , m_StateMachine(nullptr)
+        , m_CodeSize(0)
+        , m_NativeSizeEstimate(NATIVE_SIZE_INVALID)
+        , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
+        , m_IsForceInline(false)
+        , m_IsForceInlineKnown(false)
+        , m_IsInstanceCtor(false)
+        , m_IsFromPromotableValueClass(false)
+        , m_HasSimd(false)
+        , m_LooksLikeWrapperMethod(false)
+        , m_ArgFeedsConstantTest(false)
+        , m_MethodIsMostlyLoadStore(false)
+        , m_ArgFeedsRangeCheck(false)
+        , m_ConstantFeedsConstantTest(false)
     {
         // empty
     }
 
     // Policy observations
-    void noteSuccess() override;
-    void noteBool(InlineObservation obs, bool value) override;
-    void noteFatal(InlineObservation obs) override;
-    void noteInt(InlineObservation obs, int value) override;
-    void noteDouble(InlineObservation obs, double value) override;
+    void NoteSuccess() override;
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteFatal(InlineObservation obs) override;
+    void NoteInt(InlineObservation obs, int value) override;
+    void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
-    double determineMultiplier() override;
-    int determineNativeSizeEstimate() override;
-    int determineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) override;
+    double DetermineMultiplier() override;
+    int DetermineNativeSizeEstimate() override;
+    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) override;
 
     // Policy policies
-    bool propagateNeverToRuntime() const override { return true; }
+    bool PropagateNeverToRuntime() const override { return true; }
 
 #ifdef DEBUG
-    const char* getName() const override { return "LegacyPolicy"; }
+    const char* GetName() const override { return "LegacyPolicy"; }
 #endif
 
 private:
 
     // Helper methods
-    void noteInternal(InlineObservation obs);
-    void setCandidate(InlineObservation obs);
-    void setFailure(InlineObservation obs);
-    void setNever(InlineObservation obs);
+    void NoteInternal(InlineObservation obs);
+    void SetCandidate(InlineObservation obs);
+    void SetFailure(InlineObservation obs);
+    void SetNever(InlineObservation obs);
 
     // Constants
     const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
-    Compiler*               inlCompiler;
-    CodeSeqSM*              inlStateMachine;
-    unsigned                inlCodeSize;
-    int                     inlNativeSizeEstimate;
-    InlineCallsiteFrequency inlCallsiteFrequency;
-    bool                    inlIsForceInline :1;
-    bool                    inlIsForceInlineKnown :1;
-    bool                    inlIsInstanceCtor :1;
-    bool                    inlIsFromPromotableValueClass :1;
-    bool                    inlHasSimd :1;
-    bool                    inlLooksLikeWrapperMethod :1;
-    bool                    inlArgFeedsConstantTest :1;
-    bool                    inlMethodIsMostlyLoadStore :1;
-    bool                    inlArgFeedsRangeCheck :1;
-    bool                    inlConstantFeedsConstantTest :1;
+    Compiler*               m_Compiler;
+    CodeSeqSM*              m_StateMachine;
+    unsigned                m_CodeSize;
+    int                     m_NativeSizeEstimate;
+    InlineCallsiteFrequency m_CallsiteFrequency;
+    bool                    m_IsForceInline :1;
+    bool                    m_IsForceInlineKnown :1;
+    bool                    m_IsInstanceCtor :1;
+    bool                    m_IsFromPromotableValueClass :1;
+    bool                    m_HasSimd :1;
+    bool                    m_LooksLikeWrapperMethod :1;
+    bool                    m_ArgFeedsConstantTest :1;
+    bool                    m_MethodIsMostlyLoadStore :1;
+    bool                    m_ArgFeedsRangeCheck :1;
+    bool                    m_ConstantFeedsConstantTest :1;
 };
 
 #endif // _INLINE_POLICY_H_
