@@ -101,6 +101,34 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_DateTime_DataType_Time()
+    {
+        DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
+        DateTimeDataTypeTimeType localTimeOjbect = new DateTimeDataTypeTimeType()
+        {
+            Value = localTime
+        };
+
+        string localTimeString = localTime.ToString("HH:mm:ss.fffffffzzzzzz");
+        DateTimeDataTypeTimeType localTimeOjbectRoundTrip = SerializeAndDeserialize(localTimeOjbect,
+string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
+<DateTimeDataTypeTimeType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">{0}</DateTimeDataTypeTimeType>", localTimeString));
+
+        Assert.StrictEqual(localTimeOjbect.Value, localTimeOjbectRoundTrip.Value);
+
+        DateTimeDataTypeTimeType utcTimeOjbect = new DateTimeDataTypeTimeType()
+        {
+            Value = new DateTime(549269870000L, DateTimeKind.Utc)
+        };
+
+        DateTimeDataTypeTimeType utcTimeRoundTrip = SerializeAndDeserialize(utcTimeOjbect,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<DateTimeDataTypeTimeType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</DateTimeDataTypeTimeType>");
+
+        Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
+    }
+
+    [Fact]
     public static void Xml_DecimalAsRoot()
     {
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })

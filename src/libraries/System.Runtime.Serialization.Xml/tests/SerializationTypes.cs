@@ -1285,6 +1285,18 @@ namespace SerializationTypes
         }
     }
 
+    public class DateTimeDataTypeTimeType
+    {
+        DateTime _value;
+
+        [XmlText(DataType = "time")]
+        public DateTime Value
+        {
+            get { return _value; }
+            set { _value = value; }
+        }
+    }
+
     [DataContract(IsReference = false)]
     public class SimpleDC
     {
