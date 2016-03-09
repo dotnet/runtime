@@ -91,12 +91,37 @@ def static setMachineAffinity(def job, def os, def architecture) {
     }
 }
 
+def static isGCStressRelatedTesting(def scenario) {
+    def gcStressTestEnvVars = [ 'COMPlus_GCStress', 'COMPlus_ZapDisable', 'COMPlus_HeapVerify']
+    def scenarioName = scenario.toLowerCase()
+    def isGCStressTesting = false
+    Constants.jitStressModeScenarios[scenario].each{ k, v -> 
+        if (k in gcStressTestEnvVars) {
+            isGCStressTesting = true;
+        }
+    }   
+    return isGCStressTesting
+}
+
 def static isCorefxTesting(def scenario) {
     def corefx_prefix = 'corefx_'
     if (scenario.length() < corefx_prefix.length()) {
-        return
+        return false
     }
     return scenario.substring(0,corefx_prefix.length()) == corefx_prefix
+}
+
+def static setTestJobTimeOut(newJob, scenario) {
+    if (isGCStressRelatedTesting(scenario)) {
+        Utilities.setJobTimeout(newJob, 720)
+    }
+    else if (isCorefxTesting(scenario)) {
+        Utilities.setJobTimeout(newJob, 360)
+    }
+    else if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+        Utilities.setJobTimeout(newJob, 240)
+    }
+    // Non-test jobs use the default timeout value.
 }
 
 def static getStressModeDisplayName(def scenario) {
@@ -826,6 +851,7 @@ combinedScenarios.each { scenario ->
                                             if (architecture == 'x64' || !isPR) {
                                                 Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
                                             }
+                                            setTestJobTimeOut(newJob, scenario)
                                         }
                                     }
                                     else {
@@ -833,8 +859,8 @@ combinedScenarios.each { scenario ->
                                         // For windows, pull full test results and test drops for x86/x64
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
                                         
-                                        // Set timeout to 240
-                                        Utilities.setJobTimeout(newJob, 240)
+                                        // Set timeout 
+                                        setTestJobTimeOut(newJob, scenario)
                                         
                                         if (architecture == 'x64' || !isPR) {
                                             Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
@@ -883,6 +909,8 @@ combinedScenarios.each { scenario ->
                                         }
                                         buildCommands += "src/pal/tests/palsuite/runpaltests.sh \${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration} \${WORKSPACE}/bin/paltestout"
                                     
+                                        // Set time out
+                                        setTestJobTimeOut(newJob, scenario)
                                         // Basic archiving of the build
                                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
                                         // And pal tests
@@ -910,7 +938,7 @@ combinedScenarios.each { scenario ->
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
-                                        Utilities.setJobTimeout(newJob, 360)
+                                        setTestJobTimeOut(newJob, scenario)
                                         Utilities.addXUnitDotNETResults(newJob, 'fx/bin/tests/**/testResults.xml')
                                     }
                                     break
@@ -1096,6 +1124,10 @@ combinedScenarios.each { scenario ->
                                 stressModeString = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)
                             }
                             
+                            if (isGCStressRelatedTesting(scenario)) {
+                                shell('init-tools.sh')
+                            }
+                            
                             shell("""${stressModeString}
         ./tests/runtest.sh \\
             --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
@@ -1107,11 +1139,11 @@ combinedScenarios.each { scenario ->
             ${serverGCString}""")
                         }
                     }
-                
+
                     setMachineAffinity(newJob, os, architecture)
                     Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
                     // Set timeouts to 240.
-                    Utilities.setJobTimeout(newJob, 240)
+                    setTestJobTimeOut(newJob, scenario)
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
                 
                     // Create a build flow to join together the build and tests required to run this
