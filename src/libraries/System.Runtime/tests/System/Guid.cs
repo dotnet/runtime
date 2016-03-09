@@ -36,8 +36,8 @@ public static class GuidTests
     public static void TestCtor_ByteArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("b", () => new Guid((byte[])null)); // Byte array is null
-        Assert.Throws<ArgumentException>(null, () => new Guid(new byte[15])); // Byte array is not 16 bytes long
-        Assert.Throws<ArgumentException>(null, () => new Guid(new byte[17])); // Byte array is not 16 bytes long
+        Assert.Throws<ArgumentException>(() => new Guid(new byte[15])); // Byte array is not 16 bytes long
+        Assert.Throws<ArgumentException>(() => new Guid(new byte[17])); // Byte array is not 16 bytes long
     }
 
     [Theory]
@@ -73,8 +73,8 @@ public static class GuidTests
     public static void TestCtor_Int_Short_Short_ByteArray_Invalid()
     {
         Assert.Throws<ArgumentNullException>("d", () => new Guid(0, 0, 0, null)); // Byte array is null
-        Assert.Throws<ArgumentException>(null, () => new Guid(0, 0, 0, new byte[7])); // Byte array is not 8 bytes long
-        Assert.Throws<ArgumentException>(null, () => new Guid(0, 0, 0, new byte[9])); // Byte array is not 8 bytes long
+        Assert.Throws<ArgumentException>(() => new Guid(0, 0, 0, new byte[7])); // Byte array is not 8 bytes long
+        Assert.Throws<ArgumentException>(() => new Guid(0, 0, 0, new byte[9])); // Byte array is not 8 bytes long
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public static class GuidTests
     public static void TestCompareTo_Invalid()
     {
         IComparable comparable = s_testGuid;
-        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a8a110d5-fc49-43c5-bf46-802db8f843ff")); // Obj is not a guid
+        Assert.Throws<ArgumentException>(() => comparable.CompareTo("a8a110d5-fc49-43c5-bf46-802db8f843ff")); // Obj is not a guid
     }
 
     public static IEnumerable<object[]> Equals_TestData()
