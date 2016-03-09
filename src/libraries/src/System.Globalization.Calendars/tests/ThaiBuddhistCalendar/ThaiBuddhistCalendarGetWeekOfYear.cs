@@ -104,12 +104,6 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(actualWeek, resultWeek);
         }
         #endregion
-        
-        [Fact]
-        public void GetWeekOfYear_Invalid()
-        {
-            CalendarHelpers.GetWeekOfYear_Invalid(new ThaiBuddhistCalendar());
-        }
 
         #region Helper Methods
         internal int GetFirstDayWeekOfYear(DateTime time, int firstDayOfWeek)
