@@ -40,7 +40,7 @@ For each unique configuration needed for a given library project a configuration
 - `$(TargetGroup) -> [Empty]* | <PackageTargetFramework> | <PackageTargetRuntime> | <Version> | <PackageTargetFramework><PackageTargetRuntime>`
  - `$(PackageTargetFramework) -> netstandard1.x/(currently dotnet5.x) | netcore50 | net46 | dnxcore50`
  - `$(PackageTargetRuntime) -> aot`
- - For more information on various targets see also [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md)
+ - For more information on various targets see also [.NET Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md)
 - `$(ConfigurationGroup) -> Debug* | Release`
 <BR/>`*` -> *default values*
 
