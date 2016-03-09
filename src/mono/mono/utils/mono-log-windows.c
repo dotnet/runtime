@@ -1,7 +1,7 @@
 /*
- * mono-log-common.c: Platform-independent interface to the logger
+ * mono-log-windows.c: Simplistic simulation of a syslog logger for Windows
  *
- * This module contains the POSIX syslog logger interface
+ * This module contains the Windows syslog logger interface
  *
  * Author:
  *    Neale Ferguson <neale@sinenomine.net>

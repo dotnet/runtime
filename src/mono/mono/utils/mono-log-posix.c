@@ -1,5 +1,5 @@
 /*
- * mono-log-posix.c: POSIX nterface to the logger
+ * mono-log-posix.c: POSIX interface to the logger
  *
  * This module contains the POSIX syslog logger routines
  *
