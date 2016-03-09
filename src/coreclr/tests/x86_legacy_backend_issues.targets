@@ -151,5 +151,14 @@
 		<ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_relarrres\_il_relarrres.cmd" >
 			<Issue>2419</Issue>
 		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.cmd" >
+			<Issue>3571</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPSTR\LPSTRTest\LPSTRTest.cmd" >
+			<Issue>3571</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd" >
+			<Issue>3571</Issue>
+		</ExcludeList>
 	</ItemGroup>
 </Project>
