@@ -70,7 +70,10 @@ internal static partial class Interop
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
                 Ssl.SslCtxSetQuietShutdown(innerContext);
 
-                Ssl.SetEncryptionPolicy(innerContext, policy);
+                if (!Ssl.SetEncryptionPolicy(innerContext, policy))
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                }
 
                 if (certHandle != null && certKeyHandle != null)
                 {
