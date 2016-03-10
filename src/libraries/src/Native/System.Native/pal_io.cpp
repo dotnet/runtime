@@ -1103,3 +1103,9 @@ extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
     return -1;
 #endif
 }
+
+extern "C" char* SystemNative_RealPath(const char* path)
+{
+    assert(path != nullptr);
+    return realpath(path, nullptr);
+}
