@@ -455,7 +455,7 @@ namespace Internal.Cryptography.Pal
         }
 
         /// <summary>
-        /// Checks the file has the correct permissions.
+        /// Checks the file has the correct permissions and attempts to modify them if they're inappropriate.
         /// </summary>
         /// <param name="stream">
         /// The file stream to check.
@@ -465,16 +465,13 @@ namespace Internal.Cryptography.Pal
         /// </param>
         private static void EnsureFilePermissions(FileStream stream, uint userId)
         {
-            // Verify that we're creating files with u+rw and o-rw, g-rw.
+            // Verify that we're creating files with u+rw and g-rw, o-rw.
             const Interop.Sys.Permissions requiredPermissions =
-                Interop.Sys.Permissions.S_IRUSR |
-                Interop.Sys.Permissions.S_IWUSR;
+                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR;
 
             const Interop.Sys.Permissions forbiddenPermissions =
-                Interop.Sys.Permissions.S_IROTH |
-                Interop.Sys.Permissions.S_IWOTH |
-                Interop.Sys.Permissions.S_IRGRP |
-                Interop.Sys.Permissions.S_IWGRP;
+                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
+                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
 
             Interop.Sys.FileStatus stat;
             if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
@@ -490,14 +487,20 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Format(SR.Cryptography_OwnerNotCurrentUser, stream.Name));
             }
 
-            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions)
+            if ((stat.Mode & (int)requiredPermissions) != (int)requiredPermissions ||
+                (stat.Mode & (int)forbiddenPermissions) != 0)
             {
-                throw new CryptographicException(SR.Format(SR.Cryptography_InsufficientFilePermissions, stream.Name));
-            }
+                if (Interop.Sys.FChMod(stream.SafeFileHandle, (int)requiredPermissions) < 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    throw new CryptographicException(
+                        SR.Format(SR.Cryptography_InvalidFilePermissions, stream.Name),
+                        new IOException(error.GetErrorMessage(), error.RawErrno));
+                }
 
-            if ((stat.Mode & (int)forbiddenPermissions) != 0)
-            {
-                throw new CryptographicException(SR.Format(SR.Cryptography_TooBroadFilePermissions, stream.Name));
+                Debug.Assert(Interop.Sys.FStat(stream.SafeFileHandle, out stat) == 0);
+                Debug.Assert((stat.Mode & (int)requiredPermissions) == (int)requiredPermissions);
+                Debug.Assert((stat.Mode & (int)forbiddenPermissions) == 0);
             }
         }
     }

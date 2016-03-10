@@ -246,17 +246,14 @@
   <data name="Cryptography_FileStatusError" xml:space="preserve">
     <value>Unable to get file status.</value>
   </data>
-  <data name="Cryptography_InsufficientFilePermissions" xml:space="preserve">
-    <value>Invalid file permissions. The file '{0}' must be readable and writable by the owner.</value>
-  </data>
   <data name="Cryptography_InvalidDirectoryPermissions" xml:space="preserve">
     <value>Invalid directory permissions. The directory '{0}' must be readable, writable and executable by the owner. It must not be readable, writable or executable by anyone other than the owner.</value>
   </data>
   <data name="Cryptography_OwnerNotCurrentUser" xml:space="preserve">
     <value>The owner of '{0}' is not the current user.</value>
   </data>
-  <data name="Cryptography_TooBroadFilePermissions" xml:space="preserve">
-    <value>Invalid file permissions. The file '{0}' must not be readable or writable by anyone other than the owner.</value>
+  <data name="Cryptography_InvalidFilePermissions" xml:space="preserve">
+    <value>Invalid file permissions. The file '{0}' must readable and writable by the current owner and by no one else, and the permissions could not be changed to meet that criteria.</value>
   </data>
   <data name="Cryptography_Invalid_X500Name" xml:space="preserve">
     <value>The string contains an invalid X500 name attribute key, oid, value or delimiter.</value>
