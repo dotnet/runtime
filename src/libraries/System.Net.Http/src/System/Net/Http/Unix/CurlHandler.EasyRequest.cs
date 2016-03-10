@@ -96,8 +96,7 @@ namespace System.Net.Http
 
             public void EnsureResponseMessagePublished()
             {
-                // If this is the response hasn't been published yet, do any finaly processing of the response 
-                // message before it's published.
+                // If the response message hasn't been published yet, do any final processing of it before it is.
                 if (!Task.IsCompleted)
                 {
                     // On Windows, if the response was automatically decompressed, Content-Encoding and Content-Length
