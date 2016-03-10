@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <ProjectGuid>{749ED7AD-E3C1-4611-99BD-C5D4B3934B3A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.ProtectedData.Tests</AssemblyName>
+    <RootNamespace>System.Security.Cryptography.ProtectedData.Tests</RootNamespace>
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj">
+      <Project>{FB39F994-1504-4B96-9588-E0385D3B73F1}</Project>
+      <Name>System.Security.Cryptography.ProtectedData</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="ProtectedDataTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
