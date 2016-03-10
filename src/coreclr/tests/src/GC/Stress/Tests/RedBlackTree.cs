@@ -55,8 +55,7 @@ public class Tree
     {
         for (int i = 0; i < _nodes; i++)
         {
-            bool result = InsertNode();
-            if (result == false) return;
+            InsertNode();
 #if DEBUG
             TestLibrary.Logging.WriteLine("RedBlack tree now has {0} nodes", i);
 #endif 
@@ -70,7 +69,7 @@ public class Tree
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public void CheckTree(bool expectBalanced)
     {
-#if DEBUG
+#if CHECKINVARIANTS
         CheckTreeRecursive(expectBalanced, _root, null, -1, _nodes + 1, false);
 #endif
     }
@@ -182,6 +181,7 @@ public class Tree
             newNode.parent = parent;
             return;
         }
+        
         if (newNode.key < curr.key)
         {
             InsertNode(ref curr.left, newNode, curr);
@@ -194,11 +194,9 @@ public class Tree
         Fixup(ref curr);
     }
 
-    public bool InsertNode()
+    public void InsertNode()
     {
         Node n = BuildNode();
-
-        if (n == null) return false;
 
         InsertNode(ref _root, n, null);
 
@@ -207,7 +205,6 @@ public class Tree
             _root.color = Color.Black;
         
         CheckTree(true);
-        return true;
     }
 
     public Node BuildNode()
@@ -235,15 +232,15 @@ public class Tree
 
         if (k == r.key) return false;
 
-        else if (k < r.key)
+        if (k < r.key)
         {
             if (r.left != null) return (UniqueKey(r.left, k));
-            else { return true; }
+            else return true;
         }
         else
         {
             if (r.right != null) return (UniqueKey(r.right, k));
-            else { return true; }
+            else return true;
         }
     }
 
@@ -304,12 +301,15 @@ public class Tree
         }
 
         var result = false;
-        if (n.key > key) { 
-            if(!IsRed(n.left) && !IsRed(n.left.left)) {
+        if (n.key > key) 
+        { 
+            if(!IsRed(n.left) && !IsRed(n.left.left)) 
                 MoveRedLeft(ref n);
-            }
+            
             result = DeleteNode(ref n.left, key);
-        } else {
+        } 
+        else 
+        {
             if (IsRed(n.left)) RotateRight(ref n);
 
             if (n.right == null)
@@ -353,10 +353,8 @@ public class Tree
         }
 
         if (!IsRed(curr.left) && !IsRed(curr.left.left))
-        {
             MoveRedLeft(ref curr);
-        }
-
+        
         min = DeleteMin(ref curr.left);
 
         Fixup(ref curr);
