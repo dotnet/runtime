@@ -4,8 +4,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <OutputType>Library</OutputType>
-    <GenerateRunScript>false</GenerateRunScript>
     <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
@@ -15,4 +13,5 @@
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="Build" /> 
 </Project>
