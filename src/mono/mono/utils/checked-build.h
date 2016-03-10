@@ -12,6 +12,18 @@
 
 #include <config.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-publib.h>
+
+typedef enum {
+	MONO_CHECK_MODE_NONE = 0,
+	MONO_CHECK_MODE_GC = 0x1,
+	MONO_CHECK_MODE_METADATA = 0x2,
+	MONO_CHECK_MODE_THREAD = 0x4,
+	MONO_CHECK_MODE_ALL = MONO_CHECK_MODE_GC | MONO_CHECK_MODE_METADATA | MONO_CHECK_MODE_THREAD,
+	MONO_CHECK_MODE_UNKNOWN = 0x8
+} MonoCheckMode;
+
+mono_bool mono_check_mode_enabled (MonoCheckMode query);
 
 // This is for metadata writes which we have chosen not to check at the current time.
 // Because in principle this should never happen, we still use a macro so that the exemptions will be easier to find, and remove, later.
