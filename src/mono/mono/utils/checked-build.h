@@ -18,7 +18,7 @@
 // The current reason why this is needed is for pointers to constant strings, which the checker cannot verify yet.
 #define CHECKED_METADATA_WRITE_PTR_EXEMPT(ptr, val) do { (ptr) = (val); } while (0)
 
-#if defined(CHECKED_BUILD)
+#ifdef ENABLE_CHECKED_BUILD
 
 #define g_assert_checked g_assert
 
@@ -45,10 +45,9 @@ void checked_build_init (void);
 
 #define CHECKED_MONO_INIT()
 
-#endif /* CHECKED_BUILD */
+#endif /* ENABLE_CHECKED_BUILD */
 
-#if defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_GC)
-
+#ifdef ENABLE_CHECKED_BUILD_GC
 /*
 GC runtime modes rules:
 
@@ -149,9 +148,9 @@ void assert_in_gc_critical_region (void);
 #define MONO_REQ_GC_NOT_CRITICAL
 #define MONO_REQ_GC_CRITICAL
 
-#endif /* defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_GC) */
+#endif /* defined(ENABLE_CHECKED_BUILD_GC) */
 
-#if defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_METADATA)
+#ifdef ENABLE_CHECKED_BUILD_METADATA
 
 // Use when writing a pointer from one image or imageset to another.
 #define CHECKED_METADATA_WRITE_PTR(ptr, val) do {    \
@@ -180,9 +179,9 @@ void check_metadata_store_local(void *from, void *to);
 #define CHECKED_METADATA_WRITE_PTR_LOCAL(ptr, val) do { (ptr) = (val); } while (0)
 #define CHECKED_METADATA_WRITE_PTR_ATOMIC(ptr, val) do { mono_atomic_store_release (&(ptr), (val)); } while (0)
 
-#endif /* defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_METADATA) */
+#endif /* defined(ENABLE_CHECKED_BUILD_METADATA) */
 
-#if defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_THREAD)
+#ifdef ENABLE_CHECKED_BUILD_THREAD
 
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta) do {	\
 	checked_build_thread_transition (transition, info, from_state, suspend_count, next_state, suspend_count_delta);	\
@@ -194,6 +193,6 @@ void checked_build_thread_transition(const char *transition, void *info, int fro
 
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta)
 
-#endif /* defined(CHECKED_BUILD) && !defined(DISABLE_CHECKED_BUILD_THREAD) */
+#endif /* defined(ENABLE_CHECKED_BUILD_THREAD) */
 
 #endif /* __CHECKED_BUILD_H__ */

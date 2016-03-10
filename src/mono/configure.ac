@@ -3547,35 +3547,34 @@ AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperat
 	fi
 ], [with_cooperative_gc=no])
 
-AC_ARG_WITH(checked_build, [  --with-checked-build=yes|no      Enable checked build (expensive asserts)) (defaults to no)],[
-	if test x$with_checked_build != xno ; then
-		AC_DEFINE(CHECKED_BUILD,1,[Enable checked build.])
+AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread],[
+
+	if test x$enable_checked_build != x ; then
+		AC_DEFINE(ENABLE_CHECKED_BUILD,1,[Enable checked build])
 	fi
-], [with_checked_build=no])
+	for feature in `echo "$enable_checked_build" | sed -e "s/,/ /g"`; do
+		eval "mono_checked_build_test_enable_$feature='yes'"
+	done
 
-if test x$with_checked_build != xno ; then
-	DISABLED_CHECKED_BUILD_TEST=none
-
-	AC_ARG_ENABLE(checked_build_test, [  --enable-checked-build-test=LIST      drop support for LIST checked build tests. LIST is a comma-separated list from: gc, metadata, thread.],
-	[
-		for feature in `echo "$enable_checked_build_test" | sed -e "s/,/ /g"`; do
-			eval "mono_checked_build_test_disable_$feature='yes'"
-		done
-		DISABLED_CHECKED_BUILD_TEST=$enable_checked_build_test
-	],[])
-
-	if test "x$mono_checked_build_test_disable_gc" = "xyes"; then
-		AC_DEFINE(DISABLE_CHECKED_BUILD_GC, 1, [Disable GC checked build])
+	if test "x$mono_checked_build_test_enable_all" = "xyes"; then
+		eval "mono_checked_build_test_enable_gc='yes'"
+		eval "mono_checked_build_test_enable_metadata='yes'"
+		eval "mono_checked_build_test_enable_thread='yes'"
 	fi
 
-	if test "x$mono_checked_build_test_disable_metadata" = "xyes"; then
-		AC_DEFINE(DISABLE_CHECKED_BUILD_METADATA, 1, [Disable metadata checked build])
+	if test "x$mono_checked_build_test_enable_gc" = "xyes"; then
+		AC_DEFINE(ENABLE_CHECKED_BUILD_GC, 1, [Enable GC checked build])
 	fi
 
-	if test "x$mono_checked_build_test_disable_thread" = "xyes"; then
-		AC_DEFINE(DISABLE_CHECKED_BUILD_THREAD, 1, [Disable thread checked build])
+	if test "x$mono_checked_build_test_enable_metadata" = "xyes"; then
+		AC_DEFINE(ENABLE_CHECKED_BUILD_METADATA, 1, [Enable metadata checked build])
 	fi
-fi
+
+	if test "x$mono_checked_build_test_enable_thread" = "xyes"; then
+		AC_DEFINE(ENABLE_CHECKED_BUILD_THREAD, 1, [Enable thread checked build])
+	fi
+
+], [])
 
 AC_CHECK_HEADER([malloc.h], 
 		[AC_DEFINE([HAVE_USR_INCLUDE_MALLOC_H], [1], 

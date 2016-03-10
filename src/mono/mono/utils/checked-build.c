@@ -8,7 +8,7 @@
  */
 #include <config.h>
 
-#ifdef CHECKED_BUILD
+#ifdef ENABLE_CHECKED_BUILD
 
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
@@ -50,7 +50,7 @@ get_state (void)
 	return state;
 }
 
-#if !defined(DISABLE_CHECKED_BUILD_THREAD)
+#ifdef ENABLE_CHECKED_BUILD_THREAD
 
 #define MAX_NATIVE_BT 6
 #define MAX_NATIVE_BT_PROBE (MAX_NATIVE_BT + 5)
@@ -143,9 +143,9 @@ checked_build_thread_transition (const char *transition, void *info, int from_st
 	g_ptr_array_add (state->transitions, t);
 }
 
-#endif /* !defined(DISABLE_CHECKED_BUILD_THREAD) */
+#endif /* defined(ENABLE_CHECKED_BUILD_THREAD) */
 
-#if !defined(DISABLE_CHECKED_BUILD_GC)
+#ifdef ENABLE_CHECKED_BUILD_GC
 
 static void
 assertion_fail (const char *msg, ...)
@@ -180,6 +180,10 @@ assertion_fail (const char *msg, ...)
 	g_error (err->str);
 	g_string_free (err, TRUE);
 }
+
+#endif /* defined(ENABLE_CHECKED_BUILD_THREAD) */
+
+#ifdef ENABLE_CHECKED_BUILD_GC
 
 void
 assert_gc_safe_mode (void)
@@ -273,9 +277,9 @@ assert_in_gc_critical_region (void)
 		assertion_fail("Expected GC critical region");
 }
 
-#endif /* !defined(DISABLE_CHECKED_BUILD_GC) */
+#endif /* defined(ENABLE_CHECKED_BUILD_GC) */
 
-#if !defined(DISABLE_CHECKED_BUILD_METADATA)
+#ifdef ENABLE_CHECKED_BUILD_METADATA
 
 // check_metadata_store et al: The goal of these functions is to verify that if there is a pointer from one mempool into
 // another, that the pointed-to memory is protected by the reference count mechanism for MonoImages.
@@ -610,6 +614,6 @@ check_metadata_store_local (void *from, void *to)
     check_mempool_may_reference_mempool (from, to, TRUE);
 }
 
-#endif /* !defined(DISABLE_CHECKED_BUILD_METADATA) */
+#endif /* defined(ENABLE_CHECKED_BUILD_METADATA) */
 
-#endif /* CHECKED_BUILD */
+#endif /* ENABLE_CHECKED_BUILD */
