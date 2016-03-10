@@ -119,7 +119,17 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
+	<ProjectReference Include="..\ref\System.Runtime.csproj">
+      <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
+      <Name>System.Runtime</Name>
+      <!-- Don't copy the reference assembly to output -->
+      <Private>false</Private>
+      <UndefineProperties>OSGroup</UndefineProperties>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.csproj">
+      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Name>System.Runtime</Name>
+      <!-- Don't reference implementation assembly, but do deploy it. -->
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
