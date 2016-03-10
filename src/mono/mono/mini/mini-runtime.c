@@ -81,6 +81,7 @@
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
+#include "llvm-jit.h"
 #endif
 #endif
 

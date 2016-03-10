@@ -30,6 +30,7 @@
 #include "llvm-c/Analysis.h"
 
 #include "mini-llvm-cpp.h"
+#include "llvm-jit.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
 

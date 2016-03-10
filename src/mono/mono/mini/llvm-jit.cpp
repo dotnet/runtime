@@ -16,6 +16,7 @@
 #include <llvm-c/ExecutionEngine.h>
 
 #include "mini-llvm-cpp.h"
+#include "llvm-jit.h"
 
 #if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
 

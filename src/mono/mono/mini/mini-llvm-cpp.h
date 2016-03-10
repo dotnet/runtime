@@ -34,25 +34,6 @@ typedef enum {
 	LLVM_ATOMICRMW_OP_ADD = 1,
 } AtomicRMWOp;
 
-typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
-typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
-typedef void (ExceptionTableCb) (void *data);
-typedef char* (DlSymCb) (const char *name, void **symbol);
-
-typedef void* MonoEERef;
-
-MonoEERef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee);
-
-void
-mono_llvm_dispose_ee (MonoEERef *mono_ee);
-
-gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method);
-
-void
-mono_llvm_optimize_method (MonoEERef mono_ee, LLVMValueRef method);
-
 void
 mono_llvm_dump_value (LLVMValueRef value);
 
@@ -107,9 +88,6 @@ mono_llvm_set_call_preserveall_cc (LLVMValueRef call);
 _Unwind_Reason_Code 
 mono_debug_personality (int a, _Unwind_Action b,
 	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);
-
-void
-mono_llvm_set_unhandled_exception_handler (void);
 
 void
 default_mono_llvm_unhandled_exception (void);
