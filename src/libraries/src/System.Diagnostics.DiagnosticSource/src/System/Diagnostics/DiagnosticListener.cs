@@ -34,16 +34,6 @@ namespace System.Diagnostics
     /// </summary>
     public class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object>>, IDisposable
     {
-#if false
-        /// <summary>
-        /// This is the DiagnosticListener that is used by default by the class library.   
-        /// Generally you don't want to make your own but rather have everyone use this one, which
-        /// ensures that everyone who wished to subscribe gets the callbacks.  
-        /// The main reason not to us this one is that you WANT isolation from other 
-        /// events in the system (e.g. multi-tenancy).  
-        /// </summary>
-        public static DiagnosticListener DefaultListener { get { return s_default; } }
-#endif 
         /// <summary>
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
         /// as well as those that occurred in the past, and all future Listeners created in the future. 
