@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             CompilationOptions compilationOptions = null,
             CompilationLibrary[] compileLibraries = null,
             RuntimeLibrary[] runtimeLibraries = null,
-            IReadOnlyList<KeyValuePair<string, string[]>> runtimeGraph = null)
+            IReadOnlyList<RuntimeFallbacks> runtimeGraph = null)
         {
             return new DependencyContext(
                             target ?? string.Empty,
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             compilationOptions ?? CompilationOptions.Default,
                             compileLibraries ?? new CompilationLibrary[0],
                             runtimeLibraries ?? new RuntimeLibrary[0],
-                            runtimeGraph ?? new KeyValuePair<string, string[]>[0]
+                            runtimeGraph ?? new RuntimeFallbacks[0]
                             );
         }
 
@@ -58,8 +58,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             "Target/runtime",
                             runtimeGraph: new[]
                             {
-                                new KeyValuePair<string, string[]>("win7-x64", new [] { "win6", "win5"}),
-                                new KeyValuePair<string, string[]>("win8-x64", new [] { "win7-x64"}),
+                                new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                                new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
                             }));
 
             var rids = result.Should().HaveProperty("runtimes")
