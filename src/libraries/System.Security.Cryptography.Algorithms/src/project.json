@@ -10,7 +10,7 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.Primitives": "4.0.0-rc3-23908",
+        "System.Security.Cryptography.Primitives": "4.0.0-rc3-23910",
         "System.Text.Encoding.Extensions": "4.0.0"
       },
       "imports": [

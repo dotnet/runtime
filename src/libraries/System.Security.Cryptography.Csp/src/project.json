@@ -1,9 +1,11 @@
 {
   "frameworks": {
     "netstandard1.3": {
-      "imports": [ "dotnet5.4" ],
+      "imports": [
+        "dotnet5.4"
+      ],
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.IO": "4.0.10",
@@ -11,8 +13,8 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.Extensions": "4.0.10",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.Algorithms": "4.1.0-rc3-23908",
-        "System.Security.Cryptography.Encoding": "4.0.0-rc3-23908",
+        "System.Security.Cryptography.Algorithms": "4.1.0-rc3-23910",
+        "System.Security.Cryptography.Encoding": "4.0.0-rc3-23910",
         "System.Text.Encoding": "4.0.10",
         "System.Threading": "4.0.10"
       }

@@ -1,14 +1,14 @@
 {
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0029",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
-    "System.Console": "4.0.0-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+    "System.Console": "4.0.0-rc3-23910",
     "System.Globalization": "4.0.10",
     "System.Reflection": "4.0.10",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23908",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23910",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",

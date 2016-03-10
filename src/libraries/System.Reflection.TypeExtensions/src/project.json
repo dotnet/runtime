@@ -2,8 +2,8 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23908"
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
       }
     },
     "net46": {
@@ -13,12 +13,12 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23908",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23910",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Linq": "4.0.0",
-        "System.Reflection": "4.1.0-rc3-23908",
+        "System.Reflection": "4.1.0-rc3-23910",
         "System.Runtime.Extensions": "4.0.10"
       }
     }

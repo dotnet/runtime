@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
-    "Microsoft.Win32.Registry": "4.0.0-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+    "Microsoft.Win32.Registry": "4.0.0-rc3-23910",
     "System.Collections": "4.0.10",
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",
