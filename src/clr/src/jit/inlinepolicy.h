@@ -43,7 +43,6 @@ public:
         , m_Compiler(compiler)
         , m_StateMachine(nullptr)
         , m_CodeSize(0)
-        , m_NativeSizeEstimate(NATIVE_SIZE_INVALID)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , m_IsForceInline(false)
         , m_IsForceInlineKnown(false)
@@ -67,9 +66,7 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
-    double DetermineMultiplier() override;
-    int DetermineNativeSizeEstimate() override;
-    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) override;
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
@@ -85,6 +82,9 @@ private:
     void SetCandidate(InlineObservation obs);
     void SetFailure(InlineObservation obs);
     void SetNever(InlineObservation obs);
+    double DetermineMultiplier();
+    int DetermineNativeSizeEstimate();
+    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
     // Constants
     const unsigned MAX_BASIC_BLOCKS = 5;
@@ -93,7 +93,6 @@ private:
     Compiler*               m_Compiler;
     CodeSeqSM*              m_StateMachine;
     unsigned                m_CodeSize;
-    int                     m_NativeSizeEstimate;
     InlineCallsiteFrequency m_CallsiteFrequency;
     bool                    m_IsForceInline :1;
     bool                    m_IsForceInlineKnown :1;
