@@ -63,55 +63,5 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(kC.GetDayOfMonth(actualValue) + 1, kC.GetDayOfMonth(expectedValue));
         }
         #endregion
-
-        #region Negative Test Logic
-        // NegTest1:Invoke the method with min datetime
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.AddMonths(new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0), -1);
-            });
-        }
-
-        // NegTest2:Invoke the method with max datetime
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.AddMonths(new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0), 5);
-            });
-        }
-
-        // NegTest3:Invoke the method with Large months
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.AddMonths(new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0), -120000);
-            });
-        }
-
-        // NegTest4:Invoke the method with Large months
-        [Fact]
-        public void NegTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            DateTime actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.AddMonths(new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0), 120000);
-            });
-        }
-        #endregion
     }
 }
