@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
     "Microsoft.Win32.Primitives": "4.0.0",
     "System.Collections": "4.0.0",
     "System.Collections.Concurrent": "4.0.0",
@@ -9,16 +9,18 @@
     "System.Diagnostics.Tracing": "4.0.0",
     "System.Globalization.Extensions": "4.0.0",
     "System.Net.Primitives": "4.0.10",
-    "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23908",
-    "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23908",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-rc3-23910",
+    "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23910",
     "System.Security.Principal": "4.0.0",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23908",
+    "System.Security.Principal.Windows": "4.0.0-rc3-23910",
     "System.Threading": "4.0.10",
-    "System.Threading.ThreadPool": "4.0.10-rc3-23908"
+    "System.Threading.ThreadPool": "4.0.10-rc3-23910"
   },
   "frameworks": {
     "netstandard1.4": {
-      "imports": [ "dotnet5.5" ]
+      "imports": [
+        "dotnet5.5"
+      ]
     }
   },
   "runtimes": {

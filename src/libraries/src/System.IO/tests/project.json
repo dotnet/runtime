@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
     "System.Globalization": "4.0.10",
-    "System.IO": "4.1.0-rc3-23908",
+    "System.IO": "4.1.0-rc3-23910",
     "System.Text.Encoding.CodePages": "4.0.0",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
