@@ -2,7 +2,7 @@
   "dependencies": {
     "System.Runtime": "4.0.0",
     "System.IO": "4.0.0",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc3-23908"
+    "System.Security.Cryptography.Primitives": "4.0.0-rc3-23910"
   },
   "frameworks": {
     "netstandard1.4": {
