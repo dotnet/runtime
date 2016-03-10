@@ -59,35 +59,5 @@ namespace System.Globalization.CalendarsTests
             }
         }
         #endregion
-
-        #region Negative Tests
-        // NegTest1: The year greater than max year
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MaxSupportedDateTime.Year - 1911 + rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.GetMonthsInYear(year, era);
-            });
-        }
-
-        // NegTest2: The year less than min year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MinSupportedDateTime.Year - rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.GetMonthsInYear(year, era);
-            });
-        }
-        #endregion
     }
 }

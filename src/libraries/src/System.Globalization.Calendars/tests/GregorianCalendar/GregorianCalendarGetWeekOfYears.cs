@@ -223,65 +223,7 @@ namespace System.Globalization.CalendarTests
         }
 
         #endregion
-
-        #region Negative Tests
-        // NegTest1: firstDayOfWeek is too large.
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            DateTime time = DateTime.Now;
-            CalendarWeekRule rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
-            DayOfWeek firstDayOfWeek = (DayOfWeek)(7 + _generator.GetInt32(-55) % (int.MaxValue - 6));
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.GetWeekOfYear(time, rule, firstDayOfWeek);
-            });
-        }
-
-        // NegTest2: firstDayOfWeek is less than minimum value supported
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            DateTime time = DateTime.Now;
-            CalendarWeekRule rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
-            DayOfWeek firstDayOfWeek = (DayOfWeek)(-1 * _generator.GetInt32(-55) - 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.GetWeekOfYear(time, rule, firstDayOfWeek);
-            });
-        }
-
-        // NegTest3: rule is a too large value
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            DateTime time = DateTime.Now;
-            CalendarWeekRule rule = (CalendarWeekRule)(3 + _generator.GetInt32(-55) % (int.MaxValue - 2));
-            DayOfWeek firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.GetWeekOfYear(time, rule, firstDayOfWeek);
-            });
-        }
-
-        // NegTest4: rule is less than maximum supported value
-        [Fact]
-        public void NegTest4()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            DateTime time = DateTime.Now;
-            CalendarWeekRule rule = (CalendarWeekRule)(-1 * _generator.GetInt32(-55) - 1);
-            DayOfWeek firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.GetWeekOfYear(time, rule, firstDayOfWeek);
-           });
-        }
-        #endregion
-
+        
         #region Helper methods for all the tests
         //Get a random year beween minmum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)

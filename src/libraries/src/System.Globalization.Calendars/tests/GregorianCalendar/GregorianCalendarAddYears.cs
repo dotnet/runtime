@@ -146,23 +146,6 @@ namespace System.Globalization.CalendarsTests
         }
 
         #endregion
-        #region Negative Tests
-        [Fact]
-        public void NegTest1()
-        {
-            DateTime time;
-            int years;
-            System.Globalization.Calendar myCalendar;
-            time = DateTime.Now;
-            years = 9999;
-            myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.AddYears(time, years);
-           });
-        }
-
-        #endregion
         #region Helper method for all the tests
         private string GetParamesInfo(DateTime time, int years)
         {

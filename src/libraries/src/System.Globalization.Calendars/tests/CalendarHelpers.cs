@@ -139,12 +139,12 @@ namespace System.Globalization.Tests
                 DateTime minDate = calendar.MinSupportedDateTime;
                 if (minDate != DateTime.MinValue)
                 {
-                    yield return new object[] { calendar, minDate.AddYears(-1) };
+                    yield return new object[] { calendar, minDate.AddDays(-1) };
                 }
                 DateTime maxDate = calendar.MaxSupportedDateTime;
                 if (maxDate != DateTime.MaxValue)
                 {
-                    yield return new object[] { calendar, maxDate.AddYears(1) }; 
+                    yield return new object[] { calendar, maxDate.AddDays(1) }; 
                 }
             }
         }
