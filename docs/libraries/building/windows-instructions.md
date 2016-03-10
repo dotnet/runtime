@@ -14,6 +14,8 @@ The following free downloads are compatible:
 
 Note: In order to build our C++ projects be sure to select "Programming Languages | Visual C++ | Common Tools for Visual C++ 2015" while installing VS 2015 (or modify your install to include it).
 
+We also require that [Visual Studio 2015 Update 1](https://www.visualstudio.com/en-us/news/vs2015-update1-vs.aspx) be installed.
+
 [CMake](https://cmake.org/) is required to build the native libraries for Windows. To build these libraries cmake must be installed from [the CMake download page](https://cmake.org/download/) and added to your path.
 
 ## Building From the Command Line
