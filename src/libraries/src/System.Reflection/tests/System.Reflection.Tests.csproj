@@ -34,6 +34,7 @@
     <Compile Include="Assembly\Assembly_IsDynamicTests.cs" />
     <Compile Include="Assembly\Assembly_LoadTests.cs" />
     <Compile Include="Assembly\Assembly_LocationTests.cs" />
+    <Compile Include="Assembly\Assembly_Members.cs" />
     <Compile Include="Assembly\Assembly_ModulesTests.cs" />
     <Compile Include="Assembly\Assembly_ToStringTests.cs" />
     <Compile Include="Assembly\Assembly_GetEntryAssembly.cs" />
@@ -41,6 +42,7 @@
     <Compile Include="ConstructorInfo\ConstructorInfo_FieldTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfo_InvokeTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfo_MethodTests.cs" />
+	<Compile Include="EventInfo\EventInfo_Members.cs" />
     <Compile Include="EventInfo\EventInfo_MethodTests.cs" />
     <Compile Include="EventInfo\EventInfo_PropertyTests.cs" />
     <Compile Include="FieldInfo\FieldInfo_ConstantTests.cs" />
@@ -70,6 +72,7 @@
     <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_GetValueTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_Members.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
     <Compile Include="PropertyInfo\PropertyInfo_SetValueTests.cs" />
@@ -95,6 +98,7 @@
     <Compile Include="TypeInfo\TypeInfo_StructLayoutAttribute.cs" />
     <Compile Include="TypeInfo\TypeInfo_TypeInitializer.cs" />
     <Compile Include="TypeInfo\TypeInfo_UnderlyingSystemType.cs" />
+    <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assembly\EmbeddedImage.png">
