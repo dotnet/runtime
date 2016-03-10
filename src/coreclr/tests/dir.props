@@ -21,6 +21,10 @@
     <BuildToolsTargets45>true</BuildToolsTargets45>   
   </PropertyGroup>  
 
+  <!-- Make the stable version of xunit that the tests depend on available to both the project.json generation and the validation task. -->
+  <PropertyGroup>
+    <XunitPackageVersion>2.1.0</XunitPackageVersion>
+  </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
@@ -42,8 +46,8 @@
     <ValidationPattern Include="^(?i)((System\..%2A)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
       <ExpectedPrerelease>rc2-23816</ExpectedPrerelease>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)(xunit(\.assert|\.runner\.(utility|msbuild)))$">
-      <ExpectedVersion>2.1.0</ExpectedVersion>
+    <ValidationPattern Include="^(?i)(xunit(\.assert|\.core|\.runner\.(utility|msbuild))?)$">
+      <ExpectedVersion>$(XunitPackageVersion)</ExpectedVersion>
     </ValidationPattern>
     <!-- Add a dummy value so that the item isn't removed by msbuild. Without the | this item doesn't show up later. -->
     <ValidationPattern Include="^(?i)(xunit\.console\.netcore|dummy value)$">
