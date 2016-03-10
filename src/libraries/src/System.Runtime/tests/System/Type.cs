@@ -254,4 +254,37 @@ public static class TypeTests
 
         Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
     }
+
+    [Fact]
+    public static void Delimiter()
+    {
+        Assert.NotNull(Type.Delimiter);
+    }
+
+    [Theory]
+    [InlineData(typeof(bool), TypeCode.Boolean)]
+    [InlineData(typeof(byte), TypeCode.Byte)]
+    [InlineData(typeof(char), TypeCode.Char)]
+    [InlineData(typeof(DateTime), TypeCode.DateTime)]
+    [InlineData(typeof(decimal), TypeCode.Decimal)]
+    [InlineData(typeof(double), TypeCode.Double)]
+    [InlineData(null, TypeCode.Empty)]
+    [InlineData(typeof(short), TypeCode.Int16)]
+    [InlineData(typeof(int), TypeCode.Int32)]
+    [InlineData(typeof(long), TypeCode.Int64)]
+    [InlineData(typeof(object), TypeCode.Object)]
+    [InlineData(typeof(System.Nullable), TypeCode.Object)]
+    [InlineData(typeof(Nullable<int>), TypeCode.Object)]
+    [InlineData(typeof(Dictionary<,>), TypeCode.Object)]
+    [InlineData(typeof(Exception), TypeCode.Object)]
+    [InlineData(typeof(sbyte), TypeCode.SByte)]
+    [InlineData(typeof(float), TypeCode.Single)]
+    [InlineData(typeof(string), TypeCode.String)]
+    [InlineData(typeof(ushort), TypeCode.UInt16)]
+    [InlineData(typeof(uint), TypeCode.UInt32)]
+    [InlineData(typeof(ulong), TypeCode.UInt64)]
+    public static void GetTypeCode(Type t, TypeCode typeCode)
+    {
+        Assert.Equal(typeCode, Type.GetTypeCode(t));
+    }
 }
