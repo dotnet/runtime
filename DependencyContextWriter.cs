@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject WriteRuntimeGraph(DependencyContext context)
         {
             return new JObject(
-                context.RuntimeGraph.Select(g => new JProperty(g.Key, new JArray(g.Value)))
+                context.RuntimeGraph.Select(g => new JProperty(g.Runtime, new JArray(g.Fallbacks)))
                 );
         }
 
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
             if (value != null)
             {
-                o[name] = value.ToString();
+                o.Add(new JProperty(name, value));
             }
             }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 return;
             }
-            libraryObject.Add(
+            libraryObject.AddFirst(
                 new JProperty(DependencyContextStrings.DependenciesPropertyName,
                 new JObject(
                     dependencies.Select(dependency => new JProperty(dependency.Name, dependency.Version))))
@@ -232,8 +232,8 @@ namespace Microsoft.Extensions.DependencyModel
                         new JObject(runtimeLibrary.RuntimeTargets.SelectMany(WriteRuntimeTarget)))
                         );
                 }
-                AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
                 AddRuntimeAssemblies(libraryObject, runtimeLibrary.Assemblies);
+                AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
                 libraryObject.Add(DependencyContextStrings.NativeLibrariesKey, WriteAssetList(runtimeLibrary.NativeLibraries));
 
                 dependencies.UnionWith(runtimeLibrary.Dependencies);

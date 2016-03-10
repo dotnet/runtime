@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public class DependencyContextCsvReader
+    public class DependencyContextCsvReader: IDependencyContextReader
     {
         public DependencyContext Read(Stream stream)
         {
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.DependencyModel
                 compilationOptions: CompilationOptions.Default,
                 compileLibraries: Enumerable.Empty<CompilationLibrary>(),
                 runtimeLibraries: runtimeLibraries.ToArray(),
-                runtimeGraph: Enumerable.Empty<KeyValuePair<string, string[]>>());
+                runtimeGraph: Enumerable.Empty<RuntimeFallbacks>());
         }
 
         private Tuple<string, string, string, string> PackageIdentity(DepsFileLine line)
