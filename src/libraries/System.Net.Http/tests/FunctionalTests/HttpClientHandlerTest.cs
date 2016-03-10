@@ -220,6 +220,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory, MemberData(nameof(CompressedServers))]
+        public async Task GetAsync_DefaultAutomaticDecompression_HeadersRemoved(Uri server)
+        {
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(server, HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                Assert.False(response.Content.Headers.Contains("Content-Encoding"), "Content-Encoding unexpectedly found");
+                Assert.False(response.Content.Headers.Contains("Content-Length"), "Content-Length unexpectedly found");
+            }
+        }
+
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK()
         {

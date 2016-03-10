@@ -96,6 +96,34 @@ namespace System.Net.Http
 
             public void EnsureResponseMessagePublished()
             {
+                // If this is the response hasn't been published yet, do any finaly processing of the response 
+                // message before it's published.
+                if (!Task.IsCompleted)
+                {
+                    // On Windows, if the response was automatically decompressed, Content-Encoding and Content-Length
+                    // headers are removed from the response. Do the same thing here.
+                    DecompressionMethods dm = _handler.AutomaticDecompression;
+                    if (dm != DecompressionMethods.None)
+                    {
+                        HttpContentHeaders contentHeaders = _responseMessage.Content.Headers;
+                        IEnumerable<string> encodings;
+                        if (contentHeaders.TryGetValues(HttpKnownHeaderNames.ContentEncoding, out encodings))
+                        {
+                            foreach (string encoding in encodings)
+                            {
+                                if (((dm & DecompressionMethods.GZip) != 0 && string.Equals(encoding, EncodingNameGzip, StringComparison.OrdinalIgnoreCase)) ||
+                                    ((dm & DecompressionMethods.Deflate) != 0 && string.Equals(encoding, EncodingNameDeflate, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    contentHeaders.Remove(HttpKnownHeaderNames.ContentEncoding);
+                                    contentHeaders.Remove(HttpKnownHeaderNames.ContentLength);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Now ensure it's published.
                 bool result = TrySetResult(_responseMessage);
                 Debug.Assert(result || Task.Status == TaskStatus.RanToCompletion,
                     "If the task was already completed, it should have been completed succesfully; " +
