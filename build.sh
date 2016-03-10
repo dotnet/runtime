@@ -248,8 +248,7 @@ build_mscorlib()
         exit 1
     fi
 
-    # The cross build generates exectuable 'crossgen' with arm architecture (without x86).
-    # It can not be run to make mscorlib.ni.dll from mscorlib.dll on X86-based build machine.
+    # The cross build generates a crossgen with the target architecture.
     if [ $__CrossBuild != 1 ]; then
        if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
            echo "Generating native image for mscorlib."
