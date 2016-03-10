@@ -16,5 +16,10 @@ namespace Microsoft.Extensions.EnvironmentAbstractions
         {
             return File.ReadAllText(path);
         }
+
+        public Stream OpenRead(string path)
+        {
+            return File.OpenRead(path);
+        }
     }
 }
