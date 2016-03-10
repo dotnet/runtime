@@ -132,7 +132,10 @@ parse_config_and_set_env_vars(){
     DOCS_JSON_PATH="$INPUT_DIR/docs.json"
 
     PACKAGE_SOURCE_DIR="${OUTPUT_DIR}/${PACKAGE_NAME}-${PACKAGE_VERSION}"
-    INSTALL_ROOT="/usr/share/${PACKAGE_NAME}"
+
+    if ! INSTALL_ROOT="$($extract_base_cmd $CONFIG "install_root")"; then
+        INSTALL_ROOT="/usr/share/$PACKAGE_NAME"
+    fi
 
     DEBIAN_DIR="${PACKAGE_SOURCE_DIR}/debian"
     DOCS_DIR="${PACKAGE_SOURCE_DIR}/docs"
