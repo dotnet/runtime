@@ -99,10 +99,6 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
         case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
             m_ConstantFeedsConstantTest = value;
             break;
-        case InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK:
-            // Passed the profitability screen. Update candidacy.
-            SetCandidate(obs);
-            break;
         case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
             {
                 // Set up the state machine, if this inline is
@@ -120,17 +116,9 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 
         case InlineObservation::CALLEE_END_OPCODE_SCAN:
             {
-                // We only expect to see this observation once, so the
-                // native size estimate should have its initial value.
-                assert(m_NativeSizeEstimate == NATIVE_SIZE_INVALID);
-
-                // If we were using the state machine, get it to kick
-                // out a size estimate.
                 if (m_StateMachine != nullptr)
                 {
                     m_StateMachine->End();
-                    m_NativeSizeEstimate = m_StateMachine->NativeSize;
-                    assert(m_NativeSizeEstimate != NATIVE_SIZE_INVALID);
                 }
 
                 break;
@@ -525,11 +513,9 @@ double LegacyPolicy::DetermineMultiplier()
 int LegacyPolicy::DetermineNativeSizeEstimate()
 {
     // Should be a discretionary candidate.
-    assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-    // Should have a valid state machine estimate.
-    assert(m_NativeSizeEstimate != NATIVE_SIZE_INVALID);
+    assert(m_StateMachine != nullptr);
 
-    return m_NativeSizeEstimate;
+    return m_StateMachine->NativeSize;
 }
 
 //------------------------------------------------------------------------
@@ -593,4 +579,83 @@ int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methI
     }
 
     return callsiteSize;
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+//
+// Notes:
+//    A profitable inline is one that is projected to have a beneficial
+//    size/speed tradeoff.
+//
+//    It is expected that this method is only invoked for discretionary
+//    candidates, since it does not make sense to do this assessment for
+//    failed, always, or forced inlines.
+
+void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    assert(InlDecisionIsCandidate(m_Decision));
+    assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+    const int calleeNativeSizeEstimate = DetermineNativeSizeEstimate();
+    const int callsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
+    const double multiplier = DetermineMultiplier();
+    const int threshold = (int)(callsiteNativeSizeEstimate * multiplier);
+
+    JITDUMP("calleeNativeSizeEstimate=%d\n", calleeNativeSizeEstimate)
+    JITDUMP("callsiteNativeSizeEstimate=%d\n", callsiteNativeSizeEstimate);
+    JITDUMP("benefit multiplier=%g\n", multiplier);
+    JITDUMP("threshold=%d\n", threshold);
+
+#if DEBUG
+    // Size estimates are in bytes * 10
+    const double sizeDescaler = 10.0;
+#endif
+
+    // Reject if callee size is over the threshold
+    if (calleeNativeSizeEstimate > threshold)
+    {
+        // Inline appears to be unprofitable
+        JITLOG_THIS(m_Compiler,
+                    (LL_INFO100000,
+                     "Native estimate for function size exceedsn threshold"
+                     " for inlining %g > %g (multiplier = %g)\n",
+                     calleeNativeSizeEstimate / sizeDescaler,
+                     threshold / sizeDescaler,
+                     multiplier));
+
+        // Fail the inline
+        if (m_IsPrejitRoot)
+        {
+            SetNever(InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+        }
+        else
+        {
+            SetFailure(InlineObservation::CALLSITE_NOT_PROFITABLE_INLINE);
+        }
+    }
+    else
+    {
+        // Inline appears to be profitable
+        JITLOG_THIS(m_Compiler,
+                    (LL_INFO100000,
+                     "Native estimate for function size is within threshold"
+                     " for inlining %g <= %g (multiplier = %g)\n",
+                     calleeNativeSizeEstimate / sizeDescaler,
+                     threshold / sizeDescaler,
+                     multiplier));
+
+        // Update candidacy
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+        }
+    }
 }
