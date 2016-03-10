@@ -7,6 +7,8 @@
     <OutputType>Library</OutputType>
     <GenerateRunScript>false</GenerateRunScript>
     <CLRTestKind>BuildOnly</CLRTestKind>
+    <!-- Skip validation of the test_runtime project created by the test build. -->
+    <ValidatePackageVersions>false</ValidatePackageVersions>
   </PropertyGroup>
   <ItemGroup>
      <DnuSourceList Include="$(CORE_ROOT)\.nuget\pkg" /> 
