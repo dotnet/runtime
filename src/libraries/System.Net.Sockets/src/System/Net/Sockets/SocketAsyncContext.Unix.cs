@@ -371,8 +371,16 @@ namespace System.Net.Sockets
                 Debug.Assert(!IsStopped, "Expected !IsStopped");
                 Debug.Assert(operation.Next == null, "Operation already in queue");
 
-                operation.Next = (_tail == null) ? operation : _tail.Next;
-                _tail = operation;
+                if (IsEmpty)
+                {
+                    operation.Next = operation;
+                    _tail = operation;
+                }
+                else
+                {
+                    operation.Next = _tail.Next;
+                    _tail.Next = operation;
+                }
             }
 
             public OperationQueue<TOperation> Stop()
