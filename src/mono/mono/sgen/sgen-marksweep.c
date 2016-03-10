@@ -1651,6 +1651,8 @@ sweep_finish (void)
 	}
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
+	if (concurrent_sweep)
+		binary_protocol_concurrent_sweep_end (sgen_timestamp ());
 }
 
 static void
