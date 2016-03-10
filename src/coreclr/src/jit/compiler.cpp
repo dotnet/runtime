@@ -1407,8 +1407,6 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
 
     compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
 
-    compNativeSizeEstimate = NATIVE_SIZE_INVALID;
-
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
         AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
@@ -4843,46 +4841,25 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             // the code in fgFindJumpTargets references that data
             // member extensively.
             assert(compInlineResult == nullptr);
+            assert(impInlineInfo == nullptr);
             compInlineResult = &prejitResult;
 
             // Find the basic blocks. We must do this regardless of
             // inlineability, since we are prejitting this method.
             //
-            // Among other things, this will set compNativeSizeEstimate
-            // for the subset of methods we check below.
+            // This will also update the status of this method as
+            // an inline candidate.
             fgFindBasicBlocks();
 
             // Undo the temporary setup.
             assert(compInlineResult == &prejitResult);
             compInlineResult = nullptr;
 
-            // If this method is still a viable inline candidate,
-            // do the profitability screening.
-            if (prejitResult.IsCandidate())
+            // If still a viable, discretionary inline, assess
+            // profitability.
+            if (prejitResult.IsDiscretionaryCandidate())
             {
-                // Only needed if the inline is discretionary.
-                InlineObservation obs = prejitResult.GetObservation();
-                if (obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
-                {
-                    // We should have run the CodeSeq state machine
-                    // and got the native size estimate.
-                    assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
-
-                    // Estimate the call site impact
-                    int callsiteNativeSizeEstimate =
-                        prejitResult.DetermineCallsiteNativeSizeEstimate(methodInfo);
-
-                    // See if we're willing to pay for inlining this method
-                    impCanInlineNative(callsiteNativeSizeEstimate,
-                                       compNativeSizeEstimate,
-                                       nullptr, // Calculate static inlining hint.
-                                       &prejitResult);
-                }
-            }
-            else
-            {
-                // If it's not a candidate, it should be a failure.
-                assert(prejitResult.IsFailure());
+                prejitResult.DetermineProfitability(methodInfo);
             }
 
             // Handle the results of the inline analysis.

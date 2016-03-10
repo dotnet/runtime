@@ -241,9 +241,7 @@ public:
     virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
     // Policy determinations
-    virtual double DetermineMultiplier() = 0;
-    virtual int DetermineNativeSizeEstimate() = 0;
-    virtual int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo) = 0;
+    virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
 
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
@@ -320,6 +318,16 @@ public:
         return InlDecisionIsCandidate(m_Policy->GetDecision());
     }
 
+    // Has the policy determined this inline attempt is still viable
+    // and is a discretionary inline?
+    bool IsDiscretionaryCandidate() const
+    {
+        bool result = InlDecisionIsCandidate(m_Policy->GetDecision()) &&             
+            (m_Policy->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+        return result;
+    }
+
     // Has the policy made a determination?
     bool IsDecided() const
     {
@@ -373,22 +381,10 @@ public:
         m_Policy->NoteDouble(obs, value);
     }
 
-    // Determine the benfit multiplier for this inline.
-    double DetermineMultiplier()
+    // Determine if this inline is profitable
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     {
-        return m_Policy->DetermineMultiplier();
-    }
-
-    // Determine the native size estimate for this inline
-    int DetermineNativeSizeEstimate()
-    {
-        return m_Policy->DetermineNativeSizeEstimate();
-    }
-
-    // Determine the native size estimate for this call site
-    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo)
-    {
-        return m_Policy->DetermineCallsiteNativeSizeEstimate(methodInfo);
+        return m_Policy->DetermineProfitability(methodInfo);
     }
 
     // Ensure details of this inlining process are appropriately
