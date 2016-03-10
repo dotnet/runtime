@@ -128,7 +128,6 @@ $(_XunitEpilog)
     "xunit" : "2.1.0",
     "xunit.assert" : "2.1.0",
     "xunit.core" : "2.1.0",
-    "xunit.runner.msbuild": "2.1.0"
   },
   "frameworks": {
     "net45": {
@@ -304,11 +303,33 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+
+    <!--
+      Contents of a project.json that will be restored once with errors turned off. This works
+      around the package being incompatible with dotnet restore. Only the package contents are
+      required so the compatibility errors can be ignored.
+    -->
+    <PropertyGroup>
+      <XunitRunnerRestoreGenConfig>{ "dependencies": { "xunit.runner.msbuild": "2.1.0" }, "frameworks": { "net45": {} } }</XunitRunnerRestoreGenConfig>
+      <XunitRunnerRestoreProjectDir>$(BaseOutputPath)\tempRestoreProject</XunitRunnerRestoreProjectDir>
+      <XunitRunnerRestoreProjectJsonPath>$(XunitRunnerRestoreProjectDir)\project.json</XunitRunnerRestoreProjectJsonPath>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(XunitRunnerRestoreProjectDir)" />
+    <WriteLinesToFile File="$(XunitRunnerRestoreProjectJsonPath)"
+                      Lines="$(XunitRunnerRestoreGenConfig)"
+                      Overwrite="true" />
+    
+    <Exec Command="$(DnuRestoreCommand) &quot;$(XunitRunnerRestoreProjectJsonPath)&quot;"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="^Unable to resolve .*"
+          IgnoreExitCode="true" 
+          IgnoreStandardErrorWarningFormat="true" />
+    
     <!-- Restore all wrapper projects' project.jsons in one pass for perf & to avoid concurrency problems -->
     <Exec Command="$(DnuRestoreCommand) &quot;$(XunitWrapperGeneratedCSDirBase.TrimEnd('\\'))&quot;"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="^Unable to locate .*"
-          ContinueOnError="WarnAndContinue" />
+          StandardOutputImportance="Low" />
+    
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
