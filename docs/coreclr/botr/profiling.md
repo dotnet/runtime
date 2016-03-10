@@ -390,7 +390,7 @@ There are four types of statics. The following table describes what they are and
 Exceptions
 ----------
 
-Notifications of exceptions are the most difficult of all notifications to describe and to understand.  This is because of the inherent complexity in exception processing.  The set of exception notifications described below was designed to provide all the information required for a sophisticated profiler – so that, at every instant, it can keep track of which pass (first or second), which frame, which filter and which finally block is being executed, for every thread in the profilee process. Note that the Exception notifications do not provide any _threadID's_ but the a profiler can always call _ICorProfilerInfo::GetCurrentThreadID_ to discover which managed thread throws the exception.
+Notifications of exceptions are the most difficult of all notifications to describe and to understand.  This is because of the inherent complexity in exception processing.  The set of exception notifications described below was designed to provide all the information required for a sophisticated profiler – so that, at every instant, it can keep track of which pass (first or second), which frame, which filter and which finally block is being executed, for every thread in the profilee process. Note that the Exception notifications do not provide any _threadID's_ but a profiler can always call _ICorProfilerInfo::GetCurrentThreadID_ to discover which managed thread throws the exception.
 
 ![Exception callback sequence]: profiling-exception-callback-sequence.png
 
