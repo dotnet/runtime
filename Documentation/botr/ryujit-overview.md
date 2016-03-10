@@ -3,7 +3,7 @@ JIT Compiler Structure
 
 # Introduction
 
-RyuJIT is the code name for the next generation Just in Time Compiler (aka “JIT”) for the AMD64 .NET runtime . Its first implementation is for the AMD64 architecture. It is derived from a code base that is still in use for the other targets of .NET.
+RyuJIT is the code name for the next generation Just in Time Compiler (aka “JIT”) for the AMD64 .NET runtime. Its first implementation is for the AMD64 architecture. It is derived from a code base that is still in use for the other targets of .NET.
 
 The primary design considerations for RyuJIT are to:
 
