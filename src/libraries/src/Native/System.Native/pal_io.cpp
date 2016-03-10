@@ -494,6 +494,13 @@ extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode)
     return result;
 }
 
+extern "C" int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
+{
+    int32_t result;
+    while (CheckInterrupted(result = fchmod(ToFileDescriptor(fd), static_cast<mode_t>(mode))));
+    return result;
+}
+
 extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode)
 {
     int32_t result;
