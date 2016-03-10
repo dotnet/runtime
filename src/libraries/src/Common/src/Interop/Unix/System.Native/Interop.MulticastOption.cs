@@ -13,7 +13,8 @@ internal static partial class Interop
         internal enum MulticastOption : int
         {
             MULTICAST_ADD = 0,
-            MULTICAST_DROP = 1
+            MULTICAST_DROP = 1,
+            MULTICAST_IF = 2
         }
 
         internal struct IPv4MulticastOption

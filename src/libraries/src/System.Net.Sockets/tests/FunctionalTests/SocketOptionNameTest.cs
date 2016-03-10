@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 
@@ -83,17 +84,67 @@ namespace System.Net.Sockets.Tests
         public void MulticastOption_CreateSocketSetGetOption_GroupAndInterfaceIndex_SetSucceeds_GetThrows()
         {
             int interfaceIndex = 0;
-            int port = 54321;
             IPAddress groupIp = IPAddress.Parse("239.1.2.3");
 
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                socket.Bind(new IPEndPoint(IPAddress.Any, port));
-
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(groupIp, interfaceIndex));
 
                 Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership));
             }
+        }
+
+        [Theory]
+        [InlineData(0)] // Any
+        [InlineData(1)] // Loopback
+        [PlatformSpecific(~PlatformID.OSX)] // Receive times out on loopback interface
+        public void MulticastInterface_Set_ValidIndex_Succeeds(int interfaceIndex)
+        {
+            IPAddress multicastAddress = IPAddress.Parse("239.1.2.3");
+            string message = "hello";
+            int port;
+
+            using (Socket receiveSocket = CreateBoundUdpSocket(out port),
+                          sendSocket    = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiveSocket.ReceiveTimeout = 1000;
+                receiveSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(multicastAddress, interfaceIndex));
+
+                sendSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex));
+                sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
+
+                var receiveBuffer = new byte[1024];
+                int bytesReceived = receiveSocket.Receive(receiveBuffer);
+                string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
+
+                Assert.Equal(receivedMessage, message);
+            }
+        }
+
+        [Fact]
+        public void MulticastInterface_Set_InvalidIndex_Throws()
+        {
+            int interfaceIndex = 31415;
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                Assert.Throws<SocketException>(() =>
+                    s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex)));
+            }
+        }
+
+        // Create an Udp Socket and binds it to an available port
+        private static Socket CreateBoundUdpSocket(out int localPort)
+        {
+            Socket receiveSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            // sending a message will bind the socket to an available port
+            string sendMessage = "dummy message";
+            int port = 54320;
+            IPAddress multicastAddress = IPAddress.Parse("239.1.1.1");
+            receiveSocket.SendTo(Encoding.UTF8.GetBytes(sendMessage), new IPEndPoint(multicastAddress, port));
+
+            localPort = (receiveSocket.LocalEndPoint as IPEndPoint).Port;
+            return receiveSocket;
         }
     }
 }

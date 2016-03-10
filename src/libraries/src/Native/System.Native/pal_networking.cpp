@@ -1344,6 +1344,10 @@ static bool GetMulticastOptionName(int32_t multicastOption, bool isIPv6, int& op
             optionName = isIPv6 ? IPV6_DROP_MEMBERSHIP : IP_DROP_MEMBERSHIP;
             return true;
 
+        case PAL_MULTICAST_IF:
+            optionName = IP_MULTICAST_IF;
+            return true;
+
         default:
             return false;
     }
@@ -1405,6 +1409,10 @@ extern "C" Error SystemNative_SetIPv4MulticastOption(int32_t socket, int32_t mul
 #else
     ip_mreq opt = {.imr_multiaddr = {.s_addr = option->MulticastAddress},
                    .imr_interface = {.s_addr = option->LocalAddress}};
+    if (option->InterfaceIndex != 0)
+    {
+        return PAL_ENOPROTOOPT;
+    }
 #endif
     int err = setsockopt(socket, IPPROTO_IP, optionName, &opt, sizeof(opt));
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);

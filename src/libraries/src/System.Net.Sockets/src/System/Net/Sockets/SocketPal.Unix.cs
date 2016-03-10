@@ -863,6 +863,26 @@ namespace System.Net.Sockets
                     return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
                 }
             }
+            else if (optionLevel == SocketOptionLevel.IP)
+            {
+                if (optionName == SocketOptionName.MulticastInterface)
+                {
+                    // if the value of the IP_MULTICAST_IF is an address in the 0.x.x.x block
+                    // the value is interpreted as an interface index
+                    int interfaceIndex = IPAddress.NetworkToHostOrder(optionValue);
+                    if ((interfaceIndex & 0xff000000) == 0)
+                    {
+                        var opt = new Interop.Sys.IPv4MulticastOption {
+                            MulticastAddress = 0,
+                            LocalAddress = 0,
+                            InterfaceIndex = interfaceIndex
+                        };
+
+                        err = Interop.Sys.SetIPv4MulticastOption(handle, Interop.Sys.MulticastOption.MULTICAST_IF, &opt);
+                        return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                    }
+                }
+            }
 
             err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
