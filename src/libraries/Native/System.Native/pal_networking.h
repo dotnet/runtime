@@ -91,8 +91,9 @@ enum ProtocolType : int32_t
 
 enum MulticastOption : int32_t
 {
-    PAL_MULTICAST_ADD = 0, // IP{,V6}_ADD_MEMBERSHIP
-    PAL_MULTICAST_DROP = 1 // IP{,V6}_DROP_MEMBERSHIP
+    PAL_MULTICAST_ADD = 0,  // IP{,V6}_ADD_MEMBERSHIP
+    PAL_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
+    PAL_MULTICAST_IF = 2    // IP_MULTICAST_IF
 };
 
 /*
