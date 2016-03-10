@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-rc3-23908",
+    "System.Console": "4.0.0-rc3-23910",
     "System.Globalization": "4.0.10",
     "System.Linq": "4.0.0",
     "System.Linq.Expressions": "4.0.10",

@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.CSharp": "4.0.0",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0029",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23908",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
     "System.Dynamic.Runtime": "4.0.10",
     "System.Globalization": "4.0.10",
     "System.Linq": "4.0.0",
