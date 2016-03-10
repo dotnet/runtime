@@ -2009,7 +2009,10 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
-		return mono_value_box (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject));
+		MonoObject *res = mono_value_box_checked (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return res;
+
 	}
 	case MONO_TYPE_STRING: {
 		MonoString *str = (MonoString *) val;

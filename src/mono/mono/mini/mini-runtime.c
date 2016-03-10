@@ -2502,7 +2502,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 		mono_error_set_exception_instance (error, (MonoException*) *exc);
 
 	if (sig->ret->type != MONO_TYPE_VOID && info->ret_box_class)
-		return mono_value_box (domain, info->ret_box_class, retval);
+		return mono_value_box_checked (domain, info->ret_box_class, retval, error);
 	else
 		return *(MonoObject**)retval;
 }
@@ -2677,7 +2677,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		mono_arch_finish_dyn_call (info->dyn_call_info, buf);
 
 		if (info->ret_box_class)
-			return mono_value_box (domain, info->ret_box_class, retval);
+			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
 		else
 			return *(MonoObject**)retval;
 	}

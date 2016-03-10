@@ -138,19 +138,23 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 ICALL_EXPORT MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoArray *arr, guint32 pos)
 {
+	MonoError error;
 	MonoClass *ac;
 	gint32 esize;
 	gpointer *ea;
+	MonoObject *result = NULL;
 
 	ac = (MonoClass *)arr->obj.vtable->klass;
 
 	esize = mono_array_element_size (ac);
 	ea = (gpointer*)((char*)arr->vector + (pos * esize));
 
-	if (ac->element_class->valuetype)
-		return mono_value_box (arr->obj.vtable->domain, ac->element_class, ea);
-	else
-		return (MonoObject *)*ea;
+	if (ac->element_class->valuetype) {
+		result = mono_value_box_checked (arr->obj.vtable->domain, ac->element_class, ea, &error);
+		mono_error_set_pending_exception (&error);
+	} else
+		result = (MonoObject *)*ea;
+	return result;
 }
 
 ICALL_EXPORT MonoObject *
@@ -3175,6 +3179,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 ICALL_EXPORT MonoObject *
 ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs) 
 {
+	MonoError error;
 	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
 	MonoMethodSignature *sig = mono_method_signature (m);
@@ -3203,9 +3208,11 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 				MonoClassField* field = mono_class_get_field_from_name (k, str);
 				if (field) {
 					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
-					if (field_klass->valuetype)
-						result = mono_value_box (domain, field_klass, (char *)this_arg + field->offset);
-					else 
+					if (field_klass->valuetype) {
+						result = mono_value_box_checked (domain, field_klass, (char *)this_arg + field->offset, &error);
+						mono_error_set_pending_exception (&error);
+						/* fallthru to cleanup */
+					} else 
 						result = (MonoObject *)*((gpointer *)((char *)this_arg + field->offset));
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 1);
@@ -7611,12 +7618,16 @@ mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 ICALL_EXPORT MonoObject*
 mono_TypedReference_ToObject (MonoTypedRef* tref)
 {
+	MonoError error;
+	MonoObject *result = NULL;
 	if (MONO_TYPE_IS_REFERENCE (tref->type)) {
 		MonoObject** objp = (MonoObject **)tref->value;
 		return *objp;
 	}
 
-	return mono_value_box (mono_domain_get (), tref->klass, tref->value);
+	result = mono_value_box_checked (mono_domain_get (), tref->klass, tref->value, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoTypedRef

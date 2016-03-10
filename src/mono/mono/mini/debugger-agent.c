@@ -6031,6 +6031,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 			} else if (type == VALUE_TYPE_ID_NULL) {
 				*(MonoObject**)addr = NULL;
 			} else if (type == MONO_TYPE_VALUETYPE) {
+				MonoError error;
 				guint8 *buf2;
 				gboolean is_enum;
 				MonoClass *klass;
@@ -6062,7 +6063,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 					g_free (vtype_buf);
 					return err;
 				}
-				*(MonoObject**)addr = mono_value_box (d, klass, vtype_buf);
+				*(MonoObject**)addr = mono_value_box_checked (d, klass, vtype_buf, &error);
+				mono_error_cleanup (&error);
 				g_free (vtype_buf);
 			} else {
 				char *name = mono_type_full_name (t);
@@ -6084,6 +6086,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 static ErrorCode
 decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
+	MonoError error;
 	ErrorCode err;
 	int type = decode_byte (buf, &buf, limit);
 
@@ -6108,7 +6111,12 @@ decode_value (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 				g_free (nullable_buf);
 				return err;
 			}
-			mono_nullable_init (addr, mono_value_box (domain, mono_class_from_mono_type (targ), nullable_buf), mono_class_from_mono_type (t));
+			MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type (targ), nullable_buf, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
+				return ERR_INVALID_OBJECT;
+			}
+			mono_nullable_init (addr, boxed, mono_class_from_mono_type (t));
 			g_free (nullable_buf);
 			*endbuf = buf;
 			return ERR_NONE;

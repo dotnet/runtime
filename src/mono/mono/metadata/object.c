@@ -4600,7 +4600,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 						 * boxed object in the arg array with the copy.
 						 */
 						MonoObject *orig = mono_array_get (params, MonoObject*, i);
-						MonoObject *copy = mono_value_box (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig));
+						MonoObject *copy = mono_value_box_checked (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig), &error);
+						mono_error_raise_exception (&error); /* FIXME don't raise here */
 						mono_array_setref (params, i, copy);
 					}
 						
@@ -4652,8 +4653,11 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 			if (!params)
 				return NULL;
-			else
-				return mono_value_box (mono_domain_get (), method->klass->cast_class, pa [0]);
+			else {
+				MonoObject *result = mono_value_box_checked (mono_domain_get (), method->klass->cast_class, pa [0], &error);
+				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				return result;
+			}
 		}
 
 		if (!obj) {
@@ -4669,7 +4673,8 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			else
 				o = obj;
 		} else if (method->klass->valuetype) {
-			obj = mono_value_box (mono_domain_get (), method->klass, obj);
+			obj = mono_value_box_checked (mono_domain_get (), method->klass, obj, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 
 		if (exc) {
@@ -4692,7 +4697,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			nullable = mono_object_new_checked (mono_domain_get (), method->klass, &error);
 			mono_error_raise_exception (&error); /* FIXME don't raise here */
 
-			mono_nullable_init ((guint8 *)mono_object_unbox (nullable), mono_value_box (mono_domain_get (), method->klass->cast_class, obj), method->klass);
+			MonoObject *boxed = mono_value_box_checked (mono_domain_get (), method->klass->cast_class, obj, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_nullable_init ((guint8 *)mono_object_unbox (nullable), boxed, method->klass);
 			obj = mono_object_unbox (nullable);
 		}
 
@@ -5798,12 +5805,31 @@ mono_string_new_wrapper (const char *text)
 MonoObject *
 mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	MonoError error;
+	MonoObject *result = mono_value_box_checked (domain, klass, value, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_value_box_checked:
+ * @domain: the domain of the new object
+ * @class: the class of the value
+ * @value: a pointer to the unboxed data
+ * @error: set on error
+ *
+ * Returns: A newly created object which contains @value. On failure
+ * returns NULL and sets @error.
+ */
+MonoObject *
+mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 	MonoObject *res;
 	int size;
 	MonoVTable *vtable;
+
+	mono_error_init (error);
 
 	g_assert (klass->valuetype);
 	if (mono_class_is_nullable (klass))
@@ -5813,8 +5839,8 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	if (!vtable)
 		return NULL;
 	size = mono_class_instance_size (klass);
-	res = mono_object_new_alloc_specific_checked (vtable, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	res = mono_object_new_alloc_specific_checked (vtable, error);
+	return_val_if_nok (error, NULL);
 
 	size = size - sizeof (MonoObject);
 
@@ -5844,8 +5870,8 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 #endif
 #endif
 	if (klass->has_finalize) {
-		mono_object_register_finalizer (res, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_object_register_finalizer (res, error);
+		return_val_if_nok (error, NULL);
 	}
 	return res;
 }
@@ -7235,9 +7261,10 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 
 		klass = mono_class_from_mono_type (sig->params [i]);
 
-		if (klass->valuetype)
-			arg = mono_value_box (domain, klass, vpos);
-		else 
+		if (klass->valuetype) {
+			arg = mono_value_box_checked (domain, klass, vpos, &error);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		} else 
 			arg = *((MonoObject **)vpos);
 		      
 		mono_array_setref (msg->args, i, arg);
@@ -7498,9 +7525,10 @@ mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField 
 			mono_raise_exception (mono_get_exception_not_supported ("Linked away."));
 	}
 
-	if (field_class->valuetype)
-		arg = mono_value_box (domain, field_class, val);
-	else 
+	if (field_class->valuetype) {
+		arg = mono_value_box_checked (domain, field_class, val, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	} else 
 		arg = *((MonoObject **)val);
 		
 
