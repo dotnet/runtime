@@ -35,6 +35,14 @@ To run a clean, priority 1, crossgen test pass:
 
 Additionally, there is a Visual Studio solution, `<repo_root>\tests\src\AllTestProjects.sln`, where users can build a particular testcase, or all priority 0 testcases that are within it.
 
+**Building Individual Tests**
+
+Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast once
+
+* Native Test: Build the generated Visual Studio solution or make file corresponding to Test cmake file.
+  
+* Managed Test: You can invoke msbuild on the project directly from Visual Studio Command Prompt.
+
 **Running Tests**
 
 In a clean command prompt: `<repo_root>\tests\runtest.cmd`
@@ -83,3 +91,13 @@ If test changes are needed, make the change and build the test project. This wil
 8. Add any other projects as a dependency, if needed.
 9. Build the test.
 10. Follow the steps to re-run a failed test to validate the new test.
+
+Note:
+
+1. You can disable building of a test per architecture or configuration by using DisableProjectBuild tag in the project. for example:
+
+  ``<PropertyGroup>``
+
+     ``<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>``
+
+  ``</PropertyGroup>``
