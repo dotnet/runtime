@@ -12,6 +12,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
+    <!-- Set the project.json directory for generated TestWrappers. -->
+    <TestWrappersPackagesConfigFileDirectory>$(MSBuildThisFileDirectory)TestWrappersConfig\</TestWrappersPackagesConfigFileDirectory>
   </PropertyGroup>
 
   <!-- Expose the target OS in a more convenient fashion -->
