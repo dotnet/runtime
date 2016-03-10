@@ -50,10 +50,12 @@
 #include <mach-o/dyld.h>
 #endif
 
-/* AssemblyVersionMap: an assembly name and the assembly version set on which it is based */
+/* AssemblyVersionMap: an assembly name, the assembly version set on which it is based, the assembly name it is replaced with and whether only versions lower than the current runtime version should be remapped */
 typedef struct  {
 	const char* assembly_name;
 	guint8 version_set_index;
+	const char* new_assembly_name;
+	gboolean only_lower_versions;
 } AssemblyVersionMap;
 
 /* the default search path is empty, the first slot is replaced with the computed value */
@@ -89,8 +91,12 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"I18N.Other", 0},
 	{"I18N.Rare", 0},
 	{"I18N.West", 0},
-	{"Microsoft.Build.Engine", 2},
-	{"Microsoft.Build.Framework", 2},
+	{"Microsoft.Build.Engine", 2, NULL, TRUE},
+	{"Microsoft.Build.Framework", 2, NULL, TRUE},
+	{"Microsoft.Build.Tasks", 2, "Microsoft.Build.Tasks.v4.0"},
+	{"Microsoft.Build.Tasks.v3.5", 2, "Microsoft.Build.Tasks.v4.0"},
+	{"Microsoft.Build.Utilities", 2, "Microsoft.Build.Utilities.v4.0"},
+	{"Microsoft.Build.Utilities.v3.5", 2, "Microsoft.Build.Utilities.v4.0"},
 	{"Microsoft.VisualBasic", 1},
 	{"Microsoft.VisualC", 1},
 	{"Mono.Cairo", 0},
@@ -1017,6 +1023,9 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 				aname->build == vset->build && aname->revision == vset->revision)
 				return aname;
 		
+			if (framework_assemblies[pos].only_lower_versions && compare_versions ((AssemblyVersionSet*)vset, aname) < 0)
+				return aname;
+
 			if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
 				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
 					"The request to load the assembly %s v%d.%d.%d.%d was remapped to v%d.%d.%d.%d",
@@ -1030,6 +1039,13 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 			dest_aname->minor = vset->minor;
 			dest_aname->build = vset->build;
 			dest_aname->revision = vset->revision;
+			if (framework_assemblies[pos].new_assembly_name != NULL) {
+				dest_aname->name = framework_assemblies[pos].new_assembly_name;
+				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+							"The assembly name %s was remapped to %s",
+							aname->name,
+							dest_aname->name);
+			}
 			return dest_aname;
 		} else if (res < 0) {
 			last = pos - 1;
