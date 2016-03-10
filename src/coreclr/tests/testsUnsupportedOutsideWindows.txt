@@ -1,3 +1,5 @@
+baseservices/exceptions/regressions/V1/SEH/VJ/UnmanagedToManaged/UnmanagedToManaged.sh
+baseservices/exceptions/regressions/Dev11/147911/test147911/test147911.sh
 baseservices/threading/commitstackonlyasneeded/DefaultStackCommit/DefaultStackCommit.sh
 CoreMangLib/cti/system/byte/ByteToString3/ByteToString3.sh
 CoreMangLib/cti/system/convert/ConvertToInt32_4/ConvertToInt32_4.sh
