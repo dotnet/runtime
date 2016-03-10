@@ -27,13 +27,17 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject Write(DependencyContext context)
         {
-            return new JObject(
+            var contextObject =  new JObject(
                 new JProperty(DependencyContextStrings.RuntimeTargetPropertyName, WriteRuntimeTargetInfo(context)),
                 new JProperty(DependencyContextStrings.CompilationOptionsPropertName, WriteCompilationOptions(context.CompilationOptions)),
                 new JProperty(DependencyContextStrings.TargetsPropertyName, WriteTargets(context)),
-                new JProperty(DependencyContextStrings.LibrariesPropertyName, WriteLibraries(context)),
-                new JProperty(DependencyContextStrings.RuntimesPropertyName, WriteRuntimeGraph(context))
+                new JProperty(DependencyContextStrings.LibrariesPropertyName, WriteLibraries(context))
                 );
+            if (context.RuntimeGraph.Any())
+            {
+                contextObject.Add(new JProperty(DependencyContextStrings.RuntimesPropertyName, WriteRuntimeGraph(context)));
+            }
+            return contextObject;
         }
 
         private string WriteRuntimeTargetInfo(DependencyContext context)
@@ -46,11 +50,7 @@ namespace Microsoft.Extensions.DependencyModel
         private JObject WriteRuntimeGraph(DependencyContext context)
         {
             return new JObject(
-                    new JProperty(context.TargetFramework,
-                        new JObject(
-                            context.RuntimeGraph.Select(g => new JProperty(g.Key, new JArray(g.Value)))
-                            )
-                    )
+                context.RuntimeGraph.Select(g => new JProperty(g.Key, new JArray(g.Value)))
                 );
         }
 
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
             libraryObject.Add(DependencyContextStrings.ResourceAssembliesPropertyName,
                 new JObject(resourceAssemblies.Select(a =>
-                    new JProperty(a.Path, new JObject(new JProperty(DependencyContextStrings.LocalePropertyName, a.Locale))))
+                    new JProperty(NormalizePath(a.Path), new JObject(new JProperty(DependencyContextStrings.LocalePropertyName, a.Locale))))
                     )
                 );
         }
@@ -263,7 +263,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             foreach (var assembly in assemblies)
             {
-                yield return new JProperty(assembly,
+                yield return new JProperty(NormalizePath(assembly),
                     new JObject(
                         new JProperty(DependencyContextStrings.RidPropertyName, runtime),
                         new JProperty(DependencyContextStrings.AssetTypePropertyName, assetType)
@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WriteAssemblies(IEnumerable<string> assemblies)
         {
-            return new JObject(assemblies.Select(assembly => new JProperty(assembly, new JObject())));
+            return new JObject(assemblies.Select(assembly => new JProperty(NormalizePath(assembly), new JObject())));
         }
 
         private JObject WriteLibraries(DependencyContext context)
@@ -293,6 +293,11 @@ namespace Microsoft.Extensions.DependencyModel
                 new JProperty(DependencyContextStrings.ServiceablePropertyName, library.Serviceable),
                 new JProperty(DependencyContextStrings.Sha512PropertyName, library.Hash)
                 );
+        }
+
+        private string NormalizePath(string path)
+        {
+            return path.Replace('\\', '/');
         }
     }
 }
