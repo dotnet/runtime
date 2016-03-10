@@ -1,7 +1,7 @@
 SUBDIRS = assemblyresolve gc-descriptors
 
 check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-cattr-type-load test-reflection-load-with-context test_platform	\
-		 test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload test-process-stress rm-empty-logs
+		 test-console-output test-messages test-env-options test-unhandled-exception-2 test-appdomain-unload test-process-stress test-assembly-load-remap rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -1428,6 +1428,13 @@ PROCESS_STRESS_TESTS=	\
 
 test-process-stress: $(PROCESS_STRESS_TESTS) test-runner.exe
 	$(RUNTIME) ./test-runner.exe --testsuite-name $@ --timeout 600 $(PROCESS_STRESS_TESTS)
+
+EXTRA_DIST += assembly-load-remap.cs
+test-assembly-load-remap: assembly-load-remap.exe
+	MONO_LOG_LEVEL=warning MONO_LOG_MASK=asm $(RUNTIME) assembly-load-remap.exe "2.0.0.0" | grep "remapped to v4.0.0.0"
+	MONO_LOG_LEVEL=warning MONO_LOG_MASK=asm $(RUNTIME) assembly-load-remap.exe "4.0.0.0" | grep "remapped to" && exit 1 || exit 0
+	MONO_LOG_LEVEL=warning MONO_LOG_MASK=asm $(RUNTIME) assembly-load-remap.exe "12.0.0.0" | grep "remapped to" && exit 1 || exit 0
+	MONO_LOG_LEVEL=warning MONO_LOG_MASK=asm $(RUNTIME) assembly-load-remap.exe "14.0.0.0" | grep "remapped to" && exit 1 || exit 0
 
 coreclr-gcstress:
 	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress
