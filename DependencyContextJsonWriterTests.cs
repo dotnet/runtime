@@ -62,10 +62,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                 new KeyValuePair<string, string[]>("win8-x64", new [] { "win7-x64"}),
                             }));
 
-            var runtimes = result.Should().HaveProperty("runtimes")
-                .Subject.Should().BeOfType<JObject>().Subject;
-
-            var rids = runtimes.Should().HaveProperty("Target")
+            var rids = result.Should().HaveProperty("runtimes")
                 .Subject.Should().BeOfType<JObject>().Subject;
 
             rids.Should().HaveProperty("win7-x64")
@@ -159,7 +156,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         {
                                             new RuntimeTarget("win7-x64",
                                                 new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
-                                                new [] { "Banana.Win7-x64.so" }
+                                                new [] { "native\\Banana.Win7-x64.so" }
                                             )
                                         },
                                         new [] {
@@ -184,12 +181,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             runtimeAssembly.Should().HavePropertyValue("rid", "win7-x64");
             runtimeAssembly.Should().HavePropertyValue("assetType", "runtime");
 
-            var nativeLibrary = runtimeTargets.Should().HavePropertyAsObject("Banana.Win7-x64.so").Subject;
+            var nativeLibrary = runtimeTargets.Should().HavePropertyAsObject("native/Banana.Win7-x64.so").Subject;
             nativeLibrary.Should().HavePropertyValue("rid", "win7-x64");
             nativeLibrary.Should().HavePropertyValue("assetType", "native");
 
             var resourceAssemblies = library.Should().HavePropertyAsObject("resources").Subject;
-            var resourceAssembly = resourceAssemblies.Should().HavePropertyAsObject("en-US\\Banana.Resource.dll").Subject;
+            var resourceAssembly = resourceAssemblies.Should().HavePropertyAsObject("en-US/Banana.Resource.dll").Subject;
             resourceAssembly.Should().HavePropertyValue("locale", "en-US");
 
             //libraries
