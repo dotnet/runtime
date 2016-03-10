@@ -1016,6 +1016,12 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 			if (aname->major == vset->major && aname->minor == vset->minor &&
 				aname->build == vset->build && aname->revision == vset->revision)
 				return aname;
+
+			if (compare_versions (vset, aname) < 0) {
+				// requested version is newer than current
+				// runtime version, don't remap
+				return aname;
+			}
 		
 			if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
 				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
