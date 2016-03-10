@@ -1125,7 +1125,7 @@ combinedScenarios.each { scenario ->
                             }
                             
                             if (isGCStressRelatedTesting(scenario)) {
-                                shell('init-tools.sh')
+                                shell('./init-tools.sh')
                             }
                             
                             shell("""${stressModeString}
