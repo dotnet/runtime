@@ -14,7 +14,7 @@ namespace System.Reflection
         public AmbiguousMatchException(string message) { }
         public AmbiguousMatchException(string message, System.Exception inner) { }
     }
-    public abstract partial class Assembly
+    public abstract partial class Assembly : System.Reflection.ICustomAttributeProvider
     {
         internal Assembly() { }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { return default(System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData>); } }
@@ -37,6 +37,19 @@ namespace System.Reflection
         public static System.Reflection.Assembly GetEntryAssembly() { return default(System.Reflection.Assembly); }
         public virtual string Location { get { return default(string); } }
         public override string ToString() { return default(string); }
+        public virtual string CodeBase { get { return default(string); } }
+        public virtual string ImageRuntimeVersion { get { return default(string); } }
+        public object CreateInstance(string typeName) { return default(object); }
+        public object CreateInstance(string typeName, bool ignoreCase) { return default(object); }
+        public static string CreateQualifiedName(string assemblyName, string typeName) { return default(string); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        public virtual Type[] GetExportedTypes() { return default(Type[]); }
+        public virtual AssemblyName[] GetReferencedAssemblies() { return default(AssemblyName[]); }
+        public virtual Type GetType(string name, bool throwOnError) { return default(Type); }
+        public virtual Type[] GetTypes() { return default(Type[]); }
+        bool System.Reflection.ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
+
     }
     public enum AssemblyContentType
     {
@@ -86,6 +99,7 @@ namespace System.Reflection
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
         public virtual object Invoke(object[] parameters) { return default(object); }
+        public override MemberTypes MemberType { get { return default(MemberTypes); } }
     }
     public partial class CustomAttributeData
     {
@@ -93,6 +107,11 @@ namespace System.Reflection
         public virtual System.Type AttributeType { get { return default(System.Type); } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeTypedArgument> ConstructorArguments { get { return default(System.Collections.Generic.IList<System.Reflection.CustomAttributeTypedArgument>); } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeNamedArgument> NamedArguments { get { return default(System.Collections.Generic.IList<System.Reflection.CustomAttributeNamedArgument>); } }
+        public virtual ConstructorInfo Constructor { get { return default(ConstructorInfo); } }
+        public static System.Collections.Generic.IList<CustomAttributeData> GetCustomAttributes(Assembly target) { return default(System.Collections.Generic.IList<CustomAttributeData>); }
+        public static System.Collections.Generic.IList<CustomAttributeData> GetCustomAttributes(MemberInfo target) { return default(System.Collections.Generic.IList<CustomAttributeData>); }
+        public static System.Collections.Generic.IList<CustomAttributeData> GetCustomAttributes(Module target) { return default(System.Collections.Generic.IList<CustomAttributeData>); }
+        public static System.Collections.Generic.IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target) { return default(System.Collections.Generic.IList<CustomAttributeData>); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CustomAttributeNamedArgument
@@ -100,12 +119,22 @@ namespace System.Reflection
         public bool IsField { get { return default(bool); } }
         public string MemberName { get { return default(string); } }
         public System.Reflection.CustomAttributeTypedArgument TypedValue { get { return default(System.Reflection.CustomAttributeTypedArgument); } }
+        public static bool operator ==(CustomAttributeNamedArgument left, CustomAttributeNamedArgument right) { return default(bool); }
+        public static bool operator !=(CustomAttributeNamedArgument left, CustomAttributeNamedArgument right) { return default(bool); }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public override string ToString() { return default(string); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct CustomAttributeTypedArgument
     {
         public System.Type ArgumentType { get { return default(System.Type); } }
         public object Value { get { return default(object); } }
+        public static bool operator ==(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) { return default(bool); }
+        public static bool operator !=(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) { return default(bool); }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+        public override string ToString() { return default(string); }
     }
     public abstract partial class EventInfo : System.Reflection.MemberInfo
     {
@@ -113,6 +142,7 @@ namespace System.Reflection
         public virtual System.Reflection.MethodInfo AddMethod { get { return default(System.Reflection.MethodInfo); } }
         public abstract System.Reflection.EventAttributes Attributes { get; }
         public virtual System.Type EventHandlerType { get { return default(System.Type); } }
+        public virtual bool IsMulticast { get { return default(bool); } }
         public bool IsSpecialName { get { return default(bool); } }
         public virtual System.Reflection.MethodInfo RaiseMethod { get { return default(System.Reflection.MethodInfo); } }
         public virtual System.Reflection.MethodInfo RemoveMethod { get { return default(System.Reflection.MethodInfo); } }
@@ -120,6 +150,13 @@ namespace System.Reflection
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
         public virtual void RemoveEventHandler(object target, System.Delegate handler) { }
+        public MethodInfo GetAddMethod() { return default(MethodInfo); }
+        public abstract MethodInfo GetAddMethod(bool nonPublic);
+        public MethodInfo GetRaiseMethod() { return default(MethodInfo); }
+        public abstract MethodInfo GetRaiseMethod(bool nonPublic);
+        public MethodInfo GetRemoveMethod() { return default(MethodInfo); }
+        public abstract MethodInfo GetRemoveMethod(bool nonPublic);
+
     }
     public abstract partial class FieldInfo : System.Reflection.MemberInfo
     {
@@ -140,8 +177,13 @@ namespace System.Reflection
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle) { return default(System.Reflection.FieldInfo); }
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle, System.RuntimeTypeHandle declaringType) { return default(System.Reflection.FieldInfo); }
         public override int GetHashCode() { return default(int); }
+        public virtual Type[] GetOptionalCustomModifiers() { return default(Type[]); }
+        public virtual object GetRawConstantValue() { return default(object); }
+        public virtual Type[] GetRequiredCustomModifiers() { return default(Type[]); }
         public abstract object GetValue(object obj);
+        public override MemberTypes MemberType { get { return default(MemberTypes); } }
         public virtual void SetValue(object obj, object value) { }
+
     }
     public interface ICustomAttributeProvider
     {
@@ -152,6 +194,12 @@ namespace System.Reflection
     public static partial class IntrospectionExtensions
     {
         public static System.Reflection.TypeInfo GetTypeInfo(this System.Type type) { return default(System.Reflection.TypeInfo); }
+    }
+    public partial class InvalidFilterCriteriaException : Exception
+    {
+        public InvalidFilterCriteriaException() { }
+        public InvalidFilterCriteriaException(string message) { }
+        public InvalidFilterCriteriaException(string message, Exception inner) { }
     }
     public partial interface IReflectableType
     {
@@ -173,7 +221,7 @@ namespace System.Reflection
         public virtual System.Reflection.ResourceLocation ResourceLocation { get { return default(System.Reflection.ResourceLocation); } }
     }
     public delegate bool MemberFilter(MemberInfo m, object filterCriteria);
-    public abstract partial class MemberInfo : ICustomAttributeProvider
+    public abstract partial class MemberInfo : System.Reflection.ICustomAttributeProvider
     {
         internal MemberInfo() { }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { return default(System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData>); } }
@@ -183,9 +231,9 @@ namespace System.Reflection
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
         public abstract MemberTypes MemberType { get; }
-        object[] ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
-        object[] ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
-        bool ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        bool System.Reflection.ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
     }
     [Flags]
     public enum MemberTypes
@@ -229,6 +277,7 @@ namespace System.Reflection
         public static System.Reflection.MethodBase GetMethodFromHandle(System.RuntimeMethodHandle handle, System.RuntimeTypeHandle declaringType) { return default(System.Reflection.MethodBase); }
         public abstract System.Reflection.ParameterInfo[] GetParameters();
         public virtual object Invoke(object obj, object[] parameters) { return default(object); }
+        public abstract MethodImplAttributes GetMethodImplementationFlags();
     }
     public abstract partial class MethodInfo : System.Reflection.MethodBase
     {
@@ -244,9 +293,9 @@ namespace System.Reflection
         public override int GetHashCode() { return default(int); }
         public virtual System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { return default(System.Reflection.MethodInfo); }
         public override MemberTypes MemberType { get { return default(MemberTypes); } }
-        public abstract ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
+        public abstract System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
     }
-    public abstract partial class Module
+    public abstract partial class Module : System.Reflection.ICustomAttributeProvider
     {
         internal Module() { }
         public virtual System.Reflection.Assembly Assembly { get { return default(System.Reflection.Assembly); } }
@@ -257,8 +306,27 @@ namespace System.Reflection
         public override int GetHashCode() { return default(int); }
         public virtual System.Type GetType(string className, bool throwOnError, bool ignoreCase) { return default(System.Type); }
         public override string ToString() { return default(string); }
+        public static readonly TypeFilter FilterTypeName;
+        public static readonly TypeFilter FilterTypeNameIgnoreCase;
+        public virtual Guid ModuleVersionId { get { return default(Guid); } }
+        public virtual string ScopeName { get { return default(string); } }
+        public virtual Type[] FindTypes(TypeFilter filter, object filterCriteria) { return default(Type[]); }
+        public FieldInfo GetField(string name) { return default(FieldInfo); }
+        public virtual FieldInfo GetField(string name, BindingFlags bindingAttr) { return default(FieldInfo); }
+        public FieldInfo[] GetFields() { return default(FieldInfo[]); }
+        public virtual FieldInfo[] GetFields(BindingFlags bindingFlags) { return default(FieldInfo[]); }
+        public MethodInfo GetMethod(string name) { return default(MethodInfo); }
+        public MethodInfo GetMethod(string name, Type[] types) { return default(MethodInfo); }
+        public MethodInfo[] GetMethods() { return default(MethodInfo[]); }
+        public virtual MethodInfo[] GetMethods(BindingFlags bindingFlags) { return default(MethodInfo[]); }
+        public virtual Type GetType(string className) { return default(Type); }
+        public virtual Type GetType(string className, bool ignoreCase) { return default(Type); }
+        public virtual Type[] GetTypes() { return default(Type[]); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        bool System.Reflection.ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
     }
-    public partial class ParameterInfo
+    public partial class ParameterInfo : System.Reflection.ICustomAttributeProvider
     {
         internal ParameterInfo() { }
         public virtual System.Reflection.ParameterAttributes Attributes { get { return default(System.Reflection.ParameterAttributes); } }
@@ -273,6 +341,12 @@ namespace System.Reflection
         public virtual string Name { get { return default(string); } }
         public virtual System.Type ParameterType { get { return default(System.Type); } }
         public virtual int Position { get { return default(int); } }
+        public virtual Type[] GetOptionalCustomModifiers() { return default(Type[]); }
+        public virtual Type[] GetRequiredCustomModifiers() { return default(Type[]); }
+        public virtual object RawDefaultValue { get { return default(object); } }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(bool inherit) { return default(object[]); }
+        object[] System.Reflection.ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit) { return default(object[]); }
+        bool System.Reflection.ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit) { return default(bool); }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct ParameterModifier
@@ -298,6 +372,16 @@ namespace System.Reflection
         public virtual object GetValue(object obj, object[] index) { return default(object); }
         public void SetValue(object obj, object value) { }
         public virtual void SetValue(object obj, object value, object[] index) { }
+        public override MemberTypes MemberType { get { return default(MemberTypes); } }
+        public MethodInfo[] GetAccessors() { return default(MethodInfo[]); }
+        public abstract MethodInfo[] GetAccessors(bool nonPublic);
+        public MethodInfo GetGetMethod() { return default(MethodInfo); }
+        public abstract MethodInfo GetGetMethod(bool nonPublic);
+        public MethodInfo GetSetMethod() { return default(MethodInfo); }
+        public abstract MethodInfo GetSetMethod(bool nonPublic);
+        public virtual Type[] GetOptionalCustomModifiers() { return default(Type[]); }
+        public virtual object GetRawConstantValue() { return default(object); }
+        public virtual Type[] GetRequiredCustomModifiers() { return default(Type[]); }
     }
     public abstract partial class ReflectionContext
     {
@@ -319,6 +403,12 @@ namespace System.Reflection
         ContainedInAnotherAssembly = 2,
         ContainedInManifestFile = 4,
         Embedded = 1,
+    }
+    public sealed partial class TargetException : System.Exception
+    {
+        public TargetException() { }
+        public TargetException(string message) { }
+        public TargetException(string message, Exception inner) { }
     }
     public sealed partial class TargetInvocationException : System.Exception
     {
