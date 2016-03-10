@@ -15467,13 +15467,21 @@ BOOL     Compiler::impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeO
     }
 }
 
-/*****************************************************************************
- */
+//------------------------------------------------------------------------
+// impMakeDiscretionaryInlineObservations: make observations that help
+// determine the profitability of a discretionary inline
+//
+// Arguments:
+//    pInlineInfo -- InlineInfo for the inline, or null for the prejit root
+//    inlineResult -- InlineResult accumulating information about this inline
+//
+// Notes:
+//    If inlining or prejitting the root, this method also makes
+//    various observations about the method that factor into inline
+//    decisions. It sets `compNativeSizeEstimate` as a side effect.
 
-void             Compiler::impCanInlineNative(int           callsiteNativeEstimate,
-                                              int           calleeNativeSizeEstimate,
-                                              InlineInfo*   pInlineInfo,     // NULL for static inlining hint for ngen.
-                                              InlineResult* inlineResult)
+void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
+                                                      InlineResult* inlineResult)
 {
     assert(pInlineInfo != NULL &&  compIsForInlining() ||  // Perform the actual inlining.
            pInlineInfo == NULL && !compIsForInlining()     // Calculate the static inlining hint for ngen.
@@ -15486,8 +15494,6 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     // to the trouble of estimating the native code size. Even if it did, it
     // shouldn't be relying on the result of this method.
     assert(inlineResult->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-
-    JITDUMP("\ncalleeNativeSizeEstimate=%d, callsiteNativeEstimate=%d.\n", calleeNativeSizeEstimate, callsiteNativeEstimate);
 
     // Note if this method is an instance constructor
     if ((info.compFlags & CORINFO_FLG_CONSTRUCTOR) != 0 &&
@@ -15549,53 +15555,6 @@ void             Compiler::impCanInlineNative(int           callsiteNativeEstima
     }
 
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
-
-    // Determine multiplier given the various observations.
-    double multiplier = inlineResult->DetermineMultiplier();
-
-    // Note the various estimates we've obtained.
-    inlineResult->NoteInt(InlineObservation::CALLEE_NATIVE_SIZE_ESTIMATE, calleeNativeSizeEstimate);
-    inlineResult->NoteInt(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE, callsiteNativeEstimate);
-    inlineResult->NoteDouble(InlineObservation::CALLSITE_BENEFIT_MULTIPLIER, multiplier);
-
-    int threshold = (int)(callsiteNativeEstimate * multiplier);
-
-    JITDUMP("\ncalleeNativeSizeEstimate=%d, threshold=%d.\n", calleeNativeSizeEstimate, threshold);
-        
-#define NATIVE_CALL_SIZE_MULTIPLIER (10.0)
-    if (calleeNativeSizeEstimate > threshold)
-    {
-#ifdef DEBUG
-        char * message = (char *)compAllocator->allocateMemory(128);
-        sprintf(message, "Native estimate for function size exceeds threshold %g > %g (multiplier = %g).",
-                calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
-                threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier);
-        //pInlineInfo is null when we're determining the static hint for inlining.
-#else
-        const char * message = "Native estimate for function size exceeds threshold.";
-#endif
-
-        if (pInlineInfo != nullptr) 
-        {
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_EXCEEDS_THRESHOLD);
-        }
-        else 
-        {
-            // Static hint case.... here the "callee" is the function being assessed.
-            inlineResult->NoteFatal(InlineObservation::CALLEE_EXCEEDS_THRESHOLD);
-        }
-    }
-    else 
-    {
-       JITLOG((LL_INFO100000, "Native estimate for function size is within threshold for inlining %g <= %g (multiplier = %g)\n",
-                 calleeNativeSizeEstimate / NATIVE_CALL_SIZE_MULTIPLIER,
-                 threshold / NATIVE_CALL_SIZE_MULTIPLIER, multiplier));
-
-       // Candidate has passed the profitability screen, update candidacy.
-       inlineResult->Note(InlineObservation::CALLSITE_NATIVE_SIZE_ESTIMATE_OK);
-    }
-
-#undef NATIVE_CALL_SIZE_MULTIPLIER
 }
 
 

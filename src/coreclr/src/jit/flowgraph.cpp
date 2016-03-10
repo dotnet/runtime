@@ -4182,6 +4182,7 @@ private:
     unsigned slot1;
     unsigned depth;
 };
+
 //------------------------------------------------------------------------
 // fgFindJumpTargets: walk the IL stream, determining jump target offsets
 //
@@ -4782,46 +4783,39 @@ TOO_FAR:
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-        // If the inline is viable and discretionary, we need to get
-        // an estimate for the callee native code size.
-        if (compInlineResult->IsCandidate()
-            && (compInlineResult->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE))
+        // If the inline is viable and discretionary, do the
+        // profitability screening.
+        if (compInlineResult->IsDiscretionaryCandidate())
         {
-            compNativeSizeEstimate = compInlineResult->DetermineNativeSizeEstimate();
-            noway_assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
-            JITDUMP("\n\ncompNativeSizeEstimate=%d\n", compNativeSizeEstimate);
+            // Make some callsite specific observations that will feed
+            // into the profitability model.
+            impMakeDiscretionaryInlineObservations(impInlineInfo, compInlineResult);
 
-            // If we're inlining, use the size estimate to do further
-            // screening.
-            //
-            // If we're in the prejit-root case we do something
-            // similar as part of the prejit screen over in
-            // compCompileHelper.
+            // None of those observations should have changed the
+            // inline's viability.
+            assert(compInlineResult->IsCandidate());
+
             if (compIsForInlining())
             {
-                // Make an inlining decision based on the estimated native size.
-                int callsiteNativeSizeEstimate =
-                    compInlineResult->DetermineCallsiteNativeSizeEstimate(
-                        &impInlineInfo->inlineCandidateInfo->methInfo);
-
-                impCanInlineNative(callsiteNativeSizeEstimate,
-                                   compNativeSizeEstimate,
-                                   impInlineInfo,
-                                   compInlineResult);
-
+                // Assess profitability...
+                CORINFO_METHOD_INFO* methodInfo = &impInlineInfo->inlineCandidateInfo->methInfo;
+                compInlineResult->DetermineProfitability(methodInfo);
+                
                 if (compInlineResult->IsFailure())
                 {
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\n\nInline expansion aborted because of impCanInlineNative: %s %s\n",
-                               compInlineResult->ResultString(),
-                               compInlineResult->ReasonString());
-                    }
-#endif
-
+                    JITDUMP("\n\nInline expansion aborted, inline not profitable\n");
                     return;
                 }
+                else
+                {
+                    // The inline is still viable.
+                    assert(compInlineResult->IsCandidate());
+                }
+            }
+            else
+            {
+                // Prejit root case. Profitability assessment for this
+                // is done over in compCompileHelper.
             }
         }
     }
