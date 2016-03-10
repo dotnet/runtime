@@ -627,6 +627,7 @@ mono_cpu_count (void)
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
 	 * Instead we use /sys entries to query the actual hardware CPU count.
 	 */
+	int count = 0;
 	char buffer[8] = {'\0'};
 	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
 	/* Format of the /sys entry is a cpulist of indexes which in the case
