@@ -172,7 +172,7 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666f;
 
-static gboolean lazy_sweep = FALSE;
+static gboolean lazy_sweep = TRUE;
 
 enum {
 	SWEEP_STATE_SWEPT,
