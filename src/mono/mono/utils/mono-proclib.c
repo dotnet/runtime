@@ -622,7 +622,6 @@ mono_cpu_count (void)
 	GetSystemInfo (&info);
 	return info.dwNumberOfProcessors;
 #else
-	int count = 0;
 #ifdef PLATFORM_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
@@ -642,6 +641,75 @@ mono_cpu_count (void)
 	if (count > 0)
 		return count + 1;
 #endif
+
+#if defined(HOST_ARM) || defined (HOST_ARM64)
+
+/*
+ * Recap from Alexander Köplinger <alex.koeplinger@outlook.com>:
+ *
+ * When we merged the change from PR #2722, we started seeing random failures on ARM in
+ * the MonoTests.System.Threading.ThreadPoolTests.SetAndGetMaxThreads and
+ * MonoTests.System.Threading.ManualResetEventSlimTests.Constructor_Defaults tests. Both
+ * of those tests are dealing with Environment.ProcessorCount to verify some implementation
+ * details.
+ *
+ * It turns out that on the Jetson TK1 board we use on public Jenkins and on ARM kernels
+ * in general, the value returned by sched_getaffinity (or _SC_NPROCESSORS_ONLN) doesn't
+ * contain CPUs/cores that are powered off for power saving reasons. This is contrary to
+ * what happens on x86, where even cores in deep-sleep state are returned [1], [2]. This
+ * means that we would get a processor count of 1 at one point in time and a higher value
+ * when load increases later on as the system wakes CPUs.
+ *
+ * Various runtime pieces like the threadpool and also user code however relies on the
+ * value returned by Environment.ProcessorCount e.g. for deciding how many parallel tasks
+ * to start, thereby limiting the performance when that code thinks we only have one CPU.
+ *
+ * Talking to a few people, this was the reason why we changed to _SC_NPROCESSORS_CONF in
+ * mono#1688 and why we added a special case for Android in mono@de3addc to get the "real"
+ * number of processors in the system.
+ *
+ * Because of those issues Android/Dalvik also switched from _ONLN to _SC_NPROCESSORS_CONF
+ * for the Java API Runtime.availableProcessors() too [3], citing:
+ * > Traditionally this returned the number currently online, but many mobile devices are
+ * able to take unused cores offline to save power, so releases newer than Android 4.2 (Jelly
+ * Bean) return the maximum number of cores that could be made available if there were no
+ * power or heat constraints.
+ *
+ * The problem with sticking to _SC_NPROCESSORS_CONF however is that it breaks down in
+ * constrained environments like Docker or with an explicit CPU affinity set by the Linux
+ * `taskset` command, They'd get a higher CPU count than can be used, start more threads etc.
+ * which results in unnecessary context switches and overloaded systems. That's why we need
+ * to respect sched_getaffinity.
+ *
+ * So while in an ideal world we would be able to rely on sched_getaffinity/_SC_NPROCESSORS_ONLN
+ * to return the number of theoretically available CPUs regardless of power saving measures
+ * everywhere, we can't do this on ARM.
+ *
+ * I think the pragmatic solution is the following:
+ * * use sched_getaffinity (+ fallback to _SC_NPROCESSORS_ONLN in case of error) on x86. This
+ * ensures we're inline with what OpenJDK [4] and CoreCLR [5] do
+ * * use _SC_NPROCESSORS_CONF exclusively on ARM (I think we could eventually even get rid of
+ * the PLATFORM_ANDROID special case)
+ *
+ * Helpful links:
+ *
+ * [1] https://sourceware.org/ml/libc-alpha/2013-07/msg00383.html
+ * [2] https://lists.01.org/pipermail/powertop/2012-September/000433.html
+ * [3] https://android.googlesource.com/platform/libcore/+/750dc634e56c58d1d04f6a138734ac2b772900b5%5E1..750dc634e56c58d1d04f6a138734ac2b772900b5/
+ * [4] https://bugs.openjdk.java.net/browse/JDK-6515172
+ * [5] https://github.com/dotnet/coreclr/blob/7058273693db2555f127ce16e6b0c5b40fb04867/src/pal/src/misc/sysinfo.cpp#L148
+ */
+
+#ifdef _SC_NPROCESSORS_CONF
+	{
+		int count = sysconf (_SC_NPROCESSORS_CONF);
+		if (count > 0)
+			return count;
+	}
+#endif
+
+#else
+
 #ifdef HAVE_SCHED_GETAFFINITY
 	{
 		cpu_set_t set;
@@ -649,13 +717,19 @@ mono_cpu_count (void)
 			return CPU_COUNT (&set);
 	}
 #endif
-#ifdef _SC_NPROCESSORS_CONF
-	count = sysconf (_SC_NPROCESSORS_CONF);
-	if (count > 0)
-		return count;
+#ifdef _SC_NPROCESSORS_ONLN
+	{
+		int count = sysconf (_SC_NPROCESSORS_ONLN);
+		if (count > 0)
+			return count;
+	}
 #endif
+
+#endif /* defined(HOST_ARM) || defined (HOST_ARM64) */
+
 #ifdef USE_SYSCTL
 	{
+		int count;
 		int mib [2];
 		size_t len = sizeof (int);
 		mib [0] = CTL_HW;
@@ -664,7 +738,7 @@ mono_cpu_count (void)
 			return count;
 	}
 #endif
-#endif
+#endif /* HOST_WIN32 */
 	/* FIXME: warn */
 	return 1;
 }

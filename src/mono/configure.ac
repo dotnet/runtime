@@ -3100,6 +3100,45 @@ SPARC64)
 	;;
 esac
 
+case "$HOST" in
+X86)
+	AC_DEFINE(HOST_X86, 1, [...])
+	;;
+AMD64)
+	AC_DEFINE(HOST_AMD64, 1, [...])
+	;;
+ARM)
+	AC_DEFINE(HOST_ARM, 1, [...])
+	;;
+ARM64)
+	AC_DEFINE(HOST_ARM64, 1, [...])
+	;;
+POWERPC)
+	AC_DEFINE(HOST_POWERPC, 1, [...])
+	;;
+POWERPC64)
+	AC_DEFINE(HOST_POWERPC, 1, [...])
+	AC_DEFINE(HOST_POWERPC64, 1, [...])
+	;;
+S390X)
+	AC_DEFINE(HOST_S390X, 1, [...])
+	;;
+MIPS)
+	AC_DEFINE(HOST_MIPS, 1, [...])
+	;;
+IA64)
+	AC_DEFINE(HOST_IA64, 1, [...])
+	;;
+SPARC)
+	AC_DEFINE(HOST_SPARC, 1, [...])
+	;;
+SPARC64)
+	AC_DEFINE(HOST_SPARC64, 1, [...])
+	;;
+esac
+
+
+
 dnl *************
 dnl *** VTUNE ***
 dnl *************
