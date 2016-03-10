@@ -2591,21 +2591,23 @@ copy_remote_class_key (MonoDomain *domain, gpointer *key)
  * mono_remote_class:
  * @domain: the application domain
  * @class_name: name of the remote class
+ * @error: set on error
  *
  * Creates and initializes a MonoRemoteClass object for a remote type. 
  *
- * Can raise an exception on failure. 
+ * On failure returns NULL and sets @error
  */
 MonoRemoteClass*
-mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class)
+mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
 	MonoRemoteClass *rc;
 	gpointer* key, *mp_key;
 	char *name;
 	
+	mono_error_init (error);
+
 	key = create_remote_class_key (NULL, proxy_class);
 	
 	mono_domain_lock (domain);
@@ -2617,11 +2619,11 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 		return rc;
 	}
 
-	name = mono_string_to_utf8_mp (domain->mp, class_name, &error);
-	if (!mono_error_ok (&error)) {
+	name = mono_string_to_utf8_mp (domain->mp, class_name, error);
+	if (!is_ok (error)) {
 		g_free (key);
 		mono_domain_unlock (domain);
-		mono_error_raise_exception (&error);
+		return NULL;
 	}
 
 	mp_key = copy_remote_class_key (domain, key);
