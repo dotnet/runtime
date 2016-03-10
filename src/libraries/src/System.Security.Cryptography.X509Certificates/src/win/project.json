@@ -25,5 +25,9 @@
         "System.Security.Cryptography.Csp": "4.0.0-rc3-23908"
       }
     }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }

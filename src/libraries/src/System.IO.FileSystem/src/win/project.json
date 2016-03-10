@@ -17,13 +17,13 @@
         "System.Text.Encoding": "4.0.10",
         "System.Text.Encoding.Extensions": "4.0.10",
         "System.Threading": "4.0.10",
+        "System.Threading.Overlapped": "4.0.0",
         "System.Threading.Tasks": "4.0.10"
       }
-    },
-    "net46": {
-      "dependencies": {
-        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
-      }
     }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }
