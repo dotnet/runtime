@@ -373,9 +373,10 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 					mparams[i] = *((gpointer *)params [i]);
 				} else {
 					/* runtime_invoke expects a boxed instance */
-					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i])))
-						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass);
-					else
+					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
+						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, &error);
+						mono_error_raise_exception (&error); /* FIXME don't raise here */
+					} else
 						mparams[i] = params [i];
 				}
 			} else {

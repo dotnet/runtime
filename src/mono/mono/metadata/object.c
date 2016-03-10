@@ -3506,7 +3506,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	klass = mono_class_from_mono_type (type);
 
 	if (mono_class_is_nullable (klass))
-		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass);
+		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass, error);
 
 	o = mono_object_new_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
@@ -3734,17 +3734,17 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
  * mono_nullable_box:
  * @buf: The buffer representing the data to be boxed
  * @klass: the type to box it as.
+ * @error: set on oerr
  *
  * Creates a boxed vtype or NULL from the Nullable structure pointed to by
- * @buf.
+ * @buf.  On failure returns NULL and sets @error
  */
 MonoObject*
-mono_nullable_box (guint8 *buf, MonoClass *klass)
+mono_nullable_box (guint8 *buf, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
-	
+	mono_error_init (error);
 	MonoClass *param_class = klass->cast_class;
 
 	mono_class_setup_fields_locking (klass);
@@ -3754,8 +3754,8 @@ mono_nullable_box (guint8 *buf, MonoClass *klass)
 	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
 
 	if (*(guint8*)(buf + klass->fields [1].offset - sizeof (MonoObject))) {
-		MonoObject *o = mono_object_new_checked (mono_domain_get (), param_class, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoObject *o = mono_object_new_checked (mono_domain_get (), param_class, error);
+		return_val_if_nok (error, NULL);
 		if (param_class->has_references)
 			mono_gc_wbarrier_value_copy (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), 1, param_class);
 		else
@@ -5833,7 +5833,7 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 
 	g_assert (klass->valuetype);
 	if (mono_class_is_nullable (klass))
-		return mono_nullable_box ((guint8 *)value, klass);
+		return mono_nullable_box ((guint8 *)value, klass, error);
 
 	vtable = mono_class_vtable (domain, klass);
 	if (!vtable)
