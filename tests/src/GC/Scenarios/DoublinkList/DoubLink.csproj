@@ -32,8 +32,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="project.json" />
+    <None Include="$(GCPackagesConfigFileDirectory)extra\project.json" />
   </ItemGroup>
+  <PropertyGroup>
+    <ProjectJson>$(GCPackagesConfigFileDirectory)extra\project.json</ProjectJson>
+    <ProjectLockJson>$(GCPackagesConfigFileDirectory)extra\project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>

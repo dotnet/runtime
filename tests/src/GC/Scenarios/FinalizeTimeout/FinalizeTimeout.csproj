@@ -18,7 +18,11 @@
     <Compile Include="FinalizeTimeout.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <None Include="$(GCPackagesConfigFileDirectory)minimal\project.json" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <PropertyGroup>
+    <ProjectJson>$(GCPackagesConfigFileDirectory)minimal\project.json</ProjectJson>
+    <ProjectLockJson>$(GCPackagesConfigFileDirectory)minimal\project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
