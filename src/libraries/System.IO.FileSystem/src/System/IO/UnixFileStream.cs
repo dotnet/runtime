@@ -115,7 +115,7 @@ namespace System.IO
 
             // If the file gets created a new, we'll select the permissions for it.  Most utilities by default use 666 (read and 
             // write for all). However, on Windows it's possible to write out a file and then execute it.  To maintain that similarity, 
-            // we use 766, so that in additoin the user has execute privileges. No matter what we choose, it'll be subject to the umask 
+            // we use 766, so that in addition the user has execute privileges. No matter what we choose, it'll be subject to the umask 
             // applied by the system, such that the actual permissions will typically be less than what we select here.
             const Interop.Sys.Permissions openPermissions =
                 Interop.Sys.Permissions.S_IRWXU |
