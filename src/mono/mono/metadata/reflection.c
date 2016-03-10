@@ -7773,7 +7773,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	MonoError error;
 	MonoReflectionMethodBody *result = mono_method_body_get_object_checked (domain, method, &error);
-	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
+	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
 	return result;
 }
 
@@ -7802,7 +7802,7 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 
 	/* for compatibility with .net */
 	if (method_is_dynamic (method)) {
-		mono_error_set_exception_instance (error, mono_get_exception_invalid_operation (NULL));
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
 		return NULL;
 	}
 
@@ -7842,7 +7842,8 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 		local_var_sig_token = 0; //FIXME
 
 	ret = (MonoReflectionMethodBody*)mono_object_new_checked (domain, mono_class_get_method_body_class (), error);
-	return_val_if_nok (error, NULL);
+	if (!is_ok (error))
+		goto fail;
 
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
@@ -7854,10 +7855,12 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 	MONO_OBJECT_SETREF (ret, locals, mono_array_new_cached (domain, mono_class_get_local_variable_info_class (), header->num_locals));
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new_checked (domain, mono_class_get_local_variable_info_class (), error);
-		return_val_if_nok (error, NULL);
+		if (!is_ok (error))
+			goto fail;
 
 		rt = mono_type_get_object_checked (domain, header->locals [i], error);
-		return_val_if_nok (error, NULL);
+		if (!is_ok (error))
+			goto fail;
 
 		MONO_OBJECT_SETREF (info, local_type, rt);
 
@@ -7870,7 +7873,8 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 	MONO_OBJECT_SETREF (ret, clauses, mono_array_new_cached (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses));
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new_checked (domain, mono_class_get_exception_handling_clause_class (), error);
-		return_val_if_nok (error, NULL);
+		if (!is_ok (error))
+			goto fail;
 		MonoExceptionClause *clause = &header->clauses [i];
 
 		info->flags = clause->flags;
@@ -7882,7 +7886,8 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 			info->filter_offset = clause->data.filter_offset;
 		else if (clause->data.catch_class) {
 			rt = mono_type_get_object_checked (mono_domain_get (), &clause->data.catch_class->byval_arg, error);
-			return_val_if_nok (error, NULL);
+			if (!is_ok (error))
+				goto fail;
 
 			MONO_OBJECT_SETREF (info, catch_type, rt);
 		}
@@ -7893,6 +7898,10 @@ mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, Mon
 	mono_metadata_free_mh (header);
 	CACHE_OBJECT (MonoReflectionMethodBody *, method, ret, NULL);
 	return ret;
+
+fail:
+	mono_metadata_free_mh (header);
+	return NULL;
 }
 
 /**
