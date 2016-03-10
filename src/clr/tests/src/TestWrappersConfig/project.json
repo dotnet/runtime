@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "xunit": "2.1.0",
+    "xunit.assert": "2.1.0",
+    "xunit.core": "2.1.0"
+  },
+  "frameworks": {
+    "net45": {
+      "imports": "portable-net45+win8"
+    }
+  }
+}
