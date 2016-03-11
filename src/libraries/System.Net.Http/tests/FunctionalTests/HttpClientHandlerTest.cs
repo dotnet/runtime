@@ -953,7 +953,10 @@ namespace System.Net.Http.Functional.Tests
         public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds)
         {
             int port;
-            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(out port, requireAuth: creds != null && creds != CredentialCache.DefaultCredentials);
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: creds != null && creds != CredentialCache.DefaultCredentials,
+                expectCreds: true);
             Uri proxyUrl = new Uri($"http://localhost:{port}");
 
             using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
@@ -989,6 +992,26 @@ namespace System.Net.Http.Functional.Tests
                     null);
             }
         }
+
+        [Fact]
+        public void Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
+        {
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: true,
+                expectCreds: false);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null) })
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> responseTask = client.GetAsync(HttpTestServers.RemoteEchoServer);
+                Task.WaitAll(proxyTask, responseTask);
+
+                Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
+            }
+        }        
 
         private sealed class UseSpecifiedUriWebProxy : IWebProxy
         {
