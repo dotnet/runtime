@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal ReferenceAssemblyPathResolver(IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
             : this(fileSystem,
-                GetDefaultReferenceAssembliesPath(runtimeEnvironment, environment),
+                GetDefaultReferenceAssembliesPath(runtimeEnvironment, fileSystem, environment),
                 GetFallbackSearchPaths(fileSystem, runtimeEnvironment, environment))
         {
         }
@@ -101,11 +101,10 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             return new[] { net20Dir };
         }
 
-        internal static string GetDefaultReferenceAssembliesPath(IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
+        internal static string GetDefaultReferenceAssembliesPath(IRuntimeEnvironment runtimeEnvironment, IFileSystem fileSystem, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            var referenceAssembliesPath = environment.GetEnvironmentVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH");
-
+            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment, fileSystem, runtimeEnvironment); 
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;
@@ -138,6 +137,5 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 programFiles,
                 "Reference Assemblies", "Microsoft", "Framework");
         }
-
     }
 }
