@@ -424,5 +424,8 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
              <Issue>3392</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\exceptions\regressions\Dev11\147911\*">
+             <Issue>3651</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
