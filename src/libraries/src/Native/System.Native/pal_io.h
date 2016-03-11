@@ -679,3 +679,10 @@ extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathNam
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
 extern "C" int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
+
+/**
+* Expands all symbolic links and expands all paths to return an absolute path
+*
+* Returns the result absolute path on success or null on error with errno set appropriately.
+*/
+extern "C" char* SystemNative_RealPath(const char* path);
