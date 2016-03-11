@@ -104,8 +104,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         internal static string GetDefaultReferenceAssembliesPath(IRuntimeEnvironment runtimeEnvironment, IEnvironment environment)
         {
             // Allow setting the reference assemblies path via an environment variable
-            var referenceAssembliesPath = environment.GetEnvironmentVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH");
-
+            var referenceAssembliesPath = DotNetReferenceAssembliesPathResolver.Resolve(environment); 
             if (!string.IsNullOrEmpty(referenceAssembliesPath))
             {
                 return referenceAssembliesPath;
@@ -138,6 +137,5 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 programFiles,
                 "Reference Assemblies", "Microsoft", "Framework");
         }
-
     }
 }
