@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
                 return;
             }
             libraryObject.Add(new JProperty(DependencyContextStrings.CompileTimeAssembliesKey,
-                 WriteAssemblies(compilationAssemblies))
+                 WriteAssetList(compilationAssemblies))
              );
         }
 
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.DependencyModel
                 return;
             }
             libraryObject.Add(new JProperty(DependencyContextStrings.RuntimeAssembliesKey,
-                       WriteAssemblies(runtimeAssemblies.Select(a => a.Path)))
+                       WriteAssetList(runtimeAssemblies.Select(a => a.Path)))
                    );
         }
 
@@ -197,6 +197,12 @@ namespace Microsoft.Extensions.DependencyModel
                 AddDependencies(libraryObject, runtimeLibrary.Dependencies);
                 AddRuntimeAssemblies(libraryObject, runtimeLibrary.Assemblies);
                 AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
+
+                if (runtimeLibrary.NativeLibraries.Any())
+                {
+                    libraryObject.Add(DependencyContextStrings.NativeLibrariesKey, WriteAssetList(runtimeLibrary.NativeLibraries));
+                }
+
                 return libraryObject;
             }
 
@@ -213,7 +219,6 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WritePortableTargetLibrary(RuntimeLibrary runtimeLibrary, CompilationLibrary compilationLibrary)
         {
-
             var libraryObject = new JObject();
 
             var dependencies = new HashSet<Dependency>();
@@ -229,6 +234,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
                 AddResourceAssemblies(libraryObject, runtimeLibrary.ResourceAssemblies);
                 AddRuntimeAssemblies(libraryObject, runtimeLibrary.Assemblies);
+                libraryObject.Add(DependencyContextStrings.NativeLibrariesKey, WriteAssetList(runtimeLibrary.NativeLibraries));
 
                 dependencies.UnionWith(runtimeLibrary.Dependencies);
             }
@@ -272,9 +278,9 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        private JObject WriteAssemblies(IEnumerable<string> assemblies)
+        private JObject WriteAssetList(IEnumerable<string> assetPaths)
         {
-            return new JObject(assemblies.Select(assembly => new JProperty(NormalizePath(assembly), new JObject())));
+            return new JObject(assetPaths.Select(assembly => new JProperty(NormalizePath(assembly), new JObject())));
         }
 
         private JObject WriteLibraries(DependencyContext context)

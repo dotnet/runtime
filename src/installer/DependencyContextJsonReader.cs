@@ -169,9 +169,11 @@ namespace Microsoft.Extensions.DependencyModel
                         ));
                 }
 
-                var assemblies = ReadAssemblies(libraryObject, DependencyContextStrings.RuntimeAssembliesKey)
+                var assemblies = ReadAssetList(libraryObject, DependencyContextStrings.RuntimeAssembliesKey)
                     .Select(RuntimeAssembly.Create)
                     .ToArray();
+
+                var nativeLibraries = ReadAssetList(libraryObject, DependencyContextStrings.NativeLibrariesKey);
 
                 var resourceAssemblies = ReadResourceAssemblies((JObject)libraryObject[DependencyContextStrings.ResourceAssembliesPropertyName]);
 
@@ -181,6 +183,7 @@ namespace Microsoft.Extensions.DependencyModel
                     version: version,
                     hash: stub.Hash,
                     assemblies: assemblies,
+                    nativeLibraries: nativeLibraries,
                     resourceAssemblies: resourceAssemblies,
                     subTargets: runtimeTargets.ToArray(),
                     dependencies: dependencies,
@@ -188,7 +191,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
             else
             {
-                var assemblies = ReadAssemblies(libraryObject, DependencyContextStrings.CompileTimeAssembliesKey);
+                var assemblies = ReadAssetList(libraryObject, DependencyContextStrings.CompileTimeAssembliesKey);
                 return new CompilationLibrary(stub.Type, name, version, stub.Hash, assemblies, dependencies, stub.Serviceable);
             }
         }
@@ -226,7 +229,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        private static string[] ReadAssemblies(JObject libraryObject, string name)
+        private static string[] ReadAssetList(JObject libraryObject, string name)
         {
             var assembliesObject = (JObject) libraryObject[name];
 
