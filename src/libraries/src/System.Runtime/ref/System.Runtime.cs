@@ -28,6 +28,7 @@ namespace System
     public static partial class Activator
     {
         public static object CreateInstance(System.Type type) { return default(object); }
+        public static object CreateInstance(System.Type type, System.Boolean nonPublic) { return default(object); }
         public static object CreateInstance(System.Type type, params object[] args) { return default(object); }
         public static T CreateInstance<T>() { return default(T); }
     }
