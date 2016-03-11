@@ -7502,6 +7502,10 @@ CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     // result if sign-bit of srcType is set.
     if (srcType == TYP_ULONG)
     {
+        // The instruction sequence below is less accurate than what clang
+        // and gcc generate. However, we keep the current sequence for backward compatiblity.
+        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
+        // should be also updated for consistent conversion result.
         assert(dstType == TYP_DOUBLE);
         assert(!op1->isContained());
 
