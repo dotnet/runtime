@@ -599,7 +599,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_TYPE_LOAD:
-		if (error->type_name && error->assembly_name) {
+		if ((error->type_name && error->assembly_name) || error->exn.klass) {
 			type_name = get_type_name_as_mono_string (error, domain, error_out);
 			if (!mono_error_ok (error_out))
 				break;
