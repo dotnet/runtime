@@ -178,7 +178,6 @@ GC/LargeMemory/API/gc/collect/collect.sh
 GC/LargeMemory/API/gc/getgeneration/getgeneration.sh
 GC/Scenarios/DoublinkList/doublinknoleak/doublinknoleak.sh
 GC/Scenarios/BaseFinal/basefinal/basefinal.sh
-GC/Coverage/concurrentspin2/concurrentspin2.sh
 GC/Coverage/smalloom/smalloom.sh
 GC/Coverage/271010/271010.sh
 GC/Features/BackgroundGC/concurrentspin2/concurrentspin2.sh
@@ -194,6 +193,5 @@ GC/Features/SustainedLowLatency/sustainedlowlatency_race_reverse/sustainedlowlat
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Features/SustainedLowLatency/sustainedlowlatency_race/sustainedlowlatency_race.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
-
 JIT/Regression/CLR-x86-EJIT/V1-M09.5-PDC/b14426/b14426/b14426.sh
 JIT/Performance/CodeQuality/BenchmarksGame/pidigits/pi-digits/pi-digits.sh
