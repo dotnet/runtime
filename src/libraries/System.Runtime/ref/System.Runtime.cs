@@ -28,6 +28,7 @@ namespace System
     public static partial class Activator
     {
         public static object CreateInstance(System.Type type) { return default(object); }
+        public static object CreateInstance(System.Type type, System.Boolean nonPublic) { return default(object); }
         public static object CreateInstance(System.Type type, params object[] args) { return default(object); }
         public static T CreateInstance<T>() { return default(T); }
     }
@@ -1883,6 +1884,7 @@ namespace System
     {
         public static readonly System.Type[] EmptyTypes;
         public static readonly object Missing;
+        public static readonly char Delimiter;
         internal Type() { }
         public abstract string AssemblyQualifiedName { get; }
         public abstract string FullName { get; }
@@ -1906,6 +1908,7 @@ namespace System
         public static System.Type GetType(string typeName) { return default(System.Type); }
         public static System.Type GetType(string typeName, bool throwOnError) { return default(System.Type); }
         public static System.Type GetType(string typeName, bool throwOnError, bool ignoreCase) { return default(System.Type); }
+        public static System.TypeCode GetTypeCode(System.Type type) { return default(System.TypeCode);  }
         public static System.Type GetTypeFromHandle(System.RuntimeTypeHandle handle) { return default(System.Type); }
         public abstract System.Type MakeArrayType();
         public abstract System.Type MakeArrayType(int rank);
