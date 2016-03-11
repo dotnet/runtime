@@ -38,9 +38,9 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
             
             if (os == Platform.Darwin && 
-                fileSystem.Directory.Exists("/Library/Framework/Mono.Framework/Versions/Current/lib/mono/xbuild-frameworks"))
+                fileSystem.Directory.Exists("/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/xbuild-frameworks"))
             {
-                return "/Library/Framework/Mono.Framework/Versions/Current/lib/mono/xbuild-frameworks";
+                return "/Library/Frameworks/Mono.framework/Versions/Current/lib/mono/xbuild-frameworks";
             }
             
             if (fileSystem.Directory.Exists("/usr/local/lib/mono/xbuild-frameworks"))
