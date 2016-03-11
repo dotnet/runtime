@@ -57,7 +57,7 @@ namespace System.Net.Sockets
             return SafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out socket);
         }
 
-        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
@@ -224,8 +224,21 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, int available, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
+            int available;
+            errno = Interop.Sys.GetBytesAvailable(socket, &available);
+            if (errno != Interop.Error.SUCCESS)
+            {
+                receivedFlags = 0;
+                return -1;
+            }
+            if (available == 0)
+            {
+                // Always request at least one byte.
+                available = 1;
+            }
+
             // Pin buffers and set up iovecs.
             int maxBuffers = buffers.Count;
             var handles = new GCHandle[maxBuffers];
@@ -297,7 +310,7 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int ReceiveMessageFrom(SafeCloseSocket socket, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
+        private static unsafe int ReceiveMessageFrom(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
@@ -464,29 +477,15 @@ namespace System.Net.Sockets
         {
             try
             {
-                int available;
-                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-                if (errno != Interop.Error.SUCCESS)
-                {
-                    bytesReceived = 0;
-                    receivedFlags = 0;
-                    errorCode = GetSocketErrorForErrorCode(errno);
-                    return true;
-                }
-                if (available == 0)
-                {
-                    // Always request at least one byte.
-                    available = 1;
-                }
-
+                Interop.Error errno;
                 int received;
                 if (buffer != null)
                 {
-                    received = Receive(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
                 else
                 {
-                    received = Receive(socket, flags, available, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
                 if (received != -1)
@@ -521,23 +520,9 @@ namespace System.Net.Sockets
         {
             try
             {
-                int available;
-                Interop.Error errno = Interop.Sys.GetBytesAvailable(socket, &available);
-                if (errno != Interop.Error.SUCCESS)
-                {
-                    bytesReceived = 0;
-                    receivedFlags = 0;
-                    ipPacketInformation = default(IPPacketInformation);
-                    errorCode = GetSocketErrorForErrorCode(errno);
-                    return true;
-                }
-                if (available == 0)
-                {
-                    // Always request at least one byte.
-                    available = 1;
-                }
+                Interop.Error errno;
 
-                int received = ReceiveMessageFrom(socket, flags, available, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                int received = ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
