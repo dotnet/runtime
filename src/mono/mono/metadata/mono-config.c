@@ -286,7 +286,7 @@ dllmap_start (gpointer user_data,
 					
 					result = (char *)g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_values[i])+1);
 					strncpy (result, attribute_names[i], p-attribute_values[i]);
-					strcat (result, libdir);
+					strcpy (result+(p-attribute_values[i]), libdir);
 					strcat (result, p+strlen("$mono_libdir"));
 					info->target = result;
 				} else 
