@@ -758,7 +758,7 @@ load_failing_tests
 
 if [ -n "$COMPlus_GCStress" ]; then
     scriptPath=$(dirname $0)
-    ${scriptPath}/setup-gcstress.sh --outputDir=$coreOverlayDir
+    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
     if [ $? -ne 0 ] 
     then
         echo 'Failed to download coredistools library'
