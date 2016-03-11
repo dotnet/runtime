@@ -47,6 +47,7 @@ namespace Microsoft.Extensions.DependencyModel
                     version: identity.Item3,
                     hash: identity.Item4,
                     assemblies: packageGroup.Select(l => RuntimeAssembly.Create(l.AssetPath)),
+                    nativeLibraries: Enumerable.Empty<string>(),
                     resourceAssemblies: Enumerable.Empty<ResourceAssembly>(),
                     subTargets: Enumerable.Empty<RuntimeTarget>(),
                     dependencies: Enumerable.Empty<Dependency>(),
