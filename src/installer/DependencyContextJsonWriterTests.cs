@@ -151,6 +151,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "1.2.3",
                                         "HASH",
                                         new [] { RuntimeAssembly.Create("Banana.dll")},
+                                        new [] { "runtimes\\linux\\native\\native.so" },
                                         new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
                                         new []
                                         {
@@ -172,8 +173,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
+
             library.Should().HavePropertyAsObject("runtime")
                 .Subject.Should().HaveProperty("Banana.dll");
+            library.Should().HavePropertyAsObject("native")
+                .Subject.Should().HaveProperty("runtimes/linux/native/native.so");
 
             var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
 
@@ -226,6 +230,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "1.2.3",
                                         "HASH",
                                         new [] { RuntimeAssembly.Create("Banana.dll")},
+                                        new [] { "native.dll" },
                                         new ResourceAssembly[] {},
                                         new []
                                         {
@@ -247,8 +252,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
             var dependencies = library.Should().HavePropertyAsObject("dependencies").Subject;
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
+
             library.Should().HavePropertyAsObject("runtime")
                 .Subject.Should().HaveProperty("Banana.dll");
+            library.Should().HavePropertyAsObject("native")
+                .Subject.Should().HaveProperty("native.dll");
 
             library.Should().HavePropertyAsObject("compile")
               .Subject.Should().HaveProperty("ref/Banana.dll");
@@ -286,6 +294,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "1.2.3",
                                         "HASH",
                                         new [] { RuntimeAssembly.Create("Banana.dll")},
+                                        new [] { "runtimes\\osx\\native\\native.dylib" },
                                         new ResourceAssembly[] {},
                                         new RuntimeTarget[] {},
                                         new [] {
@@ -303,6 +312,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             dependencies.Should().HavePropertyValue("Fruits.Abstract.dll", "2.0.0");
             library.Should().HavePropertyAsObject("runtime")
                 .Subject.Should().HaveProperty("Banana.dll");
+            library.Should().HavePropertyAsObject("native")
+                .Subject.Should().HaveProperty("runtimes/osx/native/native.dylib");
 
             //libraries
             var libraries = result.Should().HavePropertyAsObject("libraries").Subject;
@@ -327,6 +338,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "1.2.3",
                                         "HASH",
                                         new RuntimeAssembly[] { },
+                                        new string[] { },
                                         new []
                                         {
                                             new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
@@ -361,6 +373,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "1.2.3",
                                         "HASH",
                                         new RuntimeAssembly[] { },
+                                        new string[] { },
                                         new []
                                         {
                                             new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
