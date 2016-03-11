@@ -122,6 +122,15 @@ namespace System.Net.Http
                     
                     state.LastStatusCode = statusCode;
 
+                    // If we don't have any proxy credentials to try, then we end up with 407.
+                    ICredentials proxyCreds = state.Proxy == null ?
+                        state.DefaultProxyCredentials :
+                        state.Proxy.Credentials;
+                     if (proxyCreds == null)
+                     {
+                         break;
+                     }
+
                     // Determine authorization scheme to use. We ignore the firstScheme
                     // parameter which is included in the supportedSchemes flags already.
                     // We pass the schemes to ChooseAuthScheme which will pick the scheme
