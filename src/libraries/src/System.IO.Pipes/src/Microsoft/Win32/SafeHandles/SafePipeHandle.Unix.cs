@@ -4,6 +4,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -13,34 +15,64 @@ namespace Microsoft.Win32.SafeHandles
     {
         private const int DefaultInvalidHandle = -1;
 
-        /// <summary>Opens the specified file with the requested flags and mode.</summary>
-        /// <param name="path">The path to the file.</param>
-        /// <param name="flags">The flags with which to open the file.</param>
-        /// <param name="mode">The mode for opening the file.</param>
-        /// <returns>A SafeFileHandle for the opened file.</returns>
-        internal static SafePipeHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
+        // For anonymous pipes, SafePipeHandle.handle is the file descriptor of the pipe, and the 
+        // _named* fields remain null. For named pipes, SafePipeHandle.handle is a copy of the file descriptor 
+        // extracted from the Socket's SafeHandle, and the _named* fields are the socket and its safe handle.
+        // This allows operations related to file descriptors to be performed directly on the SafePipeHandle,
+        // and operations that should go through the Socket to be done via _namedPipeSocket.  We keep the
+        // Socket's SafeHandle alive as long as this SafeHandle is alive.
+
+        private Socket _namedPipeSocket;
+        private SafeHandle _namedPipeSocketHandle;
+
+        internal SafePipeHandle(Socket namedPipeSocket) : base((IntPtr)DefaultInvalidHandle, ownsHandle: true)
         {
-            // Ideally this would be a constrained execution region, but we don't have access to PrepareConstrainedRegions.
-            SafePipeHandle handle = Interop.CheckIo(Interop.Sys.OpenPipe(path, flags, mode));
+            Debug.Assert(namedPipeSocket != null);
+            _namedPipeSocket = namedPipeSocket;
 
-            Debug.Assert(!handle.IsInvalid);
+            // TODO: Issue https://github.com/dotnet/corefx/issues/6807
+            // This is unfortunately the only way of getting at the Socket's file descriptor right now, until #6807 is implemented.
+            _namedPipeSocketHandle = (SafeHandle)typeof(Socket).GetTypeInfo().GetDeclaredProperty("SafeHandle")?.GetValue(namedPipeSocket, null);
 
-            return handle;
+            bool ignored = false;
+            _namedPipeSocketHandle.DangerousAddRef(ref ignored);
+            SetHandle(_namedPipeSocketHandle.DangerousGetHandle());
+        }
+
+        internal Socket NamedPipeSocket => _namedPipeSocket;
+        internal SafeHandle NamedPipeSocketHandle => _namedPipeSocketHandle;
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing); // must be called before trying to Dispose the socket
+            if (disposing && _namedPipeSocket != null)
+            {
+                _namedPipeSocket.Dispose();
+                _namedPipeSocket = null;
+            }
         }
 
         protected override bool ReleaseHandle()
         {
-            // Close the handle. Although close is documented to potentially fail with EINTR, we never want
-            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
-            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
-            Debug.Assert(!this.IsInvalid);
-            return Interop.Sys.Close(handle) == 0;
+            Debug.Assert(!IsInvalid);
+
+            if (_namedPipeSocketHandle != null)
+            {
+                SetHandle(DefaultInvalidHandle);
+                _namedPipeSocketHandle.DangerousRelease();
+                _namedPipeSocketHandle = null;
+                return true;
+            }
+
+            return (long)handle >= 0 ?
+                Interop.Sys.Close(handle) == 0 :
+                true;
         }
 
         public override bool IsInvalid
         {
             [SecurityCritical]
-            get { return (long)handle < 0; }
+            get { return (long)handle < 0 && _namedPipeSocket == null; }
         }
     }
 }

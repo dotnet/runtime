@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Security;
 using System.Threading;
 
@@ -17,30 +19,35 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
-            // timeout and cancellationToken are currently ignored: [ActiveIssue(812, PlatformID.AnyUnix)]
-            // We should figure out if there's a good way to cancel calls to Open, such as
-            // by sending a signal that causes an EINTR, and then in handling the EINTR result
-            // poll the cancellationToken to see if cancellation was requested.
-
+            // timeout and cancellationToken aren't used as Connect will be very fast,
+            // either succeeding immediately if the server is listening or failing
+            // immediately if it isn't.  The only delay will be between the time the server
+            // has called Bind and the time it's subsequently called Accept.
             try
             {
-                // Open the file.  For In or Out, this will block until a client has connected.
-                // Unfortunately for InOut it won't, which is different from the Windows behavior;
-                // on Unix it won't block for InOut until it actually performs a read or write operation.
-                var clientHandle = Microsoft.Win32.SafeHandles.SafePipeHandle.Open(
-                    _normalizedPipePath, 
-                    TranslateFlags(_direction, _pipeOptions, _inheritability),
-                    (int)Interop.Sys.Permissions.S_IRWXU);
+                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
+                var clientHandle = new SafePipeHandle(socket);
+                ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
 
-                // Pipe successfully opened.  Store our client handle.
                 InitializeHandle(clientHandle, isExposed: false, isAsync: (_pipeOptions & PipeOptions.Asynchronous) != 0);
                 State = PipeState.Connected;
                 return true;
             }
-            catch (FileNotFoundException)
+            catch (SocketException e)
             {
-                // The FIFO file doesn't yet exist.
-                return false;
+                switch (e.SocketErrorCode)
+                {
+                    // Retryable errors
+                    case SocketError.AddressAlreadyInUse:
+                    case SocketError.AddressNotAvailable:
+                    case SocketError.ConnectionRefused:
+                        return false;
+
+                    // Non-retryable errors
+                    default:
+                        throw;
+                }
             }
         }
 

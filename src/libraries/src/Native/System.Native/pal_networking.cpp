@@ -29,6 +29,7 @@
 #endif
 #include <unistd.h>
 #include <vector>
+#include <pwd.h>
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -2525,5 +2526,65 @@ extern "C" int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo()
     return 1;
 #else
     return 0;
+#endif
+}
+
+static char* GetNameFromUid(uid_t uid)
+{
+    size_t bufferLength = 512;
+    while (true)
+    {
+        char *buffer = reinterpret_cast<char*>(malloc(bufferLength));
+        if (buffer == nullptr)
+            return nullptr;
+
+        struct passwd pw;
+        struct passwd* result;
+        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
+        {
+            if (result == nullptr)
+            {
+                errno = ENOENT;
+                free(buffer);
+                return nullptr;
+            }
+            else
+            {
+                char* name = strdup(pw.pw_name);
+                free(buffer);
+                return name;
+            }
+        }
+
+        free(buffer);
+        if (errno == ERANGE)
+        {
+            bufferLength *= 2;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+}
+
+extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
+{
+    int fd = ToFileDescriptor(socket);
+#ifdef SO_PEERCRED
+    struct ucred creds;
+    socklen_t len = sizeof(creds);
+    return getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0 ?
+        GetNameFromUid(creds.uid) :
+        nullptr;
+#elif HAVE_GETPEEREID
+    uid_t euid, egid;
+    return getpeereid(fd, &euid, &egid) == 0 ?
+        GetNameFromUid(euid) :
+        nullptr;
+#else
+    (void)fd;
+    errno = ENOTSUP;
+    return nullptr;
 #endif
 }

@@ -413,3 +413,5 @@ extern "C" Error SystemNative_TryChangeSocketEventRegistration(
 extern "C" Error SystemNative_WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count);
 
 extern "C" int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo();
+
+extern "C" char* SystemNative_GetPeerUserName(intptr_t socket);
