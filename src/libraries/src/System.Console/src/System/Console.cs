@@ -189,6 +189,10 @@ namespace System
             set { ConsolePal.CursorSize = value; }
         }
 
+        public static bool NumberLock { get { return ConsolePal.NumberLock; } }
+
+        public static bool CapsLock { get { return ConsolePal.CapsLock; } }
+
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }

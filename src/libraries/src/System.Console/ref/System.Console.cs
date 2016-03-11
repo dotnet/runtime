@@ -15,6 +15,7 @@ namespace System
         public static void Beep(int frequency, int duration) { }
         public static int BufferHeight { get { return default(int); } set { } }
         public static int BufferWidth { get { return default(int); } set { } }
+        public static bool CapsLock { get { return default(bool); } }
         public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
         public static void Clear() { }
         public static int CursorLeft { get { return default(int); } set { } }
@@ -33,6 +34,7 @@ namespace System
         public static int LargestWindowHeight { get { return default(int); }}
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop) { }
         public static void MoveBufferArea(int sourceLeft, int sourceTop, int sourceWidth, int sourceHeight, int targetLeft, int targetTop, char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor) { }
+        public static bool NumberLock { get { return default(bool); }}
         public static System.IO.Stream OpenStandardError() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardInput() { return default(System.IO.Stream); }
         public static System.IO.Stream OpenStandardOutput() { return default(System.IO.Stream); }

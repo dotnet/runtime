@@ -151,6 +151,10 @@ namespace System
             }
         }
 
+        public static bool NumberLock { get { throw new PlatformNotSupportedException(); } }
+
+        public static bool CapsLock { get { throw new PlatformNotSupportedException(); } }
+
         public static int CursorSize
         {
             get { return 100; }
