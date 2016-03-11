@@ -8,8 +8,7 @@
     <ProjectReference Include="..\ref\System.Xml.XmlSerializer.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="any\System.Xml.XmlSerializer.pkgproj" />
-    <ProjectReference Include="aot\System.Xml.XmlSerializer.pkgproj" />
+    <ProjectReference Include="..\src\System.Xml.XmlSerializer.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

@@ -8,13 +8,7 @@
     <ProjectReference Include="..\ref\System.Linq.Expressions.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <!-- not yet needed
-    <ProjectReference Include="..\src\Facade\System.Linq.Expressions.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    -->
-    <ProjectReference Include="any\System.Linq.Expressions.pkgproj" />
-    <ProjectReference Include="aot\System.Linq.Expressions.pkgproj" />
+    <ProjectReference Include="..\src\System.Linq.Expressions.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />

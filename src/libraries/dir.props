@@ -203,7 +203,10 @@
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
 
+    <BuildAllOSGroups Condition="'$(BuildAllOSGroups)' == ''">true</BuildAllOSGroups>
+
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Unix'))">Unix</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
@@ -257,6 +260,12 @@
         <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
+    <When Condition="'$(OSGroup)'=='Unix'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(OSGroup)'=='Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
@@ -293,7 +302,7 @@
   </Choose>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'NetBSD' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'Unix' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'NetBSD' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
   </PropertyGroup>
 
   <!-- Setup properties per TargetGroup -->

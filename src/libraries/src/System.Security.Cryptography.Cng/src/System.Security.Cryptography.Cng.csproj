@@ -13,6 +13,7 @@
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.4</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == ''">win</PackageTargetRuntime>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

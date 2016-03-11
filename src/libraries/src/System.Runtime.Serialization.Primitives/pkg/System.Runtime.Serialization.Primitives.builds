@@ -3,9 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Primitives.pkgproj" />
-    <Project Include="any\System.Runtime.Serialization.Primitives.pkgproj" />
-    <Project Include="aot\System.Runtime.Serialization.Primitives.pkgproj" />
-
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

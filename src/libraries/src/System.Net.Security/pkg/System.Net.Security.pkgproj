@@ -5,11 +5,7 @@
     <ProjectReference Include="..\ref\System.Net.Security.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.Security.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)win\System.Net.Security.pkgproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)unix\System.Net.Security.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.Security.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -18,6 +14,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

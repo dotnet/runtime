@@ -15,14 +15,12 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.0</PackageTargetFramework>
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot'">true</SkipCommonResourcesIncludes>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Windows_NT'">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Unix'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'"/>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'"/>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50aot_Debug|AnyCPU'"/>
