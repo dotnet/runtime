@@ -42,10 +42,12 @@ typedef enum {
 } MonoResolveTokenError;
 
 MONO_API int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve);
 MONO_API void          mono_reflection_free_type_info (MonoTypeNameParse *info);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
+MONO_RT_EXTERNAL_ONLY
 MONO_API uint32_t      mono_reflection_get_token (MonoObject *obj);
 
 MONO_RT_EXTERNAL_ONLY
@@ -66,6 +68,7 @@ MONO_API MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, M
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionMethodBody* mono_method_body_get_object (MonoDomain *domain, MonoMethod *method);
 
 MONO_API MonoObject *mono_get_dbnull_object (MonoDomain *domain);

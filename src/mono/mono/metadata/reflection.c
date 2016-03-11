@@ -7772,18 +7772,39 @@ MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	MonoError error;
+	MonoReflectionMethodBody *result = mono_method_body_get_object_checked (domain, method, &error);
+	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
+	return result;
+}
+
+/**
+ * mono_method_body_get_object_checked:
+ * @domain: an app domain
+ * @method: a method
+ * @error: set on error
+ *
+ * Return an System.Reflection.MethodBody object representing the
+ * method @method.  On failure, returns NULL and sets @error.
+ */
+MonoReflectionMethodBody*
+mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoError *error)
+{
 	MonoReflectionMethodBody *ret;
 	MonoMethodHeader *header;
 	MonoImage *image;
 	MonoReflectionType *rt;
 	guint32 method_rva, local_var_sig_token;
-    char *ptr;
+	char *ptr;
 	unsigned char format, flags;
 	int i;
 
+	mono_error_init (error);
+
 	/* for compatibility with .net */
-    if (method_is_dynamic (method))
-        mono_raise_exception (mono_get_exception_invalid_operation (NULL));
+	if (method_is_dynamic (method)) {
+		mono_error_set_exception_instance (error, mono_get_exception_invalid_operation (NULL));
+		return NULL;
+	}
 
 	CHECK_OBJECT (MonoReflectionMethodBody *, method, NULL);
 
@@ -7795,8 +7816,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	image = method->klass->image;
-	header = mono_method_get_header_checked (method, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	header = mono_method_get_header_checked (method, error);
+	return_val_if_nok (error, NULL);
 
 	if (!image_is_dynamic (image)) {
 		/* Obtain local vars signature token */
@@ -7820,8 +7841,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	} else
 		local_var_sig_token = 0; //FIXME
 
-	ret = (MonoReflectionMethodBody*)mono_object_new_checked (domain, mono_class_get_method_body_class (), &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	ret = (MonoReflectionMethodBody*)mono_object_new_checked (domain, mono_class_get_method_body_class (), error);
+	return_val_if_nok (error, NULL);
 
 	ret->init_locals = header->init_locals;
 	ret->max_stack = header->max_stack;
@@ -7832,11 +7853,11 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	/* Locals */
 	MONO_OBJECT_SETREF (ret, locals, mono_array_new_cached (domain, mono_class_get_local_variable_info_class (), header->num_locals));
 	for (i = 0; i < header->num_locals; ++i) {
-		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new_checked (domain, mono_class_get_local_variable_info_class (), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new_checked (domain, mono_class_get_local_variable_info_class (), error);
+		return_val_if_nok (error, NULL);
 
-		rt = mono_type_get_object_checked (domain, header->locals [i], &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		rt = mono_type_get_object_checked (domain, header->locals [i], error);
+		return_val_if_nok (error, NULL);
 
 		MONO_OBJECT_SETREF (info, local_type, rt);
 
@@ -7848,8 +7869,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	/* Exceptions */
 	MONO_OBJECT_SETREF (ret, clauses, mono_array_new_cached (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses));
 	for (i = 0; i < header->num_clauses; ++i) {
-		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new_checked (domain, mono_class_get_exception_handling_clause_class (), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoReflectionExceptionHandlingClause *info = (MonoReflectionExceptionHandlingClause*)mono_object_new_checked (domain, mono_class_get_exception_handling_clause_class (), error);
+		return_val_if_nok (error, NULL);
 		MonoExceptionClause *clause = &header->clauses [i];
 
 		info->flags = clause->flags;
@@ -7860,8 +7881,8 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 			info->filter_offset = clause->data.filter_offset;
 		else if (clause->data.catch_class) {
-			rt = mono_type_get_object_checked (mono_domain_get (), &clause->data.catch_class->byval_arg, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			rt = mono_type_get_object_checked (mono_domain_get (), &clause->data.catch_class->byval_arg, error);
+			return_val_if_nok (error, NULL);
 
 			MONO_OBJECT_SETREF (info, catch_type, rt);
 		}
@@ -8589,10 +8610,28 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
 	MonoError error;
-	MonoType *result = mono_reflection_get_type_with_rootimage(image, image, info, ignorecase, type_resolve, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoType *result = mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, &error);
+	mono_error_cleanup (&error);
 	return result;
 }
+
+/**
+ * mono_reflection_get_type_checked:
+ * @image: a metadata context
+ * @info: type description structure
+ * @ignorecase: flag for case-insensitive string compares
+ * @type_resolve: whenever type resolve was already tried
+ * @error: set on error.
+ *
+ * Build a MonoType from the type description in @info. On failure returns NULL and sets @error.
+ *
+ */
+MonoType*
+mono_reflection_get_type_checked (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error) {
+	mono_error_init (error);
+	return mono_reflection_get_type_with_rootimage (image, image, info, ignorecase, type_resolve, error);
+}
+
 
 static MonoType*
 mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
@@ -8779,8 +8818,26 @@ guint32
 mono_reflection_get_token (MonoObject *obj)
 {
 	MonoError error;
+	guint32 result = mono_reflection_get_token_checked (obj, &error);
+	mono_error_assert_ok (&error);
+	return result;
+}
+
+/**
+ * mono_reflection_get_token_checked:
+ * @obj: the object
+ * @error: set on error
+ *
+ *   Return the metadata token of @obj which should be an object
+ * representing a metadata element.  On failure sets @error.
+ */
+guint32
+mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
+{
 	MonoClass *klass;
 	guint32 token = 0;
+
+	mono_error_init (error);
 
 	klass = obj->vtable->klass;
 
@@ -8800,11 +8857,13 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
 	} else if (strcmp (klass->name, "MonoType") == 0) {
-		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)obj, error);
+		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
-		if (!mono_class_init (mc))
-			mono_raise_exception (mono_class_get_exception_for_failure (mc));
+		if (!mono_class_init (mc)) {
+			mono_error_set_exception_instance (error, mono_class_get_exception_for_failure (mc));
+			return 0;
+		}
 
 		token = mc->type_token;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
@@ -8830,7 +8889,7 @@ mono_reflection_get_token (MonoObject *obj)
 
 				g_assert (field_index >= 0 && field_index < dgclass->count_fields);
 				obj = dgclass->field_objects [field_index];
-				return mono_reflection_get_token (obj);
+				return mono_reflection_get_token_checked (obj, error);
 			}
 		}
 		token = mono_class_get_field_token (f->field);
@@ -8855,10 +8914,9 @@ mono_reflection_get_token (MonoObject *obj)
 	} else if (strcmp (klass->name, "Assembly") == 0 || strcmp (klass->name, "MonoAssembly") == 0) {
 		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	} else {
-		gchar *msg = g_strdup_printf ("MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
-		MonoException *ex = mono_get_exception_not_implemented (msg);
-		g_free (msg);
-		mono_raise_exception (ex);
+		mono_error_set_generic_error (error, "System", "NotImplementedException",
+					      "MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
+		return 0;
 	}
 
 	return token;

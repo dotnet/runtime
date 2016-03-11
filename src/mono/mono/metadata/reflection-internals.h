@@ -9,7 +9,14 @@
 #include <mono/utils/mono-error.h>
 
 MonoType*
+mono_reflection_get_type_checked (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve, MonoError *error);
+
+MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error);
+
+guint32
+mono_reflection_get_token_checked (MonoObject *obj, MonoError *error);
+
 
 MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
@@ -67,5 +74,9 @@ mono_module_get_object_checked (MonoDomain *domain, MonoImage *image, MonoError 
 
 MonoReflectionModule*
 mono_module_file_get_object_checked (MonoDomain *domain, MonoImage *image, int table_index, MonoError *error);
+
+MonoReflectionMethodBody*
+mono_method_body_get_object_checked (MonoDomain *domain, MonoMethod *method, MonoError *error);
+
 
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

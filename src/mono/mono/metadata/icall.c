@@ -1364,15 +1364,19 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 
 	if (assembly) {
 		/* When loading from the current assembly, AppDomain.TypeResolve will not be called yet */
-		type = mono_reflection_get_type (assembly->image, info, ignoreCase, &type_resolve);
+		type = mono_reflection_get_type_checked (assembly->image, info, ignoreCase, &type_resolve, error);
+		return_val_if_nok (error, NULL);
 	}
 
-	if (!info->assembly.name && !type) /* try mscorlib */
-		type = mono_reflection_get_type (NULL, info, ignoreCase, &type_resolve);
-
+	if (!info->assembly.name && !type) {
+		/* try mscorlib */
+		type = mono_reflection_get_type_checked (NULL, info, ignoreCase, &type_resolve, error);
+		return_val_if_nok (error, NULL);
+	}
 	if (assembly && !type && type_resolve) {
 		type_resolve = FALSE; /* This will invoke TypeResolve if not done in the first 'if' */
-		type = mono_reflection_get_type (assembly->image, info, ignoreCase, &type_resolve);
+		type = mono_reflection_get_type_checked (assembly->image, info, ignoreCase, &type_resolve, error);
+		return_val_if_nok (error, NULL);
 	}
 
 	if (!type) 
@@ -2473,9 +2477,12 @@ ves_icall_RuntimeTypeHandle_IsComObject (MonoReflectionType *type)
 }
 
 ICALL_EXPORT guint32
-ves_icall_RuntimeTypeHandle_GetMetadataToken (MonoReflectionType *obj)
+ves_icall_reflection_get_token (MonoObject* obj)
 {
-	return mono_reflection_get_token ((MonoObject*)obj);
+	MonoError error;
+	guint32 result = mono_reflection_get_token_checked (obj, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionModule*
@@ -4394,9 +4401,15 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	}
 
 	if (module != NULL) {
-		if (module->image)
-			type = mono_reflection_get_type (module->image, &info, ignoreCase, &type_resolve);
-		else
+		if (module->image) {
+			type = mono_reflection_get_type_checked (module->image, &info, ignoreCase, &type_resolve, &error);
+			if (!is_ok (&error)) {
+				g_free (str);
+				mono_reflection_free_type_info (&info);
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		} else
 			type = NULL;
 	}
 	else
@@ -4409,7 +4422,13 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (abuilder->modules) {
 				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
 					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-					type = mono_reflection_get_type (&mb->dynamic_image->image, &info, ignoreCase, &type_resolve);
+					type = mono_reflection_get_type_checked (&mb->dynamic_image->image, &info, ignoreCase, &type_resolve, &error);
+					if (!is_ok (&error)) {
+						g_free (str);
+						mono_reflection_free_type_info (&info);
+						mono_error_set_pending_exception (&error);
+						return NULL;
+					}
 					if (type)
 						break;
 				}
@@ -4418,14 +4437,27 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (!type && abuilder->loaded_modules) {
 				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
 					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-					type = mono_reflection_get_type (mod->image, &info, ignoreCase, &type_resolve);
+					type = mono_reflection_get_type_checked (mod->image, &info, ignoreCase, &type_resolve, &error);
+					if (!is_ok (&error)) {
+						g_free (str);
+						mono_reflection_free_type_info (&info);
+						mono_error_set_pending_exception (&error);
+						return NULL;
+					}
 					if (type)
 						break;
 				}
 			}
 		}
-		else
-			type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase, &type_resolve);
+		else {
+			type = mono_reflection_get_type_checked (assembly->assembly->image, &info, ignoreCase, &type_resolve, &error);
+			if (!is_ok (&error)) {
+				g_free (str);
+				mono_reflection_free_type_info (&info);
+				mono_error_set_pending_exception (&error);
+				return NULL;
+			}
+		}
 	g_free (str);
 	mono_reflection_free_type_info (&info);
 	if (!type) {
@@ -4465,7 +4497,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 
 	/* g_print ("got it\n"); */
 	ret = mono_type_get_object_checked (mono_object_domain (assembly), type, &error);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 
 	return ret;
 }
@@ -5103,7 +5135,10 @@ ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMeth
 ICALL_EXPORT MonoReflectionMethodBody*
 ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method)
 {
-	return mono_method_body_get_object (mono_domain_get (), method);
+	MonoError error;
+	MonoReflectionMethodBody *result = mono_method_body_get_object_checked (mono_domain_get (), method, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT MonoReflectionAssembly*
