@@ -20,7 +20,7 @@ namespace System.Net.Sockets
         }
 #endif
 
-        private const int NativeErrorToSocketErrorCount = 40;
+        private const int NativeErrorToSocketErrorCount = 41;
         private const int SocketErrorToNativeErrorCount = 40;
 
         // No Interop.Errors are included for the following SocketErrors, as there's no good mapping:
@@ -62,6 +62,7 @@ namespace System.Net.Sockets
             { Interop.Error.ENFILE, SocketError.TooManyOpenSockets },
             { Interop.Error.ENOBUFS, SocketError.NoBufferSpaceAvailable },
             { Interop.Error.ENODATA, SocketError.NoData },
+            { Interop.Error.ENOENT, SocketError.AddressNotAvailable },
             { Interop.Error.ENOPROTOOPT, SocketError.ProtocolOption },
             { Interop.Error.ENOTCONN, SocketError.NotConnected },
             { Interop.Error.ENOTSOCK, SocketError.NotSocket },
