@@ -44,7 +44,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // "anonymous" only reserved on Windows
         public static void ReservedPipeName_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
             const string reservedName = "anonymous";
@@ -68,7 +68,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // can't access SafePipeHandle on Unix until after connection created
         public static void CreateWithNegativeOneServerInstances_DefaultsToMaxServerInstances()
         {
             // When passed -1 as the maxnumberofserverisntances, the NamedPipeServerStream.Windows class
@@ -105,22 +105,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public static void Unix_ServerInstancesOver254_Allowed(PipeDirection direction)
-        {
-            // MaxNumberOfServerInstances has functionality on Unix and as such is not upper bound.
-            new NamedPipeServerStream(GetUniquePipeName(), direction, 255).Dispose();
-            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte).Dispose();
-            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte, PipeOptions.None).Dispose();
-            new NamedPipeServerStream(GetUniquePipeName(), direction, 255, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0).Dispose();
-        }
-
-        [Theory]
-        [InlineData(PipeDirection.In)]
-        [InlineData(PipeDirection.InOut)]
-        [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)]
-        public static void Windows_ServerInstancesOver254_Throws_ArgumentOutOfRangeException(PipeDirection direction)
+        public static void ServerInstancesOver254_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
             Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255));
             Assert.Throws<ArgumentOutOfRangeException>("maxNumberOfServerInstances", () => new NamedPipeServerStream("temp3", direction, 255, PipeTransmissionMode.Byte));
@@ -209,7 +194,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromDisposedServerHandle_Throws_ObjectDisposedException(PipeDirection direction)
         {
             // The pipe is closed when we try to make a new Stream with it
@@ -231,7 +216,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {
             // The pipe is already bound

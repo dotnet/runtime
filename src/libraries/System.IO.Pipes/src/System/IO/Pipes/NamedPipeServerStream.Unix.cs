@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
@@ -43,28 +45,7 @@ namespace System.IO.Pipes
             // NOTE: We don't have a good way to enforce maxNumberOfServerInstances, and don't currently try.
             // It's a Windows-specific concept.
 
-            // Make sure the FIFO exists, but don't open it until WaitForConnection is called.
             _path = GetPipePath(".", pipeName);
-            int result = Interop.Sys.MkFifo(_path, (int)(Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR));
-
-            // The FIFO was successfully created on result == 0 - note that although we create the FIFO here, we don't
-            // ever delete it. If we remove the FIFO we could invalidate other servers that also use it. 
-            // See #2764 for further discussion.
-
-            if (result != 0)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                // FIFO already exists if Error == EEXIST - nothing more to do
-
-                if (errorInfo.Error != Interop.Error.EEXIST)
-                {
-                    // something else; fail
-                    throw Interop.GetExceptionForIoErrno(errorInfo, _path);
-                }
-            }
-
-            // Store the rest of the creation arguments.  They'll be used when we open the connection
-            // in WaitForConnection.
             _direction = direction;
             _options = options;
             _inBufferSize = inBufferSize;
@@ -82,25 +63,76 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
             }
 
-            // Open the file.  For In or Out, this will block until a client has connected.
-            // Unfortunately for InOut it won't, which is different from the Windows behavior;
-            // on Unix it won't block for InOut until it actually performs a read or write operation.
-            var serverHandle = Microsoft.Win32.SafeHandles.SafePipeHandle.Open(
-                _path, 
-                TranslateFlags(_direction, _options, _inheritability), 
-                (int)Interop.Sys.Permissions.S_IRWXU);
+            // Binding to an existing path fails, so we need to remove anything left over at this location.
+            // There's of course a race condition here, where it could be recreated by someone else between this
+            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
+            Interop.Sys.Unlink(_path); // ignore any failures
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            try
+            {
+                socket.Bind(new UnixDomainSocketEndPoint(_path));
+                socket.Listen(1);
 
-            InitializeBufferSize(serverHandle, _outBufferSize); // there's only one capacity on Linux; just use the out buffer size
-            InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
-            State = PipeState.Connected;
+                Socket acceptedSocket = socket.Accept();
+                SafePipeHandle serverHandle = new SafePipeHandle(acceptedSocket);
+                ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
+                
+                InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
+                State = PipeState.Connected;
+            }
+            finally
+            {
+                // Bind will have created a file.  Now that the client is connected, it's no longer necessary, so get rid of it.
+                Interop.Sys.Unlink(_path); // ignore any failures; worst case is we leave a tmp file
+
+                // Clean up the listening socket
+                socket.Dispose();
+            }
         }
 
         public Task WaitForConnectionAsync(CancellationToken cancellationToken)
         {
+            CheckConnectOperationsServer();
+            if (State == PipeState.Connected)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
+            }
+
             return cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled(cancellationToken) :
-                Task.Factory.StartNew(s => ((NamedPipeServerStream)s).WaitForConnection(),
-                    this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                WaitForConnectionAsyncCore();
+        }
+
+        private async Task WaitForConnectionAsyncCore()
+        {   
+            // This is the same implementation as is in WaitForConnection(), but using Socket.AcceptAsync
+            // instead of Socket.Accept.
+             
+            // Binding to an existing path fails, so we need to remove anything left over at this location.
+            // There's of course a race condition here, where it could be recreated by someone else between this
+            // deletion and the bind below, in which case we'll simply let the bind fail and throw.
+            Interop.Sys.Unlink(_path); // ignore any failures
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            try
+            {
+                socket.Bind(new UnixDomainSocketEndPoint(_path));
+                socket.Listen(1);
+
+                Socket acceptedSocket = await socket.AcceptAsync().ConfigureAwait(false);
+                SafePipeHandle serverHandle = new SafePipeHandle(acceptedSocket);
+                ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
+
+                InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
+                State = PipeState.Connected;
+            }
+            finally
+            {
+                // Bind will have created a file.  Now that the client is connected, it's no longer necessary, so get rid of it.
+                Interop.Sys.Unlink(_path); // ignore any failures; worst case is we leave a tmp file
+
+                // Clean up the listening socket
+                socket.Dispose();
+            }
         }
 
         [SecurityCritical]
@@ -116,20 +148,26 @@ namespace System.IO.Pipes
         // username until it has written at least once to the pipe (and has set its impersonationLevel 
         // argument appropriately). 
         [SecurityCritical]
-        public String GetImpersonationUserName()
+        public string GetImpersonationUserName()
         {
             CheckWriteOperations();
-            throw new PlatformNotSupportedException();
-        }
 
-        private void ValidateMaxNumberOfServerInstances(int maxNumberOfServerInstances)
-        {
-            // Since Unix has no notion of Max allowed Server Instances per named pipe, we don't enforce an
-            // upper bound on maxNumberOfServerInstances.
-            if ((maxNumberOfServerInstances < 1) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
+            SafeHandle handle = InternalHandle?.NamedPipeSocketHandle;
+            if (handle == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxNumberOfServerInstances), SR.ArgumentOutOfRange_MaxNumServerInstances);
+                throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
+
+            string name = Interop.Sys.GetPeerUserName(handle);
+            if (name != null)
+            {
+                return name;
+            }
+
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+            throw error.Error == Interop.Error.ENOTSUP ?
+                new PlatformNotSupportedException() :
+                Interop.GetExceptionForIoErrno(error, _path);
         }
 
         // -----------------------------

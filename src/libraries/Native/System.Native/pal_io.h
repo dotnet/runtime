@@ -65,6 +65,7 @@ enum
     PAL_S_IFDIR = 0x4000, // Directory
     PAL_S_IFREG = 0x8000, // Regular file
     PAL_S_IFLNK = 0xA000, // Symbolic link
+    PAL_S_IFSOCK = 0xC000, // Socket
 };
 
 /**
@@ -437,13 +438,6 @@ extern "C" int32_t SystemNative_ChMod(const char* path, int32_t mode);
 * Returns 0 for success, -1 for failure. Sets errno for failure.
 */
 extern "C" int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
-
-/**
- * Create a FIFO (named pipe). Implemented as a shim to mkfifo(3).
- *
- * Returns 0 for success, -1 for failure. Sets errno for failure.
- */
-extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode);
 
 /**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
