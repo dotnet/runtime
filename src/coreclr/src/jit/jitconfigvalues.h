@@ -91,6 +91,7 @@ CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no
 CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0) // Internal Jit stress mode
 CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101) // Internal Jit stress mode: decimal bias value between (0,100) to perform CSE on a candidate. 100% = All CSEs. 0% = 0 CSE. (> 100) means no stress.
 CONFIG_INTEGER(JitStressFP, W("JitStressFP"), 0) // Internal Jit stress mode
+CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_INTEGER(JitStrictCheckForNonVirtualCallToVirtualMethod, W("JitStrictCheckForNonVirtualCallToVirtualMethod"), 1)
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications considered reaches this
