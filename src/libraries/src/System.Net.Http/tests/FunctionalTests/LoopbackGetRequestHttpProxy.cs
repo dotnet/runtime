@@ -24,15 +24,15 @@ namespace System.Net.Http.Functional.Tests
             public string AuthenticationHeaderValue;
         }
 
-        public static Task<ProxyResult> StartAsync(out int port, bool requireAuth)
+        public static Task<ProxyResult> StartAsync(out int port, bool requireAuth, bool expectCreds)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
             port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            return StartAsync(listener, requireAuth);
+            return StartAsync(listener, requireAuth, expectCreds);
         }
 
-        private static async Task<ProxyResult> StartAsync(TcpListener listener, bool requireAuth)
+        private static async Task<ProxyResult> StartAsync(TcpListener listener, bool requireAuth, bool expectCreds)
         {
             ProxyResult result = new ProxyResult();
             var headers = new Dictionary<string, string>();
@@ -60,11 +60,9 @@ namespace System.Net.Http.Functional.Tests
                 await getAndReadRequest().ConfigureAwait(false);
 
                 // If we're expecting credentials, look for them, and if we didn't get them, send back 
-                // a response and process a new request.
+                // a 407 response. Optionally, process a new request that would expect credentials.
                 if (requireAuth && !headers.ContainsKey("Proxy-Authorization"))
                 {
-                    Task<Socket> secondListen = listener.AcceptSocketAsync();
-
                     // Send back a 407
                     await clientSocket.SendAsync(
                         new ArraySegment<byte>(Encoding.ASCII.GetBytes("HTTP/1.1 407 Proxy Auth Required\r\nProxy-Authenticate: Basic\r\n\r\n")),
@@ -72,8 +70,16 @@ namespace System.Net.Http.Functional.Tests
                     clientSocket.Shutdown(SocketShutdown.Send);
                     clientSocket.Dispose();
 
-                    // Wait for a new connection that should have an auth header this time and parse it.
-                    await getAndReadRequest().ConfigureAwait(false);
+                    if (expectCreds)
+                    {
+                        // Wait for a new connection that should have an auth header this time and parse it.
+                        await getAndReadRequest().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // No credentials will be coming in a subsequent request.
+                        return default(ProxyResult);
+                    }
                 }
 
                 // Store any auth header we may have for later comparison.
