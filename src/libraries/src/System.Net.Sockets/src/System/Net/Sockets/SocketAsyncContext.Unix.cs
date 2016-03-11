@@ -763,44 +763,52 @@ namespace System.Net.Sockets
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            SocketFlags receivedFlags;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            ManualResetEventSlim @event = null;
+            try
             {
-                flags = receivedFlags;
-                return errorCode;
-            }
-
-            using (var @event = new ManualResetEventSlim(false, 0))
-            {
-                var operation = new ReceiveOperation {
-                    Event = @event,
-                    Buffer = buffer,
-                    Offset = offset,
-                    Count = count,
-                    Flags = flags,
-                    SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
-                    BytesTransferred = bytesReceived,
-                    ReceivedFlags = receivedFlags
-                };
-
-                bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
+                ReceiveOperation operation;
+                lock (_queueLock)
                 {
-                    if (isStopped)
+                    SocketFlags receivedFlags;
+                    SocketError errorCode;
+
+                    if (_receiveQueue.IsEmpty &&
+                        SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
                     {
-                        flags = operation.ReceivedFlags;
-                        bytesReceived = operation.BytesTransferred;
-                        return SocketError.Interrupted;
+                        flags = receivedFlags;
+                        return errorCode;
                     }
 
-                    if (operation.TryComplete(this))
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new ReceiveOperation
                     {
-                        socketAddressLen = operation.SocketAddressLen;
-                        flags = operation.ReceivedFlags;
-                        bytesReceived = operation.BytesTransferred;
-                        return operation.ErrorCode;
+                        Event = @event,
+                        Buffer = buffer,
+                        Offset = offset,
+                        Count = count,
+                        Flags = flags,
+                        SocketAddress = socketAddress,
+                        SocketAddressLen = socketAddressLen,
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            flags = operation.ReceivedFlags;
+                            bytesReceived = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            socketAddressLen = operation.SocketAddressLen;
+                            flags = operation.ReceivedFlags;
+                            bytesReceived = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
                     }
                 }
 
@@ -810,55 +818,63 @@ namespace System.Net.Sockets
                 bytesReceived = operation.BytesTransferred;
                 return signaled ? operation.ErrorCode : SocketError.TimedOut;
             }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
         }
 
         public SocketError ReceiveFromAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            lock (_queueLock)
             {
-                if (errorCode == SocketError.Success)
+                int bytesReceived;
+                SocketFlags receivedFlags;
+                SocketError errorCode;
+
+                if (_receiveQueue.IsEmpty &&
+                    SocketPal.TryCompleteReceiveFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
                 {
-                    ThreadPool.QueueUserWorkItem(args =>
+                    if (errorCode == SocketError.Success)
                     {
-                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
-                    }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
+                            tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
+                        }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
+                    }
+                    return errorCode;
                 }
-                return errorCode;
-            }
 
-            var operation = new ReceiveOperation {
-                Callback = callback,
-                Buffer = buffer,
-                Offset = offset,
-                Count = count,
-                Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
-                BytesTransferred = bytesReceived,
-                ReceivedFlags = receivedFlags
-            };
-
-            bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
-            {
-                if (isStopped)
+                var operation = new ReceiveOperation
                 {
-                    return SocketError.OperationAborted;
-                }
+                    Callback = callback,
+                    Buffer = buffer,
+                    Offset = offset,
+                    Count = count,
+                    Flags = flags,
+                    SocketAddress = socketAddress,
+                    SocketAddressLen = socketAddressLen,
+                };
 
-                if (operation.TryComplete(this))
+                bool isStopped;
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
-                    operation.QueueCompletionCallback();
-                    break;
+                    if (isStopped)
+                    {
+                        return SocketError.OperationAborted;
+                    }
+
+                    if (operation.TryComplete(this))
+                    {
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
                 }
+                return SocketError.IOPending;
             }
-            return SocketError.IOPending;
         }
 
         public SocketError Receive(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, int timeout, out int bytesReceived)
@@ -875,43 +891,52 @@ namespace System.Net.Sockets
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            SocketFlags receivedFlags;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            ManualResetEventSlim @event = null;
+            try
             {
-                flags = receivedFlags;
-                return errorCode;
-            }
+                ReceiveOperation operation;
 
-            using (var @event = new ManualResetEventSlim(false, 0))
-            {
-                var operation = new ReceiveOperation {
-                    Event = @event,
-                    Buffers = buffers,
-                    Flags = flags,
-                    SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
-                    BytesTransferred = bytesReceived,
-                    ReceivedFlags = receivedFlags
-                };
-
-                bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
+                lock (_queueLock)
                 {
-                    if (isStopped)
+                    SocketFlags receivedFlags;
+                    SocketError errorCode;
+                    if (_receiveQueue.IsEmpty &&
+                        SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
                     {
-                        flags = operation.ReceivedFlags;
-                        bytesReceived = operation.BytesTransferred;
-                        return SocketError.Interrupted;
+                        flags = receivedFlags;
+                        return errorCode;
                     }
 
-                    if (operation.TryComplete(this))
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new ReceiveOperation
                     {
-                        socketAddressLen = operation.SocketAddressLen;
-                        flags = operation.ReceivedFlags;
-                        bytesReceived = operation.BytesTransferred;
-                        return operation.ErrorCode;
+                        Event = @event,
+                        Buffers = buffers,
+                        Flags = flags,
+                        SocketAddress = socketAddress,
+                        SocketAddressLen = socketAddressLen,
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            flags = operation.ReceivedFlags;
+                            bytesReceived = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            socketAddressLen = operation.SocketAddressLen;
+                            flags = operation.ReceivedFlags;
+                            bytesReceived = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
                     }
+
                 }
 
                 bool signaled = operation.Wait(timeout);
@@ -920,82 +945,44 @@ namespace System.Net.Sockets
                 bytesReceived = operation.BytesTransferred;
                 return signaled ? operation.ErrorCode : SocketError.TimedOut;
             }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
         }
 
         public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+            ReceiveOperation operation;
+
+            lock (_queueLock)
             {
-                if (errorCode == SocketError.Success)
+                int bytesReceived;
+                SocketFlags receivedFlags;
+                SocketError errorCode;
+                if (_receiveQueue.IsEmpty &&
+                    SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
                 {
-                    ThreadPool.QueueUserWorkItem(args =>
+                    if (errorCode == SocketError.Success)
                     {
-                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
-                    }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
+                            tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
+                        }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
+                    }
+                    return errorCode;
                 }
-                return errorCode;
-            }
 
-            var operation = new ReceiveOperation {
-                Callback = callback,
-                Buffers = buffers,
-                Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
-                BytesTransferred = bytesReceived,
-                ReceivedFlags = receivedFlags
-            };
-
-            bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
-            {
-                if (isStopped)
+                operation = new ReceiveOperation
                 {
-                    return SocketError.OperationAborted;
-                }
-
-                if (operation.TryComplete(this))
-                {
-                    operation.QueueCompletionCallback();
-                    break;
-                }
-            }
-            return SocketError.IOPending;
-        }
-
-        public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
-        {
-            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
-
-            SocketFlags receivedFlags;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
-            {
-                flags = receivedFlags;
-                return errorCode;
-            }
-
-            using (var @event = new ManualResetEventSlim(false, 0))
-            {
-                var operation = new ReceiveMessageFromOperation {
-                    Event = @event,
-                    Buffer = buffer,
-                    Offset = offset,
-                    Count = count,
+                    Callback = callback,
+                    Buffers = buffers,
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
-                    IsIPv4 = isIPv4,
-                    IsIPv6 = isIPv6,
-                    BytesTransferred = bytesReceived,
-                    ReceivedFlags = receivedFlags,
-                    IPPacketInformation = ipPacketInformation,
                 };
 
                 bool isStopped;
@@ -1003,20 +990,74 @@ namespace System.Net.Sockets
                 {
                     if (isStopped)
                     {
-                        socketAddressLen = operation.SocketAddressLen;
-                        flags = operation.ReceivedFlags;
-                        ipPacketInformation = operation.IPPacketInformation;
-                        bytesReceived = operation.BytesTransferred;
-                        return SocketError.Interrupted;
+                        return SocketError.OperationAborted;
                     }
 
                     if (operation.TryComplete(this))
                     {
-                        socketAddressLen = operation.SocketAddressLen;
-                        flags = operation.ReceivedFlags;
-                        ipPacketInformation = operation.IPPacketInformation;
-                        bytesReceived = operation.BytesTransferred;
-                        return operation.ErrorCode;
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
+                }
+                return SocketError.IOPending;
+            }
+        }
+
+        public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+        {
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
+
+            ManualResetEventSlim @event = null;
+            try
+            {
+                ReceiveMessageFromOperation operation;
+
+                lock (_queueLock)
+                {
+                    SocketFlags receivedFlags;
+                    SocketError errorCode;
+                    if (_receiveQueue.IsEmpty &&
+                        SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+                    {
+                        flags = receivedFlags;
+                        return errorCode;
+                    }
+
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new ReceiveMessageFromOperation
+                    {
+                        Event = @event,
+                        Buffer = buffer,
+                        Offset = offset,
+                        Count = count,
+                        Flags = flags,
+                        SocketAddress = socketAddress,
+                        SocketAddressLen = socketAddressLen,
+                        IsIPv4 = isIPv4,
+                        IsIPv6 = isIPv6,
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            socketAddressLen = operation.SocketAddressLen;
+                            flags = operation.ReceivedFlags;
+                            ipPacketInformation = operation.IPPacketInformation;
+                            bytesReceived = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            socketAddressLen = operation.SocketAddressLen;
+                            flags = operation.ReceivedFlags;
+                            ipPacketInformation = operation.IPPacketInformation;
+                            bytesReceived = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
                     }
                 }
 
@@ -1027,59 +1068,66 @@ namespace System.Net.Sockets
                 bytesReceived = operation.BytesTransferred;
                 return signaled ? operation.ErrorCode : SocketError.TimedOut;
             }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
         }
 
         public SocketError ReceiveMessageFromAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, bool isIPv4, bool isIPv6, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
             SetNonBlocking();
 
-            int bytesReceived;
-            SocketFlags receivedFlags;
-            IPPacketInformation ipPacketInformation;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+            lock (_queueLock)
             {
-                if (errorCode == SocketError.Success)
+                int bytesReceived;
+                SocketFlags receivedFlags;
+                IPPacketInformation ipPacketInformation;
+                SocketError errorCode;
+
+                if (_receiveQueue.IsEmpty &&
+                    SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
                 {
-                    ThreadPool.QueueUserWorkItem(args =>
+                    if (errorCode == SocketError.Success)
                     {
-                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>, int, byte[], int, SocketFlags, IPPacketInformation>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, tup.Item6, SocketError.Success);
-                    }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags, ipPacketInformation));
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var tup = (Tuple<Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>, int, byte[], int, SocketFlags, IPPacketInformation>)args;
+                            tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, tup.Item6, SocketError.Success);
+                        }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags, ipPacketInformation));
+                    }
+                    return errorCode;
                 }
-                return errorCode;
-            }
 
-            var operation = new ReceiveMessageFromOperation {
-                Callback = callback,
-                Buffer = buffer,
-                Offset = offset,
-                Count = count,
-                Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
-                IsIPv4 = isIPv4,
-                IsIPv6 = isIPv6,
-                BytesTransferred = bytesReceived,
-                ReceivedFlags = receivedFlags,
-                IPPacketInformation = ipPacketInformation,
-            };
-
-            bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
-            {
-                if (isStopped)
+                var operation = new ReceiveMessageFromOperation
                 {
-                    return SocketError.OperationAborted;
-                }
+                    Callback = callback,
+                    Buffer = buffer,
+                    Offset = offset,
+                    Count = count,
+                    Flags = flags,
+                    SocketAddress = socketAddress,
+                    SocketAddressLen = socketAddressLen,
+                    IsIPv4 = isIPv4,
+                    IsIPv6 = isIPv6,
+                };
 
-                if (operation.TryComplete(this))
+                bool isStopped;
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
-                    operation.QueueCompletionCallback();
-                    break;
+                    if (isStopped)
+                    {
+                        return SocketError.OperationAborted;
+                    }
+
+                    if (operation.TryComplete(this))
+                    {
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
                 }
+                return SocketError.IOPending;
             }
-            return SocketError.IOPending;
         }
 
         public SocketError Send(byte[] buffer, int offset, int count, SocketFlags flags, int timeout, out int bytesSent)
@@ -1096,39 +1144,49 @@ namespace System.Net.Sockets
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            bytesSent = 0;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            ManualResetEventSlim @event = null;
+            try
             {
-                return errorCode;
-            }
+                SendOperation operation;
 
-            using (var @event = new ManualResetEventSlim(false, 0))
-            {
-                var operation = new SendOperation {
-                    Event = @event,
-                    Buffer = buffer,
-                    Offset = offset,
-                    Count = count,
-                    Flags = flags,
-                    SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
-                    BytesTransferred = bytesSent
-                };
-
-                bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
+                lock (_queueLock)
                 {
-                    if (isStopped)
+                    bytesSent = 0;
+                    SocketError errorCode;
+
+                    if (_sendQueue.IsEmpty &&
+                        SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
                     {
-                        bytesSent = operation.BytesTransferred;
-                        return SocketError.Interrupted;
+                        return errorCode;
                     }
 
-                    if (operation.TryComplete(this))
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new SendOperation
                     {
-                        bytesSent = operation.BytesTransferred;
-                        return operation.ErrorCode;
+                        Event = @event,
+                        Buffer = buffer,
+                        Offset = offset,
+                        Count = count,
+                        Flags = flags,
+                        SocketAddress = socketAddress,
+                        SocketAddressLen = socketAddressLen,
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
                     }
                 }
 
@@ -1136,53 +1194,62 @@ namespace System.Net.Sockets
                 bytesSent = operation.BytesTransferred;
                 return signaled ? operation.ErrorCode : SocketError.TimedOut;
             }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
         }
 
         public SocketError SendToAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
-            int bytesSent = 0;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            lock (_queueLock)
             {
-                if (errorCode == SocketError.Success)
+                int bytesSent = 0;
+                SocketError errorCode;
+
+                if (_sendQueue.IsEmpty &&
+                    SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
                 {
-                    ThreadPool.QueueUserWorkItem(args =>
+                    if (errorCode == SocketError.Success)
                     {
-                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, 0, SocketError.Success);
-                    }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
+                            tup.Item1(tup.Item2, tup.Item3, tup.Item4, 0, SocketError.Success);
+                        }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
+                    }
+                    return errorCode;
                 }
-                return errorCode;
-            }
 
-            var operation = new SendOperation {
-                Callback = callback,
-                Buffer = buffer,
-                Offset = offset,
-                Count = count,
-                Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
-                BytesTransferred = bytesSent
-            };
-
-            bool isStopped;
-            while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
-            {
-                if (isStopped)
+                var operation = new SendOperation
                 {
-                    return SocketError.OperationAborted;
-                }
+                    Callback = callback,
+                    Buffer = buffer,
+                    Offset = offset,
+                    Count = count,
+                    Flags = flags,
+                    SocketAddress = socketAddress,
+                    SocketAddressLen = socketAddressLen,
+                };
 
-                if (operation.TryComplete(this))
+                bool isStopped;
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
                 {
-                    operation.QueueCompletionCallback();
-                    break;
+                    if (isStopped)
+                    {
+                        return SocketError.OperationAborted;
+                    }
+
+                    if (operation.TryComplete(this))
+                    {
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
                 }
+                return SocketError.IOPending;
             }
-            return SocketError.IOPending;
         }
 
         public SocketError Send(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesSent)
@@ -1199,41 +1266,51 @@ namespace System.Net.Sockets
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
-            bytesSent = 0;
-            int bufferIndex = 0;
-            int offset = 0;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            ManualResetEventSlim @event = null;
+            try
             {
-                return errorCode;
-            }
+                SendOperation operation;
 
-            using (var @event = new ManualResetEventSlim(false, 0))
-            {
-                var operation = new SendOperation {
-                    Event = @event,
-                    Buffers = buffers,
-                    BufferIndex = bufferIndex,
-                    Offset = offset,
-                    Flags = flags,
-                    SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
-                    BytesTransferred = bytesSent
-                };
-
-                bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
+                lock (_queueLock)
                 {
-                    if (isStopped)
+                    bytesSent = 0;
+                    int bufferIndex = 0;
+                    int offset = 0;
+                    SocketError errorCode;
+
+                    if (_sendQueue.IsEmpty &&
+                        SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
                     {
-                        bytesSent = operation.BytesTransferred;
-                        return SocketError.Interrupted;
+                        return errorCode;
                     }
 
-                    if (operation.TryComplete(this))
+                    @event = new ManualResetEventSlim(false, 0);
+
+                    operation = new SendOperation
                     {
-                        bytesSent = operation.BytesTransferred;
-                        return operation.ErrorCode;
+                        Event = @event,
+                        Buffers = buffers,
+                        BufferIndex = bufferIndex,
+                        Offset = offset,
+                        Flags = flags,
+                        SocketAddress = socketAddress,
+                        SocketAddressLen = socketAddressLen,
+                    };
+
+                    bool isStopped;
+                    while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
+                    {
+                        if (isStopped)
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return SocketError.Interrupted;
+                        }
+
+                        if (operation.TryComplete(this))
+                        {
+                            bytesSent = operation.BytesTransferred;
+                            return operation.ErrorCode;
+                        }
                     }
                 }
 
@@ -1241,55 +1318,64 @@ namespace System.Net.Sockets
                 bytesSent = operation.BytesTransferred;
                 return signaled ? operation.ErrorCode : SocketError.TimedOut;
             }
+            finally
+            {
+                if (@event != null) @event.Dispose();
+            }
         }
 
         public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
-            int bufferIndex = 0;
-            int offset = 0;
-            int bytesSent = 0;
-            SocketError errorCode;
-            if (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+            lock (_queueLock)
             {
-                if (errorCode == SocketError.Success)
+                int bufferIndex = 0;
+                int offset = 0;
+                int bytesSent = 0;
+                SocketError errorCode;
+
+                if (_sendQueue.IsEmpty &&
+                    SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
                 {
-                    ThreadPool.QueueUserWorkItem(args =>
+                    if (errorCode == SocketError.Success)
                     {
-                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, SocketFlags.None, SocketError.Success);
-                    }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
+                        ThreadPool.QueueUserWorkItem(args =>
+                        {
+                            var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
+                            tup.Item1(tup.Item2, tup.Item3, tup.Item4, SocketFlags.None, SocketError.Success);
+                        }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
+                    }
+                    return errorCode;
                 }
-                return errorCode;
-            }
 
-            var operation = new SendOperation {
-                Callback = callback,
-                Buffers = buffers,
-                BufferIndex = bufferIndex,
-                Offset = offset,
-                Flags = flags,
-                SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
-                BytesTransferred = bytesSent
-            };
-
-            bool isStopped;
-            while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
-            {
-                if (isStopped)
+                var operation = new SendOperation
                 {
-                    return SocketError.OperationAborted;
-                }
+                    Callback = callback,
+                    Buffers = buffers,
+                    BufferIndex = bufferIndex,
+                    Offset = offset,
+                    Flags = flags,
+                    SocketAddress = socketAddress,
+                    SocketAddressLen = socketAddressLen,
+                };
 
-                if (operation.TryComplete(this))
+                bool isStopped;
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
                 {
-                    operation.QueueCompletionCallback();
-                    break;
+                    if (isStopped)
+                    {
+                        return SocketError.OperationAborted;
+                    }
+
+                    if (operation.TryComplete(this))
+                    {
+                        operation.QueueCompletionCallback();
+                        break;
+                    }
                 }
+                return SocketError.IOPending;
             }
-            return SocketError.IOPending;
         }
 
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
