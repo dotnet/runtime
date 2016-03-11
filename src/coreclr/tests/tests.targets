@@ -37,6 +37,7 @@
 
     <PropertyGroup>
       <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
+      <ParallelRun Condition="'$(ParallelRun)'==''">true</ParallelRun>
     </PropertyGroup>
     <ItemGroup>
       <IncludeTraitsItems Include="$(IncludeTraits)" />
@@ -44,8 +45,8 @@
     </ItemGroup>
 
     <xunit Assemblies="@(TestAssemblies)"
-      ParallelizeAssemblies="True"
-      ParallelizeTestCollections="True"
+      ParallelizeAssemblies="$(ParallelRun)"
+      ParallelizeTestCollections="$(ParallelRun)"
       Html="$(__TestRunHtmlLog)"
       Xml="$(__TestRunXmlLog)"
       IncludeTraits="@(IncludeTraitsItems)"
