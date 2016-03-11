@@ -35,7 +35,7 @@ INLINE_OBSERVATION(HAS_DELEGATE_INVOKE,       bool,   "delegate invoke",        
 INLINE_OBSERVATION(HAS_EH,                    bool,   "has exception handling",        FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFILTER,             bool,   "has endfilter",                 FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_ENDFINALLY,            bool,   "has endfinally",                FATAL,       CALLEE)
-INLINE_OBSERVATION(HAS_LEAVE,                 bool,   "has leave"    ,                 FATAL,       CALLEE)
+INLINE_OBSERVATION(HAS_LEAVE,                 bool,   "has leave",                     FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_MANAGED_VARARGS,       bool,   "managed varargs",               FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NATIVE_VARARGS,        bool,   "native varargs",                FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",                   FATAL,       CALLEE)
@@ -54,6 +54,7 @@ INLINE_OBSERVATION(MARKED_AS_SKIPPED,         bool,   "skipped by complus reques
 INLINE_OBSERVATION(MAXSTACK_TOO_BIG,          bool,   "maxstack too big"  ,            FATAL,       CALLEE)
 INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLEE)
 INLINE_OBSERVATION(NO_METHOD_INFO,            bool,   "cannot get method info",        FATAL,       CALLEE)
+INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLEE)
 INLINE_OBSERVATION(RETURN_TYPE_IS_COMPOSITE,  bool,   "has composite return type",     FATAL,       CALLEE)
 INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",         FATAL,       CALLEE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLEE)
@@ -84,9 +85,9 @@ INLINE_OBSERVATION(IS_DISCRETIONARY_INLINE,   bool,   "can inline, check heurist
 INLINE_OBSERVATION(IS_FORCE_INLINE,           bool,   "aggressive inline attribute",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_INSTANCE_CTOR,          bool,   "instance constructor",          INFORMATION, CALLEE)
 INLINE_OBSERVATION(IS_MOSTLY_LOAD_STORE,      bool,   "method is mostly load/store",   INFORMATION, CALLEE)
+INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLEE)
 INLINE_OBSERVATION(LOOKS_LIKE_WRAPPER,        bool,   "thin wrapper around a call",    INFORMATION, CALLEE)
 INLINE_OBSERVATION(MAXSTACK,                  int,    "maxstack",                      INFORMATION, CALLEE)
-INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLEE)
 INLINE_OBSERVATION(OPCODE,                    int,    "next opcode in IL stream",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(OPCODE_NORMED,             int,    "next opcode in IL stream",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",           INFORMATION, CALLEE)
@@ -134,6 +135,7 @@ INLINE_OBSERVATION(LDARGA_NOT_LOCAL_VAR,      bool,   "ldarga not on local var",
 INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(LDVIRTFN_ON_NON_VIRTUAL,   bool,   "ldvirtfn on non-virtual",       FATAL,       CALLSITE)
 INLINE_OBSERVATION(NOT_CANDIDATE,             bool,   "not inline candidate",          FATAL,       CALLSITE)
+INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(REQUIRES_SAME_THIS,        bool,   "requires same this",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLSITE)
@@ -144,12 +146,10 @@ INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",        
 
 // ------ Call Site Information ------- 
 
-INLINE_OBSERVATION(BENEFIT_MULTIPLIER,        double, "benefit multiplier",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",  INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "execution frequency",           INFORMATION, CALLSITE)
-INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE,      double, "native size estimate",          INFORMATION, CALLSITE)
-INLINE_OBSERVATION(NATIVE_SIZE_ESTIMATE_OK,   bool,   "native size estimate ok",       INFORMATION, CALLSITE)
+INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLSITE)
 
 // ------ Final Sentinel ------- 
 
