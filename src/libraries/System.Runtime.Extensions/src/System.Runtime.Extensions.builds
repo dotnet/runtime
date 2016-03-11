@@ -21,6 +21,14 @@
       <OSGroup>Windows_NT</OSGroup>
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netstandard13aot</TargetGroup>
+    </Project>
+    <Project Include="System.Runtime.Extensions.csproj">
+      <OSGroup>Linux</OSGroup>
+      <TargetGroup>netstandard13aot</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
