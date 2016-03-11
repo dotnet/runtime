@@ -36,12 +36,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var runtime = new Mock<IRuntimeEnvironment>();
             runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-
+            
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH", ReferencePath)
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
             result.Should().Be(ReferencePath);
         }
 
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var runtime = new Mock<IRuntimeEnvironment>();
             runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Linux);
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, EnvironmentMockBuilder.Empty);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, EnvironmentMockBuilder.Empty);
             result.Should().BeNull();
         }
 
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
             result.Should().Be(Path.Combine("Program Files (x86)", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .AddVariable("ProgramFiles", "Program Files")
                 .Build();
 
-            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, environment);
+            var result = ReferenceAssemblyPathResolver.GetDefaultReferenceAssembliesPath(runtime.Object, FileSystemMockBuilder.Empty, environment);
             result.Should().Be(Path.Combine("Program Files", "Reference Assemblies", "Microsoft", "Framework"));
         }
 
