@@ -191,6 +191,49 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)] 
+        public void ConcurrentSendReceive()
+        {
+            using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                const int Iters = 500;
+                const int Chunk = 1024;
+                byte[] sendData = new byte[Chunk * Iters];
+                byte[] receiveData = new byte[sendData.Length];
+                new Random().NextBytes(sendData);
+
+                string path = GetRandomNonExistingFilePath();
+
+                server.Bind(new UnixDomainSocketEndPoint(path));
+                server.Listen(1);
+
+                Task<Socket> acceptTask = server.AcceptAsync();
+                client.Connect(new UnixDomainSocketEndPoint(path));
+                acceptTask.Wait();
+                Socket accepted = acceptTask.Result;
+
+                Task[] writes = new Task[Iters];
+                Task<int>[] reads = new Task<int>[Iters];
+                for (int i = 0; i < Iters; i++)
+                {
+                    writes[i] = client.SendAsync(new ArraySegment<byte>(sendData, i * Chunk, Chunk), SocketFlags.None);
+                }
+                for (int i = 0; i < Iters; i++)
+                {
+                    reads[i] = accepted.ReceiveAsync(new ArraySegment<byte>(receiveData, i * Chunk, Chunk), SocketFlags.None);
+                }
+                Task.WaitAll(writes);
+                Task.WaitAll(reads);
+
+                for (int i = 0; i < sendData.Length; i++)
+                {
+                    Assert.True(sendData[i] == receiveData[i], $"Different at {i}");
+                }
+            }
+        }
+
         private static string GetRandomNonExistingFilePath()
         {
             string result;
