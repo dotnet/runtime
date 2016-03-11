@@ -3108,10 +3108,8 @@ private:
 
     static BOOL         impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeOut);
 
-    void                impCanInlineNative(int              callsiteNativeEstimate, 
-                                           int              calleeNativeSizeEstimate,
-                                           InlineInfo*      pInlineInfo,
-                                           InlineResult*    inlineResult);
+    void                impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
+                                                               InlineResult* inlineResult);
 
     // STATIC inlining decision based on the IL code. 
     void                impCanInlineIL(CORINFO_METHOD_HANDLE  fncHandle,
@@ -8569,10 +8567,6 @@ public:
                                                     // This can be overwritten by setting complus_JITInlineSize env variable.
 #define IMPLEMENTATION_MAX_INLINE_SIZE  _UI16_MAX   // Maximum method size supported by this implementation 
                                          
-#define NATIVE_SIZE_INVALID  (-10000)                
-
-    int                     compNativeSizeEstimate;     // The estimated native size of this method.
-
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
     JitTimer*                     pCompJitTimer;           // Timer data structure (by phases) for current compilation.
