@@ -1,5 +1,10 @@
 ﻿#!/usr/bin/env python
 #
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+## See the LICENSE file in the project root for more information.
+#
+##
 # Title               :migrate-tags.py
 #
 ################################################################################
@@ -42,7 +47,7 @@ def parse_list_file(listfile):
     # Also consider using class OrderDict
     test_properties = []
 
-    with open(listfile, 'r') as file:
+    with open(listfile) as file:
 
         expecting_metadata = False
         expecting_testname = True
@@ -86,7 +91,7 @@ def parse_list_file(listfile):
                     test_properties.append(tup)                    
                 else:
                     # we didn't have a 'key=value' line
-                    # will will switch to expecting_testname
+                    # we will switch to expecting_testname
                     # note that we have already read the next line 
                     # so need to fall into the code below which finds
                     # the test name from the line that we just read
@@ -154,7 +159,6 @@ def parse_list_file(listfile):
                 if len(split_line) == 2: 
                     test_name = split_line[0] 
                 else:
-                    # test_name = '_'.join(split_line[0:len(split_line)-1]) 
                     test_name = '_'.join(split_line[0:-1]) 
 
                 if not test_number_str.isdigit():
