@@ -237,6 +237,47 @@ namespace System
                               & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
+        private const int NumberLockVKCode = 0x90;
+        private const int CapsLockVKCode = 0x14;
+
+        public static bool NumberLock
+        {
+            get
+            {
+                try
+                {
+                    short s = Interop.mincore.GetKeyState(NumberLockVKCode);
+                    return (s & 1) == 1;
+                }
+                catch (Exception)
+                {
+                    // Since we depend on an extension api-set here
+                    // it is not guaranteed to work across the board.
+                    // In case of exception we simply throw PNSE
+                    throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
+        public static bool CapsLock
+        {
+            get
+            {
+                try
+                {
+                    short s = Interop.mincore.GetKeyState(CapsLockVKCode);
+                    return (s & 1) == 1;
+                }
+                catch (Exception)
+                {
+                    // Since we depend on an extension api-set here
+                    // it is not guaranteed to work across the board.
+                    // In case of exception we simply throw PNSE
+                    throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
         public static bool KeyAvailable
         {
             get
