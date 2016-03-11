@@ -2,16 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="System.Net.Requests.csproj">
-      <OSGroup>Unix</OSGroup>
-    </Project>
-    <Project Include="System.Net.Requests.csproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
-    <!-- Net46 facade is currently inbox for 4.0 
-    <Project Include="System.Net.Requests.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </Project> -->
+    <Project Include="runtime.native.System.Data.SqlClient.sni.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

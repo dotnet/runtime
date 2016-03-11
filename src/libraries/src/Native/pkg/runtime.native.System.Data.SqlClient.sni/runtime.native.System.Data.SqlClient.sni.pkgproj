@@ -5,14 +5,18 @@
   <PropertyGroup>
     <!-- TODO: Get this from the file version -->
     <Version>4.0.0</Version>
-    <PackageTargetRuntime>win7-$(PackagePlatform)</PackageTargetRuntime>
-    <!-- only build for x86 & x64 -->
-    <PackagePlatforms>x86;x64;</PackagePlatforms>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <File Include="$(OutputRootPath)ProjectK\Runtime\sni.dll">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <PackageTargetRuntime>win7-x86</PackageTargetRuntime>
+      <TargetPath>runtimes/win7-x86/native</TargetPath>
+    </File>
+    <File Include="$(OutputRootPath)ProjectK\Runtime\sni.dll">
+      <PackageTargetRuntime>win7-x64</PackageTargetRuntime>
+      <TargetPath>runtimes/win7-x64/native</TargetPath>
     </File>
   </ItemGroup>
   

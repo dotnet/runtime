@@ -6,17 +6,18 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
       <SupportedFramework>netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds" >
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj" >
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
 
-    <!-- Opt desktop and netcore out of this package.   
-         This can be removed after we add back the RID to restict this to Unix. 
-         https://github.com/dotnet/corefx/issues/2953 --> 
-    <NotSupportedOnTargetFramework Include="netcore50" /> 
-    <NotSupportedOnTargetFramework Include="net461" /> 
+    <ExcludeDefaultValidateFramework Include="netstandardapp1.5" />
+    <!-- Only supported on windows, so overriding
+         the validation RID's -->
+    <ValidateFramework Include="netstandardapp1.5">
+      <RuntimeIDs>osx.10.11-x64;centos.7.1-x64;ubuntu.14.04-x64;linuxmint.17-x64</RuntimeIDs>
+    </ValidateFramework>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -8,15 +8,7 @@
     <ProjectReference Include="..\ref\4.0\System.Diagnostics.Process.csproj">
       <SupportedFramework>net46</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Diagnostics.Process.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Diagnostics.Process.csproj">
-      <TargetGroup>net461</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Diagnostics.Process.pkgproj" />
-    <ProjectReference Include="linux\System.Diagnostics.Process.pkgproj" />
-    <ProjectReference Include="osx\System.Diagnostics.Process.pkgproj" />
+    <ProjectReference Include="..\src\System.Diagnostics.Process.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -25,6 +17,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

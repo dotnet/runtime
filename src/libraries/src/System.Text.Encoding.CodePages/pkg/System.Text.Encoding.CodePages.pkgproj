@@ -5,8 +5,7 @@
     <ProjectReference Include="..\ref\System.Text.Encoding.CodePages.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="win\System.Text.Encoding.CodePages.pkgproj" />
-    <ProjectReference Include="unix\System.Text.Encoding.CodePages.pkgproj" />
+    <ProjectReference Include="..\src\System.Text.Encoding.CodePages.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

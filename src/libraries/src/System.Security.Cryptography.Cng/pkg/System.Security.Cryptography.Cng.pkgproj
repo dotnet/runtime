@@ -10,6 +10,13 @@
       <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Security.Cryptography.Cng.builds" />
+
+    <ExcludeDefaultValidateFramework Include="netstandardapp1.5" />
+    <!-- Only supported on windows, so overriding
+         the validation RID's -->
+    <ValidateFramework Include="netstandardapp1.5">
+      <RuntimeIDs>win7-x86;win7-x64</RuntimeIDs>
+    </ValidateFramework>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

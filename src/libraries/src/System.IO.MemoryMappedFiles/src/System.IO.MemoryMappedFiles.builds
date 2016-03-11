@@ -3,10 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.IO.MemoryMappedFiles.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.IO.MemoryMappedFiles.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.IO.MemoryMappedFiles.csproj">
       <OSGroup>Windows_NT</OSGroup>

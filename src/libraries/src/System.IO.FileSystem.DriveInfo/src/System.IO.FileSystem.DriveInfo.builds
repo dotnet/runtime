@@ -3,13 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.IO.FileSystem.DriveInfo.csproj">
-      <OSGroup>FreeBSD</OSGroup>
-    </Project>
-    <Project Include="System.IO.FileSystem.DriveInfo.csproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="System.IO.FileSystem.DriveInfo.csproj">
-      <OSGroup>OSX</OSGroup>
+      <OSGroup>Unix</OSGroup>
     </Project>
     <Project Include="System.IO.FileSystem.DriveInfo.csproj">
       <OSGroup>Windows_NT</OSGroup>
