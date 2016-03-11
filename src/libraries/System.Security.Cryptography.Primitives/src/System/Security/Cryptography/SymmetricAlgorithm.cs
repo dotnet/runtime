@@ -11,8 +11,8 @@ namespace System.Security.Cryptography
     {
         protected SymmetricAlgorithm()
         {
-            Mode = CipherMode.CBC;
-            Padding = PaddingMode.PKCS7;
+            _cipherMode = CipherMode.CBC;
+            _paddingMode = PaddingMode.PKCS7;
         }
 
         public virtual int BlockSize
