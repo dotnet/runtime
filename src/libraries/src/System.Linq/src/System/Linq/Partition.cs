@@ -163,7 +163,7 @@ namespace System.Linq
         public IPartition<TElement> Skip(int count)
         {
             int minIndex = _minIndex + count;
-            return minIndex >= _maxIndex ? EmptyPartition<TElement>.Instance : new OrderedPartition<TElement>(_source, minIndex, _maxIndex);
+            return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TElement>.Instance : new OrderedPartition<TElement>(_source, minIndex, _maxIndex);
         }
 
         public IPartition<TElement> Take(int count)
