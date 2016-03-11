@@ -2131,6 +2131,11 @@ typedef struct {
 	 * Translate Debugger.Break () into a native breakpoint signal
 	 */
 	gboolean native_debugger_break;
+	/*
+	 * Disabling the frame pointer emit optimization can allow debuggers to more easily
+	 * identify the stack on some platforms
+	 */
+	gboolean disable_omit_fp;
 } MonoDebugOptions;
 
 enum {
