@@ -38,7 +38,7 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(FilterToOSGroup)'!=''">
+    <ItemGroup Condition="'$(FilterToOSGroup)'!='' and '$(BuildAllOSGroups)' != 'true'">
       <ProjectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)'=='$(FilterToOSGroup)' or '%(Project.OSGroup)'=='AnyOS' or '%(Project.OSGroup)'==''" />
 
       <Project Remove="@(Project)" />

@@ -5,12 +5,7 @@
     <ProjectReference Include="..\ref\System.IO.MemoryMappedFiles.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="win\System.IO.MemoryMappedFiles.pkgproj" />
-    <ProjectReference Include="linux\System.IO.MemoryMappedFiles.pkgproj" />
-    <ProjectReference Include="osx\System.IO.MemoryMappedFiles.pkgproj" />
+    <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -19,6 +14,10 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

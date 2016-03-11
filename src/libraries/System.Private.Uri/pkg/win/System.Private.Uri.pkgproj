@@ -8,8 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Private.Uri.builds">
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>
 

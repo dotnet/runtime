@@ -8,8 +8,12 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.IO.FileSystem.builds">
-      <AdditionalProperties>FilterToOSGroup=Windows_NT</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.csproj">
+      <OSGroup>Windows_NT</OSGroup>
+      <TargetGroup>netcore50</TargetGroup>
     </ProjectReference>
 
     <!-- No implementation on platforms where our P-Invokes are not allowed -->

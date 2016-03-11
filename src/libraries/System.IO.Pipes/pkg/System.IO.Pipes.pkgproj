@@ -6,12 +6,11 @@
     <ProjectReference Include="..\ref\System.IO.Pipes.csproj">
       <SupportedFramework>net46;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.Pipes.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
+    <ProjectReference Include="..\src\System.IO.Pipes.builds" />
 
-    <ProjectReference Include="$(MSBuildThisFileDirectory)win\System.IO.Pipes.pkgproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)unix\System.IO.Pipes.pkgproj" />
+    <NotSupportedOnTargetFramework Include="netcore50">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </NotSupportedOnTargetFramework>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

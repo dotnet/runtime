@@ -7,7 +7,7 @@
     <PreventImplementationReference>true</PreventImplementationReference>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Private.Uri.builds" >
+    <ProjectReference Include="..\..\src\System.Private.Uri.csproj" >
       <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
     </ProjectReference>
 

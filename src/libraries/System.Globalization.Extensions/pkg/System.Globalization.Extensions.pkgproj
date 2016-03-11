@@ -5,11 +5,7 @@
     <ProjectReference Include="..\ref\System.Globalization.Extensions.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Globalization.Extensions.csproj">
-      <TargetGroup>net46</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Globalization.Extensions.pkgproj" />
-    <ProjectReference Include="unix\System.Globalization.Extensions.pkgproj" />
+    <ProjectReference Include="..\src\System.Globalization.Extensions.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

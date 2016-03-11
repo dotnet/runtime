@@ -8,9 +8,9 @@
   </PropertyGroup>
  
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.builds" >
+    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.RuntimeInformation.csproj" >
       <!-- the binary is not specific to Linux, but we only do a Linux & OSX pass, not Unix-specific pass -->
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
   </ItemGroup>
 

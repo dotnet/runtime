@@ -8,14 +8,7 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.X509Certificates.csproj">
       <SupportedFramework>net461;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
-      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
-      <AdditionalProperties>TargetGroup=net461</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="win\System.Security.Cryptography.X509Certificates.pkgproj" />
-    <ProjectReference Include="unix\System.Security.Cryptography.X509Certificates.pkgproj" />
+    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -24,6 +17,11 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Net.Http\runtime.native.System.Net.Http.pkgproj" />
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
