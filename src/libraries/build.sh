@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [cmakeargs]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [skiptests] [cmakeargs]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -14,6 +14,7 @@ usage()
     echo "platform can be: FreeBSD, Linux, NetBSD, OSX, Windows"
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
+    echo "skiptests - skip the tests in the './bin/*/*Tests/' subdirectory."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     exit 1
 }
@@ -105,7 +106,7 @@ build_managed_corefx()
     __binclashlog=$__scriptpath/binclash.log
     __binclashloggerdll=$__scriptpath/Tools/Microsoft.DotNet.Build.Tasks.dll
 
-    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /t:Build /p:ConfigurationGroup=$__BuildType /p:OSGroup=$__BuildOS /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
+    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" "/l:BinClashLogger,$__binclashloggerdll;LogFile=$__binclashlog" /t:Build /p:ConfigurationGroup=$__BuildType /p:OSGroup=$__BuildOS /p:SkipTests=$__SkipTests /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -256,6 +257,7 @@ BUILDERRORLEVEL=0
 __UnprocessedBuildArgs=
 __CleanBuild=false
 __CrossBuild=0
+__SkipTests=false
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -340,6 +342,9 @@ while :; do
             ;;
         cross)
             __CrossBuild=1
+            ;;
+        skiptests)
+            __SkipTests=true
             ;;
         cmakeargs)
             if [ -n "$2" ]; then
