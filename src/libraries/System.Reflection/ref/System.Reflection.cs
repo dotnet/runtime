@@ -156,6 +156,7 @@ namespace System.Reflection
         public abstract MethodInfo GetRaiseMethod(bool nonPublic);
         public MethodInfo GetRemoveMethod() { return default(MethodInfo); }
         public abstract MethodInfo GetRemoveMethod(bool nonPublic);
+        public override System.Reflection.MemberTypes MemberType { get { return default(System.Reflection.MemberTypes); } }
 
     }
     public abstract partial class FieldInfo : System.Reflection.MemberInfo
@@ -404,7 +405,7 @@ namespace System.Reflection
         ContainedInManifestFile = 4,
         Embedded = 1,
     }
-    public sealed partial class TargetException : System.Exception
+    public partial class TargetException : System.Exception
     {
         public TargetException() { }
         public TargetException(string message) { }
@@ -494,5 +495,6 @@ namespace System.Reflection
         public virtual System.Runtime.InteropServices.StructLayoutAttribute StructLayoutAttribute { get { return default(System.Runtime.InteropServices.StructLayoutAttribute); } }
         public ConstructorInfo TypeInitializer { get { return default(ConstructorInfo); } }
         public virtual Type UnderlyingSystemType { get { return default(Type); } }
+        public override System.Reflection.MemberTypes MemberType { get { return default(System.Reflection.MemberTypes); } }
     }
 }
