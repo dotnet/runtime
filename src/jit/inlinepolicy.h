@@ -106,4 +106,49 @@ private:
     bool                    m_ConstantFeedsConstantTest :1;
 };
 
+#ifdef DEBUG
+
+// RandomPolicy implements a policy that inlines at random.
+// It is mostly useful for stress testing.
+
+class RandomPolicy : public InlinePolicy
+{
+public:
+
+    // Construct a RandomPolicy
+    RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed);
+
+    // Policy observations
+    void NoteSuccess() override;
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteFatal(InlineObservation obs) override;
+    void NoteInt(InlineObservation obs, int value) override;
+    void NoteDouble(InlineObservation obs, double value) override;
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+    // Policy policies
+    bool PropagateNeverToRuntime() const override { return true; }
+
+    const char* GetName() const override { return "RandomPolicy"; }
+
+private:
+
+    // Helper methods
+    void NoteInternal(InlineObservation obs);
+    void SetCandidate(InlineObservation obs);
+    void SetFailure(InlineObservation obs);
+    void SetNever(InlineObservation obs);
+
+    // Data members
+    Compiler*               m_Compiler;
+    CLRRandom*              m_Random;
+    unsigned                m_CodeSize;
+    bool                    m_IsForceInline :1;
+    bool                    m_IsForceInlineKnown :1;
+};
+
+#endif // DEBUG
+
 #endif // _INLINE_POLICY_H_
