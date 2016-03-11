@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Capture OSGroup passed to command line for setting default FilterToOSGroup value below -->
+    <_OriginalOSGroup>$(OSGroup)</_OriginalOSGroup>
+  </PropertyGroup>
   <Import Project="dir.props" />
 
   <!-- required to build the projects in their specified order -->
@@ -10,17 +14,17 @@
   <ItemGroup>
     <Project Include="src\dirs.proj">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
-      <FilterToOSGroup Condition="'$(BuildAllOSGroups)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
+      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
     <Project Include="src\packages.builds">
       <!-- When we do a traversal build we build all libraries prior to building packages -->
       <AdditionalProperties>BuildPackageLibraryReferences=false</AdditionalProperties>
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
-      <FilterToOSGroup Condition="'$(BuildAllOSGroups)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
+      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
     <Project Include="src\post.builds">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
-      <FilterToOSGroup Condition="'$(BuildAllOSGroups)' != 'true'">$(OSEnvironment)</FilterToOSGroup>
+      <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
   </ItemGroup>
 

@@ -11,13 +11,15 @@
     <ProjectReference Include="..\ref\System.Net.Requests.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="win\System.Net.Requests.pkgproj" />
-    <ProjectReference Include="unix\System.Net.Requests.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.Requests.builds" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="net46">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="wpa81" />

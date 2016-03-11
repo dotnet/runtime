@@ -5,15 +5,21 @@
     <ProjectReference Include="..\ref\System.Net.Http.csproj">
       <SupportedFramework>net45;netcore45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="win\System.Net.Http.pkgproj" />
-    <ProjectReference Include="linux\System.Net.Http.pkgproj" />
-    <ProjectReference Include="osx\System.Net.Http.pkgproj" />
+    <ProjectReference Include="..\src\System.Net.Http.builds" />
+
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Net.Http\runtime.native.System.Net.Http.pkgproj" />
+    <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
+
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="monoandroid10" />
     <InboxOnTargetFramework Include="monotouch10" />
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="net46">
+      <PackageTargetRuntime>win7</PackageTargetRuntime>
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />

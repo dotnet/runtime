@@ -2,15 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="linux\System.IO.FileSystem.Watcher.pkgproj">
-      <OSGroup>Linux</OSGroup>
-    </Project>
-    <Project Include="osx\System.IO.FileSystem.Watcher.pkgproj">
-      <OSGroup>OSX</OSGroup>
-    </Project>
-    <Project Include="win\System.IO.FileSystem.Watcher.pkgproj">
-      <OSGroup>Windows_NT</OSGroup>
-    </Project>
     <Project Include="System.IO.FileSystem.Watcher.pkgproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

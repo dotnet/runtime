@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Sockets.builds" >
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+    <ProjectReference Include="..\..\src\System.Net.Sockets.csproj" >
+      <OSGroup>Linux</OSGroup>
     </ProjectReference>
   </ItemGroup>
 

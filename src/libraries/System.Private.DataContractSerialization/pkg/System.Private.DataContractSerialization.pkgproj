@@ -9,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="any\System.Private.DataContractSerialization.pkgproj" />
-    <ProjectReference Include="aot\System.Private.DataContractSerialization.pkgproj" />
+    <ProjectReference Include="..\src\System.Private.DataContractSerialization.builds" />
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
