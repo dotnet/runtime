@@ -63,11 +63,6 @@ namespace System.Net.Http.Functional.Tests
                 // a 407 response. Optionally, process a new request that would expect credentials.
                 if (requireAuth && !headers.ContainsKey("Proxy-Authorization"))
                 {
-                    if (expectCreds)
-                    {
-                        Task<Socket> secondListen = listener.AcceptSocketAsync();
-                    }
-
                     // Send back a 407
                     await clientSocket.SendAsync(
                         new ArraySegment<byte>(Encoding.ASCII.GetBytes("HTTP/1.1 407 Proxy Auth Required\r\nProxy-Authenticate: Basic\r\n\r\n")),
