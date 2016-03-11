@@ -153,7 +153,10 @@ IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMi
   Exit /b 0
 :Compatible1
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-
+      <BatchCLRTestGCLongTestSkipCondition Condition="$(GCLongRunning) == 'true' And '$(IsLongRunningGCTest)' != 'true'"><![CDATA[
+echo Skipping execution because this is not a long-running GC test
+Exit /b 0
+      ]]></BatchCLRTestGCLongTestSkipCondition>
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
 set CLRTestExpectedExitCode=$(CLRTestExitCode)
@@ -346,6 +349,9 @@ $(CrossgenBatchScript)
 
 REM IlasmRoundTrip Script
 $(IlasmRoundTripBatchScript)
+
+REM Long GC Tests Script (when /p:GCLongRunning=true)
+$(BatchCLRTestGCLongTestSkipCondition)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
