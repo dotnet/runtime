@@ -60,8 +60,7 @@ NESTED_ENTRY DelayLoad_Helper&suffix, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK 8h, 10h, r8, r9
 
-        mov     rcx, frameFlags
-        mov     [rsp], rcx
+        mov     qword ptr [rsp + SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES], frameFlags
         lea     rcx, [rsp + __PWTB_TransitionBlock] ; pTransitionBlock
         mov     rdx, rax                            ; pIndirection
 
