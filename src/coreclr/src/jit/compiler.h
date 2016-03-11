@@ -7607,7 +7607,7 @@ public :
         /* hide/trivialize other areas */                                                       \
                                                                                                 \
         STRESS_MODE(REGS) STRESS_MODE(DBL_ALN) STRESS_MODE(LCL_FLDS) STRESS_MODE(UNROLL_LOOPS)  \
-        STRESS_MODE(MAKE_CSE) STRESS_MODE(INLINE) STRESS_MODE(CLONE_EXPR)                       \
+        STRESS_MODE(MAKE_CSE) STRESS_MODE(LEGACY_INLINE) STRESS_MODE(CLONE_EXPR)                \
         STRESS_MODE(USE_FCOMI) STRESS_MODE(USE_CMOV) STRESS_MODE(FOLD)                          \
         STRESS_MODE(BB_PROFILE) STRESS_MODE(OPT_BOOLS_GC) STRESS_MODE(REMORPH_TREES)            \
         STRESS_MODE(64RSLT_MUL) STRESS_MODE(DO_WHILE_LOOPS) STRESS_MODE(MIN_OPTS)               \
@@ -7618,6 +7618,7 @@ public :
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(PINVOKE_RESTORE_ESP)                                                        \
+        STRESS_MODE(RANDOM_INLINE)                                                              \
                                                                                                 \
         STRESS_MODE(GENERIC_VARN) STRESS_MODE(COUNT_VARN)                                       \
                                                                                                 \
@@ -7649,10 +7650,17 @@ public :
                                           unsigned          weightPercentage);
 
 #ifdef DEBUG
+
     bool                compInlineStress()
     {
-        return compStressCompile(STRESS_INLINE, 50);
+        return compStressCompile(STRESS_LEGACY_INLINE, 50);
     }
+
+    bool                compRandomInlineStress()
+    {
+        return compStressCompile(STRESS_RANDOM_INLINE, 50);
+    }
+
 #endif // DEBUG
 
     bool                compTailCallStress()
@@ -7681,6 +7689,10 @@ public :
         return BLENDED_CODE;
 #endif
     }
+
+#ifdef DEBUG
+    CLRRandom*      inlRNG;
+#endif
 
     //--------------------- Info about the procedure --------------------------
 
