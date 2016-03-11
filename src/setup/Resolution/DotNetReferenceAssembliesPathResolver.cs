@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         public static readonly string DotNetReferenceAssembliesPathEnv = "DOTNET_REFERENCE_ASSEMBLIES_PATH";
         
-        internal static string Resolve(IEnvironment envirnment)
+        internal static string Resolve(IEnvironment envirnment, IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment)
         {
             var path = envirnment.GetEnvironmentVariable(DotNetReferenceAssembliesPathEnv);
             if (!string.IsNullOrEmpty(path))
@@ -20,17 +20,17 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return path;
             }
             
-            return GetDefaultDotNetReferenceAssembliesPath();
+            return GetDefaultDotNetReferenceAssembliesPath(fileSystem, runtimeEnvironment);
         }
         
         public static string Resolve()
         {
-            return Resolve(EnvironmentWrapper.Default);
+            return Resolve(EnvironmentWrapper.Default, FileSystemWrapper.Default, PlatformServices.Default.Runtime);
         }
                 
-        private static string GetDefaultDotNetReferenceAssembliesPath()
+        private static string GetDefaultDotNetReferenceAssembliesPath(IFileSystem fileSystem, IRuntimeEnvironment runtimeEnvironment)
         {            
-            var os = PlatformServices.Default.Runtime.OperatingSystemPlatform;
+            var os = runtimeEnvironment.OperatingSystemPlatform;
             
             if (os == Platform.Windows)
             {
@@ -38,17 +38,17 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
             
             if (os == Platform.Darwin && 
-                Directory.Exists("/Library/Framework/Mono.Framework/Versions/Current/lib/mono/xbuild-frameworks"))
+                fileSystem.Directory.Exists("/Library/Framework/Mono.Framework/Versions/Current/lib/mono/xbuild-frameworks"))
             {
                 return "/Library/Framework/Mono.Framework/Versions/Current/lib/mono/xbuild-frameworks";
             }
             
-            if (Directory.Exists("/usr/local/lib/mono/xbuild-frameworks"))
+            if (fileSystem.Directory.Exists("/usr/local/lib/mono/xbuild-frameworks"))
             {
                 return "/usr/local/lib/mono/xbuild-frameworks";
             }
             
-            if (Directory.Exists("/usr/lib/mono/xbuild-frameworks"))
+            if (fileSystem.Directory.Exists("/usr/lib/mono/xbuild-frameworks"))
             {
                 return "/usr/lib/mono/xbuild-frameworks";
             }
