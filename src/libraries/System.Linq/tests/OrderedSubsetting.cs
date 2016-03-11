@@ -216,6 +216,18 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void TakeAndSkip()
+        {
+            var source = Enumerable.Range(0, 100).Shuffle().ToArray();
+            var ordered = source.OrderBy(i => i);
+            Assert.Empty(ordered.Skip(100).Take(20));
+            Assert.Equal(Enumerable.Range(10, 20), ordered.Take(30).Skip(10));
+            Assert.Equal(Enumerable.Range(10, 1), ordered.Take(11).Skip(10));
+
+            Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));
+        }
+
+        [Fact]
         public void TakeThenTakeExcessive()
         {
             var source = Enumerable.Range(0, 100).Shuffle().ToArray();
@@ -314,6 +326,7 @@ namespace System.Linq.Tests
         public void Count()
         {
             Assert.Equal(20, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Skip(10).Take(20).Count());
+            Assert.Equal(1, Enumerable.Range(0, 100).Shuffle().OrderBy(i => i).Take(2).Skip(1).Count());
         }
 
         [Fact]
