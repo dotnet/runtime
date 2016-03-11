@@ -1462,6 +1462,10 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     SIMDVector4Handle   = nullptr;
     SIMDVectorHandle     = nullptr;
 #endif
+
+#ifdef DEBUG
+    inlRNG = nullptr;
+#endif
 }
 
 /*****************************************************************************
@@ -2971,15 +2975,28 @@ bool            Compiler::compStressCompile(compStressArea  stressArea,
 
     // Does user explicitly set this STRESS_MODE through the command line?
     strStressModeNames = JitConfig.JitStressModeNames();
-    if ((strStressModeNames != NULL) &&
-        (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != NULL))
+    if (strStressModeNames != NULL)
     {
-        if (verbose)
+        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != NULL)
         {
-            printf("JitStressModeNames contains %ws\n", s_compStressModeNames[stressArea]);  
+            if (verbose)
+            {
+                printf("JitStressModeNames contains %ws\n", s_compStressModeNames[stressArea]);
+            }
+            doStress = true;
+            goto _done;
         }
-        doStress = true;
-        goto _done;
+
+        // This stress mode name did not match anything in the stress
+        // mode whitelist. If user has requested only enable mode,
+        // don't allow this stress mode to turn on.
+        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
+
+        if (onlyEnableMode)
+        {
+            doStress = false;
+            goto _done;
+        }
     }
 
     // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
