@@ -118,6 +118,9 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.RunLoop.cs">
       <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RealPath.cs">
+      <Link>Common\Interop\Unix\Interop.RealPath.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Sync.cs">
       <Link>Common\Interop\Unix\Interop.Sync.cs</Link>
     </Compile>

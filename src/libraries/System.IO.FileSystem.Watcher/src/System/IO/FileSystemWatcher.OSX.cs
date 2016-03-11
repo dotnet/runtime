@@ -172,6 +172,14 @@ namespace System.IO
 
             internal void Start()
             {
+                // Make sure _fullPath doesn't contain a link or alias
+                // since the OS will give back the actual, non link'd or alias'd paths
+                _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
+                if (_fullDirectory == null)
+                {
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
+                }
+
                 // Get the path to watch and verify we created the CFStringRef
                 SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
                 if (path.IsInvalid)
