@@ -113,7 +113,7 @@ def static isCorefxTesting(def scenario) {
 
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
-        Utilities.setJobTimeout(newJob, 720)
+        Utilities.setJobTimeout(newJob, 1440)
     }
     else if (isCorefxTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 360)
@@ -301,9 +301,14 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'corefx_jitstressregs8':
             case 'corefx_jitstressregs0x10':
             case 'corefx_jitstressregs0x80':
+            case 'zapdisable':            
+                if (os != 'CentOS7.1') {
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    Utilities.addPeriodicTrigger(job, '@daily')
+                }
+                break            
             case 'gcstress0x3':            
             case 'gcstress0xc':
-            case 'zapdisable':
             case 'heapverify1':
             case 'gcstress0xc_zapdisable':
             case 'gcstress0xc_zapdisable_jitstress2':
@@ -313,7 +318,7 @@ def static addTriggers(def job, def isPR, def architecture, def os, def configur
             case 'gcstress0xc_minopts_heapverify1':         
                 if (os != 'CentOS7.1') {
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
-                    Utilities.addPeriodicTrigger(job, '@daily')
+                    Utilities.addPeriodicTrigger(job, '@weekly')
                 }
                 break
             default:
