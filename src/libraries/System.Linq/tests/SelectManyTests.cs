@@ -332,7 +332,7 @@ namespace System.Linq.Tests.LegacyTests
         public void ForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).SelectMany(i => new int[0]);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
