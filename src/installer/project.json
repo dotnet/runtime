@@ -5,16 +5,16 @@
     "keyFile": "../../tools/Key.snk"
   },
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23901",
-    "System.IO.Compression": "4.1.0-rc2-23901",
-
-    "Microsoft.DotNet.Tools.Tests.Utilities": { "target": "project" },
+    "NETStandard.Library": "1.5.0-rc2-23911",
+    "System.IO.Compression": "4.1.0-rc2-23911",
+    "Microsoft.DotNet.Tools.Tests.Utilities": {
+      "target": "project"
+    },
     "FluentAssertions": "4.0.0",
     "moq.netcore": "4.4.0-beta8",
     "xunit": "2.1.0",
     "dotnet-test-xunit": "1.0.0-dev-91790-12"
   },
-
   "frameworks": {
     "netstandardapp1.5": {
       "imports": [
@@ -23,6 +23,5 @@
       ]
     }
   },
-
   "testRunner": "xunit"
 }
