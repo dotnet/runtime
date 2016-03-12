@@ -779,9 +779,7 @@ BOOL CrossDomainChannel::GetTargetAddressFast(DWORD optFlags, MethodTable *pSrvM
 
     _ASSERTE(m_pTargetAddress);
 #ifdef _DEBUG 
-#ifndef MDIL // Triton binder doesn't have method names available
     _ASSERTE(!strcmp(m_pSrvMD->GetName(), m_pCliMD->GetName()));
-#endif
     DefineFullyQualifiedNameForClass();
     LPCUTF8 szSrvTypeName = GetFullyQualifiedNameForClassNestedAware(pSrvMT);
     LPCUTF8 pszMethodName = m_pCliMD->GetName();

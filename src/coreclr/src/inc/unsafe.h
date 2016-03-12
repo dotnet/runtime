@@ -11,9 +11,7 @@
 // should we just check proper inclusion?
 #include <winwrap.h>
 
-#ifndef CLR_STANDALONE_BINDER
 #include "staticcontract.h"
-#endif
 
 inline VOID UnsafeEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
 {

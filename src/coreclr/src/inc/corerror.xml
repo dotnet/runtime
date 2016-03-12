@@ -4375,12 +4375,6 @@
 	<Comment> The operation was cancelled.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013153c">
-	<SymbolicName>COR_E_UNSUPPORTEDMDIL</SymbolicName>
-	<Message>"Valid IL which cannot be compiled into MDIL."</Message>
-	<Comment> Valid IL which cannot be compiled into MDIL. We will skip MDIL compilation and fall back to JIT.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013153d">
 	<SymbolicName>COR_E_INSUFFICIENTMEMORY</SymbolicName>
 	<Comment> Not enough memory was available for an operation.</Comment>

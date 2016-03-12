@@ -224,7 +224,7 @@
 // are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE 
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
-#if defined(FEATURE_CORECLR) && !defined(BINDER)
+#ifdef FEATURE_CORECLR
 #define FEATURE_CONSERVATIVE_GC 1
 #endif
 

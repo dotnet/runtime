@@ -29,14 +29,6 @@
 
 #include "md5.h"
 
-#ifdef  MDIL
-#include "WellKnownTypes.h"
-struct GuidInfo;
-class MethodDesc;
-class MethodTable;
-#include "CompactLayoutWriter.h"
-#endif
-
 // This is RTL_CONTAINS_FIELD from ntdef.h
 #define CONTAINS_FIELD(Struct, Size, Field) \
     ( (((PCHAR)(&(Struct)->Field)) + sizeof((Struct)->Field)) <= (((PCHAR)(Struct))+(Size)) )
@@ -107,11 +99,6 @@ ZapImage::~ZapImage()
 
     if (m_pDebugInfoTable != NULL)
         m_pDebugInfoTable->~ZapDebugInfoTable();
-
-#ifdef MDIL
-    if (m_pMdilDebugInfoTable != NULL)
-        m_pMdilDebugInfoTable->~MdilDebugInfoTable();
-#endif
 
     if (m_pVirtualSectionsTable != NULL)
         m_pVirtualSectionsTable->~ZapVirtualSectionsTable();
@@ -185,22 +172,6 @@ void ZapImage::InitializeSections()
 
     m_pHelperThunks = new (GetHeap()) ZapNode * [CORINFO_HELP_COUNT];
 
-#ifdef MDIL
-    if (m_zapper->m_fEmbedMDIL)
-    {
-        if (m_cbMdilPESectionData != NULL)
-        {
-            ZapBlob *mdilData = ZapBlob::NewAlignedBlob(this, m_pMdilPESectionData, m_cbMdilPESectionData, sizeof(TADDR));
-            m_pMDILSection->Place(mdilData);
-        }
-        else
-        {
-            m_zapper->Error(W("Could not embed mdil data in ni image. MDIL data not present in IL file.\n"));
-            IfFailThrow(E_INVALIDARG);
-        }
-    }
-#endif // MDIL
-
 #ifdef FEATURE_CORECLR
     if (!m_zapper->m_pOpt->m_fNoMetaData)
 #endif
@@ -211,10 +182,6 @@ void ZapImage::InitializeSections()
 
     m_pDebugInfoTable = new (GetHeap()) ZapDebugInfoTable(this);
     m_pDebugSection->Place(m_pDebugInfoTable);
-
-#ifdef MDIL
-    m_pMdilDebugInfoTable = new (GetHeap()) MdilDebugInfoTable(this);
-#endif
 
     m_pBaseRelocs = new (GetHeap()) ZapBaseRelocs(this);
     m_pBaseRelocsSection->Place(m_pBaseRelocs);
@@ -662,20 +629,6 @@ void ZapImage::AllocateVirtualSections()
         m_pDebugSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | ColdRange | DebugSection, sizeof(DWORD));
     }
 
-#ifdef MDIL
-    {
-        //
-        // .mdil section
-        //
-        m_pMDILSection = NULL;
-        if (m_zapper->m_fEmbedMDIL)
-        {
-            ZapPhysicalSection * pMDILSection = NewPhysicalSection(".mdil", IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_DISCARDABLE | IMAGE_SCN_MEM_READ);
-            m_pMDILSection = NewVirtualSection(pMDILSection, IBCUnProfiledSection | ColdRange | MDILDataSection);
-        }
-    }
-#endif
-
     {
         //
         // .reloc section
@@ -708,40 +661,14 @@ void ZapImage::Preallocate()
     m_pMethodEntryPoints->Preallocate(cbILImage);
     m_pWrappers->Preallocate(cbILImage);
 
-#ifndef BINDER
     if (m_pILMetaData != NULL)
         m_pILMetaData->Preallocate(cbILImage);
-#endif
     m_pGCInfoTable->Preallocate(cbILImage);
 #ifdef WIN64EXCEPTIONS
     m_pUnwindDataTable->Preallocate(cbILImage);
 #endif // WIN64EXCEPTIONS
     m_pDebugInfoTable->Preallocate(cbILImage);
 }
-
-#ifdef BINDER
-void ZapImage::SetNativeVersionResource(PVOID pvVersionResourceBlob, SIZE_T cbVersionResource)
-{
-    ZapNode* pBlob = ZapBlob::NewAlignedBlob(this, pvVersionResourceBlob, cbVersionResource, sizeof(TADDR));
-    ZapVersionResource * pWin32VersionResource = new (GetHeap()) ZapVersionResource(pBlob);
-    m_pWin32ResourceSection->Place(pWin32VersionResource);
-    m_pWin32ResourceSection->Place(pBlob);
-
-    SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE, m_pWin32ResourceSection);
-}
-#endif
-#ifdef CLR_STANDALONE_BINDER
-void ZapImage::EmitMethodIL(mdToken methodDefToken)
-{
-    if (m_pILMetaData != NULL)
-        m_pILMetaData->EmitMethodIL(methodDefToken);
-}
-void ZapImage::EmitFieldRVA(mdToken fieldDefToken, RVA fieldRVA)
-{
-    if (m_pILMetaData != NULL)
-        m_pILMetaData->EmitFieldRVA(fieldDefToken, fieldRVA);
-}
-#endif
 
 void ZapImage::SetVersionInfo(CORCOMPILE_VERSION_INFO * pVersionInfo)
 {
@@ -1234,10 +1161,6 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
     if (!IsReadyToRunCompilation())
     {
         m_pPreloader->FixupRVAs();
-
-#ifdef CLR_STANDALONE_BINDER
-        m_pDataImage->FixupRVAs();
-#endif
     }
 
     HANDLE hFile = GenerateFile(wszOutputFileName, pNativeImageSig);
@@ -1330,7 +1253,6 @@ void ZapImage::CalculateZapBaseAddress()
 
     SIZE_T baseAddress = 0;
 
-#ifndef BINDER // TritonTBD
     {
         // Read the actual preferred base address from the disk
 
@@ -1455,7 +1377,6 @@ void ZapImage::CalculateZapBaseAddress()
     }
 #endif
 #endif
-#endif // TritonTBD
 
 
     // Apply the calculated base address.
@@ -1463,66 +1384,6 @@ void ZapImage::CalculateZapBaseAddress()
 
     m_NativeBaseAddress = baseAddress;
 }
-
-#ifdef  MDIL
-static WORD ReadWord(BYTE *p)
-{
-    return  p[0] +
-            p[1]*256;
-}
-
-static DWORD ReadDWord(BYTE *p)
-{
-    return  p[0] + 
-            p[1]*256 +
-            p[2]*(256*256) +
-            p[3]*(256*256*256);
-}
-
-#ifdef CLR_STANDALONE_BINDER
-#include "mdil.h"
-#else
-#define CLR_STANDALONE_BINDER
-#include "mdil.h"
-#undef CLR_STANDALONE_BINDER
-#endif
-
-bool ReadMemory(BYTE *&dataPtr, COUNT_T &dataSize, void *dest, COUNT_T size)
-{
-    if (dataSize < size)
-        return false;
-
-    if (dest != NULL)
-        memcpy(dest, dataPtr, size);
-
-    dataPtr += size;
-    dataSize -= size;
-
-    return true;
-}
-
-void ZapImage::LoadMDILSection()
-{
-#ifdef BINDER
-    _ASSERTE(!"intentionally unreachable");
-#else
-    IMAGE_SECTION_HEADER *pMDILSection = m_ModuleDecoder.FindSection(".mdil");
-    m_cbMdilPESectionData = 0;
-    if (pMDILSection)
-    {
-        // We got our section - get the start of the section
-        BYTE* pStartOfMDILSection = static_cast<BYTE*>(m_ModuleDecoder.GetBase())+pMDILSection->VirtualAddress;
-        BYTE* pEndOfMDILSection = pStartOfMDILSection + pMDILSection->Misc.VirtualSize;
-        if (m_ModuleDecoder.PointerInPE(pEndOfMDILSection - 1))
-        {
-            m_pMdilPESectionData = pStartOfMDILSection;
-            m_cbMdilPESectionData = pMDILSection->Misc.VirtualSize;
-        }
-    }
-#endif
-}
-
-#endif // ifdef MDIL
 
 void ZapImage::Open(CORINFO_MODULE_HANDLE hModule,
                         IMetaDataAssemblyEmit *pEmit)
@@ -1571,18 +1432,11 @@ void ZapImage::Open(CORINFO_MODULE_HANDLE hModule,
     // 
     LoadProfileData();
 
-#ifdef  MDIL
-#ifndef BINDER
-    LoadMDILSection();
-#endif
-#endif
     //
     // Get metadata of module to be compiled
     //
     m_pMDImport = m_zapper->m_pEECompileInfo->GetModuleMetaDataImport(m_hModule);
-#ifndef BINDER
     _ASSERTE(m_pMDImport != NULL);
-#endif // !BINDER
 
     //
     // Open new assembly metadata data for writing.  We may not use it,
@@ -1742,14 +1596,8 @@ void ZapImage::OutputManifestMetadata()
             fMetadata = TRUE;
     }
 
-#ifdef CLR_STANDALONE_BINDER
-    // TritonTBD:  A workaround to place a copy of metadata into hello.ni.exe.
-    fMetadata = TRUE;
-#endif
-
     if (fMetadata)
     {
-#ifndef CLR_STANDALONE_BINDER
         // Metadata creates a new MVID for every instantiation.
         // However, we want the generated ngen image to always be the same
         // for the same input. So set the metadata MVID to NGEN_IMAGE_MVID.
@@ -1759,32 +1607,9 @@ void ZapImage::OutputManifestMetadata()
                                                   (void**)&pMDInternalEmit));
 
         IfFailThrow(pMDInternalEmit->ChangeMvid(NGEN_IMAGE_MVID));
-#endif
 
         m_pAssemblyMetaData = new (GetHeap()) ZapMetaData();
         m_pAssemblyMetaData->SetMetaData(m_pAssemblyEmit);
-
-#ifdef CLR_STANDALONE_BINDER
-
-        // now generate the NativeAssembyManifest
-        // push down first the assembly references
-        // we can do this only AFTER we have an instance of ZapMetadata (see a few lines above)
-        // the order of assembly references is/needs to be in sync with those in CORCOMPILE_DEPENDENCIES
-        
-        for (COUNT_T cnt = 0; cnt < m_pNativeManifestData.GetCount(); cnt++) {
-            m_pAssemblyMetaData->SetAssemblyReference(
-                     m_pNativeManifestData[cnt].m_AssemblyName,
-                     NULL,
-                     m_pNativeManifestData[cnt].m_pNad);
-        }
-
-        // now provide the assembly/module def relevant data
-        // please note that his assumes/knows that the last assemblyRef is "self-referential"
-        m_pAssemblyMetaData->SetAssembly(m_pNativeManifestData[(COUNT_T)m_selfIndex].m_AssemblyName,
-                                         NULL,
-                                         m_pNativeManifestData[(COUNT_T)m_selfIndex].m_pNad);
-
-#endif
 
         m_pMetaDataSection->Place(m_pAssemblyMetaData);
     }
@@ -1865,12 +1690,11 @@ void ZapImage::OutputTables()
         SetSizeOfStackCommit(m_ModuleDecoder.GetSizeOfStackCommit());
     }
 
-#if defined(_TARGET_ARM_) && defined(FEATURE_CORECLR) && defined(FEATURE_CORESYSTEM) && !defined(BINDER)
+#if defined(_TARGET_ARM_) && defined(FEATURE_CORECLR) && defined(FEATURE_CORESYSTEM)
     if (!IsReadyToRunCompilation())
     {
         // On ARM CoreSys builds, crossgen will use 4k file alignment, as requested by Phone perf team
-        // to improve perf on phones with compressed system partitions.  MDIL binder will continue to use
-        // 512 byte alignment, since there is no plan to compress data partitions.
+        // to improve perf on phones with compressed system partitions.
         SetFileAlignment(0x1000);
     }
 #elif defined(FEATURE_PAL)
@@ -1974,1389 +1798,6 @@ void ZapImage::CompileProfileData()
     EndRegion(CORINFO_REGION_HOT);
 }
 
-#ifdef  MDIL
-static COUNT_T OutputDWord(BYTE *p, DWORD d)
-{
-    if (p)
-    {
-        p[0] = (BYTE)d;
-        p[1] = (BYTE)(d>>8);
-        p[2] = (BYTE)(d>>16);
-        p[3] = (BYTE)(d>>24);
-    }
-    return 4;
-}
-
-void ZapImage::UnifyGenericInstances_MDIL(ZapInfo::MDILGenericMethodDesc *pMD)
-{
-    // we have unified on the last arg during generation - now we do the rest
-    bool change;
-    do
-    {
-        change = false;
-        for (int argToUnify = 0; argToUnify < pMD->arity; argToUnify++)
-        {
-            for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-            {
-                ZapInfo::MDILGenericMethodDesc *prev = p;
-                for (ZapInfo::MDILGenericMethodDesc *q = p->next; q != NULL; q = q->next)
-                {
-                    // we have grouped identical bodies together in the list, so if the body is
-                    // not the same, we can give up - no more identical bodies will be encountered
-                    if (q->mdilCodeOffs != p->mdilCodeOffs || q->debugInfoOffs != p->debugInfoOffs)
-                        break;
-
-                    // if the flavors of p and q agree except for one position, we can merge q into p
-                    if (ZapInfo::ArgFlavorsMatchExcept(q->flavorSet, p->flavorSet, pMD->arity, argToUnify))
-                    {
-//                        GetSvcLogger()->Printf(W("merged generic bodies %08x + %08x\n"), p->flavorSet[argToUnify], q->flavorSet[argToUnify]);
-                        p->flavorSet[argToUnify] |= q->flavorSet[argToUnify];
-
-                        // delete q from the list
-                        _ASSERT(prev->next == q);
-                        prev->next = q->next;
-                        q = prev;
-                        change = true;
-                    }
-                    else
-                    {
-                        prev = q;
-                    }
-                }
-            }
-        }
-    }
-    while (change);
-}
-
-COUNT_T ZapImage::EncodeGenericInstance_MDIL(ZapInfo::MDILGenericMethodDesc *pMD)
-{
-    // count how many instances we have
-    COUNT_T count = 0;
-    for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-    {
-        count++;
-    }
-
-    // compute the size to allocate in m_genericInstPool
-    size_t size = sizeof(ZapInfo::MDILInstHeader) + 2*count*sizeof(DWORD) + count*pMD->arity*sizeof(ZapInfo::FlavorSet);
-    size = AlignUp(size, sizeof(DWORD));
-
-    // as usual, we put some dummy stuff at the very beginning
-    if (m_genericInstPool.GetCount() == 0)
-    {
-        m_genericInstPool.SetCount(sizeof(DWORD));
-        OutputDWord(&m_genericInstPool[0], 'MDGI');
-    }
-    COUNT_T genericInstOffs = m_genericInstPool.GetCount();
-    m_genericInstPool.SetCount(genericInstOffs + (COUNT_T)size);
-
-    ZapInfo::MDILInstHeader *pMIH = (ZapInfo::MDILInstHeader *)&m_genericInstPool[genericInstOffs];
-    pMIH->m_arity = pMD->arity;
-    pMIH->m_flags = 0;
-    pMIH->m_instCount = count;
-
-    DWORD *mdilCodeOffsets = (DWORD *)(pMIH + 1);
-
-    ZapInfo::FlavorSet *flavorSets = (ZapInfo::FlavorSet *)(mdilCodeOffsets + 2*count);
-    
-    for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-    {
-        _ASSERTE(p->mdilCodeOffs  < m_codeBuffer     [GENERIC_CODE].GetCount());
-        _ASSERTE(p->debugInfoOffs < m_debugInfoBuffer[GENERIC_CODE].GetCount());
-
-        *mdilCodeOffsets++ = p->mdilCodeOffs;
-        *mdilCodeOffsets++ = p->debugInfoOffs;
-        for (int i = 0; i < pMD->arity; i++)
-            *flavorSets++ = p->flavorSet[i];
-    }
-    return genericInstOffs;
-}
-
-int ZapImage::CheckForUnmerged(ZapInfo::MDILGenericMethodDesc tab[], int last, ZapInfo::FlavorSet flavorsToMatch, WCHAR *message)
-{
-    int arity = tab[last].arity;
-    if (flavorsToMatch == 0)
-    {
-        for (int i = 0; i < last; i++)
-        {
-            if (ZapInfo::ArgFlavorsMatchExcept(tab[last].flavorSet, tab[i].flavorSet, arity, arity))
-            {
-                GetSvcLogger()->Printf(W("%s"), message);
-                return 1;
-            }
-        }
-    }
-    else
-    {
-        for (int j = 0; j < arity; j++)
-        {
-            for (int i = 0; i < last; i++)
-            {
-                if (ZapInfo::ArgFlavorsMatchExcept(tab[last].flavorSet, tab[i].flavorSet, arity, j) &&
-                    tab[last].flavorSet[j] != tab[i].flavorSet[j] && (tab[last].flavorSet[j] & flavorsToMatch) && (tab[i].flavorSet[j] & flavorsToMatch))
-                {
-                    GetSvcLogger()->Printf(W("%s"), message);
-                    return 1;
-                }
-            }
-        }
-    }
-    return 0;
-}
-
-void ZapImage::EncodeGenericInstances_MDIL()
-{
-    // make sure m_methodRidCount and m_mapMethodRidToOffs are big enough
-    COUNT_T mappingCount = m_mapGenericMethodToDesc.GetCount();
-    if (m_methodRidCount < mappingCount)
-        m_methodRidCount = mappingCount;
-    if (m_mapMethodRidToOffs.GetCount() < mappingCount)
-    {
-        COUNT_T oldCount = m_mapMethodRidToOffs.GetCount();
-        m_mapMethodRidToOffs.SetCount(mappingCount);
-        for (COUNT_T i = oldCount; i < mappingCount; i++)
-            m_mapMethodRidToOffs[i] = 0;
-    }
-
-    COUNT_T methodCount = 0;
-    COUNT_T instanceCount = 0;
-    COUNT_T uniqueBodyCount = 0;
-    COUNT_T uniqueBodySize = 0;
-    COUNT_T unmergedInstances = 0;
-    COUNT_T unmergedFloatDoubleInstances = 0;
-    COUNT_T unmergedSmallIntInstances = 0;
-    COUNT_T unmergedIntUIntInstances = 0;
-    COUNT_T unmergedIntInstances = 0;
-    COUNT_T unmergedLongULongInstances = 0;
-    COUNT_T unmergedFloatStructInstances = 0;
-    COUNT_T unmergedLongStructInstances = 0;
-    COUNT_T unmergedLongFloatInstances = 0;
-    COUNT_T unmergedNullableInstances = 0;
-    COUNT_T unmergedSharedStructInstances = 0;
-    COUNT_T unmergedStructInstances = 0;
-
-    for (COUNT_T i = 0; i < m_mapGenericMethodToDesc.GetCount(); i++)
-    {
-        ZapInfo::MDILGenericMethodDesc *pMD = m_mapGenericMethodToDesc[i];
-        if (pMD == NULL)
-            continue;
-
-        methodCount++;
-
-        UnifyGenericInstances_MDIL(pMD);
-
-#if 0 // def _DEBUG
-        DWORD prevMdilCodeOffs = 0;
-        COUNT_T uniqueBodyCountForThisMethod = 0;
-        COUNT_T uniqueBodySizeForThisMethod = 0;
-        COUNT_T instanceCountForThisMethod = 0;
-        for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-        {
-            instanceCountForThisMethod++;
-            if (prevMdilCodeOffs != p->mdilCodeOffs)
-            {
-                uniqueBodyCountForThisMethod++;
-                uniqueBodySizeForThisMethod += p->mdilCodeSize;
-                prevMdilCodeOffs = p->mdilCodeOffs;
-            }
-        }
-        GetSvcLogger()->Printf(W("%u Instances for generic method %08x - %u unique bodies totalling %u bytes\n"),
-                instanceCountForThisMethod,      TokenFromRid(i, mdtMethodDef),
-                                                        uniqueBodyCountForThisMethod,
-                                                                                  uniqueBodySizeForThisMethod);
-
-        instanceCount += instanceCountForThisMethod;
-        uniqueBodyCount += uniqueBodyCountForThisMethod;
-        uniqueBodySize += uniqueBodySizeForThisMethod;
-        const size_t MD_TABLE_SIZE = 256;
-        ZapInfo::MDILGenericMethodDesc mdTab[MD_TABLE_SIZE];
-        COUNT_T mdCount = 0;
-        for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-        {
-            if (mdCount < MD_TABLE_SIZE)
-            {
-                mdTab[mdCount] = *p;
-                mdCount++;
-            }
-        }
-        qsort(mdTab, mdCount, sizeof(mdTab[0]), ZapInfo::CmpMDILGenericMethodDesc);
-
-        for (COUNT_T mdInx = 0; mdInx < mdCount; mdInx++)
-        {
-            if (mdInx >= 1 && !ZapInfo::ArgFlavorsMatchExcept(mdTab[mdInx-1].flavorSet, mdTab[mdInx].flavorSet, mdTab[mdInx].arity, mdTab[mdInx].arity-1))
-                GetSvcLogger()->Printf(W("\n"));
-
-            GetSvcLogger()->Printf(W("  %08x(%4u): "), mdTab[mdInx].mdilCodeOffs, mdTab[mdInx].mdilCodeSize);
-            for (int j = 0; j < mdTab[mdInx].arity; j++)
-            {
-                GetSvcLogger()->Printf(W(" %08x"), mdTab[mdInx].flavorSet[j]);
-            }
-            unmergedInstances += CheckForUnmerged(mdTab, mdInx, 0, W(" - unmerged instance"));
-
-            const ZapInfo::FlavorSet FLOAT_DOUBLE = (1 << ELEMENT_TYPE_R4)|(1 << ELEMENT_TYPE_R8);
-            unmergedFloatDoubleInstances += CheckForUnmerged(mdTab, mdInx, FLOAT_DOUBLE, W(" - unmerged float/double instance"));
-
-            const ZapInfo::FlavorSet SMALL_INT = (1 << ELEMENT_TYPE_BOOLEAN)|(1 << ELEMENT_TYPE_CHAR)|(1 << ELEMENT_TYPE_I1)|(1 << ELEMENT_TYPE_U1)|(1 << ELEMENT_TYPE_I2)|(1 << ELEMENT_TYPE_U2);
-            unmergedSmallIntInstances += CheckForUnmerged(mdTab, mdInx, SMALL_INT, W(" - unmerged small int instance"));
-
-            const ZapInfo::FlavorSet REGULAR_INT = (1 << ELEMENT_TYPE_I4)|(1 << ELEMENT_TYPE_U4)|(1 << ELEMENT_TYPE_I)|(1 << ELEMENT_TYPE_U);
-            unmergedIntUIntInstances += CheckForUnmerged(mdTab, mdInx, REGULAR_INT, W(" - unmerged int/uint instance"));
-
-            const ZapInfo::FlavorSet REGISTER_INT = SMALL_INT|REGULAR_INT;
-            unmergedIntInstances += CheckForUnmerged(mdTab, mdInx, REGISTER_INT, W(" - unmerged int instance"));
-
-            const ZapInfo::FlavorSet LONG_INT = (1 << ELEMENT_TYPE_I8)|(1 << ELEMENT_TYPE_U8);
-            unmergedLongULongInstances += CheckForUnmerged(mdTab, mdInx, LONG_INT, W(" - unmerged long/ulong instance"));
-
-            const ZapInfo::FlavorSet LONG_STRUCT = LONG_INT|(1 << ELEMENT_TYPE_VALUETYPE);
-            unmergedLongStructInstances += CheckForUnmerged(mdTab, mdInx, LONG_STRUCT, W(" - unmerged long/struct instance"));
-
-            const ZapInfo::FlavorSet LONG_FLOAT = LONG_INT|FLOAT_DOUBLE;
-            unmergedLongFloatInstances += CheckForUnmerged(mdTab, mdInx, LONG_FLOAT, W(" - unmerged long/float instance"));
-
-            const ZapInfo::FlavorSet FLOAT_STRUCT = FLOAT_DOUBLE|(1 << ELEMENT_TYPE_VALUETYPE);
-            unmergedFloatStructInstances += CheckForUnmerged(mdTab, mdInx, FLOAT_STRUCT, W(" - unmerged float/struct instance"));
-
-            const ZapInfo::FlavorSet NULLABLE_STRUCT = (1 << ELEMENT_TYPE_VALUETYPE)|(1 << 0x17);
-            unmergedNullableInstances += CheckForUnmerged(mdTab, mdInx, NULLABLE_STRUCT, W(" - unmerged nullable instance"));
-
-            const ZapInfo::FlavorSet SHARED_STRUCT = (1 << ELEMENT_TYPE_VALUETYPE)|(1 << 0x1e);
-            unmergedSharedStructInstances += CheckForUnmerged(mdTab, mdInx, SHARED_STRUCT, W(" - unmerged shared struct instance"));
-
-            const ZapInfo::FlavorSet STRUCT = (1 << ELEMENT_TYPE_VALUETYPE)|(1 << 0x17)|(1 << 0x1e)|(1 << 0x1f);
-            unmergedStructInstances += CheckForUnmerged(mdTab, mdInx, STRUCT, W(" - unmerged struct instance"));
-
-            GetSvcLogger()->Printf(W("\n"));
-        }
-#endif
-        COUNT_T genericInstOffs = EncodeGenericInstance_MDIL(pMD);
-
-        _ASSERT(m_mapMethodRidToOffs[i] == 0);
-        m_mapMethodRidToOffs[i] = GENERIC_METHOD_REF | genericInstOffs;
-    }
-
-#if 0 //def _DEBUG
-    for (COUNT_T i = 0; i < m_mapGenericMethodToDesc.GetCount(); i++)
-    {
-        ZapInfo::MDILGenericMethodDesc *pMD = m_mapGenericMethodToDesc[i];
-        if (pMD == NULL)
-            continue;
-
-        // 0 the mdilCodeOffs and unify - the result tells us what we have covered...
-        for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-            p->mdilCodeOffs = 0;
-
-        UnifyGenericInstances_MDIL(pMD);
-
-        GetSvcLogger()->Printf(W("Instances for generic method %08x\n"), TokenFromRid(i, mdtMethodDef));
-
-        const size_t MD_TABLE_SIZE = 256;
-        ZapInfo::MDILGenericMethodDesc mdTab[MD_TABLE_SIZE];
-        COUNT_T mdCount = 0;
-        for (ZapInfo::MDILGenericMethodDesc *p = pMD; p != NULL; p = p->next)
-        {
-            if (mdCount < MD_TABLE_SIZE)
-            {
-                mdTab[mdCount] = *p;
-                mdCount++;
-            }
-        }
-        qsort(mdTab, mdCount, sizeof(mdTab[0]), ZapInfo::CmpMDILGenericMethodDesc);
-
-        for (COUNT_T mdInx = 0; mdInx < mdCount; mdInx++)
-        {
-            if (mdInx >= 1 && !ZapInfo::ArgFlavorsMatchExcept(mdTab[mdInx-1].flavorSet, mdTab[mdInx].flavorSet, mdTab[mdInx].arity, mdTab[mdInx].arity-1))
-                GetSvcLogger()->Printf(W("\n"));
-
-            for (int j = 0; j < mdTab[mdInx].arity; j++)
-            {
-                GetSvcLogger()->Printf(W(" %08x"), mdTab[mdInx].flavorSet[j]);
-            }
-
-            GetSvcLogger()->Printf(W("\n"));
-        }
-    }
-
-    GetSvcLogger()->Printf(W("%u instances and %u unique bodies for %u generic methods\n"), instanceCount, uniqueBodyCount, methodCount);
-    GetSvcLogger()->Printf(W("%u unmerged instances\n"), unmergedInstances);
-    GetSvcLogger()->Printf(W("%u unmerged float/double instances\n"), unmergedFloatDoubleInstances);
-    GetSvcLogger()->Printf(W("%u unmerged small int instances\n"), unmergedSmallIntInstances);
-    GetSvcLogger()->Printf(W("%u unmerged int/uint instances\n"), unmergedIntUIntInstances);
-    GetSvcLogger()->Printf(W("%u unmerged int instances\n"), unmergedIntInstances);
-    GetSvcLogger()->Printf(W("%u unmerged long/ulong instances\n"), unmergedLongULongInstances);
-    GetSvcLogger()->Printf(W("%u unmerged long/struct instances\n"), unmergedLongStructInstances);
-    GetSvcLogger()->Printf(W("%u unmerged long/float instances\n"), unmergedLongFloatInstances);
-    GetSvcLogger()->Printf(W("%u unmerged float/struct instances\n"), unmergedFloatStructInstances);
-    GetSvcLogger()->Printf(W("%u unmerged nullable instances\n"), unmergedNullableInstances);
-    GetSvcLogger()->Printf(W("%u unmerged shared struct instances\n"), unmergedSharedStructInstances);
-    GetSvcLogger()->Printf(W("%u unmerged struct instances\n"), unmergedStructInstances);
-
-    GetSvcLogger()->Printf(W("%u unique generic body size\n"), uniqueBodySize);
-
-    GetSvcLogger()->Printf(W("%u unmerged generic methods\n"), m_unmergedGenericCount);
-    GetSvcLogger()->Printf(W("%u   merged generic methods\n"), m_mergedGenericCount);
-    GetSvcLogger()->Printf(W("%u unmerged generic code size\n"), m_unmergedGenericSize);
-    GetSvcLogger()->Printf(W("%u   merged generic code size\n"), m_mergedGenericSize);
-#endif
-}
-
-
-
-//----------------------------------------------------------------------------------
-// Copies the specified number of bytes from fpIn to fpOut.
-//----------------------------------------------------------------------------------
-static bool fcopy(FILE *fpIn, FILE *fpOut, size_t cbBytes)
-{
-    size_t cbNumBytesLeft = cbBytes;
-
-    while (cbNumBytesLeft)
-    {
-        byte buffer[PAGE_SIZE];
-        size_t cbNumBytesForThisPass = min(cbNumBytesLeft, sizeof(buffer));
-        if (1 != fread(buffer, cbNumBytesForThisPass, 1, fpIn))
-            return false;
-        if (1 != fwrite(buffer, cbNumBytesForThisPass, 1, fpOut))
-            return false;
-        cbNumBytesLeft -= cbNumBytesForThisPass;
-    }
-    return true;
-}
-
-
-//----------------------------------------------------------------------------------
-// Writes the specified number of bytes at a specific position in the output file.
-//----------------------------------------------------------------------------------
-static bool fwriteat(FILE *fpOut, ULONG position, const void *pBytes, size_t cbBytes)
-{
-    if (0 != fseek(fpOut, position, SEEK_SET))
-        return false;
-    if (1 != fwrite(pBytes, cbBytes, 1, fpOut))
-        return false;
-    return true;
-}
-
-//----------------------------------------------------------------------------------
-// Writes out zeroes to "fp" until the file position is a multiple of "align".
-//----------------------------------------------------------------------------------
-static bool fzerofilluntilaligned(LONG align, FILE *fp)
-{
-    LONG pos = ftell(fp);
-    LONG endpoint = (LONG)ALIGN_UP(pos, align);
-    for (LONG i = pos; i < endpoint; i++)
-    {
-        BYTE zero = 0;
-        if (1 != fwrite(&zero, 1, 1, fp))
-            return false;
-    }
-    return true;
-}
-
-
-//----------------------------------------------------------------------------------
-// When we insert the .MDIL section, we insert bytes into two portions of the IL image.
-//
-// - Insertion point #1 starts at the end of the original section table (we need a new
-//   entry for the .MDIL section.) In practice, this always pushes the section table
-//   into a new FileAlignment page and thus requires bumping everything below
-//   by other (FileAlignment - sizeof(IMAGE_SECTION_HEADER)) bytes to preserve alignment.
-//
-//   For simplicity, we do this whether or not the section table actually spilled over.
-//
-//
-// - Insertion point #2 starts after the last original section contents. We insert
-//   the contents of the .MDIL section here.
-//
-// The bytes in between the insertion points are blitted to the output file
-// (except for a few needed fixups.)
-//
-// It was also attempted to reduce the number of insertion points to 1 by
-// inserting the .MDIL contents before the other sections. But PEDecoder boots
-// any PE whose section table isn't sorted by both RawData and RVA addresses so
-// this pulled the cord on that idea.
-//----------------------------------------------------------------------------------
-enum FIXUPREGIONID
-{
-    FIXUPREGIONID_SECTIONCONTENTS = 0,  // region from end of original section table to end of final original section contents.
-    FIXUPREGIONID_CERTIFICATES    = 1,  // region from end of section contents to end of file (WIN_CERTIFICATE stuff goes here.)
-    FIXUPREGIONID_COUNT           = 2,
-
-};
-
-
-//----------------------------------------------------------------------------------
-// We create an array of these, sorted by m_start. The array is terminated by
-// an entry whose m_start is the size of the input file.
-//----------------------------------------------------------------------------------
-struct FixupRegion
-{
-    ULONG m_start;    // Position of first byte of region (in the input file)
-    ULONG m_delta;    // Amount to add to make it correct for the output file.
-};
-
-static DWORD FixupPosition(const FixupRegion *pFixupRegions, ULONG inputPosition, ULONG *pOutputPosition)
-{
-    ULONG delta = 0;
-    while (inputPosition >= pFixupRegions->m_start)
-    {
-        delta = pFixupRegions->m_delta;
-        if (delta == ((ULONG)(-1)))
-            return ERROR_BAD_FORMAT;  // A FilePointer read from the input file is out of range.
-
-        pFixupRegions++;
-    }
-    *pOutputPosition = inputPosition + delta;
-    return ERROR_SUCCESS;
-}
-
-
-//----------------------------------------------------------------------------------
-// Creates a copy of the input IL file with a new ".mdil" section attached.
-//----------------------------------------------------------------------------------
-static DWORD EmbedMdilIntoILFile(FILE *inputFile, FILE *outputFile, LPCWSTR inputFileName, ZapImage *pZapImage)
-{
-#ifdef BINDER
-    _ASSERTE(!"intentionally unreachable");
-    return E_NOTIMPL;
-#else
-
-    _ASSERTE(0 == ftell(inputFile));
-    _ASSERTE(0 == ftell(outputFile));
-
-
-    static const BYTE aMDILSectionName[IMAGE_SIZEOF_SHORT_NAME] = {'.','m','d','i','l',0,0,0};
-
-    NewHolder<IMAGE_SECTION_HEADER> oldImageSectionHeaders;
-
-    //-----------------------------------------------------------------------------------------
-    // Read the PE headers.
-    //-----------------------------------------------------------------------------------------
-    IMAGE_DOS_HEADER dosHeader;
-    if (fread(&dosHeader, sizeof(dosHeader), 1, inputFile) != 1) goto ioerror;
-    if (dosHeader.e_magic != IMAGE_DOS_SIGNATURE)
-    {
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": Expected 'MZ' at offset 0.\n"), inputFileName);
-        goto error;  // No 'MZ'
-    }
-
-    size_t cbPEOffset = dosHeader.e_lfanew;
-    if (0 != fseek(inputFile, cbPEOffset, SEEK_SET)) goto ioerror;
-    DWORD peSignature;
-    if (1 != fread(&peSignature, sizeof(peSignature), 1, inputFile)) goto ioerror;
-    if (peSignature != IMAGE_NT_SIGNATURE) 
-    {
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": Expected 'PE\\0\\0' at offset 0x%x.\n"), inputFileName, ftell(inputFile) - sizeof(peSignature));
-        goto error; // No 'PE\0\0'
-    }
-
-    ULONG positionOfImageFileHeader = ftell(inputFile);
-    IMAGE_FILE_HEADER imageFileHeader;
-    if (1 != fread(&imageFileHeader, sizeof(imageFileHeader), 1, inputFile)) goto ioerror;
-    const int numberOfSections = imageFileHeader.NumberOfSections;
-
-    if (numberOfSections <= 0 || numberOfSections > 2048)  // crude buffer overflow guard
-    {
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": Suspicious value for IMAGE_FILE_HEADER.NumberOfSections: %d.\n"), inputFileName, numberOfSections);
-        goto error; // No 'PE\0\0'
-    }
-
-    ULONG positionOfImageOptionalHeader = ftell(inputFile);
-    IMAGE_OPTIONAL_HEADER32 imageOptionalHeader;
-    if (1 != fread(&imageOptionalHeader, sizeof(imageOptionalHeader), 1, inputFile)) goto error;
-    if (imageOptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) //0x10b
-    {
-        // No 0x10b magic. Thus, not a 32-bit header. (If you saw 0x20b here, this is a PE with a 64-bit header.)
-        if (imageOptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
-        {
-            pZapImage->GetZapper()->Error(W("Error: \"%ws\": This is a 64-bit image.\n"), inputFileName);
-        }
-        else
-        {
-            pZapImage->GetZapper()->Error(W("Error: \"%ws\": Unexpected IMAGE_OPTIONAL_HEADER.Magic value: 0x%x.\n"),
-                                          inputFileName,
-                                          (unsigned int)(imageOptionalHeader.Magic));        }
-
-        goto error;
-    }
-
-    if (imageOptionalHeader.NumberOfRvaAndSizes != IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
-    {
-        // Expected 16 IMAGE_DATA_DIRECTORY entries (an assumption hard-coded into the struct definition of IMAGE_OPTIONAL_HEADER32)
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": Unexpected IMAGE_OPTIONAL_HEADER.NumberOfRvaAndSizes value: 0x%x.\n"),
-                                      inputFileName,
-                                      (unsigned int)(imageOptionalHeader.NumberOfRvaAndSizes));
-        goto error;   
-    }
-
-    
-    //-----------------------------------------------------------------------------------------
-    // Read the IMAGE_SECTION_HEADER array.
-    //-----------------------------------------------------------------------------------------
-    if (NULL == (oldImageSectionHeaders = new (nothrow) IMAGE_SECTION_HEADER[numberOfSections])) goto oomerror;
-    size_t rvaForNewSection = 0;
-    int sectionIndexOfPreexistingMidlSection = -1;
-    ULONG endOfLastOriginalPhysicalSector = 0;
-    ULONG positionOfOriginalSectionTable = ftell(inputFile);
-    for (int sidx = 0; sidx < numberOfSections; sidx++)
-    {
-        ULONG positionOfSectionHeader = ftell(inputFile);
-        if (1 != fread(&oldImageSectionHeaders[sidx], sizeof(IMAGE_SECTION_HEADER), 1, inputFile)) goto ioerror;
-        if (0 == memcmp(aMDILSectionName, oldImageSectionHeaders[sidx].Name, IMAGE_SIZEOF_SHORT_NAME))
-        {
-            // If we are asked to generate MDIL, but the current file already has MDIL section,
-            // we change the section name, and then put in new MDIL section.  The old MDIL section will not
-            // be put into final ni image.
-            // This is support phone build which puts IL with MDIL on device.
-            sectionIndexOfPreexistingMidlSection = sidx;
-        }
-
-        // Pointer and Size of RawData must be aligned.
-        if (0 != oldImageSectionHeaders[sidx].PointerToRawData % imageOptionalHeader.FileAlignment)
-        {
-            pZapImage->GetZapper()->Error(W("Error: \"%ws\": Section #%d: PointerToRawData not aligned with IMAGE_OPTIONAL_HEADER.FileAlignment.\n"), inputFileName, (sidx + 1));
-            goto error;
-        }
-        if (0 != oldImageSectionHeaders[sidx].SizeOfRawData % imageOptionalHeader.FileAlignment)
-        {
-            pZapImage->GetZapper()->Error(W("Error: \"%ws\": Section #%d: SizeOfRawData not aligned with IMAGE_OPTIONAL_HEADER.FileAlignment.\n"), inputFileName, (sidx + 1));
-            goto error;
-        }
-
-        endOfLastOriginalPhysicalSector = max(endOfLastOriginalPhysicalSector, oldImageSectionHeaders[sidx].PointerToRawData + oldImageSectionHeaders[sidx].SizeOfRawData);
-
-        size_t spaceNeededForThisSection = ALIGN_UP(oldImageSectionHeaders[sidx].Misc.VirtualSize, imageOptionalHeader.SectionAlignment);
-        size_t nextFreeRva = oldImageSectionHeaders[sidx].VirtualAddress + spaceNeededForThisSection;
-        if (nextFreeRva > rvaForNewSection)
-            rvaForNewSection = nextFreeRva;
-    }
-    ULONG positionOfFirstByteAfterOriginalSectionTable = ftell(inputFile);
-
-    //-----------------------------------------------------------------------------------------
-    // Block copy everything to the end of the original section table.
-    //-----------------------------------------------------------------------------------------
-    if (0 != fseek(inputFile, 0, SEEK_SET)) goto ioerror;
-    if (!fcopy(inputFile, outputFile, positionOfFirstByteAfterOriginalSectionTable)) goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // Write out the new .mdil section header. (It is not quite filled out yet so this
-    // is simply the easiest way to advance the file pointer.)
-    //-----------------------------------------------------------------------------------------
-    IMAGE_SECTION_HEADER mdilSectionHeader;
-    memset(&mdilSectionHeader, 0, sizeof(mdilSectionHeader));
-    memcpy(mdilSectionHeader.Name, aMDILSectionName, IMAGE_SIZEOF_SHORT_NAME);
-    mdilSectionHeader.VirtualAddress = rvaForNewSection;
-    mdilSectionHeader.SizeOfRawData = 0xcccccccc; // Will need fixup later
-    mdilSectionHeader.PointerToRawData = 0xcccccccc; // Will need fixup later
-    mdilSectionHeader.Characteristics = IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ;
-
-    ULONG outputPositionOfMdilSectionHeader = ftell(outputFile);
-    if (1 != fwrite(&mdilSectionHeader, sizeof(mdilSectionHeader), 1, outputFile)) goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // Adding the extra section header can (and usually does) cause the section table to spill
-    // over into a new FileAlignment page. In such a case, we have to bump all the section contents
-    // by FileAlignment bytes.
-    //
-    // For simplicity (and since C# always ends up on this case anyway), always bump even if not
-    // necessary.
-    //-----------------------------------------------------------------------------------------
-    for (ULONG i = 0; i < imageOptionalHeader.FileAlignment - sizeof(IMAGE_SECTION_HEADER); i++)
-    {
-        BYTE zero = 0;
-        if (1 != fwrite(&zero, sizeof(zero), 1, outputFile)) goto ioerror;
-    }
-
-    //-----------------------------------------------------------------------------------------
-    // Block copy everything from the end of the original section table to the end of the section contents.
-    //-----------------------------------------------------------------------------------------
-    ULONG sizeOfOriginalSectionContents = endOfLastOriginalPhysicalSector - positionOfFirstByteAfterOriginalSectionTable;
-    if (0 != fseek(inputFile, positionOfFirstByteAfterOriginalSectionTable, SEEK_SET)) goto error;
-    if (!fcopy(inputFile, outputFile, sizeOfOriginalSectionContents)) goto ioerror;
-
-    
-    //-----------------------------------------------------------------------------------------
-    // Write out the actual MDIL
-    //-----------------------------------------------------------------------------------------
-    mdilSectionHeader.PointerToRawData = ftell(outputFile);
-    // Our previous alignment checks on the section's PointerToRawData and SizeOfRawData should guarantee this assert
-    _ASSERTE(0 == (mdilSectionHeader.PointerToRawData % imageOptionalHeader.FileAlignment));  
-    DWORD errorCode = pZapImage->Write_MDIL(outputFile);
-    if (errorCode != ERROR_SUCCESS)
-        return errorCode;
-
-    //-----------------------------------------------------------------------------------------
-    // Add pad bytes after the MDIL to satisfy the section alignment requirement.
-    //-----------------------------------------------------------------------------------------
-    mdilSectionHeader.Misc.VirtualSize = ftell(outputFile) - mdilSectionHeader.PointerToRawData;
-    mdilSectionHeader.SizeOfRawData = (DWORD)ALIGN_UP(mdilSectionHeader.Misc.VirtualSize, imageOptionalHeader.FileAlignment);
-    if (!fzerofilluntilaligned(imageOptionalHeader.FileAlignment, outputFile)) goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // Copy out any stuff after the section contents (e.g. WIN_CERTIFICATE)
-    //-----------------------------------------------------------------------------------------
-    if (0 != fseek(inputFile, 0, SEEK_END)) goto ioerror;
-    ULONG inputFileSize = ftell(inputFile);
-    ULONG sizeOfStuffAfterSectionContents = inputFileSize - endOfLastOriginalPhysicalSector;
-    if (0 != fseek(inputFile, endOfLastOriginalPhysicalSector, SEEK_SET)) goto ioerror;
-    if (!fcopy(inputFile, outputFile, sizeOfStuffAfterSectionContents)) goto ioerror;
-    ULONG outputFileSize = ftell(outputFile);
-
-
-    //=========================================================================================
-    // End of pass 1. Now do fixups.
-    //=========================================================================================
-
-    //-----------------------------------------------------------------------------------------
-    // Record the various regions and their fixup data for easy lookup.
-    //-----------------------------------------------------------------------------------------
-    FixupRegion aFixupRegions[FIXUPREGIONID_COUNT + 1];
-    memset(&aFixupRegions, 0xcc, sizeof(aFixupRegions));
-
-    aFixupRegions[FIXUPREGIONID_SECTIONCONTENTS].m_start = positionOfFirstByteAfterOriginalSectionTable;
-    aFixupRegions[FIXUPREGIONID_SECTIONCONTENTS].m_delta = imageOptionalHeader.FileAlignment; 
-
-
-    aFixupRegions[FIXUPREGIONID_CERTIFICATES].m_start = endOfLastOriginalPhysicalSector;
-    aFixupRegions[FIXUPREGIONID_CERTIFICATES].m_delta = outputFileSize - inputFileSize; 
-
-    aFixupRegions[FIXUPREGIONID_COUNT].m_start = inputFileSize;
-    aFixupRegions[FIXUPREGIONID_COUNT].m_delta = (ULONG)(-1);
-
-
-    //-----------------------------------------------------------------------------------------
-    // IMAGE_FILE_HEADER.NumberOfSections is one bigger. Duh.
-    //-----------------------------------------------------------------------------------------
-    WORD newNumberOfSections = imageFileHeader.NumberOfSections + 1;
-    if (!fwriteat(outputFile,
-                  positionOfImageFileHeader + offsetof(IMAGE_FILE_HEADER, NumberOfSections),
-                  &newNumberOfSections,
-                  sizeof(newNumberOfSections)))
-        goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // We added a new .MDIL section so add its size to IMAGE_OPTIONAL_HEADER.SizeOfInitializedData.
-    //-----------------------------------------------------------------------------------------
-    DWORD newSizeOfInitializedData = imageOptionalHeader.SizeOfInitializedData + mdilSectionHeader.SizeOfRawData;
-    if (!fwriteat(outputFile,
-                  positionOfImageOptionalHeader + offsetof(IMAGE_OPTIONAL_HEADER, SizeOfInitializedData),
-                  &newSizeOfInitializedData,
-                  sizeof(newSizeOfInitializedData)))
-        goto ioerror;
-
-    if (0 != (imageOptionalHeader.SizeOfImage % imageOptionalHeader.SectionAlignment))
-    {
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": IMAGE_OPTIONAL_HEADER.SizeOfImage not aligned with IMAGE_OPTIONAL_HEADER.SectionAlignment.\n"), inputFileName);
-        goto error;   // Incoming PE format violation: SizeOfImage not a multple of SectionAlignment
-    }
-
-    //-----------------------------------------------------------------------------------------
-    // We added a new .MDIL section so add its in-memory size requirements to IMAGE_OPTIONAL_HEADER.SizeOfImage.
-    //-----------------------------------------------------------------------------------------
-    DWORD newSizeOfImage = imageOptionalHeader.SizeOfImage + (DWORD)ALIGN_UP(mdilSectionHeader.Misc.VirtualSize, imageOptionalHeader.SectionAlignment);
-    if (!fwriteat(outputFile,
-                  positionOfImageOptionalHeader + offsetof(IMAGE_OPTIONAL_HEADER, SizeOfImage),
-                  &newSizeOfImage,
-                  sizeof(newSizeOfImage)))
-        goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // We added a new IMAGE_SECTION_HEADER so recompute IMAGE_OPTIONAL_HEADER.SizeOfHeaders
-    //-----------------------------------------------------------------------------------------
-    ULONG newSizeOfHeaders = (ULONG)(ALIGN_UP(outputPositionOfMdilSectionHeader + sizeof(IMAGE_SECTION_HEADER), imageOptionalHeader.FileAlignment));
-
-    if (newSizeOfHeaders > oldImageSectionHeaders[0].VirtualAddress)
-    {
-        // A corner case that can only come up if the input file has a ridiculously low SectionAlignment (512 bytes) or
-        // a ridiculous number of sections (50).
-        pZapImage->GetZapper()->Error(
-            W("Tool limitation: \"%ws\": Could not embed MDIL into image as there is not enough room to grow the section header table without ")
-            W("modifying the section RVAs. Modifying section RVAs is not supported by this tool. It may be possible to avoid this ")
-            W("by rebuilding the input image with a smaller FileAlignment or a larger SectionAlignment. We are sorry for the inconvenience.\n"),
-            inputFileName);
-        goto error;
-    }
-
-    if (!fwriteat(outputFile,
-                  positionOfImageOptionalHeader + offsetof(IMAGE_OPTIONAL_HEADER, SizeOfHeaders),
-                  &newSizeOfHeaders,
-                  sizeof(newSizeOfHeaders)))
-        goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // We bumped the section contents by FileAlignment so add that to the original section headers PointerToRawData values.
-    //-----------------------------------------------------------------------------------------
-    for (int sidx = 0; sidx < imageFileHeader.NumberOfSections; sidx++)
-    {
-        DWORD newPointerToRawData = oldImageSectionHeaders[sidx].PointerToRawData + aFixupRegions[FIXUPREGIONID_SECTIONCONTENTS].m_delta;
-        if (!fwriteat(outputFile,
-                      positionOfOriginalSectionTable + sidx * sizeof(IMAGE_SECTION_HEADER) + offsetof(IMAGE_SECTION_HEADER, PointerToRawData),
-                      &newPointerToRawData,
-                      sizeof(newPointerToRawData)))
-
-            goto ioerror;
-    }
-
-
-    //-----------------------------------------------------------------------------------------
-    // We've now fully filled in the .MDIL section header. Rewrite it.
-    //-----------------------------------------------------------------------------------------
-    if (!fwriteat(outputFile,
-                  outputPositionOfMdilSectionHeader,
-                  &mdilSectionHeader,
-                  sizeof(mdilSectionHeader)))
-        goto ioerror;
-
-    //-----------------------------------------------------------------------------------------
-    // Some joker gave us an input with a .MDIL section already in it. Rename it
-    // and the binder will drop it over the side.
-    //-----------------------------------------------------------------------------------------
-    if (sectionIndexOfPreexistingMidlSection != -1)
-    {
-        BYTE nameMangler = '0' + sectionIndexOfPreexistingMidlSection;
-        if (!fwriteat(outputFile,
-                      positionOfOriginalSectionTable +
-                      sectionIndexOfPreexistingMidlSection * sizeof(IMAGE_SECTION_HEADER)
-                      + offsetof(IMAGE_SECTION_HEADER, Name)
-                      + 4,
-                      &nameMangler,
-                      sizeof(nameMangler)))
-            goto ioerror;
-    }
-
-
-    //-----------------------------------------------------------------------------------------
-    // IMAGE_FILE_HEADER.PointerToSymbolTable is always supposed to be 0 for managed PE's.
-    // If you remove this restriction, you'll need to add fixup code.
-    //-----------------------------------------------------------------------------------------
-    if (imageFileHeader.PointerToSymbolTable != 0)
-    {
-        pZapImage->GetZapper()->Error(W("Error: \"%ws\": IMAGE_FILE_HEADER.PointerToSymbolTable expected to be 0.\n"), inputFileName);
-        goto error;
-    }
-
-    //-----------------------------------------------------------------------------------------
-    // IMAGE_DEBUG_DIRECTORY if present has an absolute file pointer to RSDS structure. Fix it up.
-    //-----------------------------------------------------------------------------------------
-    ULONG rvaOfOldImageDebugDirectory = imageOptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
-    if (rvaOfOldImageDebugDirectory != 0)
-    {
-        if (0 != (imageOptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size % sizeof(IMAGE_DEBUG_DIRECTORY)))
-        {
-            // Yes, we have real MP apps that trigger this...
-            pZapImage->GetZapper()->Warning(W("Warning: \"%ws\": DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size expected to be a multiple of %d.\n"), inputFileName, sizeof(IMAGE_DEBUG_DIRECTORY));
-        }
-        else
-        {
-            int sidx;
-            for (sidx = 0; sidx < numberOfSections; sidx++)
-            {
-                if (rvaOfOldImageDebugDirectory >= oldImageSectionHeaders[sidx].VirtualAddress &&
-                    rvaOfOldImageDebugDirectory < oldImageSectionHeaders[sidx].VirtualAddress + oldImageSectionHeaders[sidx].Misc.VirtualSize)
-                {
-                    ULONG positionOfOldImageDebugDirectory =
-                                oldImageSectionHeaders[sidx].PointerToRawData +
-                                rvaOfOldImageDebugDirectory -
-                                oldImageSectionHeaders[sidx].VirtualAddress;
-    
-                    ULONG positionOfNewImageDebugDirectory;
-                    DWORD errorResult = FixupPosition(aFixupRegions, positionOfOldImageDebugDirectory, &positionOfNewImageDebugDirectory);
-                    if (errorResult != ERROR_SUCCESS)
-                        goto error;
-    
-                    DWORD numImageDebugDirectories = imageOptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size / sizeof(IMAGE_DEBUG_DIRECTORY); 
-                    for (DWORD i = 0; i < numImageDebugDirectories; i++)
-                    {
-                        if (0 != fseek(inputFile, positionOfOldImageDebugDirectory, SEEK_SET)) goto ioerror;
-                        IMAGE_DEBUG_DIRECTORY imageDebugDirectory;
-                        if (1 != fread(&imageDebugDirectory, sizeof(imageDebugDirectory), 1, inputFile)) goto ioerror;
-        
-                        ULONG positionOfNewDebugRawData = 0xcccccccc;
-                        errorResult = FixupPosition(aFixupRegions, imageDebugDirectory.PointerToRawData, &positionOfNewDebugRawData);
-                        if (errorResult != ERROR_SUCCESS)
-                        {
-                            if (errorResult != ERROR_BAD_FORMAT)
-                                goto error;
-    
-                            // Don't make this a fatal error: not everyone sets IMAGE_DEBUG_DIRECTORY.PointerToRawData correctly.
-                            pZapImage->GetZapper()->Warning(W("Warning: \"%ws\": IMAGE_DEBUG_DIRECTORY.PointerToRawData has an out of range value: 0x%x.\n"), inputFileName, imageDebugDirectory.PointerToRawData);
-                        }
-                        else
-                        {
-                            if (!fwriteat(outputFile, positionOfNewImageDebugDirectory + offsetof(IMAGE_DEBUG_DIRECTORY, PointerToRawData), &positionOfNewDebugRawData, sizeof(positionOfNewDebugRawData)))
-                                goto error;
-                        }
-    
-                        positionOfOldImageDebugDirectory += sizeof(IMAGE_DEBUG_DIRECTORY);
-                        positionOfNewImageDebugDirectory += sizeof(IMAGE_DEBUG_DIRECTORY);
-                    }
-                    break;
-                }
-            }
-            if (sidx == numberOfSections)
-            {
-                pZapImage->GetZapper()->Error(W("Error: \"%ws\": DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress points outside the bounds of the image: 0x%x.\n"), inputFileName, rvaOfOldImageDebugDirectory);
-                goto error;  // Could not resolve IMAGE_DEBUG_DIRECTORY rva.
-            }
-        }
-    }
-
-
-    //-----------------------------------------------------------------------------------------
-    // The WIN_CERTIFICATE structure, if present, is stored at the end of the PE file outside of
-    // any section. The so-called "rva" at IMAGE_DATA_DIRECTORY[4] is actually an absolute file position.
-    //-----------------------------------------------------------------------------------------
-    ULONG oldPositionOfWinCertificate = imageOptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress;
-    if (oldPositionOfWinCertificate != 0)
-    {
-        ULONG newPositionOfWinCertificate;
-        DWORD errorCode = FixupPosition(aFixupRegions, oldPositionOfWinCertificate, &newPositionOfWinCertificate);
-        if (errorCode != ERROR_SUCCESS)
-        {
-            pZapImage->GetZapper()->Error(W("Error: \"%ws\": DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress points outside the bounds of the image: 0x%x.\n"), inputFileName, oldPositionOfWinCertificate);
-            goto error;
-        }
-
-        if (!fwriteat(outputFile,
-                      positionOfImageOptionalHeader
-                      + offsetof(IMAGE_OPTIONAL_HEADER, DataDirectory)
-                      + sizeof(IMAGE_DATA_DIRECTORY) * IMAGE_DIRECTORY_ENTRY_SECURITY
-                      + offsetof(IMAGE_DATA_DIRECTORY, VirtualAddress),
-                      &newPositionOfWinCertificate,
-                      sizeof(newPositionOfWinCertificate)))
-        {
-            goto ioerror;
-        }
-    }
-    
-    //-----------------------------------------------------------------------------------------
-    // Force NX_COMPAT and DYNAMIC_BASE so secure OS loaders can load the image (obfuscators 
-    // tend to strip these off)
-    //-----------------------------------------------------------------------------------------
-    DWORD newDllCharacteristics = imageOptionalHeader.DllCharacteristics | IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE | IMAGE_DLLCHARACTERISTICS_NX_COMPAT;
-    if (!fwriteat(outputFile,
-                  positionOfImageOptionalHeader + offsetof(IMAGE_OPTIONAL_HEADER, DllCharacteristics),
-                  &newDllCharacteristics,
-                  sizeof(newDllCharacteristics)))
-        goto error;
-
-    //=========================================================================================
-    // End of final pass. Output complete.
-    //=========================================================================================
-
-    return ERROR_SUCCESS;
-
-ioerror:
-    pZapImage->GetZapper()->Error(W("Error: \"%ws\": Unexpected end of file.\n"), inputFileName);
-    return E_FAIL;
-
-oomerror:
-    return E_OUTOFMEMORY;
-
-error:
-    return ERROR_BAD_FORMAT;
-#endif // BINDER
-}
-
-
-
-void ZapImage::Output_MDIL()
-{
-#ifdef BINDER
-    _ASSERTE(!"intentionally unreachable");
-#else
-
-
-    StackSString outputFileName(m_zapper->GetOutputFileName());
-    FILE *outputFile = _wfopen(outputFileName.GetUnicode(), W("wb"));
-    if (outputFile == NULL)
-        return;
-
-    FILE *inputFile = _wfopen(m_pModuleFileName, W("rb"));
-    if (!inputFile) goto error;
-
-    DWORD errorCode = EmbedMdilIntoILFile(inputFile, outputFile, m_pModuleFileName, this);
-    if (errorCode != ERROR_SUCCESS)
-    {
-        SetLastError(errorCode);
-        goto error;
-    }
-
-    fclose(inputFile);
-    fclose(outputFile);
-    
-    //    GetSvcLogger()->Printf(W("finished generating %s file\n"), outputFileName.GetUnicode());
-    return;
-    
-
-error:
-    DWORD dwLastError = GetLastError();
-    fclose(inputFile);
-    fclose(outputFile);
-    WszDeleteFile(outputFileName.GetUnicode());
-    m_zapper->Error(W("Could not create %ls file\n"), outputFileName.GetUnicode());
-    SetLastError(dwLastError);
-    ThrowLastError();
-#endif // BINDER
-}
-
-
-//----------------------------------------------------------------------------------
-// Writes out the MDIL blob.
-//----------------------------------------------------------------------------------
-DWORD ZapImage::Write_MDIL(FILE *outputFile)
-{
-#ifdef BINDER
-    _ASSERTE(!"intentionally unreachable");
-    return E_NOTIMPL;
-#else
-
-    if (m_pICLW != NULL)
-    {
-        delete m_pICLW;
-        m_pICLW = NULL;
-    }
-    MDILHeader mdilHeader;
-    memset(&mdilHeader, 0, sizeof(mdilHeader));
-
-    if (m_methodRidCount == 0)
-    {
-        m_mapMethodRidToOffs.SetCount(1);
-		m_mapMethodRidToOffs[0] = 0xcafedead;
-        m_methodRidCount = 1;
-    }
-
-    DWORD totalCodeSize = 0;
-    DWORD totalDebugInfoSize = 0;
-    for (int codeKind = GENERIC_CODE; codeKind < CODE_KIND_COUNT; codeKind++)
-    {
-        if (m_codeOffs[codeKind] < sizeof(DWORD) && codeKind == GENERIC_CODE)
-        {
-            _ASSERTE(m_codeOffs[codeKind] == 0);
-            m_codeBuffer[codeKind].SetCount(sizeof(DWORD));
-            m_codeOffs[codeKind] = sizeof(DWORD);
-
-            OutputDWord(&m_codeBuffer[codeKind][0], 'MDCD');
-
-        }
-        totalCodeSize += m_codeOffs[codeKind];
-        totalDebugInfoSize += m_debugInfoBuffer[codeKind].GetCount();
-    }
-
-    EncodeGenericInstances_MDIL();
-
-    // turns out we actually need an exact method count
-    IMDInternalImport * pMDImport = m_pMDImport;
-    HENUMInternalHolder hEnum(pMDImport);
-    hEnum.EnumAllInit(mdtMethodDef);
-    m_methodRidCount = hEnum.EnumGetCount() + m_stubMethodCount + 1;
-    if (m_methodRidCount  < m_mapMethodRidToOffs.GetCount())
-    {
-        for (COUNT_T i = m_methodRidCount; i < m_mapMethodRidToOffs.GetCount(); i++)
-            _ASSERTE(m_mapMethodRidToOffs[i] == 0);
-    }
-    else if (m_mapMethodRidToOffs.GetCount() < m_methodRidCount)
-    {
-        COUNT_T oldCount = m_mapMethodRidToOffs.GetCount();
-        m_mapMethodRidToOffs.SetCount(m_methodRidCount);
-        for (COUNT_T i = oldCount; i < m_methodRidCount; i++)
-            m_mapMethodRidToOffs[i] = 0;
-    }
-
-
-    // conceptually, the code buffers for generic and non-generic code should be treated as one buffer
-    // that implies that we need to add the size of the generic code buffer to offsets in the non-generic code
-    // buffer
-    for (COUNT_T methodRid = 0; methodRid < m_mapMethodRidToOffs.GetCount(); methodRid++)
-    {
-        if ((m_mapMethodRidToOffs[methodRid] != 0) &&
-            ((m_mapMethodRidToOffs[methodRid] & GENERIC_METHOD_REF) == 0))
-        {
-            m_mapMethodRidToOffs[methodRid] += m_codeOffs[GENERIC_CODE];
-        }
-    }
-
-    for (COUNT_T methodRid = 0; methodRid < m_mapMethodRidToDebug.GetCount(); methodRid++)
-    {
-        if (m_mapMethodRidToDebug[methodRid] != 0xFFFFFFFF)
-            m_mapMethodRidToDebug[methodRid] += m_debugInfoBuffer[GENERIC_CODE].GetCount();
-        else
-            m_mapMethodRidToDebug[methodRid] = 0;
-    }
-
-
-    mdilHeader.hdrSize              = sizeof(mdilHeader);
-    mdilHeader.magic                = 'MDIL';
-    mdilHeader.version              = MDIL_VERSION_CURRENT;
-    mdilHeader.methodMapCount       = m_methodRidCount;
-    mdilHeader.extModuleCount       = m_extModRef.GetCount();
-    mdilHeader.genericInstSize      = m_genericInstPool.GetCount();
-    mdilHeader.extTypeCount         = m_extTypeRef.GetCount();
-    mdilHeader.extMemberCount       = m_extMemberRef.GetCount();
-    mdilHeader.namePoolSize         = m_namePool.GetCount();
-    mdilHeader.codeSize             = totalCodeSize;
-    mdilHeader.typeMapCount         = m_typeRidCount;
-    mdilHeader.typeSpecCount        = m_typeSpecToOffs.GetCount();
-    mdilHeader.methodSpecCount      = m_methodSpecToOffs.GetCount();
-    mdilHeader.signatureCount       = m_signatureToOffs.GetCount();
-    mdilHeader.typeSize             = m_compactLayoutOffs;
-    mdilHeader.userStringPoolSize   = m_userStringPool.GetCount();
-    mdilHeader.stubSize             = m_stubBuffer.GetCount();
-    mdilHeader.stubAssocSize        = m_stubAssocBuffer.GetCount();
-    mdilHeader.debugMapCount        = m_mapMethodRidToDebug.GetCount();
-    mdilHeader.debugInfoSize        = totalDebugInfoSize;
-
-    mdilHeader.genericCodeSize      = m_codeOffs[GENERIC_CODE];
-    mdilHeader.genericDebugInfoSize = m_debugInfoBuffer[GENERIC_CODE].GetCount();
-
-    mdilHeader.compilerVersionMajor = VER_MAJORVERSION;
-    mdilHeader.compilerVersionMinor = VER_MINORVERSION;
-    mdilHeader.compilerVersionBuildNumber = VER_PRODUCTBUILD;
-    mdilHeader.compilerVersionPrivateBuildNumber = VER_PRODUCTBUILD_QFE;
-
-    mdilHeader.subVersion           = MDIL_SUB_VERSION_CURRENT;
-
-    if (m_wellKnownTypesTable.GetCount() != 0)
-    {
-        assert(m_wellKnownTypesTable.GetCount() == WKT_COUNT);
-        mdilHeader.flags |= MDILHeader::WellKnownTypesPresent;
-    }
-
-    LoadHintEnum loadHint = LoadDefault;
-    LoadHintEnum defaultLoadHint = LoadDefault;
-    GetCompileInfo()->GetLoadHint(m_zapper->m_hAssembly,
-                                  m_zapper->m_hAssembly,
-                                  &loadHint,
-                                  &defaultLoadHint);
-    if (defaultLoadHint == LoadAlways)
-    {
-        mdilHeader.flags |= MDILHeader::IsEagerlyLoaded;
-    }
-
-    mdilHeader.flags |= GetCompileInfo()->GetMdilModuleSecurityFlags(m_zapper->m_hAssembly);
-
-    if (GetCompileInfo()->CompilerRelaxationNoStringInterningPermitted(m_zapper->m_hAssembly))
-    {
-        mdilHeader.flags |= MDILHeader::CompilerRelaxationNoStringInterning;
-    }
-
-    if (GetCompileInfo()->CompilerRelaxationNoStringInterningPermitted(m_zapper->m_hAssembly))
-    {
-        mdilHeader.flags |= MDILHeader::RuntimeCompatibilityRuntimeWrappedExceptions;
-    }
-
-    if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MINIMAL_MDIL)
-    {
-        mdilHeader.flags |= MDILHeader::MinimalMDILImage;
-    }
-
-    if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_NO_MDIL)
-    {
-        mdilHeader.flags |= MDILHeader::NoMDILImage;
-    }
-
-    mdilHeader.cerReliabilityContract = GetCompileInfo()->CERReliabilityContract(m_zapper->m_hAssembly);
-
-    // reset architecture mask
-    mdilHeader.flags &= ~MDILHeader::TargetArch_Mask;
-
-#if defined(_TARGET_X86_)
-    mdilHeader.flags |= MDILHeader::TargetArch_X86;
-#elif defined(_TARGET_ARM_)
-    mdilHeader.flags |= MDILHeader::TargetArch_ARM;
-#elif defined(_TARGET_AMD64_)
-    mdilHeader.flags |= MDILHeader::TargetArch_AMD64;
-#else
-#error unexpected target architecture (neither x86, ARM, or AMD64)
-#endif //_TARGET_X86_
-
-    mdilHeader.entryPointToken = m_ModuleDecoder.GetEntryPointToken();
-    mdilHeader.subsystem = m_ModuleDecoder.GetSubsystem();
-    {
-        // Read the actual preferred base address from the disk
-
-        // Note that we are reopening the file here. We are not guaranteed to get the same file.
-        // The worst thing that can happen is that we will read a bogus preferred base address from the file.
-        HandleHolder hFile(WszCreateFile(m_pModuleFileName,
-                                            GENERIC_READ,
-                                            FILE_SHARE_READ|FILE_SHARE_DELETE,
-                                            NULL,
-                                            OPEN_EXISTING,
-                                            FILE_ATTRIBUTE_NORMAL,
-                                            NULL));
-        if (hFile == INVALID_HANDLE_VALUE)
-            ThrowLastError();
-
-        HandleHolder hFileMap(WszCreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL));
-        if (hFileMap == NULL)
-            ThrowLastError();
-
-        MapViewHolder base(MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 0));
-        if (base == NULL)
-            ThrowLastError();
-    
-        DWORD dwFileLen = SafeGetFileSize(hFile, 0);
-        if (dwFileLen == INVALID_FILE_SIZE)
-            ThrowLastError();
-
-        PEDecoder peFlat((void *)base, (COUNT_T)dwFileLen);
-
-        mdilHeader.baseAddress = peFlat.GetPreferredBase();
-    }
-
-    mdilHeader.platformID = MDILHeader::PlatformID_Triton;
-    
-    ClrCtlData clrCtlData;
-    SArray<BYTE> blobData;
-    const void *pPublicKey = NULL;
-    ULONG cbPublicKey = 0;
-    ULONG cbPublicKeyToken = 0;
-    BYTE* pKeyToken = NULL;
-
-    AssemblyMetaDataInternal metaData;
-    LPCSTR pModuleName;
-    LPCSTR pAssemblyName;
-    DWORD flags;
-    memset(&clrCtlData, 0, sizeof(clrCtlData));
-    clrCtlData.hdrSize = sizeof(clrCtlData);
-
-    m_pMDImport->GetScopeProps(&pModuleName, &clrCtlData.MVID);
-    m_pMDImport->GetAssemblyProps(
-            TokenFromRid(1, mdtAssembly),       // [IN] The Assembly for which to get the properties.
-            &pPublicKey,
-            &cbPublicKey,
-            NULL,                               // [OUT] Hash Algorithm
-            &pAssemblyName,                     // [OUT] Buffer to fill with name
-            &metaData,                          // [OUT] Assembly Metadata (version, locale, etc.)
-            &flags);                            // [OUT] Flags
-
-    clrCtlData.assemblyName = m_assemblyName;
-    clrCtlData.locale = m_locale;
-    clrCtlData.majorVersion = metaData.usMajorVersion;
-    clrCtlData.minorVersion = metaData.usMinorVersion;
-    clrCtlData.buildNumber = metaData.usBuildNumber;
-    clrCtlData.revisionNumber = metaData.usRevisionNumber;
-    if (cbPublicKey > 0) {
-        if ((flags & afPublicKey)!= 0) {
-            clrCtlData.hasPublicKey = 1;
-        }
-        clrCtlData.cbPublicKey = cbPublicKey;
-        clrCtlData.publicKeyBlob = blobData.GetCount();
-        blobData.SetCount(clrCtlData.publicKeyBlob + clrCtlData.cbPublicKey);
-        memcpy_s(&blobData[(COUNT_T)clrCtlData.publicKeyBlob], clrCtlData.cbPublicKey, pPublicKey, cbPublicKey);
-
-        if (StrongNameTokenFromPublicKey((BYTE*)pPublicKey, cbPublicKey,
-                                     &pKeyToken, &cbPublicKeyToken))
-        {
-            if (cbPublicKeyToken > 0 && cbPublicKeyToken == sizeof(clrCtlData.publicKeyToken)) {
-                memcpy(&clrCtlData.publicKeyToken, pKeyToken, cbPublicKeyToken);
-                clrCtlData.cbPublicKeyToken = cbPublicKeyToken;
-                clrCtlData.hasPublicKeyToken = true;
-            }
-        }
-
-    }
-
-    CORCOMPILE_VERSION_INFO versionInfo;
-    IfFailThrow(m_zapper->m_pEECompileInfo->GetAssemblyVersionInfo(m_zapper->m_hAssembly, &versionInfo));
-
-    mdilHeader.timeDateStamp = versionInfo.sourceAssembly.timeStamp;
-    clrCtlData.ilImageSize = versionInfo.sourceAssembly.ilImageSize;
-    clrCtlData.wcbSNHash = 0;
-    clrCtlData.snHashBlob = blobData.GetCount();
-    
-    clrCtlData.cbTPBandName = 0;
-    clrCtlData.tpBandNameBlob = blobData.GetCount();
-
-    clrCtlData.extTypeRefExtendCount        = m_extTypeRefExtend.GetCount();
-    clrCtlData.extMemberRefExtendCount      = m_extMemberRefExtend.GetCount();
-    
-    clrCtlData.neutralResourceCultureNameLen   = m_neutralResourceCultureNameLen;
-    clrCtlData.neutralResourceCultureName      = m_cultureName;
-    clrCtlData.neutralResourceFallbackLocation = m_neutralResourceFallbackLocation;
-
-    mdilHeader.blobDataSize = blobData.GetCount() * sizeof(blobData[0]);
-
-    if ((versionInfo.wConfigFlags & CORCOMPILE_CONFIG_DEBUG) != 0)
-    {
-        mdilHeader.flags |= MDILHeader::DebuggableMDILCode;
-        if ((versionInfo.wConfigFlags & CORCOMPILE_CONFIG_DEBUG_DEFAULT) != 0)
-            mdilHeader.flags |= MDILHeader::DebuggableILAssembly;
-    }
-    else
-    {
-        // Current CLR doesn't allow non-debuggable native image to be generated from debuggable assembly.
-        _ASSERTE((versionInfo.wConfigFlags & CORCOMPILE_CONFIG_DEBUG_DEFAULT) != 0);
-    }
-
-    //-----------------------------------------------------------------------------------------
-    // Write out the MDIL blob.
-    //-----------------------------------------------------------------------------------------
-    if (fwrite(&mdilHeader,               sizeof(mdilHeader),                                        1, outputFile) != 1) goto error;
-    m_pMDImport->GetRvaOffsetData(&clrCtlData.firstMethodRvaOffset, &clrCtlData.methodDefRecordSize, &clrCtlData.methodDefCount,
-        &clrCtlData.firstFieldRvaOffset, &clrCtlData.fieldRvaRecordSize, &clrCtlData.fieldRvaCount);
-    if (fwrite(&clrCtlData,               sizeof(clrCtlData),                                        1, outputFile) != 1) goto error;
-
-    if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_NO_MDIL)
-    {   
-        // If this is a no MDIL image, we are already done.
-        goto success;
-    }
-
-    if (blobData.GetCount() > 0)
-    {
-        if(fwrite(&blobData[0], blobData.GetCount() * sizeof(blobData[0]), 1, outputFile) != 1) goto error;
-    }
-
-    if (mdilHeader.flags & MDILHeader::WellKnownTypesPresent
-     && fwrite(&m_wellKnownTypesTable[0], m_wellKnownTypesTable.GetCount()*sizeof(m_wellKnownTypesTable[0]), 1, outputFile) != 1) goto error;
-    if (m_typeRidCount != 0
-     && fwrite(&m_mapTypeRidToOffs[0],    m_typeRidCount           *sizeof(m_mapTypeRidToOffs[0]),   1, outputFile) != 1) goto error;
-    if (fwrite(&m_mapMethodRidToOffs[0],  m_methodRidCount         *sizeof(m_mapMethodRidToOffs[0]), 1, outputFile) != 1) goto error;
-    if (mdilHeader.genericInstSize != 0
-     && fwrite(&m_genericInstPool[0],     mdilHeader.genericInstSize*sizeof(m_genericInstPool[0]), 1, outputFile) != 1) goto error;
-    if (fwrite(&m_extModRef[0],           m_extModRef.GetCount()   *sizeof(m_extModRef[0]),          1, outputFile) != 1) goto error;
-    if (fwrite(&m_extTypeRef[0],          m_extTypeRef.GetCount()  *sizeof(m_extTypeRef[0]),         1, outputFile) != 1) goto error;
-    if (fwrite(&m_extMemberRef[0],        m_extMemberRef.GetCount()*sizeof(m_extMemberRef[0]),       1, outputFile) != 1) goto error;
-    if (mdilHeader.typeSpecCount > 0
-     && fwrite(&m_typeSpecToOffs[0],      m_typeSpecToOffs.GetCount()*sizeof(m_typeSpecToOffs[0]),   1, outputFile) != 1) goto error;
-    if (mdilHeader.methodSpecCount > 0
-     && fwrite(&m_methodSpecToOffs[0],    m_methodSpecToOffs.GetCount()*sizeof(m_methodSpecToOffs[0]),1,outputFile) != 1) goto error;
-    if (mdilHeader.signatureCount > 0
-     && fwrite(&m_signatureToOffs[0],     m_signatureToOffs.GetCount()*sizeof(m_signatureToOffs[0]), 1,outputFile) != 1) goto error;
-    if (fwrite(&m_namePool[0],            sizeof(m_namePool[0]),   m_namePool.GetCount(),               outputFile) != m_namePool.GetCount()) goto error;
-    if (m_compactLayoutOffs > 0
-     && fwrite(&m_compactLayoutBuffer[0], m_compactLayoutOffs      *sizeof(m_compactLayoutBuffer[0]),1, outputFile) != 1) goto error;
-    if (mdilHeader.userStringPoolSize > 0
-     && fwrite(&m_userStringPool[0],      sizeof(m_userStringPool[0]),m_userStringPool.GetCount(),      outputFile) != m_userStringPool.GetCount()) goto error;
-    if (fwrite(&m_codeBuffer[GENERIC_CODE][0], m_codeOffs[GENERIC_CODE],                             1, outputFile) != 1) goto error;
-    //write out the non-generic code immediatly after the generic code.
-    if (m_codeOffs[NON_GENERIC_CODE] != 0 && fwrite(&m_codeBuffer[NON_GENERIC_CODE][0], m_codeOffs[NON_GENERIC_CODE],                       1, outputFile) != 1) goto error;    
-    if (mdilHeader.stubSize > 0
-     && fwrite(&m_stubBuffer[0],          mdilHeader.stubSize*sizeof(m_stubBuffer[0]),               1, outputFile) != 1) goto error;
-    if (mdilHeader.stubAssocSize > 0
-     && fwrite(&m_stubAssocBuffer[0],     mdilHeader.stubAssocSize*sizeof(m_stubAssocBuffer[0]),     1, outputFile) != 1) goto error;
-    if (mdilHeader.debugMapCount > 0
-     && fwrite(&m_mapMethodRidToDebug[0], mdilHeader.debugMapCount*sizeof(m_mapMethodRidToDebug[0]), 1, outputFile) != 1) goto error;
-    if (m_debugInfoBuffer[GENERIC_CODE].GetCount() > 0
-     && fwrite(&m_debugInfoBuffer[GENERIC_CODE][0], m_debugInfoBuffer[GENERIC_CODE].GetCount(),      1, outputFile) != 1) goto error;
-    //write out the non-generic debug info immediately after the generic debug info
-    if (m_debugInfoBuffer[NON_GENERIC_CODE].GetCount() > 0
-     && fwrite(&m_debugInfoBuffer[NON_GENERIC_CODE][0], m_debugInfoBuffer[NON_GENERIC_CODE].GetCount(),1, outputFile) != 1) goto error;
-
-
-    if (m_extTypeRefExtend.GetCount() > 0) 
-    {
-        if (fwrite(&m_extTypeRefExtend[0], m_extTypeRefExtend.GetCount()*sizeof(m_extTypeRefExtend[0]), 1, outputFile) != 1) goto error;
-    }
-    if (m_extMemberRefExtend.GetCount() > 0) 
-    {
-        if (fwrite(&m_extMemberRefExtend[0], m_extMemberRefExtend.GetCount()*sizeof(m_extMemberRefExtend[0]), 1, outputFile) != 1) goto error;
-    }
-
-    
-success:
-    return ERROR_SUCCESS;
-
-error:
-    DWORD dwLastError = GetLastError();
-    if (dwLastError == ERROR_SUCCESS)
-        dwLastError = E_FAIL;
-    return dwLastError;
-#endif // BINDER
-}
-
-void ZapImage::FlushCompactLayoutData(mdToken typeToken, BYTE *pData, ULONG cData)
-{
-#ifndef BINDER
-    // Save the data in m_compactLayoutBuffer
-    COUNT_T dataSize = m_compactLayoutBuffer.GetCount();
-    if (dataSize < sizeof(DWORD))
-    {
-        assert(dataSize == 0);
-        m_compactLayoutBuffer.SetCount(10000);
-        memcpy(&m_compactLayoutBuffer[0], "CMPL", sizeof(DWORD));
-        m_compactLayoutOffs = sizeof(DWORD);
-    }
-    COUNT_T desiredSize = m_compactLayoutOffs + cData;
-    while (m_compactLayoutBuffer.GetCount() < desiredSize)
-        m_compactLayoutBuffer.SetCount(m_compactLayoutBuffer.GetCount()*2);
-    memcpy(&m_compactLayoutBuffer[(COUNT_T)m_compactLayoutOffs], pData, cData);
-
-    COUNT_T rid = RidFromToken(typeToken);
-    if (TypeFromToken(typeToken) == mdtTypeSpec)
-    {
-        assert(rid < m_typeSpecToOffs.GetCount());
-        m_typeSpecToOffs[rid] = m_compactLayoutOffs;
-    }
-    else if (TypeFromToken(typeToken) == mdtMethodSpec)
-    {
-        assert(rid < m_methodSpecToOffs.GetCount());
-        m_methodSpecToOffs[rid] = m_compactLayoutOffs;
-    }
-    else if (TypeFromToken(typeToken) == mdtSignature)
-    {
-        assert(rid < m_signatureToOffs.GetCount());
-        m_signatureToOffs[rid] = m_compactLayoutOffs;
-    }
-    else if (TypeFromToken(typeToken) == mdtMemberRef)
-    {
-        assert(rid < m_extMemberRefExtend.GetCount());
-        m_extMemberRefExtend[rid].signature = m_compactLayoutOffs;
-    }
-    else
-    {
-        assert(TypeFromToken(typeToken) == mdtTypeDef);
-        // Remember the offset in m_mapTypeRidToOffs
-        COUNT_T mappingCount = m_mapTypeRidToOffs.GetCount();
-        if (mappingCount <= rid)
-        {
-            if (mappingCount == 0)
-            {
-                m_typeRidCount = 0;
-                m_mapTypeRidToOffs.SetCount(1000);
-            }
-            while (m_mapTypeRidToOffs.GetCount() <= rid)
-                m_mapTypeRidToOffs.SetCount(m_mapTypeRidToOffs.GetCount()*2);
-            COUNT_T newMappingCount = m_mapTypeRidToOffs.GetCount();
-            for (COUNT_T i = mappingCount; i < newMappingCount; i++)
-                m_mapTypeRidToOffs[i] = 0;
-            m_typeRidCount = rid+1;
-        }
-        if (m_typeRidCount < rid+1)
-            m_typeRidCount = rid+1;
-        m_mapTypeRidToOffs[rid] = m_compactLayoutOffs;
-    }
-    m_compactLayoutOffs += cData;
-#endif // !BINDER
-}
-
-void ZapImage::FlushStubData(BYTE *pStubSize, ULONG cStubSize,
-                             BYTE *pStubData, ULONG cStubData,
-                             BYTE *pStubAssocData, ULONG cStubAssocData)
-{
-    // Save the data in m_stubBuffer and m_stubAssocBuffer
-    m_stubBuffer.SetCount(cStubSize + cStubData);
-    memcpy(&m_stubBuffer[0], pStubSize, cStubSize);
-    memcpy(&m_stubBuffer[(COUNT_T)cStubSize], pStubData, cStubData);
-
-    m_stubAssocBuffer.SetCount(cStubAssocData);
-    memcpy(&m_stubAssocBuffer[0], pStubAssocData, cStubAssocData);
-}
-
-// Flush the user string pool
-void ZapImage::FlushUserStringPool(BYTE *pData, ULONG cData)
-{
-    m_userStringPool.SetCount(AlignUp(cData, sizeof(DWORD)));
-    memcpy(&m_userStringPool[0], pData, cData);
-}
-
-void ZapImage::FlushWellKnownTypes(DWORD *wellKnownTypesTable, SIZE_T count)
-{
-    m_wellKnownTypesTable.SetCount((DWORD)count);
-    memcpy(&m_wellKnownTypesTable[0], wellKnownTypesTable, count*sizeof(wellKnownTypesTable[0]));
-}
-#endif
-
 void ZapImage::Compile()
 {
     //
@@ -3366,14 +1807,6 @@ void ZapImage::Compile()
 #ifdef _DEBUG
     static ConfigDWORD fDoNothingNGen;
     doNothingNgen = !!fDoNothingNGen.val(CLRConfig::INTERNAL_ZapDoNothing);
-#endif
-
-#ifdef MDIL
-    // Reset stream (buffer) only when we are really generating MDIL (instead of just an empty MDIL section)
-    if ((m_zapper->m_pOpt->m_compilerFlags & (CORJIT_FLG_MDIL|CORJIT_FLG_NO_MDIL)) == CORJIT_FLG_MDIL)
-    {
-        GetCompactLayoutWriter()->Reset();
-    }
 #endif
 
     if (!doNothingNgen)
@@ -3441,46 +1874,33 @@ void ZapImage::Compile()
         SortUnprofiledMethodsByClassLayoutOrder();
     }
 
-#ifdef MDIL
-    if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
+    if (IsReadyToRunCompilation())
     {
-        if (!(m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_NO_MDIL))
-        {
-            GetCompactLayoutWriter()->FlushStubData();
-        }
-        Output_MDIL();
+        // Pretend that no methods are trained, so that everything is in single code section
+        // READYTORUN: FUTURE: More than one code section
+        m_iUntrainedMethod = 0;
+    }
+
+    OutputCode(ProfiledHot);
+    OutputCode(Unprofiled);
+    OutputCode(ProfiledCold);
+
+    OutputCodeInfo(ProfiledHot);
+    OutputCodeInfo(ProfiledCold);  // actually both Unprofiled and ProfiledCold
+
+    OutputGCInfo();
+    OutputProfileData();
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation())
+    {
+        OutputEntrypointsTableForReadyToRun();
+        OutputDebugInfoForReadyToRun();
     }
     else
 #endif
     {
-        if (IsReadyToRunCompilation())
-        {
-            // Pretend that no methods are trained, so that everything is in single code section
-            // READYTORUN: FUTURE: More than one code section
-            m_iUntrainedMethod = 0;
-        }
-
-        OutputCode(ProfiledHot);
-        OutputCode(Unprofiled);
-        OutputCode(ProfiledCold);
-
-        OutputCodeInfo(ProfiledHot);
-        OutputCodeInfo(ProfiledCold);  // actually both Unprofiled and ProfiledCold
-
-        OutputGCInfo();
-        OutputProfileData();
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
-        {
-            OutputEntrypointsTableForReadyToRun();
-            OutputDebugInfoForReadyToRun();
-        }
-        else
-#endif
-        {
-            OutputDebugInfo();
-        }
+        OutputDebugInfo();
     }
 }
 
@@ -3526,16 +1946,6 @@ void ZapImage::TryCompileMethodStub(LPVOID pContext, CORINFO_METHOD_HANDLE hStub
                                                    CORJIT_FLG_DEBUG_INFO);
 
     mdMethodDef md = mdMethodDefNil;
-#ifdef MDIL
-    if (pImage->m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-    {
-        md = pImage->GetCompactLayoutWriter()->GetNextStubToken();
-        if (md == mdMethodDefNil)
-            return;
-
-        pImage->m_stubMethodCount++;
-    }
-#endif // MDIL
 
     pCompileContext->enumCompileStubResult = pImage->TryCompileMethodWorker(hStub, md,
                                                          pCompileContext->methodProfilingDataFlags);
@@ -3615,13 +2025,11 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
         }
         else
         {
-#ifndef BINDER
             Exception *ex = GET_EXCEPTION();
             HRESULT hrException = ex->GetHR();
 
             StackSString message;
-            if (hrException != COR_E_UNSUPPORTEDMDIL)
-                ex->GetMessage(message);
+            ex->GetMessage(message);
 
             CorZapLogLevel level;
 
@@ -3641,12 +2049,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
                 level = CORZAP_LOGLEVEL_INFO;
             }
 
-            if (hrException != COR_E_UNSUPPORTEDMDIL)
-                m_zapper->Print(level, W("%s while compiling method token 0x%x\n"), message.GetUnicode(), md);
-#else
-            m_zapper->PrintErrorMessage(CORZAP_LOGLEVEL_ERROR, GET_EXCEPTION());
-            m_zapper->Error(W(" while compiling method token 0x%x\n"), md);
-#endif
+            m_zapper->Print(level, W("%s while compiling method token 0x%x\n"), message.GetUnicode(), md);
 
             result = LOOKUP_FAILED;
 
@@ -3674,12 +2077,6 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
         m_pPreloader->GenerateMethodStubs(handle, m_zapper->m_pOpt->m_ngenProfileImage,
                                           &TryCompileMethodStub,
                                           &context);
-
-#ifdef  MDIL
-        if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-            m_pPreloader->AddMDILCodeFlavorsToUncompiledMethods(handle);
-#endif
-
     }
 
     return methodCompileStatus;
@@ -3755,15 +2152,6 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     if (GetCompileInfo()->HasCustomAttribute(handle, "System.Runtime.BypassNGenAttribute"))
         return NOT_COMPILED;
 
-#ifdef MDIL
-    // This is a quick workaround to opt specific methods out of MDIL generation to work around bugs.
-    if (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-    {
-        if (GetCompileInfo()->HasCustomAttribute(handle, "System.Runtime.BypassMdilAttribute"))
-            return NOT_COMPILED;
-    }
-#endif
-
 #ifdef FEATURE_READYTORUN_COMPILER
     // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
     if (IsReadyToRunCompilation())
@@ -3821,7 +2209,6 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     }
     EX_CATCH
     {
-#ifndef BINDER
         // Continue unwinding if fatal error was hit.
         if (FAILED(g_hrFatalError))
             ThrowHR(g_hrFatalError);
@@ -3830,8 +2217,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         HRESULT hrException = ex->GetHR();
 
         StackSString message;
-        if (hrException != COR_E_UNSUPPORTEDMDIL)
-            ex->GetMessage(message);
+        ex->GetMessage(message);
 
         CorZapLogLevel level;
 
@@ -3851,12 +2237,8 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
             level = CORZAP_LOGLEVEL_INFO;
         }
 
-        if (hrException != COR_E_UNSUPPORTEDMDIL)
-            m_zapper->Print(level, W("%s while compiling method %s\n"), message.GetUnicode(), zapInfo.m_currentMethodName.GetUnicode());
-#else
-        m_zapper->PrintErrorMessage(CORZAP_LOGLEVEL_ERROR, GET_EXCEPTION());
-        m_zapper->Error(W(" while compiling method %s\n"), zapInfo.m_currentMethodName.GetUnicode());
-#endif
+        m_zapper->Print(level, W("%s while compiling method %s\n"), message.GetUnicode(), zapInfo.m_currentMethodName.GetUnicode());
+
         result = COMPILE_FAILED;
         m_zapper->m_failed = TRUE;
 
@@ -4072,11 +2454,7 @@ HRESULT ZapImage::PrintTokenDescription(CorZapLogLevel level, mdToken token)
         fullName.SetUTF8(szName);
     }
 
-#ifdef BINDER
-    m_zapper->Error(W("%s"), fullName.GetUnicode());
-#else
     m_zapper->Print(level, W("%s"), fullName.GetUnicode());
-#endif
 
     return S_OK;
 }
@@ -4263,12 +2641,6 @@ HRESULT ZapImage::parseProfileData()
     //
     // Parse the section table
     //
-
-#ifndef BINDER
-    _ASSERTE(TypeProfilingData   == FirstTokenFlagSection + TBL_TypeDef);
-    _ASSERTE(MethodProfilingData == FirstTokenFlagSection + TBL_Method);
-    _ASSERTE(SectionFormatCount  >= FirstTokenFlagSection + TBL_COUNT + 4);
-#endif
 
     for (ULONG i = 0; i < sectionHeader->NumEntries; i++)
     {
@@ -5149,7 +3521,6 @@ ZapImage * ZapImage::GetZapImage()
     return this;
 }
 
-#ifndef BINDER
 void ZapImage::FileNotFoundError(LPCWSTR pszMessage)
 {
     SString message(pszMessage);
@@ -5178,7 +3549,6 @@ void ZapImage::FileNotFoundError(LPCWSTR pszMessage)
 
     fileNotFoundErrorsTable.Append(message);
 }
-#endif
 
 void ZapImage::Error(mdToken token, HRESULT hr, LPCWSTR message)
 {
@@ -5190,19 +3560,6 @@ void ZapImage::Error(mdToken token, HRESULT hr, LPCWSTR message)
 #endif
 
     CorZapLogLevel level = CORZAP_LOGLEVEL_ERROR;
-
-#ifndef BINDER
-    if (RuntimeFileNotFound(hr) || (hr == CORSEC_E_INVALID_STRONGNAME))
-    {
-        // FileNotFound errors here can be converted into a single error string per ngen compile, 
-        // and the detailed error is available with verbose logging
-        if (m_zapper->m_pOpt->m_ignoreErrors && message != NULL)
-        {
-            FileNotFoundError(message);
-            level = CORZAP_LOGLEVEL_INFO;
-         }
-    }
-#endif
 
     if (m_zapper->m_pOpt->m_ignoreErrors)
     {
@@ -5245,11 +3602,9 @@ ZapNode * ZapImage::GetHelperThunk(CorInfoHelpFunc ftnNum)
     if (pHelperThunk == NULL)
     {
         pHelperThunk = new (GetHeap()) ZapHelperThunk(ftnNum);
-#ifndef BINDER
 #ifdef _TARGET_ARM_
         pHelperThunk = GetInnerPtr(pHelperThunk, THUMB_CODE);
 #endif
-#endif // !BINDER
         m_pHelperThunks[ftnNum] = pHelperThunk;
     }
 
