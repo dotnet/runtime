@@ -7,15 +7,15 @@ It is very similar to the cross compilation procedure of CoreCLR.
 Requirements
 ------------
 
-You need a Debian based host and the following packages needs to be installed:
+You need a Debian based host, and the following packages need to be installed:
 
     lgs@ubuntu ~/git/corefx/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
 
-In addition, to cross compile CoreFX the binutils for the target are required. So for arm you need:
+In addition, to cross compile CoreFX, the binutils for the target are required. So for arm you need:
 
     lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-arm-linux-gnueabihf
 
-and conversely for arm64:
+and for arm64 you need:
 
     lgs@ubuntu ~/git/corefx/ $ sudo apt-get install binutils-aarch64-linux-gnu
 
@@ -27,7 +27,7 @@ The `cross\build-rootfs.sh` script can be used to download the files needed for 
     Usage: build-rootfs.sh [BuildArch]
     BuildArch can be: arm, arm64
 
-The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system. It will by default generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
+The `build-rootfs.sh` script must be run as root, as it has to make some symlinks to the system. It will, by default, generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
 
 For example, to generate an arm rootfs:
 
@@ -69,9 +69,9 @@ As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildTyp
 
 Compiling for managed CoreFX
 ============================
-In order to generate managed CoreFX for ARM, we can compile CoreFX with native build because managed CoreFX is architecture independent.
+The managed components of CoreFX are architecture-independent and thus do not require a special build for arm or arm64.
 
-Many of the managed binaries are OS-independent, System.Linq.dll. However, some are OS-specific, System.IO.FileSystem.dll, with different builds for Windows vs Linux.
+Many of the managed binaries are also OS-independent, e.g. System.Linq.dll, while some are OS-specific, e.g. System.IO.FileSystem.dll, with different builds for Windows and Linux.
 
     lgs@ubuntu ~/git/corefx/ $ ./build.sh managed debug clean verbose 
 
