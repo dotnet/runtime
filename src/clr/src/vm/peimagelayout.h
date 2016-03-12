@@ -70,9 +70,6 @@ public:
     void AddRef();
     ULONG Release();
     const SString& GetPath();
-#ifdef MDIL
-    BOOL GetILSizeFromMDILCLRCtlData(DWORD* pdwActualILSize);
-#endif // MDIL
 
 #ifdef FEATURE_PREJIT
     void ApplyBaseRelocations();

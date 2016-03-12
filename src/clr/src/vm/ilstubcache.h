@@ -19,9 +19,7 @@
 #include "util.hpp"
 #include "crst.h"
 #include "ngenhash.h"
-#ifndef CLR_STANDALONE_BINDER
 #include "stubgen.h"
-#endif
 
 class ILStubHashBlobBase
 {
@@ -85,7 +83,6 @@ public:
 
     void AddMethodDescChunkWithLockTaken(MethodDesc *pMD);
 
-#ifndef CLR_STANDALONE_BINDER
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
@@ -95,7 +92,7 @@ public:
         DWORD cbSig,
         SigTypeContext *pTypeContext,
         ILStubLinker* pStubLinker);
-#endif
+
     MethodTable * GetStubMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
@@ -187,9 +184,6 @@ private:
     PTR_MethodDesc      pMD;
     PTR_MethodDesc      pStubMD;
 
-#ifdef BINDER
-    friend class MdilModule;
-#endif
 } StubMethodHashEntry_t;
 
 

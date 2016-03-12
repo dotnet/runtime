@@ -31,7 +31,7 @@
 
     <!-- This might be useful, to help make sure JIT devs build all configurations of the JIT (including crossgen), but
          it appears to cause problems with the build system, and it slows down normal JIT developer productivity by adding a seldom-useful build.
-    <ProjectFile Condition="'$(MDILGenerator)' != 'true'"                                             Include="crossgen\jit_crossgen.nativeproj" />
+    <ProjectFile Include="crossgen\jit_crossgen.nativeproj" />
     -->
 
     <ProjectFile Condition="'$(BuildArchitecture)' == 'arm'"   Include="protojit\protojit.nativeproj" />

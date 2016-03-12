@@ -8,9 +8,7 @@
 #ifndef _SimpleRWLock_hpp_
 #define _SimpleRWLock_hpp_
 
-#ifndef BINDER
 #include "threads.h"
-#endif
 
 class SimpleRWLock;
 
@@ -150,11 +148,7 @@ public:
         } CONTRACTL_END;
 
         m_RWLock = 0;
-#ifdef CLR_STANDALONE_BINDER
-        m_spinCount = 0;
-#else
         m_spinCount = (GetCurrentProcessCpuCount() == 1) ? 0 : 4000;
-#endif
         m_WriterWaiting = FALSE;
 
 #ifdef _DEBUG
@@ -180,12 +174,6 @@ public:
     // Acquire the writer lock.
     void EnterWrite();
 
-#ifdef BINDER
-    // Leave the reader lock.
-    void LeaveRead();
-    // Leave the writer lock.
-    void LeaveWrite();
-#else // !BINDER
     // Leave the reader lock.
     void LeaveRead()
     {
@@ -213,7 +201,6 @@ public:
         DECTHREADLOCKCOUNT();
         EE_LOCK_RELEASED(this);
     }
-#endif // !BINDER
 
 #endif // DACCESS_COMPILE
 

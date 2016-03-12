@@ -481,13 +481,6 @@ public:
         return ZapNodeType_ExternalMethodThunk;
     }
 
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
-
     virtual void EncodeSignature(ZapImportTable * pTable, SigBuilder * pSigBuilder)
     {
         CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)GetHandle();
@@ -809,13 +802,6 @@ public:
     {
         return ZapNodeType_VirtualMethodThunk;
     }
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
 
     virtual void EncodeSignature(ZapImportTable * pTable, SigBuilder * pSigBuilder)
     {
@@ -2119,7 +2105,7 @@ void ZapImportTable::PlaceIndirectHelperThunk(ZapNode * pImport)
 ZapNode * ZapImportTable::GetIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg)
 {
     ZapNode * pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
-#if defined(_TARGET_ARM_) && !defined(BINDER)
+#if defined(_TARGET_ARM_)
     pImport = m_pImage->GetInnerPtr(pImport, THUMB_CODE);
 #endif
     return pImport;
@@ -2142,7 +2128,7 @@ ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNu
     }
     if (!pImport->IsPlaced())
         PlaceIndirectHelperThunk(pImport);
-#if defined(_TARGET_ARM_) && !defined(BINDER)
+#if defined(_TARGET_ARM_)
     pImport = m_pImage->GetInnerPtr(pImport, THUMB_CODE);
 #endif
     return pImport;

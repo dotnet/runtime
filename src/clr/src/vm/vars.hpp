@@ -62,7 +62,6 @@ typedef unsigned short wchar_t;
 #define _WCHAR_T_DEFINED
 #endif
 
-#ifndef CLR_STANDALONE_BINDER
 #include "util.hpp"
 #include <corpriv.h>
 #include <cordbpriv.h>
@@ -77,8 +76,6 @@ typedef unsigned short wchar_t;
 #ifdef FEATURE_CAS_POLICY
 #include "certificatecache.h"
 #endif
-
-#endif //CLR_STANDALONE_BINDER
 
 #include "profilepriv.h"
 
@@ -375,8 +372,6 @@ class ClassLoaderList;
 class Module;
 class ArrayTypeDesc;
 
-#ifndef BINDER
-
 #define EXTERN extern
 
 // For [<I1, etc. up to and including [Object
@@ -471,7 +466,6 @@ EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
 // We use this object to return a preallocated System.Exception instance when we have nothing
 // better to return.
 EXTERN OBJECTHANDLE         g_pPreallocatedBaseException;
-#endif // !BINDER
 
 GPTR_DECL(Thread,g_pFinalizerThread);
 GPTR_DECL(Thread,g_pSuspensionThread);
@@ -479,8 +473,6 @@ GPTR_DECL(Thread,g_pSuspensionThread);
 // Global SyncBlock cache
 typedef DPTR(SyncTableEntry) PTR_SyncTableEntry;
 GPTR_DECL(SyncTableEntry, g_pSyncTable);
-
-#if !defined(BINDER)
 
 #ifdef FEATURE_COMINTEROP
 // Global RCW cleanup list
@@ -760,7 +752,6 @@ GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif // !FEATURE_PAL
 
-#endif /* !BINDER */
 
 #ifndef MAXULONG
 #define MAXULONG    0xffffffff
@@ -878,7 +869,6 @@ struct ModuleIndex
 
 typedef DPTR(GSCookie) PTR_GSCookie;
 
-#ifndef CLR_STANDALONE_BINDER
 #ifndef DACCESS_COMPILE
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
@@ -926,4 +916,3 @@ enum HostCallPreference
 };
 
 #endif /* _VARS_HPP */
-#endif /* !CLR_STANDALONE_BINDER */

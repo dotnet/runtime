@@ -100,7 +100,6 @@ public:
         SUPPORTS_DAC;
     }
 
-#ifndef BINDER
     NameHandle(Module* pModule, mdToken token) :
         m_nameSpace(NULL),
         m_name(NULL),
@@ -113,7 +112,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
     }
-#endif // !BINDER
 
     NameHandle(const NameHandle & p)
     {
@@ -585,7 +583,6 @@ private:
                                           Instantiation classInst,        // the type arguments to the type (if any)
                                           Instantiation methodInst);      // the type arguments to the method (if any)
 
-#ifndef BINDER
     BOOL 
     FindClassModuleThrowing(
         const NameHandle *    pName, 
@@ -596,7 +593,6 @@ private:
         EEClassHashEntry_t ** ppEntry, 
         Module *              pLookInThisModuleOnly, 
         Loader::LoadFlag      loadFlag);
-#endif // !BINDER
 
     static PTR_Module ComputeLoaderModuleForCompilation(Module *pDefinitionModule,      // the module that declares the generic type or method
                                                         mdToken token,
@@ -721,7 +717,6 @@ public:
                                              LoadTypesFlag fLoadTypes = LoadTypes,
                                              ClassLoadLevel level = CLASS_LOADED);
 
-#ifndef BINDER
     // Resolve a TypeRef to a TypeDef
     // (Just a no-op on TypeDefs)
     // Return FALSE if operation failed (e.g. type does not exist)
@@ -742,7 +737,6 @@ public:
                                              mdTypeDef *      pTypeDefToken,
                                              Loader::LoadFlag loadFlag = Loader::Load,
                                              BOOL *           pfUsesTypeForwarder = NULL);
-#endif // !BINDER
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
     static void TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
@@ -919,7 +913,6 @@ public:
                                              IMDInternalImport *pTDImport,
                                              mdTypeDef *mtd);
 
-#ifndef BINDER
     class AvailableClasses_LockHolder : public CrstHolder
     {
     public:
@@ -929,7 +922,6 @@ public:
             WRAPPER_NO_CONTRACT;
         }
     };
-#endif // !BINDER
 
     friend class AvailableClasses_LockHolder;
 
@@ -1077,12 +1069,10 @@ private:
                                     EEClassHashEntry_t *pEncloser,
                                     AllocMemTracker *pamTracker);
 
-#ifndef BINDER
     // don't call this directly.
     TypeHandle LoadTypeHandleForTypeKey_Body(TypeKey *pTypeKey,
                                              TypeHandle typeHnd,
                                              ClassLoadLevel targetLevel);
-#endif //!BINDER
 #endif //!DACCESS_COMPILE
 
 };  // class ClassLoader

@@ -250,16 +250,6 @@ class ZapInfo
                           BOOL fAllowThunk);
 
 public:
-#ifdef BINDER
-    void PublishCompiledMethod(mdToken methodDefToken, CORINFO_METHOD_HANDLE methodHandle)
-    {
-        m_currentMethodToken = methodDefToken;
-        m_currentMethodHandle = methodHandle;
-        
-        PublishCompiledMethod();
-    }
-#endif
-
     ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle, CORINFO_MODULE_HANDLE module, unsigned methodProfilingDataFlags);
     ~ZapInfo();
 

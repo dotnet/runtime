@@ -280,11 +280,6 @@ private:
     unsigned    m_curBase;
 };
 
-
-#ifdef MDIL
-#define MUST_CALL_JITALLOCATOR_FREE 1
-#endif 
-
 class LiveStateFuncs
 {
 public:
