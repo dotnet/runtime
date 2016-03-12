@@ -83,5 +83,11 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(expectedValue, actualValue);
         }
         #endregion
+
+        [Fact]
+        public void ToFourDigitYear_Invalid()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => new KoreanCalendar().ToFourDigitYear(100));
+        }
     }
 }
