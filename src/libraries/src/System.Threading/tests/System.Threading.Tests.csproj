@@ -38,6 +38,12 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.EventWaitHandle.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
@@ -48,6 +54,10 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Threading.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -22,6 +22,7 @@
     <Compile Include="MemoryMappedFile.CreateOrOpen.Tests.cs" />
     <Compile Include="MemoryMappedFile.OpenExisting.Tests.cs" />
     <Compile Include="MemoryMappedFile.CreateNew.Tests.cs" />
+    <Compile Include="MemoryMappedFile.CrossProcess.cs" />
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
@@ -30,6 +31,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
       <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
@@ -50,6 +54,10 @@
     <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.csproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.IO.MemoryMappedFiles</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
