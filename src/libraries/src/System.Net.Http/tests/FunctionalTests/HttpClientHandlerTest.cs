@@ -491,6 +491,20 @@ namespace System.Net.Http.Functional.Tests
 
         public static object[][] CookieNameValues =
         {
+            // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
+            // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
+            // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
+            // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
+            // iteration index, which would cause header values to be missed if not handled correctly.
+            //
+            // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
+            //  * 0-127 chars: succeeds, index advances from 0 to 1.
+            //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
+            //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
+            //
+            // The below overall header value lengths were chosen to exercise reading header values at these
+            // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
+
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126) },
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127) },
             new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128) },
