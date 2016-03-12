@@ -102,6 +102,7 @@ static_assert(PAL_SEEK_END == SEEK_END, "");
 
 // Validate our PollFlags enum values are correct for the platform
 static_assert(PAL_POLLIN == POLLIN, "");
+static_assert(PAL_POLLPRI == POLLPRI, "");
 static_assert(PAL_POLLOUT == POLLOUT, "");
 static_assert(PAL_POLLERR == POLLERR, "");
 static_assert(PAL_POLLHUP == POLLHUP, "");
