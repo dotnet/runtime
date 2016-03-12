@@ -313,12 +313,8 @@ LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 Interval *
 LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.emplace_back();
+    intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
     Interval *newInt = &intervals.back();
-    newInt->init();
-
-    newInt->registerType = theRegisterType;
-    newInt->registerPreferences = allRegs(theRegisterType);
 
 #ifdef DEBUG
     newInt->intervalIndex = intervalCount;

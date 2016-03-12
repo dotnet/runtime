@@ -1049,10 +1049,28 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    // Initialize the interval
-    void init()
+    Interval(RegisterType registerType, regMaskTP registerPreferences)
+        : registerPreferences(registerPreferences)
+        , relatedInterval(nullptr)
+        , assignedReg(nullptr)
+        , registerType(registerType)
+        , isLocalVar(false)
+        , isSplit(false)
+        , isSpilled(false)
+        , isInternal(false)
+        , isStructField(false)
+        , isPromotedStruct(false)
+        , hasConflictingDefUse(false)
+        , hasNonCommutativeRMWDef(false)
+        , isSpecialPutArg(false)
+        , preferCalleeSave(false)
+        , isConstant(false)
+        , physReg(REG_COUNT)
+#ifdef DEBUG
+        , intervalIndex(0)
+#endif
+        , varNum(0)
     {
-        physReg = REG_COUNT;
     }
 
 #ifdef DEBUG
