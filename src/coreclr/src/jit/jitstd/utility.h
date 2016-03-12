@@ -9,6 +9,21 @@
 namespace jitstd
 {
 
+template <typename T>
+inline 
+T&& forward(typename jitstd::remove_reference<T>::type& arg)
+{
+    return static_cast<T&&>(arg);
+}
+
+template <typename T>
+inline 
+T&& forward(typename jitstd::remove_reference<T>::type&& arg)
+{
+    static_assert(!jitstd::is_lvalue_reference<T>::value, "unexpected lvalue reference");
+    return static_cast<T&&>(arg);
+}
+
 namespace utility
 {
     // Template class for scoped execution of a lambda.
