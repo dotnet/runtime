@@ -177,7 +177,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerate()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Take(2);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
@@ -194,7 +194,7 @@ namespace System.Linq.Tests
         public void ForcedToEnumeratorDoesntEnumerateIList()
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(2);
-            // Don't insist on this behaviour, but check its correct if it happens
+            // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
             Assert.False(en != null && en.MoveNext());
         }
