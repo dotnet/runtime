@@ -13,11 +13,8 @@ pal::string_t get_runtime_config_from_file(const pal::string_t& file)
     auto json_path = get_directory(file);
 
     append_path(&json_path, json_name.c_str());
-    if (pal::file_exists(json_path))
-    {
-        return json_path;
-    }
-    return pal::string_t();
+    trace::verbose(_X("Runtime config is %s"), json_path.c_str());
+    return json_path;
 }
 
 host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal::string_t* p_own_dir)
