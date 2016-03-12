@@ -13,11 +13,6 @@
 #ifndef __ZAPIMAGE_H__
 #define __ZAPIMAGE_H__
 
-
-#ifdef CLR_STANDALONE_BINDER
-#include "nativedata.h"
-#endif
-
 class ZapMetaData;
 class ZapILMetaData;
 class ZapCorHeader;
@@ -141,10 +136,6 @@ enum ZapImportSectionType
 #include "zapinfo.h"
 #include "zapcode.h"
 
-#ifdef MDIL
-class ICompactLayoutWriter;
-#endif
-
 class ZapImage
     : public ZapWriter
     , public ICorCompileDataStore
@@ -227,9 +218,6 @@ public:
     ZapVirtualSection * m_pColdUnwindDataSection;
 #endif // defined(WIN64EXCEPTIONS)
 
-#ifdef MDIL
-    ZapVirtualSection * m_pMDILSection;
-#endif
     // Preloader sections
     ZapVirtualSection * m_pPreloadSections[CORCOMPILE_SECTION_COUNT];
 
@@ -246,17 +234,6 @@ public:
 private:
     IMetaDataAssemblyEmit      *m_pAssemblyEmit; // native image manifest
     ZapMetaData *               m_pAssemblyMetaData;
-#ifdef CLR_STANDALONE_BINDER
-    SArray<NativeManifestData>  m_pNativeManifestData;
-public:
-#ifdef BINDER
-    static const ULONG          m_selfIndex = 0; // position of "self dependency" in m_pNativeManifestData
-#else
-    ULONG                       m_selfIndex;     // position of "self dependency" in m_pNativeManifestData
-#endif // BINDER
-
-private:
-#endif
 
     ZapVersionInfo *            m_pVersionInfo;
     ZapDependencies *           m_pDependencies;
@@ -308,9 +285,6 @@ private:
     ZapVirtualSectionsTable *   m_pVirtualSectionsTable;
 
     ZapDebugInfoTable *         m_pDebugInfoTable;
-#ifdef MDIL
-    MdilDebugInfoTable *        m_pMdilDebugInfoTable;
-#endif
 
     ZapILMetaData *             m_pILMetaData;
 
@@ -392,10 +366,8 @@ private:
 
     ProfileDataHashTable profileDataHashTable;
 
-#ifndef BINDER
     SArray<SString, FALSE> fileNotFoundErrorsTable;
     void FileNotFoundError(LPCWSTR pszMessage);
-#endif // BINDER
 
 public:
     struct ProfileDataSection
@@ -601,239 +573,6 @@ private:
                                              __out_ecount(dwPdbFileNameBufferSize) char * pwszPdbFileName,
                                              DWORD dwPdbFileNameBufferSize);
 
-#ifdef  MDIL
-    void LoadMDILSection();
-
-    void MethodCompileComplete_MDIL(BYTE *pCode, ULONG cCode);
-
-    void Output_MDIL();
-public:
-    DWORD Write_MDIL(FILE *outputFile);
-private:
-    void EncodeGenericInstances_MDIL();
-
-    void UnifyGenericInstances_MDIL(ZapInfo::MDILGenericMethodDesc *pMD);
-
-    COUNT_T EncodeGenericInstance_MDIL(ZapInfo::MDILGenericMethodDesc *pMD);
-
-    enum CodeKind
-    {
-        GENERIC_CODE,
-        NON_GENERIC_CODE,
-        CODE_KIND_COUNT,
-    };
-
-    SArray<BYTE>                m_codeBuffer[CODE_KIND_COUNT];  // the buffer holding the finished MDIL code
-                                                                // for all compiled methods, including a method header
-                                                                // indicating the length, and the exception tables
-                                                                // the first four bytes are a magic DWORD, so offset 0 is invalid
-                                                                // we wish to keep MDIL code possibly referenced from dependencies
-                                                                // (currently only generic code) separate from MDIL code only used
-                                                                // during translation of the module itself
-    ULONG                       m_codeOffs[CODE_KIND_COUNT];    // code offset of the header of the current method
-
-    SArray<ULONG>               m_mapMethodRidToOffs;   // offset in code buffer for each method def rid.
-                                                        // 0 means no MDIL code available.
-    static const ULONG GENERIC_METHOD_REF = 0x80000000; // hi bit on means this is a reference to a generic method descriptor
-                                                        // that in turn points to the method bodies
-
-    ULONG                       m_methodRidCount;       // number of valid entries in the m_mapMethodRidToOffs table
-
-    ULONG                       m_mergedGenericSize;
-    ULONG                       m_unmergedGenericSize;
-    ULONG                       m_mergedGenericCount;
-    ULONG                       m_unmergedGenericCount;
-
-    ULONG                       m_stubMethodCount;
-
-    ULONG                       m_assemblyName;
-    ULONG                       m_locale;
-    AssemblyMetaDataInternal    m_assemblyData;
-    ULONG                       m_neutralResourceCultureNameLen;
-    DWORD                       m_cultureName;
-    USHORT                      m_neutralResourceFallbackLocation;
-
-    SArray<ZapInfo::MDILGenericMethodDesc *> m_mapGenericMethodToDesc; // maps a method rid to a list of instances
-
-    SArray<BYTE>                m_genericInstPool;      // where the flavor -> mdil body maps are stored
-
-    BYTE *                      m_pMdilPESectionData;
-    DWORD                       m_cbMdilPESectionData;
-    struct ModuleZapImage
-    {
-        CORINFO_MODULE_HANDLE   m_module;
-        ZapImage               *m_zapImage;
-    };
-
-    SArray<ModuleZapImage>      m_mdilImages;
-
-    int CheckForUnmerged(ZapInfo::MDILGenericMethodDesc tab[], int last, ZapInfo::FlavorSet flavorsToMatch, __in_z WCHAR *message);
-
-    ICompactLayoutWriter       *m_pICLW;
-
-    SArray<BYTE>                m_stubBuffer;           // the buffer holding all IL stub descriptions
-    SArray<BYTE>                m_stubAssocBuffer;      // the buffer with method -> IL stub associations
-
-    SArray<BYTE>                m_debugInfoBuffer[CODE_KIND_COUNT]; // the buffer holding the debug info for all compiled methods
-                                                                    // the first four bytes are a magic DWORD, so offset 0 is invalid
-                                                                    // as for code, we want to keep information possibly referenced from dependencies
-                                                                    // (currently only generic code) separate from information used only
-                                                                    // during translation of the module itself so we keep two buffers
-    SArray<ULONG>               m_mapMethodRidToDebug;  // offset in debug info buffer for each method def rid.
-                                                        // before adjusting the offsets to account for the generic code buffer:
-                                                        //     0xFFFFFFFF indicates no debug data and 0 is a valid offset
-                                                        // after adjusting the offsets, aka what is written to file:
-                                                        //     0xFFFFFFFF is valid (albeit never generated) and 0 indicates no debug data
-
-public:
-
-    Zapper *GetZapper()
-    {
-        return m_zapper;
-    }
-
-    // remember the assembly data
-    void SetAssemblyNameAndLocale(ULONG assembly, ULONG locale, AssemblyMetaDataInternal *assemblyData) {
-        m_assemblyName = assembly;
-        m_locale = locale;
-        m_assemblyData = *assemblyData;
-    }
-
-    // Set neutral resource culture information
-    void SetNeutralResourceInfo(ULONG neutralResourceCultureNameLen, DWORD cultureName, USHORT neutralResourceFallbackLocation)
-    {
-        m_neutralResourceCultureNameLen = neutralResourceCultureNameLen;
-        m_cultureName = cultureName;
-        m_neutralResourceFallbackLocation = neutralResourceFallbackLocation;
-    }
-
-    // Should compact layout info be generated?
-    bool DoCompactLayout()
-    {
-        return (m_zapper->m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL) != 0;
-    }
-
-    // Flush a serialized representation of a type
-    void FlushCompactLayoutData(mdToken typeToken, BYTE *pData, ULONG cData);
-
-    // Flush the IL stub data
-    void FlushStubData(BYTE *pStubSize, ULONG cStubSize,
-                       BYTE *pStubData, ULONG cStubData,
-                       BYTE *pStubAssocData, ULONG cStubAssocData);
-
-    // Flush the user string pool
-    void FlushUserStringPool(BYTE *pData, ULONG cData);
-
-    // Flush the well known types table
-    void FlushWellKnownTypes(DWORD *wellKnownTypesTable, SIZE_T count);
-
-    struct  ExtModRef
-    {
-        enum ExtModRefFlags
-        {
-            NO_FLAGS            = 0x0000,
-            IS_FROM_IL_METADATA = 0x0001,
-            IS_EAGERLY_BOUND    = 0x0002,
-            IS_MODULE_REF       = 0x0004,
-            IS_LOCAL_MODULE     = 0x0008,
-        };
-
-        ULONG           name;       // offset of name in name pool
-        ExtModRefFlags  flags;
-    };
-
-    SArray<ExtModRef>   m_extModRef;
-
-    SArray<char>        m_namePool;
-
-    struct  ExtTypeRef
-    {
-        ULONG   module  : 14;     // 16383 max modules to import from
-        ULONG   ordinal : 18;     // 262143 max types within a module 
-                                  // Just like metadata does today, I'm planning to use
-                                  // wider tables when necessary
-    };
-
-#ifndef BINDER
-    SArray<ExtTypeRef>  m_extTypeRef;
-
-    struct ExtTypeRefExtend
-    {
-        ULONG resolutionScope;  // Rid in ExtTypeRef table of containing type (currently only used for nested types, all other type have a 0)
-        ULONG name_space;       // offset of namespace in name pool
-        ULONG name;             // offset of name in name pool
-    };
-
-    SArray<ExtTypeRefExtend>  m_extTypeRefExtend;
-#endif // !BINDER
-
-    struct ExtMemberRef
-    {
-        ULONG   typeRid : 15;       // 32767 max types to import
-        ULONG   isTypeSpec : 1;
-        ULONG   isField : 1;           // is this a field or a method?
-        ULONG   ordinal : 15;          // 32767 max fields or methods in a type
-                                       // Just like metadata does today, I'm planning to use
-                                       // wider tables when necessary
-    };
-
-    SArray<ExtMemberRef> m_extMemberRef;
-
-#ifndef BINDER
-    struct ExtMemberRefExtend
-    {
-        ULONG name;             // offset of name in name pool
-        ULONG signature;        // offset of signature.
-    };
-
-    SArray<ExtMemberRefExtend> m_extMemberRefExtend;
-#endif // !BINDER
-
-    SArray<ULONG>        m_typeSpecToOffs;
-    SArray<ULONG>        m_methodSpecToOffs;
-    SArray<ULONG>        m_signatureToOffs;
-    SArray<BYTE>         m_compactLayoutBuffer;  // the buffer holding the finished compact layout data
-                                                 // the first four bytes are a magic DWORD, so offset 0 is invalid
-
-    void SetCompactLayoutWriter(ICompactLayoutWriter *pICLW)
-    {
-        m_pICLW = pICLW;
-    }
-
-    ICompactLayoutWriter *GetCompactLayoutWriter()
-    {
-        return m_pICLW;
-    }
-
-#ifdef BINDER
-    void Output()
-    {
-        OutputCode(ProfiledHot);
-        OutputCode(Unprofiled);
-        OutputCode(ProfiledCold);
-
-        OutputCodeInfo(ProfiledHot);
-        OutputCodeInfo(ProfiledCold);  // actually both Unprofiled and ProfiledCold
-
-        OutputGCInfo();
-        OutputDebugInfo();
-        OutputProfileData();
-    }
-#ifdef CLR_STANDALONE_BINDER
-    void EmitMethodIL(mdToken methodDefToken);
-    void EmitFieldRVA(mdToken fieldDefToken, RVA fieldRVA);
-#endif
-#endif
-
-private:
-
-    SArray<ULONG>               m_mapTypeRidToOffs;     // offset in compact layout buffer for each typedef rid
-    ULONG                       m_compactLayoutOffs;    // offset of the current type in the compact layout data
-    ULONG                       m_typeRidCount;         // number of valid entries in the m_mapTypeRidToOffs table
-    SArray<BYTE>                m_userStringPool;       // this is the user string pool exactly like it is in meta data
-    SArray<DWORD>               m_wellKnownTypesTable;  // this is an array of type def tokens for the well known types
-#endif
-
 public:
     ZapImage(Zapper *zapper);
     virtual ~ZapImage();
@@ -886,18 +625,9 @@ public:
     void Preload();
     void LinkPreload();
 
-#ifdef BINDER
-    void SetNativeVersionResource(PVOID pvVersionResourceBlob, SIZE_T cbVersionResource);
-#endif
     void SetVersionInfo(CORCOMPILE_VERSION_INFO * pVersionInfo);
     void SetDependencies(CORCOMPILE_DEPENDENCY *pDependencies, DWORD cDependencies);
     void SetPdbFileName(const SString &strFileName);
-
-#ifdef CLR_STANDALONE_BINDER
-    void AddNativeDependency (NativeManifestData * pNativeManifestData) {
-        m_pNativeManifestData.Append(*pNativeManifestData);
-    }
-#endif
 
 #ifdef WIN64EXCEPTIONS
     void SetRuntimeFunctionsDirectoryEntry();
@@ -1082,17 +812,6 @@ public:
 
     CompileStatus     CompileProfileDataWorker(mdToken token, unsigned methodProfilingDataFlags);
     void              CompileProfileData();
-#ifdef CLR_STANDALONE_BINDER
-    PEDecoder *GetPEDecoder()
-    {
-        return &m_ModuleDecoder;
-    }
-
-    ZapMethodEntryPoint *GetMethodEntryPoint(CORINFO_METHOD_HANDLE handle, CORINFO_ACCESS_FLAGS accessFlags)
-    {
-        return m_pMethodEntryPoints->GetMethodEntryPoint(handle, accessFlags);
-    }
-#endif
 };
 
 class BinaryWriter

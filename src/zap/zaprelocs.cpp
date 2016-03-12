@@ -33,15 +33,6 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
     switch (type)
     {
     case IMAGE_REL_BASED_ABSOLUTE:
-#ifdef TARGET_THUMB2
-        if (pTarget->IsThumb2Code())
-        {
-            // code rvas to thumb2 code need to have the low bit set so that
-            // the cpu knows to use the thumb2 instruction set as opposed to the arm instruction set
-            _ASSERTE((targetOffset & THUMB_CODE) == 0);
-            targetOffset |= THUMB_CODE;
-        }
-#endif //TARGET_THUMB2
         *(UNALIGNED DWORD *)pLocation = pTarget->GetRVA() + targetOffset;
         // IMAGE_REL_BASED_ABSOLUTE does not need base reloc entry
         return;
@@ -57,29 +48,10 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         // Misaligned relocs disable ASLR on ARM. We should never ever emit them.
         _ASSERTE(IS_ALIGNED(rva, sizeof(TADDR)));
 #endif
-#ifdef TARGET_THUMB2
-        if (pTarget->IsThumb2Code())
-        {
-            // code rvas to thumb2 code need to have the low bit set so that
-            // the cpu knows to use the thumb2 instruction set as opposed to the arm instruction set
-            pActualTarget |= THUMB_CODE;
-        }
-#endif //TARGET_THUMB2
         *(UNALIGNED TADDR *)pLocation = pActualTarget;
         break;
 
     case IMAGE_REL_BASED_RELPTR:
-#ifdef TARGET_THUMB2
-        if (pTarget->IsThumb2Code())
-        {
-            pActualTarget |= THUMB_CODE;
-        }
-#endif //TARGET_THUMB2
-#ifdef BINDER
-        // fall through
-
-    case IMAGE_REL_BASED_MD_METHODENTRY:
-#endif // BINDER
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
             *(UNALIGNED TADDR *)pLocation = (INT32)(pActualTarget - pSite);
@@ -90,12 +62,6 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
     case IMAGE_REL_BASED_RELPTR32:
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
-#ifdef TARGET_THUMB2
-            if (pTarget->IsThumb2Code())
-            {
-                pActualTarget |= THUMB_CODE;
-            }
-#endif //TARGET_THUMB2
             *(UNALIGNED INT32 *)pLocation = (INT32)(pActualTarget - pSite);
         }
         // IMAGE_REL_BASED_RELPTR32 does not need base reloc entry
@@ -114,21 +80,12 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
 #if defined(_TARGET_ARM_)
     case IMAGE_REL_BASED_THUMB_MOV32:
         {
-            if (pTarget->IsThumb2Code())
-            {
-                // code pointers to thumb2 code need to have the low bit set so that
-                // the cpu knows to use the thumb2 instruction set as opposed to the arm instruction set
-                pActualTarget |= THUMB_CODE;
-            }
             PutThumb2Mov32((UINT16 *)pLocation, (UINT32)pActualTarget);
             break;
         }
 
     case IMAGE_REL_BASED_THUMB_BRANCH24:
         {
-#ifdef BINDER
-            _ASSERTE(pTarget->IsThumb2Code());
-#endif
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
 
             // Kind of a workaround: make this reloc work both for calls (which have the thumb bit set),
@@ -277,9 +234,6 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
             case IMAGE_REL_BASED_PTR:
                 targetOffset = (int)*(UNALIGNED TADDR *)pLocation;
                 break;
-#ifdef BINDER
-            case IMAGE_REL_BASED_MD_METHODENTRY:
-#endif
             case IMAGE_REL_BASED_RELPTR:
                 targetOffset = (int)*(UNALIGNED TADDR *)pLocation;
                 break;
@@ -408,23 +362,3 @@ ZapBlobWithRelocs * ZapBlobWithRelocs::NewAlignedBlob(ZapWriter * pWriter, PVOID
         return NULL;
     }
 }
-
-#ifdef BINDER
-void ZapBlobWithRelocs::SqueezeRelocs(DWORD entryCount)
-{
-    ZapReloc *pRelocs = GetRelocs();
-
-    DWORD nonEmptyCount = 0;
-    for (DWORD index = 0; index < entryCount; index++)
-    {
-        if (pRelocs[index].m_pTargetNode != NULL)
-        {
-            pRelocs[nonEmptyCount] = pRelocs[index];
-            nonEmptyCount++;
-        }
-    }
-    // Set sentinel
-    C_ASSERT(offsetof(ZapReloc, m_type) == 0);
-    pRelocs[nonEmptyCount].m_type = IMAGE_REL_INVALID;
-}
-#endif

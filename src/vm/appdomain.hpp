@@ -15,7 +15,6 @@
 #ifndef _APPDOMAIN_H
 #define _APPDOMAIN_H
 
-#ifndef CLR_STANDALONE_BINDER
 #include "eventtrace.h"
 #include "assembly.hpp"
 #include "clsload.hpp"
@@ -49,17 +48,6 @@
 #include "..\md\winmd\inc\adapter.h"
 #include "winrttypenameconverter.h"
 #endif // FEATURE_COMINTEROP
-
-#else // CLR_STANDALONE_BINDER
-class DomainFile;
-class CPUSTUBLINKER;
-struct CodeLabel;
-class IdDispenser;
-typedef DPTR(OBJECTREF) PTR_OBJECTREF;
-typedef DPTR(DomainFile) PTR_DomainFile;
-typedef DPTR(IdDispenser) PTR_IdDispenser;
-#include "..\md\winmd\inc\adapter.h"
-#endif // CLR_STANDALONE_BINDER
 
 #include "appxutil.h"
 
@@ -288,7 +276,6 @@ struct DomainLocalModule
         return &m_pGCStatics;
     }
 
-#ifndef CLR_STANDALONE_BINDER
     // Returns bytes so we can add offsets
     inline PTR_BYTE GetGCStaticsBasePointer(MethodTable * pMT)
     {
@@ -321,7 +308,6 @@ struct DomainLocalModule
             return dac_cast<PTR_BYTE>(this);
         }
     }
-#endif // !CLR_STANDALONE_BINDER
 
     inline DynamicClassInfo* GetDynamicClassInfo(DWORD n)
     {
@@ -333,7 +319,6 @@ struct DomainLocalModule
         return &m_pDynamicClassTable[n];
     }
 
-#ifndef CLR_STANDALONE_BINDER
     // These helpers can now return null, as the debugger may do queries on a type
     // before the calls to PopulateClass happen
     inline PTR_BYTE GetDynamicEntryGCStaticsBasePointer(DWORD n, PTR_LoaderAllocator pLoaderAllocator)
@@ -397,7 +382,6 @@ struct DomainLocalModule
 
         return retval;
     }
-#endif // CLR_STANDALONE_BINDER
 
     FORCEINLINE PTR_DynamicClassInfo GetDynamicClassInfoIfInitialized(DWORD n)
     {
@@ -466,7 +450,6 @@ struct DomainLocalModule
         return offsetof(DomainLocalModule, m_pDataBlob);
     }
 
-#ifndef CLR_STANDALONE_BINDER
     FORCEINLINE MethodTable * GetMethodTableFromClassDomainID(DWORD dwClassDomainID)
     {
         DWORD rid = (DWORD)(dwClassDomainID) + 1;
@@ -476,8 +459,7 @@ struct DomainLocalModule
         PREFIX_ASSUME(pMT != NULL);
         return pMT;
     }
-#endif // CLR_STANDALONE_BINDER
-    
+
 private:
     friend void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck);
 
@@ -519,8 +501,6 @@ public:
 
 };  // struct DomainLocalModule
 
-
-#ifndef CLR_STANDALONE_BINDER
 
 typedef DPTR(class DomainLocalBlock) PTR_DomainLocalBlock;
 class DomainLocalBlock
@@ -3006,52 +2986,6 @@ public:
         return dac_cast<PTR_CompilationDomain>(this);
     }
 
-#ifdef MDIL
-    void SetMDILCompilationDomain()
-    {
-
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsCompilationDomain());
-        m_dwFlags |= MDIL_COMPILATION_DOMAIN;
-    }
-
-    BOOL IsMDILCompilationDomain()
-    {
-
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & MDIL_COMPILATION_DOMAIN;
-    }
-
-    void SetMinimalMDILCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsCompilationDomain());
-        m_dwFlags |= MINIMAL_MDIL_COMPILATION_DOMAIN;
-    }
-
-    BOOL IsMinimalMDILCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & MINIMAL_MDIL_COMPILATION_DOMAIN;
-    }
-
-    void SetNoMDILCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(IsCompilationDomain());
-        m_dwFlags |= NO_MDIL_COMPILATION_DOMAIN;
-    }
-
-    BOOL IsNoMDILCompilationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & NO_MDIL_COMPILATION_DOMAIN;
-    }
-#endif // MDIL
-
     void SetCanUnload()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3983,11 +3917,6 @@ public:
         ILLEGAL_VERIFICATION_DOMAIN =       0x8000, // This can't be a verification domain
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
         ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
-#ifdef MDIL
-        MDIL_COMPILATION_DOMAIN =         0x040000, // Are we generating MDIL?
-        MINIMAL_MDIL_COMPILATION_DOMAIN = 0x080000, // Are we generating platform MDIL?
-        NO_MDIL_COMPILATION_DOMAIN      = 0x100000, // Are we generating a file we believe will fail on the Triton code path
-#endif
 #ifdef FEATURE_CORECLR
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
         ENABLE_ASSEMBLY_LOADFILE        = 0x400000, // Allow Assembly.LoadFile in CoreCLR
@@ -5443,8 +5372,5 @@ public:
     }
 };
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
-
-#endif // !CLR_STANDALONE_BINDER
 
 #endif

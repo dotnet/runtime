@@ -2584,15 +2584,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // FEATURE_COMINTEROP
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-                
-#ifdef MDIL
-                if (GetAppDomain()->IsMDILCompilationDomain())
-                {
-                    // GetNDirectTarget is understood by the compiler and generates the CALL_PINVOKE instruction
-                    pcsEmit->EmitCALL(pcsEmit->GetToken(MscorlibBinder::GetMethod(METHOD__STUBHELPERS__GET_NDIRECT_TARGET)), 1, 1);
-                }
-                else
-#endif // MDIL
+
                 {
                     // Perf: inline the helper for now
                     //pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);

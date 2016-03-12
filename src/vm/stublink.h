@@ -113,9 +113,7 @@ struct StubUnwindInfoHeapSegment
 #endif
 };
 
-#ifndef BINDER
 VOID UnregisterUnwindInfoInLoaderHeap (UnlockedLoaderHeap *pHeap);
-#endif //!BINDER
 
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
 

@@ -483,18 +483,14 @@ extern DWORD g_ExceptionLine;
 #define ENDCANNOTTHROWCOMPLUSEXCEPTION_SEH()
 
 #define COMPlusThrow                        RealCOMPlusThrow
-#ifndef CLR_STANDALONE_BINDER
 #define COMPlusThrowNonLocalized            RealCOMPlusThrowNonLocalized
-#endif // !CLR_STANDALONE_BINDER
 #ifndef DACCESS_COMPILE
 #define COMPlusThrowHR                      RealCOMPlusThrowHR
 #else
 #define COMPlusThrowHR ThrowHR
 #endif
 #define COMPlusThrowWin32                   RealCOMPlusThrowWin32
-#ifndef CLR_STANDALONE_BINDER
 #define COMPlusThrowOM                      RealCOMPlusThrowOM
-#endif // !CLR_STANDALONE_BINDER
 #ifdef FEATURE_STACK_PROBE
 #define COMPlusThrowSO                      RealCOMPlusThrowSO
 #endif
