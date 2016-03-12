@@ -375,6 +375,9 @@
 		<File
 			RelativePath=".\CLRConfig.cpp"
 			>
+		<File
+			RelativePath=".\configuration.cpp"
+			>
 		</File>
 		<File
 			RelativePath=".\clrhost.cpp"

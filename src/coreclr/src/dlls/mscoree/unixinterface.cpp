@@ -6,7 +6,7 @@
 //*****************************************************************************
 // unixinterface.cpp
 //
-// Implementation for the interface exposed by the libcoreclr.so on Unix
+// Implementation for the interface exposed by libcoreclr.so
 //
 
 //*****************************************************************************
@@ -14,6 +14,7 @@
 #include "stdafx.h"
 #include <utilcode.h>
 #include <corhost.h>
+#include <configuration.h>
 
 typedef int (STDMETHODCALLTYPE *HostMain)(
     const int argc,
@@ -86,76 +87,47 @@ static LPCWSTR* StringArrayToUnicode(int argc, LPCSTR* argv)
     return argvW;
 }
 
-static void ExtractStartupFlagsAndConvertToUnicode(
+static void InitializeStartupFlags(STARTUP_FLAGS* startupFlagsRef)
+{
+    STARTUP_FLAGS startupFlags = static_cast<STARTUP_FLAGS>(
+            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
+            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN);
+
+    if (Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), CLRConfig::UNSUPPORTED_gcConcurrent))
+    {
+        startupFlags = static_cast<STARTUP_FLAGS>(startupFlags | STARTUP_CONCURRENT_GC);
+    }
+    if (Configuration::GetKnobBooleanValue(W("System.GC.Server"), CLRConfig::UNSUPPORTED_gcServer))
+    {
+        startupFlags = static_cast<STARTUP_FLAGS>(startupFlags | STARTUP_SERVER_GC);
+    }
+    if (Configuration::GetKnobBooleanValue(W("System.GC.RetainVM"), CLRConfig::UNSUPPORTED_GCRetainVM))
+    {
+        startupFlags = static_cast<STARTUP_FLAGS>(startupFlags | STARTUP_HOARD_GC_VM);
+    }
+
+    *startupFlagsRef = startupFlags;
+}
+
+static void ConvertConfigPropertiesToUnicode(
     const char** propertyKeys,
     const char** propertyValues,
-    int* propertyCountRef,
-    STARTUP_FLAGS* startupFlagsRef,
+    int propertyCount,
     LPCWSTR** propertyKeysWRef,
     LPCWSTR** propertyValuesWRef)
 {
-    int propertyCount = *propertyCountRef;
-
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
 
     LPCWSTR* propertyValuesW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyValuesW != nullptr);
 
-    // Extract the startup flags from the properties, and convert the remaining properties into unicode
-    STARTUP_FLAGS startupFlags =
-        static_cast<STARTUP_FLAGS>(
-            STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
-            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
-            STARTUP_FLAGS::STARTUP_CONCURRENT_GC);
-    int propertyCountW = 0;
     for (int propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
     {
-        auto SetFlagValue = [&](STARTUP_FLAGS flag)
-        {
-            if (strcmp(propertyValues[propertyIndex], "0") == 0)
-            {
-                startupFlags = static_cast<STARTUP_FLAGS>(startupFlags & ~flag);
-            }
-            else if (strcmp(propertyValues[propertyIndex], "1") == 0)
-            {
-                startupFlags = static_cast<STARTUP_FLAGS>(startupFlags | flag);
-            }
-        };
-
-        if (strcmp(propertyKeys[propertyIndex], "CONCURRENT_GC") == 0)
-        {
-            SetFlagValue(STARTUP_CONCURRENT_GC);
-        }
-        else if (strcmp(propertyKeys[propertyIndex], "SERVER_GC") == 0)
-        {
-            SetFlagValue(STARTUP_SERVER_GC);
-        }
-        else if (strcmp(propertyKeys[propertyIndex], "HOARD_GC_VM") == 0)
-        {
-            SetFlagValue(STARTUP_HOARD_GC_VM);
-        }
-        else if (strcmp(propertyKeys[propertyIndex], "TRIM_GC_COMMIT") == 0)
-        {
-            SetFlagValue(STARTUP_TRIM_GC_COMMIT);
-        }
-        else
-        {
-            // This is not a CoreCLR startup flag, convert it to unicode and preserve it for returning
-            propertyKeysW[propertyCountW] = StringToUnicode(propertyKeys[propertyIndex]);
-            propertyValuesW[propertyCountW] = StringToUnicode(propertyValues[propertyIndex]);
-            ++propertyCountW;
-        }
+        propertyKeysW[propertyIndex] = StringToUnicode(propertyKeys[propertyIndex]);
+        propertyValuesW[propertyIndex] = StringToUnicode(propertyValues[propertyIndex]);
     }
 
-    for (int propertyIndex = propertyCountW; propertyIndex < propertyCount; ++propertyIndex)
-    {
-        propertyKeysW[propertyIndex] = nullptr;
-        propertyValuesW[propertyIndex] = nullptr;
-    }
-
-    *propertyCountRef = propertyCountW;
-    *startupFlagsRef = startupFlags;
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
 }
@@ -205,22 +177,20 @@ int coreclr_initialize(
 
     ConstWStringHolder appDomainFriendlyNameW = StringToUnicode(appDomainFriendlyName);
 
-    STARTUP_FLAGS startupFlags;
-    LPCWSTR* propertyKeysWTemp;
-    LPCWSTR* propertyValuesWTemp;
-    ExtractStartupFlagsAndConvertToUnicode(
+    LPCWSTR* propertyKeysW;
+    LPCWSTR* propertyValuesW;
+    ConvertConfigPropertiesToUnicode(
         propertyKeys,
         propertyValues,
-        &propertyCount,
-        &startupFlags,
-        &propertyKeysWTemp,
-        &propertyValuesWTemp);
-    
-    ConstWStringArrayHolder propertyKeysW;
-    propertyKeysW.Set(propertyKeysWTemp, propertyCount);
-    
-    ConstWStringArrayHolder propertyValuesW;
-    propertyValuesW.Set(propertyValuesWTemp, propertyCount);
+        propertyCount,
+        &propertyKeysW,
+        &propertyValuesW);
+
+    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
+    Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+
+    STARTUP_FLAGS startupFlags;
+    InitializeStartupFlags(&startupFlags);
 
     hr = host->SetStartupFlags(startupFlags);
     IfFailRet(hr);
