@@ -13,14 +13,13 @@
     "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16537"
   },
   "frameworks": {
-    "net451": { },
+    "net451": {},
     "netstandard1.3": {
       "imports": "dnxcore50",
       "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23901"
+        "NETStandard.Library": "1.5.0-rc2-23911"
       }
     }
   },
-  "scripts": {
-  }
+  "scripts": {}
 }
