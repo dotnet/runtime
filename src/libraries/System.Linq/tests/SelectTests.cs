@@ -842,6 +842,10 @@ namespace System.Linq.Tests
             Assert.Empty(source.Take(-1));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
         }
 
         [Fact]
@@ -853,6 +857,10 @@ namespace System.Linq.Tests
             Assert.Empty(source.Take(-1));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
         }
 
         [Fact]
@@ -864,6 +872,10 @@ namespace System.Linq.Tests
             Assert.Empty(source.Take(-1));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(4));
             Assert.Equal(new[] { 2, 4, 6, 8 }, source.Take(40));
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
         }
 
         [Fact]
