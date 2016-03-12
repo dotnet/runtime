@@ -3568,7 +3568,15 @@ bool ZapInfo::canTailCall(CORINFO_METHOD_HANDLE caller,
 #ifdef FEATURE_READYTORUN_COMPILER
     // READYTORUN: FUTURE: Delay load fixups for tailcalls
     if (IsReadyToRunCompilation())
+    {
+        if (fIsTailPrefix)
+        {
+            m_zapper->Warning(W("ReadyToRun: Explicit tailcalls not supported\n"));
+            ThrowHR(E_NOTIMPL);
+        }
+
         return false;
+    }
 #endif
 
     return m_pEEJitInfo->canTailCall(caller, declaredCallee, exactCallee, fIsTailPrefix);
