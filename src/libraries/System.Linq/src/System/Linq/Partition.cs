@@ -140,19 +140,19 @@ namespace System.Linq
     internal sealed class OrderedPartition<TElement> : IPartition<TElement>
     {
         private readonly OrderedEnumerable<TElement> _source;
-        private readonly int _minIndex;
-        private readonly int _maxIndex;
+        private readonly int _minIndexInclusive;
+        private readonly int _maxIndexInclusive;
 
-        public OrderedPartition(OrderedEnumerable<TElement> source, int minIdx, int maxIdx)
+        public OrderedPartition(OrderedEnumerable<TElement> source, int minIdxInclusive, int maxIdxInclusive)
         {
             _source = source;
-            _minIndex = minIdx;
-            _maxIndex = maxIdx;
+            _minIndexInclusive = minIdxInclusive;
+            _maxIndexInclusive = maxIdxInclusive;
         }
 
         public IEnumerator<TElement> GetEnumerator()
         {
-            return _source.GetEnumerator(_minIndex, _maxIndex);
+            return _source.GetEnumerator(_minIndexInclusive, _maxIndexInclusive);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -162,26 +162,26 @@ namespace System.Linq
 
         public IPartition<TElement> Skip(int count)
         {
-            int minIndex = _minIndex + count;
-            return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TElement>.Instance : new OrderedPartition<TElement>(_source, minIndex, _maxIndex);
+            int minIndex = _minIndexInclusive + count;
+            return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TElement>.Instance : new OrderedPartition<TElement>(_source, minIndex, _maxIndexInclusive);
         }
 
         public IPartition<TElement> Take(int count)
         {
-            int maxIndex = _minIndex + count - 1;
-            if ((uint)maxIndex >= (uint)_maxIndex)
+            int maxIndex = _minIndexInclusive + count - 1;
+            if ((uint)maxIndex >= (uint)_maxIndexInclusive)
             {
                 return this;
             }
 
-            return new OrderedPartition<TElement>(_source, _minIndex, maxIndex);
+            return new OrderedPartition<TElement>(_source, _minIndexInclusive, maxIndex);
         }
 
         public TElement TryGetElementAt(int index, out bool found)
         {
-            if ((uint)index <= (uint)(_maxIndex - _minIndex))
+            if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive))
             {
-                return _source.TryGetElementAt(index + _minIndex, out found);
+                return _source.TryGetElementAt(index + _minIndexInclusive, out found);
             }
 
             found = false;
@@ -190,27 +190,27 @@ namespace System.Linq
 
         public TElement TryGetFirst(out bool found)
         {
-            return _source.TryGetElementAt(_minIndex, out found);
+            return _source.TryGetElementAt(_minIndexInclusive, out found);
         }
 
         public TElement TryGetLast(out bool found)
         {
-            return _source.TryGetLast(_minIndex, _maxIndex, out found);
+            return _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
         }
 
         public TElement[] ToArray()
         {
-            return _source.ToArray(_minIndex, _maxIndex);
+            return _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
         }
 
         public List<TElement> ToList()
         {
-            return _source.ToList(_minIndex, _maxIndex);
+            return _source.ToList(_minIndexInclusive, _maxIndexInclusive);
         }
 
         public int GetCount(bool onlyIfCheap)
         {
-            return _source.GetCount(_minIndex, _maxIndex, onlyIfCheap);
+            return _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
         }
     }
 
@@ -219,8 +219,8 @@ namespace System.Linq
         private sealed class ListPartition<TSource> : Iterator<TSource>, IPartition<TSource>
         {
             private readonly IList<TSource> _source;
-            private readonly int _minIndex;
-            private readonly int _maxIndex;
+            private readonly int _minIndexInclusive;
+            private readonly int _maxIndexInclusive;
             private int _index;
 
             public ListPartition(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
@@ -229,19 +229,19 @@ namespace System.Linq
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(minIndexInclusive <= maxIndexInclusive);
                 _source = source;
-                _minIndex = minIndexInclusive;
-                _maxIndex = maxIndexInclusive;
+                _minIndexInclusive = minIndexInclusive;
+                _maxIndexInclusive = maxIndexInclusive;
                 _index = minIndexInclusive;
             }
 
             public override Iterator<TSource> Clone()
             {
-                return new ListPartition<TSource>(_source, _minIndex, _maxIndex);
+                return new ListPartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
             }
 
             public override bool MoveNext()
             {
-                if ((_state == 1 & _index <= _maxIndex) && _index < _source.Count)
+                if ((_state == 1 & _index <= _maxIndexInclusive) && _index < _source.Count)
                 {
                     _current = _source[_index];
                     ++_index;
@@ -254,27 +254,27 @@ namespace System.Linq
 
             public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
             {
-                return new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndex, _maxIndex);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
             }
 
             public IPartition<TSource> Skip(int count)
             {
-                int minIndex = _minIndex + count;
-                return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TSource>.Instance : new ListPartition<TSource>(_source, minIndex, _maxIndex);
+                int minIndex = _minIndexInclusive + count;
+                return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TSource>.Instance : new ListPartition<TSource>(_source, minIndex, _maxIndexInclusive);
             }
 
             public IPartition<TSource> Take(int count)
             {
-                int maxIndex = _minIndex + count - 1;
-                return (uint)maxIndex >= (uint)_maxIndex ? this : new ListPartition<TSource>(_source, _minIndex, maxIndex);
+                int maxIndex = _minIndexInclusive + count - 1;
+                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new ListPartition<TSource>(_source, _minIndexInclusive, maxIndex);
             }
 
             public TSource TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index <= (uint)(_maxIndex - _minIndex) && index < _source.Count - _minIndex)
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     found = true;
-                    return _source[_minIndex + index];
+                    return _source[_minIndexInclusive + index];
                 }
 
                 found = false;
@@ -283,10 +283,10 @@ namespace System.Linq
 
             public TSource TryGetFirst(out bool found)
             {
-                if (_source.Count > _minIndex)
+                if (_source.Count > _minIndexInclusive)
                 {
                     found = true;
-                    return _source[_minIndex];
+                    return _source[_minIndexInclusive];
                 }
 
                 found = false;
@@ -296,10 +296,10 @@ namespace System.Linq
             public TSource TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
-                if (lastIndex >= _minIndex)
+                if (lastIndex >= _minIndexInclusive)
                 {
                     found = true;
-                    return _source[Math.Min(lastIndex, _maxIndex)];
+                    return _source[Math.Min(lastIndex, _maxIndexInclusive)];
                 }
 
                 found = false;
@@ -311,12 +311,12 @@ namespace System.Linq
                 get
                 {
                     int count = _source.Count;
-                    if (count <= _minIndex)
+                    if (count <= _minIndexInclusive)
                     {
                         return 0;
                     }
 
-                    return Math.Min(count - 1, _maxIndex) - _minIndex + 1;
+                    return Math.Min(count - 1, _maxIndexInclusive) - _minIndexInclusive + 1;
                 }
             }
 
@@ -329,7 +329,7 @@ namespace System.Linq
                 }
 
                 TSource[] array = new TSource[count];
-                for (int i = 0, curIdx = _minIndex; i != array.Length; ++i, ++curIdx)
+                for (int i = 0, curIdx = _minIndexInclusive; i != array.Length; ++i, ++curIdx)
                 {
                     array[i] = _source[curIdx];
                 }
@@ -346,8 +346,8 @@ namespace System.Linq
                 }
 
                 List<TSource> list = new List<TSource>(count);
-                int end = _minIndex + count;
-                for (int i = _minIndex; i != end; ++i)
+                int end = _minIndexInclusive + count;
+                for (int i = _minIndexInclusive; i != end; ++i)
                 {
                     list.Add(_source[i]);
                 }

@@ -686,8 +686,8 @@ namespace System.Linq
         {
             private readonly IList<TSource> _source;
             private readonly Func<TSource, TResult> _selector;
-            private readonly int _minIndex;
-            private readonly int _maxIndex;
+            private readonly int _minIndexInclusive;
+            private readonly int _maxIndexInclusive;
             private int _index;
 
             public SelectListPartitionIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
@@ -698,19 +698,19 @@ namespace System.Linq
                 Debug.Assert(minIndexInclusive <= maxIndexInclusive);
                 _source = source;
                 _selector = selector;
-                _minIndex = minIndexInclusive;
-                _maxIndex = maxIndexInclusive;
+                _minIndexInclusive = minIndexInclusive;
+                _maxIndexInclusive = maxIndexInclusive;
                 _index = minIndexInclusive;
             }
 
             public override Iterator<TResult> Clone()
             {
-                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndex, _maxIndex);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, _maxIndexInclusive);
             }
 
             public override bool MoveNext()
             {
-                if ((_state == 1 & _index <= _maxIndex) && _index < _source.Count)
+                if ((_state == 1 & _index <= _maxIndexInclusive) && _index < _source.Count)
                 {
                     _current = _selector(_source[_index]);
                     ++_index;
@@ -723,28 +723,28 @@ namespace System.Linq
 
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
             {
-                return new SelectListPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndex, _maxIndex);
+                return new SelectListPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndexInclusive, _maxIndexInclusive);
             }
 
             public IPartition<TResult> Skip(int count)
             {
                 Debug.Assert(count > 0);
-                int minIndex = _minIndex + count;
-                return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndex);
+                int minIndex = _minIndexInclusive + count;
+                return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
             }
 
             public IPartition<TResult> Take(int count)
             {
-                int maxIndex = _minIndex + count - 1;
-                return (uint)maxIndex >= (uint)_maxIndex ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndex, maxIndex);
+                int maxIndex = _minIndexInclusive + count - 1;
+                return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, maxIndex);
             }
 
             public TResult TryGetElementAt(int index, out bool found)
             {
-                if ((uint)index <= (uint)(_maxIndex - _minIndex) && index < _source.Count - _minIndex)
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     found = true;
-                    return _selector(_source[_minIndex + index]);
+                    return _selector(_source[_minIndexInclusive + index]);
                 }
 
                 found = false;
@@ -753,10 +753,10 @@ namespace System.Linq
 
             public TResult TryGetFirst(out bool found)
             {
-                if (_source.Count > _minIndex)
+                if (_source.Count > _minIndexInclusive)
                 {
                     found = true;
-                    return _selector(_source[_minIndex]);
+                    return _selector(_source[_minIndexInclusive]);
                 }
 
                 found = false;
@@ -766,10 +766,10 @@ namespace System.Linq
             public TResult TryGetLast(out bool found)
             {
                 int lastIndex = _source.Count - 1;
-                if (lastIndex >= _minIndex)
+                if (lastIndex >= _minIndexInclusive)
                 {
                     found = true;
-                    return _selector(_source[Math.Min(lastIndex, _maxIndex)]);
+                    return _selector(_source[Math.Min(lastIndex, _maxIndexInclusive)]);
                 }
 
                 found = false;
@@ -781,12 +781,12 @@ namespace System.Linq
                 get
                 {
                     int count = _source.Count;
-                    if (count <= _minIndex)
+                    if (count <= _minIndexInclusive)
                     {
                         return 0;
                     }
 
-                    return Math.Min(count - 1, _maxIndex) - _minIndex + 1;
+                    return Math.Min(count - 1, _maxIndexInclusive) - _minIndexInclusive + 1;
                 }
             }
 
@@ -799,7 +799,7 @@ namespace System.Linq
                 }
 
                 TResult[] array = new TResult[count];
-                for (int i = 0, curIdx = _minIndex; i != array.Length; ++i, ++curIdx)
+                for (int i = 0, curIdx = _minIndexInclusive; i != array.Length; ++i, ++curIdx)
                 {
                     array[i] = _selector(_source[curIdx]);
                 }
@@ -816,8 +816,8 @@ namespace System.Linq
                 }
 
                 List<TResult> list = new List<TResult>(count);
-                int end = _minIndex + count;
-                for (int i = _minIndex; i != end; ++i)
+                int end = _minIndexInclusive + count;
+                for (int i = _minIndexInclusive; i != end; ++i)
                 {
                     list.Add(_selector(_source[i]));
                 }
