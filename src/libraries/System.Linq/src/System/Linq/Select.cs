@@ -730,7 +730,7 @@ namespace System.Linq
             {
                 Debug.Assert(count > 0);
                 int minIndex = _minIndex + count;
-                return minIndex >= _maxIndex ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndex);
+                return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndex);
             }
 
             public IPartition<TResult> Take(int count)
