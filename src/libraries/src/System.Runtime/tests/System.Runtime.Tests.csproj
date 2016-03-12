@@ -21,12 +21,6 @@
     <Compile Include="Common\CompareHelper.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\Array.cs" />
-    <Compile Include="System\Array.CustomClassStructTests.cs" />
-    <Compile Include="System\Array.EmptyTests.cs" />
-    <Compile Include="System\Array.RegionSorting.cs" />
-    <Compile Include="System\Array.SystemArrayKeyValueSortTests.cs" />
-    <Compile Include="System\Array.TestTypes.cs" />
-    <Compile Include="System\Array.Util.cs" />
     <Compile Include="System\Attribute.cs" />
     <Compile Include="System\ArraySegment.cs" />
     <Compile Include="System\Boolean.cs" />
