@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.IO.Pipes;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace InterProcessCommunication.Tests
+namespace System.IO.Pipes.Tests
 {
-    public class NamedPipesTests : RemoteExecutorTestBase
+    public sealed class NamedPipeTest_CrossProcess : RemoteExecutorTestBase
     {
-        [Fact]
-        public void PingPong()
+        [Theory]
+        [InlineData(PipeDirection.Out, PipeDirection.In)]
+        public void PingPong(PipeDirection outboundDirection, PipeDirection inboundDirection)
         {
             // Create names for two pipes
             string outName = Guid.NewGuid().ToString("N");
@@ -21,8 +20,8 @@ namespace InterProcessCommunication.Tests
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
-            using (var outbound = new NamedPipeServerStream(outName, PipeDirection.Out))
-            using (var inbound = new NamedPipeClientStream(".", inName, PipeDirection.In))
+            using (var outbound = new NamedPipeServerStream(outName, outboundDirection))
+            using (var inbound = new NamedPipeClientStream(".", inName, inboundDirection))
             using (var remote = RemoteInvoke(PingPong_OtherProcess, outName, inName))
             {
                 // Wait for both pipes to be connected
