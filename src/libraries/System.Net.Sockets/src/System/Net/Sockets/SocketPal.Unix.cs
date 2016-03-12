@@ -1061,54 +1061,30 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError Poll(SafeCloseSocket handle, int microseconds, SelectMode mode, out bool status)
         {
-            uint* fdSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            Interop.Sys.FD_ZERO(fdSet);
-
-            bool releaseHandle = false;
-            try
+            Interop.Sys.PollEvents inEvent = Interop.Sys.PollEvents.POLLNONE;
+            switch (mode)
             {
-                handle.DangerousAddRef(ref releaseHandle);
-                int fd = (int)handle.DangerousGetHandle();
-                Interop.Sys.FD_SET(fd, fdSet);
-
-                int fdCount = 0;
-                uint* readFds = null;
-                uint* writeFds = null;
-                uint* errorFds = null;
-                switch (mode)
-                {
-                    case SelectMode.SelectRead:
-                        readFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-
-                    case SelectMode.SelectWrite:
-                        writeFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-
-                    case SelectMode.SelectError:
-                        errorFds = fdSet;
-                        fdCount = fd + 1;
-                        break;
-                }
-
-                int socketCount = 0;
-                Interop.Error err = Interop.Sys.Select(fdCount, readFds, writeFds, errorFds, microseconds, &socketCount);
-                if (err != Interop.Error.SUCCESS)
-                {
-                    status = false;
-                    return GetSocketErrorForErrorCode(err);
-                }
-
-                status = Interop.Sys.FD_ISSET(fd, fdSet);
+                case SelectMode.SelectRead: inEvent = Interop.Sys.PollEvents.POLLIN; break;
+                case SelectMode.SelectWrite: inEvent = Interop.Sys.PollEvents.POLLOUT; break;
+                case SelectMode.SelectError: inEvent = Interop.Sys.PollEvents.POLLPRI; break;
             }
-            finally
+
+            int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
+
+            Interop.Sys.PollEvents outEvents;
+            Interop.Error err = Interop.Sys.Poll(handle, inEvent, milliseconds, out outEvents);
+            if (err != Interop.Error.SUCCESS)
             {
-                if (releaseHandle)
-                {
-                    handle.DangerousRelease();
-                }
+                status = false;
+                return GetSocketErrorForErrorCode(err);
+            }
+
+            switch (mode)
+            {
+                case SelectMode.SelectRead: status = (outEvents & (Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP)) != 0; break;
+                case SelectMode.SelectWrite: status = (outEvents & Interop.Sys.PollEvents.POLLOUT) != 0; break;
+                case SelectMode.SelectError: status = (outEvents & (Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI)) != 0; break;
+                default: status = false; break;
             }
             return SocketError.Success;
         }
