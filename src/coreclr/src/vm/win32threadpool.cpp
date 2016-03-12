@@ -32,6 +32,7 @@ Revision History:
 #include "appdomain.inl"
 #include "nativeoverlapped.h"
 #include "hillclimbing.h"
+#include "configuration.h"
 
 
 #ifndef FEATURE_PAL
@@ -302,6 +303,16 @@ DWORD GetDefaultMaxLimitWorkerThreads(DWORD minLimit)
     return (DWORD)limit;
 }
 
+DWORD GetForceMinWorkerThreadsValue()
+{
+    return Configuration::GetKnobDWORDValue(W("System.Threading.ThreadPool.MinThreads"), CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads);
+}
+
+DWORD GetForceMaxWorkerThreadsValue()
+{
+    return Configuration::GetKnobDWORDValue(W("System.Threading.ThreadPool.MaxThreads"), CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads);
+}
+
 BOOL ThreadpoolMgr::Initialize()
 {
     CONTRACTL
@@ -392,11 +403,11 @@ BOOL ThreadpoolMgr::Initialize()
 
     // initialize Worker and CP thread settings
     DWORD forceMin;
-    forceMin = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads);
+    forceMin = GetForceMinWorkerThreadsValue();
     MinLimitTotalWorkerThreads = forceMin > 0 ? (LONG)forceMin : (LONG)NumberOfProcessors;
 
     DWORD forceMax;
-    forceMax = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads);
+    forceMax = GetForceMaxWorkerThreadsValue();
     MaxLimitTotalWorkerThreads = forceMax > 0 ? (LONG)forceMax : (LONG)GetDefaultMaxLimitWorkerThreads(MinLimitTotalWorkerThreads);
 
     ThreadCounter::Counts counts;
@@ -511,7 +522,7 @@ BOOL ThreadpoolMgr::SetMaxThreadsHelper(DWORD MaxWorkerThreads,
     {
         BEGIN_SO_INTOLERANT_CODE(GetThread());
 
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads) == 0)
+        if (GetForceMaxWorkerThreadsValue() == 0)
         {
             MaxLimitTotalWorkerThreads = min(MaxWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount);
 
@@ -663,11 +674,11 @@ BOOL ThreadpoolMgr::GetMaxThreads(DWORD* MaxWorkerThreads,
             NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
         else
             NumberOfProcessors = GetCurrentProcessCpuCount();
-        DWORD min = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads);
+        DWORD min = GetForceMinWorkerThreadsValue();
         if (min == 0)
             min = NumberOfProcessors;
 
-        DWORD forceMax = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads);
+        DWORD forceMax = GetForceMaxWorkerThreadsValue();
         if (forceMax > 0)
         {
             *MaxWorkerThreads = forceMax;
@@ -748,7 +759,7 @@ BOOL ThreadpoolMgr::SetMinThreads(DWORD MinWorkerThreads,
         {
             BEGIN_SO_INTOLERANT_CODE(GetThread());
 
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads) == 0)
+            if (GetForceMinWorkerThreadsValue() == 0)
             {
                 MinLimitTotalWorkerThreads = min(MinWorkerThreads, (DWORD)ThreadCounter::MaxPossibleCount);
 
@@ -849,7 +860,7 @@ BOOL ThreadpoolMgr::GetMinThreads(DWORD* MinWorkerThreads,
             NumberOfProcessors = GetCurrentProcessCpuCount();
         DWORD forceMin;
         BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), forceMin=0);
-        forceMin = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads);
+        forceMin = GetForceMinWorkerThreadsValue();
         END_SO_INTOLERANT_CODE;
         *MinWorkerThreads = forceMin > 0 ? forceMin : NumberOfProcessors;
         *MinIOCompletionThreads = NumberOfProcessors;

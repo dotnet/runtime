@@ -2004,11 +2004,6 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
         return HOST_E_INVALIDOPERATION;
     }
 
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcServer) != 0)
-    {
-        flag = (STARTUP_FLAGS)(flag | STARTUP_SERVER_GC);
-    }
-    
     m_dwStartupFlags = flag;
 
     return S_OK;

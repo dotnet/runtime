@@ -309,6 +309,7 @@ CONFIG_DWORD_INFO(INTERNAL_FastGCCheckStack, W("FastGCCheckStack"), 0, "")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_FastGCStress, W("FastGCStress"), "reduce the number of GCs done by enabling GCStress")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCBreakOnOOM, W("GCBreakOnOOM"), "Does a DebugBreak at the soonest time we detect an OOM")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConcurrent, W("gcConcurrent"), (DWORD)-1, "Enables/Disables concurrent GC")
+
 #ifdef FEATURE_CONSERVATIVE_GC
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConservative, W("gcConservative"), 0, "Enables/Disables conservative GC")
 #endif
@@ -335,7 +336,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCCompactRatio, W("GCCompactRatio"), 0, "Sp
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_GCPollType, W("GCPollType"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_NewGCCalc, W("NewGCCalc"), "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCprnLvl, W("GCprnLvl"), "Specifies the maximum level of GC logging")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCRetainVM, W("GCRetainVM"), "When set we put the segments that should be deleted on a standby list (instead of releasing them back to the OS) which will be considered to satisfy new segment requests (note that the same thing can be specified via API which is the supported way)")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCRetainVM, W("GCRetainVM"), 0, "When set we put the segments that should be deleted on a standby list (instead of releasing them back to the OS) which will be considered to satisfy new segment requests (note that the same thing can be specified via API which is the supported way)")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCSegmentSize, W("GCSegmentSize"), "Specifies the managed heap segment size")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCLOHCompact, W("GCLOHCompact"), "Specifies the LOH compaction mode")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_gcAllowVeryLargeObjects, W("gcAllowVeryLargeObjects"), 0, "allow allocation of 2GB+ objects on GC heap")
