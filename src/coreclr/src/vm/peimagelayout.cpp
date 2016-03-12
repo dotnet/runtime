@@ -694,30 +694,6 @@ StreamImageLayout::StreamImageLayout(IStream* pIStream,PEImage* pOwner)
 }
 #endif // FEATURE_FUSION
 
-#ifdef MDIL
-BOOL PEImageLayout::GetILSizeFromMDILCLRCtlData(DWORD* pdwActualILSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    IMAGE_SECTION_HEADER* pMDILSection = FindSection(".mdil");
-    if (pMDILSection)
-    {
-        TADDR pMDILSectionStart = GetRvaData(VAL32(pMDILSection->VirtualAddress));
-        MDILHeader* mdilHeader = (MDILHeader*)pMDILSectionStart;
-        ClrCtlData* pClrCtlData = (ClrCtlData*)(pMDILSectionStart + mdilHeader->hdrSize);
-        *pdwActualILSize = pClrCtlData->ilImageSize;
-        return TRUE;
-    }
-    return FALSE;
-}
-#endif // MDIL
-
 #endif // !DACESS_COMPILE
 
 

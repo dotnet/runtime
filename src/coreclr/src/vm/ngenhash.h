@@ -171,10 +171,6 @@ class NgenHashTable
     // Nidump knows how to walk this data structure.
     friend class NativeImageDumper;
 #endif
-#ifdef BINDER
-    template<class HashEntry, class HashTableType> friend class NGenHashTableBuilder;
-    friend class MdilModule;
-#endif
 
 protected:
     // This opaque structure provides enumeration context when walking the set of entries which share a common
@@ -335,10 +331,6 @@ private:
     {
 #ifdef DACCESS_COMPILE
         friend class NativeImageDumper;
-#endif
-#ifdef BINDER
-        template<class HashEntry, class HashTableType> friend class NGenHashTableBuilder;
-        friend class MdilModule;
 #endif
 
     public:

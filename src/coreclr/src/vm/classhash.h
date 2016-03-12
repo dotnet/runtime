@@ -21,9 +21,6 @@ typedef struct EEClassHashEntry
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
-#ifdef BINDER
-    friend class MdilModule;
-#endif
 
 #ifdef _DEBUG
     PTR_CUTF8                               DebugKey[2];    // Name of the type
@@ -79,7 +76,6 @@ public:
     //NOTICE: look at InsertValue() in ClassLoader, that may be the function you want to use. Use this only
     //        when you are sure you want to insert the value in 'this' table. This function does not deal
     //        with case (as often the class loader has to)
-#ifndef BINDER
     EEClassHashEntry_t *InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueUsingPreallocatedEntry(EEClassHashEntry_t *pStorageForNewEntry, LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser);
@@ -92,7 +88,6 @@ public:
     EEClassHashEntry_t *FindNextNestedClass(NameHandle* pName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, LookupContext *pContext);
-#endif // BINDER
 
     BOOL     CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2);
 
@@ -105,14 +100,12 @@ public:
     };
 
     static PTR_VOID CompressClassDef(mdToken cl /* either a TypeDef or ExportedType*/);
-#ifndef BINDER
     bool UncompressModuleAndClassDef(PTR_VOID Data, Loader::LoadFlag loadFlag,
                                      Module **ppModule, mdTypeDef *pCL,
                                      mdExportedType *pmdFoundExportedType);
     VOID UncompressModuleAndNonExportClassDef(PTR_VOID Data, Module **ppModule,
                                               mdTypeDef *pCL);
     static mdToken UncompressModuleAndClassDef(PTR_VOID Data);
-#endif // !BINDER
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

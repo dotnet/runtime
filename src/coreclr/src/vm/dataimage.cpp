@@ -9,14 +9,11 @@
 #ifdef FEATURE_PREJIT
 
 #include "dataimage.h"
-#ifdef BINDER
-#include "mdilmodule.h"
-#else // BINDER
 #include "compile.h"
 
 #include "field.h"
 #include "constrainedexecutionregion.h"
-#endif // BINDER
+
 //
 // Include Zapper infrastructure here
 //
@@ -26,15 +23,9 @@
 // and remove the dataimage.cpp completely.
 //
 #include "zapper.h"
-#ifdef BINDER
-#include "zapwriter.h"
-#include "zapimage.h"
-#include "zapimport.h"
-#else
 #include "../zap/zapwriter.h"
 #include "../zap/zapimage.h"
 #include "../zap/zapimport.h"
-#endif // BINDER
 #include "inlinetracking.h"
 
 #define NodeTypeForItemKind(kind) ((ZapNodeType)(ZapNodeType_StoredStructure + kind))
@@ -125,23 +116,14 @@ public:
     static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
 };
 
-#ifdef BINDER
-DataImage::DataImage(Module *module, ZapImage *pZapImage)
-    : m_module(module),
-#else // BINDER
 DataImage::DataImage(Module *module, CEEPreloader *preloader)
     : m_module(module),
       m_preloader(preloader), 
-#endif
       m_iCurrentFixup(0),       // Dev11 bug 181494 instrumentation
       m_pInternedStructures(NULL), 
       m_pCurrentAssociatedMethodTable(NULL)
 {
-#ifdef BINDER
-    m_pZapImage = pZapImage;
-#else // BINDER
     m_pZapImage = m_preloader->GetDataStore()->GetZapImage();
-#endif // BINDER
     m_pZapImage->m_pDataImage = this;
 
     m_pInternedStructures = new InternedStructureHashTable();
@@ -174,7 +156,6 @@ void DataImage::PostSave()
 #endif
 }
 
-#ifndef BINDER
 DWORD DataImage::GetMethodProfilingFlags(MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
@@ -186,7 +167,6 @@ DWORD DataImage::GetMethodProfilingFlags(MethodDesc * pMD)
     const MethodProfilingData * pData = m_methodProfilingData.LookupPtr(pMD);
     return (pData != NULL) ? pData->flags : 0;
 }
-#endif
 
 void DataImage::SetMethodProfilingFlags(MethodDesc * pMD, DWORD flags)
 {
@@ -209,7 +189,6 @@ void DataImage::Preallocate()
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef BINDER
     // TODO: Move to ZapImage
 
     PEDecoder pe((void *)m_module->GetFile()->GetManagedFileContents());
@@ -224,7 +203,6 @@ void DataImage::Preallocate()
     PREALLOCATE_ARRAY(DataImage::m_Fixups, 0.046, cbILImage);
     PREALLOCATE_HASHTABLE(DataImage::m_surrogates, 0.0025, cbILImage);
     PREALLOCATE_HASHTABLE((*DataImage::m_pInternedStructures), 0.0007, cbILImage);
-#endif
 }
 
 ZapHeap * DataImage::GetHeap()
@@ -389,9 +367,6 @@ static void EncodeTargetOffset(PVOID pLocation, SSIZE_T targetOffset, ZapRelocat
     // Store the targetOffset into the location of the reloc temporarily
     switch (type)
     {
-#ifdef BINDER
-    case IMAGE_REL_BASED_MD_METHODENTRY:
-#endif
     case IMAGE_REL_BASED_PTR:
     case IMAGE_REL_BASED_RELPTR:
         *(UNALIGNED TADDR *)pLocation = (TADDR)targetOffset;
@@ -422,9 +397,6 @@ static SSIZE_T DecodeTargetOffset(PVOID pLocation, ZapRelocationType type)
     // Store the targetOffset into the location of the reloc temporarily
     switch (type)
     {
-#ifdef BINDER
-    case IMAGE_REL_BASED_MD_METHODENTRY:
-#endif
     case IMAGE_REL_BASED_PTR:
     case IMAGE_REL_BASED_RELPTR:
         return (SSIZE_T)*(UNALIGNED TADDR *)pLocation;
@@ -607,7 +579,6 @@ void DataImage::NoteReusedStructure(const void *data)
     }
 }
 
-#ifndef BINDER
 // Save the info of an RVA into m_rvaInfoVector.
 void DataImage::StoreRvaInfo(FieldDesc * pFD,
                              DWORD      rva,
@@ -626,7 +597,6 @@ void DataImage::StoreRvaInfo(FieldDesc * pFD,
 
     m_rvaInfoVector.Append(rvaInfo);
 }
-#endif
 
 // qsort compare function.
 // Primary key: rva (ascending order). Secondary key: size (descending order).
@@ -642,7 +612,6 @@ int __cdecl DataImage::rvaInfoVectorEntryCmp(const void* a_, const void* b_)
     return (int)(b->size - a->size); // Descending order on size
 }
 
-#ifndef BINDER
 // Sort the list of RVA statics in an ascending order wrt the RVA and save them.
 // For RVA structures with the same RVA, we will only store the one with the largest size.
 void DataImage::SaveRvaStructure()
@@ -681,7 +650,6 @@ void DataImage::SaveRvaStructure()
         previousRvaInfo = rvaInfo;
     }
 }
-#endif // !BINDER
 
 void DataImage::RegisterSurrogate(PVOID ptr, PVOID surrogate)
 {
@@ -926,7 +894,6 @@ void DataImage::FixupRVAs()
     STANDARD_VM_CONTRACT;
 
     FixupModuleRVAs();
-#ifndef BINDER
     FixupRvaStructure();
 
     if (m_module->m_pCerNgenRootTable != NULL)
@@ -934,8 +901,6 @@ void DataImage::FixupRVAs()
 
     // Dev11 bug 181494 instrumentation
     if (m_Fixups.GetCount() != m_iCurrentFixup) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-
-#endif // !BINDER
 
     qsort(&m_Fixups[0], m_Fixups.GetCount(), sizeof(FixupEntry), fixupEntryCmp);
 
@@ -949,14 +914,12 @@ void DataImage::FixupRVAs()
 
     m_Fixups.Append(entry);
 
-#ifndef BINDER
     // Dev11 bug 181494 instrumentation
     if (m_Fixups.GetCount() -1 != m_iCurrentFixup) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-#endif
+
     m_iCurrentFixup = 0;
 }
 
-#ifndef BINDER
 void DataImage::SetRVAsForFields(IMetaDataEmit * pEmit)
 {
     for (COUNT_T i=0; i<m_rvaInfoVector.GetCount(); i++) {
@@ -970,7 +933,6 @@ void DataImage::SetRVAsForFields(IMetaDataEmit * pEmit)
         pEmit->SetRVA(rvaInfo->pFD->GetMemberDef(), dwOffset);
     }
 }
-#endif // !BINDER
 
 void ZapStoredStructure::Save(ZapWriter * pWriter)
 {
@@ -1127,8 +1089,6 @@ void DataImage::FixupModuleRVAs()
     if (pFilterPersonalityRoutine != NULL)
         FixupFieldToNode(m_module->m_pNGenLayoutInfo, offsetof(NGenLayoutInfo, m_rvaFilterPersonalityRoutine), pFilterPersonalityRoutine, 0, IMAGE_REL_BASED_ABSOLUTE);
 }
-
-#ifndef BINDER
 
 void DataImage::FixupRvaStructure()
 {
@@ -2571,5 +2531,4 @@ void DataImage::StoreCompressedLayoutMap(LookupMapBase *pMap, ItemKind kind)
     AddStructureInOrder(pNode);
 }
 
-#endif // !BINDER
 #endif // FEATURE_PREJIT
