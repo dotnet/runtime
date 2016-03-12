@@ -1052,7 +1052,6 @@ public:
     // Initialize the interval
     void init()
     {
-        memset(this, 0, sizeof(Interval));
         physReg = REG_COUNT;
     }
 
