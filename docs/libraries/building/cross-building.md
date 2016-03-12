@@ -2,7 +2,7 @@ Cross Compilation for ARM on Linux
 ==================================
 
 Through cross compilation, on Linux it is possible to build CoreFX for arm or arm64.
-It is almost similiar to the cross compilation procedure of CoreCLR. 
+It is very similar to the cross compilation procedure of CoreCLR. 
 
 Requirements
 ------------
@@ -27,7 +27,7 @@ The `cross\build-rootfs.sh` script can be used to download the files needed for 
     Usage: build-rootfs.sh [BuildArch]
     BuildArch can be: arm, arm64
 
-The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system, it will by default generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
+The `build-rootfs.sh` script must be run as root as it has to make some symlinks to the system. It will by default generate the rootfs in `cross\rootfs\<BuildArch>` however this can be changed by setting the `ROOTFS_DIR` environment variable.
 
 For example, to generate an arm rootfs:
 
@@ -68,12 +68,23 @@ As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildTyp
 
 
 Compiling for managed CoreFX
-----------------------------
-In order to generate managed CoreFX for ARM, we can compile CoreFX with native build because managed CoreFX is independent on BuildOS and BuildArch.
+============================
+In order to generate managed CoreFX for ARM, we can compile CoreFX with native build because managed CoreFX is architecture independent.
+
+Many of the managed binaries are OS-independent, System.Linq.dll. However, some are OS-specific, System.IO.FileSystem.dll, with different builds for Windows vs Linux.
 
     lgs@ubuntu ~/git/corefx/ $ ./build.sh managed debug clean verbose 
 
 The output is at bin/<BuildOS>.AnyCPU.Debug.
 
+    lgs@ubuntu ~/git/corefx/ $ ls -al ./bin
+    drwxrwxr-x  17 lgs lgs  4096  3  6 21:00 .
+    drwxrwxr-x  10 lgs lgs  4096  3 12 15:04 ..
+    drwx------  98 lgs lgs  4096  3  6 21:36 AnyOS.AnyCPU.Debug
+    drwx------  98 lgs lgs  4096  3  6 19:40 AnyOS.AnyCPU.Release
+    drwx------ 284 lgs lgs 20480  3  6 22:30 Linux.AnyCPU.Debug
+    drwx------ 284 lgs lgs 20480  3  6 20:45 Linux.AnyCPU.Release
+    drwx------  33 lgs lgs  4096  3  6 21:33 Windows_NT.AnyCPU.Debug
+    drwx------  33 lgs lgs  4096  3  6 19:36 Windows_NT.AnyCPU.Release
 
 
