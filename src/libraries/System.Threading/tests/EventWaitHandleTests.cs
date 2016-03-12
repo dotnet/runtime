@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class EventWaitHandleTests
+    public class EventWaitHandleTests : RemoteExecutorTestBase
     {
         [Theory]
         [InlineData(false, EventResetMode.AutoReset)]
@@ -137,6 +138,57 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.OpenExisting("anything"));
             EventWaitHandle ewh;
             Assert.Throws<PlatformNotSupportedException>(() => EventWaitHandle.TryOpenExisting("anything", out ewh));
+        }
+
+        [PlatformSpecific(PlatformID.Windows)] // names aren't supported on Unix
+        [Theory]
+        [InlineData(EventResetMode.ManualReset)]
+        [InlineData(EventResetMode.AutoReset)]
+        public void PingPong(EventResetMode mode)
+        {
+            // Create names for the two events
+            string outboundName = Guid.NewGuid().ToString("N");
+            string inboundName = Guid.NewGuid().ToString("N");
+
+            // Create the two events and the other process with which to synchronize
+            using (var inbound = new EventWaitHandle(true, mode, inboundName))
+            using (var outbound = new EventWaitHandle(false, mode, outboundName))
+            using (var remote = RemoteInvoke(PingPong_OtherProcess, mode.ToString(), outboundName, inboundName))
+            {
+                // Repeatedly wait for one event and then set the other
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    if (mode == EventResetMode.ManualReset)
+                    {
+                        inbound.Reset();
+                    }
+                    outbound.Set();
+                }
+            }
+        }
+
+        private static int PingPong_OtherProcess(string modeName, string inboundName, string outboundName)
+        {
+            EventResetMode mode = (EventResetMode)Enum.Parse(typeof(EventResetMode), modeName);
+
+            // Open the two events
+            using (var inbound = EventWaitHandle.OpenExisting(inboundName))
+            using (var outbound = EventWaitHandle.OpenExisting(outboundName))
+            {
+                // Repeatedly wait for one event and then set the other
+                for (int i = 0; i < 10; i++)
+                {
+                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    if (mode == EventResetMode.ManualReset)
+                    {
+                        inbound.Reset();
+                    }
+                    outbound.Set();
+                }
+            }
+
+            return SuccessExitCode;
         }
 
     }

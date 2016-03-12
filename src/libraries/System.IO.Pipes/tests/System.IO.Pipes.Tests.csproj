@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -25,6 +25,7 @@
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
+    <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTestBase.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
@@ -32,6 +33,7 @@
     <Compile Include="Interop.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTestBase.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Read.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Write.cs" />
@@ -46,6 +48,12 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>
@@ -59,6 +67,10 @@
     <ProjectReference Include="..\src\System.IO.Pipes.csproj">
       <Project>{16ee5522-f387-4c9e-9ef2-b5134b043f37}</Project>
       <Name>System.IO.Pipes</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

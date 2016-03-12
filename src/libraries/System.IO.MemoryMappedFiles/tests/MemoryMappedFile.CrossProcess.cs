@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.IO;
-using System.IO.MemoryMappedFiles;
 using Xunit;
 
-namespace InterProcessCommunication.Tests
+namespace System.IO.MemoryMappedFiles.Tests
 {
-    public class MemoryMappedFilesTests : RemoteExecutorTestBase
+    public class CrossProcessTests : RemoteExecutorTestBase
     {
         [Fact]
         public void DataShared()

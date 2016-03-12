@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.IO;
-using System.IO.Pipes;
 using Xunit;
 
-namespace InterProcessCommunication.Tests
+namespace System.IO.Pipes.Tests
 {
-    public class AnonymousPipesTests : RemoteExecutorTestBase
+    public class AnonymousPipeTest_CrossProcess : RemoteExecutorTestBase
     {
         [Fact]
         public void PingPong()
