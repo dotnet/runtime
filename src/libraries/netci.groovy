@@ -265,7 +265,7 @@ branchList.each { branchName ->
                     // TODO: Add a new job or allow for copying coreclr from debug build
                     
                     // CoreCLR
-                    copyArtifacts("dotnet_coreclr/release_${os.toLowerCase()}") {
+                    copyArtifacts("dotnet_coreclr/master/release_${os.toLowerCase()}") {
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
                             latestSuccessful(true)
@@ -273,7 +273,7 @@ branchList.each { branchName ->
                     }
                     
                     // MSCorlib
-                    copyArtifacts("dotnet_coreclr/release_windows_nt") {
+                    copyArtifacts("dotnet_coreclr/master/release_windows_nt") {
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
@@ -528,7 +528,7 @@ branchList.each { branchName ->
                     // TODO: Add a new job or allow for copying coreclr from debug build
                     
                     // CoreCLR
-                    copyArtifacts("dotnet_coreclr/release_${os.toLowerCase()}") {
+                    copyArtifacts("dotnet_coreclr/master/release_${os.toLowerCase()}") {
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
                             latestSuccessful(true)
@@ -536,7 +536,7 @@ branchList.each { branchName ->
                     }
                     
                     // MSCorlib
-                    copyArtifacts("dotnet_coreclr/release_windows_nt") {
+                    copyArtifacts("dotnet_coreclr/master/release_windows_nt") {
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
