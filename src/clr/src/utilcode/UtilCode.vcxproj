@@ -382,6 +382,7 @@
     <ClCompile Include="check.cpp" />
     <ClCompile Include="circularlog.cpp" />
     <ClCompile Include="CLRConfig.cpp" />
+    <ClCompile Include="configuration.cpp" />
     <ClCompile Include="clrhost.cpp" />
     <ClCompile Include="COMEx.cpp" />
     <ClCompile Include="corimage.cpp" />

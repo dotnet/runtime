@@ -16,6 +16,7 @@ set(UTILCODE_COMMON_SOURCES
   makepath.cpp
   splitpath.cpp
   clrconfig.cpp
+  configuration.cpp
   collections.cpp
   posterror.cpp
   fstream.cpp

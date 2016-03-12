@@ -3006,7 +3006,7 @@ static BOOL CacheCommandLine(__in LPWSTR pCmdLine, __in_opt LPWSTR* ArgvW)
 }
 
 //*****************************************************************************
-// This entry point is called from the native entry piont of the loaded
+// This entry point is called from the native entry point of the loaded
 // executable image.  The command line arguments and other entry point data
 // will be gathered here.  The entry point for the user image will be found
 // and handled accordingly.
