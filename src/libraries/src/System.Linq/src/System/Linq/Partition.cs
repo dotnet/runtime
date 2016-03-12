@@ -260,7 +260,7 @@ namespace System.Linq
             public IPartition<TSource> Skip(int count)
             {
                 int minIndex = _minIndex + count;
-                return minIndex >= _maxIndex ? EmptyPartition<TSource>.Instance : new ListPartition<TSource>(_source, minIndex, _maxIndex);
+                return (uint)minIndex > (uint)_maxIndex ? EmptyPartition<TSource>.Instance : new ListPartition<TSource>(_source, minIndex, _maxIndex);
             }
 
             public IPartition<TSource> Take(int count)

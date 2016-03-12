@@ -416,6 +416,26 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void TakeCanOnlyBeOneList()
+        {
+            var source = new[] { 2, 4, 6, 8, 10 };
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
+        }
+
+        [Fact]
+        public void TakeCanOnlyBeOneNotList()
+        {
+            var source = GuaranteeNotIList(new[] { 2, 4, 6, 8, 10 });
+            Assert.Equal(new[] { 2 }, source.Take(1));
+            Assert.Equal(new[] { 4 }, source.Skip(1).Take(1));
+            Assert.Equal(new[] { 6 }, source.Take(3).Skip(2));
+            Assert.Equal(new[] { 2 }, source.Take(3).Take(1));
+        }
+
+        [Fact]
         public void RepeatEnumerating()
         {
             var source = new[] { 1, 2, 3, 4, 5 };
