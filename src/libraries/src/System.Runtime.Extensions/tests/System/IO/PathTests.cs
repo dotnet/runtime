@@ -472,24 +472,6 @@ namespace System.IO.Tests
 
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
-        [InlineData(@"\\?\GLOBALROOT\")]
-        [InlineData(@"\\?\")]
-        [InlineData(@"\\?\.")]
-        [InlineData(@"\\?\..")]
-        [InlineData(@"\\?\\")]
-        [InlineData(@"\\?\C:\\")]
-        [InlineData(@"\\?\C:\|")]
-        [InlineData(@"\\?\C:\.")]
-        [InlineData(@"\\?\C:\..")]
-        [InlineData(@"\\?\C:\Foo\.")]
-        [InlineData(@"\\?\C:\Foo\..")]
-        public static void GetFullPath_Windows_ArgumentExceptionPaths(string path)
-        {
-            Assert.Throws<ArgumentException>(() => Path.GetFullPath(path));
-        }
-
-        [PlatformSpecific(PlatformID.Windows)]
-        [Theory]
         [InlineData(@"bad::$DATA")]
         [InlineData(@"C  :")]
         [InlineData(@"C  :\somedir")]
@@ -567,9 +549,54 @@ namespace System.IO.Tests
         [InlineData(@"\\?\C:\ .")]
         [InlineData(@"\\?\C:\ ..")]
         [InlineData(@"\\?\C:\...")]
+        [InlineData(@"\\?\GLOBALROOT\")]
+        [InlineData(@"\\?\")]
+        [InlineData(@"\\?\.")]
+        [InlineData(@"\\?\..")]
+        [InlineData(@"\\?\\")]
+        [InlineData(@"\\?\C:\\")]
+        [InlineData(@"\\?\C:\|")]
+        [InlineData(@"\\?\C:\.")]
+        [InlineData(@"\\?\C:\..")]
+        [InlineData(@"\\?\C:\Foo\.")]
+        [InlineData(@"\\?\C:\Foo\..")]
+        [InlineData(@"\\?\UNC\")]
+        [InlineData(@"\\?\UNC\server")]
+        [InlineData(@"\\?\UNC\server\")]
+        [InlineData(@"\\?\UNC\server\\")]
+        [InlineData(@"\\?\UNC\server\..")]
+        [InlineData(@"\\?\UNC\server\share\.")]
+        [InlineData(@"\\?\UNC\server\share\..")]
+        [InlineData(@"\\?\UNC\a\b\\")]
+        [InlineData(@"\\.\UNC\")]
+        [InlineData(@"\\.\UNC\server")]
+        [InlineData(@"\\.\UNC\server\")]
+        [InlineData(@"\\.\UNC\server\\")]
+        [InlineData(@"\\.\UNC\server\..")]
+        [InlineData(@"\\.\UNC\server\share\.")]
+        [InlineData(@"\\.\UNC\server\share\..")]
+        [InlineData(@"\\.\UNC\a\b\\")]
+        [InlineData(@"\\.\")]
+        [InlineData(@"\\.\.")]
+        [InlineData(@"\\.\..")]
+        [InlineData(@"\\.\\")]
+        [InlineData(@"\\.\C:\\")]
+        [InlineData(@"\\.\C:\|")]
+        [InlineData(@"\\.\C:\.")]
+        [InlineData(@"\\.\C:\..")]
+        [InlineData(@"\\.\C:\Foo\.")]
+        [InlineData(@"\\.\C:\Foo\..")]
         public static void GetFullPath_Windows_ValidExtendedPaths(string path)
         {
-            Assert.Equal(path, Path.GetFullPath(path));
+            // None of these should throw
+            if (path.StartsWith(@"\\?\"))
+            {
+                Assert.Equal(path, Path.GetFullPath(path));
+            }
+            else
+            {
+                Path.GetFullPath(path);
+            }
         }
 
         [PlatformSpecific(PlatformID.Windows)]
@@ -599,14 +626,6 @@ namespace System.IO.Tests
         [InlineData(@"\\server\")]
         [InlineData(@"\\server\\")]
         [InlineData(@"\\server\..")]
-        [InlineData(@"\\?\UNC\")]
-        [InlineData(@"\\?\UNC\server")]
-        [InlineData(@"\\?\UNC\server\")]
-        [InlineData(@"\\?\UNC\server\\")]
-        [InlineData(@"\\?\UNC\server\..")]
-        [InlineData(@"\\?\UNC\server\share\.")]
-        [InlineData(@"\\?\UNC\server\share\..")]
-        [InlineData(@"\\?\UNC\a\b\\")]
         public static void GetFullPath_Windows_UNC_Invalid(string invalidPath)
         {
             Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));
@@ -625,8 +644,17 @@ namespace System.IO.Tests
                 var sb = new StringBuilder(260);
                 if (GetShortPathName(tempFilePath, sb, sb.Capacity) > 0) // only proceed if we could successfully create the short name
                 {
+                    string shortName = sb.ToString();
+
                     // Make sure the shortened name expands back to the original one
-                    Assert.Equal(tempFilePath, Path.GetFullPath(sb.ToString()));
+                    Assert.Equal(tempFilePath, Path.GetFullPath(shortName));
+
+                    // Should work with device paths that aren't well-formed extended syntax
+                    Assert.Equal(@"\\.\" + tempFilePath, Path.GetFullPath(@"\\.\" + shortName));
+                    Assert.Equal(@"\\?\" + tempFilePath, Path.GetFullPath(@"//?/" + shortName));
+
+                    // Shouldn't mess with well-formed extended syntax
+                    Assert.Equal(@"\\?\" + shortName, Path.GetFullPath(@"\\?\" + shortName));
 
                     // Validate case where short name doesn't expand to a real file
                     string invalidShortName = @"S:\DOESNT~1\USERNA~1.RED\LOCALS~1\Temp\bg3ylpzp";
