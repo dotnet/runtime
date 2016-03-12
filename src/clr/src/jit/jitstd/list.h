@@ -196,6 +196,8 @@ public:
     allocator_type get_allocator() const;
 
     iterator insert(iterator position, const T& x);
+    template <class... Args>
+    iterator emplace(iterator position, Args&&... args);
     void insert(iterator position, size_type n, const T& x);
     template <class InputIterator>
     void insert(iterator position, InputIterator first, InputIterator last);
@@ -212,7 +214,11 @@ public:
     void pop_front();
 
     void push_back(const T& val);
+    template <class... Args>
+    void emplace_back(Args&&... args);
     void push_front (const T& val);
+    template <class... Args>
+    void emplace_front(Args&&... args);
 
     reverse_iterator rbegin();
     const_reverse_iterator rbegin() const;
@@ -252,6 +258,14 @@ private:
         Node* m_pPrev;
         Node(Node* pPrev, Node* pNext, const T& value)
             : m_value(value)
+            , m_pNext(pNext)
+            , m_pPrev(pPrev)
+        {
+        }
+
+        template <class... Args>
+        Node(Node* pPrev, Node* pNext, Args&&... args)
+            : m_value(jitstd::forward<Args>(args)...)
             , m_pNext(pNext)
             , m_pPrev(pPrev)
         {
@@ -494,6 +508,45 @@ typename list<T, Allocator>::iterator
 }
 
 template <typename T, typename Allocator>
+template <typename... Args>
+typename list<T, Allocator>::iterator 
+    list<T, Allocator>::emplace(iterator position, Args&&... args)
+{
+    ++m_nSize;
+
+    Node* pInsert = position.m_pNode;
+    if (pInsert == nullptr)
+    {
+        Node* pNewTail = new (m_nodeAllocator.allocate(1), placement_t()) Node(m_pTail, nullptr, jitstd::forward<Args>(args)...);
+        if (m_pHead == nullptr)
+        {
+            m_pTail = pNewTail;
+            m_pHead = m_pTail;
+        }
+        else
+        {
+            m_pTail->m_pNext = pNewTail;
+            m_pTail = pNewTail;
+        }
+        return iterator(m_pTail);
+    }
+    else
+    {
+        Node* pNode = new (m_nodeAllocator.allocate(1), placement_t()) Node(pInsert->m_pPrev, pInsert, jitstd::forward<Args>(args)...);
+        if (pInsert->m_pPrev)
+        {
+            pInsert->m_pPrev->m_pNext = pNode;
+        }
+        else
+        {
+            m_pHead = pNode;
+        }
+        pInsert->m_pPrev = pNode;
+        return iterator(pNode);
+    }
+}
+
+template <typename T, typename Allocator>
 void list<T, Allocator>::insert(iterator position, size_type n, const T& val)
 {
     insert_helper(position, n, val, int_not_an_iterator_tag());
@@ -614,9 +667,23 @@ void list<T, Allocator>::push_back(const T& val)
 }
 
 template <typename T, typename Allocator>
+template <typename... Args>
+void list<T, Allocator>::emplace_back(Args&&... args)
+{
+    emplace(end(), jitstd::forward<Args>(args)...);
+}
+
+template <typename T, typename Allocator>
 void list<T, Allocator>::push_front(const T& val)
 {
     insert(begin(), val);
+}
+
+template <typename T, typename Allocator>
+template <typename... Args>
+void list<T, Allocator>::emplace_front(Args&&... args)
+{
+    emplace(begin(), jitstd::forward<Args>(args)...);
 }
 
 template <typename T, typename Allocator>

@@ -313,7 +313,7 @@ LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 Interval *
 LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.push_back(Interval());
+    intervals.emplace_back();
     Interval *newInt = &intervals.back();
     newInt->init();
 
@@ -332,9 +332,8 @@ LinearScan::newInterval(RegisterType theRegisterType)
 RefPosition *
 LinearScan::newRefPositionRaw()
 {
-    refPositions.push_back(RefPosition());
+    refPositions.emplace_back();
     RefPosition *newRP = &refPositions.back();
-    memset(newRP, 0, sizeof(RefPosition)); // TODO-Cleanup: call a RefPosition constructor instead?
 #ifdef DEBUG
     newRP->rpNum = refPositionCount;
 #endif // DEBUG
