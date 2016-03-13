@@ -112,60 +112,6 @@ namespace System.Globalization.CalendarsTests
         }
         #endregion
 
-        #region Negative tests
-        // NegTest1: The resulting DateTime is greater than the supported range
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int month = rand.Next(1, 12);
-            int day;
-            if (tc.IsLeapYear(year))
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_LEAP_YEAR[month] + 1);
-            }
-            else
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR[month] + 1);
-            }
-
-            DateTime dt = tc.ToDateTime(year, month, day, 0, 0, 0, 0);
-            int addValue = rand.Next((tc.MaxSupportedDateTime.Year - year - 1911), Int32.MaxValue);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.AddMonths(dt, addValue);
-            });
-        }
-
-        // NegTest2: The resulting DateTime is less than the supported range
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int month = rand.Next(1, 12);
-            int day;
-            if (tc.IsLeapYear(year))
-            {
-                day = rand.Next(1, 30);
-            }
-            else
-            {
-                day = rand.Next(1, 29);
-            }
-
-            DateTime dt = tc.ToDateTime(year, month, day, 0, 0, 0, 0);
-            int addValue = rand.Next(Int32.MinValue, (tc.MinSupportedDateTime.Year - year) * 12);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.AddMonths(dt, addValue);
-            });
-        }
-        #endregion
-
         #region Helper Methods
         private void VerificationHelper(DateTime value, int addValue)
         {

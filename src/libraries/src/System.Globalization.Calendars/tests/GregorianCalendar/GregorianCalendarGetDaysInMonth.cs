@@ -162,66 +162,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedDays, actualDays);
         }
         #endregion
-
-        #region Negative Tests
-        // NegTest1: year is greater than maximum supported value
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            year = myCalendar.MaxSupportedDateTime.Year + 100;
-            month = _generator.GetInt32(-55) % 12 + 1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.GetDaysInMonth(year, month);
-           });
-        }
-
-        // NegTest2: year is less than maximum supported value
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            year = myCalendar.MinSupportedDateTime.Year - 100;
-            month = _generator.GetInt32(-55) % 12 + 1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.GetDaysInMonth(year, month);
-           });
-        }
-
-        // NegTest3: month is greater than maximum supported value
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            year = GetAYear(myCalendar);
-            month = 13 + _generator.GetInt32(-55) % (int.MaxValue - 12);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.GetDaysInMonth(year, month);
-            });
-        }
-
-        // NegTest4: month is less than maximum supported value
-        [Fact]
-        public void NegTest4()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            year = myCalendar.MinSupportedDateTime.Year - 100;
-            month = -1 * _generator.GetInt32(-55);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.GetDaysInMonth(year, month);
-            });
-        }
-
-        #endregion
-
+        
         #region Helper methods for all the tests
         //Indicate whether the specified year is leap year or not
         private bool IsLeapYear(int year)
