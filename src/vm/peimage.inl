@@ -405,7 +405,7 @@ inline const BOOL PEImage::HasStrongNameSignature()
 
 #ifndef DACCESS_COMPILE
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if !defined(FEATURE_CORECLR)
 inline const HRESULT PEImage::VerifyStrongName(DWORD* verifyOutputFlags)  
 {
     WRAPPER_NO_CONTRACT;
@@ -445,7 +445,7 @@ inline const HRESULT PEImage::VerifyStrongName(DWORD* verifyOutputFlags)
     }
     return hr;
 }    
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // !FEATURE_CORECLR
 
 #endif // !DACCESS_COMPILE
 

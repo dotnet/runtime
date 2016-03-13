@@ -4344,7 +4344,7 @@ void PEAssembly::VerifyStrongName()
 #endif // !defined(FEATURE_CORECLR)    
     else
     {
-#if defined(FEATURE_CORECLR) && (!defined(CROSSGEN_COMPILE) || defined(PLATFORM_UNIX))
+#if defined(FEATURE_CORECLR)
         // Runtime policy on CoreCLR is to skip verification of ALL assemblies
         m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
         m_fStrongNameVerified = TRUE;
@@ -4397,7 +4397,7 @@ void PEAssembly::VerifyStrongName()
 #endif
         }
 
-#endif // FEATURE_CORECLR && (!CROSSGEN_COMPILE || PLATFORM_UNIX)
+#endif // FEATURE_CORECLR
     }
 
     m_fStrongNameVerified = TRUE;
