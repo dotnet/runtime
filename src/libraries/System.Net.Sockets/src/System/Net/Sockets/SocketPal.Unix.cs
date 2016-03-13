@@ -1091,62 +1091,136 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError Select(IList checkRead, IList checkWrite, IList checkError, int microseconds)
         {
-            uint* readSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxReadFd = Socket.FillFdSetFromSocketList(readSet, checkRead);
+            int checkReadInitialCount = checkRead != null ? checkRead.Count : 0;
+            int checkWriteInitialCount = checkWrite != null ? checkWrite.Count : 0;
+            int checkErrorInitialCount = checkError != null ? checkError.Count : 0;
+            int count = checked(checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount);
+            Debug.Assert(count > 0, $"Expected at least one entry.");
 
-            uint* writeSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxWriteFd = Socket.FillFdSetFromSocketList(writeSet, checkWrite);
+            // Rather than using the select syscall, we use poll.  While this has a mismatch in API from Select and
+            // requires some translation, it avoids the significant limitation of select only working with file descriptors
+            // less than FD_SETSIZE, and thus failing arbitrarily depending on the file descriptor value assigned
+            // by the system.  Since poll then expects an array of entries, we try to allocate the array on the stack,
+            // only falling back to allocating it on the heap if it's deemed too big.
 
-            uint* errorSet = stackalloc uint[Interop.Sys.FD_SETSIZE_UINTS];
-            int maxErrorFd = Socket.FillFdSetFromSocketList(errorSet, checkError);
-
-            int fdCount = 0;
-            uint* readFds = null;
-            uint* writeFds = null;
-            uint* errorFds = null;
-
-            if (maxReadFd != 0)
+            const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
+            if (count < StackThreshold)
             {
-                readFds = readSet;
-                fdCount = maxReadFd;
+                Interop.Sys.PollEvent* eventsOnStack = stackalloc Interop.Sys.PollEvent[count];
+                return SelectViaPoll(
+                    checkRead, checkReadInitialCount,
+                    checkWrite, checkWriteInitialCount,
+                    checkError, checkErrorInitialCount,
+                    eventsOnStack, count, microseconds);
             }
-
-            if (maxWriteFd != 0)
+            else
             {
-                writeFds = writeSet;
-                if (maxWriteFd > fdCount)
+                var eventsOnHeap = new Interop.Sys.PollEvent[count];
+                fixed (Interop.Sys.PollEvent* eventsOnHeapPtr = eventsOnHeap)
                 {
-                    fdCount = maxWriteFd;
+                    return SelectViaPoll(
+                        checkRead, checkReadInitialCount,
+                        checkWrite, checkWriteInitialCount,
+                        checkError, checkErrorInitialCount,
+                        eventsOnHeapPtr, count, microseconds);
                 }
             }
+        }
 
-            if (maxErrorFd != 0)
-            {
-                errorFds = errorSet;
-                if (maxErrorFd > fdCount)
-                {
-                    fdCount = maxErrorFd;
-                }
-            }
+        private static unsafe SocketError SelectViaPoll(
+            IList checkRead, int checkReadInitialCount,
+            IList checkWrite, int checkWriteInitialCount,
+            IList checkError, int checkErrorInitialCount,
+            Interop.Sys.PollEvent* events, int eventsLength,
+            int microseconds)
+        {
+            // Add each of the list's contents to the events array 
+            Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
+            int offset = 0;
+            AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);
+            AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.Sys.PollEvents.POLLOUT);
+            AddToPollArray(events, eventsLength, checkError, ref offset, Interop.Sys.PollEvents.POLLPRI);
+            Debug.Assert(offset == eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
 
-            int socketCount;
-            Interop.Error err = Interop.Sys.Select(fdCount, readFds, writeFds, errorFds, microseconds, &socketCount);
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Socket::Select() Interop.Sys.Select returns socketCount:" + socketCount);
-            }
-
+            // Do the poll
+            uint triggered = 0;
+            int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
+            Interop.Error err = Interop.Sys.Poll(events, (uint)eventsLength, milliseconds, &triggered);
             if (err != Interop.Error.SUCCESS)
             {
                 return GetSocketErrorForErrorCode(err);
             }
 
-            Socket.FilterSocketListUsingFdSet(readSet, checkRead);
-            Socket.FilterSocketListUsingFdSet(writeSet, checkWrite);
-            Socket.FilterSocketListUsingFdSet(errorSet, checkError);
-
+            // Remove from the lists any entries which weren't set
+            if (triggered == 0)
+            {
+                checkRead?.Clear();
+                checkWrite?.Clear();
+                checkError?.Clear();
+            }
+            else
+            {
+                FilterPollList(checkRead, events, checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);
+                FilterPollList(checkWrite, events, checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLOUT);
+                FilterPollList(checkError, events, checkErrorInitialCount + checkWriteInitialCount + checkReadInitialCount - 1, Interop.Sys.PollEvents.POLLERR | Interop.Sys.PollEvents.POLLPRI);
+            }
             return SocketError.Success;
+        }
+
+        private static unsafe void AddToPollArray(Interop.Sys.PollEvent* arr, int arrLength, IList socketList, ref int arrOffset, Interop.Sys.PollEvents events)
+        {
+            if (socketList == null)
+                return;
+
+            int listCount = socketList.Count;
+            for (int i = 0; i < listCount; i++)
+            {
+                if (arrOffset >= arrLength)
+                {
+                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                    throw new ArgumentOutOfRangeException(nameof(socketList));
+                }
+
+                Socket socket = socketList[i] as Socket;
+                if (socket == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName));
+                }
+
+                int fd = (int)socket.SafeHandle.DangerousGetHandle();
+                arr[arrOffset++] = new Interop.Sys.PollEvent { Events = events, FileDescriptor = fd };
+            }
+        }
+
+        private static unsafe void FilterPollList(IList socketList, Interop.Sys.PollEvent* arr, int arrEndOffset, Interop.Sys.PollEvents desiredEvents)
+        {
+            if (socketList == null)
+                return;
+
+            // The Select API requires leaving in the input lists only those sockets that were ready.  As such, we need to loop
+            // through each poll event, and for each that wasn't ready, remove the corresponding Socket from its list.  Technically
+            // this is O(n^2), due to removing from the list requiring shifting down all elements after it.  However, this doesn't
+            // happen with the most common cases.  If very few sockets were ready, then as we iterate from the end of the list, each
+            // removal will typiclaly be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
+            // which case we're only doing a small number of O(n) shifts.  It's only for the intermediate case, where a non-trivial
+            // number of sockets are ready and a non-trivial number of sockets are not ready that we end up paying the most.  We could
+            // avoid these costs by, for example, allocating a side list that we fill with the sockets that should remain, clearing
+            // the original list, and then populating the original list with the contents of the side list.  That of course has its
+            // own costs, and so for now we do the "simple" thing.  This can be changed in the future as needed.
+
+            for (int i = socketList.Count - 1; i >= 0; --i, --arrEndOffset)
+            {
+                if (arrEndOffset < 0)
+                {
+                    Debug.Fail("IList.Count must have been faulty, returning a negative value and/or returning a different value across calls.");
+                    throw new ArgumentOutOfRangeException(nameof(arrEndOffset));
+                }
+
+                if ((arr[arrEndOffset].TriggeredEvents & desiredEvents) == 0)
+                {
+                    socketList.RemoveAt(i);
+                }
+            }
         }
 
         public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)
