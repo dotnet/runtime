@@ -13,6 +13,8 @@ namespace System.Net.Http
     // is not supported (i.e. before Win8.1/Win2K12R2) in the WinHttpOpen() function.
     internal class WinInetProxyHelper
     {
+        bool _useProxy = false;
+
         public WinInetProxyHelper()
         {
             var proxyConfig = new Interop.WinHttp.WINHTTP_CURRENT_USER_IE_PROXY_CONFIG();
@@ -25,16 +27,25 @@ namespace System.Net.Http
                     AutoDetect = proxyConfig.AutoDetect;
                     Proxy = Marshal.PtrToStringUni(proxyConfig.Proxy);
                     ProxyBypass = Marshal.PtrToStringUni(proxyConfig.ProxyBypass);
+
+                    WinHttpTraceHelper.Trace(
+                        "WinInetProxyHelper.ctor: AutoConfigUrl={0}, AutoDetect={1}, Proxy={2}, ProxyBypass={3}",
+                        AutoConfigUrl,
+                        AutoDetect,
+                        Proxy,
+                        ProxyBypass);
+                    _useProxy = true;
                 }
                 else
                 {
-                    var lastError = Marshal.GetLastWin32Error();
-                    if (lastError != Interop.WinHttp.ERROR_FILE_NOT_FOUND)
-                    {
-                        throw WinHttpException.CreateExceptionUsingError(lastError);
-                    }
+                    // We match behavior of WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY and ignore errors.
+                    int lastError = Marshal.GetLastWin32Error();
+                    WinHttpTraceHelper.Trace("WinInetProxyHelper.ctor: error={0}", lastError);
                 }
+
+                WinHttpTraceHelper.Trace("WinInetProxyHelper.ctor: _useProxy={0}", _useProxy);
             }
+
             finally
             {
                 // FreeHGlobal already checks for null pointer before freeing the memory.
@@ -68,11 +79,26 @@ namespace System.Net.Http
 
         public string ProxyBypass { get; set; }
 
-        public void GetProxyForUrl(SafeWinHttpHandle sessionHandle, Uri uri, out Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo)
+        public bool GetProxyForUrl(
+            SafeWinHttpHandle sessionHandle,
+            Uri uri,
+            out Interop.WinHttp.WINHTTP_PROXY_INFO proxyInfo)
         {
+            proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY;
+            proxyInfo.Proxy = IntPtr.Zero;
+            proxyInfo.ProxyBypass = IntPtr.Zero;
+
+            if (!_useProxy)
+            {
+                return false;
+            }
+
+            bool useProxy = false;
+
             Interop.WinHttp.WINHTTP_AUTOPROXY_OPTIONS autoProxyOptions;
             autoProxyOptions.AutoConfigUrl = AutoConfigUrl;
-            autoProxyOptions.AutoDetectFlags = AutoDetect ? (Interop.WinHttp.WINHTTP_AUTO_DETECT_TYPE_DHCP | Interop.WinHttp.WINHTTP_AUTO_DETECT_TYPE_DNS_A) : 0;
+            autoProxyOptions.AutoDetectFlags = AutoDetect ?
+                (Interop.WinHttp.WINHTTP_AUTO_DETECT_TYPE_DHCP | Interop.WinHttp.WINHTTP_AUTO_DETECT_TYPE_DNS_A) : 0;
             autoProxyOptions.AutoLoginIfChallenged = false;
             autoProxyOptions.Flags =
                 (AutoDetect ? Interop.WinHttp.WINHTTP_AUTOPROXY_AUTO_DETECT : 0) |
@@ -92,50 +118,65 @@ namespace System.Net.Http
             //    URL and script are cached for future calls to WinHttpGetProxyForUrl.
             // 2. If Step 1 fails, with ERROR_WINHTTP_LOGIN_FAILURE, then call WinHttpGetProxyForUrl with the
             //    fAutoLogonIfChallenged member set to TRUE.
+            //
+            // We match behavior of WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY and ignore errors.
             var repeat = false;
             do
             {
-                if (Interop.WinHttp.WinHttpGetProxyForUrl(sessionHandle, uri.AbsoluteUri, ref autoProxyOptions, out proxyInfo))
+                if (Interop.WinHttp.WinHttpGetProxyForUrl(
+                    sessionHandle,
+                    uri.AbsoluteUri,
+                    ref autoProxyOptions,
+                    out proxyInfo))
                 {
-                    repeat = false;
+                    WinHttpTraceHelper.Trace("WinInetProxyHelper.GetProxyForUrl: Using autoconfig proxy settings");
+                    useProxy = true;
+                    
+                    break;
                 }
                 else
                 {
                     var lastError = Marshal.GetLastWin32Error();
-                    if (lastError == Interop.WinHttp.ERROR_WINHTTP_AUTODETECTION_FAILED)
-                    {
-                        // Fall back to manual settings if available.
-                        if (!string.IsNullOrEmpty(Proxy))
-                        {
-                            proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY;
-                            proxyInfo.Proxy = Marshal.StringToHGlobalUni(Proxy);
-                            proxyInfo.ProxyBypass = string.IsNullOrEmpty(ProxyBypass) ? IntPtr.Zero : Marshal.StringToHGlobalUni(ProxyBypass);
-                        }
-                        else
-                        {
-                            proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY;
-                            proxyInfo.Proxy = IntPtr.Zero;
-                            proxyInfo.ProxyBypass = IntPtr.Zero;
-                        }
+                    WinHttpTraceHelper.Trace("WinInetProxyHelper.GetProxyForUrl: error={0}", lastError);
 
-                        repeat = false;
-                    }
-                    else if (lastError == Interop.WinHttp.ERROR_WINHTTP_LOGIN_FAILURE)
+                    if (lastError == Interop.WinHttp.ERROR_WINHTTP_LOGIN_FAILURE)
                     {
                         if (repeat)
                         {
-                            throw WinHttpException.CreateExceptionUsingError(lastError);
+                            // We don't retry more than once.
+                            break;
                         }
-
-                        repeat = true;
-                        autoProxyOptions.AutoLoginIfChallenged = true;
+                        else
+                        {
+                            repeat = true;
+                            autoProxyOptions.AutoLoginIfChallenged = true;
+                        }
                     }
                     else
                     {
-                        WinHttpException.ThrowExceptionUsingLastError();
+                        break;
                     }
                 }
             } while (repeat);
+
+            // Fall back to manual settings if available.
+            if (!useProxy && !string.IsNullOrEmpty(Proxy))
+            {
+                proxyInfo.AccessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY;
+                proxyInfo.Proxy = Marshal.StringToHGlobalUni(Proxy);
+                proxyInfo.ProxyBypass = string.IsNullOrEmpty(ProxyBypass) ?
+                    IntPtr.Zero : Marshal.StringToHGlobalUni(ProxyBypass);
+
+                WinHttpTraceHelper.Trace(
+                    "WinInetProxyHelper.GetProxyForUrl: Fallback to Proxy={0}, ProxyBypass={1}",
+                    Proxy,
+                    ProxyBypass);
+                useProxy = true;
+            }
+
+            WinHttpTraceHelper.Trace("WinInetProxyHelper.GetProxyForUrl: useProxy={0}", useProxy);
+
+            return useProxy;
         }
     }
 }

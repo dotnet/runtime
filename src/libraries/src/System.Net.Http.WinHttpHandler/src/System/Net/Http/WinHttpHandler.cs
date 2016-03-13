@@ -995,8 +995,10 @@ nameof(value),
                     }
                     else if (_proxyHelper != null && _proxyHelper.AutoSettingsUsed)
                     {
-                        updateProxySettings = true;
-                        _proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo);
+                        if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
+                        {
+                            updateProxySettings = true;
+                        }
                     }
 
                     if (updateProxySettings)

@@ -751,7 +751,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 });
 
             Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.SessionProxySettings.AccessType);
-            Assert.Equal(Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY, APICallHistory.RequestProxySettings.AccessType);
+            Assert.Equal(null, APICallHistory.RequestProxySettings.AccessType);
         }
 
         [Fact]

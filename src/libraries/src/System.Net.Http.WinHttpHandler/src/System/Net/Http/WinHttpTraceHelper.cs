@@ -54,6 +54,16 @@ namespace System.Net.Http
             Debug.WriteLine(format, arg0);
         }
 
+        public static void Trace(string format, object arg0, object arg1)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0, arg1);
+        }
+
         public static void Trace(string format, object arg0, object arg1, object arg2)
         {
             if (!IsTraceEnabled())
@@ -62,6 +72,16 @@ namespace System.Net.Http
             }
             
             Debug.WriteLine(format, arg0, arg1, arg2);
+        }
+
+        public static void Trace(string format, object arg0, object arg1, object arg2, object arg3)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0, arg1, arg2, arg3);
         }
 
         public static void TraceCallbackStatus(string message, IntPtr handle, IntPtr context, uint status)
