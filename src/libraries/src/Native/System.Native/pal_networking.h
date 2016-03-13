@@ -397,11 +397,6 @@ extern "C" Error SystemNative_SetSockOpt(
 
 extern "C" Error SystemNative_Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
 
-extern "C" int32_t SystemNative_FdSetSize();
-
-extern "C" Error SystemNative_Select(
-    int32_t fdCount, uint32_t* readFdSet, uint32_t* writeFdSet, uint32_t* errorFdSet, int32_t microseconds, int32_t* selected);
-
 extern "C" Error SystemNative_GetBytesAvailable(int32_t socket, int32_t* available);
 
 extern "C" Error SystemNative_CreateSocketEventPort(int32_t* port);
