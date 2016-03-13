@@ -81,7 +81,6 @@ JIT/jit64/localloc/verify/verify01_small/verify01_small.sh
 JIT/jit64/regress/ndpw/21220/b21220/b21220.sh
 JIT/jit64/regress/vsw/102754/test1/test1.sh
 JIT/jit64/regress/vsw/102754/test2/test2.sh
-JIT/jit64/regress/vsw/546707/sql_stress4/sql_stress4.sh
 JIT/Methodical/Boxing/xlang/_dbgsin_il_cs/_dbgsin_il_cs.sh
 JIT/Methodical/Boxing/xlang/_dbgsin_il_il/_dbgsin_il_il.sh
 JIT/Methodical/Boxing/xlang/_odbgsin_il_cs/_odbgsin_il_cs.sh
@@ -208,4 +207,4 @@ GC/Features/SustainedLowLatency/sustainedlowlatency_race_reverse/sustainedlowlat
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Features/SustainedLowLatency/sustainedlowlatency_race/sustainedlowlatency_race.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
-GC/M10/RefCrossTHDs/refcrossthds/refcrossthds.sh
+
