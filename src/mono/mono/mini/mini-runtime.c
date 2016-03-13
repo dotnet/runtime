@@ -2164,7 +2164,6 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		}
 		g_slist_free (remove);
 	}
-
 	mono_domain_unlock (domain);
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
@@ -3520,6 +3519,12 @@ runtime_invoke_info_free (gpointer value)
 }
 
 static void
+free_jit_callee_list (gpointer key, gpointer value, gpointer user_data)
+{
+	g_slist_free (value);
+}
+
+static void
 mini_free_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = domain_jit_info (domain);
@@ -3549,6 +3554,10 @@ mini_free_jit_domain_info (MonoDomain *domain)
 		mono_debugger_agent_free_domain_info (domain);
 	if (info->gsharedvt_arg_tramp_hash)
 		g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
+	if (info->llvm_jit_callees) {
+		g_hash_table_foreach (info->llvm_jit_callees, free_jit_callee_list, NULL);
+		g_hash_table_destroy (info->llvm_jit_callees);
+	}
 #ifdef ENABLE_LLVM
 	mono_llvm_free_domain_info (domain);
 #endif

@@ -33,7 +33,7 @@ void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);
 
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method);
+mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame);
 
 void
 mono_llvm_optimize_method (MonoEERef mono_ee, LLVMValueRef method);

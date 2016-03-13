@@ -18,6 +18,10 @@
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
 
+extern "C" {
+#include <mono/utils/mono-dl.h>
+}
+
 #if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
 
 /*
@@ -31,42 +35,169 @@
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
-#include "llvm/ExecutionEngine/Orc/LazyEmittingLayer.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/OrcArchitectureSupport.h"
 
 using namespace llvm;
 using namespace llvm::orc;
 
+extern cl::opt<bool> EnableMonoEH;
+extern cl::opt<std::string> MonoEHFrameSymbol;
+
 void
 mono_llvm_set_unhandled_exception_handler (void)
 {
 }
 
-static gboolean inited;
-
-static void
-init_llvm (void)
-{
-	if (inited)
-		return;
-
-	InitializeNativeTarget ();
-	InitializeNativeTargetAsmPrinter();
+template <typename T>
+static std::vector<T> singletonSet(T t) {
+  std::vector<T> Vec;
+  Vec.push_back(std::move(t));
+  return Vec;
 }
+
+#ifdef __MINGW32__
+
+#include <stddef.h>
+extern void *memset(void *, int, size_t);
+void bzero (void *to, size_t count) { memset (to, 0, count); }
+
+#endif
+
+class MonoLLVMJIT {
+public:
+	/* We use our own trampoline infrastructure instead of the Orc one */
+	typedef ObjectLinkingLayer<> ObjLayerT;
+	typedef IRCompileLayer<ObjLayerT> CompileLayerT;
+	typedef CompileLayerT::ModuleSetHandleT ModuleHandleT;
+
+	MonoLLVMJIT (TargetMachine *TM)
+		: TM(TM),
+		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)) {
+	}
+
+	ModuleHandleT addModule(Module *M) {
+		auto Resolver = createLambdaResolver(
+                      [&](const std::string &Name) {
+						  const char *name = Name.c_str ();
+						  if (!strcmp (name, "___bzero"))
+							  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)(void*)bzero, (JITSymbolFlags)0);
+
+						  MonoDl *current;
+						  char *err;
+						  void *symbol;
+						  current = mono_dl_open (NULL, 0, NULL);
+						  g_assert (current);
+						  if (name [0] == '_')
+							  err = mono_dl_symbol (current, name + 1, &symbol);
+						  else
+							  err = mono_dl_symbol (current, name, &symbol);
+						  mono_dl_close (current);
+						  if (!symbol)
+							  outs () << "R: " << Name << "\n";
+						  assert (symbol);
+						  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)symbol, (JITSymbolFlags)0);
+                      },
+                      [](const std::string &S) {
+						  outs () << "R2: " << S << "\n";
+						  assert (0);
+						  return nullptr;
+					  } );
+
+		return CompileLayer.addModuleSet(singletonSet(M),
+										  make_unique<SectionMemoryManager>(),
+										  std::move(Resolver));
+	}
+
+	std::string mangle(const std::string &Name) {
+		std::string MangledName;
+		{
+			raw_string_ostream MangledNameStream(MangledName);
+			Mangler::getNameWithPrefix(MangledNameStream, Name,
+									   TM->createDataLayout());
+		}
+		return MangledName;
+	}
+
+	std::string mangle(const GlobalValue *GV) {
+		std::string MangledName;
+		{
+			Mangler Mang;
+
+			raw_string_ostream MangledNameStream(MangledName);
+			Mang.getNameWithPrefix(MangledNameStream, GV, false);
+		}
+		return MangledName;
+	}
+
+	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
+		F->getParent ()->setDataLayout (TM->createDataLayout ());
+		auto ModuleHandle = addModule (F->getParent ());
+
+		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
+		auto BodyAddr = BodySym.getAddress();
+		assert (BodyAddr);
+
+		for (int i = 0; i < nvars; ++i) {
+			GlobalVariable *var = unwrap<GlobalVariable>(callee_vars [i]);
+
+			auto sym = CompileLayer.findSymbolIn (ModuleHandle, mangle (var->getName ()), true);
+			auto addr = sym.getAddress ();
+			g_assert (addr);
+			callee_addrs [i] = (gpointer)addr;
+		}
+
+		auto ehsym = CompileLayer.findSymbolIn(ModuleHandle, "mono_eh_frame", false);
+		auto ehaddr = ehsym.getAddress ();
+		g_assert (ehaddr);
+		*eh_frame = (gpointer)ehaddr;
+
+		return (gpointer)BodyAddr;
+	}
+
+private:
+	TargetMachine *TM;
+	ObjLayerT ObjectLayer;
+	CompileLayerT CompileLayer;
+};
+
+static MonoLLVMJIT *jit;
 
 MonoEERef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
 {
-	init_llvm ();
+	InitializeNativeTarget ();
+	InitializeNativeTargetAsmPrinter();
+
+	EnableMonoEH = true;
+	MonoEHFrameSymbol = "mono_eh_frame";
+
+	EngineBuilder EB;
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+	std::vector<std::string> attrs;
+	// FIXME: Autodetect this
+	attrs.push_back("sse3");
+	attrs.push_back("sse4.1");
+	EB.setMAttrs (attrs);
+#endif
+	auto TM = EB.selectTarget ();
+	assert (TM);
+
+	jit = new MonoLLVMJIT (TM);
 
 	return NULL;
 }
 
-void
-mono_llvm_optimize_method (MonoEERef eeref, LLVMValueRef method)
+/*
+ * mono_llvm_compile_method:
+ *
+ *   Compile METHOD to native code. Compute the addresses of the variables in CALLEE_VARS and store them into
+ * CALLEE_ADDRS. Return the EH frame address in EH_FRAME.
+ */
+gpointer
+mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
-	g_assert_not_reached ();
+	return jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
 }
 
 void
@@ -75,13 +206,14 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 }
 
 void
-LLVMAddGlobalMapping (LLVMExecutionEngineRef EE, LLVMValueRef Global,
-					  void* Addr)
+LLVMAddGlobalMapping(LLVMExecutionEngineRef EE, LLVMValueRef Global,
+					 void* Addr)
 {
+	g_assert_not_reached ();
 }
 
 void*
-LLVMGetPointerToGlobal (LLVMExecutionEngineRef EE, LLVMValueRef Global)
+LLVMGetPointerToGlobal(LLVMExecutionEngineRef EE, LLVMValueRef Global)
 {
 	g_assert_not_reached ();
 	return NULL;

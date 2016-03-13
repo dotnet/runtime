@@ -354,6 +354,8 @@ typedef struct
 	gpointer *memcpy_addr [17];
 	gpointer *bzero_addr [17];
 	gpointer llvm_module;
+	/* Maps MonoMethod -> GSlist of addresses */
+	GHashTable *llvm_jit_callees;
 } MonoJitDomainInfo;
 
 typedef struct {
