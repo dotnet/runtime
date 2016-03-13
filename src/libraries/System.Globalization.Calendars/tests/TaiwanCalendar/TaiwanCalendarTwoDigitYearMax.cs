@@ -31,34 +31,6 @@ namespace System.Globalization.CalendarsTests
             Assert.Equal(twoYearMax, tc.TwoDigitYearMax);
         }
         #endregion
-
-        #region Negative Tests
-        // NegTest1: Set the TwoDigitYear max as greater than the year of  MaxSuportedDateTime
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            int year = 8089;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.TwoDigitYearMax = year;
-            });
-        }
-
-        // NegTest2: The year less than 99
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            int year = 98;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.TwoDigitYearMax = year;
-            });
-        }
-        #endregion
     }
 }
 

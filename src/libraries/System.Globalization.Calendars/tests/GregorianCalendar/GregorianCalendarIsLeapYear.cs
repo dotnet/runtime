@@ -86,50 +86,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedValue, actualValue);
         }
         #endregion
-
-        #region Negative Tests
-        // NegTest1: year is greater than maximum supported value
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year;
-            year = myCalendar.MaxSupportedDateTime.Year + 100;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.IsLeapYear(year, 1);
-            });
-        }
-
-        // NegTest2: year is less than minimum supported value
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year;
-            year = myCalendar.MinSupportedDateTime.Year - 100;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.IsLeapYear(year, 1);
-            });
-        }
-
-        // NegTest3: era is outside the range supported by the calendar
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year;
-            int era;
-            year = this.GetAYear(myCalendar);
-            era = 2 + _generator.GetInt32(-55) % (int.MaxValue - 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                myCalendar.IsLeapYear(year, era);
-            });
-        }
-        #endregion
-
+        
         #region Helper methods for all the tests
         //Indicate whether the specified year is leap year or not
         private bool IsLeapYear(int year)

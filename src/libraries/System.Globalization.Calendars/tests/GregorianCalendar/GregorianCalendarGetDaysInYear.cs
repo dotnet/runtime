@@ -82,34 +82,6 @@ namespace System.Globalization.CalendarTests
         }
         #endregion
 
-        #region Negtive Tests
-        // NegTest1: year is greater than maximum supported value
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year;
-            year = myCalendar.MaxSupportedDateTime.Year + 100;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.GetDaysInYear(year);
-           });
-        }
-
-        // NegTest2: year is less than maximum supported value
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year;
-            year = myCalendar.MinSupportedDateTime.Year - 100;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-           {
-               myCalendar.GetDaysInYear(year);
-           });
-        }
-        #endregion
-
         #region Helper methods for all the tests
         //Indicate whether the specified year is leap year or not
         private bool IsLeapYear(int year)

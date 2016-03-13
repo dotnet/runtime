@@ -84,48 +84,10 @@ namespace System.Globalization.CalendarsTests
         }
         #endregion
 
-        #region Negative Test Logic
-        // NegTest1:Invoke the method with year out of lower range
         [Fact]
-        public void NegTest1()
+        public void ToFourDigitYear_Invalid()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.ToFourDigitYear(100);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>("year", () => new KoreanCalendar().ToFourDigitYear(100));
         }
-
-        // NegTest2:Invoke the method with negative year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int actualValue;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.ToFourDigitYear(-1);
-            });
-        }
-
-        // NegTest3:Invoke the method with year out of the upper range
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int actualValue;
-            // it stands to reason that if we're looking to throw an exception then it might be a good idea
-            // to ensure the value passed into the method is one that will actual cause the exception to be
-            // thrown
-            // 100-2333  throw exception
-            // 2334-12332 no exception
-            // 12333 or more throw exception
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                actualValue = kC.ToFourDigitYear(12333);
-            });
-        }
-        #endregion
     }
 }

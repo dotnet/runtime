@@ -45,54 +45,7 @@ namespace System.Globalization.CalendarsTests
             }
         }
         #endregion
-
-        #region Negative Tests
-        // NegTest1: The year greater than max year
-        [Fact]
-        public void NegTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MaxSupportedDateTime.Year - 1911 + rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-
-        // NegTest2: The year less than min year
-        [Fact]
-        public void NegTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = tc.MinSupportedDateTime.Year - rand.Next(1, Int32.MaxValue);
-            int era = Calendar.CurrentEra;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-
-        // NegTest3: The era greater than 1
-        [Fact]
-        public void NegTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year + 1);
-            int era = 2;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                tc.IsLeapYear(year, era);
-            });
-        }
-        #endregion
-
+        
         #region Helper Methods
         private bool isLeapYear(int year)
         {

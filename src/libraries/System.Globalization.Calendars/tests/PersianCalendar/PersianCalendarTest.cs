@@ -34,21 +34,6 @@ namespace System.Globalization.CalendarsTests
             }
         }
 
-        [Fact]
-        public void TestUpperLimits()
-        {
-            PersianCalendar cal = new PersianCalendar();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                cal.ToDateTime(9378, 10, 14, 0, 0, 0, 0);
-            });
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                cal.GetYear(new DateTime(622, 3, 21));
-            });
-        }
-
 
         [Fact]
         public void TestLeapYears()
