@@ -526,7 +526,12 @@ namespace System.Globalization
             long ticks = time.Ticks;
             for (int i = 0; i < m_EraInfo.Length; i++)
             {
-                if (ticks >= m_EraInfo[i].ticks)
+                // while calculating dates with JapaneseLuniSolarCalendar, we can run into cases right after the start of the era  
+                // and still belong to the month which is started in previous era. Calculating equivalent calendar date will cause  
+                // using the new era info which will have the year offset equal to the year we are calculating year = m_EraInfo[i].yearOffset  
+                // which will end up with zero as calendar year.
+                // We should use the previous era info instead to get the right year number. Example of such date is Feb 2nd 1989
+                if (ticks >= m_EraInfo[i].ticks && year > m_EraInfo[i].yearOffset)                
                 {
                     return (year - m_EraInfo[i].yearOffset);
                 }
