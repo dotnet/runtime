@@ -25,6 +25,7 @@
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="SelectTest.cs" />
     <Compile Include="SendReceive.cs" />
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
