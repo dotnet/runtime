@@ -4490,6 +4490,18 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 	}
 
+	/* Update llvm callees */
+	if (domain_jit_info (target_domain)->llvm_jit_callees) {
+		GSList *callees = g_hash_table_lookup (domain_jit_info (target_domain)->llvm_jit_callees, method);
+		GSList *l;
+
+		for (l = callees; l; l = l->next) {
+			gpointer *addr = (gpointer*)l->data;
+
+			*addr = code;
+		}
+	}
+
 	mono_emit_jit_map (jinfo);
 #endif
 	mono_domain_unlock (target_domain);
