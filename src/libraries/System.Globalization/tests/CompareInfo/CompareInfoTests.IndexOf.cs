@@ -212,38 +212,113 @@ namespace System.Globalization.Tests
         public void IndexOf_Invalid()
         {
             // Source is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, "a"));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, "a", CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, "a", 0, 0));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, "a", 0, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, "a", 0, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, "a"));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, "a", CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, "a", 0, 0));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, "a", 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, "a", 0, 0, CompareOptions.None));
 
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, 'a'));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, 'a', CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, 'a', 0, 0));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, 'a', 0, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, 'a', 0, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, 'a'));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, 'a', CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, 'a', 0, 0));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, 'a', 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, 'a', 0, 0, CompareOptions.None));
 
             // Value is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf("", null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf("", null, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf("", null, 0, 0));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf("", null, 0, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf("", null, 0, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("value", () => s_invariantCompare.IndexOf("", null));
+            Assert.Throws<ArgumentNullException>("value", () => s_invariantCompare.IndexOf("", null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("value", () => s_invariantCompare.IndexOf("", null, 0, 0));
+            Assert.Throws<ArgumentNullException>("value", () => s_invariantCompare.IndexOf("", null, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("value", () => s_invariantCompare.IndexOf("", null, 0, 0, CompareOptions.None));
 
             // Source and value are null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, null, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, null, 0, 0));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, null, 0, CompareOptions.None));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IndexOf(null, null, 0, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, null));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, null, 0, 0));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, null, 0, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IndexOf(null, null, 0, 0, CompareOptions.None));
 
             // Options are invalid
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IndexOf("Test's", "Tests", CompareOptions.StringSort));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IndexOf("Test's", "Tests", (CompareOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IndexOf("Test's", "Tests", (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, 2, CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'b', 0, CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'c', 0, 2, CompareOptions.StringSort));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'b', 0, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'c', 0, 2, CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'b', 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'c', 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, 2, (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', 0, (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', 0, 2, (CompareOptions)(-1)));
+
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, 2, (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', 0, (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'a', 0, 2, (CompareOptions)0x11111111));
+
+            // StartIndex < 0
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", -1, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", -1, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", -1, 4, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', -1, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', -1, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', -1, 4, CompareOptions.None));
+
+            // StartIndex > source.Length
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", 5, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", "Test", 5, 0, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', 5, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', 5, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s_invariantCompare.IndexOf("Test", 'a', 5, 0, CompareOptions.None));
+
+            // Count < 0
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 0, -1, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, -1, CompareOptions.None));
+
+            // Count > source.Length
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 0, 5));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 0, 5, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, 5));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 0, 5, CompareOptions.None));
+
+            // StartIndex + count > source.Length
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", "Test", 2, 4, CompareOptions.None));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.IndexOf("Test", 'a', 2, 4, CompareOptions.None));
         }
-        
+
+        [Fact]
+        public static void IndexOf_MinusOneCompatability()
+        {
+            // This behavior was for .NET Framework 1.1 compatability.
+            // Allowing empty source strings with invalid offsets was quickly outed.
+            // with invalid offsets.
+            Assert.Equal(0, s_invariantCompare.IndexOf("", "", -1, CompareOptions.None));
+            Assert.Equal(-1, s_invariantCompare.IndexOf("", "a", -1, CompareOptions.None));
+        }
+
         private static char UnassignedUnicodeCharacter()
         {
             for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
