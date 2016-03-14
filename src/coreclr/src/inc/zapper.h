@@ -131,12 +131,8 @@ class Zapper
 
     bool                    m_fForceFullTrust;
 
-#ifdef MDIL
-    bool                    m_fEmbedMDIL;
-#endif
+    SString                 m_outputFilename;
 
-    SString                 m_outputFilename;  // output target when coregen is emitting a combined IL/MDIL file.
-                                                   // (an empty string here (temporarily) indicates the use of the depecrated /createmdil sitch.)
   public:
 
     struct assemblyDependencies
@@ -354,12 +350,8 @@ class Zapper
 
     // The arguments control which native image of mscorlib to use.
     // This matters for hardbinding.
-#ifdef BINDER
-    void InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument, ICorCompileInfo *compileInfo, ICorDynamicInfo *dynamicInfo);
-#else
     void InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument);
     void LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler);
-#endif
 
 #ifdef FEATURE_FUSION
     HRESULT TryEnumerateFusionCache(LPCWSTR assemblyName, bool fPrint, bool fDelete);
@@ -458,11 +450,6 @@ class Zapper
 
 #ifdef FEATURE_LEGACYNETCF
     void SetAppCompatWP8(bool val);
-#endif
-
-#ifdef MDIL
-    void SetEmbedMDIL(bool val);
-    void SetCompilerFlag(DWORD val);
 #endif
 
     void SetForceFullTrust(bool val);

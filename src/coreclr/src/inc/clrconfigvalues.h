@@ -703,26 +703,7 @@ CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbid
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NgenBind_OptimizeNonGac, W("NgenBind_OptimizeNonGac"), 0, "Skip loading IL image outside of GAC when NI can be loaded")
 
-// 
-// MDIL
-// 
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JIT_MDIL_MIN_TOKEN, W("JIT_MDIL_MIN_TOKEN"), 0, "TBD", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JIT_MDIL_MAX_TOKEN, W("JIT_MDIL_MAX_TOKEN"), 0xffffffff, "TBD", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitDisassembleMDIL, W("JitDisassembleMDIL"), 0, "TBD", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitListMDILtoNative, W("JitListMDILtoNative"), 0, "TBD", CLRConfig::REGUTIL_default)
-RETAIL_CONFIG_STRING_INFO_EX(INTERNAL_MDIL_BREAK_ON, W("MDIL_BREAK_ON"), "TBD", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer", CLRConfig::REGUTIL_default)
-
-// MDIL stress
-CONFIG_DWORD_INFO(INTERNAL_TritonStressSeed, W("TritonStressSeed"), 0, "Seed used for random number used to drive mdil stress modes")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressLogFlags, W("TritonStressLogFlags"), 3, "Triton stress logging")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressPartialMDIL, W("TritonStressPartialMDIL"), 0, "This stress mode will cause some number of methods to abort MDIL compilation. This should trigger them to fall back to JIT at runtime.")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressPartialCTL, W("TritonStressPartialCTL"), 0, "This stress mode will cause some number of types from this module to fail to generate CTL.")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressTypeLoad, W("TritonStressTypeLoad"), 0, "Triton Stress of type loading in mdilbind, parameter is LoadStressFlag")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressMethodLoad, W("TritonStressMethodLoad"), 0, "Triton Stress of method loading in mdilbind, parameter is LoadStressFlag")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressFieldLoad, W("TritonStressFieldLoad"), 0, "Triton Stress of field loading in mdilbind, parameter is LoadStressFlag")
-CONFIG_DWORD_INFO(INTERNAL_TritonStressAssemblyLoad, W("TritonStressAssemblyLoad"), 0, "Triton Stress of assembly loading in mdilbind, parameter is LoadStressFlag")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_MdilNIGenDefaultFailureMode, W("MdilNIGenDefaultFailureMode"), 0, "Override default failure mode of mdil ni generation")
 
 // 
 // NGEN

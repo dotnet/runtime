@@ -12,10 +12,6 @@
 #include "appmodel.h"
 #include "fusionsetup.h"
 
-#if defined(CLR_STANDALONE_BINDER)
-#include "windowsstring.h"
-#endif // CLR_STANDALONE_BINDER
-
 #define PACKAGE_FILTER_CLR_DEFAULT (PACKAGE_FILTER_HEAD|PACKAGE_FILTER_DIRECT)
 
 

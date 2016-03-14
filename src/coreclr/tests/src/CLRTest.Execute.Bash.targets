@@ -135,6 +135,22 @@ fi
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>        
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$COMPlus_GCStress" ]
+then
+  echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  exit 0
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ \( ! -z "$COMPlus_JitStress" \) -o \( ! -z "$COMPlus_JitStressRegs" \) -o \( ! -z "$COMPlus_JITMinOpts" \) ]
+then
+  echo SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET
+  exit 0
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
@@ -280,6 +296,7 @@ cd "$%28dirname "$0")"
 # The __TestEnv variable may be used to specify something to run before the test.
 $__TestEnv
 
+$(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 # CrossGen Script (when /p:CrossGen=true)

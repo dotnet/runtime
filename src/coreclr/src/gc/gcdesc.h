@@ -168,9 +168,9 @@ public:
     {
         // If it doesn't contain pointers, there isn't a GCDesc
         PTR_MethodTable mt(pMT);
-#ifndef BINDER
+
         _ASSERTE(mt->ContainsPointersOrCollectible());
-#endif
+
         return PTR_CGCDesc(mt);
     }
 

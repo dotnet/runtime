@@ -13,10 +13,6 @@
 
 #include "common.h"
 
-#ifdef CLR_STANDALONE_BINDER
-#include "coreclr\corebindresult.h"
-#endif // CLR_STANDALONE_BINDER
-
 #include "../binder/inc/assembly.hpp"
 
 #ifndef FEATURE_FUSION

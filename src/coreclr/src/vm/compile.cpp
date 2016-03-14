@@ -137,11 +137,7 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
                                      BOOL fForceDebug,
                                      BOOL fForceProfiling,
                                      BOOL fForceInstrument,
-                                     BOOL fForceFulltrustDomain
-#ifdef MDIL
-                                   , MDILCompilationFlags     mdilCompilationFlags
-#endif
-                                               )
+                                     BOOL fForceFulltrustDomain)
 {
     STANDARD_VM_CONTRACT;
 
@@ -159,11 +155,7 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
 
     {
         SystemDomain::LockHolder lh;
-        pCompilationDomain->Init(
-#ifdef MDIL
-            mdilCompilationFlags
-#endif
-             );
+        pCompilationDomain->Init();
     }
 
     if (pEmitter)
@@ -507,7 +499,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
                     TRUE,                   // fThrowOnFileNotFound
                     &bindResult, 
 
-                    // fNgenExplicitBind: Generally during NGEN / MDIL compilation, this is
+                    // fNgenExplicitBind: Generally during NGEN compilation, this is
                     // TRUE, meaning "I am NGEN, and I am doing an explicit bind to the IL
                     // image, so don't infer the NI and try to open it, because I already
                     // have it open". But if we're executing crossgen /CreatePDB, this should
@@ -538,13 +530,6 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
                 pDomain->ToCompilationDomain()->ComputeAssemblyHardBindList(pAssemblyHolder->GetPersistentMDImport());
 #endif
 
-#ifdef MDIL
-            // MDIL is generated as a special mode of ngen.exe or coregen.exe; normally these two utilities
-            // would not generate anything if a native image for the requested assembly already exists.
-            // Of course, this is not the desired behavior when generating MDIL - it should always work.
-            // We need to prevent loading of the native image when we are generating MDIL.
-            if (!GetAppDomain()->IsMDILCompilationDomain())
-#endif
             {
                 // Mark the assembly before it gets fully loaded and NGen image dependencies are verified. This is necessary
                 // to allow skipping compilation if there is NGen image already.
@@ -925,90 +910,6 @@ BOOL CEECompileInfo::CheckAssemblyZap(
     return result;
 }
 
-#ifdef MDIL
-DWORD CEECompileInfo::GetMdilModuleSecurityFlags(
-    CORINFO_ASSEMBLY_HANDLE assembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly *pAssembly = (Assembly*) assembly;
-
-    ModuleSecurityDescriptor *pMSD = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pAssembly);
-
-    MDILHeader::Flags securityFlags = MDILHeader::MdilModuleSecurityDescriptorFlags_None;
-
-    // Is Microsoft Platform
-    if (pMSD->IsMicrosoftPlatform())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsMicrosoftPlatform);
-
-    // Is every method and type in the assembly transparent
-    if (pMSD->IsAllTransparent())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsAllTransparent);
-
-    // Is every method and type introduced by the assembly critical
-    if (pMSD->IsAllCritical())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsAllCritical);
-
-    // Combined with IsAllCritical - is every method and type introduced by the assembly safe critical
-    if (pMSD->IsTreatAsSafe())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsTreatAsSafe);
-
-    // Does the assembly not care about transparency, and wants the CLR to take care of making sure everything
-    // is annotated properly in the assembly.
-    if (pMSD->IsOpportunisticallyCritical())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsOpportunisticallyCritical);
-
-    // Partial trust assemblies are forced all-transparent under some conditions. This 
-    // tells us whether that is true for this particular assembly.
-    if (pMSD->IsAllTransparentDueToPartialTrust())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_TransparentDueToPartialTrust);
-
-#ifdef FEATURE_APTCA
-    if (pMSD->IsAPTCA())
-#endif
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_IsAPTCA);
-
-#ifndef FEATURE_CORECLR
-    // Can fully trusted transparent code bypass verification
-    if (pMSD->CanTransparentCodeSkipVerification())
-        securityFlags = (MDILHeader::Flags)(securityFlags | MDILHeader::MdilModuleSecurityDescriptorFlags_SkipFullTrustVerification);
-#endif // !FEATURE_CORECLR
-
-    return (DWORD)securityFlags;
-}
-
-BOOL CEECompileInfo::CompilerRelaxationNoStringInterningPermitted(
-    CORINFO_ASSEMBLY_HANDLE assembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly *pAssembly = (Assembly*) assembly;
-
-    return pAssembly->GetManifestModule()->IsNoStringInterning();
-}
-
-BOOL CEECompileInfo::RuntimeCompatibilityWrapExceptions(
-    CORINFO_ASSEMBLY_HANDLE assembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly *pAssembly = (Assembly*) assembly;
-
-    return pAssembly->GetManifestModule()->IsRuntimeWrapExceptions();
-}
-
-DWORD CEECompileInfo::CERReliabilityContract(
-    CORINFO_ASSEMBLY_HANDLE assembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly *pAssembly = (Assembly*) assembly;
-
-    return pAssembly->GetManifestModule()->GetReliabilityContract();
-}
-
-#endif // MDIL
-
 HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembly,
                                              CORINFO_MODULE_HANDLE       module)
 {
@@ -1151,23 +1052,6 @@ CORINFO_ASSEMBLY_HANDLE
 
     return (CORINFO_ASSEMBLY_HANDLE) GetModule(module)->GetAssembly();
 }
-
-#ifdef MDIL
-HRESULT CEECompileInfo::ShouldCompile(CORINFO_METHOD_HANDLE method)
-{
-    STANDARD_VM_CONTRACT;
-    MethodDesc * pMD = (MethodDesc *)method;
-
-    BOOL fIsMinimalMDIL = GetAppDomain()->IsMinimalMDILCompilationDomain();
-    if (fIsMinimalMDIL && !pMD->HasClassOrMethodInstantiation())
-        return S_FALSE;
-
-    if (GetAppDomain()->IsNoMDILCompilationDomain())
-        return S_FALSE;
-
-    return S_OK;
-}
-#endif // MDIL
 
 #ifdef FEATURE_FUSION
 HRESULT CEECompileInfo::GetAssemblyName(
@@ -1370,9 +1254,7 @@ void GetLoadHint(ASSEMBLY * pAssembly, ASSEMBLY *pAssemblyDependency,
 HRESULT CEECompileInfo::GetLoadHint(CORINFO_ASSEMBLY_HANDLE hAssembly,
                                     CORINFO_ASSEMBLY_HANDLE hAssemblyDependency,
                                     LoadHintEnum *loadHint,
-                                    LoadHintEnum *defaultLoadHint // for MDIL we want to separate the default load hint on the assembly
-                                                                  // from the load hint on the dependency
-                                    )
+                                    LoadHintEnum *defaultLoadHint)
 {
     STANDARD_VM_CONTRACT;
 
@@ -5272,199 +5154,6 @@ BOOL CEEPreloader::IsUncompiledMethod(CORINFO_METHOD_HANDLE handle)
 #endif
 }
 
-#ifdef MDIL
-#define ELEMENT_TYPE_NULLABLE       ((CorElementType)0x17)
-#define ELEMENT_TYPE_NULLABLE_CANON ((CorElementType)0x1f)
-MethodTable *GetMethodTable(CorElementType elType)
-{
-    switch (elType)
-    {
-    default:
-        assert(!"unexpected element type");
-        return g_pCanonMethodTableClass;
-
-    case    ELEMENT_TYPE_BOOLEAN:
-    case    ELEMENT_TYPE_CHAR:
-    case    ELEMENT_TYPE_I1:
-    case    ELEMENT_TYPE_U1:
-    case    ELEMENT_TYPE_I2:
-    case    ELEMENT_TYPE_U2:
-    case    ELEMENT_TYPE_I4:
-    case    ELEMENT_TYPE_U4:
-    case    ELEMENT_TYPE_I8:
-    case    ELEMENT_TYPE_U8:
-    case    ELEMENT_TYPE_R4:
-    case    ELEMENT_TYPE_R8:
-        return MscorlibBinder::LoadPrimitiveType(elType);
-
-    case    ELEMENT_TYPE_VALUETYPE:
-        return MscorlibBinder::GetClass(CLASS__DECIMAL);
-
-    case    ELEMENT_TYPE_CLASS:
-        return g_pCanonMethodTableClass;
-
-    case    ELEMENT_TYPE_NULLABLE:
-        {
-            MethodTable *pInstMT = NULL;
-            EX_TRY
-            {
-                TypeHandle int32TH = GetMethodTable(ELEMENT_TYPE_I4);
-                pInstMT = ClassLoader::LoadGenericInstantiationThrowing(g_pNullableClass->GetModule(),
-                                                                        g_pNullableClass->GetCl(),
-                                                                        Instantiation(&int32TH, 1),
-                                                                        ClassLoader::LoadTypes
-                                                                        ).GetMethodTable();
-            }
-            EX_CATCH
-            {
-                // do nothing
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-
-            return pInstMT;
-        }
-
-    case    ELEMENT_TYPE_NULLABLE_CANON:
-        {
-            MethodTable *pInstMT = NULL;
-            EX_TRY
-            {
-                TypeHandle canonTH = g_pCanonMethodTableClass;
-                pInstMT = ClassLoader::LoadGenericInstantiationThrowing(g_pNullableClass->GetModule(),
-                                                                        g_pNullableClass->GetCl(),
-                                                                        Instantiation(&canonTH, 1),
-                                                                        ClassLoader::LoadTypes
-                                                                        ).GetMethodTable();
-            }
-            EX_CATCH
-            {
-                // do nothing
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-
-            return pInstMT;
-        }
-    }
-}
-
-void CEEPreloader::AddMDILCodeFlavorsToUncompiledMethods(CORINFO_METHOD_HANDLE handle)
-{
-    STANDARD_VM_CONTRACT;
-#if 0
-    static CorElementType popularFlavors[] = 
-    {
-        ELEMENT_TYPE_CLASS,
-        ELEMENT_TYPE_VALUETYPE,
-        ELEMENT_TYPE_I4,
-//        ELEMENT_TYPE_NULLABLE,
-        ELEMENT_TYPE_R8,
-        ELEMENT_TYPE_U1,
-        ELEMENT_TYPE_BOOLEAN,
-        ELEMENT_TYPE_U2,
-        ELEMENT_TYPE_I8,
-        ELEMENT_TYPE_U4,
-        ELEMENT_TYPE_U8,
-//        ELEMENT_TYPE_NULLABLE_CANON,
-    };
-
-    MethodDesc *pMD = GetMethod(handle);
-    MethodTable *pMT = pMD->GetMethodTable();
-
-    DWORD nGenericClassArgs = pMT->GetNumGenericArgs();
-    DWORD nGenericMethodArgs = pMD->GetNumGenericMethodArgs();
-    DWORD nGenericArgs = nGenericClassArgs + nGenericMethodArgs;
-    if (nGenericArgs == 0)
-                return;
-    DWORD flavorCount = nGenericArgs <= 1 ? COUNTOF(popularFlavors) : COUNTOF(popularFlavors)*COUNTOF(popularFlavors);
-    DWORD flavorsPerArg = nGenericArgs <= 1 ? COUNTOF(popularFlavors) : COUNTOF(popularFlavors);
-
-    for (DWORD flavor = 1; flavor < flavorCount; flavor++)
-    {
-        // First instantiate the declaring type at <...,...,...>
-
-        DWORD dwAllocSize = 0;
-        if (!ClrSafeInt<DWORD>::multiply(sizeof(TypeHandle), nGenericClassArgs, dwAllocSize))
-            ThrowHR(COR_E_OVERFLOW);
-
-        CQuickBytes qbGenericClassArgs;
-        TypeHandle* pGenericClassArgs = reinterpret_cast<TypeHandle*>(qbGenericClassArgs.AllocThrows(dwAllocSize));
-
-        DWORD remainder = flavor;
-
-        for (DWORD i = 0; i < nGenericClassArgs; i++)
-        {
-            pGenericClassArgs[i] = GetMethodTable(popularFlavors[remainder % flavorsPerArg]);
-            remainder /= flavorsPerArg;
-        }
-
-        MethodTable *pInstMT = NULL;
-
-        EX_TRY
-        {
-            pInstMT = ClassLoader::LoadGenericInstantiationThrowing(pMT->GetModule(),
-                                                                    pMT->GetCl(),
-                                                                    Instantiation(pGenericClassArgs, nGenericClassArgs),
-                                                                    ClassLoader::LoadTypes
-                                                                    ).GetMethodTable();
-        }
-        EX_CATCH
-        {
-            // do nothing
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        if (pInstMT == NULL)
-        {
-            continue;
-        }
-
-        // Now instantiate the method at <__Canon,...,__Canon>, creating the shared code.
-        // This will not create an instantiating stub just yet.
-        CQuickBytes qbGenericMethodArgs;
-        TypeHandle *genericMethodArgs = NULL;
-
-        // The rest of this method instantiates a generic method
-        // Instantiate at "__Canon" if a NULL "genericMethodArgs" is given
-        if (nGenericMethodArgs)
-        {
-            dwAllocSize = 0;
-            if (!ClrSafeInt<DWORD>::multiply(sizeof(TypeHandle), nGenericMethodArgs, dwAllocSize))
-                ThrowHR(COR_E_OVERFLOW);
-        
-            genericMethodArgs = reinterpret_cast<TypeHandle*>(qbGenericMethodArgs.AllocThrows(dwAllocSize));
-
-
-            for (DWORD i =0; i < nGenericMethodArgs; i++)
-            {
-                genericMethodArgs[i] = GetMethodTable(popularFlavors[remainder % flavorsPerArg]);
-                remainder /= flavorsPerArg;
-            }
-        }
-
-        MethodDesc *pInstMD = NULL;
-        EX_TRY
-        {
-            pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc( pMD, 
-                                                                    pMT,
-                                                                    FALSE, /* don't get unboxing entry point */
-                                                                    Instantiation(genericMethodArgs, nGenericMethodArgs),
-                                                                    TRUE,
-                                                                    FALSE,
-                                                                    TRUE);
-        }
-        EX_CATCH
-        {
-            // do nothing
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        if (pInstMD != NULL)
-            AddToUncompiledMethods(pInstMD);
-    }
-#endif
-}
-#endif
-
 static bool IsTypeAccessibleOutsideItsAssembly(TypeHandle th)
 {
     STANDARD_VM_CONTRACT;
@@ -5555,12 +5244,6 @@ static bool IsMethodCallableOutsideItsAssembly(MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef MDIL
-    // Tracking of referenced methods does not kick in during MDIL compilation, so disable this optimization.
-    if (GetAppDomain()->IsMDILCompilationDomain())
-        return true;
-#endif
-
     // Virtual methods can be called via interfaces, etc. We would need to do
     // more analysis to trim them. For now, assume that they can be referenced outside this assembly.
     if (pMD->IsVirtual())
@@ -5592,12 +5275,6 @@ void CEEPreloader::AddToUncompiledMethods(MethodDesc *pMD, BOOL fForStubs)
         if (!pMD->MayHaveNativeCode() && !pMD->IsWrapperStub())
             return;
     }
-
-#ifdef MDIL
-    BOOL fIsMinimalMDIL = GetAppDomain()->IsMinimalMDILCompilationDomain();
-    if (fIsMinimalMDIL && (fForStubs || !pMD->HasClassOrMethodInstantiation()))
-        return;
-#endif // MDIL
 
     // If it's already been compiled, don't add it to the set of uncompiled methods
     if (m_image->GetCodeAddress(pMD) != NULL)
@@ -6944,15 +6621,7 @@ void CEEPreloader::GenerateMethodStubs(
     MethodDesc* pMD = GetMethod(hMethod);
     MethodDesc* pStubMD = NULL;
 
-#ifdef MDIL
-    // Do not generate IL stubs when generating MDIL
-    // This prevents versionability concerns around IL stubs exposing internal
-    // implementation details of the CLR.
-    if (GetAppDomain()->IsMDILCompilationDomain())
-        return;
-#endif
-
-    // Do not generate IL stubs when generating MDIL
+    // Do not generate IL stubs when generating ReadyToRun images
     // This prevents versionability concerns around IL stubs exposing internal
     // implementation details of the CLR.
     if (IsReadyToRunCompilation())
@@ -7524,11 +7193,7 @@ CompilationDomain::~CompilationDomain()
 
 }
 
-void CompilationDomain::Init(
-#ifdef MDIL
-                             MDILCompilationFlags     mdilCompilationFlags
-#endif
-                             )
+void CompilationDomain::Init()
 {
     STANDARD_VM_CONTRACT;
 
@@ -7543,14 +7208,6 @@ void CompilationDomain::Init(
 
     Security::SetDefaultAppDomainProperty(GetSecurityDescriptor());
     SetCompilationDomain();
-#ifdef MDIL
-    if (mdilCompilationFlags & MDILCompilationFlags_CreateMDIL)
-        SetMDILCompilationDomain();
-    if (mdilCompilationFlags & MDILCompilationFlags_MinimalMDIL)
-        SetMinimalMDILCompilationDomain();
-    if (mdilCompilationFlags & MDILCompilationFlags_NoMDIL)
-        SetNoMDILCompilationDomain();
-#endif
 
 #ifndef FEATURE_CORECLR
     // We need the Compilation Domain to be homogeneous.  We've already forced everything to be full trust.
