@@ -12511,12 +12511,7 @@ ensure_generic_class_runtime_vtable (MonoClass *klass, MonoError *error)
 	if (!ensure_runtime_vtable (gklass, error))
 		return FALSE;
 
-	if (!fix_partial_generic_class (klass, error)) {
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
-		return FALSE;
-	}
-
-	return TRUE;
+	return fix_partial_generic_class (klass, error);
 }
 
 /**
@@ -12575,8 +12570,10 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 			klass->interfaces_inited = 1;
 		}
 	} else if (klass->generic_class){
-		if (!ensure_generic_class_runtime_vtable (klass, error))
+		if (!ensure_generic_class_runtime_vtable (klass, error)) {
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			return FALSE;
+		}
 	}
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
