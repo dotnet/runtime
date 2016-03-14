@@ -9257,15 +9257,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 					
-			if (!cmethod || mono_loader_get_last_error ()) {
-				if (mono_loader_get_last_error ()) {
-					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-					mono_error_set_from_loader_error (&cfg->error);
-					CHECK_CFG_ERROR;
-				} else {
-					LOAD_ERROR;
-				}
-			}
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {

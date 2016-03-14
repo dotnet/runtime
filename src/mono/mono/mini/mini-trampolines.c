@@ -1016,14 +1016,6 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 			mono_error_set_pending_exception (&error);
 			return NULL;
 		}
-		if (mono_loader_get_last_error ()) {
-			MonoError error;
-
-			mono_error_init (&error);
-			mono_error_set_from_loader_error (&error);
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
 		// FIXME: Error handling (how ?)
 		g_assert (res);
 	}
