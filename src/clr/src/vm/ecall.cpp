@@ -223,12 +223,8 @@ DWORD ECall::GetIDForMethod(MethodDesc *pMD)
     }
     CONTRACTL_END;
 
-#ifndef MDIL
     // We should not go here for NGened methods
-    // However, we will come here for MDIL binder generated images because the 
-    // IDs for FCALLS are not exernally known (and certainly not constant).
     _ASSERTE(!pMD->IsZapped());
-#endif
 
     INT ImplsIndex = FindImplsIndexForClass(pMD->GetMethodTable());
     if (ImplsIndex < 0)

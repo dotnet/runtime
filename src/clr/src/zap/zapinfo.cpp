@@ -397,9 +397,6 @@ void ZapInfo::ProcessReferences()
 
 void ZapInfo::CompileMethod()
 {
-#ifdef BINDER
-    _ASSERTE(!"intentionally unreachable");
-#else
     PRECONDITION(m_zapper->m_pJitCompiler != NULL);
 
     InitMethodName();
@@ -525,10 +522,8 @@ void ZapInfo::CompileMethod()
 #endif
 
     PublishCompiledMethod();
-#endif // BINDER
 }
 
-#ifndef BINDER
 #ifndef FEATURE_FULL_NGEN
 class MethodCodeComparer
 {
@@ -757,7 +752,6 @@ COUNT_T ZapImage::MethodCodeTraits::Hash(key_t k)
     return hash;
 }
 #endif
-#endif
 
 void ZapInfo::PublishCompiledMethod()
 {
@@ -787,12 +781,6 @@ void ZapInfo::PublishCompiledMethod()
     pMethod->m_pExceptionInfo = m_pExceptionInfo;
 
     pMethod->m_pFixupList = EmitFixupList();
-#ifdef BINDER
-    // in the binder, do this here instead of a later phase because of phase ordering problem (FlushPrecodesAndMethodDescs needs this)
-    // compare with the disabled code in ZapImage::OutputCodeInfo
-    if (pMethod->m_pFixupList != NULL)
-        pMethod->m_pFixupInfo = m_pImage->GetImportTable()->PlaceFixups(pMethod->m_pFixupList);
-#endif
 
     pMethod->m_pDebugInfo = EmitDebugInfo();
     pMethod->m_pGCInfo = EmitGCInfo();
@@ -813,7 +801,6 @@ void ZapInfo::PublishCompiledMethod()
 
 #endif // WIN64EXCEPTIONS
 
-#ifndef BINDER
 #ifndef FEATURE_FULL_NGEN
     //
     // Method code deduplication
@@ -831,7 +818,6 @@ void ZapInfo::PublishCompiledMethod()
 
         m_pImage->m_CodeDeduplicator.Add(pMethod);
     }
-#endif
 #endif
 
     // Remember the gc info for IL stubs associated with hot methods so they can be packed well.
@@ -1241,7 +1227,7 @@ int ZapInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     ThrowHR(COR_E_INVALIDPROGRAM);
 #else
 
-#if defined(_DEBUG) && !defined(BINDER)
+#if defined(_DEBUG)
     return(_DbgBreakCheck(szFile, iLine, szExpr));
 #else
     return(true);       // break into debugger
@@ -1500,11 +1486,7 @@ CORINFO_CLASS_HANDLE ZapInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
             // embed it after its resolved. So use a deferred reloc
 
             *ppIndirection = NULL;
-#ifdef BINDER
-            return m_pEEJitInfo->embedClassHandle(handle, ppIndirection);
-#else
             return CORINFO_CLASS_HANDLE(m_pImage->GetWrappers()->GetClassHandle(handle));
-#endif
         }
 
         *ppIndirection = m_pImage->GetImportTable()->GetClassHandleImport(handle);
@@ -1802,7 +1784,7 @@ void * ZapInfo::getHelperFtn (CorInfoHelpFunc ftnNum, void **ppIndirection)
         {
             pHelperThunk = new (m_pImage->GetHeap()) ZapHelperThunk(dwHelper);
         }
-#if defined(_TARGET_ARM_) && !defined(BINDER)
+#if defined(_TARGET_ARM_)
         if ((dwHelper & CORCOMPILE_HELPER_PTR) == 0)
             pHelperThunk = m_pImage->GetInnerPtr(pHelperThunk, THUMB_CODE);
 #endif
@@ -2405,11 +2387,9 @@ void ZapInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODU
         // No need to add dependency fixup since we will have an unconditional dependency
         // already
     }
-#ifndef BINDER
     else if (!GetCompileInfo()->IsInCurrentVersionBubble(moduleTo))
     {
     }
-#endif
     else
     {
         ZapImport * pImport = m_pImage->GetImportTable()->GetActiveDependencyImport(moduleFrom, moduleTo);
@@ -3588,7 +3568,15 @@ bool ZapInfo::canTailCall(CORINFO_METHOD_HANDLE caller,
 #ifdef FEATURE_READYTORUN_COMPILER
     // READYTORUN: FUTURE: Delay load fixups for tailcalls
     if (IsReadyToRunCompilation())
+    {
+        if (fIsTailPrefix)
+        {
+            m_zapper->Warning(W("ReadyToRun: Explicit tailcalls not supported\n"));
+            ThrowHR(E_NOTIMPL);
+        }
+
         return false;
+    }
 #endif
 
     return m_pEEJitInfo->canTailCall(caller, declaredCallee, exactCallee, fIsTailPrefix);

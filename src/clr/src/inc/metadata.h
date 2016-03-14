@@ -14,10 +14,8 @@
 #ifndef _METADATA_H_
 #define _METADATA_H_
 
-#ifndef BINDER
 #include "../md/inc/metamodelro.h"
 #include "../md/inc/liteweightstgdb.h"
-#endif
 
 class UTSemReadWrite;
 
