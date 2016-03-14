@@ -84,24 +84,14 @@ namespace System.Reflection.Metadata
             }
         }
 
-#if FUTURE
-        public
-#else
-        internal
-#endif
-        TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        public TType DecodeFieldSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);
             return decoder.DecodeFieldSignature(ref blobReader);
         }
 
-#if FUTURE
-        public 
-#else
-        internal
-#endif
-        MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        public MethodSignature<TType> DecodeMethodSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blobReader = _reader.GetBlobReader(Signature);

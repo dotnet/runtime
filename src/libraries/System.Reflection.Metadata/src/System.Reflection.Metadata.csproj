@@ -12,8 +12,7 @@
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
     <AssemblyVersion>1.3.0.0</AssemblyVersion>
-    <!-- TODO: Remove use of FUTURE -->
-    <DefineConstants>$(DefineConstants);SRM;FUTURE</DefineConstants>
+    <DefineConstants>$(DefineConstants);SRM</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageDestination Include="lib/netstandard1.1">
@@ -31,19 +30,6 @@
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Optimize>true</Optimize>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug_Future|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Optimize>false</Optimize>
-    <ErrorReport>prompt</ErrorReport>
-    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <Future>true</Future>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release_Future|AnyCPU'">
-    <Future>true</Future>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Optimize>true</Optimize>
     <ErrorReport>prompt</ErrorReport>

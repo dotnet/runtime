@@ -15,7 +15,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
     /// Represents a method (definition, reference, or standalone) or property signature.
     /// In the case of properties, the signature matches that of a getter with a distinguishing <see cref="SignatureHeader"/>.
     /// </summary>
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct MethodSignature<TType>
