@@ -332,7 +332,7 @@ ssize_t             emitter::emitGetInsAmdAny(instrDesc *id)
      if ((regmask & RBM_R23) != RBM_NONE)
          encodeMask |= 0x10;
 
-     id->idReg1((regNumber)encodeMask);  // Save in idReg1
+     id->idReg3((regNumber)encodeMask);  // Save in idReg3
 
      encodeMask = 0;
 
@@ -347,7 +347,7 @@ ssize_t             emitter::emitGetInsAmdAny(instrDesc *id)
      if ((regmask & RBM_R28) != RBM_NONE)
          encodeMask |= 0x10;
 
-     id->idReg2((regNumber)encodeMask);  // Save in idReg2
+     id->idReg4((regNumber)encodeMask);  // Save in idReg4
 
 #else
     NYI("unknown target");
@@ -419,7 +419,7 @@ ssize_t             emitter::emitGetInsAmdAny(instrDesc *id)
 
 #elif defined(_TARGET_ARM64_)
     assert(REGNUM_BITS >= 5);
-    encodeMask = id->idReg1();
+    encodeMask = id->idReg3();
 
     if ((encodeMask & 0x01) != 0)
         regmask |= RBM_R19;
@@ -432,7 +432,7 @@ ssize_t             emitter::emitGetInsAmdAny(instrDesc *id)
     if ((encodeMask & 0x10) != 0)
         regmask |= RBM_R23;
 
-    encodeMask = id->idReg2();
+    encodeMask = id->idReg4();
 
     if ((encodeMask & 0x01) != 0)
         regmask |= RBM_R24;
