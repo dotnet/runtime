@@ -3310,6 +3310,8 @@ mini_parse_debug_option (const char *option)
 		mono_align_small_structs = TRUE;
 	else if (!strcmp (option, "native-debugger-break"))
 		debug_options.native_debugger_break = TRUE;
+	else if (!strcmp (option, "disable_omit_fp"))
+		debug_options.disable_omit_fp = TRUE;
 	else
 		return FALSE;
 

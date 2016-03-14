@@ -3478,6 +3478,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->full_aot = full_aot;
+	cfg->disable_omit_fp = debug_options.disable_omit_fp;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
 	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
