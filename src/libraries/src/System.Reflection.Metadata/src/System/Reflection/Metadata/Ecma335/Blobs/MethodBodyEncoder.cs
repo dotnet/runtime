@@ -14,7 +14,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 #endif
 {
     [Flags]
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     enum MethodBodyAttributes
@@ -24,7 +24,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         LargeExceptionRegions = 2,
     }
 
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct MethodBodiesEncoder
@@ -71,7 +71,7 @@ namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
         }
     }
 
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct MethodBodyEncoder

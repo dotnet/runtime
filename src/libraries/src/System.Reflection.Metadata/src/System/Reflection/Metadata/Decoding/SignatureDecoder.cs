@@ -18,7 +18,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
     /// Decodes signature blobs.
     /// See Metadata Specification section II.23.2: Blobs and signatures.
     /// </summary>
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct SignatureDecoder<TType>

@@ -78,12 +78,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-#if FUTURE
-        public 
-#else
-        internal
-#endif
-        TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        public TType DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             var decoder = new SignatureDecoder<TType>(provider, _reader, options);
             var blob = _reader.GetBlobReader(Signature);
