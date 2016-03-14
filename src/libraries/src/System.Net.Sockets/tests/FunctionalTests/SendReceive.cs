@@ -20,7 +20,15 @@ namespace System.Net.Sockets.Tests
             _log = output;
         }
 
-        private static void SendToRecvFromAsync_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
+        public static readonly object[][] SendToRecvFromAsync_Datagram_UDP_MemberData = new object[][]
+        {
+            new object[] { IPAddress.IPv6Loopback, IPAddress.IPv6Loopback },
+            new object[] { IPAddress.Loopback, IPAddress.Loopback }
+        };
+
+        [Theory]
+        [MemberData(nameof(SendToRecvFromAsync_Datagram_UDP_MemberData))]
+        public void SendToRecvFromAsync_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
         {
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
@@ -144,7 +152,17 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static void SendRecvAsync_Stream_TCP(IPAddress listenAt, bool useMultipleBuffers)
+        public static readonly object[][] SendRecvAsync_Stream_TCP_MemberData = new object[][]
+        {
+            new object[] { IPAddress.IPv6Loopback, true },
+            new object[] { IPAddress.IPv6Loopback, false },
+            new object[] { IPAddress.Loopback, true },
+            new object[] { IPAddress.Loopback, false },
+        };
+
+        [Theory]
+        [MemberData(nameof(SendRecvAsync_Stream_TCP_MemberData))]
+        public void SendRecvAsync_Stream_TCP(IPAddress listenAt, bool useMultipleBuffers)
         {
             const int BytesToSend = 123456;
             const int ListenBacklog = 1;
@@ -329,7 +347,15 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
-        private static void SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
+        public static readonly object[][] SendRecvAsync_TcpListener_TcpClient_MemberData = new[]
+        {
+            new object[] { IPAddress.Loopback },
+            new object[] { IPAddress.IPv6Loopback },
+        };
+
+        [Theory]
+        [MemberData(nameof(SendRecvAsync_TcpListener_TcpClient_MemberData))]
+        public void SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
         {
             const int BytesToSend = 123456;
             const int ListenBacklog = 1;
@@ -397,52 +423,94 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
-        [Fact]
-        public void SendToRecvFromAsync_Single_Datagram_UDP_IPv6()
+        public static readonly object[][] SendRecvPollSync_TcpListener_TcpClient_MemberData = new[]
         {
-            SendToRecvFromAsync_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
+            new object[] { IPAddress.Loopback, true },
+            new object[] { IPAddress.Loopback, false },
+            new object[] { IPAddress.IPv6Loopback, true },
+            new object[] { IPAddress.IPv6Loopback, false },
+        };
 
-        [Fact]
-        public void SendToRecvFromAsync_Single_Datagram_UDP_IPv4()
+        [Theory]
+        [MemberData(nameof(SendRecvPollSync_TcpListener_TcpClient_MemberData))]
+        public void SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
         {
-            SendToRecvFromAsync_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
-        }
+            const int BytesToSend = 123456;
+            const int ListenBacklog = 1;
+            const int TestTimeout = 30000;
 
-        [Fact]
-        public void SendRecvAsync_Multiple_Stream_TCP_IPv6()
-        {
-            SendRecvAsync_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
-        }
+            var listener = new TcpListener(listenAt, 0);
+            listener.Start(ListenBacklog);
+            try
+            {
+                int bytesReceived = 0;
+                var receivedChecksum = new Fletcher32();
+                Task serverTask = Task.Run(async () =>
+                {
+                    using (Socket remote = await listener.AcceptSocketAsync())
+                    {
+                        var recvBuffer = new byte[256];
+                        while (true)
+                        {
+                            if (pollBeforeOperation)
+                            {
+                                Assert.True(remote.Poll(-1, SelectMode.SelectRead), "Read poll before completion should have succeeded");
+                            }
+                            int received = remote.Receive(recvBuffer, 0, recvBuffer.Length, SocketFlags.None);
+                            if (received == 0)
+                            {
+                                Assert.True(remote.Poll(0, SelectMode.SelectRead), "Read poll after completion should have succeeded");
+                                break;
+                            }
 
-        [Fact]
-        public void SendRecvAsync_Single_Stream_TCP_IPv6()
-        {
-            SendRecvAsync_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
-        }
+                            bytesReceived += received;
+                            receivedChecksum.Add(recvBuffer, 0, received);
+                        }
+                    }
+                });
 
-        [Fact]
-        public void SendRecvAsync_TcpListener_TcpClient_IPv6()
-        {
-            SendRecvAsync_TcpListener_TcpClient(IPAddress.IPv6Loopback);
-        }
+                int bytesSent = 0;
+                var sentChecksum = new Fletcher32();
+                Task clientTask = Task.Run(async () =>
+                {
+                    var clientEndpoint = (IPEndPoint)listener.LocalEndpoint;
 
-        [Fact]
-        public void SendRecvAsync_Multiple_Stream_TCP_IPv4()
-        {
-            SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
-        }
+                    using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        await client.ConnectAsync(clientEndpoint.Address, clientEndpoint.Port);
 
-        [Fact]
-        public void SendRecvAsync_Single_Stream_TCP_IPv4()
-        {
-            SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
-        }
+                        if (pollBeforeOperation)
+                        {
+                            Assert.False(client.Poll(TestTimeout, SelectMode.SelectRead), "Expected writer's read poll to fail after timeout");
+                        }
 
-        [Fact]
-        public void SendRecvAsync_TcpListener_TcpClient_IPv4()
-        {
-            SendRecvAsync_TcpListener_TcpClient(IPAddress.Loopback);
+                        var random = new Random();
+                        var sendBuffer = new byte[512];
+                        for (int remaining = BytesToSend, sent = 0; remaining > 0; remaining -= sent)
+                        {
+                            random.NextBytes(sendBuffer);
+
+                            if (pollBeforeOperation)
+                            {
+                                Assert.True(client.Poll(-1, SelectMode.SelectWrite), "Write poll should have succeeded");
+                            }
+                            sent = client.Send(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining), SocketFlags.None);
+
+                            bytesSent += sent;
+                            sentChecksum.Add(sendBuffer, 0, sent);
+                        }
+                    }
+                });
+
+                Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout), "Wait timed out");
+
+                Assert.Equal(bytesSent, bytesReceived);
+                Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
     }
 }
