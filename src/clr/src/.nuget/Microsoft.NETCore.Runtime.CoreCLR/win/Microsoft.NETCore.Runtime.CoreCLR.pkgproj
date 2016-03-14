@@ -11,12 +11,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-
-    <!-- Windows nuget package will depend upon the APISet package -->
-    <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
-      <Version>1.0.1-rc3-23803</Version>
-    </Dependency>
-
     <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll"/>
