@@ -22,28 +22,14 @@ namespace System.Runtime.InteropServices
             }
             
             byte *pBytes = (byte *) ptr;
-            int length = 0; 
+            int length = 0;
             
-            while (*pBytes != 0)
+            while (pBytes[length] != 0)
             {
-                pBytes++;
                 length++;
             }
             
-            if (length == 0)
-            {
-                return String.Empty;
-            }
-            
-            char [] chars = new char[length];
-            pBytes = (byte *) ptr;
-            
-            for (int i=0; i<length; i++)
-            {
-                chars[i] = (char) pBytes[i]; 
-            }
-            
-            return new string(chars);
+            return System.Text.Encoding.UTF8.GetString(pBytes, length);
         }
     }
 }
