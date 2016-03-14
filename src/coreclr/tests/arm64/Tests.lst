@@ -5415,7 +5415,7 @@ RelativePath=JIT\Directed\zeroinit\init_int32\init_int32.exe
 WorkingDir=JIT\Directed\zeroinit\init_int32
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3665
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=Any
 [init_int64.exe_774]
 RelativePath=JIT\Directed\zeroinit\init_int64\init_int64.exe
@@ -5436,7 +5436,7 @@ RelativePath=JIT\Directed\zeroinit\init_uint32\init_uint32.exe
 WorkingDir=JIT\Directed\zeroinit\init_uint32
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3665
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=Any
 [init_uint64.exe_777]
 RelativePath=JIT\Directed\zeroinit\init_uint64\init_uint64.exe
