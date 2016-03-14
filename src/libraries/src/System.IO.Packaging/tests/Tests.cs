@@ -41,6 +41,88 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void T201_FileFormatException()
+        {
+            var e = new FileFormatException();
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T202_FileFormatException()
+        {
+            var e2 = new IOException("Test");
+            var e = new FileFormatException("Test", e2);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T203_FileFormatException()
+        {
+            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            var e = new FileFormatException(partUri);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T203A_FileFormatException()
+        {
+            Uri partUri = null;
+            var e = new FileFormatException(partUri);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T204_FileFormatException()
+        {
+            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            var e = new FileFormatException(partUri, "Test");
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T205_FileFormatException()
+        {
+            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            var e2 = new IOException("Test");
+            var e = new FileFormatException(partUri, e2);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T205A_FileFormatException()
+        {
+            Uri partUri = null;
+            var e2 = new IOException("Test");
+            var e = new FileFormatException(partUri, e2);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T206_FileFormatException()
+        {
+            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            var e2 = new IOException("Test");
+            var e = new FileFormatException(partUri, "Test", e2);
+            Assert.NotNull(e);
+        }
+
+        [Fact]
+        public void T208_InvalidParameter()
+        {
+            var ba = File.ReadAllBytes("plain.docx");
+            var documentPath = "document.xml";
+            Uri partUriDocument = PackUriHelper.CreatePartUri(new Uri(documentPath, UriKind.Relative));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(ba, 0, ba.Length);
+                Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+                PackagePart packagePartDocument = null;
+                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop= ;"); });
+            }
+        }
+
+        [Fact]
         public void T172_EmptyRelationshipPart()
         {
             var docName = "EmptyRelationshipElement.docx";
