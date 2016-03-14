@@ -14,6 +14,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
     <Compile Include="DiagnosticSourceTests.cs" />
   </ItemGroup>
   <ItemGroup>

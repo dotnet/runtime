@@ -7,23 +7,50 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <!-- unset PackageTargetFramework we'll use PackageDestination instead -->
+    <PackageTargetFramework />
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetFramework)' == ''">
+
+  <!-- By default we build the 'latest'  which is netstandard1.3 -->
+  <ItemGroup Condition="'$(TargetGroup)' == ''">
+    <PackageDestination Include="lib/netstandard1.3">
+      <TargetFramework>netstandard1.3</TargetFramework>
+    </PackageDestination>
+
+    <!-- duplicate in net46 folder so older nuget clients can consume -->
+    <PackageDestination Include="lib/net46">
+      <TargetFramework>net46</TargetFramework>
+    </PackageDestination>
+  </ItemGroup>
+
+  <!-- However to allow it to work on V4.5 runtimes and other old platforms
+       we also have a separate complilation of this DLL that works for V4.5
+       (which is netstandard1.1 -->
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
     <PackageDestination Include="lib/netstandard1.1">
       <TargetFramework>netstandard1.1</TargetFramework>
     </PackageDestination>
-    <!-- Support downlevel targets -->
+
+    <!-- duplicate in portable folder so older nuget clients can consume -->
     <PackageDestination Include="lib/portable-net45+win8+wpa81">
       <TargetFramework>portable-net45+win8+wpa81</TargetFramework>
     </PackageDestination>
   </ItemGroup>
-  <!-- Default configurations to help VS understand the configurations -->
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
+      <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+  </PropertyGroup> 
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <NoWarn>0420</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <NoWarn>0420</NoWarn>
   </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
