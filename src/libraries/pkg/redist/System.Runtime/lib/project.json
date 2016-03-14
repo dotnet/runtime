@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "System.Runtime": "4.0.20"
-  },
-  "frameworks": {
-    "dnxcore50": {}
-  }
-}

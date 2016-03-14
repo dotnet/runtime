@@ -9,7 +9,11 @@
     <Project Include="System.AppContext.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.AppContext.csproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project> -->
+    <Project Include="redist\System.AppContext.depproj">
       <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>

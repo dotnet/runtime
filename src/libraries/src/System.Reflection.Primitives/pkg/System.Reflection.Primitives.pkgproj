@@ -9,6 +9,7 @@
       <SupportedFramework>net45;netcore45;netstandardapp1.5;wp8;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="any\System.Reflection.Primitives.pkgproj" />
+    <ProjectReference Include="aot\System.Reflection.Primitives.pkgproj" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
