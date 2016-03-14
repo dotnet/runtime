@@ -17,10 +17,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
   
   <ItemGroup Condition="'$(TargetGroup)'==''">
+    <!--<Compile Include="System\ComponentModel\BrowsableAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\CategoryAttribute.cs" />-->
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
+    <!--<Compile Include="System\ComponentModel\DescriptionAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />-->
     <Compile Include="System\ComponentModel\IComponent.cs" />
     <Compile Include="System\ComponentModel\IContainer.cs" />
+    <!--<Compile Include="System\ComponentModel\ImmutableObjectAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\InitializationEventAttribute.cs" />-->
     <Compile Include="System\ComponentModel\ISite.cs" />
+    <!--<Compile Include="System\ComponentModel\LocalizableAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\MergablePropertyAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\NotifyParentPropertyAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\ParenthesizePropertyNameAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\ReadOnlyAttribute.cs" />-->
+    <!--<Compile Include="System\ComponentModel\RefreshProperties.cs" />-->
+    <!--<Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />-->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='net45'">
     <TargetingPackReference Include="mscorlib" />
