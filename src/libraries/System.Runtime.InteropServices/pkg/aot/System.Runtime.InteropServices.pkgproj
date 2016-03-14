@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Runtime.InteropServices.csproj">
+    <ProjectReference Include="..\..\src\redist\System.Runtime.InteropServices.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>

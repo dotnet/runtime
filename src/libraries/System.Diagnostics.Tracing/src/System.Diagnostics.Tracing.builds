@@ -6,7 +6,14 @@
     <Project Include="System.Diagnostics.Tracing.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Diagnostics.Tracing.csproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project> -->
+    <Project Include="redist\System.Diagnostics.Tracing.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.Diagnostics.Tracing.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>

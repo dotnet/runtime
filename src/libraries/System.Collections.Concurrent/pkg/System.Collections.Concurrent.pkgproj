@@ -4,6 +4,9 @@
     <Version>4.0.12.0</Version>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Version>4.0.12</Version>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.Collections.Concurrent.depproj">
       <SupportedFramework>net45;netcore45;wpa81</SupportedFramework>
@@ -11,8 +14,7 @@
     <ProjectReference Include="..\ref\System.Collections.Concurrent.csproj">
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
-    <!-- reference .CSProj rather than .builds since we don't need the desktop facade -->
-    <ProjectReference Include="..\src\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="..\src\System.Collections.Concurrent.builds" />
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
     <InboxOnTargetFramework Include="net45" />
