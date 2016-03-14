@@ -313,9 +313,13 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
 
                     if wintypeName == "win:UnicodeString":
                         lTTngImpl.append("    INT " + paramname + "_path_size = -1;\n")
+                        lTTngImpl.append("    PathCharString " + paramname + "_PS;\n")
                         lTTngImpl.append("    INT " + paramname + "_full_name_path_size")
-                        lTTngImpl.append(" = WideCharToMultiByte( CP_ACP, 0, " + paramname + ", -1, NULL, 0, NULL, NULL );\n")
-                        lTTngImpl.append("    CHAR* " + paramname + "_full_name = NULL;\n")
+                        lTTngImpl.append(" = (PAL_wcslen(" + paramname + ") + 1)*sizeof(WCHAR);\n")
+                        lTTngImpl.append("    CHAR* " + paramname + "_full_name = ")
+                        lTTngImpl.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
+                        lTTngImpl.append("    if (" + paramname + "_full_name == NULL )")
+                        lTTngImpl.append("    { return ERROR_WRITE_FAULT; }\n")
 
             lTTngImpl.append("\n")
 
@@ -343,23 +347,18 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
 
                     if ctf_type == "ctf_string" and wintypeName == "win:UnicodeString":
                         #emit code to convert unicode to ansi string
-                        lTTngImpl.append("    "+ paramname + "_full_name = (CHAR*)malloc(")
-                        lTTngImpl.append(paramname + "_full_name_path_size*sizeof(CHAR));\n")
-
-                        lTTngImpl.append("    _ASSERTE("+paramname+ "_full_name != NULL);\n")
-                        lTTngImpl.append("    if(" + paramname + "_full_name == NULL){goto LExit;}\n\n")
 
                         lTTngImpl.append("    " + paramname+ "_path_size = WideCharToMultiByte( CP_ACP, 0, ")
                         lTTngImpl.append(paramname + ", -1, ")
                         lTTngImpl.append(paramname + "_full_name, ")
                         lTTngImpl.append(paramname + "_full_name_path_size, NULL, NULL );\n")
 
-                        lTTngImpl.append("    _ASSERTE(" +paramname+ "_path_size == " )
-                        lTTngImpl.append(paramname + "_full_name_path_size );\n")
+                        lTTngImpl.append("    _ASSERTE(" +paramname+ "_path_size < " )
+                        lTTngImpl.append(paramname + "_full_name_path_size );\n    ")
 
-                        lTTngImpl.append("    if( " + paramname + "_path_size == 0 ){ Error = ERROR_INVALID_PARAMETER; goto LExit;}\n")
+                        lTTngImpl.append(paramname + "_PS.CloseBuffer(" + paramname + "_path_size );\n")
+                        lTTngImpl.append("    if( " + paramname + "_path_size == 0 ){ return ERROR_INVALID_PARAMETER; }\n")
 
-                        vars_to_be_freed.append(paramname + "_full_name")
 
                         linefnbody.append(paramname + "_full_name")
                         linefnbody.append(",\n")
@@ -388,13 +387,6 @@ def generateLttngTpProvider(providerName,eventNodes,allTemplates):
         lTTngImpl.extend(linefnbody)
         lTTngImpl.append("        Error = ERROR_SUCCESS;\n")
 
-        if len(vars_to_be_freed) > 0:
-            lTTngImpl.append("LExit:\n")
-            vars_to_be_freed.reverse()
-            for var in vars_to_be_freed:
-                lTTngImpl.append("        if ("+ var + " != NULL) {free(" )
-                lTTngImpl.append(var)
-                lTTngImpl.append(");}\n")
 
         lTTngImpl.append("\nreturn Error;\n}\n")
 
@@ -549,6 +541,14 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
         lTTngImpl.write("""
 #define TRACEPOINT_DEFINE
 #define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
+
+#include "stdlib.h"
+#include "pal_mstypes.h"
+#include "pal_error.h"
+#include "pal.h"
+#define PAL_free free
+#define PAL_realloc realloc
+#include "pal/stackstring.hpp"
 """)
         lTTngImpl.write("#include \"" + lttngevntheadershortname + "\"\n\n")
 
