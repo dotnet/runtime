@@ -28,6 +28,7 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="dblarray4.cs" />
