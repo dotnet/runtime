@@ -10,10 +10,12 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [Flags]
         internal enum PollEvents : short
         {
             POLLNONE = 0x0000,  // No events occurred.
-            POLLIN   = 0x0001,  // any readable data available
+            POLLIN   = 0x0001,  // non-urgent readable data available
+            POLLPRI  = 0x0002,  // urgent readable data available
             POLLOUT  = 0x0004,  // data can be written without blocked
             POLLERR  = 0x0008,  // an error occurred
             POLLHUP  = 0x0010,  // the file descriptor hung up
@@ -46,7 +48,7 @@ internal static partial class Interop
         /// <param name="timeout">The amount of time to wait; -1 for infinite, 0 for immediate return, and a positive number is the number of milliseconds</param>
         /// <param name="triggered">The events that were returned by the poll call. May be PollEvents.POLLNONE in the case of a timeout.</param>
         /// <returns>An error or Error.SUCCESS.</returns>
-        internal static unsafe Error Poll(SafeFileHandle fd, PollEvents events, int timeout, out PollEvents triggered)
+        internal static unsafe Error Poll(SafeHandle fd, PollEvents events, int timeout, out PollEvents triggered)
         {
             bool gotRef = false;
             try

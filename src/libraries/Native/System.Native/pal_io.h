@@ -218,7 +218,8 @@ enum SysConfName : int32_t
  */
 enum PollEvents : int16_t
 {
-    PAL_POLLIN = 0x0001,   /* any readable data available */
+    PAL_POLLIN = 0x0001,   /* non-urgent readable data available */
+    PAL_POLLPRI = 0x0002,  /* urgent readable data available */
     PAL_POLLOUT = 0x0004,  /* data can be written without blocked */
     PAL_POLLERR = 0x0008,  /* an error occurred */
     PAL_POLLHUP = 0x0010,  /* the file descriptor hung up */

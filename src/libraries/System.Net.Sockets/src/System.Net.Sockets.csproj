@@ -442,6 +442,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MulticastOption.cs">
       <Link>Interop\Unix\System.Native\Interop.MulticastOption.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Interop\Unix\System.Native\Interop.Poll.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs">
       <Link>Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs</Link>
     </Compile>
