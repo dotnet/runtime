@@ -943,7 +943,7 @@ protected:
             }
 
             // Note that we use the _idReg3 and _idReg4 fields to hold
-            // the live gcrefReg mask for the call instructions on arm
+            // the live gcrefReg mask for the call instructions on arm64
             //
             struct
             {
