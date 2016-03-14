@@ -1,9 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -16,12 +15,17 @@ namespace System.Globalization.Tests
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        
+
         public static IEnumerable<object[]> IndexOf_TestData()
         {
             // Empty string
             yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
+
+            // OrdinalIgnoreCase
+            yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2 };
+            yield return new object[] { s_invariantCompare, "Hello", "L", 0, 5, CompareOptions.OrdinalIgnoreCase, 2 };
+            yield return new object[] { s_invariantCompare, "Hello", "h", 0, 5, CompareOptions.OrdinalIgnoreCase, 0 };
 
             // Long strings
             yield return new object[] { s_invariantCompare, new string('b', 100) + new string('a', 5555), "aaaaaaaaaaaaaaa", 0, 5655, CompareOptions.None, 100 };
@@ -85,7 +89,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
         {
-            // Searches for the ligature �;
+            // Searches for the ligature Æ
             string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, 24 };
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 };
@@ -339,13 +343,13 @@ namespace System.Globalization.Tests
                 else return -1;
             }
             if (string2 == null) return -1;
- 
+
             if (string2.Length > string1.Length) return -1;
- 
+
             for (int i = 0; i <= string1.Length - string2.Length; i++)
             {
                 bool match = true;
-                for (int j = 0; j<string2.Length; j++)
+                for (int j = 0; j < string2.Length; j++)
                 {
                     if (string1[i + j] != string2[j])
                     {
