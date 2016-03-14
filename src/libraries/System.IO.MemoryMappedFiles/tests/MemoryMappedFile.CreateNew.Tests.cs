@@ -229,9 +229,6 @@ namespace System.IO.MemoryMappedFiles.Tests
                 {
                     continue;
                 }
-                string mapName = tmpMapName == "CreateUniqueMapName()" ? 
-                    CreateUniqueMapName() : 
-                    tmpMapName;
 
                 foreach (long tmpCapacity in capacities)
                 {
@@ -245,6 +242,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                         {
                             foreach (HandleInheritability inheritability in inheritabilities)
                             {
+                                string mapName = tmpMapName == "CreateUniqueMapName()" ? CreateUniqueMapName() : tmpMapName;
                                 yield return new object[] { mapName, capacity, access, option, inheritability };
                             }
                         }
