@@ -11,7 +11,7 @@ namespace System.Diagnostics
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
     /// </summary>
     public abstract class DiagnosticSource
-    {
+    { 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
         /// is given a name, which identifies it as well as a object (typically an anonymous type)

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.builds">
-      <SupportedFramework>net45;netcore45;netstandardapp1.5;wpa81</SupportedFramework>
+      <SupportedFramework>net46;net45;netcore45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
 
