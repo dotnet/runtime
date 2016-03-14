@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -13,12 +12,30 @@ namespace System.Globalization.Tests
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        
+
         public static IEnumerable<object[]> LastIndexOf_TestData()
         {
             // Empty strings
             yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 2 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "", "a", -1, 0, CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "", "", 0, -1, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "", "a", 0, -1, CompareOptions.None, -1 };
+
+            // Start index = source.Length
+            yield return new object[] { s_invariantCompare, "Hello", "l", 5, 5, CompareOptions.None, 3 };
+            yield return new object[] { s_invariantCompare, "Hello", "b", 5, 5, CompareOptions.None, -1 };
+            yield return new object[] { s_invariantCompare, "Hello", "l", 5, 0, CompareOptions.None, -1 };
+
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 5, CompareOptions.None, 4 };
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 0, CompareOptions.None, 4 };
+
+            // OrdinalIgnoreCase
+            yield return new object[] { s_invariantCompare, "Hello", "l", 4, 5, CompareOptions.OrdinalIgnoreCase, 3 };
+            yield return new object[] { s_invariantCompare, "Hello", "L", 4, 5, CompareOptions.OrdinalIgnoreCase, 3 };
+            yield return new object[] { s_invariantCompare, "Hello", "h", 4, 5, CompareOptions.OrdinalIgnoreCase, 0 };
 
             // Long strings
             yield return new object[] { s_invariantCompare, new string('a', 5555) + new string('b', 100), "aaaaaaaaaaaaaaa", 5654, 5655, CompareOptions.None, 5540 };
@@ -59,7 +76,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
-            // Searches for the ligature Æ;
+            // Searches for the ligature Æ
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source, "AE", 25, 18, CompareOptions.None, 24 };
             yield return new object[] { s_invariantCompare, source, "ae", 25, 18, CompareOptions.None, 9 };
@@ -294,7 +311,6 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 6));
             Assert.Throws<ArgumentOutOfRangeException>("count", () => s_invariantCompare.LastIndexOf("Test", 's', 4, 7, CompareOptions.None));
         }
-
 
         private static char UnassignedUnicodeCharacter()
         {

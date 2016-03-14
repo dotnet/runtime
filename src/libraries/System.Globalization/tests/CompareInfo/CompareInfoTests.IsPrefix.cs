@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -13,7 +12,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        
+
         public static IEnumerable<object[]> IsPrefix_TestData()
         {
             // Empty strings
@@ -73,7 +72,7 @@ namespace System.Globalization.Tests
             IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true);
             IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false);
         }
-        
+
         [Fact]
         [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void IsPrefix_UnassignedUnicode()
@@ -81,6 +80,7 @@ namespace System.Globalization.Tests
             IsPrefix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, true);
             IsPrefix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.IgnoreNonSpace, true);
         }
+
         [Fact]
         public void IsPrefix_Invalid()
         {
