@@ -44,7 +44,7 @@ namespace System.Net.Http
             Debug.WriteLine(message);
         }
 
-        public static void Trace(string format, object arg0)
+        public static void Trace(string format, bool arg0)
         {
             if (!IsTraceEnabled())
             {
@@ -54,7 +54,27 @@ namespace System.Net.Http
             Debug.WriteLine(format, arg0);
         }
 
-        public static void Trace(string format, object arg0, object arg1)
+        public static void Trace(string format, int arg0)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0);
+        }
+
+        public static void Trace(string format, string arg0)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0);
+        }
+
+        public static void Trace(string format, string arg0, string arg1)
         {
             if (!IsTraceEnabled())
             {
@@ -64,7 +84,7 @@ namespace System.Net.Http
             Debug.WriteLine(format, arg0, arg1);
         }
 
-        public static void Trace(string format, object arg0, object arg1, object arg2)
+        public static void Trace(string format, IntPtr arg0, bool arg1, bool arg2)
         {
             if (!IsTraceEnabled())
             {
@@ -74,7 +94,7 @@ namespace System.Net.Http
             Debug.WriteLine(format, arg0, arg1, arg2);
         }
 
-        public static void Trace(string format, object arg0, object arg1, object arg2, object arg3)
+        public static void Trace(string format, string arg0, bool arg1, string arg2, string arg3)
         {
             if (!IsTraceEnabled())
             {
