@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -33,8 +30,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public void ThrowNullSameAsRethrow()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ThrowNullSameAsRethrow(bool useInterpreter)
         {
             UnaryExpression rethrow = Expression.Rethrow();
             UnaryExpression nullThrow = Expression.Throw(null);
@@ -46,29 +44,13 @@ namespace System.Linq.Expressions.Tests
                     ),
                     Expression.Catch(typeof(TestException), nullThrow)
                 );
-            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(false);
+            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(useInterpreter);
             Assert.Throws<TestException>(doRethrowTwice);
         }
 
-        [Fact]
-        public void ThrowNullSameAsRethrowInterpreted()
-        {
-            UnaryExpression rethrow = Expression.Rethrow();
-            UnaryExpression nullThrow = Expression.Throw(null);
-            Assert.Equal(rethrow.GetType(), nullThrow.GetType());
-            TryExpression rethrowTwice = Expression.TryCatch(
-                Expression.TryCatch(
-                        Expression.Throw(Expression.Constant(new TestException())),
-                        Expression.Catch(typeof(TestException), rethrow)
-                    ),
-                    Expression.Catch(typeof(TestException), nullThrow)
-                );
-            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(true);
-            Assert.Throws<TestException>(doRethrowTwice);
-        }
-
-        [Fact]
-        public void TypedThrowNullSameAsRethrow()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void TypedThrowNullSameAsRethrow(bool useInterpreter)
         {
             UnaryExpression rethrow = Expression.Rethrow(typeof(int));
             UnaryExpression nullThrow = Expression.Throw(null, typeof(int));
@@ -80,86 +62,106 @@ namespace System.Linq.Expressions.Tests
                     ),
                     Expression.Catch(typeof(TestException), nullThrow)
                 );
-            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(false);
+            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(useInterpreter);
             Assert.Throws<TestException>(() => doRethrowTwice());
         }
 
-        [Fact]
-        public void TypedThrowNullSameAsRethrowInterpreted()
-        {
-            UnaryExpression rethrow = Expression.Rethrow(typeof(int));
-            UnaryExpression nullThrow = Expression.Throw(null, typeof(int));
-            Assert.Equal(rethrow.GetType(), nullThrow.GetType());
-            TryExpression rethrowTwice = Expression.TryCatch(
-                Expression.TryCatch(
-                        Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
-                        Expression.Catch(typeof(TestException), rethrow)
-                    ),
-                    Expression.Catch(typeof(TestException), nullThrow)
-                );
-            Action doRethrowTwice = Expression.Lambda<Action>(rethrowTwice).Compile(true);
-            Assert.Throws<TestException>(() => doRethrowTwice());
-        }
-
-        [Fact]
-        public void CannotRethrowOutsideCatch()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CannotRethrowOutsideCatch(bool useInterpreter)
         {
             LambdaExpression rethrowNothing = Expression.Lambda<Action>(Expression.Rethrow());
-            Assert.Throws<InvalidOperationException>(() => rethrowNothing.Compile(false));
+            Assert.Throws<InvalidOperationException>(() => rethrowNothing.Compile(useInterpreter));
         }
 
-        [Fact]
-        public void CannotRethrowOutsideCatchInterpreted()
-        {
-            LambdaExpression rethrowNothing = Expression.Lambda<Action>(Expression.Rethrow());
-            Assert.Throws<InvalidOperationException>(() => rethrowNothing.Compile(true));
-        }
-
-        [Fact]
-        public void CanCatchAndThrowNonExceptions()
+        [Theory]
+        [InlineData(false)]
+        public void CanCatchAndThrowNonExceptions(bool useInterpreter)
         {
             TryExpression throwCatchString = Expression.TryCatch(
                 Expression.Throw(Expression.Constant("Hello")),
                 Expression.Catch(typeof(string), Expression.Empty())
                 );
-            Expression.Lambda<Action>(throwCatchString).Compile(false)();
+            Expression.Lambda<Action>(throwCatchString).Compile(useInterpreter)();
         }
 
         [Fact]
         [ActiveIssue(5898)]
         public void CanCatchAndThrowNonExceptionsInterpreted()
         {
-            TryExpression throwCatchString = Expression.TryCatch(
-                Expression.Throw(Expression.Constant("Hello")),
-                Expression.Catch(typeof(string), Expression.Empty())
-                );
-            Expression.Lambda<Action>(throwCatchString).Compile(true)();
+            CanCatchAndThrowNonExceptions(true);
         }
 
-        [Fact]
-        public void CanAccessExceptionCaught()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ThrowNullThrowsNRE(bool useInterpreter)
+        {
+            Action throwNull = Expression.Lambda<Action>(
+                Expression.Throw(Expression.Constant(null, typeof(Expression)))
+                ).Compile(useInterpreter);
+            Assert.Throws<NullReferenceException>(throwNull);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ThrowNullThrowsCatchableNRE(bool useInterpreter)
+        {
+            Func<int> throwCatchNull = Expression.Lambda<Func<int>>(
+                Expression.TryCatch(
+                    Expression.Throw(Expression.Constant(null, typeof(ArgumentException)), typeof(int)),
+                    Expression.Catch(typeof(ArgumentException), Expression.Constant(1)),
+                    Expression.Catch(typeof(NullReferenceException), Expression.Constant(2)),
+                    Expression.Catch(typeof(Expression), Expression.Constant(3))
+                    )
+                ).Compile(useInterpreter);
+            Assert.Equal(2, throwCatchNull());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanCatchExceptionAsObject(bool useInterpreter)
+        {
+            Func<int> throwCatchAsObject = Expression.Lambda<Func<int>>(
+                Expression.TryCatch(
+                    Expression.Throw(Expression.Constant(new Exception()), typeof(int)),
+                    Expression.Catch(typeof(ArgumentException), Expression.Constant(1)),
+                    Expression.Catch(typeof(object), Expression.Constant(2))
+                    )
+                ).Compile(useInterpreter);
+            Assert.Equal(2, throwCatchAsObject());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanCatchExceptionAsObjectObtainingException(bool useInterpreter)
+        {
+            Exception testException = new Exception();
+            ParameterExpression param = Expression.Parameter(typeof(object));
+            Func<object> throwCatchAsObject = Expression.Lambda<Func<object>>(
+                Expression.TryCatch(
+                    Expression.Throw(Expression.Constant(testException), typeof(object)),
+                    Expression.Catch(typeof(ArgumentException), Expression.Constant("Will be skipped", typeof(object))),
+                    Expression.Catch(param, param)
+                    )
+                ).Compile(useInterpreter);
+            Assert.Same(testException, throwCatchAsObject());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanAccessExceptionCaught(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Variable(typeof(Exception));
             TryExpression throwCatch = Expression.TryCatch(
                 Expression.Throw(Expression.Constant(new TestException()), typeof(string)),
                 Expression.Catch(variable, Expression.Property(variable, "Message"))
                 );
-            Assert.Equal("This is a test exception", Expression.Lambda<Func<string>>(throwCatch).Compile(false)());
+            Assert.Equal("This is a test exception", Expression.Lambda<Func<string>>(throwCatch).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void CanAccessExceptionCaughtInterpreted()
-        {
-            ParameterExpression variable = Expression.Variable(typeof(Exception));
-            TryExpression throwCatch = Expression.TryCatch(
-                Expression.Throw(Expression.Constant(new TestException()), typeof(string)),
-                Expression.Catch(variable, Expression.Property(variable, "Message"))
-                );
-            Assert.Equal("This is a test exception", Expression.Lambda<Func<string>>(throwCatch).Compile(true)());
-        }
-
-        [Fact]
-        public void FromMakeMethods()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FromMakeMethods(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(int),
@@ -168,20 +170,7 @@ namespace System.Linq.Expressions.Tests
                 null,
                 new[] { Expression.MakeCatchBlock(typeof(TestException), null, Expression.Constant(3), null) }
                 );
-            Assert.Equal(3, Expression.Lambda<Func<int>>(tryExp).Compile(false)());
-        }
-
-        [Fact]
-        public void FromMakeMethodsInterpreted()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(int),
-                Expression.MakeUnary(ExpressionType.Throw, Expression.Constant(new TestException()), typeof(int)),
-                null,
-                null,
-                new[] { Expression.MakeCatchBlock(typeof(TestException), null, Expression.Constant(3), null) }
-                );
-            Assert.Equal(3, Expression.Lambda<Func<int>>(tryExp).Compile(true)());
+            Assert.Equal(3, Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -271,10 +260,11 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("finally", () => Expression.TryCatchFinally(Expression.Constant(1), value, Expression.Catch(typeof(object), Expression.Constant(1))));
         }
 
-        [Fact]
-        public void NonExceptionDerivedExceptionWrapped()
+        [Theory]
+        [InlineData(false)]
+        public void NonExceptionDerivedExceptionWrapped(bool useInterpreter)
         {
-            Action throwWrapped = Expression.Lambda<Action>(Expression.Throw(Expression.Constant(""))).Compile(false);
+            Action throwWrapped = Expression.Lambda<Action>(Expression.Throw(Expression.Constant(""))).Compile(useInterpreter);
             Exception ex = Assert.ThrowsAny<Exception>(throwWrapped);
             Assert.Equal("System.Runtime.CompilerServices.RuntimeWrappedException", ex.GetType().FullName);
         }
@@ -283,98 +273,63 @@ namespace System.Linq.Expressions.Tests
         [ActiveIssue(5898)]
         public void NonExceptionDerivedExceptionWrappedInterpreted()
         {
-            Action throwWrapped = Expression.Lambda<Action>(Expression.Throw(Expression.Constant(""))).Compile(true);
-            Exception ex = Assert.ThrowsAny<Exception>(throwWrapped);
-            Assert.Equal("System.Runtime.CompilerServices.RuntimeWrappedException", ex.GetType().FullName);
+            NonExceptionDerivedExceptionWrapped(true);
         }
 
-        [Fact]
-        public void FinallyDoesNotDetermineValue()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyDoesNotDetermineValue(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Constant(2));
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(false)());
+            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyDoesNotDetermineValueInterpreted()
-        {
-            TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Constant(2));
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyDoesNotNeedToMatchType()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyDoesNotNeedToMatchType(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Constant(""));
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(false)());
+            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyDoesNotNeedToMatchTypeInterpreted()
-        {
-            TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Constant(""));
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyCanBeVoid()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyCanBeVoid(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Empty());
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(false)());
+            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyCanBeVoidInterpreted()
-        {
-            TryExpression finally2 = Expression.TryFinally(Expression.Constant(1), Expression.Empty());
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyCanBeNonVoidWithVoidTry()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyCanBeNonVoidWithVoidTry(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryFinally(Expression.Empty(), Expression.Constant(0));
-            Expression.Lambda<Action>(finally2).Compile(false)();
+            Expression.Lambda<Action>(finally2).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void FinallyCanBeNonVoidWithVoidTryInterpreted()
-        {
-            TryExpression finally2 = Expression.TryFinally(Expression.Empty(), Expression.Constant(0));
-            Expression.Lambda<Action>(finally2).Compile(true)();
-        }
-
-        [Fact]
-        public void FinallyDoesNotDetermineValueNothingCaught()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyDoesNotDetermineValueNothingCaught(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryCatchFinally(
                 Expression.Constant(1),
                 Expression.Constant(2),
                 Expression.Catch(typeof(object), Expression.Constant(3))
                 );
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(false)());
+            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyDoesNotDetermineValueNothingCaughtInterpreted()
-        {
-            TryExpression finally2 = Expression.TryCatchFinally(
-                Expression.Constant(1),
-                Expression.Constant(2),
-                Expression.Catch(typeof(object), Expression.Constant(3))
-                );
-            Assert.Equal(1, Expression.Lambda<Func<int>>(finally2).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyDoesNotDetermineValueSomethingCaught()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyDoesNotDetermineValueSomethingCaught(bool useInterpreter)
         {
             TryExpression finally2 = Expression.TryCatchFinally(
                 Expression.Throw(Expression.Constant(new ArgumentException()), typeof(int)),
                 Expression.Constant(2),
                 Expression.Catch(typeof(ArgumentException), Expression.Constant(3))
                 );
-            Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(false)());
+            Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -388,9 +343,10 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(true)());
         }
 
-        [Fact]
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         [ActiveIssue(3838)]
-        public void FaultNotTriggeredOnNoThrow()
+        public void FaultNotTriggeredOnNoThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
             LabelTarget target = Expression.Label(typeof(int));
@@ -404,31 +360,13 @@ namespace System.Linq.Expressions.Tests
                 Expression.Return(target, variable),
                 Expression.Label(target, Expression.Default(typeof(int)))
                 );
-            Assert.Equal(1, Expression.Lambda<Func<int>>(block).Compile(false)());
+            Assert.Equal(1, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Fact]
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         [ActiveIssue(3838)]
-        public void FaultNotTriggeredOnNoThrowInterpreted()
-        {
-            ParameterExpression variable = Expression.Parameter(typeof(int));
-            LabelTarget target = Expression.Label(typeof(int));
-            BlockExpression block = Expression.Block(
-                new[] { variable },
-                Expression.Assign(variable, Expression.Constant(1)),
-                Expression.TryFault(
-                    Expression.Empty(),
-                    Expression.Assign(variable, Expression.Constant(2))
-                    ),
-                Expression.Return(target, variable),
-                Expression.Label(target, Expression.Default(typeof(int)))
-                );
-            Assert.Equal(1, Expression.Lambda<Func<int>>(block).Compile(true)());
-        }
-
-        [Fact]
-        [ActiveIssue(3838)]
-        public void FaultTriggeredOnThrow()
+        public void FaultTriggeredOnThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
             LabelTarget target = Expression.Label(typeof(int));
@@ -445,33 +383,12 @@ namespace System.Linq.Expressions.Tests
                 Expression.Return(target, variable),
                 Expression.Label(target, Expression.Default(typeof(int)))
                 );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(false)());
+            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Fact]
-        [ActiveIssue(3838)]
-        public void FaultTriggeredOnThrowInterpreted()
-        {
-            ParameterExpression variable = Expression.Parameter(typeof(int));
-            LabelTarget target = Expression.Label(typeof(int));
-            BlockExpression block = Expression.Block(
-                new[] { variable },
-                Expression.Assign(variable, Expression.Constant(1)),
-                Expression.TryCatch(
-                    Expression.TryFault(
-                        Expression.Throw(Expression.Constant(new TestException())),
-                        Expression.Assign(variable, Expression.Constant(2))
-                        ),
-                    Expression.Catch(typeof(TestException), Expression.Empty())
-                    ),
-                Expression.Return(target, variable),
-                Expression.Label(target, Expression.Default(typeof(int)))
-                );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyTriggeredOnNoThrow()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyTriggeredOnNoThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
             LabelTarget target = Expression.Label(typeof(int));
@@ -485,29 +402,12 @@ namespace System.Linq.Expressions.Tests
                 Expression.Return(target, variable),
                 Expression.Label(target, Expression.Default(typeof(int)))
                 );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(false)());
+            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyTriggeredOnNoThrowInterpreted()
-        {
-            ParameterExpression variable = Expression.Parameter(typeof(int));
-            LabelTarget target = Expression.Label(typeof(int));
-            BlockExpression block = Expression.Block(
-                new[] { variable },
-                Expression.Assign(variable, Expression.Constant(1)),
-                Expression.TryFinally(
-                    Expression.Empty(),
-                    Expression.Assign(variable, Expression.Constant(2))
-                    ),
-                Expression.Return(target, variable),
-                Expression.Label(target, Expression.Default(typeof(int)))
-                );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(true)());
-        }
-
-        [Fact]
-        public void FinallyTriggeredOnThrow()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void FinallyTriggeredOnThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
             LabelTarget target = Expression.Label(typeof(int));
@@ -524,32 +424,12 @@ namespace System.Linq.Expressions.Tests
                 Expression.Return(target, variable),
                 Expression.Label(target, Expression.Default(typeof(int)))
                 );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(false)());
+            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyTriggeredOnThrowInterpreted()
-        {
-            ParameterExpression variable = Expression.Parameter(typeof(int));
-            LabelTarget target = Expression.Label(typeof(int));
-            BlockExpression block = Expression.Block(
-                new[] { variable },
-                Expression.Assign(variable, Expression.Constant(1)),
-                Expression.TryCatch(
-                    Expression.TryFinally(
-                        Expression.Throw(Expression.Constant(new TestException())),
-                        Expression.Assign(variable, Expression.Constant(2))
-                        ),
-                    Expression.Catch(typeof(TestException), Expression.Empty())
-                    ),
-                Expression.Return(target, variable),
-                Expression.Label(target, Expression.Default(typeof(int)))
-                );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(true)());
-        }
-
-        [Fact]
-        public void CatchChaining()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CatchChaining(bool useInterpreter)
         {
             TryExpression chain = Expression.TryCatch(
                 Expression.Throw(Expression.Constant(new DerivedTestException()), typeof(int)),
@@ -557,19 +437,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Catch(typeof(TestException), Expression.Constant(2)),
                 Expression.Catch(typeof(DerivedTestException), Expression.Constant(3))
                 );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(chain).Compile(false)());
-        }
-
-        [Fact]
-        public void CatchChainingInterpreted()
-        {
-            TryExpression chain = Expression.TryCatch(
-                Expression.Throw(Expression.Constant(new DerivedTestException()), typeof(int)),
-                Expression.Catch(typeof(InvalidOperationException), Expression.Constant(1)),
-                Expression.Catch(typeof(TestException), Expression.Constant(2)),
-                Expression.Catch(typeof(DerivedTestException), Expression.Constant(3))
-                );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(chain).Compile(true)());
+            Assert.Equal(2, Expression.Lambda<Func<int>>(chain).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -579,20 +447,13 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(typeof(int), noExplicitType.Type);
         }
 
-        [Fact]
-        public void ExplicitType()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void ExplicitType(bool useInterpreter)
         {
             TryExpression explicitType = Expression.MakeTry(typeof(object), Expression.Constant("hello"), Expression.Empty(), null, null);
             Assert.Equal(typeof(object), explicitType.Type);
-            Assert.Equal("hello", Expression.Lambda<Func<object>>(explicitType).Compile(false)());
-        }
-
-        [Fact]
-        public void ExplicitTypeInterpreted()
-        {
-            TryExpression explicitType = Expression.MakeTry(typeof(object), Expression.Constant("hello"), Expression.Empty(), null, null);
-            Assert.Equal(typeof(object), explicitType.Type);
-            Assert.Equal("hello", Expression.Lambda<Func<object>>(explicitType).Compile(true)());
+            Assert.Equal("hello", Expression.Lambda<Func<object>>(explicitType).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -651,9 +512,10 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.Catch(Expression.Parameter(typeof(Exception)), Expression.Empty(), Expression.Constant(42)));
         }
 
-        [Fact]
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         [ActiveIssue(3838)]
-        public void FilterOnCatch()
+        public void FilterOnCatch(bool useInterpreter)
         {
             TryExpression tryExp = Expression.TryCatch(
                 Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
@@ -661,20 +523,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Catch(typeof(TestException), Expression.Constant(2), Expression.Constant(true)),
                 Expression.Catch(typeof(TestException), Expression.Constant(3))
                 );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(tryExp).Compile(false)());
-        }
-
-        [Fact]
-        [ActiveIssue(3838)]
-        public void FilterOnCatchInterpreted()
-        {
-            TryExpression tryExp = Expression.TryCatch(
-                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
-                Expression.Catch(typeof(TestException), Expression.Constant(1), Expression.Constant(false)),
-                Expression.Catch(typeof(TestException), Expression.Constant(2), Expression.Constant(true)),
-                Expression.Catch(typeof(TestException), Expression.Constant(3))
-                );
-            Assert.Equal(2, Expression.Lambda<Func<int>>(tryExp).Compile(true)());
+            Assert.Equal(2, Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter)());
         }
 
         [Fact]
@@ -695,8 +544,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.MakeTry(typeof(int), Expression.Constant(2), null, null, new[] { Expression.Catch(typeof(InvalidCastException), Expression.Constant("")) }));
         }
 
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoid()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanReturnAnythingFromExplicitVoid(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(void),
@@ -709,11 +559,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
                 }
                 );
-            Expression.Lambda<Action>(tryExp).Compile(false)();
+            Expression.Lambda<Action>(tryExp).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidInterpreted()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanReturnAnythingFromExplicitVoidVoidBody(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(void),
@@ -726,45 +577,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
                 }
                 );
-            Expression.Lambda<Action>(tryExp).Compile(true)();
+            Expression.Lambda<Action>(tryExp).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidVoidBody()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(void),
-                Expression.Constant(1),
-                null,
-                null,
-                new[]
-                {
-                    Expression.Catch(typeof(InvalidCastException), Expression.Constant("hello")),
-                    Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                }
-                );
-            Expression.Lambda<Action>(tryExp).Compile(false)();
-        }
-
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidVoidBodyInterpreted()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(void),
-                Expression.Constant(1),
-                null,
-                null,
-                new[]
-                {
-                    Expression.Catch(typeof(InvalidCastException), Expression.Constant("hello")),
-                    Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                }
-                );
-            Expression.Lambda<Action>(tryExp).Compile(true)();
-        }
-
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidVoidThrowingBody()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanReturnAnythingFromExplicitVoidVoidThrowingBody(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(void),
@@ -777,28 +595,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
                 }
                 );
-            Expression.Lambda<Action>(tryExp).Compile(false)();
+            Expression.Lambda<Action>(tryExp).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidVoidThrowingBodyInterpreted()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(void),
-                Expression.Throw(Expression.Constant(new InvalidOperationException())),
-                null,
-                null,
-                new[]
-                {
-                    Expression.Catch(typeof(InvalidCastException), Expression.Constant("hello")),
-                    Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                }
-                );
-            Expression.Lambda<Action>(tryExp).Compile(true)();
-        }
-
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidTypedThrowingBody()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanReturnAnythingFromExplicitVoidTypedThrowingBody(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(void),
@@ -811,28 +613,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
                 }
                 );
-            Expression.Lambda<Action>(tryExp).Compile(false)();
+            Expression.Lambda<Action>(tryExp).Compile(useInterpreter)();
         }
 
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidTypedThrowingBodyInterpreted()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(void),
-                Expression.Throw(Expression.Constant(new InvalidOperationException()), typeof(int)),
-                null,
-                null,
-                new[]
-                {
-                    Expression.Catch(typeof(InvalidCastException), Expression.Constant("hello")),
-                    Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                }
-                );
-            Expression.Lambda<Action>(tryExp).Compile(true)();
-        }
-
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidCatch()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanReturnAnythingFromExplicitVoidCatch(bool useInterpreter)
         {
             TryExpression tryExp = Expression.MakeTry(
                 typeof(void),
@@ -845,24 +631,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
                 }
                 );
-            Expression.Lambda<Action>(tryExp).Compile(false)();
-        }
-
-        [Fact]
-        public void CanReturnAnythingFromExplicitVoidCatchInterpreted()
-        {
-            TryExpression tryExp = Expression.MakeTry(
-                typeof(void),
-                Expression.Throw(Expression.Constant(new InvalidOperationException()), typeof(int)),
-                null,
-                null,
-                new[]
-                {
-                    Expression.Catch(typeof(InvalidCastException), Expression.Empty()),
-                    Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                }
-                );
-            Expression.Lambda<Action>(tryExp).Compile(true)();
+            Expression.Lambda<Action>(tryExp).Compile(useInterpreter)();
         }
 
         [Fact]
