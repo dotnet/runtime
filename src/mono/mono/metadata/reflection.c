@@ -12401,7 +12401,19 @@ mono_reflection_free_dynamic_generic_class (MonoGenericClass *gclass)
 	}
 }
 
-static void
+/**
+ * fix_partial_generic_class:
+ * @klass: a generic instantiation MonoClass
+ * @error: set on error
+ *
+ * Assumes that the generic container of @klass has its vtable
+ * initialized, and updates the parent class, insterfaces, methods and
+ * fields of @klass by inflating the types using the generic context.
+ *
+ * On success returns TRUE, on failure returns FALSE and sets @error.
+ *
+ */
+static gboolean
 fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
 	MonoClass *gklass = klass->generic_class->container_class;
@@ -12411,7 +12423,7 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 	mono_error_init (error);
 
 	if (klass->wastypebuilder)
-		return;
+		return TRUE;
 
 	dgclass = (MonoDynamicGenericClass *)  klass->generic_class;
 	if (klass->parent != gklass->parent) {
@@ -12425,16 +12437,14 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 				mono_class_setup_parent (klass, parent);
 			}
 		} else {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			mono_error_cleanup (error);
 			if (gklass->wastypebuilder)
 				klass->wastypebuilder = TRUE;
-			return;
+			return FALSE;
 		}
 	}
 
 	if (!dgclass->initialized)
-		return;
+		return TRUE;
 
 	if (klass->method.count != gklass->method.count) {
 		klass->method.count = gklass->method.count;
@@ -12454,13 +12464,13 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 
 		for (i = 0; i < gklass->interface_count; ++i) {
 			MonoType *iface_type = mono_class_inflate_generic_type_checked (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass), error);
-			return_if_nok (error);
+			return_val_if_nok (error, FALSE);
 
 			klass->interfaces [i] = mono_class_from_mono_type (iface_type);
 			mono_metadata_free_type (iface_type);
 
-			ensure_runtime_vtable (klass->interfaces [i], error);
-			return_if_nok (error);
+			if (!ensure_runtime_vtable (klass->interfaces [i], error))
+				return FALSE;
 		}
 		klass->interfaces_inited = 1;
 	}
@@ -12473,14 +12483,14 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 			klass->fields [i] = gklass->fields [i];
 			klass->fields [i].parent = klass;
 			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), error);
-			return_if_nok (error);
+			return_val_if_nok (error, FALSE);
 		}
 	}
 
 	/*We can only finish with this klass once it's parent has as well*/
 	if (gklass->wastypebuilder)
 		klass->wastypebuilder = TRUE;
-	return;
+	return TRUE;
 }
 
 /**
@@ -12501,8 +12511,10 @@ ensure_generic_class_runtime_vtable (MonoClass *klass, MonoError *error)
 	if (!ensure_runtime_vtable (gklass, error))
 		return FALSE;
 
-	fix_partial_generic_class (klass, error);
-	return_val_if_nok (error, FALSE);
+	if (!fix_partial_generic_class (klass, error)) {
+		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -12931,8 +12943,12 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	MonoClass *klass = (MonoClass*)user_data;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
-		fix_partial_generic_class (mono_class_from_mono_type (type), &error); //Ensure it's safe to use it.
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoClass *inst_klass = mono_class_from_mono_type (type);
+		//Ensure it's safe to use it.
+		if (!fix_partial_generic_class (inst_klass, &error)) {
+			mono_class_set_failure (inst_klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
+		}
 		return TRUE;
 	} else
 		return FALSE;
