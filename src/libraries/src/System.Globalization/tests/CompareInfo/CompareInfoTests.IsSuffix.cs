@@ -86,21 +86,23 @@ namespace System.Globalization.Tests
         public void IsSuffix_Invalid()
         {
             // Source is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, ""));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, "", CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, ""));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, "", CompareOptions.None));
 
             // Prefix is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix("", null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix("", null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("suffix", () => s_invariantCompare.IsSuffix("", null));
+            Assert.Throws<ArgumentNullException>("suffix", () => s_invariantCompare.IsSuffix("", null, CompareOptions.None));
 
             // Source and prefix are null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsSuffix(null, null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, null));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsSuffix(null, null, CompareOptions.None));
 
             // Options are invalid
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.StringSort));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsSuffix("Test's", "Tests", (CompareOptions)0x11111111));
         }
 
         private static char UnassignedUnicodeCharacter()
