@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Version>4.0.1.0</Version>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Net.Http.csproj">
       <SupportedFramework>net45;netcore45;netstandardapp1.5;wpa81</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Net.Http.builds" />
-
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Net.Http\runtime.native.System.Net.Http.pkgproj" />
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
-
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="monoandroid10" />
