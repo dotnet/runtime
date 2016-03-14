@@ -18,10 +18,6 @@
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
 
-extern "C" {
-#include <mono/utils/mono-dl.h>
-}
-
 #if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
 
 /*
@@ -37,6 +33,10 @@ extern "C" {
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/OrcArchitectureSupport.h"
+
+extern "C" {
+#include <mono/utils/mono-dl.h>
+}
 
 using namespace llvm;
 using namespace llvm::orc;
