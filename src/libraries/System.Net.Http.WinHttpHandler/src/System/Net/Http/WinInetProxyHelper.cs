@@ -13,7 +13,7 @@ namespace System.Net.Http
     // is not supported (i.e. before Win8.1/Win2K12R2) in the WinHttpOpen() function.
     internal class WinInetProxyHelper
     {
-        bool _useProxy = false;
+        private bool _useProxy = false;
 
         public WinInetProxyHelper()
         {
