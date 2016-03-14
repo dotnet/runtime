@@ -81,14 +81,14 @@ RelativePath=GC\Regressions\v2.0-beta1\149926\149926\149926.exe
 WorkingDir=GC\Regressions\v2.0-beta1\149926\149926
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;ISSUE_3104;LONG_RUNNING
+Categories=Pri0;RT;EXPECTED_FAIL;REL_PASS;ISSUE_3104;LONG_RUNNING
 HostStyle=Any
 [289745.exe_12]
 RelativePath=GC\Regressions\v2.0-beta1\289745\289745\289745.exe
 WorkingDir=GC\Regressions\v2.0-beta1\289745\289745
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;ISSUE_3104
+Categories=Pri0;RT;EXPECTED_FAIL;REL_PASS;ISSUE_3104
 HostStyle=Any
 [302560.exe_13]
 RelativePath=GC\Regressions\v2.0-beta1\289745\302560\302560.exe
@@ -2958,7 +2958,7 @@ RelativePath=JIT\Directed\intrinsic\pow\pow1\pow1.exe
 WorkingDir=JIT\Directed\intrinsic\pow\pow1
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS
 HostStyle=Any
 [pow2_cs_d.exe_423]
 RelativePath=JIT\Directed\intrinsic\pow\pow2_cs_d\pow2_cs_d.exe
@@ -30895,7 +30895,7 @@ RelativePath=JIT\opt\ETW\TailCallCases\TailCallCases.exe
 WorkingDir=JIT\opt\ETW\TailCallCases
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS
 HostStyle=Any
 [badcallee.exe_4414]
 RelativePath=JIT\opt\Inline\regression\badcallee\badcallee\badcallee.exe
@@ -34269,7 +34269,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b40721\b40721\b40721.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b40721\b40721
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS;ISSUE_2990
 HostStyle=Any
 [b40725.exe_4896]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b40725\b40725\b40725.exe
@@ -34374,7 +34374,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41621\b41621\b41621.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41621\b41621
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_2989
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS;ISSUE_2989
 HostStyle=Any
 [b41627.exe_4911]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41627\b41627\b41627.exe
@@ -35459,7 +35459,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b50027\b50027\b50027.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b50027\b50027
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS;ISSUE_2990
 HostStyle=Any
 [b50033.exe_5066]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b50033\b50033\b50033.exe
@@ -35515,7 +35515,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b51420\b51420\b51420.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b51420\b51420
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;REL_PASS;ISSUE_2990
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS;ISSUE_2990
 HostStyle=Any
 [b51463.exe_5074]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b51463\b51463\b51463.exe
@@ -35900,7 +35900,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57493\b57493\b57493.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57493\b57493
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE;REL_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL;NEW_PASS
 HostStyle=Any
 [b57516.exe_5129]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57516\b57516\b57516.exe
@@ -50474,7 +50474,7 @@ RelativePath=CoreMangLib\cti\system\intptr\IntPtrGetHashCode\IntPtrGetHashCode.e
 WorkingDir=CoreMangLib\cti\system\intptr\IntPtrGetHashCode
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;ISSUE_3511
+Categories=Pri1;RT;EXPECTED_FAIL;NEW_PASS;ISSUE_3511
 HostStyle=Any
 [IntPtrToInt32.exe_7210]
 RelativePath=CoreMangLib\cti\system\intptr\IntPtrToInt32\IntPtrToInt32.exe
@@ -58384,7 +58384,7 @@ RelativePath=CoreMangLib\cti\system\uintptr\UIntPtrGetHashCode\UIntPtrGetHashCod
 WorkingDir=CoreMangLib\cti\system\uintptr\UIntPtrGetHashCode
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;ISSUE_3511
+Categories=Pri1;RT;EXPECTED_FAIL;NEW_PASS;ISSUE_3511
 HostStyle=Any
 [UIntPtrSize.exe_8340]
 RelativePath=CoreMangLib\cti\system\uintptr\UIntPtrSize\UIntPtrSize.exe
