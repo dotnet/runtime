@@ -172,6 +172,10 @@ namespace System.IO
 
             internal void Start()
             {
+                // Normalize the _fullDirectory path to have a trailing slash
+                if (_fullDirectory[_fullDirectory.Length - 1] != '/')
+                    _fullDirectory += "/";
+
                 // Make sure _fullPath doesn't contain a link or alias
                 // since the OS will give back the actual, non link'd or alias'd paths
                 _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
@@ -326,9 +330,8 @@ namespace System.IO
                         string relativePath = null;
                         if (eventPaths[i].Equals(_fullDirectory, StringComparison.OrdinalIgnoreCase) == false)
                         {
-                            // Check if the event path, with the root directory removed, begins with a / and
-                            // if so, remove it; otherwise, just remove the root path (which contains a trailing /)
-                            relativePath = eventPaths[i].Remove(0, _fullDirectory.Length + (eventPaths[i][_fullDirectory.Length] == '/' ? 1 : 0));
+                            // Remove the root directory to get the relative path
+                            relativePath = eventPaths[i].Remove(0, _fullDirectory.Length);
                         }
 
                         // Check if this is a rename
@@ -348,9 +351,9 @@ namespace System.IO
                             }
                             else
                             {
-                                // Remove the base directory prefix (including trailing / that OS X adds) and 
-                                // add the paired event to the list of events to skip and notify the user of the rename
-                                string newPathRelativeName = eventPaths[pairedId].Remove(0, _fullDirectory.Length + 1);
+                                // Remove the base directory prefix and add the paired event to the list of 
+                                // events to skip and notify the user of the rename 
+                                string newPathRelativeName = eventPaths[pairedId].Remove(0, _fullDirectory.Length);
                                 watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, newPathRelativeName, relativePath);
 
                                 // Create a new list, if necessary, and add the event
