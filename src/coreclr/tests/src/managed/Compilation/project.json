@@ -18,7 +18,8 @@
     "System.Threading.Overlapped": "4.0.0",
     "System.Threading.Tasks": "4.0.10",
     "System.Threading.Tasks.Parallel": "4.0.0",
-    "System.Threading.ThreadPool": "4.0.10-rc2-23816"
+    "System.Threading.ThreadPool": "4.0.10-rc2-23816",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc2-23816"
   },
   "frameworks": {
     "dnxcore50": {
