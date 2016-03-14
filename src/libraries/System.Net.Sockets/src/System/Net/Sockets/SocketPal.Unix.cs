@@ -823,12 +823,6 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
-        public static SocketError IoctlInternal(SafeCloseSocket handle, IOControlCode ioControlCode, IntPtr optionInValue, int inValueLength, IntPtr optionOutValue, int outValueLength, out int optionLength)
-        {
-            // TODO #6828: can this be supported in some reasonable fashion?
-            throw new PlatformNotSupportedException();
-        }
-
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             Interop.Error err;
