@@ -49,6 +49,9 @@
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
+
+    <Compile Include="ServiceNameCollectionTest.cs" />
+
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>

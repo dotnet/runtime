@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-
-using System.Collections;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Principal;
-using System.Security.Authentication;
 
 namespace System.Net.Security
 {
@@ -405,9 +400,9 @@ namespace System.Net.Security
             }
 
             // Acquire possible Client Certificate information and set it on the handle.
-            X509Certificate clientCertificate = null;   // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
-            ArrayList filteredCerts = new ArrayList();  // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
-            string[] issuers = null;                    // This is a list of issuers sent by the server, only valid is we do know what the server cert is.
+            X509Certificate clientCertificate = null;        // This is a candidate that can come from the user callback or be guessed when targeting a session restart.
+            var filteredCerts = new List<X509Certificate>(); // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
+            string[] issuers = null;                         // This is a list of issuers sent by the server, only valid is we do know what the server cert is.
 
             bool sessionRestartAttempt = false; // If true and no cached creds we will use anonymous creds.
 
@@ -609,7 +604,7 @@ namespace System.Net.Security
             // EnsurePrivateKey should do the right demand for us.
             for (int i = 0; i < filteredCerts.Count; ++i)
             {
-                clientCertificate = filteredCerts[i] as X509Certificate;
+                clientCertificate = filteredCerts[i];
                 if ((selectedCert = EnsurePrivateKey(clientCertificate)) != null)
                 {
                     break;
