@@ -1,3 +1,4 @@
+baseservices/exceptions/simple/HardwareEH/HardwareEH.sh
 baseservices/exceptions/unittests/EHPatternTests/EHPatternTests.sh
 baseservices/threading/paramthreadstart/ThreadStartString_1/ThreadStartString_1.sh
 CoreMangLib/cti/system/multicastdelegate/MulticastDelegateCtor/MulticastDelegateCtor.sh
