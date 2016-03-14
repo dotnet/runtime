@@ -41,153 +41,6 @@ namespace System.IO.Packaging
         #region Public Methods
 
         /// <summary>
-        /// This method is used to create a valid pack Uri
-        /// </summary>
-        /// <param name="packageUri">This is the uri that points to the entire package.
-        /// This parameter should be an absolute Uri. This parameter cannot be null or empty 
-        /// This method will create a valid pack uri that references the entire package</param>
-        /// <returns>A Uri with the "pack://" scheme</returns>
-        /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
-        /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
-        public static Uri Create(Uri packageUri)
-        {
-            return Create(packageUri, null, null);
-        }
-
-        /// <summary>
-        /// This method is used to create a valid pack Uri
-        /// </summary>
-        /// <param name="packageUri">This is the uri that points to the entire package.
-        /// This parameter should be an absolute Uri. This parameter cannot be null or empty </param>
-        /// <param name="partUri">This is the uri that points to the part within the package
-        /// This parameter should be a relative Uri.
-        /// This parameter can be null in which case we will create a valid pack uri
-        /// that references the entire package</param>
-        /// <returns>A Uri with the "pack://" scheme</returns>
-        /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
-        /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
-        /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
-        public static Uri Create(Uri packageUri, Uri partUri)
-        {
-            return Create(packageUri, partUri, null);
-        }
-
-        /// <summary>
-        /// This method is used to create a valid pack Uri
-        /// </summary>
-        /// <param name="packageUri">This is the uri that points to the entire package.
-        /// This parameter should be an absolute Uri. This parameter cannot be null or empty </param>
-        /// <param name="partUri">This is the uri that points to the part within the package
-        /// This parameter should be a relative Uri.
-        /// This parameter can be null in which case we will create a valid pack uri
-        /// that references the entire package</param>
-        /// <param name="fragment">Fragment for the resulting Pack URI. This parameter can be null
-        /// The fragment string must start with a "#"</param>
-        /// <returns>A Uri with the "pack://" scheme</returns>
-        /// <exception cref="ArgumentNullException">If packageUri parameter is null</exception>
-        /// <exception cref="ArgumentException">If packageUri parameter is not an absolute Uri</exception>
-        /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
-        /// <exception cref="ArgumentException">If fragment parameter is empty or does not start with a "#"</exception>
-        public static Uri Create(Uri packageUri, Uri partUri, string fragment)
-        {
-            // Step 1 - Validate input parameters
-            ValidatePackageUri(packageUri);
-
-            if (partUri != null)
-                partUri = ValidatePartUri(partUri);
-
-            if (fragment != null)
-            {
-                if (fragment == String.Empty || fragment[0] != '#')
-                    throw new ArgumentException(SR.FragmentMustStartWithHash);
-            }
-
-            // Step 2 - Remove fragment identifier from the package URI, if it is present
-            // Since '#" is an excluded character in Uri syntax, it can only occur as the 
-            // fragment identifier, in all other places it should be escaped.
-            // Hence we can safely use IndexOf to find the begining of the fragment.
-            string absolutePackageUri = packageUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped);
-
-            //We know that the Fragment property will always be a string and never will return null, String.Empty if the fragment is empty.
-            if (packageUri.Fragment.Length != 0)
-            {
-                absolutePackageUri = absolutePackageUri.Substring(0, absolutePackageUri.IndexOf('#'));
-            }
-
-            // Step 3 - Escape: "%", "?", "@", "#" and "," in the package URI 
-            absolutePackageUri = EscapeSpecialCharacters(absolutePackageUri);
-
-            // Step 4 - Replace all '/' with ',' in the resulting string
-            absolutePackageUri = absolutePackageUri.Replace(ForwardSlashChar, ',');
-
-            // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far            
-            absolutePackageUri = String.Concat(PackUriHelper.UriSchemePack, "://", absolutePackageUri);
-
-            Uri packUri = new Uri(absolutePackageUri);
-
-            // Step 6 - Append the part Uri if present.
-            if (partUri != null)
-                packUri = new Uri(packUri, partUri);
-
-            // Step 7 - Append fragment if present
-            if (fragment != null)
-                packUri = new Uri(String.Concat(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped), fragment));
-
-            // We want to ensure that internal content of resulting Uri has canonical form
-            // i.e.  result.OrignalString would appear as perfectly formatted Uri string 
-            // so we roundtrip the result.
-
-            return new Uri(packUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped));
-        }
-
-        /// <summary>
-        /// This method parses the pack uri and returns the inner
-        /// Uri that points to the package as a whole.
-        /// </summary>
-        /// <param name="packUri">Uri which has pack:// scheme</param>
-        /// <returns>Returns the inner uri that points to the entire package</returns>
-        /// <exception cref="ArgumentNullException">If packUri parameter is null</exception>
-        /// <exception cref="ArgumentException">If packUri parameter is not an absolute Uri</exception>
-        /// <exception cref="ArgumentException">If packUri parameter does not have "pack://" scheme</exception>
-        /// <exception cref="ArgumentException">If inner packageUri extracted from the packUri has a fragment component</exception>
-        public static Uri GetPackageUri(Uri packUri)
-        {
-            Uri packageUri;
-            Uri partUri;
-
-            //Parameter Validation is done in the follwoing method
-            ValidateAndGetPackUriComponents(packUri, out packageUri, out partUri);
-
-            return packageUri;
-        }
-
-        /// <summary>
-        /// This method parses the pack uri and returns the absolute 
-        /// path of the URI. This corresponds to the part within the 
-        /// package. This corresponds to the absolute path component in 
-        /// the Uri. If there is no part component present, this method
-        /// returns a null
-        /// </summary>
-        /// <param name="packUri">Returns a relative Uri that represents the
-        /// part within the package. If the pack Uri points to the entire
-        /// package then we return a null</param>
-        /// <returns>Returns a relative URI with an absolute path that points to a part within a package</returns>
-        /// <exception cref="ArgumentNullException">If packUri parameter is null</exception>
-        /// <exception cref="ArgumentException">If packUri parameter is not an absolute Uri</exception>
-        /// <exception cref="ArgumentException">If packUri parameter does not have "pack://" scheme</exception>
-        /// <exception cref="ArgumentException">If partUri extracted from packUri does not conform to the valid partUri syntax</exception>
-        public static Uri GetPartUri(Uri packUri)
-        {
-            Uri packageUri;
-            Uri partUri;
-
-            //Parameter Validation is done in the follwoing method
-            ValidateAndGetPackUriComponents(packUri, out packageUri, out partUri);
-
-            return partUri;
-        }
-
-        /// <summary>
         /// This method is used to create a valid part Uri given a relative URI
         /// Makes sure that the URI -  
         /// 1. Relative 
@@ -308,55 +161,6 @@ namespace System.IO.Packaging
             if (!(partUri is ValidatedPartUri))
                 partUri = ValidatePartUri(partUri);
             return ((ValidatedPartUri)partUri).NormalizedPartUri;
-        }
-
-        /// <summary>
-        /// This method compares two pack uris and returns an int to indicate the equivalence. 
-        /// </summary>
-        /// <param name="firstPackUri">First Uri of pack:// scheme to be compared</param>
-        /// <param name="secondPackUri">Second Uri of pack:// scheme to be compared</param>
-        /// <returns>A 32-bit signed integer indicating the lexical relationship between the compared Uri components.
-        /// Value - Less than zero means firstUri is less than secondUri
-        /// Value - Equal to zero means both the Uris are equal
-        /// Value - Greater than zero means firstUri is greater than secondUri </returns>
-        /// <exception cref="ArgumentException">If either of the Uris are not absolute or if either of the Uris are not with pack:// scheme</exception>
-        /// <exception cref="ArgumentException">If firstPackUri or secondPackUri parameter is not an absolute Uri</exception>
-        /// <exception cref="ArgumentException">If firstPackUri or secondPackUri parameter does not have "pack://" scheme</exception>
-        public static int ComparePackUri(Uri firstPackUri, Uri secondPackUri)
-        {
-            //If any of the operands are null then we simply call System.Uri compare to return the correct value
-            if (firstPackUri == null || secondPackUri == null)
-                return CompareUsingSystemUri(firstPackUri, secondPackUri);
-            else
-            {
-                int compareResult;
-
-                Uri firstPackageUri;
-                Uri secondPackageUri;
-                Uri firstPartUri;
-                Uri secondPartUri;
-
-                ValidateAndGetPackUriComponents(firstPackUri, out firstPackageUri, out firstPartUri);
-                ValidateAndGetPackUriComponents(secondPackUri, out secondPackageUri, out secondPartUri);
-
-
-                if (firstPackageUri.Scheme == PackUriHelper.UriSchemePack && secondPackageUri.Scheme == PackUriHelper.UriSchemePack)
-                {
-                    compareResult = ComparePackUri(firstPackageUri, secondPackageUri);
-                }
-                else
-                {
-                    compareResult = CompareUsingSystemUri(firstPackageUri, secondPackageUri);
-                }
-
-                //Iff the PackageUri match do we compare the part uris.
-                if (compareResult == 0)
-                {
-                    compareResult = ComparePartUri(firstPartUri, secondPartUri);
-                }
-
-                return compareResult;
-            }
         }
 
         /// <summary>
@@ -557,11 +361,6 @@ namespace System.IO.Packaging
 
         #region Internal Methods
 
-        internal static bool IsPackUri(Uri uri)
-        {
-            return uri != null && string.Equals(uri.Scheme, UriSchemePack, StringComparison.OrdinalIgnoreCase);
-        }
-
         internal static bool TryValidatePartUri(Uri partUri, out ValidatedPartUri validatedPartUri)
         {
             var validatedUri = partUri as ValidatedPartUri;
@@ -630,17 +429,6 @@ namespace System.IO.Packaging
             return validatedUri.PartUriString;
         }
 
-        //This method validates the packUri and returns its two components if they are valid-
-        //1. Package Uri
-        //2. Part Uri
-        internal static void ValidateAndGetPackUriComponents(Uri packUri, out Uri packageUri, out Uri partUri)
-        {
-            //Validate if its not null and is an absolute Uri, has pack:// Scheme.
-            packUri = ValidatePackUri(packUri);
-            packageUri = GetPackageUriComponent(packUri);
-            partUri = GetPartUriComponent(packUri);
-        }
-
         #endregion Internal Methods
 
         //------------------------------------------------------
@@ -658,83 +446,10 @@ namespace System.IO.Packaging
 
         #region Private Methods
 
-        /// <summary>
-        /// This method is used to validate the package uri
-        /// </summary>
-        /// <param name="packageUri"></param>
-        /// <returns></returns>
-        private static void ValidatePackageUri(Uri packageUri)
-        {
-            if (packageUri == null)
-                throw new ArgumentNullException(nameof(packageUri));
-
-            if (!packageUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.UriShouldBeAbsolute);
-        }
-
-        //validates is a given uri has pack:// scheme
-        private static Uri ValidatePackUri(Uri packUri)
-        {
-            if (packUri == null)
-                throw new ArgumentNullException(nameof(packUri));
-
-            if (!packUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.UriShouldBeAbsolute);
-
-            if (packUri.Scheme != PackUriHelper.UriSchemePack)
-                throw new ArgumentException(SR.UriShouldBePackScheme);
-
-            return packUri;
-        }
-        
         private static readonly char[] HexUpperChars = {
             '0', '1', '2', '3', '4', '5', '6', '7',
             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
         };
-
-        private static unsafe string[] HexEscapeCharsToStrings(char[] characters)
-        {
-            var strings = new string[characters.Length];
-            char* chars = stackalloc char[3];
-            chars[0] = '%';
-
-            for (int i = 0; i < characters.Length; i++)
-            {
-                char c = characters[i];
-                Debug.Assert(c <= 0xFF);
-
-                chars[1] = HexUpperChars[(c & 0xf0) >> 4];
-                chars[2] = HexUpperChars[c & 0xf];
-                strings[i] = new string(chars, 0, 3);
-            }
-
-            return strings;
-        }
-
-        /// <summary>
-        /// Escapes -  %', '@', ',', '?' in the package URI 
-        /// This method modifies the string in a culture safe and case safe manner. 
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        private static string EscapeSpecialCharacters(string path)
-        {
-            // If there are no special characters, just return the original path.
-            if (path.IndexOfAny(s_specialCharacterChars) < 0)
-            {
-                return path;
-            }
-
-            // Escaping for the following - '%'; '@'; ',' and '?'
-            // !!Important!! - The order is important - The '%' sign should be escaped first.
-            // This is currently enforced by the order of characters in the _specialCharacters array
-            var builder = new StringBuilder(path);
-            for (int i = 0; i < s_specialCharacterStrings.Length; i++)
-            {
-                builder.Replace(s_specialCharacterStrings[i], s_specialCharacterHexEscapedStrings[i]);
-            }
-            return builder.ToString();
-        }
 
         private static Exception GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
@@ -926,39 +641,6 @@ namespace System.IO.Packaging
             return (partName.Length == 0 || ((partName.Length == 1) && (partName[0] == ForwardSlashChar)));
         }
 
-        //This method validates and returns the PackageUri component
-        private static Uri GetPackageUriComponent(Uri packUri)
-        {
-            Debug.Assert(packUri != null, "packUri parameter cannot be null");
-
-            //Step 1 - Get the authority part of the URI. This section represents that package URI
-            String hostAndPort = packUri.GetComponents(UriComponents.HostAndPort, UriFormat.UriEscaped);
-
-            //Step 2 - Replace the ',' with '/' to reconstruct the package URI
-            hostAndPort = hostAndPort.Replace(',', ForwardSlashChar);
-
-            //Step 3 - Unescape the special characters that we had escaped to construct the packUri
-            Uri packageUri = new Uri(Uri.UnescapeDataString(hostAndPort));
-
-            if (packageUri.Fragment != String.Empty)
-                throw new ArgumentException(SR.InnerPackageUriHasFragment);
-
-            return packageUri;
-        }
-
-        //This method validates and returns the PartUri component.
-        private static PackUriHelper.ValidatedPartUri GetPartUriComponent(Uri packUri)
-        {
-            Debug.Assert(packUri != null, "packUri parameter cannot be null");
-
-            string partName = GetStringForPartUriFromAnyUri(packUri);
-
-            if (partName == String.Empty)
-                return null;
-            else
-                return ValidatePartUri(new Uri(partName, UriKind.Relative));
-        }
-
         #endregion Private Methods
 
         //------------------------------------------------------
@@ -980,8 +662,6 @@ namespace System.IO.Packaging
         // If any more characters need to be added to the array below they should be added at the end.
         // All of these arrays must maintain the same ordering.
         private static readonly char[] s_specialCharacterChars = { '%', '@', ',', '?' };
-        private static readonly string[] s_specialCharacterStrings = { "%", "@", ",", "?" };
-        private static readonly string[] s_specialCharacterHexEscapedStrings = HexEscapeCharsToStrings(s_specialCharacterChars);
 
         //Rels segment and extension
         private static readonly string s_relationshipPartSegmentName = "_rels";
