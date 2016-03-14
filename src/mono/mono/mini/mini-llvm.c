@@ -3214,6 +3214,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				}
 				callee = LLVMBuildLoad (builder, tramp_var, "");
 #else
+				target =
+					mono_create_jit_trampoline (mono_domain_get (),
+												call->method, &error);
+				if (!mono_error_ok (&error))
+					mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+
 				callee = LLVMAddFunction (ctx->lmodule, name, llvm_sig);
 				g_free (name);
 
@@ -6316,7 +6322,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					LLVMTypeRef icall_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
 					callee = emit_jit_callee (ctx, "llvm_resume_unwind_trampoline", icall_sig, target);
 #else
-					callee = LLVMGetNamedFunction (lmodule, "llvm_resume_unwind_trampoline");
+					callee = LLVMGetNamedFunction (ctx->lmodule, "llvm_resume_unwind_trampoline");
 #endif
 				}
 				LLVMBuildCall (builder, callee, NULL, 0, "");
