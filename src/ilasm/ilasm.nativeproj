@@ -7,6 +7,7 @@
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
   <!--Leaf project Properties-->
   <PropertyGroup>
+    <IsDesktopTool>true</IsDesktopTool>
     <LibCLib>$(ClrCrtLib)</LibCLib>
     <CDefines>$(CDefines);UNICODE;_UNICODE;FEATURE_NO_HOST;SELF_NO_HOST;NO_HOST_CPP_EH_ONLY</CDefines>
     <CDefines>$(CDefines);__TODO_PORT_TO_WRAPPERS__</CDefines>
