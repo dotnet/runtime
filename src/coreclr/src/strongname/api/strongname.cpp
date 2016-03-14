@@ -113,9 +113,9 @@ enum StrongNameCachedCsp {
 // allocated lazily as needed.
 struct SN_THREAD_CTX {
     DWORD       m_dwLastError;
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if !defined(FEATURE_CORECLR)
     HCRYPTPROV  m_hProv[CachedCspCount];
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // !FEATURE_CORECLR
 };
 
 #endif // !DACCESS_COMPILE
@@ -199,7 +199,7 @@ struct SN_THREAD_CTX {
 #endif // FEATURE_WINDOWSPHONE
 #endif // FEATURE_CORECLR
 
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if !defined(FEATURE_CORECLR)
 
 #ifdef FEATURE_STRONGNAME_MIGRATION
 #include "caparser.h"
@@ -4667,11 +4667,11 @@ ErrExit:
 
 #endif // #ifndef DACCESS_COMPILE
 
-#else // !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#else // !defined(FEATURE_CORECLR)
 
 #define InitStrongName() S_OK
 
-#endif // !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#endif // !defined(FEATURE_CORECLR)
 
 
 // Free buffer allocated by routines below.
@@ -4697,12 +4697,12 @@ SN_THREAD_CTX *GetThreadContext()
         if (pThreadCtx == NULL)
             return NULL;
         pThreadCtx->m_dwLastError = S_OK;
-#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
+#if !defined(FEATURE_CORECLR)
         for (ULONG i = 0; i < CachedCspCount; i++)
         {
             pThreadCtx->m_hProv[i] = NULL;
         }
-#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
+#endif // !FEATURE_CORECLR
 
         EX_TRY {
             ClrFlsSetValue(TlsIdx_StrongName, pThreadCtx);

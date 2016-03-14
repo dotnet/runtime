@@ -3447,18 +3447,6 @@ void DomainAssembly::GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE
     PEImageLayoutHolder ilLayout(GetFile()->GetAnyILWithRef());
     pSignature->timeStamp = ilLayout->GetTimeDateStamp();
     pSignature->ilImageSize = ilLayout->GetVirtualSize();
-#ifdef MDIL    
-    if (g_fIsNGenEmbedILProcess)
-    {
-        PEImageHolder pILImage(GetFile()->GetILimage());
-        DWORD dwActualILSize; 
-        if (pILImage->GetLoadedLayout()->GetILSizeFromMDILCLRCtlData(&dwActualILSize))
-        {
-            // Use actual source IL size instead of MDIL size
-            pSignature->ilImageSize = dwActualILSize;
-        }
-    }
-#endif  // MDIL
 }
 
 BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)

@@ -85,8 +85,6 @@ enum {
 // Return true if either consistency or cer has not been specified in the encoded DWORD given.
 #define RC_INCOMPLETE(_encoded) (RC_CONSISTENCY(_encoded) == RC_CONSISTENCY_UNDEFINED || RC_CER(_encoded) == RC_CER_UNDEFINED)
 
-#ifndef CLR_STANDALONE_BINDER
-
 // Look for reliability contracts at the method, class and assembly level and parse them to extract the information we're interested
 // in from a runtime preparation viewpoint. This information is abstracted in the form of the ReliabilityContractLevel enumeration.
 ReliabilityContractLevel CheckForReliabilityContract(MethodDesc *pMD);
@@ -561,7 +559,5 @@ private:
     DWORD       m_dwMisses;
 #endif
 };
-
-#endif // CLR_STANDALONE_BINDER
 
 #endif

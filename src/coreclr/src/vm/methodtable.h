@@ -17,7 +17,6 @@
 /*
  *  Include Files 
  */
-#ifndef BINDER
 #include "vars.hpp"
 #include "cor.h"
 #include "hash.h"
@@ -35,9 +34,6 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "fixuppointer.h"
-#else
-#include "classloadlevel.h"
-#endif // !BINDER
 
 /*
  * Forward Declarations
@@ -773,12 +769,7 @@ class MethodTable
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
     friend class JIT_TrialAlloc;
-#ifndef BINDER
     friend class Module;
-#else
-    friend class MdilModule;
-    friend class CompactTypeBuilder;
-#endif
     friend class EEClass;
     friend class MethodTableBuilder;
     friend class CheckAsmOffsets;
@@ -826,11 +817,7 @@ public:
     PTR_Module GetLoaderModule();
     PTR_LoaderAllocator GetLoaderAllocator();
 
-#ifndef BINDER
     void SetLoaderModule(Module* pModule);
-#else
-    void SetLoaderModule(MdilModule* pModule);
-#endif
     void SetLoaderAllocator(LoaderAllocator* pAllocator);
 
     // Get the domain local module - useful for static init checks
@@ -1491,7 +1478,6 @@ public:
         NO_SLOT = 0xffff // a unique slot number used to indicate "empty" for fields that record slot numbers
     };
 
-#ifndef BINDER // the binder works with a slightly different representation, so remove these
     PCODE GetSlot(UINT32 slotNumber)
     {
         WRAPPER_NO_CONTRACT;
@@ -1556,7 +1542,6 @@ public:
     }
 
     void SetSlot(UINT32 slotNum, PCODE slotVal);
-#endif
 
     //-------------------------------------------------------------------
     // The VTABLE
@@ -2293,15 +2278,6 @@ public:
 
     inline PTR_InterfaceInfo GetInterfaceMap();
 
-#ifdef BINDER
-    void SetNumInterfaces(DWORD dwNumInterfaces)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        m_wNumInterfaces = (WORD)dwNumInterfaces;
-        _ASSERTE(m_wNumInterfaces == dwNumInterfaces);
-    }
-#endif
-
 #ifndef DACCESS_COMPILE
     void SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap);
 #endif
@@ -2722,11 +2698,8 @@ public:
 
     // Used for generics and reflection emit in memory
     DWORD GetModuleDynamicEntryID();
-#ifndef BINDER
     Module* GetModuleForStatics();
-#else // BINDER
-    MdilModule* GetModuleForStatics();
-#endif
+
     //-------------------------------------------------------------------
     // GENERICS DICT INFO
     //
@@ -2734,9 +2707,6 @@ public:
     // Number of generic arguments, whether this is a method table for 
     // a generic type instantiation, e.g. List<string> or the "generic" MethodTable
     // e.g. for List.
-#ifdef BINDER
-    DWORD GetNumGenericArgs();
-#else
     inline DWORD GetNumGenericArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2745,7 +2715,6 @@ public:
         else
             return 0;
     }
-#endif
 
     inline DWORD GetNumDicts()
     {
@@ -2846,7 +2815,7 @@ public:
         _ASSERTE(g_pObjectClass);
         return (this == g_pObjectClass);
     }
-#ifndef BINDER
+
     // Is this System.ValueType?
     inline DWORD IsValueTypeClass()
     {
@@ -2854,13 +2823,6 @@ public:
         _ASSERTE(g_pValueTypeClass);
         return (this == g_pValueTypeClass);
     }
-#else // BINDER
-    // Is this System.ValueType?
-    bool IsValueTypeClass();
-
-    // Is this System.Enum?
-    bool IsEnumClass();
-#endif // BINDER
 
     // Is this value type? Returns false for System.ValueType and System.Enum.
     inline BOOL IsValueType();
@@ -4387,11 +4349,7 @@ private:
         return dac_cast<DPTR(RelativeFixupPointer<PTR_Module>)>(GetMultipurposeSlotPtr(enum_flag_HasModuleOverride, c_ModuleOverrideOffsets));
     }
 
-#ifdef BINDER
-    void SetModule(PTR_Module pModule);
-#else
     void SetModule(Module * pModule);
-#endif
 
     /************************************
     //
