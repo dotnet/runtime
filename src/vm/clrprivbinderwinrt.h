@@ -250,15 +250,13 @@ public:
     // the app paths so the WinRT binder will find 3rd party WinMDs.
     HRESULT SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, SString &appLocalWinMD);
 #endif
-#ifndef CLR_STANDALONE_BINDER
     // Finds assembly with WinRT type if it is already loaded
     // Note: This method could implement interface code:ICLRPrivWinRtTypeBinder if it is ever needed
     PTR_Assembly FindAssemblyForTypeIfLoaded(
         PTR_AppDomain pAppDomain, 
         LPCUTF8       szNamespace, 
         LPCUTF8       szClassName);
-#endif // !CLR_STANDALONE_BINDER
-    
+
 #if defined(FEATURE_COMINTEROP_WINRT_DESKTOP_HOST) && !defined(CROSSGEN_COMPILE)
     BOOL SetLocalWinMDPath(HSTRING localWinMDPath);
 #endif // FEATURE_COMINTEROP_WINRT_DESKTOP_HOST && !CROSSGEN_COMPILE
@@ -303,12 +301,10 @@ private:
     FileNameToAssemblyWinRTMap m_FileNameToAssemblyMap;
 
     // Lock for the above maps
-#ifndef CLR_STANDALONE_BINDER
     CrstExplicitInit m_MapsLock;
     // Lock for adding into the above maps, in addition to the read-lock above
     CrstExplicitInit m_MapsAddLock;
-#endif // CLR_STANDALONE_BINDER
-    
+
     //=============================================================================================
     
     PTR_CLRPrivTypeCacheWinRT m_pTypeCache;

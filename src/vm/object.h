@@ -318,7 +318,6 @@ class Object
         return GetHeader()->GetSyncBlockIndex();
     }
 
-#ifndef BINDER
     ADIndex GetAppDomainIndex();
 
     // Get app domain of object, or NULL if it is agile
@@ -331,7 +330,6 @@ class Object
 
     // Set app domain of object to given domain - it can only be set once
     void SetAppDomain(AppDomain *pDomain);
-#endif // BINDER
 
 #ifdef _DEBUG
 #ifndef DACCESS_COMPILE
@@ -341,9 +339,7 @@ class Object
     {
         WRAPPER_NO_CONTRACT;
 
-#ifndef BINDER
         DEBUG_SetAppDomain(::GetAppDomain());
-#endif
     }
 #endif //!DACCESS_COMPILE
 
@@ -1285,7 +1281,6 @@ class BaseObjectWithCachedData : public Object
 #endif //FEATURE_REMOTING
 };
 
-#ifndef BINDER
 // This is the Class version of the Reflection object.
 //  A Class has adddition information.
 //  For a ReflectClassBaseObject the m_pData is a pointer to a FieldDesc array that
@@ -1370,7 +1365,6 @@ public:
     }
 
 };
-#endif // BINDER
 
 // This is the Method version of the Reflection object.
 //  A Method has adddition information.
@@ -3158,7 +3152,6 @@ typedef RealProxyObject*     REALPROXYREF;
 #endif
 
 
-#ifndef CLR_STANDALONE_BINDER
 #ifdef FEATURE_COMINTEROP
 
 //-------------------------------------------------------------
@@ -3452,7 +3445,6 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 #endif
 
 #endif // FEATURE_COMINTEROP
-#endif // CLR_STANDALONE_BINDER
 
 class StringBufferObject;
 #ifdef USE_CHECKED_OBJECTREFS
@@ -4136,13 +4128,11 @@ private:
         return GetHeader()->m_thread;
     }
 
-#ifndef BINDER
     void SetObjectThread()
     {
         WRAPPER_NO_CONTRACT;
         GetHeader()->m_thread = GetThread();
     }
-#endif //!BINDER
 
     StackTraceElement const * GetData() const
     {
@@ -4271,10 +4261,10 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-#if !defined(DACCESS_COMPILE) && !defined(CLR_STANDALONE_BINDER)
+#if !defined(DACCESS_COMPILE)
 // Define the lock used to access stacktrace from an exception object
 EXTERN_C SpinLock g_StackTraceArrayLock;
-#endif // !defined(DACCESS_COMPILE) && !defined(CLR_STANDALONE_BINDER)
+#endif // !defined(DACCESS_COMPILE)
 
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;

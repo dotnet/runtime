@@ -23,9 +23,6 @@ class MethodImpl
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
-#ifdef BINDER
-    friend class MdilModule;    // this allows it to get the offset of pdwSlots and pImplementedMD
-#endif
 
     PTR_DWORD            pdwSlots;       // Maintains the slots in sorted order, the first entry is the size
     DPTR(PTR_MethodDesc) pImplementedMD;

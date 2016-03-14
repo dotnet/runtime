@@ -26,14 +26,11 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
+    <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <PropertyGroup>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="hijacking.il" />
+    <Compile Include="DevDiv_199169.il" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
