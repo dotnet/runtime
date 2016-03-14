@@ -34479,7 +34479,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b43121\b43121\b43121.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b43121\b43121
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3667
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=Any
 [b43160.exe_4926]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b43160\b43160\b43160.exe
