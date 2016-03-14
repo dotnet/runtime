@@ -35,7 +35,6 @@ namespace SampleDynamicTests
         }
 
         [Fact]
-        [ActiveIssue(6258)]
         public static void VariantFuncTest()
         {
             Func<string, dynamic, object, int> del = Foo;
@@ -47,7 +46,6 @@ namespace SampleDynamicTests
         }
 
         [Fact]
-        [ActiveIssue(6258)]
         public static void VariantActTest()
         {
             Action<string, dynamic, object> del = Bar;
