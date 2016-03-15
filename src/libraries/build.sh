@@ -384,24 +384,6 @@ __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
 
 setup_dirs
 
-if $__buildmanaged; then
-
-    # Prepare the system
-
-    prepare_managed_build
-
-    # Build the corefx native components.
-
-    build_managed_corefx
-
-    # Build complete
-fi
-
-# If managed build failed, exit with the status code of the managed build
-if [ $BUILDERRORLEVEL != 0 ]; then
-    exit $BUILDERRORLEVEL
-fi
-
 # Configure environment if we are doing a cross compile.
 if [ "$__CrossBuild" == 1 ]; then
     export CROSSCOMPILE=1
@@ -425,6 +407,24 @@ if $__buildnative; then
     build_native_corefx
 
     # Build complete
+fi
+
+if $__buildmanaged; then
+
+    # Prepare the system
+
+    prepare_managed_build
+
+    # Build the corefx native components.
+
+    build_managed_corefx
+
+    # Build complete
+fi
+
+# If managed build failed, exit with the status code of the managed build
+if [ $BUILDERRORLEVEL != 0 ]; then
+    exit $BUILDERRORLEVEL
 fi
 
 exit $BUILDERRORLEVEL
