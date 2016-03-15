@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -85,13 +80,13 @@ namespace System.ComponentModel
             return _browsable.GetHashCode();
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
         public override bool IsDefaultAttribute()
         {
-            return (this.Equals(Default));
+            return this.Equals(Default);
         }
 #endif
     }

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -73,7 +71,7 @@ namespace System.ComponentModel
         {
             if (value is RefreshPropertiesAttribute)
             {
-                return (((RefreshPropertiesAttribute)value).RefreshProperties == _refresh);
+                return ((RefreshPropertiesAttribute)value).RefreshProperties == _refresh;
             }
             return false;
         }
@@ -88,6 +86,7 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         ///    <para>Gets a value indicating whether the current attribute is the default.</para>
         /// </devdoc>
@@ -95,6 +94,6 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
+#endif
     }
 }
-
