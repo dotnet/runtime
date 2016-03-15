@@ -41,9 +41,9 @@ namespace CoreclrTestLib
                 Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream);
                 Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream);
 
-                bool completed = process.WaitForExit(timeout) &&
-                    copyOutput.Wait(timeout) &&
-                    copyError.Wait(timeout);
+                bool completed = process.WaitForExit(timeout);
+                copyOutput.Wait(timeout);
+                copyError.Wait(timeout);
 
                 if (completed)
                 {
