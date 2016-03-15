@@ -90,7 +90,6 @@
     <Compile Include="System\UInt64.cs" />
     <Compile Include="System\UIntPtr.cs" />
     <Compile Include="System\Uri.cs" />
-    <Compile Include="System\UriBuilderTests.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Version.cs" />
     <Compile Include="System\WeakReference.cs" />
