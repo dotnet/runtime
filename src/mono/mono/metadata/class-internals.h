@@ -1153,7 +1153,7 @@ typedef struct {
 #define mono_object_is_transparent_proxy(object) (FALSE)
 #else
 MonoRemoteClass*
-mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class);
+mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class, MonoError *error);
 
 void
 mono_install_remoting_trampoline (MonoRemotingTrampoline func);
