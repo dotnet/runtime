@@ -89,11 +89,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = Read(
 @"{
     ""runtimes"": {
-        "".NETStandardApp,Version=v1.5"": {
-            ""osx.10.10-x64"": [ ],
-            ""osx.10.11-x64"": [ ""osx"" ],
-            ""rhel.7-x64"": [ ""linux-x64"", ""unix"" ]
-        }
+        ""osx.10.10-x64"": [ ],
+        ""osx.10.11-x64"": [ ""osx"" ],
+        ""rhel.7-x64"": [ ""linux-x64"", ""unix"" ]
     }
 }");
             context.RuntimeGraph.Should().Contain(p => p.Runtime == "osx.10.10-x64").Which
