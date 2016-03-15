@@ -41,6 +41,30 @@ namespace System.IO.Tests
             }
         }
 
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public async Task FifoReadWriteViaFileStream()
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 666));
+
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    using (FileStream fs = File.OpenRead(fifoPath))
+                    {
+                        Assert.Equal(42, fs.ReadByte());
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    using (FileStream fs = File.OpenWrite(fifoPath))
+                    {
+                        fs.WriteByte(42);
+                        fs.Flush();
+                    }
+                }));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
