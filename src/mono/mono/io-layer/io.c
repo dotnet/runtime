@@ -3733,9 +3733,14 @@ add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state)
 
 	if (state->fsname_index == 1 && state->fsname [0] == '/')
 		ignore_entry = FALSE;
-	else if (state->fsname_index == 0 || memcmp ("none", state->fsname, state->fsname_index) == 0)
+	else if (memcmp ("overlay", state->fsname, state->fsname_index) == 0 ||
+		memcmp ("aufs", state->fstype, state->fstype_index) == 0) {
+		/* Don't ignore overlayfs and aufs - these might be used on Docker
+		 * (https://bugzilla.xamarin.com/show_bug.cgi?id=31021) */
+		ignore_entry = FALSE;
+	} else if (state->fsname_index == 0 || memcmp ("none", state->fsname, state->fsname_index) == 0) {
 		ignore_entry = TRUE;
-	else if (state->fstype_index >= 5 && memcmp ("fuse.", state->fstype, 5) == 0) {
+	} else if (state->fstype_index >= 5 && memcmp ("fuse.", state->fstype, 5) == 0) {
 		/* Ignore GNOME's gvfs */
 		if (state->fstype_index == 21 && memcmp ("fuse.gvfs-fuse-daemon", state->fstype, state->fstype_index) == 0)
 			ignore_entry = TRUE;
