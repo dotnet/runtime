@@ -536,7 +536,7 @@ ICALL(SIGH_1, "get_signature_field", mono_reflection_sighelper_get_signature_fie
 ICALL(SIGH_2, "get_signature_local", mono_reflection_sighelper_get_signature_local)
 
 ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
-ICALL(TYPEB_1, "create_generic_class", mono_reflection_create_generic_class)
+ICALL(TYPEB_1, "create_generic_class", ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class)
 ICALL(TYPEB_2, "create_internal_class", mono_reflection_create_internal_class)
 ICALL(TYPEB_3, "create_runtime_class", mono_reflection_create_runtime_class)
 ICALL(TYPEB_4, "get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter)

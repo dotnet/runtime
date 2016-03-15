@@ -1347,7 +1347,7 @@ void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb
 
 void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb);
 
-void        mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb);
+gboolean    mono_reflection_create_generic_class  (MonoReflectionTypeBuilder *tb, MonoError *error);
 
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 

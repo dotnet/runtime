@@ -195,7 +195,7 @@ static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly,
 static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj, MonoError *error);
 
 static guint32 create_typespec (MonoDynamicImage *assembly, MonoType *type);
-static void init_type_builder_generics (MonoObject *type);
+static void init_type_builder_generics (MonoObject *type, MonoError *error);
 
 #define RESOLVE_TYPE(type, error) do {					\
 	type = (MonoObject *)mono_reflection_type_resolve_user_types ((MonoReflectionType*)type, error); \
@@ -2062,7 +2062,8 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	MonoType *type;
 	MonoClass *klass;
 
-	init_type_builder_generics (fb->type);
+	init_type_builder_generics (fb->type, error);
+	return_val_if_nok (error, 0);
 
 	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 	return_val_if_nok (error, 0);
@@ -3318,7 +3319,8 @@ mono_reflection_method_on_tb_inst_get_handle (MonoReflectionMethodOnTypeBuilderI
 
 	mono_error_init (error);
 
-	init_type_builder_generics ((MonoObject*)m->inst);
+	init_type_builder_generics ((MonoObject*)m->inst, error);
+	return_val_if_nok (error, NULL);
 
 	method = inflate_method (m->inst, (MonoObject*)m->mb, error);
 	return_val_if_nok (error, NULL);
@@ -3555,8 +3557,10 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	g_assert (tb->generic_params);
 	klass = mono_class_from_mono_type (type);
 
-	if (tb->generic_container)
-		mono_reflection_create_generic_class (tb);
+	if (tb->generic_container) {
+		if (!mono_reflection_create_generic_class (tb, error))
+			goto fail;
+	}
 
 	sigbuffer_add_value (&buf, MONO_TYPE_GENERICINST);
 	g_assert (klass->generic_container);
@@ -3649,16 +3653,18 @@ fail:
 }
 
 static void
-init_type_builder_generics (MonoObject *type)
+init_type_builder_generics (MonoObject *type, MonoError *error)
 {
 	MonoReflectionTypeBuilder *tb;
+
+	mono_error_init (error);
 
 	if (!is_sre_type_builder(mono_object_class (type)))
 		return;
 	tb = (MonoReflectionTypeBuilder *)type;
 
 	if (tb && tb->generic_container)
-		mono_reflection_create_generic_class (tb);
+		mono_reflection_create_generic_class (tb, error);
 }
 
 static guint32
@@ -3682,7 +3688,8 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	mono_class_from_mono_type (typeb);
 
 	/*FIXME this is one more layer of ugliness due how types are created.*/
-	init_type_builder_generics (fb->type);
+	init_type_builder_generics (fb->type, error);
+	return_val_if_nok (error, 0);
 
 	/* fb->type does not include the custom modifiers */
 	/* FIXME: We should do this in one place when a fieldbuilder is created */
@@ -5581,7 +5588,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		if (create_open_instance && tb->generic_params) {
 			MonoType *type;
-			init_type_builder_generics (obj);
+			init_type_builder_generics (obj, error);
+			return_val_if_nok (error, 0);
 			type = mono_reflection_type_get_handle ((MonoReflectionType *)obj, error);
 			return_val_if_nok (error, 0);
 			token = mono_image_typedef_or_ref_full (assembly, type, TRUE);
@@ -10870,8 +10878,9 @@ is_sre_generic_instance (MonoClass *klass)
 }
 
 static void
-init_type_builder_generics (MonoObject *type)
+init_type_builder_generics (MonoObject *type, MonoError *error)
 {
+	mono_error_init (error);
 }
 
 #endif /* !DISABLE_REFLECTION_EMIT */
@@ -11540,25 +11549,30 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 {
 }
 
-/*
+/**
  * mono_reflection_create_generic_class:
  * @tb: a TypeBuilder object
+ * @error: set on error
  *
  * Creates the generic class after all generic parameters have been added.
+ * On success returns TRUE, on failure returns FALSE and sets @error.
+ * 
  */
-void
-mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
+gboolean
+mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error)
 {
-	MonoError error;
+
 	MonoClass *klass;
 	int count, i;
+
+	mono_error_init (error);
 
 	klass = mono_class_from_mono_type (tb->type.type);
 
 	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
 
 	if (klass->generic_container || (count == 0))
-		return;
+		return TRUE;
 
 	g_assert (tb->generic_container && (tb->generic_container->owner.klass == klass));
 
@@ -11572,8 +11586,8 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = (MonoReflectionGenericParam *)mono_array_get (tb->generic_params, gpointer, i);
-		MonoType *param_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		MonoType *param_type = mono_reflection_type_get_handle ((MonoReflectionType*)gparam, error);
+		return_val_if_nok (error, FALSE);
 		MonoGenericParamFull *param = (MonoGenericParamFull *) param_type->data.generic_param;
 		klass->generic_container->type_params [i] = *param;
 		/*Make sure we are a diferent type instance */
@@ -11585,6 +11599,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 	}
 
 	klass->generic_container->context.class_inst = mono_get_shared_generic_inst (klass->generic_container);
+	return TRUE;
 }
 
 /**
@@ -12188,8 +12203,12 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	}
 
 	/* FIXME: fix the CreateGenericParameters protocol to avoid the two stage setup of TypeBuilders */
-	if (tb && tb->generic_container)
-		mono_reflection_create_generic_class (tb);
+	if (tb && tb->generic_container) {
+		if (!mono_reflection_create_generic_class (tb, error)) {
+			mono_loader_unlock ();
+			return NULL;
+		}
+	}
 
 	MonoType *t = mono_reflection_type_get_handle (type, error);
 	if (!is_ok (error)) {
@@ -14109,10 +14128,11 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 	g_assert_not_reached ();
 }
 
-void
-mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
+gboolean
+mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb, MonoError *error)
 {
 	g_assert_not_reached ();
+	return FALSE;
 }
 
 void

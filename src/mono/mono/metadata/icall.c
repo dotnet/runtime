@@ -1269,6 +1269,21 @@ ves_icall_System_Reflection_Emit_AssemblyBuilder_InternalAddModule (MonoReflecti
 	return result;
 }
 
+/**
+ * ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class:
+ * @tb: a TypeBuilder object
+ *
+ * (icall)
+ * Creates the generic class after all generic parameters have been added.
+ */
+ICALL_EXPORT void
+ves_icall_System_Reflection_Emit_TypeBuilder_create_generic_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoError error;
+	(void) mono_reflection_create_generic_class (tb, &error);
+	mono_error_set_pending_exception (&error);
+}
+
 ICALL_EXPORT MonoArray*
 ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues)
 {
