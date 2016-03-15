@@ -5,33 +5,21 @@
     <AssemblyName>System.Runtime.Serialization.Json</AssemblyName>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework> 
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <ProjectJson>netcore50aot/project.json</ProjectJson>
-    <ProjectLockJson>netcore50aot/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <TargetingPackReference Include="mscorlib" Condition="'$(TargetGroup)' == 'net46'" />
-    <TargetingPackReference Include="System.Runtime.Serialization" Condition="'$(TargetGroup)' == 'net46'" />
-    <TargetingPackReference Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcore50aot'" />
-    <TargetingPackReference Include="System.Private.DataContractSerialization" Condition="'$(TargetGroup)' == 'netcore50aot'" />
+  <ItemGroup Condition="'$(TargetGroup)' == ''" >
+    <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot' And '$(TargetGroup)' != 'net46'">
-    <ProjectReference Include="$(SourceDir)System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="System.Runtime.Serialization"/>
   </ItemGroup>
 
   <ItemGroup>
