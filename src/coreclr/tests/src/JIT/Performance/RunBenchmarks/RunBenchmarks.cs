@@ -205,8 +205,8 @@ namespace BenchmarkConsoleApplication
         public int NumberOfRunsPerBenchmark; // Number of runs/iterations each benchmark should be run
         public string ComplusVersion; // COMPlus_VERSION for desktop CLR hosted runs (optional).
         public string BenchmarksRootDirectory; // Root directory for benchmark tree specified in .XML file.
-        public string BenchmarkXmlFileName; // Benchmark .XML filename (default benchmarks.xml)
-        public string BenchmarkCsvFileName; // Benchmark output .CSV filename (default console)
+        public string BenchmarkXmlFileName; // Benchmark .XML filename (default coreclr_benchmarks.xml)
+        public string BenchmarkCsvFileName; // Benchmark output .CSV filename (default coreclr_benchmarks.csv)
         public string SuiteName; // Specific benchmark suite name to be executed (optional).
         public List<string> IncludeBenchmarkList; // List of specific benchmarks to be included (optional)
         public List<string> ExcludeBenchmarkList; // List of specific benchmarks to be excluded (optional)
@@ -239,8 +239,8 @@ namespace BenchmarkConsoleApplication
             ComplusVersion = "",
             SuiteName = "",
             BenchmarksRootDirectory = "",
-            BenchmarkXmlFileName = "benchmarks.xml",
-            BenchmarkCsvFileName = "benchmarks.csv",
+            BenchmarkXmlFileName = "coreclr_benchmarks.xml",
+            BenchmarkCsvFileName = "coreclr_benchmarks.csv",
             IncludeBenchmarkList = new List<string>(),
             ExcludeBenchmarkList = new List<string>(),
             IncludeTagList = new List<string>(),
@@ -429,7 +429,7 @@ namespace BenchmarkConsoleApplication
             Console.WriteLine("");
             Console.WriteLine("   options: ");
             Console.WriteLine("");
-            Console.WriteLine("   -f <xmlFile>   specify benchmark xml file (default benchmarks.xml)");
+            Console.WriteLine("   -f <xmlFile>   specify benchmark xml file (default coreclr_benchmarks.xml)");
             Console.WriteLine("   -n <number>    specify number of runs for each benchmark (default is 1)");
             Console.WriteLine("   -w             specify that warmup run should be done first");
             Console.WriteLine("   -v             run in verbose mode");
@@ -446,6 +446,10 @@ namespace BenchmarkConsoleApplication
             Console.WriteLine("   -run           run benchmarks");
             Console.WriteLine("   -norun         prints what would be run, but nothing is executed");
             Console.WriteLine("   -testcase      run as CoreCLR test case (default)");
+            Console.WriteLine("   -norun         prints what would be run, but don't run benchmarks");
+            Console.WriteLine("   -tags <tags>   specify benchmarks with tags to include");
+            Console.WriteLine("   -notags <tags> specify benchmarks with tags to exclude");
+            Console.WriteLine("   -csvfile       specify name of Comma Seperated Value output file (default coreclr_benchmarks.csv)");
 
             Exit(-1);
         }
