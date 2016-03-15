@@ -11,35 +11,35 @@ namespace System.Linq.Expressions.Tests
     public class UnboxTests
     {
         [Theory]
-        [MemberData(nameof(UnboxableFromObject))]
-        [MemberData(nameof(NullableUnboxableFromObject))]
-        [MemberData(nameof(UnboxableFromIComparable))]
-        [MemberData(nameof(NullableUnboxableFromIComparable))]
-        [MemberData(nameof(UnboxableFromIComparableT))]
-        [MemberData(nameof(NullableUnboxableFromIComparableT))]
-        public void CanUnbox(object value, Type type, Type boxedType)
+        [PerCompilationType(nameof(UnboxableFromObject))]
+        [PerCompilationType(nameof(NullableUnboxableFromObject))]
+        [PerCompilationType(nameof(UnboxableFromIComparable))]
+        [PerCompilationType(nameof(NullableUnboxableFromIComparable))]
+        [PerCompilationType(nameof(UnboxableFromIComparableT))]
+        [PerCompilationType(nameof(NullableUnboxableFromIComparableT))]
+        public void CanUnbox(object value, Type type, Type boxedType, bool useInterpreter)
         {
             Expression expression = Expression.Constant(value, boxedType);
             UnaryExpression unbox = Expression.Unbox(expression, type);
             Assert.Equal(type, unbox.Type);
             BinaryExpression isEqual = Expression.Equal(Expression.Constant(value, type), unbox);
-            Assert.True(Expression.Lambda<Func<bool>>(isEqual).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(isEqual).Compile(useInterpreter)());
         }
 
         [Theory]
-        [MemberData(nameof(UnboxableFromObject))]
-        [MemberData(nameof(NullableUnboxableFromObject))]
-        [MemberData(nameof(UnboxableFromIComparable))]
-        [MemberData(nameof(NullableUnboxableFromIComparable))]
-        [MemberData(nameof(UnboxableFromIComparableT))]
-        [MemberData(nameof(NullableUnboxableFromIComparableT))]
-        public void CanUnboxFromMake(object value, Type type, Type boxedType)
+        [PerCompilationType(nameof(UnboxableFromObject))]
+        [PerCompilationType(nameof(NullableUnboxableFromObject))]
+        [PerCompilationType(nameof(UnboxableFromIComparable))]
+        [PerCompilationType(nameof(NullableUnboxableFromIComparable))]
+        [PerCompilationType(nameof(UnboxableFromIComparableT))]
+        [PerCompilationType(nameof(NullableUnboxableFromIComparableT))]
+        public void CanUnboxFromMake(object value, Type type, Type boxedType, bool useInterpreter)
         {
             Expression expression = Expression.Constant(value, boxedType);
             UnaryExpression unbox = Expression.MakeUnary(ExpressionType.Unbox, expression, type);
             Assert.Equal(type, unbox.Type);
             BinaryExpression isEqual = Expression.Equal(Expression.Constant(value, type), unbox);
-            Assert.True(Expression.Lambda<Func<bool>>(isEqual).Compile()());
+            Assert.True(Expression.Lambda<Func<bool>>(isEqual).Compile(useInterpreter)());
         }
 
         public static IEnumerable<object[]> UnboxableFromObject()
@@ -117,11 +117,11 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(NullableTypes))]
-        public void NullNullable(Type type)
+        [PerCompilationType(nameof(NullableTypes))]
+        public void NullNullable(Type type, bool useInterpreter)
         {
             UnaryExpression unbox = Expression.Unbox(Expression.Default(typeof(object)), type);
-            Func<bool> isNull = Expression.Lambda<Func<bool>>(Expression.Equal(Expression.Default(type), unbox)).Compile();
+            Func<bool> isNull = Expression.Lambda<Func<bool>>(Expression.Equal(Expression.Default(type), unbox)).Compile(useInterpreter);
             Assert.True(isNull());
         }
 
@@ -167,11 +167,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>("type", () => Expression.Unbox(value, null));
         }
 
-        [Fact]
-        public void MistmatchFailsOnRuntime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void MistmatchFailsOnRuntime(bool useInterpreter)
         {
             Expression unbox = Expression.Unbox(Expression.Constant(0, typeof(object)), typeof(long));
-            Func<long> del = Expression.Lambda<Func<long>>(unbox).Compile();
+            Func<long> del = Expression.Lambda<Func<long>>(unbox).Compile(useInterpreter);
             Assert.Throws<InvalidCastException>(() => del());
         }
 
