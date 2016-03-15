@@ -52,10 +52,10 @@ And with:
 As usual the resulting binaries will be found in `bin/Product/BuildOS.BuildArch.BuildType/`
 
 
-Cross Compilation for Linux, FreeBSD, or OS X
-=============================================
+Compiling mscorlib for ARM Linux
+================================
 
-It is also possible to use a Windows machine to build the managed components of CoreCLR or CoreFX for Linux or OS X.  This can be useful when the build on the target platform fails, for example due to Mono issues.
+It is also possible to use a Windows and a Linux machine to build the managed components of CoreCLR for ARM Linux.  This can be useful when the build on the target platform fails, for example due to Mono issues.
 
 Build mscorlib on Windows
 -------------------------
@@ -64,35 +64,30 @@ The following instructions assume you are on a Windows machine with a clone of t
 To build mscorlib for Linux, run the following command:
 
 ```
-D:\git\coreclr> build.cmd linuxmscorlib
+D:\git\coreclr> build.cmd linuxmscorlib arm
 ```
 
 The arguments `freebsdmscorlib` and `osxmscorlib` can be used instead to build mscorlib for FreeBSD or OS X.
 
-The output is at bin\Product\<BuildOS>.x64.Debug\mscorlib.dll.
+The output is at bin\Product\<BuildOS>.arm.Debug\mscorlib.dll.
 
-The CoreCLR native components need to be built on the target platform.  This can be done with the following command:
 
-```
-ellismg@linux:~/git/coreclr$ ./build.sh skipmscorlib
-```
+Build mscorlib on Ubuntu
+-------------------------
+The following instructions assume you are on a Linux machine such as Ubuntu 14.04 x86 64bit. 
 
-Build the Framework Managed Components on Windows
--------------------------------------------------
-The following instructions assume you are on a Windows machine with a clone of the CoreFX repo.
-
-To build the CoreFX managed components for Linux, run the following command:
+To build mscorlib for Linux, run the following command:
 
 ```
-D:\git\corefx> build.cmd /p:OSGroup=Linux /p:SkipTests=true
+    lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug clean verbose   
 ```
 
-`FreeBSD` and `OSX` can be used instead for the `OSGroup`.
-
-The output is at bin\<BuildOS>.AnyCPU.Debug.
-
-The CoreFX native components need to be built on the target platform.  This can be done with the following command:
+The output is at bin/Product/<BuildOS>.arm.Debug/mscorlib.dll.
 
 ```
-ellismg@linux:~/git/corefx$ ./build.sh native
+    lgs@ubuntu ~/git/coreclr/ $ file ./bin/Product/Linux.arm.Debug/mscorlib.dll 
+    ./bin/Product/Linux.arm.Debug/mscorlib.dll: PE32 executable (DLL) 
+    (console) ARMv7 Thumb Mono/.Net assembly, for MS Windows
 ```
+
+
