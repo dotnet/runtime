@@ -8864,25 +8864,13 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 	return NULL;
 }
 
-/**
- * This function might need to call runtime functions so it can't be part
- * of the metadata library.
- */
-static MonoLookupDynamicToken lookup_dynamic = NULL;
-
-void
-mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
-{
-	lookup_dynamic = func;
-}
-
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	MonoError error;
 	MonoClass *handle_class;
 
-	gpointer result = lookup_dynamic (image, token, TRUE, &handle_class, context, &error);
+	gpointer result = mono_reflection_lookup_dynamic_token (image, token, TRUE, &handle_class, context, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return result;
 
@@ -8892,7 +8880,7 @@ gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
 {
 	MonoError error;
-	gpointer result = lookup_dynamic (image, token, valid_token, handle_class, context, &error);
+	gpointer result = mono_reflection_lookup_dynamic_token (image, token, valid_token, handle_class, context, &error);
 	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return result;
 
