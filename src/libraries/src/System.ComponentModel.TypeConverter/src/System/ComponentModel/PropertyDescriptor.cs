@@ -19,6 +19,7 @@ namespace System.ComponentModel
         private object[] _editors;
         private Type[] _editorTypes;
         private int _editorCount;
+#endif
 
         /// <devdoc>
         ///    <para>
@@ -26,6 +27,14 @@ namespace System.ComponentModel
         ///       attributes.
         ///    </para>
         /// </devdoc>
+#if !PLACEHOLDER
+        // TODO: This is a temp constructor to unblock PropertyDescriptorCollection
+        protected PropertyDescriptor(string name, Attribute[] attrs)
+        {
+            Name = name;
+        }
+        public string Name { get; }
+#else
         protected PropertyDescriptor(string name, Attribute[] attrs)
         : base(name, attrs)
         {
