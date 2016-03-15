@@ -18,7 +18,7 @@ PROGRAM = monolinker.exe
 
 $(PROGRAM): $(RESOURCES)
 
-LOCAL_MCS_FLAGS = /r:$(CECIL) /r:System.Xml.dll -keyfile:$(PROGRAM_SNK) $(RESOURCES:%=-resource:%)
+LOCAL_MCS_FLAGS = /r:$(CECIL) /r:System.Xml.dll /r:System.Core.dll /r:System.dll $(RESOURCES:%=-resource:%)
 
 EXTRA_DISTFILES = $(RESOURCES)
 
