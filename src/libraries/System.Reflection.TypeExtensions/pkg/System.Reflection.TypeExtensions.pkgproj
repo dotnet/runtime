@@ -2,11 +2,17 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <ProjectReference Include="..\ref\4.0.0\System.Reflection.TypeExtensions.depproj">
+      <SupportedFramework>net46;netcore50</SupportedFramework>
+    </ProjectReference>
     <ProjectReference Include="..\ref\System.Reflection.TypeExtensions.csproj">
-      <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net462;netstandardapp1.5</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\redist\System.Reflection.TypeExtensions.depproj">
+      <TargetGroup>net46</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.TypeExtensions.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="any\System.Reflection.TypeExtensions.pkgproj" />
     <ProjectReference Include="aot\System.Reflection.TypeExtensions.pkgproj" />

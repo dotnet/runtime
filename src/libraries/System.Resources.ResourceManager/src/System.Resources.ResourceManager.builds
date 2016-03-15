@@ -7,10 +7,17 @@
     <Project Include="System.Resources.ResourceManager.csproj">
       <TargetGroup>net46</TargetGroup>
     </Project> -->
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.Resources.ResourceManager.csproj">
       <TargetGroup>netcore50</TargetGroup>
     </Project>
     <Project Include="System.Resources.ResourceManager.csproj">
+      <TargetGroup>netcore50aot</TargetGroup>
+    </Project> -->
+    <Project Include="redist\System.Resources.ResourceManager.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.Resources.ResourceManager.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>

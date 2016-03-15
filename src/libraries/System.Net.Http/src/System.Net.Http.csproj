@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)'==''">Windows_Debug</Configuration>
@@ -10,12 +10,12 @@
     <ProjectGuid>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http</AssemblyName>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetFramework Condition="'$(TargetsUnix)' == 'true'">netstandard1.4</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime> 
-    <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime> 
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsOSX)' == 'true'">osx</PackageTargetRuntime>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
     <NuGetTargetMoniker Condition="'$(TargetsUnix)' == 'true'">.NETStandard,Version=v1.4</NuGetTargetMoniker>
@@ -123,7 +123,6 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == '' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
@@ -240,9 +239,8 @@
       <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
-        <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
+      <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
     </Compile>
-
     <!-- Tls Client Certificate -->
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs">
       <Link>Common\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs</Link>
@@ -305,7 +303,6 @@
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
@@ -327,7 +324,7 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
       <Link>Common\System\Net\HttpVersion.cs</Link>
     </Compile>
-      <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
     <Compile Include="netcore50\System\Net\cookie.cs" />
@@ -336,7 +333,6 @@
     <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

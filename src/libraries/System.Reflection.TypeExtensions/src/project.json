@@ -6,7 +6,7 @@
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
       }
     },
-    "net46": {
+    "net462": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
@@ -20,7 +20,7 @@
         "System.Linq": "4.0.0",
         "System.Reflection": "4.1.0-rc3-23910",
         "System.Runtime.Extensions": "4.0.10"
-      }
+       }
     }
   }
 }

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Runtime.csproj">
+    <ProjectReference Include="..\..\src\redist\System.Runtime.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
     <ProjectReference Include="..\..\..\System.Private.Uri\pkg\System.Private.Uri.pkgproj"/>

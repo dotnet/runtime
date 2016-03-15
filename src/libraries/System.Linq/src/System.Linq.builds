@@ -6,6 +6,9 @@
     <Project Include="System.Linq.csproj">
       <TargetGroup>net462</TargetGroup>
     </Project>
+    <Project Include="redist\System.Linq.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

@@ -3,8 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Collections.Concurrent.csproj" />
+    <!-- Net46 facade is currently inbox
     <Project Include="System.Collections.Concurrent.csproj">
       <TargetGroup>net46</TargetGroup>
+    </Project> -->
+    <!-- NETCore50 must redistribute binaries due to shared library -->
+    <Project Include="redist\System.Collections.Concurrent.depproj">
+      <TargetGroup>netcore50</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
