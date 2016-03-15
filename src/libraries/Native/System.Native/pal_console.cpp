@@ -90,9 +90,9 @@ static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
     assert(signalForBreak == 0 || signalForBreak == 1);
 
     if (signalForBreak)
-        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
-    else
         termios->c_lflag |= static_cast<uint32_t>(ISIG);
+    else
+        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
 }
 
 // In order to support Console.ReadKey(intecept: true), we need to disable echo and canonical mode.
@@ -497,7 +497,7 @@ extern "C" int32_t SystemNative_InitializeConsole()
     if (tcgetattr(STDIN_FILENO, &g_initTermios) >= 0)
     {
         g_haveInitTermios = true;
-        g_signalForBreak = (g_initTermios.c_lflag & ISIG) == 0;
+        g_signalForBreak = (g_initTermios.c_lflag & ISIG) != 0;
     }
     else
     {
