@@ -7,7 +7,7 @@ using System.Text;
 namespace System.Net.Sockets
 {
     /// <summary>Represents a Unix Domain Socket endpoint as a path.</summary>
-    public sealed class UnixDomainSocketEndPoint : EndPoint
+    internal sealed class UnixDomainSocketEndPoint : EndPoint
     {
         private const int MaxPathLength = 92;   // sockaddr_un.sun_path at http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_un.h.html
         private const int PathOffset = 2;       // = offsetof(struct sockaddr_un, sun_path). It's the same on Linux and OSX

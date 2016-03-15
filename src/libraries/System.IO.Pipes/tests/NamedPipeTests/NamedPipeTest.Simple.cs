@@ -599,7 +599,6 @@ namespace System.IO.Pipes.Tests
                     ctx1.Cancel();
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverReadToken);
 
-                    ctx1.Cancel();
                     Assert.True(client.ReadAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
                 }
 

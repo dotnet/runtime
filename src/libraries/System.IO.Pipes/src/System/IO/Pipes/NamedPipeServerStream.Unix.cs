@@ -75,7 +75,16 @@ namespace System.IO.Pipes
 
                 Socket acceptedSocket = socket.Accept();
                 SafePipeHandle serverHandle = new SafePipeHandle(acceptedSocket);
-                ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
+                try
+                {
+                    ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
+                }
+                catch
+                {
+                    serverHandle.Dispose();
+                    acceptedSocket.Dispose();
+                    throw;
+                }
                 
                 InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
                 State = PipeState.Connected;

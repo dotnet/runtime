@@ -24,6 +24,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private Socket _namedPipeSocket;
         private SafeHandle _namedPipeSocketHandle;
+        private static PropertyInfo s_safeHandleProperty;
 
         internal SafePipeHandle(Socket namedPipeSocket) : base((IntPtr)DefaultInvalidHandle, ownsHandle: true)
         {
@@ -32,7 +33,9 @@ namespace Microsoft.Win32.SafeHandles
 
             // TODO: Issue https://github.com/dotnet/corefx/issues/6807
             // This is unfortunately the only way of getting at the Socket's file descriptor right now, until #6807 is implemented.
-            _namedPipeSocketHandle = (SafeHandle)typeof(Socket).GetTypeInfo().GetDeclaredProperty("SafeHandle")?.GetValue(namedPipeSocket, null);
+            PropertyInfo safeHandleProperty = s_safeHandleProperty ?? (s_safeHandleProperty = typeof(Socket).GetTypeInfo().GetDeclaredProperty("SafeHandle"));
+            Debug.Assert(safeHandleProperty != null, "Socket.SafeHandle could not be found.");
+            _namedPipeSocketHandle = (SafeHandle)safeHandleProperty?.GetValue(namedPipeSocket, null);
 
             bool ignored = false;
             _namedPipeSocketHandle.DangerousAddRef(ref ignored);
@@ -56,6 +59,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(!IsInvalid);
 
+            // Clean up resources for named handles
             if (_namedPipeSocketHandle != null)
             {
                 SetHandle(DefaultInvalidHandle);
@@ -64,6 +68,7 @@ namespace Microsoft.Win32.SafeHandles
                 return true;
             }
 
+            // Clean up resources for anonymous handles
             return (long)handle >= 0 ?
                 Interop.Sys.Close(handle) == 0 :
                 true;
