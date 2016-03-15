@@ -93,4 +93,4 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 endif()
 
 # add the install targets
-install (TARGETS sosplugin DESTINATION .)
+install_clr(sosplugin)
