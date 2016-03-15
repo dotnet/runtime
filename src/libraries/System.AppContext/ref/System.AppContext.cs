@@ -14,6 +14,6 @@ namespace System
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { isEnabled = default(bool); return default(bool); }
         public static string TargetFrameworkName { get { return default(string); } }
-        public static object GetData (string name) { return default(object); }
+        public static object GetData(string name) { return default(object); }
     }
 }
