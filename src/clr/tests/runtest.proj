@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="src\dir.props" />
-  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(NoBuild)' != 'true'" /> 
+  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" /> 
 
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
@@ -393,29 +393,29 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.json for runtime dependency -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestRuntimeJsonFile"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="src\Common\test_runtime\test_runtime.csproj"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateAllWrappers"
              Properties="_CMDDIR=%(TestDirectories.Identity)"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Execution -->
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
-             Condition=" '$(NoRun)'!='true' "/>
+             Condition=" '$(GeneraRuntimeLayout)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
-             Condition=" '$(NoRun)'!='true' "/>
+             Condition=" '$(RunTests)'=='true' "/>
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(NoBuild)'!='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
   </Target>
 </Project>
