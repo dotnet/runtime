@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata.Ecma335.Blobs
 namespace Roslyn.Reflection.Metadata.Ecma335.Blobs
 #endif
 {
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct ExceptionRegionEncoder

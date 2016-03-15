@@ -13,7 +13,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
     /// <summary>
     /// Represents the shape of an array type.
     /// </summary>
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     struct ArrayShape

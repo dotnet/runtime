@@ -24,7 +24,7 @@ namespace Roslyn.Reflection
 #endif
 {
     // TODO: argument checking
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     unsafe struct BlobWriter

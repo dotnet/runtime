@@ -89,12 +89,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Decodes the arguments encoded in the value blob.
         /// </summary>
-#if FUTURE
-        public
-#else
-        internal
-#endif
-        CustomAttributeValue<TType> DecodeValue<TType>(ICustomAttributeTypeProvider<TType> provider)
+        public CustomAttributeValue<TType> DecodeValue<TType>(ICustomAttributeTypeProvider<TType> provider)
         {
             var decoder = new CustomAttributeDecoder<TType>(provider, _reader);
             return decoder.DecodeValue(Constructor, Value);
