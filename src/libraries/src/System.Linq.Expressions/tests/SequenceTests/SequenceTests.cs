@@ -3728,13 +3728,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("null", f(null));
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DefaultOnlySwitch(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int));
             var s = Expression.Switch(p, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(false);
+            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(useInterpreter);
 
             Assert.Equal(42, fInt32Int32(0));
             Assert.Equal(42, fInt32Int32(1));
@@ -3742,7 +3743,7 @@ namespace System.Linq.Expressions.Tests
 
             s = Expression.Switch(typeof(object), p, Expression.Constant("A test string"), null);
 
-            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(false);
+            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("A test string", fInt32Object(0));
             Assert.Equal("A test string", fInt32Object(1));
@@ -3751,63 +3752,21 @@ namespace System.Linq.Expressions.Tests
             p = Expression.Parameter(typeof(string));
             s = Expression.Switch(p, Expression.Constant("foo"));
 
-            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(false);
+            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("foo", fStringString("bar"));
             Assert.Equal("foo", fStringString(null));
             Assert.Equal("foo", fStringString("foo"));
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchInterpreted()
-        {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p, Expression.Constant(42));
-
-            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(true);
-
-            Assert.Equal(42, fInt32Int32(0));
-            Assert.Equal(42, fInt32Int32(1));
-            Assert.Equal(42, fInt32Int32(-1));
-
-            s = Expression.Switch(typeof(object), p, Expression.Constant("A test string"), null);
-
-            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(true);
-
-            Assert.Equal("A test string", fInt32Object(0));
-            Assert.Equal("A test string", fInt32Object(1));
-            Assert.Equal("A test string", fInt32Object(-1));
-
-            p = Expression.Parameter(typeof(string));
-            s = Expression.Switch(p, Expression.Constant("foo"));
-
-            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(true);
-
-            Assert.Equal("foo", fStringString("bar"));
-            Assert.Equal("foo", fStringString(null));
-            Assert.Equal("foo", fStringString("foo"));
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NoDefaultOrCasesSwitch(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int));
             var s = Expression.Switch(p, (Expression)null);
 
-            var f = Expression.Lambda<Action<int>>(s, p).Compile(false);
-
-            f(0);
-
-            Assert.Equal(s.Type, typeof(void));
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchInterpreted()
-        {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p, (Expression)null);
-
-            var f = Expression.Lambda<Action<int>>(s, p).Compile(true);
+            var f = Expression.Lambda<Action<int>>(s, p).Compile(useInterpreter);
 
             f(0);
 
@@ -3832,15 +3791,16 @@ namespace System.Linq.Expressions.Tests
             return 42;
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchWithSideEffectCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DefaultOnlySwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
             var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
             var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
             var s = Expression.Switch(switchValue, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(false);
+            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             Assert.Equal(42, fInt32Int32(ref changed));
@@ -3850,48 +3810,16 @@ namespace System.Linq.Expressions.Tests
             Assert.True(changed);
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchWithSideEffectInterpreted()
-        {
-            bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
-            var s = Expression.Switch(switchValue, Expression.Constant(42));
-
-            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(true);
-
-            Assert.False(changed);
-            Assert.Equal(42, fInt32Int32(ref changed));
-            Assert.True(changed);
-            changed = false;
-            Assert.Equal(42, fInt32Int32(ref changed));
-            Assert.True(changed);
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchWithSideEffectCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NoDefaultOrCasesSwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
             var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
             var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
             var s = Expression.Switch(switchValue, (Expression)null);
 
-            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(false);
-
-            Assert.False(changed);
-            f(ref changed);
-            Assert.True(changed);
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchWithSideEffectInterpreted()
-        {
-            bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
-            var s = Expression.Switch(switchValue, (Expression)null);
-
-            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(true);
+            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             f(ref changed);

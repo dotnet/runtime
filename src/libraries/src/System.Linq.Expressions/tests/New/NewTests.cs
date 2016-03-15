@@ -251,16 +251,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(() => Expression.New(cctor));
         }
 
-        [Fact]
-        public static void CheckNewWithAbstractCtor()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckNewWithAbstractCtor(bool useInterpretation)
         {
             var ctor = typeof(AbstractCtor).GetTypeInfo().DeclaredConstructors.Single();
             var f = Expression.Lambda<Func<AbstractCtor>>(Expression.New(ctor));
 
-            foreach (var preferInterpretation in new[] { false, true })
-            {
-                Assert.Throws<InvalidOperationException>(() => f.Compile(preferInterpretation));
-            }
+            Assert.Throws<InvalidOperationException>(() => f.Compile(useInterpretation));
         }
 
         static class StaticCtor

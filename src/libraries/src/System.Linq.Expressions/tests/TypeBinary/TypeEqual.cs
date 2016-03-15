@@ -76,8 +76,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationCompiled(Expression expression, Type type)
+        [PerCompilationType(nameof(ExpressionAndTypeCombinations))]
+        public void ExpressionEvaluation(Expression expression, Type type, bool useInterpreter)
         {
             bool expected;
             if (type == typeof(void))
@@ -93,33 +93,12 @@ namespace System.Linq.Expressions.Tests
                 expected = value != null && value.GetType() == nonNullable;
             }
 
-            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeEqual(expression, type)).Compile(false)());
+            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeEqual(expression, type)).Compile(useInterpreter)());
         }
 
         [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationInterpretted(Expression expression, Type type)
-        {
-            bool expected;
-            if (type == typeof(void))
-                expected = expression.Type == typeof(void);
-            else if (expression.Type == typeof(void))
-                expected = false;
-            else
-            {
-                Type nonNullable = type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)
-                    ? type.GetGenericArguments()[0]
-                    : type;
-                object value = Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()();
-                expected = value != null && value.GetType() == nonNullable;
-            }
-
-            Assert.Equal(expected, Expression.Lambda<Func<bool>>(Expression.TypeEqual(expression, type)).Compile(true)());
-        }
-
-        [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationWithParameterCompiled(Expression expression, Type type)
+        [PerCompilationType(nameof(ExpressionAndTypeCombinations))]
+        public void ExpressionEvaluationWithParameter(Expression expression, Type type, bool useInterpreter)
         {
             if (expression.Type == typeof(void))
                 return; // Can't have void parameter.
@@ -143,38 +122,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Assign(param, expression),
                     Expression.TypeEqual(param, type)
                     )
-                ).Compile(false);
-
-            Assert.Equal(expected, func());
-        }
-
-        [Theory]
-        [MemberData(nameof(ExpressionAndTypeCombinations))]
-        public void ExpressionEvaluationWithParameterInterpretted(Expression expression, Type type)
-        {
-            if (expression.Type == typeof(void))
-                return; // Can't have void parameter.
-            bool expected;
-            if (type == typeof(void))
-                expected = false;
-            else
-            {
-                Type nonNullable = type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)
-                    ? type.GetGenericArguments()[0]
-                    : type;
-                object value = Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()();
-                expected = value != null && value.GetType() == nonNullable;
-            }
-
-            var param = Expression.Parameter(expression.Type);
-
-            Func<bool> func = Expression.Lambda<Func<bool>>(
-                Expression.Block(
-                    new[] { param },
-                    Expression.Assign(param, expression),
-                    Expression.TypeEqual(param, type)
-                    )
-                ).Compile(true);
+                ).Compile(useInterpreter);
 
             Assert.Equal(expected, func());
         }
@@ -204,8 +152,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Same(expression, visitor.LastTypeBinaryVisited);
         }
 
-        [Fact]
-        public void VariantDelegateArgumentCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void VariantDelegateArgument(bool useInterpreter)
         {
             Action<object> ao = x => { };
             Action<string> a = x => { };
@@ -216,26 +165,7 @@ namespace System.Linq.Expressions.Tests
             Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
                 Expression.TypeEqual(param, typeof(Action<string>)),
                 param
-            ).Compile(false);
-
-            Assert.False(isActStr(ao));
-            Assert.True(isActStr(a));
-            Assert.False(isActStr(b));
-        }
-
-        [Fact]
-        public void VariantDelegateArgumentInterpreted()
-        {
-            Action<object> ao = x => { };
-            Action<string> a = x => { };
-            Action<string> b = ao;
-
-            var param = Expression.Parameter(typeof(Action<string>));
-
-            Func<Action<string>, bool> isActStr = Expression.Lambda<Func<Action<string>, bool>>(
-                Expression.TypeEqual(param, typeof(Action<string>)),
-                param
-            ).Compile(true);
+            ).Compile(useInterpreter);
 
             Assert.False(isActStr(ao));
             Assert.True(isActStr(a));

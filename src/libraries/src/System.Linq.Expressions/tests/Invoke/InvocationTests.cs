@@ -103,35 +103,26 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void InvocationDoesNotChangeFunctionInvokedCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void InvocationDoesNotChangeFunctionInvoked(bool useInterpreter)
         {
             FuncHolder holder = new FuncHolder();
             var fld = Expression.Field(Expression.Constant(holder), "Function");
             var inv = Expression.Invoke(fld);
-            Func<int> act = (Func<int>)Expression.Lambda(inv).Compile(false);
+            Func<int> act = (Func<int>)Expression.Lambda(inv).Compile(useInterpreter);
             act();
             Assert.Equal(1, holder.Function());
         }
 
-        [Fact]
-        public static void InvocationDoesNotChangeFunctionInvokedInterpreted()
-        {
-            FuncHolder holder = new FuncHolder();
-            var fld = Expression.Field(Expression.Constant(holder), "Function");
-            var inv = Expression.Invoke(fld);
-            Func<int> act = (Func<int>)Expression.Lambda(inv).Compile(true);
-            act();
-            Assert.Equal(1, holder.Function());
-        }
-
-        [Fact]
-        public static void UnboxReturnsReferenceCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void UnboxReturnsReference(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(object));
             var unbox = Expression.Unbox(p, typeof(Mutable));
             var call = Expression.Call(unbox, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<object, int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<object, int>>(call, p).Compile(useInterpreter);
 
             object boxed = new Mutable();
             Assert.Equal(0, lambda(boxed));
@@ -140,28 +131,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, lambda(boxed));
         }
 
-        [Fact]
-        public static void UnboxReturnsReferenceInterpretted()
-        {
-            var p = Expression.Parameter(typeof(object));
-            var unbox = Expression.Unbox(p, typeof(Mutable));
-            var call = Expression.Call(unbox, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<object, int>>(call, p).Compile(true);
-
-            object boxed = new Mutable();
-            Assert.Equal(0, lambda(boxed));
-            Assert.Equal(1, lambda(boxed));
-            Assert.Equal(2, lambda(boxed));
-            Assert.Equal(3, lambda(boxed));
-        }
-
-        [Fact]
-        public static void ArrayWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Mutable[]));
             var indexed = Expression.ArrayIndex(p, Expression.Constant(0));
             var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(useInterpreter);
 
             var array = new Mutable[1];
             Assert.Equal(0, lambda(array));
@@ -169,27 +146,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, lambda(array));
         }
 
-        [Fact]
-        public static void ArrayWriteBackInterpretted()
-        {
-            var p = Expression.Parameter(typeof(Mutable[]));
-            var indexed = Expression.ArrayIndex(p, Expression.Constant(0));
-            var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(true);
-
-            var array = new Mutable[1];
-            Assert.Equal(0, lambda(array));
-            Assert.Equal(1, lambda(array));
-            Assert.Equal(2, lambda(array));
-        }
-
-        [Fact]
-        public static void MultiRankArrayWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MultiRankArrayWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Mutable[,]));
             var indexed = Expression.ArrayIndex(p, Expression.Constant(0), Expression.Constant(0));
             var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(useInterpreter);
 
             var array = new Mutable[1, 1];
             Assert.Equal(0, lambda(array));
@@ -197,27 +161,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, lambda(array));
         }
 
-        [Fact]
-        public static void MultiRankArrayWriteBackInterpretted()
-        {
-            var p = Expression.Parameter(typeof(Mutable[,]));
-            var indexed = Expression.ArrayIndex(p, Expression.Constant(0), Expression.Constant(0));
-            var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(true);
-
-            var array = new Mutable[1, 1];
-            Assert.Equal(0, lambda(array));
-            Assert.Equal(1, lambda(array));
-            Assert.Equal(2, lambda(array));
-        }
-
-        [Fact]
-        public static void ArrayAccessWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayAccessWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Mutable[]));
             var indexed = Expression.ArrayAccess(p, Expression.Constant(0));
             var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(useInterpreter);
 
             var array = new Mutable[1];
             Assert.Equal(0, lambda(array));
@@ -225,27 +176,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, lambda(array));
         }
 
-        [Fact]
-        public static void ArrayAccessWriteBackInterpretted()
-        {
-            var p = Expression.Parameter(typeof(Mutable[]));
-            var indexed = Expression.ArrayAccess(p, Expression.Constant(0));
-            var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[], int>>(call, p).Compile(true);
-
-            var array = new Mutable[1];
-            Assert.Equal(0, lambda(array));
-            Assert.Equal(1, lambda(array));
-            Assert.Equal(2, lambda(array));
-        }
-
-        [Fact]
-        public static void MultiRankArrayAccessWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MultiRankArrayAccessWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Mutable[,]));
             var indexed = Expression.ArrayAccess(p, Expression.Constant(0), Expression.Constant(0));
             var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(useInterpreter);
 
             var array = new Mutable[1, 1];
             Assert.Equal(0, lambda(array));
@@ -253,53 +191,28 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, lambda(array));
         }
 
-        [Fact]
-        public static void MultiRankArrayAccessWriteBackInterpretted()
-        {
-            var p = Expression.Parameter(typeof(Mutable[,]));
-            var indexed = Expression.ArrayAccess(p, Expression.Constant(0), Expression.Constant(0));
-            var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Mutable[,], int>>(call, p).Compile(true);
-
-            var array = new Mutable[1, 1];
-            Assert.Equal(0, lambda(array));
-            Assert.Equal(1, lambda(array));
-            Assert.Equal(2, lambda(array));
-        }
-
-        [Fact]
-        public static void IndexedPropertyAccessNoWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void IndexedPropertyAccessNoWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(List<Mutable>));
             var indexed = Expression.Property(p, typeof(List<Mutable>).GetProperty("Item"), Expression.Constant(0));
             var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<List<Mutable>, int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<List<Mutable>, int>>(call, p).Compile(useInterpreter);
 
             var list = new List<Mutable> { new Mutable() };
             Assert.Equal(0, lambda(list));
             Assert.Equal(0, lambda(list));
         }
 
-        [Fact]
-        public static void IndexedPropertyAccessNoWriteBackInterpretted()
-        {
-            var p = Expression.Parameter(typeof(List<Mutable>));
-            var indexed = Expression.Property(p, typeof(List<Mutable>).GetProperty("Item"), Expression.Constant(0));
-            var call = Expression.Call(indexed, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<List<Mutable>, int>>(call, p).Compile(true);
-
-            var list = new List<Mutable> { new Mutable() };
-            Assert.Equal(0, lambda(list));
-            Assert.Equal(0, lambda(list));
-        }
-
-        [Fact]
-        public static void FieldAccessWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void FieldAccessWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Wrapper<Mutable>));
             var member = Expression.Field(p, typeof(Wrapper<Mutable>).GetField("Field"));
             var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(useInterpreter);
 
             var wrapper = new Wrapper<Mutable>();
             Assert.Equal(0, lambda(wrapper));
@@ -307,53 +220,28 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, lambda(wrapper));
         }
 
-        [Fact]
-        public static void FieldAccessWriteBackIntepretted()
-        {
-            var p = Expression.Parameter(typeof(Wrapper<Mutable>));
-            var member = Expression.Field(p, typeof(Wrapper<Mutable>).GetField("Field"));
-            var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(true);
-
-            var wrapper = new Wrapper<Mutable>();
-            Assert.Equal(0, lambda(wrapper));
-            Assert.Equal(1, lambda(wrapper));
-            Assert.Equal(2, lambda(wrapper));
-        }
-
-        [Fact]
-        public static void PropertyAccessNoWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PropertyAccessNoWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Wrapper<Mutable>));
             var member = Expression.Property(p, typeof(Wrapper<Mutable>).GetProperty("Property"));
             var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(useInterpreter);
 
             var wrapper = new Wrapper<Mutable>();
             Assert.Equal(0, lambda(wrapper));
             Assert.Equal(0, lambda(wrapper));
         }
 
-        [Fact]
-        public static void PropertyAccessNoWriteBackIntepretted()
-        {
-            var p = Expression.Parameter(typeof(Wrapper<Mutable>));
-            var member = Expression.Property(p, typeof(Wrapper<Mutable>).GetProperty("Property"));
-            var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(true);
-
-            var wrapper = new Wrapper<Mutable>();
-            Assert.Equal(0, lambda(wrapper));
-            Assert.Equal(0, lambda(wrapper));
-        }
-
-        [Fact]
-        public static void ReadonlyFieldAccessWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ReadonlyFieldAccessWriteBack(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(Wrapper<Mutable>));
             var member = Expression.Field(p, typeof(Wrapper<Mutable>).GetField("ReadOnlyField"));
             var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(false);
+            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(useInterpreter);
 
             var wrapper = new Wrapper<Mutable>();
             Assert.Equal(0, lambda(wrapper));
@@ -361,37 +249,13 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(0, lambda(wrapper));
         }
 
-        [Fact]
-        public static void ReadonlyFieldAccessWriteBackInterpreted()
-        {
-            var p = Expression.Parameter(typeof(Wrapper<Mutable>));
-            var member = Expression.Field(p, typeof(Wrapper<Mutable>).GetField("ReadOnlyField"));
-            var call = Expression.Call(member, typeof(Mutable).GetMethod("Foo"));
-            var lambda = Expression.Lambda<Func<Wrapper<Mutable>, int>>(call, p).Compile(true);
-
-            var wrapper = new Wrapper<Mutable>();
-            Assert.Equal(0, lambda(wrapper));
-            Assert.Equal(0, lambda(wrapper));
-            Assert.Equal(0, lambda(wrapper));
-        }
-
-        [Fact]
-        public static void ConstFieldAccessWriteBackCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConstFieldAccessWriteBack(bool useInterpreter)
         {
             var member = Expression.Field(null, typeof(Wrapper<Mutable>).GetField("Zero"));
             var call = Expression.Call(member, typeof(int).GetMethod("GetType"));
-            var lambda = Expression.Lambda<Func<Type>>(call).Compile(false);
-
-            var wrapper = new Wrapper<Mutable>();
-            Assert.Equal(typeof(int), lambda());
-        }
-
-        [Fact]
-        public static void ConstFieldAccessWriteBackInterpreted()
-        {
-            var member = Expression.Field(null, typeof(Wrapper<Mutable>).GetField("Zero"));
-            var call = Expression.Call(member, typeof(int).GetMethod("GetType"));
-            var lambda = Expression.Lambda<Func<Type>>(call).Compile(true);
+            var lambda = Expression.Lambda<Func<Type>>(call).Compile(useInterpreter);
 
             var wrapper = new Wrapper<Mutable>();
             Assert.Equal(typeof(int), lambda());
