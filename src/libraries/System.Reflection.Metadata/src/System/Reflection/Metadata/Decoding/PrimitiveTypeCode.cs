@@ -14,7 +14,7 @@ namespace Roslyn.Reflection.Metadata.Decoding
     /// <summary>
     /// Represents a primitive type found in metadata signatures.
     /// </summary>
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     enum PrimitiveTypeCode : byte

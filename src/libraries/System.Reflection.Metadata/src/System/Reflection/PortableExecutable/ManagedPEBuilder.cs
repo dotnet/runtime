@@ -18,7 +18,7 @@ namespace Roslyn.Reflection.PortableExecutable
     using Roslyn.Reflection.Metadata.Ecma335;
 #endif
 
-#if SRM && FUTURE
+#if SRM
     public
 #endif
     static class ManagedPEBuilder
