@@ -11,416 +11,416 @@ namespace System.Linq.Expressions.Tests
     {
         #region NullableBool tests
 
-        [Fact]
-        public static void CheckNullableBoolArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableBoolArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(0));
-            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(1));
-            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(5));
+            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(0), useInterpreter);
+            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(1), useInterpreter);
+            CheckNullableBoolArrayLengthExpression(GenerateNullableBoolArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableBoolArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableBoolArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableBoolArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableBoolArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableByte tests
 
-        [Fact]
-        public static void CheckNullableByteArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableByteArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(0));
-            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(1));
-            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(5));
+            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(0), useInterpreter);
+            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(1), useInterpreter);
+            CheckNullableByteArrayLengthExpression(GenerateNullableByteArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableByteArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableByteArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableByteArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableByteArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableChar tests
 
-        [Fact]
-        public static void CheckNullableCharArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableCharArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(0));
-            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(1));
-            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(5));
+            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(0), useInterpreter);
+            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(1), useInterpreter);
+            CheckNullableCharArrayLengthExpression(GenerateNullableCharArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableCharArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableCharArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableCharArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableCharArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableDecimal tests
 
-        [Fact]
-        public static void CheckNullableDecimalArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableDecimalArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(0));
-            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(1));
-            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(5));
+            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(0), useInterpreter);
+            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(1), useInterpreter);
+            CheckNullableDecimalArrayLengthExpression(GenerateNullableDecimalArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableDecimalArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableDecimalArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableDecimalArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableDecimalArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableDouble tests
 
-        [Fact]
-        public static void CheckNullableDoubleArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableDoubleArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(0));
-            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(1));
-            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(5));
+            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(0), useInterpreter);
+            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(1), useInterpreter);
+            CheckNullableDoubleArrayLengthExpression(GenerateNullableDoubleArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableDoubleArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableDoubleArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableDoubleArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableDoubleArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableEnum tests
 
-        [Fact]
-        public static void CheckNullableEnumArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEnumArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(0));
-            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(1));
-            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(5));
+            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(0), useInterpreter);
+            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(1), useInterpreter);
+            CheckNullableEnumArrayLengthExpression(GenerateNullableEnumArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableEnumArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableEnumArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableEnumArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableEnumArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableEnumLong tests
 
-        [Fact]
-        public static void CheckNullableEnumLongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableEnumLongArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(0));
-            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(1));
-            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(5));
+            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(0), useInterpreter);
+            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(1), useInterpreter);
+            CheckNullableEnumLongArrayLengthExpression(GenerateNullableEnumLongArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableEnumLongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableEnumLongArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableEnumLongArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableEnumLongArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableFloat tests
 
-        [Fact]
-        public static void CheckNullableFloatArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableFloatArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(0));
-            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(1));
-            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(5));
+            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(0), useInterpreter);
+            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(1), useInterpreter);
+            CheckNullableFloatArrayLengthExpression(GenerateNullableFloatArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableFloatArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableFloatArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableFloatArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableFloatArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableInt tests
 
-        [Fact]
-        public static void CheckNullableIntArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableIntArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(0));
-            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(1));
-            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(5));
+            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(0), useInterpreter);
+            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(1), useInterpreter);
+            CheckNullableIntArrayLengthExpression(GenerateNullableIntArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableIntArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableIntArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableIntArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableIntArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableLong tests
 
-        [Fact]
-        public static void CheckNullableLongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableLongArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(0));
-            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(1));
-            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(5));
+            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(0), useInterpreter);
+            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(1), useInterpreter);
+            CheckNullableLongArrayLengthExpression(GenerateNullableLongArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableLongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableLongArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableLongArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableLongArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableSByte tests
 
-        [Fact]
-        public static void CheckNullableSByteArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableSByteArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(0));
-            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(1));
-            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(5));
+            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(0), useInterpreter);
+            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(1), useInterpreter);
+            CheckNullableSByteArrayLengthExpression(GenerateNullableSByteArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableSByteArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableSByteArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableSByteArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableSByteArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableStruct tests
 
-        [Fact]
-        public static void CheckNullableStructArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(0));
-            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(1));
-            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(5));
+            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(0), useInterpreter);
+            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(1), useInterpreter);
+            CheckNullableStructArrayLengthExpression(GenerateNullableStructArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableStructArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableStructArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableStructArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableStructArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableStructWithString tests
 
-        [Fact]
-        public static void CheckNullableStructWithStringArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructWithStringArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(0));
-            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(1));
-            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(5));
+            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(0), useInterpreter);
+            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(1), useInterpreter);
+            CheckNullableStructWithStringArrayLengthExpression(GenerateNullableStructWithStringArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableStructWithStringArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableStructWithStringArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableStructWithStringArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableStructWithStringArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableStructWithStringAndValue tests
 
-        [Fact]
-        public static void CheckNullableStructWithStringAndValueArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructWithStringAndValueArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(0));
-            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(1));
-            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(5));
+            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(0), useInterpreter);
+            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(1), useInterpreter);
+            CheckNullableStructWithStringAndValueArrayLengthExpression(GenerateNullableStructWithStringAndValueArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableStructWithStringAndValueArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableStructWithStringAndValueArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableStructWithStringAndValueArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableStructWithStringAndValueArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableStructWithTwoParameters tests
 
-        [Fact]
-        public static void CheckNullableStructWithTwoParametersArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructWithTwoParametersArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(0));
-            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(1));
-            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(5));
+            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(0), useInterpreter);
+            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(1), useInterpreter);
+            CheckNullableStructWithTwoParametersArrayLengthExpression(GenerateNullableStructWithTwoParametersArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableStructWithTwoParametersArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableStructWithTwoParametersArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableStructWithTwoParametersArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableStructWithTwoParametersArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableStructWithValue tests
 
-        [Fact]
-        public static void CheckNullableStructWithValueArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableStructWithValueArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(0));
-            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(1));
-            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(5));
+            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(0), useInterpreter);
+            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(1), useInterpreter);
+            CheckNullableStructWithValueArrayLengthExpression(GenerateNullableStructWithValueArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableStructWithValueArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableStructWithValueArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableStructWithValueArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableStructWithValueArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableShort tests
 
-        [Fact]
-        public static void CheckNullableShortArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableShortArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(0));
-            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(1));
-            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(5));
+            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(0), useInterpreter);
+            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(1), useInterpreter);
+            CheckNullableShortArrayLengthExpression(GenerateNullableShortArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableShortArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableShortArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableShortArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableShortArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableUInt tests
 
-        [Fact]
-        public static void CheckNullableUIntArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableUIntArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(0));
-            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(1));
-            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(5));
+            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(0), useInterpreter);
+            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(1), useInterpreter);
+            CheckNullableUIntArrayLengthExpression(GenerateNullableUIntArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableUIntArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableUIntArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableUIntArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableUIntArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableULong tests
 
-        [Fact]
-        public static void CheckNullableULongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableULongArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(0));
-            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(1));
-            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(5));
+            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(0), useInterpreter);
+            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(1), useInterpreter);
+            CheckNullableULongArrayLengthExpression(GenerateNullableULongArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableULongArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableULongArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableULongArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableULongArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region NullableUShort tests
 
-        [Fact]
-        public static void CheckNullableUShortArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckNullableUShortArrayLengthTest(bool useInterpreter)
         {
-            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(0));
-            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(1));
-            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(5));
+            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(0), useInterpreter);
+            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(1), useInterpreter);
+            CheckNullableUShortArrayLengthExpression(GenerateNullableUShortArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionNullableUShortArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionNullableUShortArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionNullableUShortArrayLength(null);
+            Assert.Throws<NullReferenceException>(() => CheckNullableUShortArrayLengthExpression(null, useInterpreter));
         }
 
         #endregion
 
         #region Generic tests
 
-        [Fact]
-        public static void CheckGenericNullableEnumWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericNullableEnumWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionArrayLengthTestHelper<E>();
+            CheckGenericWithStructRestrictionArrayLengthTestHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericNullableEnumWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericNullableEnumWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<E>();
+            Assert.Throws<NullReferenceException>(() => CheckGenericWithStructRestrictionArrayLengthExpression<E>(null, useInterpreter));
         }
 
-        [Fact]
-        public static void CheckGenericNullableStructWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericNullableStructWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionArrayLengthTestHelper<S>();
+            CheckGenericWithStructRestrictionArrayLengthTestHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericNullableStructWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericNullableStructWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<S>();
+            CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericNullableStructWithStringAndFieldWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericNullableStructWithStringAndFieldWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckGenericWithStructRestrictionArrayLengthTestHelper<Scs>();
+            CheckGenericWithStructRestrictionArrayLengthTestHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericNullableStructWithStringAndFieldWithStructRestrictionArrayLengthTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericNullableStructWithStringAndFieldWithStructRestrictionArrayLengthTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Scs>();
+            CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Scs>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        public static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>() where Ts : struct
+        public static void CheckGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
-            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(0));
-            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(1));
-            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(5));
+            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(0), useInterpreter);
+            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(1), useInterpreter);
+            CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(GenerateGenericWithStructRestrictionArray<Ts>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>() where Ts : struct
+        public static void CheckExceptionGenericWithStructRestrictionArrayLengthTestHelper<Ts>(bool useInterpreter) where Ts : struct
         {
-            CheckExceptionGenericWithStructRestrictionArrayLength<Ts>(null);
+            Assert.Throws<NullReferenceException>(() => CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(null, useInterpreter));
         }
 
         #endregion
@@ -683,533 +683,214 @@ namespace System.Linq.Expressions.Tests
 
         #region Check length expression
 
-        private static void CheckNullableBoolArrayLengthExpression(bool?[] array)
+        private static void CheckNullableBoolArrayLengthExpression(bool?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(bool?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableByteArrayLengthExpression(byte?[] array)
+        private static void CheckNullableByteArrayLengthExpression(byte?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(byte?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableCharArrayLengthExpression(char?[] array)
+        private static void CheckNullableCharArrayLengthExpression(char?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(char?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableDecimalArrayLengthExpression(decimal?[] array)
+        private static void CheckNullableDecimalArrayLengthExpression(decimal?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(decimal?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableDoubleArrayLengthExpression(double?[] array)
+        private static void CheckNullableDoubleArrayLengthExpression(double?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(double?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableEnumArrayLengthExpression(E?[] array)
+        private static void CheckNullableEnumArrayLengthExpression(E?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(E?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableEnumLongArrayLengthExpression(El?[] array)
+        private static void CheckNullableEnumLongArrayLengthExpression(El?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(El?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableFloatArrayLengthExpression(float?[] array)
+        private static void CheckNullableFloatArrayLengthExpression(float?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(float?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableIntArrayLengthExpression(int?[] array)
+        private static void CheckNullableIntArrayLengthExpression(int?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(int?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableLongArrayLengthExpression(long?[] array)
+        private static void CheckNullableLongArrayLengthExpression(long?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(long?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableSByteArrayLengthExpression(sbyte?[] array)
+        private static void CheckNullableSByteArrayLengthExpression(sbyte?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(sbyte?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableStructArrayLengthExpression(S?[] array)
+        private static void CheckNullableStructArrayLengthExpression(S?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(S?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableStructWithStringArrayLengthExpression(Sc?[] array)
+        private static void CheckNullableStructWithStringArrayLengthExpression(Sc?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(Sc?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableStructWithStringAndValueArrayLengthExpression(Scs?[] array)
+        private static void CheckNullableStructWithStringAndValueArrayLengthExpression(Scs?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(Scs?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableStructWithTwoParametersArrayLengthExpression(Sp?[] array)
+        private static void CheckNullableStructWithTwoParametersArrayLengthExpression(Sp?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(Sp?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableStructWithValueArrayLengthExpression(Ss?[] array)
+        private static void CheckNullableStructWithValueArrayLengthExpression(Ss?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(Ss?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableShortArrayLengthExpression(short?[] array)
+        private static void CheckNullableShortArrayLengthExpression(short?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(short?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableUIntArrayLengthExpression(uint?[] array)
+        private static void CheckNullableUIntArrayLengthExpression(uint?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(uint?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableULongArrayLengthExpression(ulong?[] array)
+        private static void CheckNullableULongArrayLengthExpression(ulong?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(ulong?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckNullableUShortArrayLengthExpression(ushort?[] array)
+        private static void CheckNullableUShortArrayLengthExpression(ushort?[] array, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(ushort?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
         }
 
-        private static void CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(Ts?[] array) where Ts : struct
+        private static void CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(Ts?[] array, bool useInterpreter) where Ts : struct
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.ArrayLength(Expression.Constant(array, typeof(Ts?[]))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
             Assert.Equal(array.Length, f());
-        }
-
-        #endregion
-
-        #region Check exception array length
-
-        private static void CheckExceptionNullableBoolArrayLength(bool?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableBoolArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableByteArrayLength(byte?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableByteArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableCharArrayLength(char?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableCharArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableDecimalArrayLength(decimal?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableDecimalArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableDoubleArrayLength(double?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableDoubleArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableEnumArrayLength(E?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableEnumArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableEnumLongArrayLength(El?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableEnumLongArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableFloatArrayLength(float?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableFloatArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableIntArrayLength(int?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableIntArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableLongArrayLength(long?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableLongArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableSByteArrayLength(sbyte?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableSByteArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableStructArrayLength(S?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableStructArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableStructWithStringArrayLength(Sc?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableStructWithStringArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableStructWithStringAndValueArrayLength(Scs?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableStructWithStringAndValueArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableStructWithTwoParametersArrayLength(Sp?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableStructWithTwoParametersArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableStructWithValueArrayLength(Ss?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableStructWithValueArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableShortArrayLength(short?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableShortArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableUIntArrayLength(uint?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableUIntArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableULongArrayLength(ulong?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableULongArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionNullableUShortArrayLength(ushort?[] array)
-        {
-            bool success = true;
-            try
-            {
-                CheckNullableUShortArrayLengthExpression(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
-        }
-
-        private static void CheckExceptionGenericWithStructRestrictionArrayLength<Ts>(Ts?[] array) where Ts : struct
-        {
-            bool success = true;
-            try
-            {
-                CheckGenericWithStructRestrictionArrayLengthExpression<Ts>(array); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
         }
 
         #endregion

@@ -9,1098 +9,1178 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayArrayIndexTests
     {
-        #region Bool tests
+        #region Boolean tests
 
-        [Fact]
-        public static void CheckBoolArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(0));
-            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(1));
-            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(5));
+            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(0), useInterpreter);
+            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(1), useInterpreter);
+            CheckBoolArrayArrayIndex(GenerateBoolArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionBoolArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionBoolArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionBoolArrayArrayIndex(null, -1);
-            CheckExceptionBoolArrayArrayIndex(null, 0);
-            CheckExceptionBoolArrayArrayIndex(null, 1);
+            CheckExceptionBoolArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(0), -1);
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(0), 0);
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(1), -1);
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(1), 1);
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(5), -1);
-            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(5), 5);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(0), -1, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(0), 0, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(1), -1, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(1), 1, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(5), -1, useInterpreter);
+            CheckExceptionBoolArrayArrayIndex(GenerateBoolArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Byte tests
 
-        [Fact]
-        public static void CheckByteArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckByteArrayArrayIndex(GenerateByteArrayArray(0));
-            CheckByteArrayArrayIndex(GenerateByteArrayArray(1));
-            CheckByteArrayArrayIndex(GenerateByteArrayArray(5));
+            CheckByteArrayArrayIndex(GenerateByteArrayArray(0), useInterpreter);
+            CheckByteArrayArrayIndex(GenerateByteArrayArray(1), useInterpreter);
+            CheckByteArrayArrayIndex(GenerateByteArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionByteArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionByteArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionByteArrayArrayIndex(null, -1);
-            CheckExceptionByteArrayArrayIndex(null, 0);
-            CheckExceptionByteArrayArrayIndex(null, 1);
+            CheckExceptionByteArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(0), -1);
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(0), 0);
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(1), -1);
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(1), 1);
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(5), -1);
-            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(5), 5);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(0), -1, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(0), 0, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(1), -1, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(1), 1, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(5), -1, useInterpreter);
+            CheckExceptionByteArrayArrayIndex(GenerateByteArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Custom tests
 
-        [Fact]
-        public static void CheckCustomArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckCustomArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(0));
-            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(1));
-            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(5));
+            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(0), useInterpreter);
+            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(1), useInterpreter);
+            CheckCustomArrayArrayIndex(GenerateCustomArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionCustomArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionCustomArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionCustomArrayArrayIndex(null, -1);
-            CheckExceptionCustomArrayArrayIndex(null, 0);
-            CheckExceptionCustomArrayArrayIndex(null, 1);
+            CheckExceptionCustomArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(0), -1);
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(0), 0);
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(1), -1);
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(1), 1);
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(5), -1);
-            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(5), 5);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(0), -1, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(0), 0, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(1), -1, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(1), 1, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(5), -1, useInterpreter);
+            CheckExceptionCustomArrayArrayIndex(GenerateCustomArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Char tests
 
-        [Fact]
-        public static void CheckCharArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckCharArrayArrayIndex(GenerateCharArrayArray(0));
-            CheckCharArrayArrayIndex(GenerateCharArrayArray(1));
-            CheckCharArrayArrayIndex(GenerateCharArrayArray(5));
+            CheckCharArrayArrayIndex(GenerateCharArrayArray(0), useInterpreter);
+            CheckCharArrayArrayIndex(GenerateCharArrayArray(1), useInterpreter);
+            CheckCharArrayArrayIndex(GenerateCharArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionCharArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionCharArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionCharArrayArrayIndex(null, -1);
-            CheckExceptionCharArrayArrayIndex(null, 0);
-            CheckExceptionCharArrayArrayIndex(null, 1);
+            CheckExceptionCharArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(0), -1);
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(0), 0);
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(1), -1);
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(1), 1);
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(5), -1);
-            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(5), 5);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(0), -1, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(0), 0, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(1), -1, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(1), 1, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(5), -1, useInterpreter);
+            CheckExceptionCharArrayArrayIndex(GenerateCharArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Custom2 tests
 
-        [Fact]
-        public static void CheckCustom2ArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckCustom2ArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0));
-            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1));
-            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5));
+            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0), useInterpreter);
+            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1), useInterpreter);
+            CheckCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionCustom2ArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionCustom2ArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionCustom2ArrayArrayIndex(null, -1);
-            CheckExceptionCustom2ArrayArrayIndex(null, 0);
-            CheckExceptionCustom2ArrayArrayIndex(null, 1);
+            CheckExceptionCustom2ArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0), -1);
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0), 0);
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1), -1);
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1), 1);
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5), -1);
-            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5), 5);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0), -1, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(0), 0, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1), -1, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(1), 1, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5), -1, useInterpreter);
+            CheckExceptionCustom2ArrayArrayIndex(GenerateCustom2ArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Decimal tests
 
-        [Fact]
-        public static void CheckDecimalArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(0));
-            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(1));
-            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(5));
+            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(0), useInterpreter);
+            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(1), useInterpreter);
+            CheckDecimalArrayArrayIndex(GenerateDecimalArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionDecimalArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionDecimalArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionDecimalArrayArrayIndex(null, -1);
-            CheckExceptionDecimalArrayArrayIndex(null, 0);
-            CheckExceptionDecimalArrayArrayIndex(null, 1);
+            CheckExceptionDecimalArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(0), -1);
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(0), 0);
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(1), -1);
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(1), 1);
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(5), -1);
-            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(5), 5);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(0), -1, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(0), 0, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(1), -1, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(1), 1, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(5), -1, useInterpreter);
+            CheckExceptionDecimalArrayArrayIndex(GenerateDecimalArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Delegate tests
 
-        [Fact]
-        public static void CheckDelegateArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckDelegateArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(0));
-            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(1));
-            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(5));
+            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(0), useInterpreter);
+            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(1), useInterpreter);
+            CheckDelegateArrayArrayIndex(GenerateDelegateArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionDelegateArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionDelegateArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionDelegateArrayArrayIndex(null, -1);
-            CheckExceptionDelegateArrayArrayIndex(null, 0);
-            CheckExceptionDelegateArrayArrayIndex(null, 1);
+            CheckExceptionDelegateArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(0), -1);
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(0), 0);
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(1), -1);
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(1), 1);
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(5), -1);
-            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(5), 5);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(0), -1, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(0), 0, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(1), -1, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(1), 1, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(5), -1, useInterpreter);
+            CheckExceptionDelegateArrayArrayIndex(GenerateDelegateArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region double tests
 
-        [Fact]
-        public static void CheckdoubleArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckdoubleArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(0));
-            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(1));
-            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(5));
+            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(0), useInterpreter);
+            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(1), useInterpreter);
+            CheckdoubleArrayArrayIndex(GeneratedoubleArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptiondoubleArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptiondoubleArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptiondoubleArrayArrayIndex(null, -1);
-            CheckExceptiondoubleArrayArrayIndex(null, 0);
-            CheckExceptiondoubleArrayArrayIndex(null, 1);
+            CheckExceptiondoubleArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(0), -1);
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(0), 0);
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(1), -1);
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(1), 1);
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(5), -1);
-            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(5), 5);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(0), -1, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(0), 0, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(1), -1, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(1), 1, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(5), -1, useInterpreter);
+            CheckExceptiondoubleArrayArrayIndex(GeneratedoubleArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Enum tests
 
-        [Fact]
-        public static void CheckEnumArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(0));
-            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(1));
-            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(5));
+            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(0), useInterpreter);
+            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(1), useInterpreter);
+            CheckEnumArrayArrayIndex(GenerateEnumArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionEnumArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionEnumArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionEnumArrayArrayIndex(null, -1);
-            CheckExceptionEnumArrayArrayIndex(null, 0);
-            CheckExceptionEnumArrayArrayIndex(null, 1);
+            CheckExceptionEnumArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(0), -1);
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(0), 0);
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(1), -1);
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(1), 1);
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(5), -1);
-            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(5), 5);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(0), -1, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(0), 0, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(1), -1, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(1), 1, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(5), -1, useInterpreter);
+            CheckExceptionEnumArrayArrayIndex(GenerateEnumArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region EnumLong tests
 
-        [Fact]
-        public static void CheckEnumLongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckEnumLongArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0));
-            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1));
-            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5));
+            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0), useInterpreter);
+            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1), useInterpreter);
+            CheckEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionEnumLongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionEnumLongArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionEnumLongArrayArrayIndex(null, -1);
-            CheckExceptionEnumLongArrayArrayIndex(null, 0);
-            CheckExceptionEnumLongArrayArrayIndex(null, 1);
+            CheckExceptionEnumLongArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0), -1);
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0), 0);
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1), -1);
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1), 1);
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5), -1);
-            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5), 5);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0), -1, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(0), 0, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1), -1, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(1), 1, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5), -1, useInterpreter);
+            CheckExceptionEnumLongArrayArrayIndex(GenerateEnumLongArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Float tests
 
-        [Fact]
-        public static void CheckFloatArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(0));
-            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(1));
-            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(5));
+            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(0), useInterpreter);
+            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(1), useInterpreter);
+            CheckFloatArrayArrayIndex(GenerateFloatArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionFloatArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionFloatArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionFloatArrayArrayIndex(null, -1);
-            CheckExceptionFloatArrayArrayIndex(null, 0);
-            CheckExceptionFloatArrayArrayIndex(null, 1);
+            CheckExceptionFloatArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(0), -1);
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(0), 0);
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(1), -1);
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(1), 1);
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(5), -1);
-            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(5), 5);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(0), -1, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(0), 0, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(1), -1, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(1), 1, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(5), -1, useInterpreter);
+            CheckExceptionFloatArrayArrayIndex(GenerateFloatArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Func tests
 
-        [Fact]
-        public static void CheckFuncArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckFuncArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(0));
-            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(1));
-            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(5));
+            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(0), useInterpreter);
+            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(1), useInterpreter);
+            CheckFuncArrayArrayIndex(GenerateFuncArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionFuncArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionFuncArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionFuncArrayArrayIndex(null, -1);
-            CheckExceptionFuncArrayArrayIndex(null, 0);
-            CheckExceptionFuncArrayArrayIndex(null, 1);
+            CheckExceptionFuncArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(0), -1);
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(0), 0);
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(1), -1);
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(1), 1);
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(5), -1);
-            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(5), 5);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(0), -1, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(0), 0, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(1), -1, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(1), 1, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(5), -1, useInterpreter);
+            CheckExceptionFuncArrayArrayIndex(GenerateFuncArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Interface tests
 
-        [Fact]
-        public static void CheckInterfaceArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckInterfaceArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0));
-            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1));
-            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5));
+            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0), useInterpreter);
+            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1), useInterpreter);
+            CheckInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionInterfaceArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionInterfaceArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionInterfaceArrayArrayIndex(null, -1);
-            CheckExceptionInterfaceArrayArrayIndex(null, 0);
-            CheckExceptionInterfaceArrayArrayIndex(null, 1);
+            CheckExceptionInterfaceArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0), -1);
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0), 0);
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1), -1);
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1), 1);
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5), -1);
-            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5), 5);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0), -1, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(0), 0, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1), -1, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(1), 1, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5), -1, useInterpreter);
+            CheckExceptionInterfaceArrayArrayIndex(GenerateInterfaceArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region IEquatable tests
 
-        [Fact]
-        public static void CheckIEquatableArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckIEquatableArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0));
-            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1));
-            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5));
+            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0), useInterpreter);
+            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1), useInterpreter);
+            CheckIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionIEquatableArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionIEquatableArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionIEquatableArrayArrayIndex(null, -1);
-            CheckExceptionIEquatableArrayArrayIndex(null, 0);
-            CheckExceptionIEquatableArrayArrayIndex(null, 1);
+            CheckExceptionIEquatableArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0), -1);
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0), 0);
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1), -1);
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1), 1);
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5), -1);
-            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5), 5);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0), -1, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(0), 0, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1), -1, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(1), 1, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5), -1, useInterpreter);
+            CheckExceptionIEquatableArrayArrayIndex(GenerateIEquatableArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region IEquatable2 tests
 
-        [Fact]
-        public static void CheckIEquatable2ArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckIEquatable2ArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0));
-            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1));
-            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5));
+            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0), useInterpreter);
+            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1), useInterpreter);
+            CheckIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionIEquatable2ArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionIEquatable2ArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionIEquatable2ArrayArrayIndex(null, -1);
-            CheckExceptionIEquatable2ArrayArrayIndex(null, 0);
-            CheckExceptionIEquatable2ArrayArrayIndex(null, 1);
+            CheckExceptionIEquatable2ArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0), -1);
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0), 0);
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1), -1);
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1), 1);
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5), -1);
-            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5), 5);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0), -1, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(0), 0, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1), -1, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(1), 1, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5), -1, useInterpreter);
+            CheckExceptionIEquatable2ArrayArrayIndex(GenerateIEquatable2ArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Int tests
 
-        [Fact]
-        public static void CheckIntArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckIntArrayArrayIndex(GenerateIntArrayArray(0));
-            CheckIntArrayArrayIndex(GenerateIntArrayArray(1));
-            CheckIntArrayArrayIndex(GenerateIntArrayArray(5));
+            CheckIntArrayArrayIndex(GenerateIntArrayArray(0), useInterpreter);
+            CheckIntArrayArrayIndex(GenerateIntArrayArray(1), useInterpreter);
+            CheckIntArrayArrayIndex(GenerateIntArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionIntArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionIntArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionIntArrayArrayIndex(null, -1);
-            CheckExceptionIntArrayArrayIndex(null, 0);
-            CheckExceptionIntArrayArrayIndex(null, 1);
+            CheckExceptionIntArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(0), -1);
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(0), 0);
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(1), -1);
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(1), 1);
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(5), -1);
-            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(5), 5);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(0), -1, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(0), 0, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(1), -1, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(1), 1, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(5), -1, useInterpreter);
+            CheckExceptionIntArrayArrayIndex(GenerateIntArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Long tests
 
-        [Fact]
-        public static void CheckLongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckLongArrayArrayIndex(GenerateLongArrayArray(0));
-            CheckLongArrayArrayIndex(GenerateLongArrayArray(1));
-            CheckLongArrayArrayIndex(GenerateLongArrayArray(5));
+            CheckLongArrayArrayIndex(GenerateLongArrayArray(0), useInterpreter);
+            CheckLongArrayArrayIndex(GenerateLongArrayArray(1), useInterpreter);
+            CheckLongArrayArrayIndex(GenerateLongArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionLongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionLongArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionLongArrayArrayIndex(null, -1);
-            CheckExceptionLongArrayArrayIndex(null, 0);
-            CheckExceptionLongArrayArrayIndex(null, 1);
+            CheckExceptionLongArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(0), -1);
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(0), 0);
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(1), -1);
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(1), 1);
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(5), -1);
-            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(5), 5);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(0), -1, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(0), 0, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(1), -1, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(1), 1, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(5), -1, useInterpreter);
+            CheckExceptionLongArrayArrayIndex(GenerateLongArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Object tests
 
-        [Fact]
-        public static void CheckObjectArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckObjectArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(0));
-            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(1));
-            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(5));
+            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(0), useInterpreter);
+            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(1), useInterpreter);
+            CheckObjectArrayArrayIndex(GenerateObjectArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionObjectArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionObjectArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionObjectArrayArrayIndex(null, -1);
-            CheckExceptionObjectArrayArrayIndex(null, 0);
-            CheckExceptionObjectArrayArrayIndex(null, 1);
+            CheckExceptionObjectArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(0), -1);
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(0), 0);
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(1), -1);
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(1), 1);
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(5), -1);
-            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(5), 5);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(0), -1, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(0), 0, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(1), -1, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(1), 1, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(5), -1, useInterpreter);
+            CheckExceptionObjectArrayArrayIndex(GenerateObjectArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Struct tests
 
-        [Fact]
-        public static void CheckStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStructArrayArrayIndex(GenerateStructArrayArray(0));
-            CheckStructArrayArrayIndex(GenerateStructArrayArray(1));
-            CheckStructArrayArrayIndex(GenerateStructArrayArray(5));
+            CheckStructArrayArrayIndex(GenerateStructArrayArray(0), useInterpreter);
+            CheckStructArrayArrayIndex(GenerateStructArrayArray(1), useInterpreter);
+            CheckStructArrayArrayIndex(GenerateStructArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStructArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStructArrayArrayIndex(null, -1);
-            CheckExceptionStructArrayArrayIndex(null, 0);
-            CheckExceptionStructArrayArrayIndex(null, 1);
+            CheckExceptionStructArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(0), -1);
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(0), 0);
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(1), -1);
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(1), 1);
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(5), -1);
-            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(5), 5);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(0), -1, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(0), 0, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(1), -1, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(1), 1, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(5), -1, useInterpreter);
+            CheckExceptionStructArrayArrayIndex(GenerateStructArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region SByte tests
 
-        [Fact]
-        public static void CheckSByteArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(0));
-            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(1));
-            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(5));
+            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(0), useInterpreter);
+            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(1), useInterpreter);
+            CheckSByteArrayArrayIndex(GenerateSByteArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionSByteArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionSByteArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionSByteArrayArrayIndex(null, -1);
-            CheckExceptionSByteArrayArrayIndex(null, 0);
-            CheckExceptionSByteArrayArrayIndex(null, 1);
+            CheckExceptionSByteArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(0), -1);
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(0), 0);
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(1), -1);
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(1), 1);
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(5), -1);
-            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(5), 5);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(0), -1, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(0), 0, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(1), -1, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(1), 1, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(5), -1, useInterpreter);
+            CheckExceptionSByteArrayArrayIndex(GenerateSByteArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region StructWithString tests
 
-        [Fact]
-        public static void CheckStructWithStringArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0));
-            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1));
-            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5));
+            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0), useInterpreter);
+            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1), useInterpreter);
+            CheckStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStructWithStringArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStructWithStringArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStructWithStringArrayArrayIndex(null, -1);
-            CheckExceptionStructWithStringArrayArrayIndex(null, 0);
-            CheckExceptionStructWithStringArrayArrayIndex(null, 1);
+            CheckExceptionStructWithStringArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0), -1);
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0), 0);
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1), -1);
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1), 1);
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5), -1);
-            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5), 5);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0), -1, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(0), 0, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1), -1, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(1), 1, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5), -1, useInterpreter);
+            CheckExceptionStructWithStringArrayArrayIndex(GenerateStructWithStringArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region StructWithStringAndStruct tests
 
-        [Fact]
-        public static void CheckStructWithStringAndStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndStructArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0));
-            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1));
-            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5));
+            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0), useInterpreter);
+            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1), useInterpreter);
+            CheckStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStructWithStringAndStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStructWithStringAndStructArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, -1);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, 0);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, 1);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0), -1);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0), 0);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1), -1);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1), 1);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5), -1);
-            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5), 5);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0), -1, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(0), 0, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1), -1, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(1), 1, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5), -1, useInterpreter);
+            CheckExceptionStructWithStringAndStructArrayArrayIndex(GenerateStructWithStringAndStructArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Short tests
 
-        [Fact]
-        public static void CheckShortArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckShortArrayArrayIndex(GenerateShortArrayArray(0));
-            CheckShortArrayArrayIndex(GenerateShortArrayArray(1));
-            CheckShortArrayArrayIndex(GenerateShortArrayArray(5));
+            CheckShortArrayArrayIndex(GenerateShortArrayArray(0), useInterpreter);
+            CheckShortArrayArrayIndex(GenerateShortArrayArray(1), useInterpreter);
+            CheckShortArrayArrayIndex(GenerateShortArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionShortArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionShortArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionShortArrayArrayIndex(null, -1);
-            CheckExceptionShortArrayArrayIndex(null, 0);
-            CheckExceptionShortArrayArrayIndex(null, 1);
+            CheckExceptionShortArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(0), -1);
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(0), 0);
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(1), -1);
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(1), 1);
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(5), -1);
-            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(5), 5);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(0), -1, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(0), 0, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(1), -1, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(1), 1, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(5), -1, useInterpreter);
+            CheckExceptionShortArrayArrayIndex(GenerateShortArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region StructWithTwoFields tests
 
-        [Fact]
-        public static void CheckStructWithTwoFieldsArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoFieldsArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0));
-            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1));
-            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5));
+            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0), useInterpreter);
+            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1), useInterpreter);
+            CheckStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStructWithTwoFieldsArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStructWithTwoFieldsArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, -1);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, 0);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, 1);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0), -1);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0), 0);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1), -1);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1), 1);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5), -1);
-            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5), 5);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0), -1, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(0), 0, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1), -1, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(1), 1, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5), -1, useInterpreter);
+            CheckExceptionStructWithTwoFieldsArrayArrayIndex(GenerateStructWithTwoFieldsArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region StructWithValue tests
 
-        [Fact]
-        public static void CheckStructWithValueArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0));
-            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1));
-            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5));
+            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0), useInterpreter);
+            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1), useInterpreter);
+            CheckStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStructWithValueArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStructWithValueArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStructWithValueArrayArrayIndex(null, -1);
-            CheckExceptionStructWithValueArrayArrayIndex(null, 0);
-            CheckExceptionStructWithValueArrayArrayIndex(null, 1);
+            CheckExceptionStructWithValueArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0), -1);
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0), 0);
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1), -1);
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1), 1);
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5), -1);
-            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5), 5);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0), -1, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(0), 0, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1), -1, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(1), 1, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5), -1, useInterpreter);
+            CheckExceptionStructWithValueArrayArrayIndex(GenerateStructWithValueArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region String tests
 
-        [Fact]
-        public static void CheckStringArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckStringArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckStringArrayArrayIndex(GenerateStringArrayArray(0));
-            CheckStringArrayArrayIndex(GenerateStringArrayArray(1));
-            CheckStringArrayArrayIndex(GenerateStringArrayArray(5));
+            CheckStringArrayArrayIndex(GenerateStringArrayArray(0), useInterpreter);
+            CheckStringArrayArrayIndex(GenerateStringArrayArray(1), useInterpreter);
+            CheckStringArrayArrayIndex(GenerateStringArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionStringArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionStringArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionStringArrayArrayIndex(null, -1);
-            CheckExceptionStringArrayArrayIndex(null, 0);
-            CheckExceptionStringArrayArrayIndex(null, 1);
+            CheckExceptionStringArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(0), -1);
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(0), 0);
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(1), -1);
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(1), 1);
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(5), -1);
-            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(5), 5);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(0), -1, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(0), 0, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(1), -1, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(1), 1, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(5), -1, useInterpreter);
+            CheckExceptionStringArrayArrayIndex(GenerateStringArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region UInt tests
 
-        [Fact]
-        public static void CheckUIntArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(0));
-            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(1));
-            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(5));
+            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(0), useInterpreter);
+            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(1), useInterpreter);
+            CheckUIntArrayArrayIndex(GenerateUIntArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionUIntArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionUIntArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionUIntArrayArrayIndex(null, -1);
-            CheckExceptionUIntArrayArrayIndex(null, 0);
-            CheckExceptionUIntArrayArrayIndex(null, 1);
+            CheckExceptionUIntArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(0), -1);
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(0), 0);
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(1), -1);
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(1), 1);
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(5), -1);
-            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(5), 5);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(0), -1, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(0), 0, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(1), -1, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(1), 1, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(5), -1, useInterpreter);
+            CheckExceptionUIntArrayArrayIndex(GenerateUIntArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region ULong tests
 
-        [Fact]
-        public static void CheckULongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckULongArrayArrayIndex(GenerateULongArrayArray(0));
-            CheckULongArrayArrayIndex(GenerateULongArrayArray(1));
-            CheckULongArrayArrayIndex(GenerateULongArrayArray(5));
+            CheckULongArrayArrayIndex(GenerateULongArrayArray(0), useInterpreter);
+            CheckULongArrayArrayIndex(GenerateULongArrayArray(1), useInterpreter);
+            CheckULongArrayArrayIndex(GenerateULongArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionULongArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionULongArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionULongArrayArrayIndex(null, -1);
-            CheckExceptionULongArrayArrayIndex(null, 0);
-            CheckExceptionULongArrayArrayIndex(null, 1);
+            CheckExceptionULongArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(0), -1);
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(0), 0);
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(1), -1);
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(1), 1);
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(5), -1);
-            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(5), 5);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(0), -1, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(0), 0, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(1), -1, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(1), 1, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(5), -1, useInterpreter);
+            CheckExceptionULongArrayArrayIndex(GenerateULongArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region UShort tests
 
-        [Fact]
-        public static void CheckUShortArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(0));
-            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(1));
-            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(5));
+            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(0), useInterpreter);
+            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(1), useInterpreter);
+            CheckUShortArrayArrayIndex(GenerateUShortArrayArray(5), useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionUShortArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionUShortArrayArrayIndexTest(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionUShortArrayArrayIndex(null, -1);
-            CheckExceptionUShortArrayArrayIndex(null, 0);
-            CheckExceptionUShortArrayArrayIndex(null, 1);
+            CheckExceptionUShortArrayArrayIndex(null, -1, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(null, 0, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(0), -1);
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(0), 0);
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(1), -1);
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(1), 1);
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(5), -1);
-            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(5), 5);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(0), -1, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(0), 0, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(1), -1, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(1), 1, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(5), -1, useInterpreter);
+            CheckExceptionUShortArrayArrayIndex(GenerateUShortArrayArray(5), 5, useInterpreter);
         }
 
         #endregion
 
         #region Generic tests
 
-        [Fact]
-        public static void CheckGenericCustomArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndexTestHelper<C>();
+            CheckGenericArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericCustomArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericCustomArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericArrayArrayIndexTestHelper<C>();
+            CheckExceptionGenericArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericEnumArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericEnumArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndexTestHelper<E>();
+            CheckGenericArrayArrayIndexTestHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericEnumArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericEnumArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericArrayArrayIndexTestHelper<E>();
+            CheckExceptionGenericArrayArrayIndexTestHelper<E>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericObjectArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericObjectArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndexTestHelper<object>();
+            CheckGenericArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericObjectArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericObjectArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericArrayArrayIndexTestHelper<object>();
+            CheckExceptionGenericArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericStructArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndexTestHelper<S>();
+            CheckGenericArrayArrayIndexTestHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericStructArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericStructArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericArrayArrayIndexTestHelper<S>();
+            CheckExceptionGenericArrayArrayIndexTestHelper<S>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericStructWithStringAndFieldArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericStructWithStringAndFieldArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndexTestHelper<Scs>();
+            CheckGenericArrayArrayIndexTestHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericStructWithStringAndFieldArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericStructWithStringAndFieldArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericArrayArrayIndexTestHelper<Scs>();
+            CheckExceptionGenericArrayArrayIndexTestHelper<Scs>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<C>();
+            CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericCustomWithClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericCustomWithClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<C>();
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericObjectWithClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericObjectWithClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<object>();
+            CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericObjectWithClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericObjectWithClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<object>();
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<C>();
+            CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericCustomWithClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericCustomWithClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<C>();
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericObjectWithClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericObjectWithClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<object>();
+            CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericObjectWithClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericObjectWithClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<object>();
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<object>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithSubClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithSubClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<C>();
+            CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericCustomWithSubClassRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericCustomWithSubClassRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<C>();
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckGenericCustomWithSubClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckGenericCustomWithSubClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<C>();
+            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
-        [Fact]
-        public static void CheckExceptionGenericCustomWithSubClassAndNewRestrictionArrayArrayIndexTest()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CheckExceptionGenericCustomWithSubClassAndNewRestrictionArrayArrayIndexTest(bool useInterpreter)
         {
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<C>();
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<C>(useInterpreter);
         }
 
         #endregion
 
         #region Generic helpers
 
-        public static void CheckGenericArrayArrayIndexTestHelper<T>()
+        public static void CheckGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
         {
-            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0));
-            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1));
-            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5));
+            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), useInterpreter);
+            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), useInterpreter);
+            CheckGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericArrayArrayIndexTestHelper<T>()
+        public static void CheckExceptionGenericArrayArrayIndexTestHelper<T>(bool useInterpreter)
         {
             // null arrays
-            CheckExceptionGenericArrayArrayIndex<T>(null, -1);
-            CheckExceptionGenericArrayArrayIndex<T>(null, 0);
-            CheckExceptionGenericArrayArrayIndex<T>(null, 1);
+            CheckExceptionGenericArrayArrayIndex<T>(null, -1, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(null, 0, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), -1);
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), 0);
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), -1);
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), 1);
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), -1);
-            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), 5);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), -1, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(0), 0, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), -1, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(1), 1, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), -1, useInterpreter);
+            CheckExceptionGenericArrayArrayIndex<T>(GenerateGenericArrayArray<T>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>() where Tc : class
+        public static void CheckGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
-            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0));
-            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1));
-            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5));
+            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), useInterpreter);
+            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), useInterpreter);
+            CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>() where Tc : class
+        public static void CheckExceptionGenericWithClassRestrictionArrayArrayIndexTestHelper<Tc>(bool useInterpreter) where Tc : class
         {
             // null arrays
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, -1);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, 0);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, 1);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, -1, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, 0, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), -1);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), 0);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), -1);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), 1);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), -1);
-            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), 5);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), -1, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(0), 0, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), -1, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(1), 1, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), -1, useInterpreter);
+            CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(GenerateGenericWithClassRestrictionArrayArray<Tc>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>() where Tcn : class, new()
+        public static void CheckGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
-            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0));
-            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1));
-            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5));
+            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), useInterpreter);
+            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), useInterpreter);
+            CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>() where Tcn : class, new()
+        public static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndexTestHelper<Tcn>(bool useInterpreter) where Tcn : class, new()
         {
             // null arrays
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, -1);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, 0);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, 1);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, -1, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, 0, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), -1);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), 0);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), -1);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), 1);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), -1);
-            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), 5);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), -1, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(0), 0, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), -1, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(1), 1, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), -1, useInterpreter);
+            CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(GenerateGenericWithClassAndNewRestrictionArrayArray<Tcn>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>() where TC : C
+        public static void CheckGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
         {
-            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0));
-            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1));
-            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5));
+            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), useInterpreter);
+            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), useInterpreter);
+            CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>() where TC : C
+        public static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndexTestHelper<TC>(bool useInterpreter) where TC : C
         {
             // null arrays
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, -1);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, 0);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, 1);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, -1, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, 0, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), -1);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), 0);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), -1);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), 1);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), -1);
-            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), 5);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(0), 0, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(1), 1, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(GenerateGenericWithSubClassRestrictionArrayArray<TC>(5), 5, useInterpreter);
         }
 
-        public static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>() where TCn : C, new()
+        public static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
-            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0));
-            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1));
-            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5));
+            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), useInterpreter);
+            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), useInterpreter);
+            CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), useInterpreter);
         }
 
-        public static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>() where TCn : C, new()
+        public static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndexTestHelper<TCn>(bool useInterpreter) where TCn : C, new()
         {
             // null arrays
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, -1);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, 0);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, 1);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, -1, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, 0, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(null, 1, useInterpreter);
 
             // index out of bounds
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), -1);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), 0);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), -1);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), 1);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), -1);
-            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), 5);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(0), 0, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(1), 1, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), -1, useInterpreter);
+            CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(GenerateGenericWithSubClassAndNewRestrictionArrayArray<TCn>(5), 5, useInterpreter);
         }
 
         #endregion
@@ -1531,386 +1611,386 @@ namespace System.Linq.Expressions.Tests
 
         #region Check array index
 
-        private static void CheckBoolArrayArrayIndex(bool[][] array)
+        private static void CheckBoolArrayArrayIndex(bool[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckBoolArrayArrayIndexExpression(array, i);
+                success &= CheckBoolArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckByteArrayArrayIndex(byte[][] array)
+        private static void CheckByteArrayArrayIndex(byte[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckByteArrayArrayIndexExpression(array, i);
+                success &= CheckByteArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckCustomArrayArrayIndex(C[][] array)
+        private static void CheckCustomArrayArrayIndex(C[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckCustomArrayArrayIndexExpression(array, i);
+                success &= CheckCustomArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckCharArrayArrayIndex(char[][] array)
+        private static void CheckCharArrayArrayIndex(char[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckCharArrayArrayIndexExpression(array, i);
+                success &= CheckCharArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckCustom2ArrayArrayIndex(D[][] array)
+        private static void CheckCustom2ArrayArrayIndex(D[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckCustom2ArrayArrayIndexExpression(array, i);
+                success &= CheckCustom2ArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckDecimalArrayArrayIndex(decimal[][] array)
+        private static void CheckDecimalArrayArrayIndex(decimal[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckDecimalArrayArrayIndexExpression(array, i);
+                success &= CheckDecimalArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckDelegateArrayArrayIndex(Delegate[][] array)
+        private static void CheckDelegateArrayArrayIndex(Delegate[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckDelegateArrayArrayIndexExpression(array, i);
+                success &= CheckDelegateArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckdoubleArrayArrayIndex(double[][] array)
+        private static void CheckdoubleArrayArrayIndex(double[][] array, bool useInterpreter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckdoubleArrayArrayIndexExpression(array, i);
+                success &= CheckDoubleArrayArrayIndexExpression(array, i, useInterpreter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckEnumArrayArrayIndex(E[][] array)
+        private static void CheckEnumArrayArrayIndex(E[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckEnumArrayArrayIndexExpression(array, i);
+                success &= CheckEnumArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckEnumLongArrayArrayIndex(El[][] array)
+        private static void CheckEnumLongArrayArrayIndex(El[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckEnumLongArrayArrayIndexExpression(array, i);
+                success &= CheckEnumLongArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckFloatArrayArrayIndex(float[][] array)
+        private static void CheckFloatArrayArrayIndex(float[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckFloatArrayArrayIndexExpression(array, i);
+                success &= CheckFloatArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckFuncArrayArrayIndex(Func<object>[][] array)
+        private static void CheckFuncArrayArrayIndex(Func<object>[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckFuncArrayArrayIndexExpression(array, i);
+                success &= CheckFuncArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckInterfaceArrayArrayIndex(I[][] array)
+        private static void CheckInterfaceArrayArrayIndex(I[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckInterfaceArrayArrayIndexExpression(array, i);
+                success &= CheckInterfaceArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIEquatableArrayArrayIndex(IEquatable<C>[][] array)
+        private static void CheckIEquatableArrayArrayIndex(IEquatable<C>[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIEquatableArrayArrayIndexExpression(array, i);
+                success &= CheckIEquatableArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIEquatable2ArrayArrayIndex(IEquatable<D>[][] array)
+        private static void CheckIEquatable2ArrayArrayIndex(IEquatable<D>[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIEquatable2ArrayArrayIndexExpression(array, i);
+                success &= CheckIEquatable2ArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckIntArrayArrayIndex(int[][] array)
+        private static void CheckIntArrayArrayIndex(int[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckIntArrayArrayIndexExpression(array, i);
+                success &= CheckIntArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckLongArrayArrayIndex(long[][] array)
+        private static void CheckLongArrayArrayIndex(long[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckLongArrayArrayIndexExpression(array, i);
+                success &= CheckLongArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckObjectArrayArrayIndex(object[][] array)
+        private static void CheckObjectArrayArrayIndex(object[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckObjectArrayArrayIndexExpression(array, i);
+                success &= CheckObjectArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructArrayArrayIndex(S[][] array)
+        private static void CheckStructArrayArrayIndex(S[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructArrayArrayIndexExpression(array, i);
+                success &= CheckStructArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckSByteArrayArrayIndex(sbyte[][] array)
+        private static void CheckSByteArrayArrayIndex(sbyte[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckSByteArrayArrayIndexExpression(array, i);
+                success &= CheckSByteArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithStringArrayArrayIndex(Sc[][] array)
+        private static void CheckStructWithStringArrayArrayIndex(Sc[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithStringArrayArrayIndexExpression(array, i);
+                success &= CheckStructWithStringArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithStringAndStructArrayArrayIndex(Scs[][] array)
+        private static void CheckStructWithStringAndStructArrayArrayIndex(Scs[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithStringAndStructArrayArrayIndexExpression(array, i);
+                success &= CheckStructWithStringAndStructArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckShortArrayArrayIndex(short[][] array)
+        private static void CheckShortArrayArrayIndex(short[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckShortArrayArrayIndexExpression(array, i);
+                success &= CheckShortArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithTwoFieldsArrayArrayIndex(Sp[][] array)
+        private static void CheckStructWithTwoFieldsArrayArrayIndex(Sp[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithTwoFieldsArrayArrayIndexExpression(array, i);
+                success &= CheckStructWithTwoFieldsArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStructWithValueArrayArrayIndex(Ss[][] array)
+        private static void CheckStructWithValueArrayArrayIndex(Ss[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStructWithValueArrayArrayIndexExpression(array, i);
+                success &= CheckStructWithValueArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckStringArrayArrayIndex(string[][] array)
+        private static void CheckStringArrayArrayIndex(string[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckStringArrayArrayIndexExpression(array, i);
+                success &= CheckStringArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckUIntArrayArrayIndex(uint[][] array)
+        private static void CheckUIntArrayArrayIndex(uint[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckUIntArrayArrayIndexExpression(array, i);
+                success &= CheckUIntArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckULongArrayArrayIndex(ulong[][] array)
+        private static void CheckULongArrayArrayIndex(ulong[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckULongArrayArrayIndexExpression(array, i);
+                success &= CheckULongArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckUShortArrayArrayIndex(ushort[][] array)
+        private static void CheckUShortArrayArrayIndex(ushort[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckUShortArrayArrayIndexExpression(array, i);
+                success &= CheckUShortArrayArrayIndexExpression(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithCustomArrayArrayIndex<T>(T[][] array)
+        private static void CheckGenericWithCustomArrayArrayIndex<T>(T[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithCustomArrayArrayIndexExpression<T>(array, i);
+                success &= CheckGenericWithCustomArrayArrayIndexExpression<T>(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericArrayArrayIndex<T>(T[][] array)
+        private static void CheckGenericArrayArrayIndex<T>(T[][] array, bool useInterpeter)
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericArrayArrayIndexExpression<T>(array, i);
+                success &= CheckArrayArrayIndexExpression<T>(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array) where Tc : class
+        private static void CheckGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array, bool useInterpeter) where Tc : class
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(array, i);
+                success &= CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array) where Tcn : class, new()
+        private static void CheckGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array, bool useInterpeter) where Tcn : class, new()
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(array, i);
+                success &= CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array) where TC : C
+        private static void CheckGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array, bool useInterpeter) where TC : C
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(array, i);
+                success &= CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(array, i, useInterpeter);
             }
 
             Assert.True(success);
         }
 
-        private static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array) where TCn : C, new()
+        private static void CheckGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array, bool useInterpeter) where TCn : C, new()
         {
             bool success = true;
             for (int i = 0; i < array.Length; i++)
             {
-                success &= CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(array, i);
+                success &= CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(array, i, useInterpeter);
             }
 
             Assert.True(success);
@@ -1920,388 +2000,388 @@ namespace System.Linq.Expressions.Tests
 
         #region Check index expression
 
-        private static bool CheckBoolArrayArrayIndexExpression(bool[][] array, int index)
+        private static bool CheckBoolArrayArrayIndexExpression(bool[][] array, int index, bool useInterpreter)
         {
             Expression<Func<bool[]>> e =
                 Expression.Lambda<Func<bool[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(bool[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckByteArrayArrayIndexExpression(byte[][] array, int index)
+        private static bool CheckByteArrayArrayIndexExpression(byte[][] array, int index, bool useInterpreter)
         {
             Expression<Func<byte[]>> e =
                 Expression.Lambda<Func<byte[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(byte[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckCustomArrayArrayIndexExpression(C[][] array, int index)
+        private static bool CheckCustomArrayArrayIndexExpression(C[][] array, int index, bool useInterpreter)
         {
             Expression<Func<C[]>> e =
                 Expression.Lambda<Func<C[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(C[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<C[]> f = e.Compile();
+            Func<C[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckCharArrayArrayIndexExpression(char[][] array, int index)
+        private static bool CheckCharArrayArrayIndexExpression(char[][] array, int index, bool useInterpreter)
         {
             Expression<Func<char[]>> e =
                 Expression.Lambda<Func<char[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(char[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckCustom2ArrayArrayIndexExpression(D[][] array, int index)
+        private static bool CheckCustom2ArrayArrayIndexExpression(D[][] array, int index, bool useInterpreter)
         {
             Expression<Func<D[]>> e =
                 Expression.Lambda<Func<D[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(D[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<D[]> f = e.Compile();
+            Func<D[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckDecimalArrayArrayIndexExpression(decimal[][] array, int index)
+        private static bool CheckDecimalArrayArrayIndexExpression(decimal[][] array, int index, bool useInterpreter)
         {
             Expression<Func<decimal[]>> e =
                 Expression.Lambda<Func<decimal[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(decimal[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckDelegateArrayArrayIndexExpression(Delegate[][] array, int index)
+        private static bool CheckDelegateArrayArrayIndexExpression(Delegate[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Delegate[]>> e =
                 Expression.Lambda<Func<Delegate[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Delegate[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Delegate[]> f = e.Compile();
+            Func<Delegate[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckdoubleArrayArrayIndexExpression(double[][] array, int index)
+        private static bool CheckDoubleArrayArrayIndexExpression(double[][] array, int index, bool useInterpreter)
         {
             Expression<Func<double[]>> e =
                 Expression.Lambda<Func<double[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(double[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckEnumArrayArrayIndexExpression(E[][] array, int index)
+        private static bool CheckEnumArrayArrayIndexExpression(E[][] array, int index, bool useInterpreter)
         {
             Expression<Func<E[]>> e =
                 Expression.Lambda<Func<E[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(E[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<E[]> f = e.Compile();
+            Func<E[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckEnumLongArrayArrayIndexExpression(El[][] array, int index)
+        private static bool CheckEnumLongArrayArrayIndexExpression(El[][] array, int index, bool useInterpreter)
         {
             Expression<Func<El[]>> e =
                 Expression.Lambda<Func<El[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(El[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<El[]> f = e.Compile();
+            Func<El[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckFloatArrayArrayIndexExpression(float[][] array, int index)
+        private static bool CheckFloatArrayArrayIndexExpression(float[][] array, int index, bool useInterpreter)
         {
             Expression<Func<float[]>> e =
                 Expression.Lambda<Func<float[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(float[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckFuncArrayArrayIndexExpression(Func<object>[][] array, int index)
+        private static bool CheckFuncArrayArrayIndexExpression(Func<object>[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Func<object>[]>> e =
                 Expression.Lambda<Func<Func<object>[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Func<object>[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Func<object>[]> f = e.Compile();
+            Func<Func<object>[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckInterfaceArrayArrayIndexExpression(I[][] array, int index)
+        private static bool CheckInterfaceArrayArrayIndexExpression(I[][] array, int index, bool useInterpreter)
         {
             Expression<Func<I[]>> e =
                 Expression.Lambda<Func<I[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(I[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<I[]> f = e.Compile();
+            Func<I[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckIEquatableArrayArrayIndexExpression(IEquatable<C>[][] array, int index)
+        private static bool CheckIEquatableArrayArrayIndexExpression(IEquatable<C>[][] array, int index, bool useInterpreter)
         {
             Expression<Func<IEquatable<C>[]>> e =
                 Expression.Lambda<Func<IEquatable<C>[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(IEquatable<C>[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<C>[]> f = e.Compile();
+            Func<IEquatable<C>[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckIEquatable2ArrayArrayIndexExpression(IEquatable<D>[][] array, int index)
+        private static bool CheckIEquatable2ArrayArrayIndexExpression(IEquatable<D>[][] array, int index, bool useInterpreter)
         {
             Expression<Func<IEquatable<D>[]>> e =
                 Expression.Lambda<Func<IEquatable<D>[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(IEquatable<D>[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<IEquatable<D>[]> f = e.Compile();
+            Func<IEquatable<D>[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckIntArrayArrayIndexExpression(int[][] array, int index)
+        private static bool CheckIntArrayArrayIndexExpression(int[][] array, int index, bool useInterpreter)
         {
             Expression<Func<int[]>> e =
                 Expression.Lambda<Func<int[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(int[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckLongArrayArrayIndexExpression(long[][] array, int index)
+        private static bool CheckLongArrayArrayIndexExpression(long[][] array, int index, bool useInterpreter)
         {
             Expression<Func<long[]>> e =
                 Expression.Lambda<Func<long[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(long[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckObjectArrayArrayIndexExpression(object[][] array, int index)
+        private static bool CheckObjectArrayArrayIndexExpression(object[][] array, int index, bool useInterpreter)
         {
             Expression<Func<object[]>> e =
                 Expression.Lambda<Func<object[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(object[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<object[]> f = e.Compile();
+            Func<object[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStructArrayArrayIndexExpression(S[][] array, int index)
+        private static bool CheckStructArrayArrayIndexExpression(S[][] array, int index, bool useInterpreter)
         {
             Expression<Func<S[]>> e =
                 Expression.Lambda<Func<S[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(S[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckSByteArrayArrayIndexExpression(sbyte[][] array, int index)
+        private static bool CheckSByteArrayArrayIndexExpression(sbyte[][] array, int index, bool useInterpreter)
         {
             Expression<Func<sbyte[]>> e =
                 Expression.Lambda<Func<sbyte[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(sbyte[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStructWithStringArrayArrayIndexExpression(Sc[][] array, int index)
+        private static bool CheckStructWithStringArrayArrayIndexExpression(Sc[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Sc[]>> e =
                 Expression.Lambda<Func<Sc[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Sc[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStructWithStringAndStructArrayArrayIndexExpression(Scs[][] array, int index)
+        private static bool CheckStructWithStringAndStructArrayArrayIndexExpression(Scs[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Scs[]>> e =
                 Expression.Lambda<Func<Scs[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Scs[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckShortArrayArrayIndexExpression(short[][] array, int index)
+        private static bool CheckShortArrayArrayIndexExpression(short[][] array, int index, bool useInterpreter)
         {
             Expression<Func<short[]>> e =
                 Expression.Lambda<Func<short[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(short[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStructWithTwoFieldsArrayArrayIndexExpression(Sp[][] array, int index)
+        private static bool CheckStructWithTwoFieldsArrayArrayIndexExpression(Sp[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Sp[]>> e =
                 Expression.Lambda<Func<Sp[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Sp[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStructWithValueArrayArrayIndexExpression(Ss[][] array, int index)
+        private static bool CheckStructWithValueArrayArrayIndexExpression(Ss[][] array, int index, bool useInterpreter)
         {
             Expression<Func<Ss[]>> e =
                 Expression.Lambda<Func<Ss[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Ss[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckStringArrayArrayIndexExpression(string[][] array, int index)
+        private static bool CheckStringArrayArrayIndexExpression(string[][] array, int index, bool useInterpreter)
         {
             Expression<Func<string[]>> e =
                 Expression.Lambda<Func<string[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(string[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<string[]> f = e.Compile();
+            Func<string[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckUIntArrayArrayIndexExpression(uint[][] array, int index)
+        private static bool CheckUIntArrayArrayIndexExpression(uint[][] array, int index, bool useInterpreter)
         {
             Expression<Func<uint[]>> e =
                 Expression.Lambda<Func<uint[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(uint[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckULongArrayArrayIndexExpression(ulong[][] array, int index)
+        private static bool CheckULongArrayArrayIndexExpression(ulong[][] array, int index, bool useInterpreter)
         {
             Expression<Func<ulong[]>> e =
                 Expression.Lambda<Func<ulong[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(ulong[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckUShortArrayArrayIndexExpression(ushort[][] array, int index)
+        private static bool CheckUShortArrayArrayIndexExpression(ushort[][] array, int index, bool useInterpreter)
         {
             Expression<Func<ushort[]>> e =
                 Expression.Lambda<Func<ushort[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(ushort[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericWithCustomArrayArrayIndexExpression<T>(T[][] array, int index)
+        private static bool CheckGenericWithCustomArrayArrayIndexExpression<T>(T[][] array, int index, bool useInterpreter)
         {
             Expression<Func<T[]>> e =
                 Expression.Lambda<Func<T[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(T[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<T[]> f = e.Compile();
+            Func<T[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericArrayArrayIndexExpression<T>(T[][] array, int index)
+        private static bool CheckArrayArrayIndexExpression<T>(T[][] array, int index, bool useInterpreter)
         {
             Expression<Func<T[]>> e =
                 Expression.Lambda<Func<T[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(T[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<T[]> f = e.Compile();
+            Func<T[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(Tc[][] array, int index) where Tc : class
+        private static bool CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(Tc[][] array, int index, bool useInterpreter) where Tc : class
         {
             Expression<Func<Tc[]>> e =
                 Expression.Lambda<Func<Tc[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Tc[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tc[]> f = e.Compile();
+            Func<Tc[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(Tcn[][] array, int index) where Tcn : class, new()
+        private static bool CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(Tcn[][] array, int index, bool useInterpreter) where Tcn : class, new()
         {
             Expression<Func<Tcn[]>> e =
                 Expression.Lambda<Func<Tcn[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(Tcn[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Tcn[]> f = e.Compile();
+            Func<Tcn[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(TC[][] array, int index) where TC : C
+        private static bool CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(TC[][] array, int index, bool useInterpreter) where TC : C
         {
             Expression<Func<TC[]>> e =
                 Expression.Lambda<Func<TC[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(TC[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TC[]> f = e.Compile();
+            Func<TC[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
-        private static bool CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(TCn[][] array, int index) where TCn : C, new()
+        private static bool CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(TCn[][] array, int index, bool useInterpreter) where TCn : C, new()
         {
             Expression<Func<TCn[]>> e =
                 Expression.Lambda<Func<TCn[]>>(
                     Expression.ArrayIndex(Expression.Constant(array, typeof(TCn[][])),
                         Expression.Constant(index, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<TCn[]> f = e.Compile();
+            Func<TCn[]> f = e.Compile(useInterpreter);
             return object.Equals(f(), array[index]);
         }
 
@@ -2309,529 +2389,284 @@ namespace System.Linq.Expressions.Tests
 
         #region Check exception array index
 
-        private static void CheckExceptionBoolArrayArrayIndex(bool[][] array, int index)
+        private static void CheckExceptionBoolArrayArrayIndex(bool[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckBoolArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckBoolArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckBoolArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionByteArrayArrayIndex(byte[][] array, int index)
+        private static void CheckExceptionByteArrayArrayIndex(byte[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckByteArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckByteArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckByteArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionCustomArrayArrayIndex(C[][] array, int index)
+        private static void CheckExceptionCustomArrayArrayIndex(C[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckCustomArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckCustomArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckCustomArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionCharArrayArrayIndex(char[][] array, int index)
+        private static void CheckExceptionCharArrayArrayIndex(char[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckCharArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckCharArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckCharArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionCustom2ArrayArrayIndex(D[][] array, int index)
+        private static void CheckExceptionCustom2ArrayArrayIndex(D[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckCustom2ArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckCustom2ArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckCustom2ArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionDecimalArrayArrayIndex(decimal[][] array, int index)
+        private static void CheckExceptionDecimalArrayArrayIndex(decimal[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckDecimalArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckDecimalArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckDecimalArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionDelegateArrayArrayIndex(Delegate[][] array, int index)
+        private static void CheckExceptionDelegateArrayArrayIndex(Delegate[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckDelegateArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckDelegateArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckDelegateArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptiondoubleArrayArrayIndex(double[][] array, int index)
+        private static void CheckExceptiondoubleArrayArrayIndex(double[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckdoubleArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckDoubleArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckDoubleArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionEnumArrayArrayIndex(E[][] array, int index)
+        private static void CheckExceptionEnumArrayArrayIndex(E[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckEnumArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckEnumArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckEnumArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionEnumLongArrayArrayIndex(El[][] array, int index)
+        private static void CheckExceptionEnumLongArrayArrayIndex(El[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckEnumLongArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckEnumLongArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckEnumLongArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionFloatArrayArrayIndex(float[][] array, int index)
+        private static void CheckExceptionFloatArrayArrayIndex(float[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckFloatArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckFloatArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckFloatArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionFuncArrayArrayIndex(Func<object>[][] array, int index)
+        private static void CheckExceptionFuncArrayArrayIndex(Func<object>[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckFuncArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckFuncArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckFuncArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionInterfaceArrayArrayIndex(I[][] array, int index)
+        private static void CheckExceptionInterfaceArrayArrayIndex(I[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckInterfaceArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckInterfaceArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckInterfaceArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionIEquatableArrayArrayIndex(IEquatable<C>[][] array, int index)
+        private static void CheckExceptionIEquatableArrayArrayIndex(IEquatable<C>[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckIEquatableArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckIEquatableArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckIEquatableArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionIEquatable2ArrayArrayIndex(IEquatable<D>[][] array, int index)
+        private static void CheckExceptionIEquatable2ArrayArrayIndex(IEquatable<D>[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckIEquatable2ArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckIEquatable2ArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckIEquatable2ArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionIntArrayArrayIndex(int[][] array, int index)
+        private static void CheckExceptionIntArrayArrayIndex(int[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckIntArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckIntArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckIntArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionLongArrayArrayIndex(long[][] array, int index)
+        private static void CheckExceptionLongArrayArrayIndex(long[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckLongArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckLongArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckLongArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionObjectArrayArrayIndex(object[][] array, int index)
+        private static void CheckExceptionObjectArrayArrayIndex(object[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckObjectArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckObjectArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckObjectArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStructArrayArrayIndex(S[][] array, int index)
+        private static void CheckExceptionStructArrayArrayIndex(S[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStructArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStructArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStructArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionSByteArrayArrayIndex(sbyte[][] array, int index)
+        private static void CheckExceptionSByteArrayArrayIndex(sbyte[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckSByteArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckSByteArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckSByteArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStructWithStringArrayArrayIndex(Sc[][] array, int index)
+        private static void CheckExceptionStructWithStringArrayArrayIndex(Sc[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStructWithStringArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStructWithStringArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStructWithStringArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStructWithStringAndStructArrayArrayIndex(Scs[][] array, int index)
+        private static void CheckExceptionStructWithStringAndStructArrayArrayIndex(Scs[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStructWithStringAndStructArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStructWithStringAndStructArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStructWithStringAndStructArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionShortArrayArrayIndex(short[][] array, int index)
+        private static void CheckExceptionShortArrayArrayIndex(short[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckShortArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckShortArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckShortArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStructWithTwoFieldsArrayArrayIndex(Sp[][] array, int index)
+        private static void CheckExceptionStructWithTwoFieldsArrayArrayIndex(Sp[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStructWithTwoFieldsArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStructWithTwoFieldsArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStructWithTwoFieldsArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStructWithValueArrayArrayIndex(Ss[][] array, int index)
+        private static void CheckExceptionStructWithValueArrayArrayIndex(Ss[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStructWithValueArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStructWithValueArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStructWithValueArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionStringArrayArrayIndex(string[][] array, int index)
+        private static void CheckExceptionStringArrayArrayIndex(string[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckStringArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckStringArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckStringArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionUIntArrayArrayIndex(uint[][] array, int index)
+        private static void CheckExceptionUIntArrayArrayIndex(uint[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckUIntArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckUIntArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckUIntArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionULongArrayArrayIndex(ulong[][] array, int index)
+        private static void CheckExceptionULongArrayArrayIndex(ulong[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckULongArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckULongArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckULongArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionUShortArrayArrayIndex(ushort[][] array, int index)
+        private static void CheckExceptionUShortArrayArrayIndex(ushort[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckUShortArrayArrayIndexExpression(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckUShortArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckUShortArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericWithCustomArrayArrayIndex<T>(T[][] array, int index)
+        private static void CheckExceptionGenericWithCustomArrayArrayIndex<T>(T[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckGenericWithCustomArrayArrayIndexExpression<T>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckGenericWithCustomArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckGenericWithCustomArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericArrayArrayIndex<T>(T[][] array, int index)
+        private static void CheckExceptionGenericArrayArrayIndex<T>(T[][] array, int index, bool useInterpreter)
         {
-            bool success = true;
-            try
-            {
-                CheckGenericArrayArrayIndexExpression<T>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array, int index) where Tc : class
+        private static void CheckExceptionGenericWithClassRestrictionArrayArrayIndex<Tc>(Tc[][] array, int index, bool useInterpreter) where Tc : class
         {
-            bool success = true;
-            try
-            {
-                CheckGenericWithClassRestrictionArrayArrayIndexExpression<Tc>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckGenericWithClassRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckGenericWithClassRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array, int index) where Tcn : class, new()
+        private static void CheckExceptionGenericWithClassAndNewRestrictionArrayArrayIndex<Tcn>(Tcn[][] array, int index, bool useInterpreter) where Tcn : class, new()
         {
-            bool success = true;
-            try
-            {
-                CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression<Tcn>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckGenericWithClassAndNewRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array, int index) where TC : C
+        private static void CheckExceptionGenericWithSubClassRestrictionArrayArrayIndex<TC>(TC[][] array, int index, bool useInterpreter) where TC : C
         {
-            bool success = true;
-            try
-            {
-                CheckGenericWithSubClassRestrictionArrayArrayIndexExpression<TC>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckGenericWithSubClassRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckGenericWithSubClassRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
-        private static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array, int index) where TCn : C, new()
+        private static void CheckExceptionGenericWithSubClassAndNewRestrictionArrayArrayIndex<TCn>(TCn[][] array, int index, bool useInterpreter) where TCn : C, new()
         {
-            bool success = true;
-            try
-            {
-                CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression<TCn>(array, index); // expect to fail
-                success = false;
-            }
-            catch
-            {
-            }
-
-            Assert.True(success);
+            if (array == null)
+                Assert.Throws<NullReferenceException>(() => CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
+            else
+                Assert.Throws<IndexOutOfRangeException>(() => CheckGenericWithSubClassAndNewRestrictionArrayArrayIndexExpression(array, index, useInterpreter));
         }
 
         #endregion
