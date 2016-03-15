@@ -146,9 +146,8 @@ add_dependencies(sos mscordaccore)
 target_link_libraries(sos ${SOS_LIBRARY})
 
 # add the install targets
-install (TARGETS sos DESTINATION .)
-if(WIN32)
-  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/sos.pdb DESTINATION PDB)
-else(WIN32)
-  install (FILES sosdocsunix.txt DESTINATION .)
-endif(WIN32)
+install_clr(sos)
+
+if(NOT WIN32)
+  install(FILES sosdocsunix.txt DESTINATION .)
+endif(NOT WIN32)

@@ -30,4 +30,4 @@ add_dependencies(coreconsole
     coreclr
 )
 
-install (TARGETS coreconsole DESTINATION .)
+install_clr(coreconsole)
