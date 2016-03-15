@@ -37,6 +37,7 @@
     <Compile Include="Int64ConverterTests.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="PropertyDescriptorCollectionTests.cs" />
     <Compile Include="SampleClasses.cs" />
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />

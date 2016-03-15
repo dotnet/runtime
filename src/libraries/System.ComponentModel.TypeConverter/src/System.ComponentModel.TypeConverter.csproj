@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -60,7 +60,7 @@
     <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
     <Compile Include="System\ComponentModel\NullableConverter.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
-    <!--<Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />-->
+    <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <!--<Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />-->
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
     <!--<Compile Include="System\ComponentModel\RefreshEventArgs.cs" />-->

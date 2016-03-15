@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -3348,19 +3350,22 @@ namespace System.ComponentModel
                 return !(attribute.Match(memberAttribute));
             }
         }
-
+#endif
         /// <devdoc>
         ///     Sorts descriptors by name of the descriptor.
         /// </devdoc>
         public static void SortDescriptorArray(IList infos)
         {
-            if (infos == null)
-            {
-                throw new ArgumentNullException("infos");
-            }
+            throw new NotImplementedException();
+            //if (infos == null)
+            //{
+            //    throw new ArgumentNullException("infos");
+            //}
 
-            ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
+            //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
+
+#if PLACEHOLDER
 
         /// <devdoc>
         ///     Internal tracing API for debugging type descriptor.
@@ -4777,6 +4782,6 @@ namespace System.ComponentModel
         {
         }
 #endif
-        }
+    }
 }
 
