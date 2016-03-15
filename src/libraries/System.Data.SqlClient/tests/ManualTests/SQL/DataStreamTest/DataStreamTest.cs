@@ -1156,7 +1156,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                             reader.GetBytes(6, 0, buffer, 0, buffer.Length);
                             SeqAccessFailureWrapper<InvalidOperationException>(action, behavior);
-
+#if DEBUG
                             // GetStream while async is pending
                             Task t = null;
                             using (PendAsyncReadsScope pendScope = new PendAsyncReadsScope(reader))
@@ -1169,6 +1169,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                             // GetStream after Read 
                             DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetStream(0));
+#endif
                         }
 
                         // IsDBNull + GetStream
@@ -1189,12 +1190,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             reader.IsDBNullAsync(8).Wait();
                         }
                     }
-
+#if DEBUG
                     // Test GetStream is non-blocking
                     using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                     {
                         reader.Read();
-
                         Task t = null;
                         using (PendAsyncReadsScope pendScope = new PendAsyncReadsScope(reader))
                         {
@@ -1205,6 +1205,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         }
                         t.Wait();
                     }
+#endif
                 }
             }
         }
@@ -1267,7 +1268,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                                 reader.GetChars(6, 0, buffer, 0, buffer.Length);
                                 SeqAccessFailureWrapper<InvalidOperationException>(action, behavior);
-
+#if DEBUG
                                 // GetTextReader while async is pending
                                 Task t = null;
                                 using (PendAsyncReadsScope pendScope = new PendAsyncReadsScope(reader))
@@ -1280,6 +1281,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                                 // GetTextReader after Read 
                                 DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetTextReader(0));
+#endif
                             }
 
                             // IsDBNull + GetTextReader
@@ -1300,7 +1302,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 reader.IsDBNullAsync(8).Wait();
                             }
                         }
-
+#if DEBUG
                         // Test GetTextReader is non-blocking
                         using (SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                         {
@@ -1316,6 +1318,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             }
                             t.Wait();
                         }
+#endif
                     }
                 }
             }
@@ -1355,7 +1358,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                             reader.GetXmlReader(4);
                             action = (() => reader.GetXmlReader(4));
                             SeqAccessFailureWrapper<InvalidOperationException>(action, behavior);
-
+#if DEBUG
                             // GetXmlReader while async is pending
                             Task t = null;
                             using (PendAsyncReadsScope pendScope = new PendAsyncReadsScope(reader))
@@ -1368,6 +1371,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                             // GetXmlReader after Read 
                             DataTestClass.AssertThrowsWrapper<InvalidOperationException>(() => reader.GetXmlReader(0));
+#endif
                         }
                     }
                 }
@@ -1469,7 +1473,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 stream = reader.GetStream(1);
                                 stream.Read(largeBuffer, 0, 0);
                             }
-
+#if DEBUG
                             using (SqlDataReader reader = cmd.ExecuteReader(behavior))
                             {
                                 reader.Read();
@@ -1485,7 +1489,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 }
                                 t.Wait();
                             }
-
                             using (SqlDataReader reader = cmd.ExecuteReader(behavior))
                             {
                                 reader.Read();
@@ -1530,6 +1533,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                 }
                                 DataTestClass.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
                             }
+#endif
                         }
                     }
                 }
@@ -1628,7 +1632,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     textReader = reader.GetTextReader(1);
                                     textReader.Read(largeBuffer, 0, 0);
                                 }
-
+#if DEBUG
                                 using (SqlDataReader reader = cmd.ExecuteReader(behavior))
                                 {
                                     reader.Read();
@@ -1657,6 +1661,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                                     }
                                     DataTestClass.AssertThrowsWrapper<AggregateException, IOException, SqlException>(() => t.Wait());
                                 }
+#endif
                             }
                         }
                     }
