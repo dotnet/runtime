@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkFifo", SetLastError = true)]
-        internal static extern int MkFifo(string path, int mode);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerUserName", SetLastError = true)]
+        internal unsafe static extern string GetPeerUserName(SafeHandle socket);
     }
 }

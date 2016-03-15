@@ -55,7 +55,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [PlatformSpecific(PlatformID.Windows)]
         public static void ReservedPipeName_Throws_ArgumentOutOfRangeException(PipeDirection direction)
         {
             const string serverName = ".";

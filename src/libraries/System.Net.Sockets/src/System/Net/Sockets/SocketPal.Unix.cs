@@ -819,13 +819,13 @@ namespace System.Net.Sockets
 
         public static SocketError Ioctl(SafeCloseSocket handle, int ioControlCode, byte[] optionInValue, byte[] optionOutValue, out int optionLength)
         {
-            // TODO: can this be supported in some reasonable fashion?
+            // TODO #6828: can this be supported in some reasonable fashion?
             throw new PlatformNotSupportedException();
         }
 
         public static SocketError IoctlInternal(SafeCloseSocket handle, IOControlCode ioControlCode, IntPtr optionInValue, int inValueLength, IntPtr optionOutValue, int outValueLength, out int optionLength)
         {
-            // TODO: can this be supported in some reasonable fashion?
+            // TODO #6828: can this be supported in some reasonable fashion?
             throw new PlatformNotSupportedException();
         }
 

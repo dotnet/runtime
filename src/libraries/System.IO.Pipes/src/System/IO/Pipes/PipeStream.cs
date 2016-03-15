@@ -15,6 +15,7 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        internal const string AnonymousPipeName = "anonymous";
         private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
         private SafePipeHandle _handle;
