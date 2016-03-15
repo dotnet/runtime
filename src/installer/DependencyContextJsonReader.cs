@@ -86,9 +86,7 @@ namespace Microsoft.Extensions.DependencyModel
                 yield break;
             }
 
-            var targets = runtimes.Children();
-            var runtime = (JProperty)targets.Single();
-            foreach (var pair in (JObject)runtime.Value)
+            foreach (var pair in runtimes)
             {
                 yield return new RuntimeFallbacks(pair.Key, pair.Value.Values<string>().ToArray());
             }
