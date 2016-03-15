@@ -8879,15 +8879,23 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
 gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoClass *handle_class;
 
-	return lookup_dynamic (image, token, TRUE, &handle_class, context);
+	gpointer result = lookup_dynamic (image, token, TRUE, &handle_class, context, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return result;
+
 }
 
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
 {
-	return lookup_dynamic (image, token, valid_token, handle_class, context);
+	MonoError error;
+	gpointer result = lookup_dynamic (image, token, valid_token, handle_class, context, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return result;
+
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;
