@@ -2161,20 +2161,23 @@ namespace System.ComponentModel
             return NodeFor(type, false);
         }
 
+#endif
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type GetReflectionType(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException("type");
-            }
+            throw new NotImplementedException();
+            //if (type == null)
+            //{
+            //    throw new ArgumentNullException("type");
+            //}
 
-            return NodeFor(type).GetReflectionType(type);
+            //return NodeFor(type).GetReflectionType(type);
         }
 
+#if PLACEHOLDER
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
@@ -4774,6 +4777,6 @@ namespace System.ComponentModel
         {
         }
 #endif
-    }
+        }
 }
 
