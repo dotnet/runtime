@@ -6,6 +6,7 @@
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
   <!--Leaf project Properties-->
   <PropertyGroup>
+    <IsDesktopTool>true</IsDesktopTool>
     <UseAtl>true</UseAtl>
     <AtlVer>mfc</AtlVer>
     <EntryPoint>winmain</EntryPoint>

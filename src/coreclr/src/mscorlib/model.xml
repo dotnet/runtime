@@ -168,6 +168,7 @@
       <Member Name="DefineSwitchDefault(System.String,System.Boolean)" />
       <Member Name="SetSwitch(System.String,System.Boolean)" />
       <Member Name="TryGetSwitch(System.String,System.Boolean@)" />
+      <Member Name="GetData(System.String)" />
     </Type>
     <Type Name="System.ApplicationException" Condition="FEATURE_LEGACYNETCF">
       <Member Name="#ctor" />
