@@ -6933,11 +6933,11 @@ PRINT_CONSTANT:
 
         if (IsAVXInstruction(ins))
         {
-            printf("%s, %s", emitYMMregName((unsigned)id->idReg1()), sstr);
+            printf(", %s", emitYMMregName((unsigned)id->idReg1()));
         }
         else if (IsSSE2Instruction(ins))
         {
-            printf(", %s", emitXMMregName((unsigned)id->idReg1()), sstr);
+            printf(", %s", emitXMMregName((unsigned)id->idReg1()));
         }
         else
         {
@@ -7026,7 +7026,17 @@ PRINT_CONSTANT:
         {
             printf("%s, %s", emitRegName(id->idReg2(), attr), emitXMMregName((unsigned)id->idReg1()));
         }
-        else if  (ins == INS_cvttsd2si)
+#ifndef LEGACY_BACKEND
+        else if  ((ins == INS_cvtsi2ss) || (ins == INS_cvtsi2sd))
+        {
+            printf(" %s, %s",  emitXMMregName((unsigned)id->idReg1()), emitRegName(id->idReg2(), attr));
+        }
+#endif
+        else if  ((ins == INS_cvttsd2si) 
+#ifndef LEGACY_BACKEND
+                  || (ins == INS_cvtss2si) || (ins == INS_cvtsd2si) || (ins == INS_cvttss2si)
+#endif
+                 )
         {
             printf(" %s, %s",  emitRegName(id->idReg1(), attr), emitXMMregName((unsigned)id->idReg2()));
         }
