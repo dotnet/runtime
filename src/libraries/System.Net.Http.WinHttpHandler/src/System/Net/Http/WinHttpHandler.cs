@@ -1276,11 +1276,11 @@ nameof(value),
             SafeWinHttpHandle requestHandle,
             Interop.WinHttp.WINHTTP_STATUS_CALLBACK callback)
         {
-            uint notificationFlags =
+            const uint notificationFlags =
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
-                    Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
-                    Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
-                    Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
 
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,

@@ -137,7 +137,7 @@ namespace System.Net.WebSockets
                         WinHttpException.ThrowExceptionUsingLastError();
                     }
 
-                    uint notificationFlags =
+                    const uint notificationFlags =
                         Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
                         Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
                         Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SECURE_FAILURE;
