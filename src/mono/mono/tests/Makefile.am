@@ -32,10 +32,14 @@ MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
 	$(RUNTIME) $(CLASS)/mkbundle.exe
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -debug \
+MCS_NO_LIB = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -debug \
+	-noconfig -nologo \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
 	-nowarn:0169 -nowarn:1690 -nowarn:0649 -nowarn:0612 -nowarn:3021 \
 	-nowarn:0197
+
+MCS = $(MCS_NO_LIB) -lib:$(CLASS)
+
 ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
@@ -705,7 +709,7 @@ EXTRA_DIST=test-driver test-runner.cs $(TEST_CS_SRC_DIST) $(TEST_IL_SRC) \
 	$(ILASM) -out:$@ $<
 
 %.exe: %.cs TestDriver.dll
-	$(MCS) -r:TestDriver.dll -out:$@ $<
+	$(MCS) -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:TestDriver.dll -out:$@ $<
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
@@ -1188,7 +1192,7 @@ test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-except
 
 # We use 'test-support-files' to handle an ordering issue between the 'mono/' and 'runtime/' directories
 bug-80307.exe: $(srcdir)/bug-80307.cs
-	$(MCS) -r:System.Web -out:$@ $(srcdir)/bug-80307.cs
+	$(MCS) -r:System.Web.dll -out:$@ $(srcdir)/bug-80307.cs
 	cd $(top_builddir)/runtime && $(MAKE) test-support-files
 
 EXTRA_DIST += bug-81673-interface.cs
@@ -1241,7 +1245,7 @@ bug-17537-helper.exe: bug-17537-helper.cs
 	chmod -x $@
 
 bug-17537.exe: bug-17537.cs bug-17537-helper.exe
-	$(MCS) -out:$@ $(srcdir)/bug-17537.cs
+	$(MCS) -r:System.dll -out:$@ $(srcdir)/bug-17537.cs
 
 EXTRA_DIST += coreclr-security.cs
 
@@ -1275,7 +1279,7 @@ generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
 bug-3903.exe: bug-3903.cs
-	$(MCS) -sdk:2 $(srcdir)/bug-3903.cs -out:$@
+	$(MCS_NO_LIB) -lib:$(srcdir)/../../external/binary-reference-assemblies/v2.0/ $(srcdir)/bug-3903.cs -r:System.Core.dll -out:$@
 
 gshared: test-generic-sharing
 
