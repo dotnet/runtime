@@ -60,8 +60,8 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValueData))]
-        public void CanWriteAndReadBack(object value)
+        [PerCompilationType(nameof(ValueData))]
+        public void CanWriteAndReadBack(object value, bool useInterpreter)
         {
             Type type = value.GetType();
             ParameterExpression variable = Expression.Variable(type);
@@ -76,18 +76,19 @@ namespace System.Linq.Expressions.Tests
                             variable
                             )
                         )
-                    ).Compile()()
+                    ).Compile(useInterpreter)()
                 );
         }
 
-        [Fact]
-        public void CanUseAsLambdaParameter()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void CanUseAsLambdaParameter(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Variable(typeof(int));
             Func<int, int> addOne = Expression.Lambda<Func<int, int>>(
                 Expression.Add(variable, Expression.Constant(1)),
                 variable
-                ).Compile();
+                ).Compile(useInterpreter);
             Assert.Equal(3, addOne(2));
         }
 

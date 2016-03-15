@@ -36,19 +36,20 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact] // [Issue(3224, "https://github.com/dotnet/corefx/issues/3224")]
-        public static void SelfApplication()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void SelfApplication(bool useInterpreter)
         {
             // Expression<X> f = x => {};
             Expression<X> f = Expression.Lambda<X>(Expression.Empty(), Expression.Parameter(typeof(X)));
             var a = Expression.Lambda(Expression.Invoke(f, f));
 
-            a.Compile().DynamicInvoke();
+            a.Compile(useInterpreter).DynamicInvoke();
 
             var it = Expression.Parameter(f.Type);
             var b = Expression.Lambda(Expression.Invoke(Expression.Lambda(Expression.Invoke(it, it), it), f));
 
-            b.Compile().DynamicInvoke();
+            b.Compile(useInterpreter).DynamicInvoke();
         }
 
         [Fact]
