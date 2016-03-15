@@ -4,14 +4,10 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
         "System.Runtime": "4.0.20",
+        "System.Runtime.Serialization.Primitives": "4.1.1-rc3-23910",
         "System.Reflection": "4.0.10",
         "System.Reflection.TypeExtensions": "4.0.0",
         "System.Xml.XmlDocument": "4.0.0"
-      }
-    },
-    "netcore50": {
-      "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
       }
     },
     "net46": {

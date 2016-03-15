@@ -4,14 +4,8 @@
   <ItemGroup>
     <Project Include="System.Runtime.Serialization.Xml.csproj" />
     <Project Include="System.Runtime.Serialization.Xml.csproj">
-      <TargetGroup>netcore50</TargetGroup>
-    </Project>
-    <Project Include="System.Runtime.Serialization.Xml.csproj">
-      <TargetGroup>netcore50aot</TargetGroup>
-    </Project>
-    <Project Include="System.Runtime.Serialization.Xml.csproj">
       <TargetGroup>net46</TargetGroup>
-    </Project>  
+    </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
