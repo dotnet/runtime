@@ -279,8 +279,18 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                 {
+                    string sErrorText = null%3B
+                    try
+                    {
+                        sErrorText = System.IO.File.ReadAllText(errorFile)%3B
+                    }
+                    catch(Exception ex)
+                    {
+                      sErrorText = "Unable to read error file: " + errorFile%3B
+                    }
+
                     string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.Message
-                                                 : System.IO.File.ReadAllText(errorFile) + "\n\n" +
+                                                 : sErrorText + "\n\n" +
                                                    "Raw output:      " + outputFile + "\n" +
                                                    "To run the test:\n" +
                                                    "> set CORE_ROOT=" + _Global.coreRoot + "\n" +
