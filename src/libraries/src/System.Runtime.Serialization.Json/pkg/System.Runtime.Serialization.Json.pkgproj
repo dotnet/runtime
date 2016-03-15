@@ -17,7 +17,7 @@
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">
-      <PackageTargetFramework>netstandardapp1.5</PackageTargetFramework>
+      <PackageTargetFramework>netstandard1.3</PackageTargetFramework>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">
       <PackageTargetFramework>netcore50</PackageTargetFramework>
