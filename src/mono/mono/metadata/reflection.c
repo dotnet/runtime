@@ -11793,9 +11793,9 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 static MonoMethod*
 reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					 ReflectionMethodBuilder *rmb,
-					 MonoMethodSignature *sig)
+					 MonoMethodSignature *sig,
+					 MonoError *error)
 {
-	MonoError error;
 	MonoMethod *m;
 	MonoMethodWrapper *wrapperm;
 	MonoMarshalSpec **specs;
@@ -11804,7 +11804,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	gboolean dynamic;
 	int i;
 
-	mono_error_init (&error);
+	mono_error_init (error);
 	/*
 	 * Methods created using a MethodBuilder should have their memory allocated
 	 * inside the image mempool, while dynamic methods should have their memory
@@ -11848,10 +11848,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 		method_aux = image_g_new0 (image, MonoReflectionMethodAux, 1);
 
-		method_aux->dllentry = rmb->dllentry ? mono_string_to_utf8_image (image, rmb->dllentry, &error) : image_strdup (image, m->name);
-		g_assert (mono_error_ok (&error));
-		method_aux->dll = mono_string_to_utf8_image (image, rmb->dll, &error);
-		g_assert (mono_error_ok (&error));
+		method_aux->dllentry = rmb->dllentry ? mono_string_to_utf8_image (image, rmb->dllentry, error) : image_strdup (image, m->name);
+		mono_error_assert_ok (error);
+		method_aux->dll = mono_string_to_utf8_image (image, rmb->dll, error);
+		mono_error_assert_ok (error);
 		
 		((MonoMethodPInvoke*)m)->piflags = (rmb->native_cc << 8) | (rmb->charset ? (rmb->charset - 1) * 2 : 0) | rmb->extra_flags;
 
@@ -11904,16 +11904,16 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				mono_array_get (rmb->ilgen->locals, MonoReflectionLocalBuilder*, i);
 
 			header->locals [i] = image_g_new0 (image, MonoType, 1);
-			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)lb->type, &error);
-			mono_error_assert_ok (&error);
+			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)lb->type, error);
+			mono_error_assert_ok (error);
 			memcpy (header->locals [i], type, MONO_SIZEOF_TYPE);
 		}
 
 		header->num_clauses = num_clauses;
 		if (num_clauses) {
 			header->clauses = method_encode_clauses (image, (MonoDynamicImage*)klass->image,
-								 rmb->ilgen, num_clauses, &error);
-			mono_error_assert_ok (&error);
+								 rmb->ilgen, num_clauses, error);
+			mono_error_assert_ok (error);
 		}
 
 		wrapperm->header = header;
@@ -11936,8 +11936,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		for (i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
 				mono_array_get (rmb->generic_params, MonoReflectionGenericParam*, i);
-			MonoType *gp_type = mono_reflection_type_get_handle ((MonoReflectionType*)gp, &error);
-			mono_error_assert_ok (&error);
+			MonoType *gp_type = mono_reflection_type_get_handle ((MonoReflectionType*)gp, error);
+			mono_error_assert_ok (error);
 			MonoGenericParamFull *param = (MonoGenericParamFull *) gp_type->data.generic_param;
 			container->type_params [i] = *param;
 		}
@@ -12018,8 +12018,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				}
 
 				if (pb->name) {
-					method_aux->param_names [i] = mono_string_to_utf8_image (image, pb->name, &error);
-					g_assert (mono_error_ok (&error));
+					method_aux->param_names [i] = mono_string_to_utf8_image (image, pb->name, error);
+					mono_error_assert_ok (error);
 				}
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
@@ -12040,11 +12040,12 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					if (specs == NULL)
 						specs = image_g_new0 (image, MonoMarshalSpec*, sig->param_count + 1);
 					specs [pb->position] = 
-						mono_marshal_spec_from_builder (image, klass->image->assembly, pb->marshal_info, &error);
-					if (!is_ok (&error)) {
+						mono_marshal_spec_from_builder (image, klass->image->assembly, pb->marshal_info, error);
+					if (!is_ok (error)) {
 						mono_loader_unlock ();
 						image_g_free (image, specs);
-						mono_error_raise_exception (&error); /* FIXME don't raise here */
+						/* FIXME: if image is NULL, this leaks all the other stuff we alloc'd in this function */
+						return NULL;
 					}
 				}
 			}
@@ -12078,7 +12079,8 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, Mon
 	if (!reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
 		return NULL;
 
-	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	return_val_if_nok (error, NULL);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
 	/* If we are in a generic class, we might be called multiple times from inflate_method */
@@ -12107,7 +12109,8 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb,
 	if (!reflection_methodbuilder_from_method_builder (&rmb, mb, error))
 		return NULL;
 
-	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	return_val_if_nok (error, NULL);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
 	/* If we are in a generic class, we might be called multiple times from inflate_method */
@@ -13618,7 +13621,10 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb, MonoError *er
 		klass = mono_defaults.object_class;
 	}
 
-	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mb->mhandle = handle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig, error);
+	g_free (rmb.refs);
+	return_val_if_nok (error, FALSE);
+
 	release_data = g_new (DynamicMethodReleaseData, 1);
 	release_data->handle = handle;
 	release_data->domain = mono_object_get_domain ((MonoObject*)mb);
@@ -13640,8 +13646,6 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb, MonoError *er
 		}
 	}
 	g_slist_free (mb->referenced_by);
-
-	g_free (rmb.refs);
 
 	/* ilgen is no longer needed */
 	mb->ilgen = NULL;
