@@ -2674,15 +2674,22 @@ void            CodeGen::genJumpToThrowHlpBlk(emitJumpKind          jumpKind,
         /* The code to throw the exception will be generated inline, and
            we will jump around it in the normal non-exception case */
 
-        BasicBlock * tgtBlk = genCreateTempLabel();
-        jumpKind = emitter::emitReverseJumpKind(jumpKind);
-        inst_JMP(jumpKind, tgtBlk);
+        BasicBlock * tgtBlk = nullptr;
+        emitJumpKind reverseJumpKind = emitter::emitReverseJumpKind(jumpKind);
+        if (reverseJumpKind != jumpKind)
+        {
+            tgtBlk = genCreateTempLabel();
+            inst_JMP(reverseJumpKind, tgtBlk);
+        }
 
         genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
 
         /* Define the spot for the normal non-exception case to jump to */
-
-        genDefineTempLabel(tgtBlk);
+        if (tgtBlk != nullptr)
+        {
+            assert(reverseJumpKind != jumpKind);
+            genDefineTempLabel(tgtBlk);
+        }
     }
 }
 
