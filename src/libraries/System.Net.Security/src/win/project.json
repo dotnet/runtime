@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "imports": [
-        "dotnet5.5"
+        "dotnet5.4"
       ],
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
