@@ -384,26 +384,6 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError IoctlInternal(SafeCloseSocket handle, IOControlCode ioControlCode, IntPtr optionInValue, int inValueLength, IntPtr optionOutValue, int outValueLength, out int optionLength)
-        {
-            if ((unchecked((int)ioControlCode)) == Interop.Winsock.IoctlSocketConstants.FIONBIO)
-            {
-                throw new InvalidOperationException(SR.net_sockets_useblocking);
-            }
-
-            SocketError errorCode = Interop.Winsock.WSAIoctl_Blocking_Internal(
-                handle.DangerousGetHandle(),
-                (uint)ioControlCode,
-                optionInValue,
-                inValueLength,
-                optionOutValue,
-                outValueLength,
-                out optionLength,
-                SafeNativeOverlapped.Zero,
-                IntPtr.Zero);
-            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
-        }
-
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             SocketError errorCode = Interop.Winsock.setsockopt(

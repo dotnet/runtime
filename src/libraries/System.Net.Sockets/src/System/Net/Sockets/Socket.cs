@@ -1923,39 +1923,6 @@ namespace System.Net.Sockets
             return IOControl(unchecked((int)ioControlCode), optionInValue, optionOutValue);
         }
 
-        internal int IOControl(IOControlCode ioControlCode, IntPtr optionInValue, int inValueSize, IntPtr optionOutValue, int outValueSize)
-        {
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-
-            int realOptionLength = 0;
-
-            // This can throw ObjectDisposedException.
-            SocketError errorCode = SocketPal.IoctlInternal(_handle, ioControlCode, optionInValue, inValueSize, optionOutValue, outValueSize, out realOptionLength);
-
-            if (GlobalLog.IsEnabled)
-            {
-                GlobalLog.Print("Socket#" + LoggingHash.HashString(this) + "::IOControl() Interop.Winsock.WSAIoctl returns errorCode:" + errorCode);
-            }
-
-            // Throw an appropriate SocketException if the native call fails.
-            if (errorCode != SocketError.Success)
-            {
-                // Update the internal state of this socket according to the error before throwing.
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (s_loggingEnabled)
-                {
-                    NetEventSource.Exception(NetEventSource.ComponentType.Socket, this, "IOControl", socketException);
-                }
-                throw socketException;
-            }
-
-            return realOptionLength;
-        }
-
         // Sets the specified option to the specified value.
         public void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
