@@ -32,8 +32,7 @@ public class ReadAndWrite
     }
     
     [Fact]
-    [OuterLoop]
-    public static void WriteToOutputStream()
+    public static void WriteToOutputStream_EmptyArray()
     {
         Stream outStream = Console.OpenStandardOutput();
         outStream.Write(new byte[] { }, 0, 0);
