@@ -70,6 +70,7 @@ static_assert(PAL_S_IFCHR == S_IFCHR, "");
 static_assert(PAL_S_IFDIR == S_IFDIR, "");
 static_assert(PAL_S_IFREG == S_IFREG, "");
 static_assert(PAL_S_IFLNK == S_IFLNK, "");
+static_assert(PAL_S_IFSOCK == S_IFSOCK, "");
 
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
@@ -499,13 +500,6 @@ extern "C" int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 {
     int32_t result;
     while (CheckInterrupted(result = fchmod(ToFileDescriptor(fd), static_cast<mode_t>(mode))));
-    return result;
-}
-
-extern "C" int32_t SystemNative_MkFifo(const char* path, int32_t mode)
-{
-    int32_t result;
-    while (CheckInterrupted(result = mkfifo(path, static_cast<mode_t>(mode))));
     return result;
 }
 

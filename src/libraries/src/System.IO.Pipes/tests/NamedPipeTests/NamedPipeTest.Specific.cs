@@ -47,22 +47,20 @@ namespace System.IO.Pipes.Tests
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
             {
                 var ctx = new CancellationTokenSource();
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // [ActiveIssue(812, PlatformID.AnyUnix)] - Unix implementation currently ignores timeout and cancellation token once the operation has been initiated
-                {
-                    Task clientConnectToken = client.ConnectAsync(ctx.Token);
-                    ctx.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => clientConnectToken);
-                }
+
+                Task clientConnectToken = client.ConnectAsync(ctx.Token);
+                ctx.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => clientConnectToken);
+
                 ctx.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.ConnectAsync(ctx.Token));
             }
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // Unix implementation uses bidirectional sockets
         public void ConnectWithConflictingDirections_Throws_UnauthorizedAccessException()
         {
-            // Unix port currently doesn't recognize conflicts in pipe direction
             string serverName1 = GetUniquePipeName();
             using (NamedPipeServerStream server = new NamedPipeServerStream(serverName1, PipeDirection.Out))
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", serverName1, PipeDirection.Out))
@@ -83,7 +81,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeOptions.None)]
         [InlineData(PipeOptions.Asynchronous)]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // Unix currently doesn't support message mode
         public async Task Windows_MessagePipeTransissionMode(PipeOptions serverOptions)
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -172,7 +170,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // Unix doesn't support MaxNumberOfServerInstances
         public async Task Windows_Get_NumberOfServerInstances_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -194,7 +192,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // Win32 P/Invokes to verify the user name
         public async Task Windows_GetImpersonationUserName_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -217,66 +215,66 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
+        public async Task Unix_GetImpersonationUserName_Succeed()
+        {
+            string pipeName = GetUniquePipeName();
+
+            using (var server = new NamedPipeServerStream(pipeName))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+            {
+                Task serverTask = server.WaitForConnectionAsync();
+
+                client.Connect();
+                await serverTask;
+
+                string name = server.GetImpersonationUserName();
+                Assert.NotNull(name);
+                Assert.False(string.IsNullOrWhiteSpace(name));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void Unix_MessagePipeTransissionMode()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.InOut, 1, PipeTransmissionMode.Message));
         }
 
-        [Fact]
-        [PlatformSpecific(PlatformID.Linux)]
-        public static void Linux_BufferSizeRoundtripping()
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.Out)]
+        [InlineData(PipeDirection.InOut)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
             string pipeName = GetUniquePipeName();
-            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In))
+            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
+            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut))
             {
                 Task clientConnect = client.ConnectAsync();
                 server.WaitForConnection();
                 clientConnect.Wait();
 
                 desiredBufferSize = server.OutBufferSize * 2;
-                Assert.True(desiredBufferSize > 0);
             }
 
-            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.In))
+            using (var server = new NamedPipeServerStream(pipeName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
+            using (var client = new NamedPipeClientStream(".", pipeName, direction == PipeDirection.In ? PipeDirection.Out : PipeDirection.In))
             {
                 Task clientConnect = client.ConnectAsync();
                 server.WaitForConnection();
                 clientConnect.Wait();
 
-                Assert.Equal(desiredBufferSize, server.OutBufferSize);
-                Assert.Equal(desiredBufferSize, client.InBufferSize);
-            }
+                if ((direction & PipeDirection.Out) != 0)
+                {
+                    Assert.InRange(server.OutBufferSize, desiredBufferSize, int.MaxValue);
+                }
 
-            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
-            {
-                Task clientConnect = client.ConnectAsync();
-                server.WaitForConnection();
-                clientConnect.Wait();
-
-                Assert.Equal(desiredBufferSize, server.InBufferSize);
-                Assert.Equal(desiredBufferSize, client.OutBufferSize);
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.OSX)]
-        public static void OSX_BufferSizeNotSupported()
-        {
-            int desiredBufferSize = 10;
-            string pipeName = GetUniquePipeName();
-            using (var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, desiredBufferSize, desiredBufferSize))
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
-            {
-                Task clientConnect = client.ConnectAsync();
-                server.WaitForConnection();
-                clientConnect.Wait();
-
-                Assert.Throws<PlatformNotSupportedException>(() => server.InBufferSize);
-                Assert.Throws<PlatformNotSupportedException>(() => client.OutBufferSize);
+                if ((direction & PipeDirection.In) != 0)
+                {
+                    Assert.InRange(server.InBufferSize, desiredBufferSize, int.MaxValue);
+                }
             }
         }
 
@@ -320,7 +318,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
+        [PlatformSpecific(PlatformID.Windows)] // Unix doesn't currently support message mode
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = GetUniquePipeName();
@@ -415,40 +413,6 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.ReadMode = (PipeTransmissionMode)999);
                 Assert.Throws<ArgumentOutOfRangeException>(() => client.ReadMode = (PipeTransmissionMode)999);
             }
-        }
-
-        [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void Unix_MultipleServerDisposal_DoesntDeletePipe()
-        {
-            // Test for when multiple servers are created and linked to the same FIFO. The original ServerStream
-            // that created the FIFO is disposed. The other servers should still be valid and useable.
-            string serverName = GetUniquePipeName();
-
-            var server1 = new NamedPipeServerStream(serverName, PipeDirection.In); // Creates the FIFO
-            var server2 = new NamedPipeServerStream(serverName, PipeDirection.In);
-            var client1 = new NamedPipeClientStream(".", serverName, PipeDirection.Out);
-            var client2 = new NamedPipeClientStream(".", serverName, PipeDirection.Out);
-
-            Task server1Task = server1.WaitForConnectionAsync(); // Opens a handle to the FIFO
-            Task server2Task = server2.WaitForConnectionAsync(); // Opens a handle to the same FIFO as server1
-
-            Task client1Task = client1.ConnectAsync();
-            Task.WaitAll(server1Task, server2Task, client1Task); // client1 connects to server1 AND server2
-
-            Assert.True(server1.IsConnected);
-            Assert.True(server2.IsConnected);
-
-            // Get rid of client1/server1 and make sure server2 isn't connected (so that it can connect to client2)
-            server1.Dispose();
-            client1.Dispose();
-            server2.Disconnect();
-            Assert.False(server2.IsConnected);
-
-            server2Task = server2.WaitForConnectionAsync(); // Opens a handle to the same FIFO
-            Task client2Task = client2.ConnectAsync(); 
-            Task.WaitAll(server2Task, client2Task); // Should not block!
-            Assert.True(server2.IsConnected);
         }
 
     }
