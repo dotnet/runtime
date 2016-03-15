@@ -5,7 +5,7 @@
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
       }
     },
-    "net46": {
+    "net462": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
@@ -16,7 +16,7 @@
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1"
       }
     },
-    "netstandard1.3": {
+    "netstandard1.5": {
       "imports": [ "netcore50" ],
       "dependencies": {
         "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23910"

@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Reflection.TypeExtensions.csproj">
+    <ProjectReference Include="..\..\src\redist\System.Reflection.TypeExtensions.depproj">
       <TargetGroup>netcore50aot</TargetGroup>
     </ProjectReference>
   </ItemGroup>

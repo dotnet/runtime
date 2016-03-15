@@ -4,13 +4,20 @@
   <ItemGroup>
     <Project Include="System.IO.csproj" />
     <Project Include="System.IO.csproj">
-      <TargetGroup>net46</TargetGroup>
+      <TargetGroup>net462</TargetGroup>
     </Project>
+    <!-- NETCore50 must redistribute binaries due to shared library
     <Project Include="System.IO.csproj">
       <TargetGroup>netcore50aot</TargetGroup>
-    </Project>
+    </Project> -->
     <Project Include="System.IO.csproj">
       <TargetGroup>netstandard13aot</TargetGroup>
+    </Project>
+    <Project Include="redist\System.IO.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </Project>
+    <Project Include="redist\System.IO.depproj">
+      <TargetGroup>netcore50aot</TargetGroup>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

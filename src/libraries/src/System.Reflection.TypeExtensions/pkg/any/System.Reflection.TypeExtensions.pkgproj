@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Reflection.TypeExtensions.csproj" />
+    <ProjectReference Include="..\..\src\redist\System.Reflection.TypeExtensions.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
 
     <!-- Desktop facade comes from the reference package -->
     <ExternalOnTargetFramework Include="net" />

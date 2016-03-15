@@ -21,7 +21,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
     <TargetingPackReference Include="System.Private.CoreLib"/>
     <TargetingPackReference Include="System.Private.Reflection" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj" />
   </ItemGroup>
   <ItemGroup>
      <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />

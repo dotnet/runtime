@@ -3,10 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\4.0.0\System.AppContext.depproj">
-      <SupportedFramework>net46</SupportedFramework>
+      <SupportedFramework>net46;netcore50</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\ref\System.AppContext.csproj">
-      <SupportedFramework>net462;netcore50;netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>net462;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\redist\System.AppContext.depproj">
       <TargetGroup>net46</TargetGroup>
