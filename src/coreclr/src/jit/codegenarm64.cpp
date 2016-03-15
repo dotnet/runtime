@@ -6225,13 +6225,8 @@ CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) ||(srcSize == EA_8BYTE));
 
-    instruction ins = INS_scvtf;            // default to sign converts
+    instruction ins = varTypeIsUnsigned(srcType) ? INS_ucvtf : INS_scvtf;
     insOpts     cvtOption = INS_OPTS_NONE;  // invalid value
-
-    if (varTypeIsUnsigned(dstType))
-    {
-        ins = INS_ucvtf;             // use unsigned converts
-    }
 
     if (dstType == TYP_DOUBLE)
     {
