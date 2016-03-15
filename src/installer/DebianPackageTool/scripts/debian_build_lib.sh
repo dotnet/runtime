@@ -142,6 +142,7 @@ _get_files_in_dir_tree(){
 
     # Use Globstar expansion to enumerate all directories and files in the tree
     shopt -s globstar
+    shopt -s dotglob
     dir_tree_list=( "${root_dir}/"** )
 
     # Build a new array with only the Files contained in $dir_tree_list
