@@ -137,10 +137,15 @@ namespace System.Net.WebSockets
                         WinHttpException.ThrowExceptionUsingLastError();
                     }
 
+                    uint notificationFlags =
+                        Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
+                        Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
+                        Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SECURE_FAILURE;
+
                     if (Interop.WinHttp.WinHttpSetStatusCallback(
                         _operation.RequestHandle,
                         WinHttpWebSocketCallback.s_StaticCallbackDelegate,
-                        Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_NOTIFICATIONS,
+                        notificationFlags,
                         IntPtr.Zero) == (IntPtr)Interop.WinHttp.WINHTTP_INVALID_STATUS_CALLBACK)
                     {
                         WinHttpException.ThrowExceptionUsingLastError();
