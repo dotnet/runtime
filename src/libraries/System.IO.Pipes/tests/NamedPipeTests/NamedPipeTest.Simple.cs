@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -718,7 +719,6 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ActiveIssue(6806, PlatformID.AnyUnix)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -749,7 +749,10 @@ namespace System.IO.Pipes.Tests
                 const int WaitTimeout = 30000;
                 Assert.True(Task.WaitAll(writes, WaitTimeout));
                 Assert.True(Task.WaitAll(reads, WaitTimeout));
-                Assert.Equal(sendingData, readingData);
+
+                // The data of each write may not be written atomically, and as such some of the data may be
+                // interleaved rather than entirely in the order written.
+                Assert.Equal(sendingData.OrderBy(b => b), readingData.OrderBy(b => b));
             }
         }
     }
