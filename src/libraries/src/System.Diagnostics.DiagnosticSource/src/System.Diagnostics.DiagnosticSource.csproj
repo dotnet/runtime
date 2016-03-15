@@ -43,6 +43,7 @@
       <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup> 
 
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <NoWarn>0420</NoWarn>
   </PropertyGroup>
@@ -50,7 +51,6 @@
     <NoWarn>0420</NoWarn>
   </PropertyGroup>
 
-  <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
