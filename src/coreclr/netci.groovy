@@ -869,16 +869,16 @@ combinedScenarios.each { scenario ->
                                     }
                                     else if (scenario == 'ilrt') {
                                         // First do the build with skiptests and then build the tests with ilasm roundtrip
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} skiptests"
-                                        buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} ilasmroundtrip"
                                     }
                                     else if (scenario == 'r2r') {
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
-                                        buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen"
                                     }
                                     else if (scenario == 'pri1r2r') {
-                                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
-                                        buildCommands += "tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
