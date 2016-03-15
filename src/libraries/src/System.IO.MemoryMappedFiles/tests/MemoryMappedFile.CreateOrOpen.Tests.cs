@@ -282,7 +282,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
             else
             {
-                Assert.Throws<IOException>(() => MemoryMappedFile.CreateNew(CreateUniqueMapName(), long.MaxValue));
+                Assert.Throws<IOException>(() => MemoryMappedFile.CreateOrOpen(CreateUniqueMapName(), long.MaxValue));
             }
         }
 
