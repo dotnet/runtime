@@ -484,6 +484,49 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        public async Task ReadAsync_DisconnectDuringRead_Returns0()
+        {
+            using (NamedPipePair pair = CreateNamedPipePair())
+            {
+                pair.Connect();
+                Task<int> readTask;
+                if (pair.clientStream.CanRead)
+                {
+                    readTask = pair.clientStream.ReadAsync(new byte[1], 0, 1);
+                    pair.serverStream.Dispose();
+                }
+                else
+                {
+                    readTask = pair.serverStream.ReadAsync(new byte[1], 0, 1);
+                    pair.clientStream.Dispose();
+                }
+                Assert.Equal(0, await readTask);
+            }
+        }
+
+        [PlatformSpecific(PlatformID.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
+        [Fact]
+        public async Task WriteAsync_DisconnectDuringWrite_Throws()
+        {
+            using (NamedPipePair pair = CreateNamedPipePair())
+            {
+                pair.Connect();
+                Task writeTask;
+                if (pair.clientStream.CanWrite)
+                {
+                    writeTask = pair.clientStream.WriteAsync(new byte[1], 0, 1);
+                    pair.serverStream.Dispose();
+                }
+                else
+                {
+                    writeTask = pair.serverStream.WriteAsync(new byte[1], 0, 1);
+                    pair.clientStream.Dispose();
+                }
+                await Assert.ThrowsAsync<IOException>(() => writeTask);
+            }
+        }
+
+        [Fact]
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
