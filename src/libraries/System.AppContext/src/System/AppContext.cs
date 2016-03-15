@@ -38,6 +38,12 @@ namespace System
             }
         }
 
+        public static object GetData(string name)
+        {
+            // If a property is missing, return null.
+            return null;
+        }
+
         /// <summary>
         /// Try to get the value of the switch.
         /// </summary>
