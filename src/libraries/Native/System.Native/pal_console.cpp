@@ -140,7 +140,7 @@ extern "C" void SystemNative_UninitializeConsoleAfterRead()
 
         int tmpErrno = errno; // preserve any errors from before uninitializing
         IncorporateBreak(&g_preReadTermios, g_signalForBreak);
-        int ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_preReadTermios);
+        int ret = tcsetattr(STDIN_FILENO, TCSANOW, &g_preReadTermios);
         assert(ret >= 0); // shouldn't fail, but if it does we don't want to fail in release
         (void)ret;
         errno = tmpErrno;
@@ -278,7 +278,7 @@ extern "C" int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
     if (tcgetattr(STDIN_FILENO, &current) >= 0)
     {
         IncorporateBreak(&current, signalForBreak);
-        if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &current) >= 0)
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &current) >= 0)
         {
             g_signalForBreak = signalForBreak;
             return 1;
