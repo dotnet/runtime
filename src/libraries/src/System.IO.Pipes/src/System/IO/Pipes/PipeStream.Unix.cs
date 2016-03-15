@@ -82,6 +82,26 @@ namespace System.IO.Pipes
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
             DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+
+            // For named pipes, receive on the socket.
+            Socket socket = _handle.NamedPipeSocket;
+            if (socket != null)
+            {
+                // For a blocking socket, we could simply use the same Read syscall as is done
+                // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
+                // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
+                // is already handled by Socket.Receive, so we use it here.
+                try
+                {
+                    return socket.Receive(buffer, offset, count, SocketFlags.None);
+                }
+                catch (SocketException e)
+                {
+                    throw GetIOExceptionForSocketException(e);
+                }
+            }
+
+            // For anonymous pipes, read from the file descriptor.
             fixed (byte* bufPtr = buffer)
             {
                 int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
@@ -94,6 +114,33 @@ namespace System.IO.Pipes
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
             DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+
+            // For named pipes, send to the socket.
+            Socket socket = _handle.NamedPipeSocket;
+            if (socket != null)
+            {
+                // For a blocking socket, we could simply use the same Write syscall as is done
+                // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
+                // end up returning EWOULDBLOCK rather than blocking waiting for space available.  
+                // Such a case is already handled by Socket.Send, so we use it here.
+                try
+                {
+                    while (count > 0)
+                    {
+                        int bytesWritten = socket.Send(buffer, offset, count, SocketFlags.None);
+                        Debug.Assert(bytesWritten <= count);
+
+                        count -= bytesWritten;
+                        offset += bytesWritten;
+                    }
+                }
+                catch (SocketException e)
+                {
+                    throw GetIOExceptionForSocketException(e);
+                }
+            }
+
+            // For anonymous pipes, write the file descriptor.
             fixed (byte* bufPtr = buffer)
             {
                 while (count > 0)
@@ -139,11 +186,7 @@ namespace System.IO.Pipes
             }
             catch (SocketException e)
             {
-                if (e.SocketErrorCode == SocketError.Shutdown) // EPIPE
-                {
-                    State = PipeState.Broken;
-                }
-                throw new IOException(e.Message, e);
+                throw GetIOExceptionForSocketException(e);
             }
         }
 
@@ -169,12 +212,17 @@ namespace System.IO.Pipes
             }
             catch (SocketException e)
             {
-                if (e.SocketErrorCode == SocketError.Shutdown) // EPIPE
-                {
-                    State = PipeState.Broken;
-                }
-                throw new IOException(e.Message, e);
+                throw GetIOExceptionForSocketException(e);
             }
+        }
+
+        private IOException GetIOExceptionForSocketException(SocketException e)
+        {
+            if (e.SocketErrorCode == SocketError.Shutdown) // EPIPE
+            {
+                State = PipeState.Broken;
+            }
+            return new IOException(e.Message, e);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.

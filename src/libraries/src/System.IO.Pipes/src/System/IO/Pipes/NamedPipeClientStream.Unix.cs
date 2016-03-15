@@ -22,20 +22,23 @@ namespace System.IO.Pipes
             // timeout and cancellationToken aren't used as Connect will be very fast,
             // either succeeding immediately if the server is listening or failing
             // immediately if it isn't.  The only delay will be between the time the server
-            // has called Bind and the time it's subsequently called Accept.
+            // has called Bind and Listen, with the latter immediately following the former.
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            SafePipeHandle clientHandle = null;
             try
             {
-                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                 socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
-                var clientHandle = new SafePipeHandle(socket);
+                clientHandle = new SafePipeHandle(socket);
                 ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
-
-                InitializeHandle(clientHandle, isExposed: false, isAsync: (_pipeOptions & PipeOptions.Asynchronous) != 0);
-                State = PipeState.Connected;
-                return true;
             }
             catch (SocketException e)
             {
+                if (clientHandle != null)
+                {
+                    clientHandle.Dispose();
+                }
+                socket.Dispose();
+
                 switch (e.SocketErrorCode)
                 {
                     // Retryable errors
@@ -49,6 +52,10 @@ namespace System.IO.Pipes
                         throw;
                 }
             }
+
+            InitializeHandle(clientHandle, isExposed: false, isAsync: (_pipeOptions & PipeOptions.Asynchronous) != 0);
+            State = PipeState.Connected;
+            return true;
         }
 
         public int NumberOfServerInstances

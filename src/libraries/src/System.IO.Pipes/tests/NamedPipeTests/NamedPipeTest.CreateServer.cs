@@ -208,8 +208,10 @@ namespace System.IO.Pipes.Tests
         [PlatformSpecific(PlatformID.AnyUnix)]
         public static void Unix_GetHandleOfNewServerStream_Throws_InvalidOperationException()
         {
-            var pipe = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte);
-            Assert.Throws<InvalidOperationException>(() => pipe.SafePipeHandle);
+            using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte))
+            {
+                Assert.Throws<InvalidOperationException>(() => pipe.SafePipeHandle);
+            }
         }
 
         [Theory]
@@ -220,9 +222,10 @@ namespace System.IO.Pipes.Tests
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {
             // The pipe is already bound
-            var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle));
-            pipe.Dispose();
+            using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            {
+                Assert.Throws<ArgumentException>(() => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle));
+            }
         }
 
         [Fact]

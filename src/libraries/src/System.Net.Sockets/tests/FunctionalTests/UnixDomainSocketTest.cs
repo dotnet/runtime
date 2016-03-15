@@ -24,8 +24,8 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
-            // Throws SocketException with this message "An address incompatible with the requested protocol was used"
-            Assert.Throws<SocketException>(() => new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified));
+            SocketException e = Assert.Throws<SocketException>(() => new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified));
+            Assert.Equal(SocketError.AddressFamilyNotSupported, e.SocketErrorCode);
         }
 
         [Fact]
@@ -105,7 +105,7 @@ namespace System.Net.Sockets.Tests
                         await complete.Task;
                     }
 
-                    Assert.Equal(SocketError.SocketError, args.SocketError);
+                    Assert.Equal(SocketError.AddressNotAvailable, args.SocketError);
                 }
             }
             finally
@@ -141,6 +141,44 @@ namespace System.Net.Sockets.Tests
                             data[0] = 0;
 
                             Assert.Equal(1, client.Receive(data));
+                            Assert.Equal(i, data[0]);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public async Task Socket_SendReceiveAsync_Success()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+            try
+            {
+                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    server.Bind(endPoint);
+                    server.Listen(1);
+
+                    await client.ConnectAsync(endPoint);
+                    using (Socket accepted = await server.AcceptAsync())
+                    {
+                        var data = new byte[1];
+                        for (int i = 0; i < 10; i++)
+                        {
+                            data[0] = (byte)i;
+
+                            await accepted.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
+                            data[0] = 0;
+
+                            Assert.Equal(1, await client.ReceiveAsync(new ArraySegment<byte>(data), SocketFlags.None));
                             Assert.Equal(i, data[0]);
                         }
                     }

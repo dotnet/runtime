@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-
 namespace System.IO.Pipes.Tests
 {
     /// <summary>
@@ -44,9 +42,15 @@ namespace System.IO.Pipes.Tests
 
             public void Dispose()
             {
-                if (readablePipe != null)
-                    readablePipe.Dispose();
-                writeablePipe.Dispose();
+                try
+                {
+                    if (readablePipe != null)
+                        readablePipe.Dispose();
+                }
+                finally
+                {
+                    writeablePipe.Dispose();
+                }
             }
         }
 
