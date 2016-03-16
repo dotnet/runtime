@@ -11,7 +11,6 @@ namespace System.IO.Tests
 {
     public class BinaryWriter_WriteTests
     {
-
         [Fact]
         public void BinaryWriter_WriteBoolTest()
         {
@@ -141,14 +140,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void BinaryWriter_WriteStringTest_Null()
+        public void BinaryWriter_WriteStringTest_Null()
         {
-            // [] ArgumentNullException for null argument
-            MemoryStream mstr = new MemoryStream();
-            BinaryWriter dw2 = new BinaryWriter(mstr);
-            Assert.Throws<ArgumentNullException>(() => dw2.Write((string)null));
-            mstr.Dispose();
-            dw2.Dispose();
+            using (Stream memStream = CreateStream())
+            using (BinaryWriter dw2 = new BinaryWriter(memStream))
+            {
+                Assert.Throws<ArgumentNullException>(() => dw2.Write((string)null));
+            }
         }
 
         protected virtual Stream CreateStream()

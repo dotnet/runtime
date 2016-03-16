@@ -9,8 +9,8 @@ namespace System.IO.Tests
     public class MemoryStream_ConstructorTests
     {
         [Theory]
-        [InlineData(666, -1, int.MaxValue)]
-        [InlineData(666, 6, -1)]
+        [InlineData(10, -1, int.MaxValue)]
+        [InlineData(10, 6, -1)]
         public static void MemoryStream_Ctor_NegativeIndeces(int arraySize, int index, int count)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(new byte[arraySize], index, count));
@@ -31,19 +31,11 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void MemoryStream_Ctor_ExtremeCapacities()
+        public static void MemoryStream_Ctor_InvalidCapacities()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(-1));
             Assert.Throws<OutOfMemoryException>(() => new MemoryStream(int.MaxValue));
-        }
-
-        [Fact]
-        public static void MemoryStream_Ctor_NegativeCapacity()
-        {
-            for (int i = -1; i > -50; i--)
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(i));
-            }
         }
     }
 }
