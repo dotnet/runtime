@@ -7457,7 +7457,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
 			mono_error_set_bad_image (error, image,"Bad token table for dynamic image: %x", table);
 			return NULL;
 		}
-		klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, NULL); /*FIXME proper error handling*/
+		klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, NULL, error);
 		goto done;
 	}
 
@@ -7507,8 +7507,11 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 	mono_error_init (error);
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
-	if (image_is_dynamic (image))
-		return mono_class_get_type ((MonoClass *)mono_lookup_dynamic_token (image, type_token, context));
+	if (image_is_dynamic (image)) {
+		MonoClass *klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, context, error);
+		return_val_if_nok (error, NULL);
+		return mono_class_get_type (klass);
+	}
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
 		MonoClass *klass = mono_class_get_checked (image, type_token, error);
@@ -8866,15 +8869,11 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 }
 
 gpointer
-mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context)
+mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
 	MonoClass *handle_class;
-
-	gpointer result = mono_reflection_lookup_dynamic_token (image, token, TRUE, &handle_class, context, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return result;
-
+	mono_error_init (error);
+	return mono_reflection_lookup_dynamic_token (image, token, TRUE, &handle_class, context, error);
 }
 
 gpointer

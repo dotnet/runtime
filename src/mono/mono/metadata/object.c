@@ -6295,9 +6295,11 @@ MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	MonoError error;
 
 	if (image->dynamic) {
-		MonoString *str = (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
+		MonoString *str = (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		return str;
 	} else {
 		if (!mono_verifier_verify_string_signature (image, idx, NULL))
