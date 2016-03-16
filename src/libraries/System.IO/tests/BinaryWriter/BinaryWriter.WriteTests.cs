@@ -11,10 +11,6 @@ namespace System.IO.Tests
 {
     public class BinaryWriter_WriteTests
     {
-        protected virtual Stream CreateStream()
-        {
-            return new MemoryStream();
-        }
 
         [Fact]
         public void BinaryWriter_WriteBoolTest()
@@ -142,6 +138,22 @@ namespace System.IO.Tests
                 "\0\0\0\t\t\tHey\"\"", "\u0022\u0011", str1, string.Empty };
 
             WriteTest(strArr, (bw, s) => bw.Write(s), (br) => br.ReadString());
+        }
+
+        [Fact]
+        public static void BinaryWriter_WriteStringTest_Null()
+        {
+            // [] ArgumentNullException for null argument
+            MemoryStream mstr = new MemoryStream();
+            BinaryWriter dw2 = new BinaryWriter(mstr);
+            Assert.Throws<ArgumentNullException>(() => dw2.Write((string)null));
+            mstr.Dispose();
+            dw2.Dispose();
+        }
+
+        protected virtual Stream CreateStream()
+        {
+            return new MemoryStream();
         }
 
         private void WriteTest<T>(T[] testElements, Action<BinaryWriter, T> write, Func<BinaryReader, T> read)
