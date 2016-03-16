@@ -322,7 +322,7 @@ public:
     // and is a discretionary inline?
     bool IsDiscretionaryCandidate() const
     {
-        bool result = InlDecisionIsCandidate(m_Policy->GetDecision()) &&             
+        bool result = InlDecisionIsCandidate(m_Policy->GetDecision()) &&
             (m_Policy->GetObservation() == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
         return result;
@@ -433,9 +433,9 @@ public:
     // SetReported indicates that this particular result doesn't need
     // to be reported back to the runtime, either because the runtime
     // already knows, or we aren't actually inlining yet.
-    void SetReported() 
-    { 
-        m_Reported = true; 
+    void SetReported()
+    {
+        m_Reported = true;
     }
 
 private:
@@ -447,10 +447,10 @@ private:
     // Report/log/dump decision as appropriate
     void Report();
 
-    Compiler*               m_Compiler;
+    Compiler*               m_RootCompiler;
     InlinePolicy*           m_Policy;
     GenTreeCall*            m_Call;
-    CORINFO_METHOD_HANDLE   m_Caller;
+    CORINFO_METHOD_HANDLE   m_Caller;     // immediate caller's handle
     CORINFO_METHOD_HANDLE   m_Callee;
     const char*             m_Context;
     bool                    m_Reported;
