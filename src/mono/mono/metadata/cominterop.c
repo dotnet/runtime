@@ -571,7 +571,7 @@ cominterop_type_from_handle (MonoType *handle)
 	mono_class_init (klass);
 
 	ret = mono_type_get_object_checked (domain, handle, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_set_pending_exception (&error);
 
 	return ret;
 }
@@ -1476,22 +1476,21 @@ static gboolean cominterop_can_support_dispatch (MonoClass* klass)
 }
 
 static void*
-cominterop_get_idispatch_for_object (MonoObject* object)
+cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 {
-	MonoError error;
+	mono_error_init (error);
 	if (!object)
 		return NULL;
 
 	if (cominterop_object_is_rcw (object)) {
-		gpointer itf = cominterop_get_interface_checked (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object, 
-								 mono_class_get_idispatch_class (), &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return cominterop_get_interface_checked (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object,
+							 mono_class_get_idispatch_class (), error);
 	}
 	else {
 		MonoClass* klass = mono_object_class (object);
 		if (!cominterop_can_support_dispatch (klass) ) {
-			cominterop_set_hr_error (&error, MONO_E_NOINTERFACE);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			cominterop_set_hr_error (error, MONO_E_NOINTERFACE);
+			return NULL;
 		}
 		return cominterop_get_ccw (object, mono_class_get_idispatch_class ());
 	}
@@ -1564,7 +1563,10 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObject* object)
 {
 #ifndef DISABLE_COM
-	return cominterop_get_idispatch_for_object (object);
+	MonoError error;
+	void* idisp = cominterop_get_idispatch_for_object (object, &error);
+	mono_error_set_pending_exception (&error);
+	return idisp;
 #else
 	g_assert_not_reached ();
 #endif
