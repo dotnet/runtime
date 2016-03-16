@@ -21,13 +21,9 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<RuntimeLibrary> runtimeLibraries,
             IEnumerable<RuntimeFallbacks> runtimeGraph)
         {
-            if (targetFramework == null)
+            if (string.IsNullOrEmpty(targetFramework))
             {
-                throw new ArgumentNullException(nameof(targetFramework));
-            }
-            if (runtime == null)
-            {
-                throw new ArgumentNullException(nameof(runtime));
+                throw new ArgumentException(nameof(targetFramework));
             }
             if (compilationOptions == null)
             {

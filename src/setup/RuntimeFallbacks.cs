@@ -14,9 +14,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         public RuntimeFallbacks(string runtime, IEnumerable<string> fallbacks)
         {
-            if (runtime == null)
+            if (string.IsNullOrEmpty(runtime))
             {
-                throw new ArgumentNullException(nameof(runtime));
+                throw new ArgumentException(nameof(runtime));
             }
             if (fallbacks == null)
             {
