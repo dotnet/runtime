@@ -427,7 +427,7 @@ public:
 private:
     //------------------------------------------------------------------------
     // Should we stress lsra?
-    // This uses the same COMPLUS variable as rsStressRegs (COMPLUS_JitStressRegs)
+    // This uses the same COMPLUS variable as rsStressRegs (COMPlus_JitStressRegs)
     // However, the possible values and their interpretation are entirely different.
     //
     // The mask bits are currently divided into fields in which each non-zero value

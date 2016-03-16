@@ -655,7 +655,7 @@ namespace SortVersioning
     //         </runtime>
     //        </configuration>
     // 2) Environment variable
-    //        set COMPLUS_CompatSortNLSVersion=4096
+    //        set COMPlus_CompatSortNLSVersion=4096
     // 3) RegistryKey
     //        [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework]
     //        "CompatSortNLSVersion"=dword:00001000

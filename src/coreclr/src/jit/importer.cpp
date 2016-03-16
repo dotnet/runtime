@@ -13622,7 +13622,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
             if (opts.compGcChecks && info.compRetType == TYP_REF)
             {
                 // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
-                // VSW 440513: Incorrect gcinfo on the return value under COMPLUS_JitGCChecks=1 for methods with one-return BB.
+                // VSW 440513: Incorrect gcinfo on the return value under COMPlus_JitGCChecks=1 for methods with one-return BB.
                         
                 assert(op2->gtType == TYP_REF);
                                       
@@ -16633,7 +16633,7 @@ void          Compiler::impMarkInlineCandidate(GenTreePtr callNode, CORINFO_CONT
     }
 #endif
 
-    // Check for COMPLUS_AggressiveInlining
+    // Check for COMPlus_AggressiveInlining
     if (compDoAggressiveInlining)
     {
         methAttr |= CORINFO_FLG_FORCEINLINE;
