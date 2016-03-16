@@ -52,5 +52,14 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void CopyTo_ArgumentValidity(int count)
+        {
+            List<T> list = GenericListFactory(count);
+            Assert.Throws<ArgumentException>(() => list.CopyTo(0, new T[0], 0, count + 1));
+            Assert.Throws<ArgumentException>(() => list.CopyTo(count, new T[0], 0, 1));
+        }
     }
 }
