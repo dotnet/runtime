@@ -2,87 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.ToFourDigitYear(System.Int32)
     public class KoreanCalendarToFourDigitYear
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:Invoke the method with min two digit year
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> ToFourDigitYear_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int twoDigitMax = kC.TwoDigitYearMax;
-            int lBound = twoDigitMax - 99;
-            int rBound = twoDigitMax;
-            int twoDigitYear = 0;
+            yield return new object[] { 0 };
+            yield return new object[] { 99 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 100 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToFourDigitYear_TestData))]
+        public void ToFourDigitYear(int year)
+        {
+            KoreanCalendar calendar = new KoreanCalendar();
+            int lBound = calendar.TwoDigitYearMax - 99;
+            int rBound = calendar.TwoDigitYearMax;
             int expectedValue;
-            if (twoDigitYear < (lBound % 100))
+            if (year < (lBound % 100))
             {
-                expectedValue = (lBound / 100 + 1) * 100 + twoDigitYear;
+                expectedValue = (lBound / 100 + 1) * 100 + year;
             }
             else
             {
-                expectedValue = (lBound / 100) * 100 + twoDigitYear;
+                expectedValue = (lBound / 100) * 100 + year;
             }
-
-            int actualValue = kC.ToFourDigitYear(twoDigitYear);
-            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(expectedValue, calendar.ToFourDigitYear(year));
         }
-
-        // PosTest2:Invoke the method with max two digit year
-        [Fact]
-        public void PosTest2()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int twoDigitMax = kC.TwoDigitYearMax;
-            int lBound = twoDigitMax - 99;
-            int rBound = twoDigitMax;
-            int twoDigitYear = 99;
-            int expectedValue;
-            if (twoDigitYear < (lBound % 100))
-            {
-                expectedValue = (lBound / 100 + 1) * 100 + twoDigitYear;
-            }
-            else
-            {
-                expectedValue = (lBound / 100) * 100 + twoDigitYear;
-            }
-
-            int actualValue = kC.ToFourDigitYear(twoDigitYear);
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest3:Invoke the method with random two digit year
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            int twoDigitMax = kC.TwoDigitYearMax;
-            int lBound = twoDigitMax - 99;
-            int rBound = twoDigitMax;
-            int twoDigitYear = _generator.GetInt16(-55) % 100;
-            int expectedValue;
-            if (twoDigitYear < (lBound % 100))
-            {
-                expectedValue = (lBound / 100 + 1) * 100 + twoDigitYear;
-            }
-            else
-            {
-                expectedValue = (lBound / 100) * 100 + twoDigitYear;
-            }
-
-            int actualValue = kC.ToFourDigitYear(twoDigitYear);
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
 
         [Fact]
         public void ToFourDigitYear_Invalid()
