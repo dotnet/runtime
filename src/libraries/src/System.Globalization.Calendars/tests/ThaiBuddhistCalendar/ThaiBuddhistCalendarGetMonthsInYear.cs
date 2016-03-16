@@ -2,63 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Globalization.Tests;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.ThaiBuddhistCalendar.GetMonthsInYear(Int32,Int32)
     public class ThaiBuddhistCalendarGetMonthsInYear
     {
-        private readonly int _months_IN_YEAR = 12;
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Tests
-        // PosTest1: Verify the day is a random year
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMonthsInYear_TestData()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tbc.MinSupportedDateTime.Year + 543, tbc.MaxSupportedDateTime.Year + 544);
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.Equal(_months_IN_YEAR, tbc.GetMonthsInYear(year, era));
-            }
+            yield return new object[] { 1, 1 };
+            yield return new object[] { 9999, 1 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, 1 };
         }
 
-        // PosTest2: Verify year is ThaiBuddhistCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMonthsInYear_TestData))]
+        public void GetMonthsInYear(int year, int era)
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MinSupportedDateTime;
-            int year = dt.Year + 543;
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.Equal(_months_IN_YEAR, tbc.GetMonthsInYear(year, era));
-            }
+            int expected = new GregorianCalendar().GetMonthsInYear(year, era);
+            Assert.Equal(expected, new ThaiBuddhistCalendar().GetMonthsInYear(year + 543, era));
         }
-
-        // PosTest3: Verify the DateTime is ThaiBuddhistCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            DateTime dt = tbc.MaxSupportedDateTime;
-            int year = dt.Year + 543;
-            int era;
-            for (int i = 0; i < tbc.Eras.Length; i++)
-            {
-                era = tbc.Eras[i];
-                Assert.Equal(_months_IN_YEAR, tbc.GetMonthsInYear(year, era));
-            }
-        }
-        #endregion
     }
 }

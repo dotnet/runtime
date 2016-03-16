@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTime.MinValue, rule, firstDayOfWeek };
             yield return new object[] { DateTime.MaxValue, rule, firstDayOfWeek };
             yield return new object[] { new DateTime(2008, 2, 29), rule, firstDayOfWeek };
-            yield return new object[] { new DateTime(s_randomDataGenerator.GetInt64(-55) % DateTime.MaxValue.Ticks + 1), rule, firstDayOfWeek };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55), rule, firstDayOfWeek };
         }
 
         [Theory]

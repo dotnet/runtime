@@ -401,6 +401,8 @@ namespace System
             return retStrings;
         }
 
+        public DateTime GetDateTime(int newSeed) => new DateTime(GetInt64(newSeed) % (DateTime.MaxValue.Ticks + 1));
+
         public static void VerifyRandomDistribution(byte[] random)
         {
             // Better tests for randomness are available.  For now just use a simple
