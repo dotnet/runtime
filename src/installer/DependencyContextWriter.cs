@@ -16,6 +16,14 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public void Write(DependencyContext context, Stream stream)
         {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
             using (var writer = new StreamWriter(stream))
             {
                 using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })

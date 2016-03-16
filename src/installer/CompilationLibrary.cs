@@ -19,6 +19,10 @@ namespace Microsoft.Extensions.DependencyModel
             bool serviceable)
             : base(type, name, version, hash,  dependencies, serviceable)
         {
+            if (assemblies == null)
+            {
+                throw new ArgumentNullException(nameof(assemblies));
+            }
             Assemblies = assemblies.ToArray();
         }
 

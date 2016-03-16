@@ -13,6 +13,10 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public DependencyContext Read(Stream stream)
         {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
             var lines = new List<DepsFileLine>();
             using (var reader = new StreamReader(stream))
             {
