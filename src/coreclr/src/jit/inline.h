@@ -238,7 +238,6 @@ public:
     virtual void NoteBool(InlineObservation obs, bool value) = 0;
     virtual void NoteFatal(InlineObservation obs) = 0;
     virtual void NoteInt(InlineObservation obs, int value) = 0;
-    virtual void NoteDouble(InlineObservation obs, double value) = 0;
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
@@ -373,12 +372,6 @@ public:
     void NoteInt(InlineObservation obs, int value)
     {
         m_Policy->NoteInt(obs, value);
-    }
-
-    // Make an observation with a double value
-    void NoteDouble(InlineObservation obs, double value)
-    {
-        m_Policy->NoteDouble(obs, value);
     }
 
     // Determine if this inline is profitable
