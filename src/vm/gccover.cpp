@@ -741,7 +741,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
                 //
                 // Given all of this, skip the MethodDesc::ReturnsObject() call by default to avoid
                 // unexpected AVs.  This implies leaving out the GC coverage breakpoints for direct calls
-                // unless COMPLUS_GcStressOnDirectCalls=1 is explicitly set in the environment.
+                // unless COMPlus_GcStressOnDirectCalls=1 is explicitly set in the environment.
                 //
 
                 static ConfigDWORD fGcStressOnDirectCalls;

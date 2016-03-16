@@ -149,8 +149,8 @@ int ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     IfFailThrow(m_pEECompileInfo->GetBaseJitFlags(handle, &flags));
     jitFlags |= flags;
 
-    // COMPLUS_JitFramed specifies the default fpo setting for jitted and NGened code.
-    // You can override the behavior for NGened code using COMPLUS_NGenFramed.
+    // COMPlus_JitFramed specifies the default fpo setting for jitted and NGened code.
+    // You can override the behavior for NGened code using COMPlus_NGenFramed.
     static ConfigDWORD g_NGenFramed;
     DWORD dwNGenFramed = g_NGenFramed.val(CLRConfig::UNSUPPORTED_NGenFramed);
     if (dwNGenFramed == 0) 

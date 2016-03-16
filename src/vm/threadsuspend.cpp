@@ -7911,7 +7911,7 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
 #ifdef FEATURE_ENABLE_GCPOLL
             // On platforms that support both hijacking and GC polling
             // decide whether to hijack based on a configuration value.  
-            // COMPLUS_GCPollType = 1 is the setting that enables hijacking
+            // COMPlus_GCPollType = 1 is the setting that enables hijacking
             // in GCPOLL enabled builds.
             EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
             if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
