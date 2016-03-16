@@ -202,6 +202,12 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
+#if MANAGED_SNI
+            if(_integratedSecurity)
+            {
+                throw new PlatformNotSupportedException("Integrated security is not supported");
+            }
+#endif
 
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
@@ -360,6 +366,12 @@ namespace System.Data.SqlClient
         internal SqlConnectionString(SqlConnectionString connectionOptions, string dataSource, bool userInstance) : base(connectionOptions)
         {
             _integratedSecurity = connectionOptions._integratedSecurity;
+#if MANAGED_SNI
+            if (_integratedSecurity)
+            {
+                throw new PlatformNotSupportedException("Integrated security is not supported");
+            }
+#endif
             _encrypt = connectionOptions._encrypt;
 
             _mars = connectionOptions._mars;
