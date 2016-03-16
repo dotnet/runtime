@@ -2,71 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetDaysInMonth(System.Int32,System.Int32,System.Int32)
     public class KoreanCalendarGetDaysInMonth
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:Invoke the mthod with Min DateTime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetDaysInMonth_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = gC.GetDaysInMonth(dateTime.Year, dateTime.Month, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetDaysInMonth(dateTime.Year + 2333, dateTime.Month, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { 1, 1, 1 };
+            yield return new object[] { 9999, 12, 1 };
+            yield return new object[] { 2004, 2, 1 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, s_randomDataGenerator.GetInt16(-55) % 12 + 1, 1 };
         }
 
-        // PosTest2:Invoke the mthod with Max DateTime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDaysInMonth_TestData))]
+        public void GetDaysInMonth(int year, int month, int era)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int expectedValue = gC.GetDaysInMonth(dateTime.Year, dateTime.Month, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetDaysInMonth(dateTime.Year + 2333, dateTime.Month, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            int expected = new GregorianCalendar().GetDaysInMonth(year, month, era);
+            Assert.Equal(expected, new KoreanCalendar().GetDaysInMonth(year + 2333, month, era));
         }
-
-        // PosTest3:Invoke the mthod with leap year DateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new GregorianCalendar().ToDateTime(2004, 2, 29, 0, 0, 0, 0);
-            int expectedValue = gC.GetDaysInMonth(dateTime.Year, dateTime.Month, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetDaysInMonth(dateTime.Year + 2333, dateTime.Month, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Invoke the mthod with random argument
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new DateTime(_generator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
-            dateTime = new GregorianCalendar().ToDateTime(dateTime.Year, dateTime.Month, dateTime.Day, 0, 0, 0, 0);
-            int month = _generator.GetInt16(-55) % 12 + 1;
-            int expectedValue = gC.GetDaysInMonth(dateTime.Year, month, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetDaysInMonth(dateTime.Year + 2333, month, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }
