@@ -852,9 +852,12 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SysStringByteLen(IntPtr bstr);
 
+#if FEATURE_LEGACYSURFACE
         [DllImport(Win32Native.OLEAUT32)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern uint SysStringLen(SafeBSTRHandle bstr);
+#endif
+
 #endif
 
         [DllImport(KERNEL32)]
@@ -1755,7 +1758,7 @@ namespace Microsoft.Win32 {
         // DPAPI
         //
 
-#if FEATURE_COMINTEROP
+#if FEATURE_LEGACYSURFACE
         //
         // RtlEncryptMemory and RtlDecryptMemory are declared in the internal header file crypt.h. 
         // They were also recently declared in the public header file ntsecapi.h (in the Platform SDK as well as the current build of Server 2003). 
@@ -1777,7 +1780,7 @@ namespace Microsoft.Win32 {
             [In,Out] SafeBSTRHandle     pDataIn,
             [In]     uint       cbDataIn,   // multiple of RTL_ENCRYPT_MEMORY_SIZE
             [In]     uint       dwFlags);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_LEGACYSURFACE
 
 #if FEATURE_CORECLR 
         [DllImport(NTDLL, CharSet=CharSet.Unicode, SetLastError=true)]
@@ -2416,11 +2419,30 @@ namespace Microsoft.Win32 {
         [return: MarshalAs(UnmanagedType.Bool)]
         internal extern static bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
 
+#if FEATURE_CORECLR
 #if FEATURE_PAL
         [DllImport(KERNEL32, EntryPoint = "PAL_Random")]
         [ResourceExposure(ResourceScope.None)]
         internal extern static bool Random(bool bStrong,
                            [Out, MarshalAs(UnmanagedType.LPArray)] byte[] buffer, int length);
+#else
+        internal const int PROV_RSA_FULL = 1;
+        internal const int CRYPT_VERIFYCONTEXT = unchecked((int)0xF0000000);
+
+        [DllImport("advapi32", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CryptAcquireContext([Out] out IntPtr phProv,
+                                                        string pszContainer,
+                                                        string pszProvider,
+                                                        int dwProvType,
+                                                        int dwFlags);
+
+        [DllImport("advapi32", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool CryptGenRandom(IntPtr hProv,
+                                                   int dwLen,
+                                                   [In, Out, MarshalAs(UnmanagedType.LPArray)] byte[] pbBuffer);
+#endif
 #endif
     }
 }
