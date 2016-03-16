@@ -90,7 +90,6 @@ if(WIN32)
     list(APPEND CORECLR_LIBRARIES
         mdwinmd_wks
         comnls_wks
-        comcrypt_wks
         msvcrt.lib
         kernel32.lib
         advapi32.lib
@@ -101,7 +100,6 @@ if(WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        crypt32.lib
         RuntimeObject.lib
     )
 else()
