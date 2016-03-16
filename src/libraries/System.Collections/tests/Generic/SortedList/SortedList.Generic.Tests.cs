@@ -431,6 +431,20 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData("ValidCollectionSizes")]
+        public void SortedList_Generic_RemoveAt_OutOfRangeValues(int count)
+        {
+            if (!IsReadOnly)
+            {
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(-1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(int.MinValue));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(count));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.RemoveAt(count + 1));
+            }
+        }
+
         #endregion
 
         #region TrimExcess
