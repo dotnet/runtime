@@ -130,9 +130,11 @@ namespace System.IO
 
                 // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive 
                 // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory, 
-                // and not atomic with file opening, it's better than nothing.
+                // and not atomic with file opening, it's better than nothing.  Some kinds of files, e.g. FIFOs, don't support
+                // locking on some platforms, e.g. OSX, and so if flock returns ENOTSUP, we similarly treat it as a hint and ignore it,
+                // as we don't want to entirely prevent usage of a particular file simply because locking isn't supported.
                 Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-                CheckFileCall(Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB));
+                CheckFileCall(Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB), ignoreNotSupported: true);
 
                 // These provide hints around how the file will be accessed.  Specifying both RandomAccess
                 // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
