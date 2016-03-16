@@ -29,7 +29,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     }
 
     auto fx_dir = muxer_dir;
-    append_path(&fx_dir, _X("Shared"));
+    append_path(&fx_dir, _X("shared"));
     append_path(&fx_dir, fx_name.c_str());
 
     // If not roll forward or if pre-release, just return.
