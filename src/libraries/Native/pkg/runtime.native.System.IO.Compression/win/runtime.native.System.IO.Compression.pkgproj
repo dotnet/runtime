@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
-  <ItemGroup Condition="Exists('$(OutputRootPath)ProjectK')">
-    <File Include="$(OutputRootPath)ProjectK\Runtime\clrcompression.dll">
+  <ItemGroup>
+    <File Include="$(WinNativePath)ProjectK\Runtime\clrcompression.dll">
       <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
     </File>
     <!-- use Win10 temporarily as the distinguishing factor, in reality the distinction is app-container vs not. -->
-    <File Include="$(OutputRootPath)NetCoreForCoreCLR\native\clrcompression.dll">
+    <File Include="$(WinNativePath)NetCoreForCoreCLR\native\clrcompression.dll">
       <TargetPath>runtimes/win10-$(PackagePlatform)/native</TargetPath>
     </File>
   </ItemGroup>
