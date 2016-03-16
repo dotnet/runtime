@@ -14,8 +14,8 @@ namespace System.IO.Pipes.Tests
         public void PingPong_Sync()
         {
             // Create names for two pipes
-            string outName = Guid.NewGuid().ToString("N");
-            string inName = Guid.NewGuid().ToString("N");
+            string outName = Path.GetRandomFileName();
+            string inName = Path.GetRandomFileName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
@@ -40,8 +40,8 @@ namespace System.IO.Pipes.Tests
         public async Task PingPong_Async()
         {
             // Create names for two pipes
-            string outName = Guid.NewGuid().ToString("N");
-            string inName = Guid.NewGuid().ToString("N");
+            string outName = Path.GetRandomFileName();
+            string inName = Path.GetRandomFileName();
 
             // Create the two named pipes, one for each direction, then create
             // another process with which to communicate
