@@ -10,14 +10,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(OutputRootPath)ProjectK\Runtime\sni.dll">
-      <PackageTargetRuntime>win7-x86</PackageTargetRuntime>
-      <TargetPath>runtimes/win7-x86/native</TargetPath>
-    </File>
-    <File Include="$(OutputRootPath)ProjectK\Runtime\sni.dll">
-      <PackageTargetRuntime>win7-x64</PackageTargetRuntime>
-      <TargetPath>runtimes/win7-x64/native</TargetPath>
-    </File>
+    <ProjectReference Include="win\runtime.native.System.Data.SqlClient.sni.pkgproj">
+      <TargetFramework>any</TargetFramework>
+      <Platform>amd64</Platform>
+    </ProjectReference>
+    <ProjectReference Include="win\runtime.native.System.Data.SqlClient.sni.pkgproj">
+      <TargetFramework>any</TargetFramework>
+      <Platform>x86</Platform>
+    </ProjectReference>
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
