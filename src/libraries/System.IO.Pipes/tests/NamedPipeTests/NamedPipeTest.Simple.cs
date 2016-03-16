@@ -323,12 +323,15 @@ namespace System.IO.Pipes.Tests
 
                 if (!pair.writeToServer)
                 {
-                    // Pipe is broken
-                    Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
-                    Assert.Throws<IOException>(() => client.WriteByte(5));
-                    Assert.Throws<IOException>(() => { client.WriteAsync(buffer, 0, buffer.Length); });
-                    Assert.Throws<IOException>(() => client.Flush());
-                    Assert.Throws<IOException>(() => client.NumberOfServerInstances);
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // writes on Unix may still succeed after other end disconnects, due to socket being used
+                    {
+                        // Pipe is broken
+                        Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                        Assert.Throws<IOException>(() => client.WriteByte(5));
+                        Assert.Throws<IOException>(() => { client.WriteAsync(buffer, 0, buffer.Length); });
+                        Assert.Throws<IOException>(() => client.Flush());
+                        Assert.Throws<IOException>(() => client.NumberOfServerInstances);
+                    }
                 }
                 else
                 {
