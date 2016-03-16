@@ -4222,6 +4222,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr,
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
+#ifdef DEBUG
+
+        // If inlining, this method should still be a candidate.
+        if (compIsForInlining())
+        {
+            assert(compInlineResult->IsCandidate());
+        }
+
+#endif // DEBUG
+
         // note that we're starting to look at the opcodes.
         compInlineResult->Note(InlineObservation::CALLEE_BEGIN_OPCODE_SCAN);
     }
