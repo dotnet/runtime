@@ -161,7 +161,7 @@
     <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net45/</PackagingTaskDir>
     <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">00001</BuildNumberMajor>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(BuildArch)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
   </PropertyGroup>
