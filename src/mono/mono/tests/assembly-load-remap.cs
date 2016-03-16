@@ -1,9 +1,13 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 public class Tests
 {
+	[DllImport("__Internal")]
+	extern static void mono_set_assemblies_path (string path);
+
 	public static void Main (string[] args)
 	{
 		var ver40 = new Version (4, 0, 0, 0);
@@ -17,11 +21,13 @@ public class Tests
 		var frwk20 = Assembly.ReflectionOnlyLoad ("Microsoft.Build.Framework, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
 		var frwk35 = Assembly.ReflectionOnlyLoad ("Microsoft.Build.Framework, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
 
-		// when run as part of the test suite, we need to register the xbuild 14.0 path or v14 assembly lookup will fail 
-		if (!String.IsNullOrEmpty (Environment.GetEnvironmentVariable ("MONO_PATH"))) {
-			var p = Path.Combine (new DirectoryInfo (Environment.GetEnvironmentVariable ("MONO_PATH")).Parent.FullName, "xbuild_14");
-			Console.WriteLine("Adding private bin path " + p);
-			AppDomain.CurrentDomain.AppendPrivatePath (p);
+		// when run as part of the test suite, we need to register the xbuild 14.0 path or v14 assembly lookup will fail
+		var mono_path = Environment.GetEnvironmentVariable ("MONO_PATH");
+		if (!String.IsNullOrEmpty (mono_path)) {
+			var xbuild = Path.Combine (new DirectoryInfo (mono_path).Parent.FullName, "xbuild_14");
+			mono_path = xbuild + Path.PathSeparator + mono_path;
+			Console.WriteLine ("Setting Mono assemblies path to " + mono_path);
+			mono_set_assemblies_path (mono_path);
 		}
 
 		var engn140 = Assembly.ReflectionOnlyLoad ("Microsoft.Build.Engine, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
