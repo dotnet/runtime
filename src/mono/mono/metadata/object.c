@@ -5977,11 +5977,17 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	MonoError error;
+	MonoObject *result = NULL;
+
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
-		return mono_object_isinst_mbyref (obj, klass);
+	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		result = mono_object_isinst_mbyref_checked (obj, klass, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return result;
+	}
 
 	if (!obj)
 		return NULL;
@@ -5995,7 +6001,19 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	MonoObject *result = mono_object_isinst_mbyref_checked (obj, klass, &error);
+	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	return result;
+}
+
+MonoObject *
+mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoVTable *vt;
+
+	mono_error_init (error);
 
 	if (!obj)
 		return NULL;
@@ -6035,12 +6053,12 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		im = mono_object_get_virtual_method (rp, im);
 		g_assert (im);
 	
-		pa [0] = mono_type_get_object_checked (domain, &klass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		pa [0] = mono_type_get_object_checked (domain, &klass->byval_arg, error);
+		return_val_if_nok (error, NULL);
 		pa [1] = obj;
 
-		res = mono_runtime_invoke_checked (im, rp, pa, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		res = mono_runtime_invoke_checked (im, rp, pa, error);
+		return_val_if_nok (error, NULL);
 
 		if (*(MonoBoolean *) mono_object_unbox(res)) {
 			/* Update the vtable of the remote type, so it can safely cast to this new type */
@@ -6063,10 +6081,11 @@ MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	MonoError error;
 
 	if (!obj) return NULL;
-	if (mono_object_isinst_mbyref (obj, klass)) return obj;
-		
+	if (mono_object_isinst_mbyref_checked (obj, klass, &error)) return obj;
+	mono_error_cleanup (&error);
 	return NULL;
 }
 

@@ -186,6 +186,7 @@ mono_object_clone	    (MonoObject *obj);
 MONO_API MonoObject *
 mono_object_isinst	    (MonoObject *obj, MonoClass *klass);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
 
