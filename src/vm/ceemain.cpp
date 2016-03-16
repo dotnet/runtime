@@ -1439,11 +1439,11 @@ HRESULT EEStartup(COINITIEE fFlags)
     PAL_TRY(COINITIEE *, pfFlags, &fFlags)
     {
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PAL
-        DacGlobals::Initialize();
-        InitializeJITNotificationTable();
-#endif
         InitializeClrNotifications();
+#ifdef FEATURE_PAL
+        InitializeJITNotificationTable();
+        DacGlobals::Initialize();
+#endif
 #endif // CROSSGEN_COMPILE
 
         EEStartupHelper(*pfFlags);
