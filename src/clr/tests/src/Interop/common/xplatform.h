@@ -54,9 +54,11 @@
 #if __i386__
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))
+#define __cdecl __attribute__((cdecl))
 #else
 #define __stdcall
 #define _cdecl
+#define __cdecl
 #endif
 #endif
 
