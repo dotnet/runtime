@@ -563,7 +563,9 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		MonoClass *handle_class;
 
 		*retklass = NULL;
-		result = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
+		MonoError inner_error;
+		result = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, &inner_error);
+		mono_error_cleanup (&inner_error);
 		// This checks the memberref type as well
 		if (!result || handle_class != mono_defaults.fieldhandle_class) {
 			mono_error_set_bad_image (error, image, "Bad field token 0x%08x", token);
@@ -1873,7 +1875,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (image_is_dynamic (image)) {
 		MonoClass *handle_class;
 
-		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
+		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, error);
+		mono_error_assert_ok (error);
 		mono_loader_assert_no_error ();
 
 		// This checks the memberref type as well
