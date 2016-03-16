@@ -2,37 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using Microsoft.Win32;
 using System.Collections;
-using System.Globalization;
+using System.Diagnostics;
 
-/*
- This class has the HostProtectionAttribute. The purpose of this attribute is to enforce host-specific programming model guidelines, not security behavior. 
- Suppress FxCop message - BUT REVISIT IF ADDING NEW SECURITY ATTRIBUTES.
-*/
-[assembly: SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.EventDescriptorCollection")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.get_IsFixedSize():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.ICollection.get_SyncRoot():System.Object")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.ICollection.get_IsSynchronized():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.get_IsReadOnly():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.Clear():System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IEnumerable.GetEnumerator():System.Collections.IEnumerator")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.ICollection.CopyTo(System.Array,System.Int32):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.ICollection.get_Count():System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.Contains(System.Object):System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.Remove(System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.get_Item(System.Int32):System.Object")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.set_Item(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.Add(System.Object):System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.IndexOf(System.Object):System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.RemoveAt(System.Int32):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.System.Collections.IList.Insert(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection..ctor(System.ComponentModel.EventDescriptor[],System.Boolean)")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.get_Count():System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.EventDescriptorCollection.GetEnumerator():System.Collections.IEnumerator")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.EventDescriptorCollection")]
 
 namespace System.ComponentModel
 {
@@ -41,8 +14,6 @@ namespace System.ComponentModel
     ///       Represents a collection of events.
     ///    </para>
     /// </devdoc>
-    [System.Runtime.InteropServices.ComVisible(true)]
-    [System.Security.Permissions.HostProtection(Synchronization = true)]
     public class EventDescriptorCollection : ICollection, IList
     {
         private EventDescriptor[] _events;
@@ -579,6 +550,56 @@ namespace System.ComponentModel
             get
             {
                 return _readOnly;
+            }
+        }
+
+        private class ArraySubsetEnumerator : IEnumerator
+        {
+            private readonly Array _array;
+            private readonly int _total;
+            private int _current;
+
+            public ArraySubsetEnumerator(Array array, int count)
+            {
+                Debug.Assert(count == 0 || array != null, "if array is null, count should be 0");
+                Debug.Assert(array == null || count <= array.Length, "Trying to enumerate more than the array contains");
+
+                _array = array;
+                _total = count;
+                _current = -1;
+            }
+
+            public bool MoveNext()
+            {
+                if (_current < _total - 1)
+                {
+                    _current++;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            public void Reset()
+            {
+                _current = -1;
+            }
+
+            public object Current
+            {
+                get
+                {
+                    if (_current == -1)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                    else
+                    {
+                        return _array.GetValue(_current);
+                    }
+                }
             }
         }
     }

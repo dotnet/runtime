@@ -41,8 +41,8 @@
     <!--<Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />-->
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
     <Compile Include="System\ComponentModel\EnumConverter.cs" />
-    <!--<Compile Include="System\ComponentModel\EventDescriptor.cs" />-->
-    <!--<Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />-->
+    <Compile Include="System\ComponentModel\EventDescriptor.cs" />
+    <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
     <!--<Compile Include="System\ComponentModel\EventHandlerList.cs" />-->
     <!--<Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />-->
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
