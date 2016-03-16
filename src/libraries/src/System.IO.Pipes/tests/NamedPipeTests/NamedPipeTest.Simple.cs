@@ -394,22 +394,14 @@ namespace System.IO.Pipes.Tests
 
                 if (pair.writeToServer)
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        Assert.Equal(0, server.OutBufferSize);
-                    else
-                        Assert.Throws<PlatformNotSupportedException>(() => server.OutBufferSize);
-
+                    Assert.Equal(0, server.OutBufferSize);
                     Assert.Throws<InvalidOperationException>(() => server.Write(buffer, 0, buffer.Length));
                     Assert.Throws<InvalidOperationException>(() => server.WriteByte(5));
                     Assert.Throws<InvalidOperationException>(() => { server.WriteAsync(buffer, 0, buffer.Length); });
                 }
                 else
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                        Assert.Equal(0, server.InBufferSize);
-                    else
-                        Assert.Throws<PlatformNotSupportedException>(() => server.InBufferSize);
-
+                    Assert.Equal(0, server.InBufferSize);
                     PipeTransmissionMode readMode = server.ReadMode;
                     Assert.Throws<InvalidOperationException>(() => server.Read(buffer, 0, buffer.Length));
                     Assert.Throws<InvalidOperationException>(() => server.ReadByte());

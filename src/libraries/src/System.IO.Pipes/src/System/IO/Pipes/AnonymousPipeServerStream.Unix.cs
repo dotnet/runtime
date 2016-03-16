@@ -28,7 +28,11 @@ namespace System.IO.Pipes
 
             // Configure the pipe.  For buffer size, the size applies to the pipe, rather than to 
             // just one end's file descriptor, so we only need to do this with one of the handles.
-            InitializeBufferSize(serverHandle, bufferSize);
+            // bufferSize is just advisory and ignored if platform does not support setting pipe capacity via fcntl.
+            if (bufferSize > 0 && Interop.Sys.Fcntl.CanGetSetPipeSz)
+            {
+                CheckPipeCall(Interop.Sys.Fcntl.SetPipeSz(serverHandle, bufferSize));
+            }
 
             // We're connected.  Finish initialization using the newly created handles.
             InitializeHandle(serverHandle, isExposed: false, isAsync: false);

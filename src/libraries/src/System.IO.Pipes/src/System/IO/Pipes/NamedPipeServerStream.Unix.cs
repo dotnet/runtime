@@ -179,6 +179,26 @@ namespace System.IO.Pipes
                 Interop.GetExceptionForIoErrno(error, _path);
         }
 
+        public override int InBufferSize
+        {
+            get
+            {
+                CheckPipePropertyOperations();
+                if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+                return InternalHandle?.NamedPipeSocket?.ReceiveBufferSize ?? _inBufferSize;
+            }
+        }
+
+        public override int OutBufferSize
+        {
+            get
+            {
+                CheckPipePropertyOperations();
+                if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+                return InternalHandle?.NamedPipeSocket?.SendBufferSize ?? _outBufferSize;
+            }
+        }
+
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
