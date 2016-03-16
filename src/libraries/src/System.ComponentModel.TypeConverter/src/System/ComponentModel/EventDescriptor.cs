@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Reflection;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -15,9 +10,11 @@ namespace System.ComponentModel
     ///       of an event.
     ///    </para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
-    [System.Runtime.InteropServices.ComVisible(true)]
+#if FEATURE_MEMBERDESCRIPTOR
     public abstract class EventDescriptor : MemberDescriptor
+#else
+    public abstract class EventDescriptor
+#endif
     {
         /// <devdoc>
         ///    <para>
@@ -26,11 +23,20 @@ namespace System.ComponentModel
         ///       array.
         ///    </para>
         /// </devdoc>
+#if !FEATURE_MEMBERDESCRIPTOR
+        // TODO: This is a placeholder until MemberDescriptor is implemented
+        protected EventDescriptor(string name, Attribute[] attrs)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+#else
         protected EventDescriptor(string name, Attribute[] attrs)
             : base(name, attrs)
         {
         }
-        
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with the name and attributes in
@@ -42,7 +48,7 @@ namespace System.ComponentModel
             : base(descr)
         {
         }
-        
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with
@@ -55,6 +61,7 @@ namespace System.ComponentModel
             : base(descr, attrs)
         {
         }
+#endif
 
         /// <devdoc>
         ///    <para>

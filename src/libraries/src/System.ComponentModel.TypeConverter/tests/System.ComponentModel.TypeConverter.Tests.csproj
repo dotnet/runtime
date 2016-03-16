@@ -20,6 +20,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayConverterTests.cs" />
+    <Compile Include="EventDescriptorCollectionTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />
     <Compile Include="BooleanConverterTests.cs" />
     <Compile Include="ByteConvertersTests.cs" />
