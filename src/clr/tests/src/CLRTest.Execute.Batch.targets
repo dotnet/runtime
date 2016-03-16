@@ -21,6 +21,7 @@ WARNING:   When setting properties based on their current state (for example:
   <ItemGroup>
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="set complus_zaprequire=2" />
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="set complus_zaprequireexcludelist=corerun" />
+    <CLRTestBatchEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="set complus_gcstress=$(GCStressLevel)" />
   </ItemGroup>
   <!--
     Target: GetBatchCrossgenScript
@@ -40,7 +41,7 @@ if not exist "$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPa
       </CrossgenBatchScript>
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
-if not exist "$(MSBuildProjectName).ni.exe" "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B. $(MSBuildProjectName).exe      
+if not exist "$(MSBuildProjectName).ni.exe" "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B%~dp0 $(MSBuildProjectName).exe      
         ]]>
       </CrossgenBatchScript>
     </PropertyGroup>
@@ -314,10 +315,10 @@ $(BatchCLRTestExitCodePrep)
 REM The __TestEnv variable may be used to specify something to run before the test.
 IF NOT "%__TestEnv%"=="" call %__TestEnv%
 
-$(BatchCLRTestEnvironmentCompatibilityCheck)
-
 REM Environment Variables
 $(BatchEnvironmentVariables)
+
+$(BatchCLRTestEnvironmentCompatibilityCheck)
 
 REM CrossGen Script (when /p:CrossGen=true)
 $(CrossgenBatchScript)
