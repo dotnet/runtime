@@ -1,0 +1,15 @@
+CannotAddAbstractMembers : Member 'System.Data.Common.DbDataReader.Close()' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbDataReader.GetSchemaTable()' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameter.SourceVersion' is abstract in the implementation but is missing in the contract.
+MembersMustExist : Member 'System.Data.Common.DbParameter.Precision.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbParameter.Precision.set(System.Byte)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbParameter.Scale.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbParameter.Scale.set(System.Byte)' does not exist in the implementation but it does exist in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameter.SourceVersion.get()' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameter.SourceVersion.set(System.Data.DataRowVersion)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsFixedSize' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsReadOnly' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsSynchronized' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsFixedSize.get()' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsReadOnly.get()' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'System.Data.Common.DbParameterCollection.IsSynchronized.get()' is abstract in the implementation but is missing in the contract.

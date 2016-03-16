@@ -1,0 +1,4 @@
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.ConnectRetryCount.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.ConnectRetryCount.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.ConnectRetryInterval.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.ConnectRetryInterval.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
