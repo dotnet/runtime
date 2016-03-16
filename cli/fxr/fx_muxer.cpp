@@ -98,6 +98,42 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
+pal::string_t resolve_sdk_version(pal::string_t sdk_path)
+{
+    pal::string_t retval;
+    std::vector<pal::string_t> versions;
+
+    pal::readdir(sdk_path, &versions);
+    fx_ver_t max_ver(-1, -1, -1);
+    fx_ver_t max_pre(-1, -1, -1);
+    for (const auto& version : versions)
+    {
+        fx_ver_t ver(-1, -1, -1);
+        if (fx_ver_t::parse(version, &ver, true))
+        {
+            max_ver = std::max(ver, max_ver);
+        }
+        if (fx_ver_t::parse(version, &ver, false))
+        {
+            max_pre = std::max(ver, max_pre);
+        }
+    }
+
+    // No production, use the max pre-release.
+    if (max_ver == fx_ver_t(-1, -1, -1))
+    {
+        max_ver = max_pre;
+    }
+
+    pal::string_t max_ver_str = max_ver.as_str();
+    append_path(&sdk_path, max_ver_str.c_str());
+    if (pal::directory_exists(sdk_path))
+    {
+        retval = sdk_path;
+    }
+    return retval;
+}
+
 bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::string_t* cli_sdk)
 {
     pal::string_t cwd;
@@ -139,24 +175,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
     {
         pal::string_t sdk_path = own_dir;
         append_path(&sdk_path, _X("sdk"));
-
-        std::vector<pal::string_t> versions;
-        pal::readdir(sdk_path, &versions);
-        fx_ver_t max_ver(-1, -1, -1);
-        for (const auto& version : versions)
-        {
-            fx_ver_t ver(-1, -1, -1);
-            if (fx_ver_t::parse(version, &ver, true))
-            {
-                max_ver = std::max(ver, max_ver);
-            }
-        }
-        pal::string_t max_ver_str = max_ver.as_str();
-        append_path(&sdk_path, max_ver_str.c_str());
-        if (pal::directory_exists(sdk_path))
-        {
-            retval = sdk_path;
-        }
+        retval = resolve_sdk_version(sdk_path);
     }
     cli_sdk->assign(retval);
     trace::verbose(_X("Found cli sdk in: %s"), cli_sdk->c_str());
@@ -232,8 +251,10 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             memcpy(new_argv.data() + 1, argv + cur_i, (argc - cur_i) * sizeof(pal::char_t*));
             new_argv[0] = argv[0];
 
-            pal::string_t deps_file = opts.count(_X("--depsfile")) ? opts[_X("--depsfile")] : _X("");
-            pal::string_t probe_path = opts.count(_X("--additionalprobingpath")) ? opts[_X("--additionalprobingpath")] : _X("");
+            pal::string_t opts_deps_file = _X("--depsfile");
+            pal::string_t opts_probe_path = _X("--additionalprobingpath");
+            pal::string_t deps_file = opts.count(opts_deps_file) ? opts[opts_deps_file] : _X("");
+            pal::string_t probe_path = opts.count(opts_probe_path) ? opts[opts_probe_path] : _X("");
 
             pal::string_t app_path = argv[cur_i];
             runtime_config_t config(get_runtime_config_json(app_path));
