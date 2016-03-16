@@ -920,7 +920,8 @@ namespace System.IO {
                 return true;
         
         }
-                
+
+#if !FEATURE_CORECLR
         // Returns a cryptographically strong random 8.3 string that can be 
         // used as either a folder name or a file name.
 #if FEATURE_PAL
@@ -996,7 +997,8 @@ namespace System.IO {
             if (r==0) __Error.WinIOError();
             return sb.ToString();
         }
-    
+#endif // FEATURE_CORECLR
+
         // Tests if a path includes a file extension. The result is
         // true if the characters that follow the last directory
         // separator ('\\' or '/') or volume separator (':') in the path include 
