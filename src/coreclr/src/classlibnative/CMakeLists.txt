@@ -27,5 +27,4 @@ add_subdirectory(float)
 
 if(WIN32)
   add_subdirectory(nls)
-  add_subdirectory(cryptography)
 endif(WIN32)
