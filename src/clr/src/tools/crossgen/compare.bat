@@ -106,10 +106,10 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 
 set BITNESS=
 IF /I "%_BuildArch%" == "amd64" set BITNESS=64
-set FRAMEWORKDIR=%SYSTEMROOT%\Microsoft.NET\Framework%BITNESS%\%COMPLUS_Version%
+set FRAMEWORKDIR=%SYSTEMROOT%\Microsoft.NET\Framework%BITNESS%\%COMPlus_Version%
 IF "%BITNESS%" == "" set BITNESS=32
 
-set NATIVEIMAGEPATH=%FRAMEWORKDIR%\assembly\NativeImages_%COMPLUS_Version%_%BITNESS%
+set NATIVEIMAGEPATH=%FRAMEWORKDIR%\assembly\NativeImages_%COMPlus_Version%_%BITNESS%
 
 rem rmdir /S /Q %NATIVEIMAGEPATH%
 rem %FRAMEWORKDIR%\ngen install mscorlib

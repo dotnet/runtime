@@ -884,7 +884,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
 
 #ifdef ALLOW_SXS_JIT_NGEN
 
-    // Do not load altjit unless COMPLUS_AltJitNgen is set.
+    // Do not load altjit unless COMPlus_AltJitNgen is set.
     LPWSTR altJit;
     HRESULT hr = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AltJitNgen, &altJit);
     if (FAILED(hr))

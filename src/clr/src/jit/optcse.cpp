@@ -2283,7 +2283,7 @@ bool                Compiler::optConfigDisableCSE(bool lexicalCSE)
         return true;        // valnum CSE phase is disabled
 #endif
 
-    // Next check if COMPLUS_JitNoCSE is set and applies to this method
+    // Next check if COMPlus_JitNoCSE is set and applies to this method
     //
     unsigned jitNoCSE = JitConfig.JitNoCSE();
 
