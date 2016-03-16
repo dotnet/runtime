@@ -39,6 +39,14 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) RandomPolicy(compiler, isPrejitRoot, seed);
     }
 
+    // Optionally install the DiscretionaryPolicy.
+    bool useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary() != 0;
+
+    if (useDiscretionaryPolicy)
+    {
+        return new (compiler, CMK_Inlining) DiscretionaryPolicy(compiler, isPrejitRoot);
+    }
+
 #endif // DEBUG
 
     // Use the legacy policy
@@ -167,7 +175,7 @@ void LegacyPolicy::NoteFatal(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
-// noteInt: handle an observed integer value
+// NoteInt: handle an observed integer value
 //
 // Arguments:
 //    obs      - the current obsevation
@@ -274,20 +282,6 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
         // Ignore all other information
         break;
     }
-}
-
-//------------------------------------------------------------------------
-// NoteDouble: handle an observed double value
-//
-// Arguments:
-//    obs      - the current obsevation
-//    value    - the value being observed
-
-void LegacyPolicy::NoteDouble(InlineObservation obs, double value)
-{
-    // Ignore for now...
-    (void) value;
-    (void) obs;
 }
 
 //------------------------------------------------------------------------
@@ -677,7 +671,12 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 #ifdef DEBUG
 
-//-----------------------
+//------------------------------------------------------------------------
+// RandomPolicy: construct a new RandomPolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
 
 RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
     : InlinePolicy(isPrejitRoot)
@@ -777,7 +776,7 @@ void RandomPolicy::NoteFatal(InlineObservation obs)
 }
 
 //------------------------------------------------------------------------
-// noteInt: handle an observed integer value
+// NoteInt: handle an observed integer value
 //
 // Arguments:
 //    obs      - the current obsevation
@@ -812,20 +811,6 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
         // Ignore all other information
         break;
     }
-}
-
-//------------------------------------------------------------------------
-// NoteDouble: handle an observed double value
-//
-// Arguments:
-//    obs      - the current obsevation
-//    value    - the value being observed
-
-void RandomPolicy::NoteDouble(InlineObservation obs, double value)
-{
-    // Ignore for now...
-    (void) value;
-    (void) obs;
 }
 
 //------------------------------------------------------------------------
@@ -1031,6 +1016,77 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
             SetCandidate(InlineObservation::CALLSITE_RANDOM_ACCEPT);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// DiscretionaryPolicy: construct a new DiscretionaryPolicy
+//
+// Arguments:
+//    compiler -- compiler instance doing the inlining (root compiler)
+//    isPrejitRoot -- true if this compiler is prejitting the root method
+
+DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
+    : LegacyPolicy(compiler, isPrejitRoot)
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
+{
+    switch (obs)
+    {
+
+    case InlineObservation::CALLEE_IL_CODE_SIZE:
+        // Override how code size is handled
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
+
+            if (m_IsForceInline)
+            {
+                // Candidate based on force inline
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else
+            {
+                // Candidate, pending profitability evaluation
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+
+            break;
+        }
+
+    case InlineObservation::CALLEE_MAXSTACK:
+    case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        // Ignore these
+        break;
+
+    default:
+        // Delegate remainder to the LegacyPolicy.
+        LegacyPolicy::NoteInt(obs, value);
+        break;
+    }
+}
+
+//------------------------------------------------------------------------
+// PropagateNeverToRuntime: determine if a never result should cause the
+// method to be marked as un-inlinable.
+
+bool DiscretionaryPolicy::PropagateNeverToRuntime() const
+{
+    // Propagate most failures, but don't propagate when the inline
+    // was viable but unprofitable.
+    bool propagate = (m_Observation != InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
+
+    return propagate;
 }
 
 #endif // DEBUG
