@@ -124,6 +124,7 @@ namespace System.Runtime.Tests.Performance
             RunDcsDeserializationTest(dictOfIntString, 100);
         }
 
+
         [Benchmark]
         public void DeserializeSimpleType()
         {
@@ -136,6 +137,16 @@ namespace System.Runtime.Tests.Performance
         {
             var value = new ClassImplementingIXmlSerialiable() { StringValue = "Hello world" };
             RunDcsDeserializationTest(value, 10000);
+        }
+
+        [Benchmark]
+        public void DeserializeXmlElement()
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(@"<html></html>");
+            XmlElement xmlElement = xmlDoc.CreateElement("Element");
+            xmlElement.InnerText = "Element innertext";
+            RunDcsDeserializationTest(xmlElement, 10000);
         }
     }
 }
