@@ -34,6 +34,7 @@ set __TestPriority=
 set __msbuildCleanBuildArgs=
 set __msbuildExtraArgs=
 set __verbosity=normal
+set __GCStressLevel=0
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -63,6 +64,7 @@ if /i "%1" == "crossgen"            (set __crossgen=true&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"      (set __ILAsmRoundtrip=true&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "priority"            (set __TestPriority=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "gcstresslevel"       (set __GCStressLevel=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "verbose"             (set __verbosity=detailed&shift&goto Arg_Loop)
 
@@ -261,6 +263,11 @@ if defined __TestPriority (
     set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:CLRTestPriorityToBuild=%__TestPriority%
 )
 
+if %__GCStressLevel% GTR 0 (
+    echo Tests will run under GCStressLevel = %__GCStressLevel%
+    set __msbuildManagedBuildArgs=%__msbuildManagedBuildArgs% /p:GCStressLevel=%__GCStressLevel%   
+)
+
 set __BuildLogRootName=Tests_Managed
 call :msbuild "%__ProjectFilesDir%\build.proj" %__msbuildManagedBuildArgs%
 if errorlevel 1 exit /b 1
@@ -343,6 +350,7 @@ echo clean: force a clean build ^(default is to perform an incremental build^).
 echo CrossGen: enables the tests to run crossgen on the test executables before executing them. 
 echo msbuildargs ... : all arguments following this tag will be passed directly to msbuild.
 echo priority ^<N^> : specify a set of test that will be built and run, with priority N.
+echo gcstresslevel ^<N^> : specify the GCStress level the tests should run under.
 echo sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
 echo IlasmRoundTrip: enables ilasm round trip build and run of the tests before executing them.

@@ -21,6 +21,7 @@ WARNING:   When setting properties based on their current state (for example:
   <ItemGroup>
     <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="complus_zaprequire=2" />
     <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="complus_zaprequireexcludelist=corerun" />
+    <CLRTestBashEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="complus_gcstress=$(GCStressLevel)" />
   </ItemGroup>
 
     <!--
@@ -45,7 +46,7 @@ fi
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
 if [ ! -f $(MSBuildProjectName).ni.exe ]; then
-  "$CORE_ROOT/crossgen.exe" /Platform_Assemblies_Paths $CORE_ROOT%3B. $(MSBuildProjectName).exe
+  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3B$PWD $(MSBuildProjectName).exe
 fi        
         ]]>        
       </CrossgenBashScript>
@@ -202,8 +203,8 @@ fi
 
 
     <ItemGroup>
-      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'true'" Include="set complus_zaprequirelist=$(_CLRTestToRunFileFullPath)" />
-      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'false'" Include="set complus_zaprequirelist=$(MSBuildProjectName)" />
+      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'true'" Include="complus_zaprequirelist=$(_CLRTestToRunFileFullPath)" />
+      <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'false'" Include="complus_zaprequirelist=$(MSBuildProjectName)" />
     </ItemGroup>
     
     <PropertyGroup>
@@ -228,9 +229,9 @@ CLRTestExitCode=$?
     </PropertyGroup>
 
     <PropertyGroup>
-      <BatchEnvironmentVariables>
+      <BashEnvironmentVariables>
         @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0d%0a')
-      </BatchEnvironmentVariables>
+      </BashEnvironmentVariables>
     </PropertyGroup>
      
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
@@ -296,6 +297,7 @@ cd "$%28dirname "$0")"
 # The __TestEnv variable may be used to specify something to run before the test.
 $__TestEnv
 
+$(BashEnvironmentVariables)
 $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
