@@ -175,6 +175,10 @@ void                emitter::emitInsSanityCheck(instrDesc *id)
         assert(isGeneralRegister(id->idReg1()));
         break;
 
+    case IF_BR_1B:    // BR_1B   ................ ......nnnnn.....         Rn
+        assert(isGeneralRegister(id->idReg3()));
+        break;
+
     case IF_LS_1A:    // LS_1A   .X......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
         assert(isGeneralRegister(id->idReg1()) ||
                isVectorRegister(id->idReg1()));
@@ -1792,6 +1796,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     case IF_BI_1A:
     case IF_BI_1B:
     case IF_BR_1A:
+    case IF_BR_1B:
     case IF_LS_1A:
     case IF_LS_2A:
     case IF_LS_2B:
@@ -3266,31 +3271,29 @@ void                emitter::emitIns_R(instruction ins,
     case INS_br:
         assert(isGeneralRegister(reg));
         id = emitNewInstrCns(attr, 0);
-        fmt = IF_BR_1A;
+        id->idReg3(reg);
+        fmt = IF_BR_1B;
         break;
 
     case INS_ret:
         assert(isGeneralRegister(reg));
         id = emitNewInstrSmall(attr);
+        id->idReg1(reg);
         fmt = IF_BR_1A;
         break;
 
     default:
-        // TODO-Cleanup: add unreached() here
-        break;
-
+        unreached();
     }
+
     assert(fmt != IF_NONE);
 
-    if (id != nullptr)
-    {
-        id->idIns(ins);
-        id->idInsFmt(fmt);
-        id->idReg1(reg);
+    id->idIns(ins);
+    id->idInsFmt(fmt);
 
-        dispIns(id);
-        appendToCurIG(id);
-    }
+    dispIns(id);
+    appendToCurIG(id);
+
 }
 
 /*****************************************************************************
@@ -6846,12 +6849,12 @@ void                emitter::emitIns_Call(EmitCallType  callType,
             {
                 ins = INS_blr;     // INS_blr Reg
             }
-            fmt = IF_BR_1A;
+            fmt = IF_BR_1B;
 
             id->idIns(ins);
             id->idInsFmt(fmt); 
 
-            id->idReg1(ireg);
+            id->idReg3(ireg);
             assert(xreg == REG_NA);
             break;
 
@@ -8215,18 +8218,21 @@ size_t              emitter::emitOutputInstr(insGroup  *ig,
 
     case IF_BR_1A:    // BR_1A   ................ ......nnnnn.....         Rn
         assert(insOptsNone(id->idInsOpt()));
+        assert(ins == INS_ret);
         code  = emitInsCode(ins, fmt);
         code |= insEncodeReg_Rn(id->idReg1());               // nnnnn
 
-        if (ins == INS_ret)
-        {
-            dst  += emitOutput_Instr(dst, code);
-        }
-        else  // INS_blr or INS_br
-        {
-             sz    = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
-             dst  += emitOutputCall(ig, dst, id, code);
-        }
+        dst  += emitOutput_Instr(dst, code);
+        break;
+
+    case IF_BR_1B:    // BR_1B   ................ ......nnnnn.....         Rn
+        assert(insOptsNone(id->idInsOpt()));
+        assert(ins != INS_ret);
+        code = emitInsCode(ins, fmt);
+        code |= insEncodeReg_Rn(id->idReg3());               // nnnnn
+
+        sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
+        dst += emitOutputCall(ig, dst, id, code);
         break;
 
     case IF_LS_1A:    // LS_1A   XX......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -9907,6 +9913,11 @@ void                emitter::emitDispIns(instrDesc *  id,
     case IF_BR_1A:    // BR_1A   ................ ......nnnnn.....         Rn
         assert(insOptsNone(id->idInsOpt()));
         emitDispReg(id->idReg1(), size, false);
+        break;
+
+    case IF_BR_1B:    // BR_1B   ................ ......nnnnn.....         Rn
+        assert(insOptsNone(id->idInsOpt()));
+        emitDispReg(id->idReg3(), size, false);
         break;
 
     case IF_LS_1A:    // LS_1A   XX......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
