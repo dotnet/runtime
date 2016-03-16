@@ -13,17 +13,23 @@ To build the tests simply navigate to the tests directory above the repo and run
 
     C:\git\coreclr>tests\buildtest.cmd clean
 
-*Building tests that will CrossGen*
+*Building tests that will be precompiled*
 
     C:\git\coreclr>tests\buildtest.cmd crossgen
 
-This will enable crossgen.exe to be run against test executables before they are executed.
+This will use crossgen.exe to precompile the test executables before they are executed.
 
 *Building Other Priority Tests*
 
     C:\git\coreclr>tests\buildtest.cmd priority 2
 
 The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 AND 2 will be built and consequently run.
+
+*Specify GCStress Level*
+
+    C:\git\coreclr>tests\buildtest.cmd gcstresslevel 2
+
+GCStress is used to help with identifying GC holes in the implementation of the managed runtime or GC life-time reporting done by the JIT. Valid values are the values supported by GCStressFlags enum in src/vm/eeconfig.h.
 
 **Example**
 
