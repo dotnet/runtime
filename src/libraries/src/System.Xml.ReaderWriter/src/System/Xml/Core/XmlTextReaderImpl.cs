@@ -23,6 +23,11 @@ namespace System.Xml
 {
     internal partial class XmlTextReaderImpl : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
+        private static UTF8Encoding s_utf8BomThrowing;
+        
+        private static UTF8Encoding UTF8BomThrowing =>
+            s_utf8BomThrowing ?? (s_utf8BomThrowing = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true));
+        
         //
         // Private helper types
         //
@@ -2240,7 +2245,7 @@ namespace System.Xml
                 case 0xEFBB:
                     if ((next2Bytes & 0xFF00) == 0xBF00)
                     {
-                        return new UTF8Encoding(true, true);
+                        return UTF8BomThrowing;
                     }
                     break;
             }
@@ -2318,7 +2323,7 @@ namespace System.Xml
             Encoding newEncoding = null;
             if (String.Equals(newEncodingName, "utf-8", StringComparison.OrdinalIgnoreCase))
             {
-                newEncoding = new UTF8Encoding(true, true);
+                newEncoding = UTF8BomThrowing;
             }
             else
             {
@@ -2378,7 +2383,7 @@ namespace System.Xml
 
         private void SwitchEncodingToUTF8()
         {
-            SwitchEncoding(new UTF8Encoding(true, true));
+            SwitchEncoding(UTF8BomThrowing);
         }
 
         // Reads more data to the character buffer, discarding already parsed chars / decoded bytes.
