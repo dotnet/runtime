@@ -1,0 +1,6 @@
+# Devdiv: Bug 158880: Expose Environment.Exit in ProjectN
+MembersMustExist : Member 'System.Environment.Exit(System.Int32)' does not exist in the implementation but it does exist in the contract.
+# Devdiv: Bug 163398: Expose Environment.GetCommandLineArgs in ProjectN
+MembersMustExist : Member 'System.Environment.GetCommandLineArgs()' does not exist in the implementation but it does exist in the contract.
+# Devdiv: Changes in ProjectN branch: Baselining till changeset is merged: Expose Environment.MachineName in ProjectN
+MembersMustExist : Member 'System.Environment.MachineName.get()' does not exist in the implementation but it does exist in the contract.
