@@ -2,49 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    public class PersianCalendarTest
+    public class PersianCalendarTests
     {
         [Fact]
-        public void TestCalendarConversion()
+        public void CalendarConversion()
         {
-            PersianCalendar cal = new PersianCalendar();
-            int i = 0;
-
-            while (i < s_dates.Length)
+            PersianCalendar calendar = new PersianCalendar();
+            for (int i = 0; i < s_dates.Length; i+= 6)
             {
                 DateTime date = new DateTime(s_dates[i + 3], s_dates[i + 4], s_dates[i + 5]);
 
-                Assert.True(cal.GetYear(date) == s_dates[i], String.Format("Calculated Persian Year {0} not equal the expected year {1}", cal.GetYear(date), s_dates[i]));
-                Assert.True(cal.GetMonth(date) == s_dates[i + 1], String.Format("Calculated Persian Month {0} not equal the expected Month {1}", cal.GetMonth(date), s_dates[i + 1]));
-                Assert.True(cal.GetDayOfMonth(date) == s_dates[i + 2], String.Format("Calculated Persian Day {0} not equal the expected Day {1}", cal.GetDayOfMonth(date), s_dates[i + 2]));
+                Assert.Equal(s_dates[i], calendar.GetYear(date));
+                Assert.Equal(s_dates[i + 1], calendar.GetMonth(date));
+                Assert.Equal(s_dates[i + 2], calendar.GetDayOfMonth(date));
 
-                DateTime result = cal.ToDateTime(s_dates[i], s_dates[i + 1], s_dates[i + 2], 0, 0, 0, 0);
-
-                Assert.True(result.Year == s_dates[i + 3], String.Format("Calculated Gregorian Year {0} not equal the expected year {1}", result.Year, s_dates[i + 3]));
-                Assert.True(result.Month == s_dates[i + 4], String.Format("Calculated Gregorian Month {0} not equal the expected Month {1}", result.Month, s_dates[i + 4]));
-                Assert.True(result.Day == s_dates[i + 5], String.Format("Calculated Gregorian Day {0} not equal the expected Day {1}", result.Day, s_dates[i + 5]));
-
-                i += 6;
+                DateTime result = calendar.ToDateTime(s_dates[i], s_dates[i + 1], s_dates[i + 2], 0, 0, 0, 0);
+                Assert.Equal(s_dates[i + 3], result.Year);
+                Assert.Equal(s_dates[i + 4], result.Month);
+                Assert.Equal(s_dates[i + 5], result.Day);
             }
         }
 
-
         [Fact]
-        public void TestLeapYears()
+        public void LeapYears()
         {
-            PersianCalendar cal = new PersianCalendar();
+            PersianCalendar calendar = new PersianCalendar();
             int lastNonLeap = 1;
 
             foreach (int year in s_leapYears)
             {
-                Assert.True(cal.IsLeapYear(year), String.Format("Year {0} is not recognized as leap year", year));
-                Assert.False(cal.IsLeapYear(lastNonLeap), String.Format("Year {0} is recognized as leap year", lastNonLeap));
+                Assert.True(calendar.IsLeapYear(year), string.Format("Year {0} is not recognized as leap year", year));
+                Assert.False(calendar.IsLeapYear(lastNonLeap), string.Format("Year {0} is recognized as leap year", lastNonLeap));
                 lastNonLeap = year - 1;
             }
         }
