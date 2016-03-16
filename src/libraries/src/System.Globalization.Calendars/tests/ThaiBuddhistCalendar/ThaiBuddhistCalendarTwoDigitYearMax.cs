@@ -2,56 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Globalization.Tests;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.ThaiBuddhistCalendar.TwoDigitYearMax(Int32)
     public class ThaiBuddhistCalendarTwoDigitYearMax
     {
-        #region Positive Tests
-        // PosTest1:Verify the default TwoDigitYearMax is 2029
         [Fact]
-        public void PosTest1()
+        public void TwoDigitYearMax_Get()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            int expectedMax = 2029 + 543;
-            Assert.Equal(tbc.TwoDigitYearMax, expectedMax);
+            Assert.Equal(2029 + 543, new ThaiBuddhistCalendar().TwoDigitYearMax);
         }
 
-        // PosTest2: Verify the TwoDigitYearMax is set random value
-        [Fact]
-        public void PosTest2()
+        public static IEnumerable<object[]> TwoDigitYearMax_Set_TestData()
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            Random rand = new Random(-55);
-            int twoYearMax = rand.Next(99, tbc.MaxSupportedDateTime.Year + 543);
-            tbc.TwoDigitYearMax = twoYearMax;
-            Assert.Equal(tbc.TwoDigitYearMax, twoYearMax);
+            yield return new object[] { new Random(-55).Next(99, 10542) };
+            yield return new object[] { 10542 };
+            yield return new object[] { 99 };
         }
 
-        // PosTest3: Verify the TwoDigitYearMax is set 10542
-        [Fact]
-        public void PosTest3()
+        [Theory]
+        [MemberData(nameof(TwoDigitYearMax_Set_TestData))]
+        public void TwoDigitYearMax_Set(int newTwoDigitYearMax)
         {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            int twoYearMax = 10542;
-            tbc.TwoDigitYearMax = twoYearMax;
-            Assert.Equal(tbc.TwoDigitYearMax, twoYearMax);
+            ThaiBuddhistCalendar calendar = new ThaiBuddhistCalendar();
+            calendar.TwoDigitYearMax = newTwoDigitYearMax;
+            Assert.Equal(newTwoDigitYearMax, calendar.TwoDigitYearMax);
         }
-
-        // PosTest4: Verify the TwoDigitYearMax is set 99
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar tbc = new ThaiBuddhistCalendar();
-            int twoYearMax = 99;
-            tbc.TwoDigitYearMax = twoYearMax;
-            Assert.Equal(tbc.TwoDigitYearMax, twoYearMax);
-        }
-        #endregion
     }
 }

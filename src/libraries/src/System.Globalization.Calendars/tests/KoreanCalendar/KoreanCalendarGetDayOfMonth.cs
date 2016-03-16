@@ -9,14 +9,14 @@ namespace System.Globalization.Tests
 {
     public class KoreanCalendarGetDayOfMonth
     {
-        private static readonly RandomDataGenerator s_randomDatagenerator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
         public static IEnumerable<object[]> GetDayOfMonth_TestData()
         {
             yield return new object[] { DateTime.MinValue };
             yield return new object[] { DateTime.MaxValue };
             yield return new object[] { new DateTime(2008, 2, 29) };
-            yield return new object[] { new DateTime(s_randomDatagenerator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1)) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
         [Theory]
