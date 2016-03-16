@@ -339,7 +339,7 @@ namespace System.IO.Pipes
 
         private static string EnsurePipeDirectoryPath()
         {
-            const string PipesFeatureName = "pipes";
+            const string PipesFeatureName = "pipe";
 
             // Ideally this would simply use PersistedFiles.GetTempFeatureDirectory(PipesFeatureName) and then
             // Directory.CreateDirectory to ensure it exists.  But this assembly doesn't reference System.IO.FileSystem.
@@ -347,7 +347,7 @@ namespace System.IO.Pipes
             // to create each of the individual directories as part of the path.  We instead access the named portions 
             // of the path directly and do the building of the path and directory structure manually.
 
-            // First ensure we know what the full path should be, e.g. /tmp/.dotnet/corefx/pipes/
+            // First ensure we know what the full path should be, e.g. /tmp/.dotnet/corefx/pipe/
             string fullPath = s_pipeDirectoryPath;
             string tempPath = null;
             if (fullPath == null)
@@ -383,7 +383,7 @@ namespace System.IO.Pipes
                 partialPath = Path.Combine(partialPath, PersistedFiles.SecondLevelDirectory);
                 CreateDirectory(partialPath);
 
-                // Create /tmp/.dotnet/corefx/pipes/ if it doesn't exist
+                // Create /tmp/.dotnet/corefx/pipe/ if it doesn't exist
                 CreateDirectory(fullPath);
             }
 
