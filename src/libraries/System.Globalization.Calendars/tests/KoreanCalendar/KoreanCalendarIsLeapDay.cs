@@ -2,85 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.IsLeapDay(System.Int32,System.Int32,System.Int32,System.Int32)
     public class KoreanCalendarIsLeapDay
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:Invoke the method with min date time
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> IsLeapDay_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int month = dateTime.Month;
-            int day = dateTime.Day;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapDay(year, month, day, era);
-            bool actualValue;
-            actualValue = kC.IsLeapDay(year + 2333, month, day, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { 1, 1, 1, 1 };
+            yield return new object[] { 9999, 12, 31, 1 };
+            yield return new object[] { 1900, 2, 28, 1 };
+            yield return new object[] { 1200, 2, 29, 1 };
         }
 
-        // PosTest2:Invoke the method with max date time
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsLeapDay_TestData))]
+        public void IsLeapDay(int year, int month, int day, int era)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int month = dateTime.Month;
-            int day = dateTime.Day;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapDay(year, month, day, era);
-            bool actualValue;
-            actualValue = kC.IsLeapDay(year + 2333, month, day, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            bool expected = new GregorianCalendar().IsLeapDay(year, month, day, era);
+            Assert.Equal(expected, new KoreanCalendar().IsLeapDay(year + 2333, month, day, era));
         }
-
-        // PosTest3:Invoke the method with normal date time
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1900, 2, 28, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int month = dateTime.Month;
-            int day = dateTime.Day;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapDay(year, month, day, era);
-            bool actualValue;
-            actualValue = kC.IsLeapDay(year + 2333, month, day, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Invoke the method with leap day date time
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1200, 2, 29, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int month = dateTime.Month;
-            int day = dateTime.Day;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapDay(year, month, day, era);
-            bool actualValue;
-            actualValue = kC.IsLeapDay(year + 2333, month, day, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

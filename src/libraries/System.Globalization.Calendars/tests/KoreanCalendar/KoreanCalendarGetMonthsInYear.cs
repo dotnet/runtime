@@ -2,56 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.GetMonthsInYear(System.Int32,System.Int32)
     public class KoreanCalendarGetMonthsInYear
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:Invoke the method with min datetime
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> GetMonthsInYear_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int expectedValue = gC.GetMonthsInYear(dateTime.Year, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetMonthsInYear(dateTime.Year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { 1, 1 };
+            yield return new object[] { 9999, 1 };
+            yield return new object[] { 2004, 1 };
+            yield return new object[] { s_randomDataGenerator.GetInt16(-55) % 9999, 1 };
         }
 
-        // PosTest2:Invoke the method with max datetime
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetMonthsInYear_TestData))]
+        public void GetMonthsInYear(int year, int era)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = new DateTime(DateTime.MaxValue.Ticks, DateTimeKind.Utc);
-            int expectedValue = gC.GetMonthsInYear(dateTime.Year, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetMonthsInYear(dateTime.Year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            int expected = new GregorianCalendar().GetMonthsInYear(year, era);
+            Assert.Equal(expected, new KoreanCalendar().GetMonthsInYear(year + 2333, era));
         }
-
-        // PosTest3:Invoke the method with max datetime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(2004, 2, 29, 0, 0, 0, 0);
-            int expectedValue = gC.GetMonthsInYear(dateTime.Year, gC.GetEra(dateTime));
-            int actualValue;
-            actualValue = kC.GetMonthsInYear(dateTime.Year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }
