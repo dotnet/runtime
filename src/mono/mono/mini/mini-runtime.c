@@ -2007,13 +2007,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 			MonoVTable *vtable;
 
 			mono_jit_stats.methods_lookups++;
-
-			vtable = mono_class_vtable_full (domain, method->klass, ex == NULL);
-			if (ex && method->klass->exception_type) {
-				*ex = mono_class_get_exception_for_failure (method->klass);
-				return NULL;
-			}
-
+			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
 			if (!mono_runtime_class_init_full (vtable, error))
 				return NULL;
