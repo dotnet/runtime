@@ -40,7 +40,7 @@ public:
     // Construct a LegacyPolicy
     LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
         : InlinePolicy(isPrejitRoot)
-        , m_Compiler(compiler)
+        , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
@@ -90,7 +90,7 @@ private:
     const unsigned MAX_BASIC_BLOCKS = 5;
 
     // Data members
-    Compiler*               m_Compiler;
+    Compiler*               m_RootCompiler;                      // root compiler instance
     CodeSeqSM*              m_StateMachine;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
@@ -142,7 +142,7 @@ private:
     void SetNever(InlineObservation obs);
 
     // Data members
-    Compiler*               m_Compiler;
+    Compiler*               m_RootCompiler;
     CLRRandom*              m_Random;
     unsigned                m_CodeSize;
     bool                    m_IsForceInline :1;

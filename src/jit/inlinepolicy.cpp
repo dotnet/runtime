@@ -123,8 +123,8 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 {
                     // Better not have a state machine already.
                     assert(m_StateMachine == nullptr);
-                    m_StateMachine = new (m_Compiler, CMK_Inlining) CodeSeqSM;
-                    m_StateMachine->Start(m_Compiler);
+                    m_StateMachine = new (m_RootCompiler, CMK_Inlining) CodeSeqSM;
+                    m_StateMachine->Start(m_RootCompiler);
                 }
                 break;
             }
@@ -224,7 +224,7 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= m_Compiler->getImpInlineSize())
+            else if (m_CodeSize <= m_RootCompiler->getImpInlineSize())
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -505,7 +505,7 @@ double LegacyPolicy::DetermineMultiplier()
         JITDUMP("\nmultiplier increased via JitInlineAdditonalMultiplier=%d to %g.", additionalMultiplier, multiplier);
     }
 
-    if (m_Compiler->compInlineStress())
+    if (m_RootCompiler->compInlineStress())
     {
         multiplier += 10;
         JITDUMP("\nmultiplier increased via inline stress to %g.", multiplier);
@@ -557,17 +557,17 @@ int LegacyPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methI
     }
 
     CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
-    COMP_HANDLE comp = m_Compiler->info.compCompHnd;
+    COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
 
     for (unsigned i = (hasThis ? 1 : 0);
          i < methInfo->args.totalILArgs();
          i++, argLst = comp->getArgNext(argLst))
     {
-        var_types sigType = (var_types) m_Compiler->eeGetArgType(argLst, &methInfo->args);
+        var_types sigType = (var_types) m_RootCompiler->eeGetArgType(argLst, &methInfo->args);
 
         if (sigType == TYP_STRUCT)
         {
-            typeInfo  verType  = m_Compiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
+            typeInfo  verType  = m_RootCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
 
             /*
 
@@ -634,7 +634,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     if (calleeNativeSizeEstimate > threshold)
     {
         // Inline appears to be unprofitable
-        JITLOG_THIS(m_Compiler,
+        JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
                      "Native estimate for function size exceedsn threshold"
                      " for inlining %g > %g (multiplier = %g)\n",
@@ -655,7 +655,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     else
     {
         // Inline appears to be profitable
-        JITLOG_THIS(m_Compiler,
+        JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
                      "Native estimate for function size is within threshold"
                      " for inlining %g <= %g (multiplier = %g)\n",
@@ -681,7 +681,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
     : InlinePolicy(isPrejitRoot)
-    , m_Compiler(compiler)
+    , m_RootCompiler(compiler)
     , m_Random(nullptr)
     , m_CodeSize(0)
     , m_IsForceInline(false)
@@ -692,7 +692,7 @@ RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
     {
         compiler->inlRNG = new (compiler, CMK_Inlining) CLRRandom();
 
-        unsigned hash = m_Compiler->info.compMethodHash();
+        unsigned hash = m_RootCompiler->info.compMethodHash();
         assert(hash != 0);
         assert(seed != 0);
         int hashSeed = static_cast<int>(hash ^ seed);
@@ -1004,7 +1004,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     if (randomValue > threshold)
     {
         // Inline appears to be unprofitable
-        JITLOG_THIS(m_Compiler, (LL_INFO100000, "Random rejection (r=%d > t=%d)\n", randomValue, threshold));
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Random rejection (r=%d > t=%d)\n", randomValue, threshold));
 
         // Fail the inline
         if (m_IsPrejitRoot)
@@ -1019,7 +1019,7 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     else
     {
         // Inline appears to be profitable
-        JITLOG_THIS(m_Compiler, (LL_INFO100000, "Random acceptance (r=%d <= t=%d)\n", randomValue, threshold));
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, "Random acceptance (r=%d <= t=%d)\n", randomValue, threshold));
 
         // Update candidacy
         if (m_IsPrejitRoot)
