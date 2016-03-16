@@ -482,20 +482,22 @@ static void cominterop_set_hr_error (MonoError *oerror, int hr)
 }
 
 /**
- * cominterop_get_interface:
+ * cominterop_get_interface_checked:
  * @obj: managed wrapper object containing COM object
  * @ic: interface type to retrieve for COM object
+ * @error: set on error
  *
- * Returns: the COM interface requested
+ * Returns: the COM interface requested. On failure returns NULL and sets @error
  */
 static gpointer
-cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exception)
+cominterop_get_interface_checked (MonoComObject* obj, MonoClass* ic, MonoError *error)
 {
-	MonoError error;
 	gpointer itf = NULL;
 
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+
+	mono_error_init (error);
 
 	mono_cominterop_lock ();
 	if (obj->itf_hash)
@@ -508,10 +510,8 @@ cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exce
 		int hr;
 		g_assert(found);
 		hr = ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (obj->iunknown, iid, &itf);
-		if (hr < 0 && throw_exception) {
-			cominterop_set_hr_error (&error, hr);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
-
+		if (hr < 0) {
+			cominterop_set_hr_error (error, hr);
 		}
 
 		if (hr >= 0 && itf) {
@@ -523,6 +523,30 @@ cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exce
 		}
 
 	}
+	return itf;
+}
+
+/**
+ * cominterop_get_interface:
+ * @obj: managed wrapper object containing COM object
+ * @ic: interface type to retrieve for COM object
+ *
+ * Returns: the COM interface requested
+ */
+static gpointer
+cominterop_get_interface (MonoComObject *obj, MonoClass *ic, gboolean throw_exception)
+{
+	MonoError error;
+	gpointer itf = cominterop_get_interface_checked (obj, ic, &error);
+	if (!is_ok (&error)) {
+		if (throw_exception) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		} else {
+			mono_error_cleanup (&error);
+		}
+	}
+
 	if (throw_exception)
 		g_assert (itf);
 
@@ -1459,8 +1483,9 @@ cominterop_get_idispatch_for_object (MonoObject* object)
 		return NULL;
 
 	if (cominterop_object_is_rcw (object)) {
-		return cominterop_get_interface (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object, 
-			mono_class_get_idispatch_class (), TRUE);
+		gpointer itf = cominterop_get_interface_checked (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object, 
+								 mono_class_get_idispatch_class (), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 	else {
 		MonoClass* klass = mono_object_class (object);
@@ -1718,13 +1743,19 @@ gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)
 {
 #ifndef DISABLE_COM
+	MonoError error;
 	MonoClass *klass = mono_type_get_class (type->type);
 	if (!mono_class_init (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
-	return cominterop_get_interface (obj, klass, (gboolean)throw_exception);
+	gpointer itf = cominterop_get_interface_checked (obj, klass, &error);
+	if (throw_exception)
+		mono_error_set_pending_exception (&error);
+	else
+		mono_error_cleanup (&error);
+	return itf;
 #else
 	g_assert_not_reached ();
 #endif
