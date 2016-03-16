@@ -69,38 +69,25 @@
       <Member Name="CreateInstance&lt;T&gt;" />
       <Member Name="CreateInstance(System.Type,System.Boolean)"/>
     </Type>
-    <Type Name="System.AppDomain">
-      <Member Name="get_CurrentDomain" />
-      <Member Name="get_FriendlyName" />
-      <Member Name="get_DomainManager" />
-      <Member Name="get_IsFullyTrusted" />
-      <Member Name="get_SetupInformation" />
-      <Member Name="get_PauseManager" Condition="FEATURE_LEGACYNETCFFAS"/>
-      <Member Status="ApiFxInternal" Name="get_MonitoringIsEnabled" />
-      <Member Status="ApiFxInternal" Name="set_MonitoringIsEnabled(System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="get_MonitoringTotalProcessorTime" />
-      <Member Status="ApiFxInternal" Name="get_MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ApiFxInternal" Name="get_MonitoringSurvivedMemorySize" />
-      <Member Status="ApiFxInternal" Name="get_MonitoringSurvivedProcessMemorySize" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="MonitoringIsEnabled" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="MonitoringTotalProcessorTime" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="MonitoringTotalAllocatedMemorySize" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="MonitoringSurvivedMemorySize" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="MonitoringSurvivedProcessMemorySize" />
+    <Type Status="ImplRoot" Name="System.AppDomain">
+      <Member Status="ImplRoot" Name="get_MonitoringIsEnabled" />
+      <Member Status="ImplRoot" Name="set_MonitoringIsEnabled(System.Boolean)" />
+      <Member Status="ImplRoot" Name="get_MonitoringTotalProcessorTime" />
+      <Member Status="ImplRoot" Name="get_MonitoringTotalAllocatedMemorySize" />
+      <Member Status="ImplRoot" Name="get_MonitoringSurvivedMemorySize" />
+      <Member Status="ImplRoot" Name="get_MonitoringSurvivedProcessMemorySize" />
+      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringIsEnabled" />
+      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalProcessorTime" />
+      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringTotalAllocatedMemorySize" />
+      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedMemorySize" />
+      <Member Status="ImplRoot" MemberType="Property" Name="MonitoringSurvivedProcessMemorySize" />
       <Member MemberType="Property" Name="IsFullyTrusted" />
-      <Member Status="ApiFxInternal" Name="GetData(System.String)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="GetData(System.String)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Name="GetAssemblies" Condition="FEATURE_LEGACYNETCF"/>
+      <Member Name="GetData(System.String)" />
       <Member Name="ToString" />
-      <Member Name="DefineDynamicAssembly(System.Reflection.AssemblyName,System.Reflection.Emit.AssemblyBuilderAccess)" />
-      <Member Name="ExecuteAssemblyByName(System.String)" />  <!-- smosier: REVIEW: added for sandboxhelper.dll -->
       <Member Status="ImplRoot" Name="SetupDomainSecurity(System.Security.Policy.Evidence,System.IntPtr,System.Boolean)" />
       <Member Status="ImplRoot" Name="SetupDomainSecurity(System.AppDomainHandle,System.Runtime.CompilerServices.ObjectHandleOnStack,System.IntPtr,System.Boolean)" />
-      <Member MemberType="Property" Name="CurrentDomain" />
-      <Member MemberType="Property" Name="FriendlyName" />
-      <Member MemberType="Property" Name="DomainManager" />
-      <Member MemberType="Event" Name="AssemblyResolve" />
-      <Member Status="ApiFxInternal" Name="OnAssemblyResolveEvent(System.Reflection.RuntimeAssembly,System.String)" />
+      <Member Status="ImplRoot" MemberType="Event" Name="AssemblyResolve" />
+      <Member Status="ImplRoot" Name="OnAssemblyResolveEvent(System.Reflection.RuntimeAssembly,System.String)" />
       <Member Status="ImplRoot" MemberType="Event" Name="AssemblyLoad" />
       <Member Status="ImplRoot" MemberType="Event" Name="ResourceResolve" />
       <Member Status="ImplRoot" MemberType="Event" Name="TypeResolve" />
@@ -117,43 +104,11 @@
       <Member Status="ImplRoot" Name="OnTypeResolveEvent(System.Reflection.RuntimeAssembly,System.String)" />
       <Member Status="ImplRoot" Name="PrepareDataForSetup(System.String,System.AppDomainSetup,System.Security.Policy.Evidence,System.Security.Policy.Evidence,System.IntPtr,System.String,System.String[],System.String[])" />
       <Member Status="ImplRoot" Name="Setup(System.Object)" />
-      <Member Status="ApiFxInternal" Name="SetData(System.String,System.Object)" />
-      <Member Name="IsCompatibilitySwitchSet(System.String)" />
       <Member Status="ImplRoot" Name="SetupDomain(System.Boolean,System.String,System.String,System.String[],System.String[])" />
-      <Member MemberType="Event" Name="UnhandledException" />
       <Member Status="ImplRoot" Name="nCreateContext" />
       <Member Name="OnDesignerNamespaceResolveEvent(System.String)" Condition="FEATURE_COMINTEROP" />
       <Member MemberType="Property" Name="BaseDirectory" />
       <Member Name="get_BaseDirectory" />
-    </Type>
-    <Type Name="System.AppDomainManager">
-      <Member Name="#ctor" />
-      <Member Name="InitializeNewDomain(System.AppDomainSetup)" />
-      <Member Name="CheckSecuritySettings(System.Security.SecurityState)" />
-    </Type>
-    <Type Name="System.IAppDomainPauseManager" Condition="FEATURE_LEGACYNETCFFAS">
-      <Member Name="Pausing" />
-      <Member Name="Paused" />
-      <Member Name="Resuming" />
-      <Member Name="Resumed" />
-    </Type>
-    <Type Name="System.AppDomainPauseManager" Condition="FEATURE_LEGACYNETCFFAS">
-      <Member Name="Pausing" />
-      <Member Name="Paused" />
-      <Member Name="Resuming" />
-      <Member Name="Resumed" />
-    </Type>
-    <Type Name="System.AppDomainSetup">
-      <Member Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="get_ApplicationBase" />
-      <Member Name="get_ApplicationName" />
-      <Member Name="get_TargetFrameworkName" />
-      <Member Name="get_LoaderOptimization" />
-      <Member Status="ApiFxInternal" Name="set_ApplicationBase(System.String)" />
-      <Member Name="set_ApplicationName(System.String)" />
-      <Member Name="SetCompatibilitySwitches(System.Collections.Generic.IEnumerable&lt;System.String&gt;)" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="ApplicationBase" />
-      <Member MemberType="Property" Name="ApplicationName" />
     </Type>
     <Type Name="System.AppDomainUnloadedException">
       <Member Name="#ctor" />
@@ -170,7 +125,7 @@
       <Member Name="TryGetSwitch(System.String,System.Boolean@)" />
       <Member Name="GetData(System.String)" />
     </Type>
-    <Type Name="System.ApplicationException" Condition="FEATURE_LEGACYNETCF">
+    <Type Name="System.ApplicationException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
@@ -222,7 +177,6 @@
       <Member Name="ConstrainedCopy(System.Array,System.Int32,System.Array,System.Int32,System.Int32)" />
       <Member Name="Copy(System.Array,System.Array,System.Int32)" />
       <Member Name="Copy(System.Array,System.Int32,System.Array,System.Int32,System.Int32)" />
-      <Member Status="ApiFxInternal" Name="Copy(System.Array,System.Int64,System.Array,System.Int64,System.Int64)" Condition="FEATURE_COMINTEROP"/>
       <Member Name="CopyTo(System.Array,System.Int32)" />
       <Member Name="CreateInstance(System.Type,System.Int32)" />
       <Member Name="CreateInstance(System.Type,System.Int32[])" />
@@ -537,12 +491,6 @@
       <Member Name="get_IsCompliant" />
       <Member MemberType="Property" Name="IsCompliant" />
     </Type>
-    <!--<Type Name="System.Collections.Comparer">
-      <Member MemberType="Field" Name="Default" />
-      <Member MemberType="Field" Name="DefaultInvariant" />
-      <Member Name="#ctor(System.Globalization.CultureInfo)" />
-      <Member Name="Compare(System.Object,System.Object)" />
-    </Type>-->
     <Type Name="System.Collections.BitArray">
       <Member Name="#ctor(System.Int32)" />
       <Member Name="#ctor(System.Int32,System.Boolean)" />
@@ -826,12 +774,6 @@
       <Member Status="ImplRoot" Name="#ctor(System.Collections.ObjectModel.KeyedCollection&lt;K,T&gt;)" />
       <Member Status="ImplRoot" Name="get_Items" />
       <Member Status="ImplRoot" MemberType="Property" Name="Items" />
-    </Type>   
-    <Type Status="ApiFxInternal" Name="System.Collections.HashHelpers">
-      <Member Status="ApiFxInternal" Name="ExpandPrime(System.Int32)" />
-      <Member Status="ApiFxInternal" Name="GetMinPrime" />
-      <Member Status="ApiFxInternal" Name="GetPrime(System.Int32)" />
-      <Member Status="ApiFxInternal" Name="IsPrime(System.Int32)" />
     </Type> 
     <Type Name="System.Collections.ICollection">
       <Member Name="CopyTo(System.Array,System.Int32)" />
@@ -990,22 +932,6 @@
       <Member Name="EndInvoke(System.IAsyncResult)" />
       <Member Name="Invoke(T,T)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.CompatibilitySwitches">
-      <Member MemberType="Property" Name="IsAppEarlierThanSilverlight4" />
-      <Member MemberType="Property" Name="IsAppEarlierThanWindowsPhone8" />
-      <Member MemberType="Property" Name="IsAppEarlierThanWindowsPhoneMango" />
-      <Member MemberType="Property" Name="IsNetFx40TimeSpanLegacyFormatMode" />
-      <Member MemberType="Property" Name="IsNetFx40LegacySecurityPolicy" />
-      <Member MemberType="Property" Name="IsNetFx45LegacyManagedDeflateStream" />
-      <Member MemberType="Property" Name="IsCompatibilityBehaviorDefined" />
-      <Member Name="get_IsAppEarlierThanSilverlight4" />
-      <Member Name="get_IsAppEarlierThanWindowsPhone8" />
-      <Member Name="get_IsAppEarlierThanWindowsPhoneMango" />
-      <Member Name="get_IsNetFx40TimeSpanLegacyFormatMode" />
-      <Member Name="get_IsNetFx40LegacySecurityPolicy" />
-      <Member Name="get_IsNetFx45LegacyManagedDeflateStream" />
-      <Member Name="get_IsCompatibilityBehaviorDefined" />
-    </Type>
     <Type Name="System.Runtime.Loader.AssemblyLoadContext" condition="FEATURE_HOST_ASSEMBLY_RESOLVER">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Default" />
@@ -1030,80 +956,6 @@
     </Type>
     <Type Name="System.Reflection.Metadata.AssemblyExtensions">
       <Member Name="TryGetRawMetadata(System.Reflection.Assembly,System.Byte*@,System.Int32@)"/>
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Runtime.Versioning.BinaryCompatibility">
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Phone_V7_1" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Phone_V8_0" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V4_5" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V4_5_1" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V4_5_2" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V4_5_3" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V4_5_4" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Desktop_V5_0" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Silverlight_V4" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Silverlight_V5" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="TargetsAtLeast_Silverlight_V6" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Phone_V7_1" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Phone_V8_0" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V4_5" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V4_5_1" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V4_5_2" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V4_5_3" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V4_5_4" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Desktop_V5_0" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Silverlight_V4" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Silverlight_V5" />
-      <Member Status="ApiFxInternal" Name="get_TargetsAtLeast_Silverlight_V6" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Runtime.Versioning.CompatibilitySwitch">
-      <Member Status="ApiFxInternal" Name="GetValue(System.String)" />
-      <Member Status="ApiFxInternal" Name="IsEnabled(System.String)" />
-      <Member Status="ApiFxInternal" Name="GetValueInternal(System.String)" />
-      <Member Status="ApiFxInternal" Name="IsEnabledInternal(System.String)" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Runtime.Versioning.TargetFrameworkId">
-      <Member Status="ApiFxInternal" MemberType="Field" Name="NotYetChecked" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="Unrecognized" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="Unspecified" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="NetFramework" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="Portable" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="NetCore" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="Silverlight" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="Phone" />
-      <Member Status="ApiFxInternal" MemberType="Field" Name="value__" />
-    </Type>
-    <Type Name="System.Console" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="get_Error" />
-      <Member Name="get_In" />
-      <Member Name="get_Out" />
-      <Member Name="Read" />
-      <Member Name="ReadLine" />
-      <Member Name="SetError(System.IO.TextWriter)" />
-      <Member Name="SetIn(System.IO.TextReader)" />
-      <Member Name="SetOut(System.IO.TextWriter)" />
-      <Member Name="Write(System.Char)" />
-      <Member Name="Write(System.Char[])" />
-      <Member Name="Write(System.Char[],System.Int32,System.Int32)" />
-      <Member Name="Write(System.Int32)" />
-      <Member Name="Write(System.Object)" />
-      <Member Name="Write(System.String)" />
-      <Member Name="Write(System.String,System.Object)" />
-      <Member Name="Write(System.String,System.Object,System.Object)" />
-      <Member Name="Write(System.String,System.Object,System.Object,System.Object)" />
-      <Member Name="Write(System.String,System.Object[])" />
-      <Member Name="WriteLine" />
-      <Member Name="WriteLine(System.Char)" />
-      <Member Name="WriteLine(System.Char[])" />
-      <Member Name="WriteLine(System.Int32)" />
-      <Member Name="WriteLine(System.Object)" />
-      <Member Name="WriteLine(System.String)" />
-      <Member Name="WriteLine(System.String,System.Object)" />
-      <Member Name="WriteLine(System.String,System.Object,System.Object)" />
-      <Member Name="WriteLine(System.String,System.Object,System.Object,System.Object)" />
-      <Member Name="WriteLine(System.String,System.Object[])" />
-      <Member MemberType="Property" Name="Error" />
-      <Member MemberType="Property" Name="In" />
-      <Member MemberType="Property" Name="Out" />
     </Type>
     <Type Name="System.ContextMarshalException">
       <Member Name="#ctor" />
@@ -1639,17 +1491,14 @@
     <Type Name="System.Diagnostics.StackFrame">
       <Member MemberType="Field" Name="OFFSET_UNKNOWN" />
       <Member Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="#ctor(System.Boolean)" />
       <Member Name="#ctor(System.Int32)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="#ctor(System.Int32,System.Boolean)" />
       <Member Name="#ctor(System.String,System.Int32)" />
       <Member Name="#ctor(System.String,System.Int32,System.Int32)" />
       <Member Name="GetFileColumnNumber" />
       <Member Name="GetFileLineNumber" />
-      <Member Status="ApiFxInternal" Name="GetFileName" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetFileName" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetFileName" />
       <Member Name="GetILOffset" />
       <Member Name="GetMethod" />
       <Member Name="GetNativeOffset" />
@@ -1658,22 +1507,15 @@
     <Type Name="System.Diagnostics.StackTrace">
       <Member MemberType="Field" Name="METHODS_TO_SKIP" />
       <Member Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Boolean)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
+      <Member Name="#ctor(System.Boolean)" />
       <Member Name="#ctor(System.Diagnostics.StackFrame)" />
       <Member Name="#ctor(System.Exception)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Exception,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Exception,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Exception,System.Int32)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Exception,System.Int32)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Exception,System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Exception,System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Int32)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Int32)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Threading.Thread,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />      
-      <Member Name="#ctor(System.Threading.Thread,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />      
+      <Member Name="#ctor(System.Exception,System.Boolean)" />
+      <Member Name="#ctor(System.Exception,System.Int32)" />
+      <Member Name="#ctor(System.Exception,System.Int32,System.Boolean)" />
+      <Member Name="#ctor(System.Int32)" />
+      <Member Name="#ctor(System.Int32,System.Boolean)" />
+      <Member Name="#ctor(System.Threading.Thread,System.Boolean)" />
       <Member Name="get_FrameCount" />
       <Member Name="GetFrame(System.Int32)" />
       <Member Name="GetFrames" />
@@ -1919,22 +1761,6 @@
       <Member Name="ToString(System.String)" />
       <Member Name="ToString(System.String,System.IFormatProvider)" />
     </Type>
-    <Type Name="System.IO.DriveInfo" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.String)" />
-      <Member Name="get_AvailableFreeSpace" />
-      <Member Name="get_DriveFormat" />
-      <Member Name="get_DriveType" />
-      <Member Name="get_IsReady" />
-      <Member Name="get_Name" />
-      <Member Name="get_RootDirectory" />
-      <Member Name="get_TotalFreeSpace" />
-      <Member Name="get_TotalSize" />
-      <Member Name="get_VolumeLabel" />
-      <Member Name="set_VolumeLabel(System.String)" />
-      <Member Name="GetDrives" />
-    </Type>
-    <Type Name="System.IO.DriveType" Condition="FEATURE_LEGACYSURFACE">
-    </Type>
     <Type Name="System.EntryPointNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -1967,7 +1793,6 @@
       <Member Name="get_OSVersion" />
       <Member Name="get_ProcessorCount" />      
       <Member Name="get_StackTrace" />
-      <Member Name="GetFolderPath(System.Environment+SpecialFolder)" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="GetEnvironmentVariable(System.String)" />
       <Member Name="GetEnvironmentVariables" />
       <Member Name="GetCommandLineArgs" />
@@ -1975,10 +1800,7 @@
       <Member Name="ExpandEnvironmentVariables(System.String)" />
       <Member MemberType="Property" Name="OSVersion" />
       <Member MemberType="Property" Name="ProcessorCount" />
-      <Member Name="get_CurrentDirectory" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="set_CurrentDirectory(System.String)" Condition="FEATURE_LEGACYSURFACE" /> <!-- FEATURE_LEGACYNETCF -->
       <Member MemberType="Property" Name="CurrentManagedThreadId"  />
-      <Member MemberType="Property" Name="CurrentDirectory" Condition="FEATURE_LEGACYSURFACE" />
       <Member MemberType="Property" Name="HasShutdownStarted" />
       <Member MemberType="Property" Name="NewLine" />
       <Member MemberType="Property" Name="StackTrace" />
@@ -1990,16 +1812,6 @@
       <Member Name="FailFast(System.String)"  />
       <Member Name="FailFast(System.String,System.Exception)"  />
       <Member Name="Exit(System.Int32)" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetFolderPath(System.Environment+SpecialFolder)"  Condition="FEATURE_LEGACYSURFACE" />
-    </Type>
-    <Type Name="System.Environment+SpecialFolder" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="ApplicationData" />
-      <Member MemberType="Field" Name="Favorites" />
-      <Member MemberType="Field" Name="Personal" />
-      <Member MemberType="Field" Name="Programs" />
-      <Member MemberType="Field" Name="StartMenu" />
-      <Member MemberType="Field" Name="Startup" />
-      <Member MemberType="Field" Name="value__" />
     </Type>
     <Type Name="System.EventArgs">
       <Member MemberType="Field" Name="Empty" />
@@ -2135,12 +1947,12 @@
     <Type Name="System.GC">
       <Member Name="AddMemoryPressure(System.Int64)" />
       <Member Name="Collect" />
-      <Member Name="Collect(System.Int32)" Condition="FEATURE_LEGACYNETCF"/>
+      <Member Name="Collect(System.Int32)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean)" />
       <Member Name="Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean)" />
       <Member Name="CollectionCount(System.Int32)" />
-      <Member Name="GetGeneration(System.Object)" Condition="FEATURE_LEGACYNETCF"/>
+      <Member Name="GetGeneration(System.Object)" />
       <Member Name="get_MaxGeneration" />
       <Member Name="GetTotalMemory(System.Boolean)" />
       <Member Name="KeepAlive(System.Object)" />
@@ -3199,7 +3011,6 @@
       <Member Name="Equals(System.Object)" />
       <Member Name="get_Size" />
       <Member Name="GetHashCode" />
-      <Member Status="ApiFxInternal" Name="IsNull" />
       <Member Name="op_Addition(System.IntPtr,System.Int32)" />
       <Member Name="op_Equality(System.IntPtr,System.IntPtr)" />
       <Member Name="op_Explicit(System.Int32)" ReturnType="System.IntPtr" />
@@ -3239,10 +3050,10 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.BufferedStream" Condition="FEATURE_LEGACYSURFACE">
-    <Member Name="#ctor(System.IO.Stream,System.Int32)" />
-    <Member Name="get_UnderlyingStream" />
-    <Member Name="get_BufferSize" />
+    <Type Status="ApiFxInternal" Name="System.IO.BufferedStream">
+      <Member Name="#ctor(System.IO.Stream,System.Int32)" />
+      <Member Name="get_UnderlyingStream" />
+      <Member Name="get_BufferSize" />
     </Type>
     <Type Name="System.IO.FileLoadException">
       <Member Name="#ctor" />
@@ -3253,13 +3064,13 @@
       <Member Name="#ctor(System.String,System.String,System.Int32)" /> <!-- Used by EE, do not remove -->
       <Member Name="get_FileName" />
     </Type>
-    <Type Name="System.IObservable&lt;T&gt;" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="Subscribe(System.IObserver&lt;T&gt;)" Condition="FEATURE_LEGACYNETCF" />
+    <Type Name="System.IObservable&lt;T&gt;">
+      <Member Name="Subscribe(System.IObserver&lt;T&gt;)"/>
     </Type>
-    <Type Name="System.IObserver&lt;T&gt;" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="OnCompleted" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="OnError(System.Exception)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="OnNext(T)" Condition="FEATURE_LEGACYNETCF" />
+    <Type Name="System.IObserver&lt;T&gt;">
+      <Member Name="OnCompleted"/>
+      <Member Name="OnError(System.Exception)"/>
+      <Member Name="OnNext(T)"/>
     </Type>
     <Type Name="System.IProgress&lt;T&gt;">
       <Member Name="Report(T)" />
@@ -3490,7 +3301,7 @@
       <Member MemberType="Property" Name="IsError" />
       <Member MemberType="Property" Name="Message" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.OleAutBinder" Condition="FEATURE_COMINTEROP" />
+    <Type Status="ImplRoot" Name="System.OleAutBinder" Condition="FEATURE_COMINTEROP" />
     <Type Name="System.OperatingSystem">
       <Member Name="#ctor(System.PlatformID,System.Version)" />
       <Member Name="Clone" />
@@ -3523,17 +3334,6 @@
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
-    </Type>
-    <Type Name="System.PlatformID">
-      <Member MemberType="Field" Name="MacOSX" Condition="not FEATURE_LEGACYNETCF" />
-      <Member MemberType="Field" Name="NokiaS60" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Field" Name="Unix" />
-      <Member MemberType="Field" Name="value__" />
-      <Member MemberType="Field" Name="Win32NT" />
-      <Member MemberType="Field" Name="Win32S" />
-      <Member MemberType="Field" Name="Win32Windows" />
-      <Member MemberType="Field" Name="WinCE" />
-      <Member MemberType="Field" Name="Xbox" />
     </Type>
     <Type Name="System.Predicate&lt;T&gt;">
       <Member Name="#ctor(System.Object,System.IntPtr)" />
@@ -3579,10 +3379,11 @@
       <Member Name="CreateInstance(System.String,System.Boolean)" />
       <Member Name="CreateQualifiedName(System.String,System.String)" />
       <Member Name="GetReferencedAssemblies" /> 	  
-      <Member Name="get_EntryPoint" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_EntryPoint" />
       <Member Name="get_FullName" />
-      <Member Name="get_ImageRuntimeVersion" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_ImageRuntimeVersion" />
       <Member Name="get_IsDynamic" />
+      <Member Name="get_CodeBase" />
       <Member Name="get_Location" />
       <Member Name="get_ManifestModule" />
       <Member Name="get_CustomAttributes" />
@@ -3592,7 +3393,7 @@
       <Member Name="GetCustomAttributes(System.Type,System.Boolean)" />
       <Member Name="GetExecutingAssembly" />
       <Member Name="GetEntryAssembly" />
-      <Member Name="GetExportedTypes" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetExportedTypes" />
       <Member Name="GetManifestResourceNames" />
       <Member Name="GetManifestResourceStream(System.String)" />
       <Member Name="GetManifestResourceInfo(System.String)" />
@@ -3600,36 +3401,24 @@
       <Member Name="GetModules" />
       <Member Name="Equals(System.Object)" />
       <Member Name="GetHashCode" />
-      <Member Status="ApiFxInternal" Name="GetName" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetName" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="GetName(System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetName(System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetSatelliteAssembly(System.Globalization.CultureInfo)" />
-      <Member Name="GetSatelliteAssembly(System.Globalization.CultureInfo,System.Version)" />
+      <Member Name="GetName" />
       <Member Name="GetType(System.String)" />
       <Member Name="GetType(System.String,System.Boolean)" />
       <Member Name="GetType(System.String,System.Boolean,System.Boolean)" />
       <Member Name="GetTypes" />
       <Member Name="IsDefined(System.Type,System.Boolean)" />
       <Member Name="IsDynamic" MemberType="Property" />
-      <Member Status="ApiFxInternal" Name="Load(System.Reflection.AssemblyName)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="Load(System.Reflection.AssemblyName)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="Load(System.Reflection.AssemblyName)" />
       <Member Name="Load(System.String)" />
-      <Member Status="ApiFxInternal" Name="Load(System.Byte[])" />
-      <Member Status="ApiFxInternal" Name="Load(System.IO.Stream)" />
-      <Member Status="ApiFxInternal" Name="Load(System.IO.Stream,System.IO.Stream)" />
-      <Member Status="ApiFxInternal" Name="Load(System.Byte[],System.Byte[])" /> <!-- for debugging -->
-      <Member Status="ApiFxInternal" Name="LoadFrom(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="LoadFrom(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="LoadFile(System.String)"/>
       <Member Name="ToString" />
       <Member MemberType="Property" Name="DefinedTypes" />
       <Member MemberType="Property" Name="CustomAttributes" />
       <Member MemberType="Property" Name="Modules" />
       <Member MemberType="Property" Name="ExportedTypes" />
-      <Member MemberType="Property" Name="EntryPoint" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="EntryPoint" />
       <Member MemberType="Property" Name="FullName" />
-      <Member MemberType="Property" Name="ImageRuntimeVersion" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="CodeBase" />
+      <Member MemberType="Property" Name="ImageRuntimeVersion" />
       <Member MemberType="Property" Name="Location" />
       <Member MemberType="Property" Name="ManifestModule" />
       <Member Status="ImplRoot" MemberType="Event" Name="ModuleResolve" />
@@ -3664,8 +3453,6 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_assembly" />
       <Member Status="ImplRoot" Name="OnModuleResolveEvent(System.String)" /> <!-- EE -->
       <Member Status="ImplRoot" MemberType="Property" Name="DefinedTypes" />
-      <!-- On Windows Phone Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
-      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" Condition="FEATURE_WINDOWSPHONE" />
     </Type>
     <Type Name="System.Reflection.TypeInfo">
       <Member Name="#ctor" />      
@@ -3757,9 +3544,6 @@
     </Type>
     <Type Name="System.Reflection.AssemblyName">
       <Member Name="#ctor" />
-      <Member Name="Clone" />      
-      <Member Status="ApiFxInternal" Name="get_CodeBase" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="get_CodeBase" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="get_CultureInfo" />
       <Member Name="get_CultureName" />
       <Member Name="get_ContentType" />
@@ -3769,35 +3553,27 @@
       <Member Name="get_Name" />
       <Member Name="get_ProcessorArchitecture" />
       <Member Name="get_Version" />
-      <Member Name="get_VersionCompatibility" />
       <Member Name="GetPublicKey" />
       <Member Name="GetPublicKeyToken" />      
-      <Member Status="ApiFxInternal" Name="set_CodeBase(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="set_CodeBase(System.String)" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="set_CultureInfo(System.Globalization.CultureInfo)" />
       <Member Name="set_Flags(System.Reflection.AssemblyNameFlags)" />
       <Member Name="set_HashAlgorithm(System.Configuration.Assemblies.AssemblyHashAlgorithm)" />
       <Member Name="set_Name(System.String)" />
       <Member Name="set_ProcessorArchitecture(System.Reflection.ProcessorArchitecture)" />
       <Member Name="set_Version(System.Version)" />
-      <Member Name="set_VersionCompatibility(System.Configuration.Assemblies.AssemblyVersionCompatibility)" />
       <Member Name="SetPublicKey(System.Byte[])" />
       <Member Name="SetPublicKeyToken(System.Byte[])" />
       <Member Name="ToString" />
       <Member Name="#ctor(System.String)" />
-      <Member Name="ReferenceMatchesDefinition(System.Reflection.AssemblyName,System.Reflection.AssemblyName)" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="CodeBase" Condition="not FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="CodeBase" Condition="FEATURE_LEGACYNETCF" />
       <Member MemberType="Property" Name="CultureInfo" />
       <Member MemberType="Property" Name="CultureName" />
-      <Member MemberType="Property" Name="ContentType" />      
+      <Member MemberType="Property" Name="ContentType" />
       <Member MemberType="Property" Name="Flags" />
       <Member MemberType="Property" Name="FullName" />
       <Member MemberType="Property" Name="HashAlgorithm" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="ProcessorArchitecture" />
       <Member MemberType="Property" Name="Version" />
-      <Member MemberType="Property" Name="VersionCompatibility" />
     </Type>
     <Type Name="System.Reflection.AssemblyNameFlags">
       <Member MemberType="Field" Name="None" />
@@ -3981,31 +3757,21 @@
       <Member MemberType="Property" Name="MemberName" />
     </Type>
     <Type Name="System.Reflection.Emit.AssemblyBuilder">
-      <Member Status="ApiFxInternal" Name="AddResourceFile(System.String,System.String)" />
-      <Member Status="ApiFxInternal" Name="AddResourceFile(System.String,System.String,System.Reflection.ResourceAttributes)" />
       <Member Name="DefineDynamicAssembly(System.Reflection.AssemblyName,System.Reflection.Emit.AssemblyBuilderAccess)" />
       <Member Name="DefineDynamicAssembly(System.Reflection.AssemblyName,System.Reflection.Emit.AssemblyBuilderAccess,System.Collections.Generic.IEnumerable&lt;System.Reflection.Emit.CustomAttributeBuilder&gt;)" />
       <Member Name="SetCustomAttribute(System.Reflection.ConstructorInfo,System.Byte[])" />
       <Member Name="DefineDynamicModule(System.String)" />
       <Member Name="DefineDynamicModule(System.String,System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="get_CodeBase" />
       <Member Name="get_EntryPoint" />
       <Member Name="get_ImageRuntimeVersion" />
-      <Member Status="ApiFxInternal" Name="get_Location" />
       <Member Name="GetDynamicModule(System.String)" />
       <Member Name="GetExportedTypes" />
-      <Member Status="ApiFxInternal" Name="GetFile(System.String)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Status="ApiFxInternal" Name="GetFiles(System.Boolean)" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="GetManifestResourceNames" />
       <Member Name="GetManifestResourceStream(System.String)" />
       <Member Name="GetManifestResourceStream(System.Type,System.String)" />
       <Member Name="SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)" />
-      <Member Status="ApiFxInternal" Name="SetEntryPoint(System.Reflection.MethodInfo)" />
-      <Member Status="ApiFxInternal" Name="SetEntryPoint(System.Reflection.MethodInfo,System.Reflection.Emit.PEFileKinds)" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="CodeBase" />
       <Member MemberType="Property" Name="EntryPoint" />
       <Member MemberType="Property" Name="ImageRuntimeVersion" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="Location" />
     </Type>
     <Type Name="System.Reflection.Emit.AssemblyBuilderAccess">
       <Member MemberType="Field" Name="Run" />
@@ -4088,20 +3854,13 @@
     </Type>
     <Type Name="System.Reflection.Emit.DynamicMethod">
       <Member Name="#ctor(System.String,System.Type,System.Type[])" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Type,System.Type[],System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type,System.Boolean)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type,System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Type,System.Type[],System.Type)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Type)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.Type,System.Type[],System.Type,System.Boolean)" Condition="not FEATURE_LEGACYNETCF"/>
-      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Type,System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
+      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Boolean)" />
+      <Member Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" />
+      <Member Name="#ctor(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type,System.Boolean)" />
+      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module)" />
+      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Reflection.Module,System.Boolean)" />
+      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Type)" />
+      <Member Name="#ctor(System.String,System.Type,System.Type[],System.Type,System.Boolean)" />
       <Member Name="CreateDelegate(System.Type)" />
       <Member Name="CreateDelegate(System.Type,System.Object)" />
       <Member Name="DefineParameter(System.Int32,System.Reflection.ParameterAttributes,System.String)" />
@@ -4434,7 +4193,6 @@
       <Member MemberType="Property" Name="LocalType" />
     </Type>
     <Type Name="System.Reflection.Emit.MethodBuilder">
-      <Member Status="ApiFxInternal" Name="CreateMethodBody(System.Byte[],System.Int32)" />
       <Member Name="DefineGenericParameters(System.String[])" />
       <Member Name="DefineParameter(System.Int32,System.Reflection.ParameterAttributes,System.String)" />
       <Member Name="Equals(System.Object)" />
@@ -4508,9 +4266,6 @@
       <Member Name="DefineGlobalMethod(System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type[],System.Type[],System.Type[][],System.Type[][])" />
       <Member Name="DefineGlobalMethod(System.String,System.Reflection.MethodAttributes,System.Type,System.Type[])" />
       <Member Name="DefineInitializedData(System.String,System.Byte[],System.Reflection.FieldAttributes)" />      
-      <Member Status="ApiFxInternal" Name="DefineManifestResource(System.String,System.IO.Stream,System.Reflection.ResourceAttributes)" />
-      <Member Status="ApiFxInternal" Name="DefinePInvokeMethod(System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)" />
-      <Member Status="ApiFxInternal" Name="DefinePInvokeMethod(System.String,System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)" />
       <Member Name="DefineType(System.String)" />
       <Member Name="DefineType(System.String,System.Reflection.TypeAttributes)" />
       <Member Name="DefineType(System.String,System.Reflection.TypeAttributes,System.Type)" />
@@ -4519,8 +4274,6 @@
       <Member Name="DefineType(System.String,System.Reflection.TypeAttributes,System.Type,System.Reflection.Emit.PackingSize,System.Int32)" />
       <Member Name="DefineType(System.String,System.Reflection.TypeAttributes,System.Type,System.Type[])" />
       <Member Name="DefineUninitializedData(System.String,System.Int32,System.Reflection.FieldAttributes)" />
-      <Member Status="ApiFxInternal" Name="DefineUnmanagedResource(System.Byte[])" />
-      <Member Status="ApiFxInternal" Name="DefineUnmanagedResource(System.String)" />
       <Member Name="get_FullyQualifiedName" />
       <Member Name="GetArrayMethod(System.Type,System.String,System.Reflection.CallingConventions,System.Type,System.Type[])" />
       <Member Name="GetArrayMethodToken(System.Type,System.String,System.Reflection.CallingConventions,System.Type,System.Type[])" />
@@ -4539,7 +4292,6 @@
       <Member Name="IsTransient" />
       <Member Name="SetCustomAttribute(System.Reflection.ConstructorInfo,System.Byte[])" />
       <Member Name="SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder)" />
-      <Member Status="ApiFxInternal" Name="SetUserEntryPoint(System.Reflection.MethodInfo)" />
       <Member MemberType="Property" Name="FullyQualifiedName" />      
     </Type>
     <Type Name="System.Reflection.Emit.OpCode">
@@ -5016,9 +4768,6 @@
       <Member Name="DefineNestedType(System.String,System.Reflection.TypeAttributes,System.Type,System.Reflection.Emit.PackingSize)" />
       <Member Name="DefineNestedType(System.String,System.Reflection.TypeAttributes,System.Type,System.Reflection.Emit.PackingSize,System.Int32)" /> 
       <Member Name="DefineNestedType(System.String,System.Reflection.TypeAttributes,System.Type,System.Type[])" />
-      <Member Status="ApiFxInternal" Name="DefinePInvokeMethod(System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)" />
-      <Member Status="ApiFxInternal" Name="DefinePInvokeMethod(System.String,System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)" />
-      <Member Status="ApiFxInternal" Name="DefinePInvokeMethod(System.String,System.String,System.String,System.Reflection.MethodAttributes,System.Reflection.CallingConventions,System.Type,System.Type[],System.Type[],System.Type[],System.Type[][],System.Type[][],System.Runtime.InteropServices.CallingConvention,System.Runtime.InteropServices.CharSet)" />
       <Member Name="DefineProperty(System.String,System.Reflection.PropertyAttributes,System.Type,System.Type[])" />
       <Member Name="DefineProperty(System.String,System.Reflection.PropertyAttributes,System.Type,System.Type[],System.Type[],System.Type[],System.Type[][],System.Type[][])" />
       <Member Name="DefineProperty(System.String,System.Reflection.PropertyAttributes,System.Reflection.CallingConventions,System.Type,System.Type[])" />
@@ -5335,20 +5084,15 @@
       <Member Name="get_IsStatic" />
       <Member Name="get_IsVirtual" />
       <Member Name="get_MethodHandle" />     
-      <Member Name="get_MethodImplementationFlags" />            
-      <!--
-      <Member Name="get_IsSecurityCritical" />
-      <Member Name="get_IsSecuritySafeCritical" />
-      <Member Name="get_IsSecurityTransparent" />      
-      -->
+      <Member Name="get_MethodImplementationFlags" />
       <Member Name="GetGenericArguments" />
       <Member Status="ImplRoot" Name="GetMethodDesc" />
       <Member Name="GetMethodFromHandle(System.RuntimeMethodHandle)" />
       <Member Name="GetMethodFromHandle(System.RuntimeMethodHandle,System.RuntimeTypeHandle)" />
-      <Member Name="GetMethodImplementationFlags" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetMethodImplementationFlags" />
       <Member Name="GetParameters" />
       <Member Name="Equals(System.Object)" />
-      <Member Name="GetHashCode" />      
+      <Member Name="GetHashCode" />
       <Member Name="Invoke(System.Object,System.Object[])" />
       <Member Name="Invoke(System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)" />
       <Member MemberType="Property" Name="Attributes" />
@@ -5394,7 +5138,7 @@
     <Type Name="System.Reflection.MethodInfo">
       <Member Name="#ctor" />
       <Member Name="get_MemberType" />
-      <Member Name="get_ReturnParameter" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_ReturnParameter" />
       <Member Name="get_ReturnType" />
       <Member Name="get_ReturnTypeCustomAttributes" />
       <Member Name="GetBaseDefinition" />
@@ -5404,7 +5148,7 @@
       <Member Name="GetHashCode" />      
       <Member Name="MakeGenericMethod(System.Type[])" />
       <Member MemberType="Property" Name="MemberType" />
-      <Member MemberType="Property" Name="ReturnParameter" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="ReturnParameter" />
       <Member MemberType="Property" Name="ReturnType" />
       <Member MemberType="Property" Name="ReturnTypeCustomAttributes" />
     </Type>
@@ -5414,9 +5158,8 @@
     <Type Name="System.Reflection.Module">
       <Member Name="#ctor" />
       <Member Name="get_Assembly" />
-      <Member Name="get_CustomAttributes" />      
-      <Member Status="ApiFxInternal" Name="get_FullyQualifiedName" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="get_FullyQualifiedName" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_CustomAttributes" />
+      <Member Name="get_FullyQualifiedName" />
       <Member Name="get_MetadataToken" />
       <Member Name="get_ModuleVersionId" />
       <Member Name="get_Name" />
@@ -5435,8 +5178,8 @@
       <Member Name="GetMethods" />
       <Member Name="GetMethods(System.Reflection.BindingFlags)" />
       <Member Name="GetType(System.String)" />
-      <Member Name="GetType(System.String,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetType(System.String,System.Boolean,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetType(System.String,System.Boolean)" />
+      <Member Name="GetType(System.String,System.Boolean,System.Boolean)" />
       <Member Name="GetTypes" />
       <Member Name="Equals(System.Object)" />
       <Member Name="GetHashCode" />      
@@ -5450,9 +5193,8 @@
       <Member Name="ResolveType(System.Int32,System.Type[],System.Type[])" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="Assembly" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="FullyQualifiedName" Condition="not FEATURE_LEGACYNETCF" />
       <Member MemberType="Property" Name="CustomAttributes" />            
-      <Member MemberType="Property" Name="FullyQualifiedName" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="FullyQualifiedName" />
       <Member MemberType="Property" Name="MetadataToken" />
       <Member MemberType="Property" Name="ModuleVersionId" />
       <Member MemberType="Property" Name="Name" />
@@ -5619,29 +5361,11 @@
       <Member MemberType="Field" Name="value__" />
       <Member MemberType="Field" Name="VisibilityMask" />
     </Type>
-    <Type Name="System.Reflection.TypeDelegator">
+    <Type Status="ImplRoot" Name="System.Reflection.TypeDelegator">
         <Member Name="#ctor" />
         <Member Name="#ctor(System.Type)" />
         <Member Name="get_MetadataToken" />
         <Member MemberType="Property" Name="MetadataToken" />
-    </Type>
-    <Type Name="System.ResolveEventArgs">
-      <Member Name="#ctor(System.String)" />
-      <Member Name="#ctor(System.String,System.Reflection.Assembly)" />
-      <Member Name="get_Name" />
-      <Member MemberType="Property" Name="Name" />
-      <Member Name="get_RequestingAssembly" />
-      <Member MemberType="Property" Name="RequestingAssembly" />
-    </Type>
-    <Type Name="System.ResolveEventHandler" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.Object,System.IntPtr)" />
-      <Member Name="BeginInvoke(System.Object,System.ResolveEventArgs,System.AsyncCallback,System.Object)" />
-      <Member Name="EndInvoke(System.IAsyncResult)" />
-      <Member Name="Invoke(System.Object,System.ResolveEventArgs)" />
-    </Type>
-    <Type Name="System.Resources.IResourceReader">
-      <Member Name="Close" />
-      <Member Name="GetEnumerator" />
     </Type>
     <Type Name="System.Resources.MissingManifestResourceException">
       <Member Name="#ctor" />
@@ -5689,11 +5413,8 @@
       <Member MemberType="Field" Name="Reader" />
       <Member MemberType="Field" Name="Table" />
       <Member Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.IO.Stream)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.IO.Stream)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Resources.IResourceReader)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.String)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="#ctor(System.IO.Stream)" />
+      <Member Name="#ctor(System.String)" />
       <Member Name="Close" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
@@ -5858,8 +5579,8 @@
       <Member Name="RunClassConstructor(System.RuntimeTypeHandle)" />
       <Member MemberType="Property" Name="OffsetToStringData" />
       <Member Status="ImplRoot" Name="ExecuteBackoutCodeHelper(System.Object,System.Object,System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="PrepareConstrainedRegionsNoOP" />
-      <Member Status="ApiFxInternal" Name="PrepareConstrainedRegions" />
+      <Member Status="ImplRoot" Name="PrepareConstrainedRegionsNoOP" />
+      <Member Status="ImplRoot" Name="PrepareConstrainedRegions" />
     </Type>
     <Type Name="System.Runtime.CompilerServices.ConditionalWeakTable&lt;TKey,TValue&gt;">
       <Member Name="#ctor" />
@@ -6170,7 +5891,6 @@
       <Member Name="GetExceptionForHR(System.Int32,System.IntPtr)" />
       <Member Name="GetFunctionPointerForDelegate(System.Delegate)" />
       <Member Name="GetHRForException(System.Exception)" />
-      <Member Status="ApiFxInternal" Name="GetHRForException_WinRT(System.Exception)" Condition="FEATURE_COMINTEROP" />
       <Member Name="GetIUnknownForObject(System.Object)" />
       <Member Name="GetLastWin32Error" />
       <Member Name="GetHRForLastWin32Error" />
@@ -6202,7 +5922,6 @@
       <Member Name="ReadIntPtr(System.IntPtr,System.Int32)" />
       <Member Name="Release(System.IntPtr)" />
       <Member Name="ReleaseComObject(System.Object)" />
-      <Member Name="SecureStringToCoTaskMemUnicode(System.Security.SecureString)" Condition="FEATURE_LEGACYSURFACE"/>
       <Member Name="SetLastWin32Error(System.Int32)" />
       <Member Name="SizeOf(System.Object)" />
       <Member Name="SizeOf(System.Type)" />            
@@ -6251,11 +5970,11 @@
       <Member Name="PtrToStringBSTR(System.IntPtr)" />
       <Member Name="PtrToStructure&lt;T&gt;(System.IntPtr)" />
       <Member Name="PtrToStructure&lt;T&gt;(System.IntPtr,T)" />
-      <Member Name="ReadByte(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="ReadInt16(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="ReadInt32(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="ReadInt64(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="ReadIntPtr(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="ReadByte(System.Object,System.Int32)" />
+      <Member Name="ReadInt16(System.Object,System.Int32)" />
+      <Member Name="ReadInt32(System.Object,System.Int32)" />
+      <Member Name="ReadInt64(System.Object,System.Int32)" />
+      <Member Name="ReadIntPtr(System.Object,System.Int32)" />
       <Member Name="ReAllocCoTaskMem(System.IntPtr,System.Int32)" />
       <Member Name="ReAllocHGlobal(System.IntPtr,System.IntPtr)" />
       <Member Name="SizeOf&lt;T&gt;" />
@@ -6267,12 +5986,12 @@
       <Member Name="StringToHGlobalUni(System.String)" />
       <Member Name="StructureToPtr&lt;T&gt;(T,System.IntPtr,System.Boolean)" />
       <Member Name="UnsafeAddrOfPinnedArrayElement&lt;T&gt;(T[],System.Int32)" />
-      <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" Condition="FEATURE_LEGACYSURFACE" />      
-      <Member Name="WriteInt16(System.Object,System.Int32,System.Char)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="WriteInt16(System.Object,System.Int32,System.Int16)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="WriteInt32(System.Object,System.Int32,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="WriteInt64(System.Object,System.Int32,System.Int64)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="WriteIntPtr(System.Object,System.Int32,System.IntPtr)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" />
+      <Member Name="WriteInt16(System.Object,System.Int32,System.Char)" />
+      <Member Name="WriteInt16(System.Object,System.Int32,System.Int16)" />
+      <Member Name="WriteInt32(System.Object,System.Int32,System.Int32)" />
+      <Member Name="WriteInt64(System.Object,System.Int32,System.Int64)" />
+      <Member Name="WriteIntPtr(System.Object,System.Int32,System.IntPtr)" />
       <Member Name="ZeroFreeBSTR(System.IntPtr)" />
       <Member Name="ZeroFreeCoTaskMemAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocAnsi(System.IntPtr)" />
@@ -6346,46 +6065,10 @@
       <Member MemberType="Property" Name="IsClosed" />
       <Member MemberType="Property" Name="IsInvalid" />
     </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.CriticalHandleMinusOneIsInvalid">
-      <Member Name="#ctor" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.CriticalHandleZeroOrMinusOneIsInvalid">
-      <Member Name="#ctor" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type> 
-    <Type Status="ApiFxInternal" Name="Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid" Condition="not FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.Boolean)" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.Boolean)" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid" Condition="not FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.Boolean)" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.Boolean)" />
-      <Member Status="ApiRoot" Name="get_IsInvalid" />
-    </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.SafeRegistryHandle" Condition="FEATURE_WIN32_REGISTRY">
-      <Member Name="#ctor(System.IntPtr,System.Boolean)" />
-      <Member Name="ReleaseHandle" />
-    </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.SafeFileHandle">
-      <Member Name="#ctor(System.IntPtr,System.Boolean)" />
-      <Member Name="ReleaseHandle" />   
-    </Type>  
-    <Type Status="ApiFxInternal" Name="Microsoft.Win32.SafeHandles.SafeWaitHandle" Condition="not FEATURE_LEGACYNETCF">
+    <Type Name="Microsoft.Win32.SafeHandles.SafeWaitHandle">
       <Member Name="#ctor(System.IntPtr,System.Boolean)" />
       <Member Status="ApiRoot" Name="ReleaseHandle" />
     </Type>
-    <Type Name="Microsoft.Win32.SafeHandles.SafeWaitHandle" Condition="FEATURE_LEGACYNETCF">
-      <Member Name="#ctor(System.IntPtr,System.Boolean)" />
-      <Member Status="ApiRoot" Name="ReleaseHandle" />
-    </Type> 
     <Type Name="System.Runtime.InteropServices.SEHException" >
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -6461,10 +6144,6 @@
     </Type>
     <Type Name="System.RuntimeFieldHandle">
       <Member Name="Equals(System.RuntimeFieldHandle)" />      
-      <Member Status="ApiFxInternal" Name="get_Value" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="get_Value" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="Value" Condition="not FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="Value" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="op_Equality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
       <Member Name="op_Inequality(System.RuntimeFieldHandle,System.RuntimeFieldHandle)" />
     </Type>
@@ -6498,612 +6177,6 @@
     </Type>
     <Type Name="System.Security.AllowPartiallyTrustedCallersAttribute">
       <Member Name="#ctor" />
-    </Type>
-    <Type Name="System.Security.Cryptography.Aes" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-    </Type>
-    <Type Name="System.Security.Cryptography.AsymmetricAlgorithm"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="KeySizeValue" />
-      <Member MemberType="Field" Name="LegalKeySizesValue" />
-      <Member MemberType="Property" Name="KeyExchangeAlgorithm" />
-      <Member MemberType="Property" Name="KeySize" />
-      <Member MemberType="Property" Name="LegalKeySizes" />
-      <Member MemberType="Property" Name="SignatureAlgorithm" />
-      <Member Name="#ctor" />
-      <Member Name="Clear" />
-      <Member Name="Create" />
-      <Member Name="Create(System.String)" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="FromXmlString(System.String)" />
-      <Member Name="get_KeyExchangeAlgorithm" />
-      <Member Name="get_KeySize" />
-      <Member Name="set_KeySize(System.Int32)" />
-      <Member Name="get_LegalKeySizes" />
-      <Member Name="get_SignatureAlgorithm" />
-      <Member Name="ToXmlString(System.Boolean)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.AsymmetricKeyExchangeDeformatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="Parameters" />
-      <Member Name="#ctor" />
-      <Member Name="DecryptKeyExchange(System.Byte[])" />
-      <Member Name="get_Parameters" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" Condition="FEATURE_LEGACYSURFACE" />
-      <Member Name="set_Parameters(System.String)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.AsymmetricKeyExchangeFormatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="Parameters" />
-      <Member Name="#ctor" />
-      <Member Name="CreateKeyExchange(System.Byte[])" />
-      <Member Name="CreateKeyExchange(System.Byte[],System.Type)" />
-      <Member Name="get_Parameters" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.AsymmetricSignatureDeformatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="SetHashAlgorithm(System.String)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="VerifySignature(System.Security.Cryptography.HashAlgorithm,System.Byte[])" />
-      <Member Name="VerifySignature(System.Byte[],System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.AsymmetricSignatureFormatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="CreateSignature(System.Byte[])" />
-      <Member Name="CreateSignature(System.Security.Cryptography.HashAlgorithm)" />
-      <Member Name="SetHashAlgorithm(System.String)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CipherMode" Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="CBC" />
-      <Member MemberType="Field" Name="CTS" />
-      <Member MemberType="Field" Name="ECB" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CryptoConfig" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="CreateFromName(System.String)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CryptographicUnexpectedOperationException" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.String)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CryptoStream" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.IO.Stream,System.Security.Cryptography.ICryptoTransform,System.Security.Cryptography.CryptoStreamMode)" />
-      <Member Name="Clear" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="Flush" />
-      <Member Name="FlushAsync(System.Threading.CancellationToken)" />
-      <Member Name="FlushFinalBlock" />
-      <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)" />
-      <Member Name="Seek(System.Int64,System.IO.SeekOrigin)" />
-      <Member Name="SetLength(System.Int64)" />
-      <Member Name="Write(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)" />
-      <Member MemberType="Property" Name="CanRead" />
-      <Member MemberType="Property" Name="CanSeek" />
-      <Member MemberType="Property" Name="CanWrite" />
-      <Member MemberType="Property" Name="HasFlushedFinalBlock" />
-      <Member MemberType="Property" Name="Length" />
-      <Member MemberType="Property" Name="Position" />
-      <Member Name="get_CanRead" />
-      <Member Name="get_CanSeek" />
-      <Member Name="get_CanWrite" />
-      <Member Name="get_HasFlushedFinalBlock" />
-      <Member Name="get_Length" />
-      <Member Name="get_Position" />
-      <Member Name="set_Position(System.Int64)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CryptoStreamMode" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Read" />
-      <Member MemberType="Field" Name="Write" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CspKeyContainerInfo"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor(System.Security.Cryptography.CspParameters)" />
-      <Member MemberType="Property" Name="Accessible" />
-      <Member MemberType="Property" Name="Exportable" />
-      <Member MemberType="Property" Name="HardwareDevice" />
-      <Member MemberType="Property" Name="KeyContainerName" />
-      <Member MemberType="Property" Name="KeyNumber" />
-      <Member MemberType="Property" Name="MachineKeyStore" />
-      <Member MemberType="Property" Name="Protected" />
-      <Member MemberType="Property" Name="ProviderName" />
-      <Member MemberType="Property" Name="ProviderType" />
-      <Member MemberType="Property" Name="RandomlyGenerated" />
-      <Member MemberType="Property" Name="Removable" />
-      <Member MemberType="Property" Name="UniqueKeyContainerName" />
-      <Member Name="get_Accessible" />
-      <Member Name="get_Exportable" />
-      <Member Name="get_HardwareDevice" />
-      <Member Name="get_KeyContainerName" />
-      <Member Name="get_KeyNumber" />
-      <Member Name="get_MachineKeyStore" />
-      <Member Name="get_Protected" />
-      <Member Name="get_ProviderName" />
-      <Member Name="get_ProviderType" />
-      <Member Name="get_RandomlyGenerated" />
-      <Member Name="get_Removable" />
-      <Member Name="get_UniqueKeyContainerName" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CspParameters"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="KeyContainerName" />
-      <Member MemberType="Field" Name="KeyNumber" />
-      <Member MemberType="Field" Name="ProviderName" />
-      <Member MemberType="Field" Name="ProviderType" />
-      <Member MemberType="Property" Name="Flags" />
-      <Member MemberType="Property" Name="KeyPassword" />
-      <Member MemberType="Property" Name="ParentWindowHandle" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Int32)" />
-      <Member Name="#ctor(System.Int32,System.String)" />
-      <Member Name="#ctor(System.Int32,System.String,System.String)" />
-      <Member Name="get_Flags" />
-      <Member Name="set_Flags(System.Security.Cryptography.CspProviderFlags)" />
-      <Member Name="get_KeyPassword" />
-      <Member Name="set_KeyPassword(System.Security.SecureString)" />
-      <Member Name="get_ParentWindowHandle" />
-      <Member Name="set_ParentWindowHandle(System.IntPtr)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.CspProviderFlags"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="CreateEphemeralKey" />
-      <Member MemberType="Field" Name="NoFlags" />
-      <Member MemberType="Field" Name="NoPrompt" />
-      <Member MemberType="Field" Name="UseArchivableKey" />
-      <Member MemberType="Field" Name="UseDefaultKeyContainer" />
-      <Member MemberType="Field" Name="UseExistingKey" />
-      <Member MemberType="Field" Name="UseMachineKeyStore" />
-      <Member MemberType="Field" Name="UseNonExportableKey" />
-      <Member MemberType="Field" Name="UseUserProtectedKey" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
-    <Type Name="System.Security.Cryptography.ICspAsymmetricAlgorithm"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="CspKeyContainerInfo" />
-      <Member Name="ExportCspBlob(System.Boolean)" />
-      <Member Name="get_CspKeyContainerInfo" />
-      <Member Name="ImportCspBlob(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.DeriveBytes" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="GetBytes(System.Int32)" />
-      <Member Name="Reset" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HashAlgorithm" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="HashSizeValue" />
-      <Member MemberType="Field" Name="HashValue" />
-      <Member MemberType="Field" Name="State" />
-      <Member MemberType="Property" Name="CanReuseTransform" />
-      <Member MemberType="Property" Name="CanTransformMultipleBlocks" />
-      <Member MemberType="Property" Name="Hash" />
-      <Member MemberType="Property" Name="HashSize" />
-      <Member MemberType="Property" Name="InputBlockSize" />
-      <Member MemberType="Property" Name="OutputBlockSize" />
-      <Member Name="#ctor" />
-      <Member Name="Clear" />
-      <Member Name="ComputeHash(System.Byte[])" />
-      <Member Name="ComputeHash(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="ComputeHash(System.IO.Stream)" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="get_CanReuseTransform" />
-      <Member Name="get_CanTransformMultipleBlocks" />
-      <Member Name="get_Hash" />
-      <Member Name="get_HashSize" />
-      <Member Name="get_InputBlockSize" />
-      <Member Name="get_OutputBlockSize" />
-      <Member Name="HashCore(System.Byte[],System.Int32,System.Int32)"/>
-      <Member Name="HashFinal"/>
-      <Member Name="Initialize"/>
-      <Member Name="TransformBlock(System.Byte[],System.Int32,System.Int32,System.Byte[],System.Int32)" />
-      <Member Name="TransformFinalBlock(System.Byte[],System.Int32,System.Int32)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HMAC" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Property" Name="BlockSizeValue" />
-      <Member MemberType="Property" Name="HashName" />
-      <Member MemberType="Property" Name="Key" />
-      <Member Name="#ctor" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="HashCore(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="HashFinal" />
-      <Member Name="Initialize" />
-      <Member Name="get_HashName" />
-      <Member Name="set_HashName(System.String)" />
-      <Member Name="get_Key" />
-      <Member Name="set_Key(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HMACSHA1" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HMACSHA256" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HMACSHA384" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.HMACSHA512" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.ICryptoTransform" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Property" Name="CanReuseTransform" />
-      <Member MemberType="Property" Name="CanTransformMultipleBlocks" />
-      <Member MemberType="Property" Name="InputBlockSize" />
-      <Member MemberType="Property" Name="OutputBlockSize" />
-      <Member Name="get_CanReuseTransform" />
-      <Member Name="get_CanTransformMultipleBlocks" />
-      <Member Name="get_InputBlockSize" />
-      <Member Name="get_OutputBlockSize" />
-      <Member Name="TransformBlock(System.Byte[],System.Int32,System.Int32,System.Byte[],System.Int32)" />
-      <Member Name="TransformFinalBlock(System.Byte[],System.Int32,System.Int32)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.KeyedHashAlgorithm" Condition="FEATURE_LEGACYSURFACE">
-        <Member MemberType="Field" Name="KeyValue" />
-        <Member MemberType="Property" Name="Key" />
-        <Member Name="#ctor" />
-        <Member Name="Dispose(System.Boolean)" />
-        <Member Name="get_Key" />
-        <Member Name="set_Key(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.KeyNumber" Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="Exchange" />
-      <Member MemberType="Field" Name="Signature" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>      
-    <Type Name="System.Security.Cryptography.KeySizes" Condition="FEATURE_LEGACYSURFACE">
-        <Member MemberType="Property" Name="MaxSize" />
-        <Member MemberType="Property" Name="MinSize" />
-        <Member MemberType="Property" Name="SkipSize" />
-        <Member Name="#ctor(System.Int32,System.Int32,System.Int32)" />
-        <Member Name="get_MaxSize" />
-        <Member Name="get_MinSize" />
-        <Member Name="get_SkipSize" />
-    </Type>
-    <Type Name="System.Security.Cryptography.MaskGenerationMethod" Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="GenerateMask(System.Byte[],System.Int32)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.MD5" Condition="FEATURE_LEGACYSURFACE">
-        <Member Name="#ctor" />
-        <Member Name="Create" />
-        <Member Name="Create(System.String)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.PaddingMode" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="None" />
-      <Member MemberType="Field" Name="PKCS7" />
-      <Member MemberType="Field" Name="Zeros" />
-    </Type> 
-    <Type Name="System.Security.Cryptography.PKCS1MaskGenerationMethod" Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="HashName" />
-      <Member Name="#ctor" />
-      <Member Name="GenerateMask(System.Byte[],System.Int32)" />
-      <Member Name="get_HashName" />
-    </Type>
-    <Type Name="System.Security.Cryptography.Rfc2898DeriveBytes" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Property" Name="IterationCount" />
-      <Member MemberType="Property" Name="Salt" />
-      <Member Name="#ctor(System.String,System.Byte[])" />
-      <Member Name="#ctor(System.String,System.Byte[],System.Int32)" />
-      <Member Name="#ctor(System.String,System.Int32)" />
-      <Member Name="#ctor(System.String,System.Int32,System.Int32)" />
-      <Member Name="#ctor(System.Byte[],System.Byte[],System.Int32)" />
-      <Member Name="CryptDeriveKey(System.String,System.String,System.Int32,System.Byte[])" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="GetBytes(System.Int32)" />
-      <Member Name="Reset" />
-      <Member Name="get_IterationCount" />
-      <Member Name="set_IterationCount(System.Int32)" />
-      <Member Name="get_Salt" />
-      <Member Name="set_Salt(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RandomNumberGenerator" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="GetBytes(System.Byte[])" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Security.Cryptography.Rijndael" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Security.Cryptography.RijndaelManaged" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Status="ApiRoot" Name="GenerateIV" />
-      <Member Status="ApiRoot" Name="GenerateKey" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RNGCryptoServiceProvider" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="GetBytes(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSA"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-      <Member Name="Create(System.String)" />
-      <Member Name="DecryptValue(System.Byte[])" />
-      <Member Name="EncryptValue(System.Byte[])" />
-      <Member Name="FromXmlString(System.String)" />
-      <Member Name="ToXmlString(System.Boolean)" />
-      <Member Name="ExportParameters(System.Boolean)" />
-      <Member Name="ImportParameters(System.Security.Cryptography.RSAParameters)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSACryptoServiceProvider"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="PublicOnly" />
-      <Member MemberType="Property" Name="CspKeyContainerInfo" />
-      <Member MemberType="Property" Name="KeySize" />
-      <Member MemberType="Property" Name="KeyExchangeAlgorithm" />
-      <Member MemberType="Property" Name="SignatureAlgorithm" />
-      <Member MemberType="Property" Name="UseMachineKeyStore" />
-      <Member MemberType="Property" Name="PersistKeyInCsp" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Int32)" />
-      <Member Name="#ctor(System.Security.Cryptography.CspParameters)" />
-      <Member Name="#ctor(System.Int32,System.Security.Cryptography.CspParameters)" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="get_PublicOnly" />
-      <Member Name="get_CspKeyContainerInfo" />
-      <Member Name="get_KeySize" />
-      <Member Name="get_KeyExchangeAlgorithm" />
-      <Member Name="get_SignatureAlgorithm" />
-      <Member Name="get_UseMachineKeyStore" />
-      <Member Name="set_UseMachineKeyStore(System.Boolean)" />
-      <Member Name="get_PersistKeyInCsp" />
-      <Member Name="set_PersistKeyInCsp(System.Boolean)" />
-      <Member Name="ExportParameters(System.Boolean)" />
-      <Member Name="ExportCspBlob(System.Boolean)" />
-      <Member Name="ImportParameters(System.Security.Cryptography.RSAParameters)" />
-      <Member Name="ImportCspBlob(System.Byte[])" />
-      <Member Name="SignData(System.IO.Stream,System.Object)" />
-      <Member Name="SignData(System.Byte[],System.Object)" />
-      <Member Name="SignData(System.Byte[],System.Int32,System.Int32,System.Object)" />
-      <Member Name="VerifyData(System.Byte[],System.Object,System.Byte[])" />
-      <Member Name="SignHash(System.Byte[],System.String)" />
-      <Member Name="VerifyHash(System.Byte[],System.String,System.Byte[])" />
-      <Member Name="Encrypt(System.Byte[],System.Boolean)" />
-      <Member Name="Decrypt(System.Byte[],System.Boolean)" />
-      <Member Name="DecryptValue(System.Byte[])" />
-      <Member Name="EncryptValue(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAOAEPKeyExchangeFormatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="Parameter" />
-      <Member MemberType="Property" Name="Parameters" />
-      <Member MemberType="Property" Name="Rng" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="get_Parameter" />
-      <Member Name="set_Parameter(System.Byte[])" />
-      <Member Name="get_Parameters" />
-      <Member Name="get_Rng" />
-      <Member Name="set_Rng(System.Security.Cryptography.RandomNumberGenerator)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="CreateKeyExchange(System.Byte[])" />
-      <Member Name="CreateKeyExchange(System.Byte[],System.Type)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAOAEPKeyExchangeDeformatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="Parameters" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="get_Parameters" />
-      <Member Name="set_Parameters(System.String)" />
-      <Member Name="DecryptKeyExchange(System.Byte[])" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAParameters"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Field" Name="Exponent" />
-      <Member MemberType="Field" Name="Modulus" />
-      <Member MemberType="Field" Name="P" />
-      <Member MemberType="Field" Name="Q" />
-      <Member MemberType="Field" Name="DP" />
-      <Member MemberType="Field" Name="DQ" />
-      <Member MemberType="Field" Name="InverseQ" />
-      <Member MemberType="Field" Name="D" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAPKCS1KeyExchangeDeformatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="RNG" />
-      <Member MemberType="Property" Name="Parameters" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="get_RNG" />
-      <Member Name="set_RNG(System.Security.Cryptography.RandomNumberGenerator)" />
-      <Member Name="get_Parameters" />
-      <Member Name="set_Parameters(System.String)" />
-      <Member Name="DecryptKeyExchange(System.Byte[])" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAPKCS1KeyExchangeFormatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member MemberType="Property" Name="Parameters" />
-      <Member MemberType="Property" Name="Rng" />
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="get_Parameters" />
-      <Member Name="get_Rng" />
-      <Member Name="set_Rng(System.Security.Cryptography.RandomNumberGenerator)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="CreateKeyExchange(System.Byte[])" />
-      <Member Name="CreateKeyExchange(System.Byte[],System.Type)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAPKCS1SignatureDeformatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="SetHashAlgorithm(System.String)" />
-      <Member Name="VerifySignature(System.Byte[],System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.RSAPKCS1SignatureFormatter"  Condition="FEATURE_LEGACYNETCFCRYPTO">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="SetKey(System.Security.Cryptography.AsymmetricAlgorithm)" />
-      <Member Name="SetHashAlgorithm(System.String)" />
-      <Member Name="CreateSignature(System.Byte[])" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA1" Condition="FEATURE_LEGACYSURFACE">
-        <Member Name="#ctor" />
-        <Member Name="Create" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA1Managed" Condition="FEATURE_LEGACYSURFACE">
-        <Member Name="#ctor" />
-        <Member Name="HashCore(System.Byte[],System.Int32,System.Int32)" />
-        <Member Name="HashFinal" />
-        <Member Name="Initialize" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA256" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA384" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA512" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="Create" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SHA256Managed" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="HashCore(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="HashFinal" />
-      <Member Name="Initialize" />
-    </Type>
-    <Type Name="System.Security.Cryptography.SymmetricAlgorithm" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="BlockSizeValue" />
-      <Member MemberType="Field" Name="FeedbackSizeValue" />
-      <Member MemberType="Field" Name="IVValue" />
-      <Member MemberType="Field" Name="KeySizeValue" />
-      <Member MemberType="Field" Name="KeyValue" />
-      <Member MemberType="Field" Name="LegalBlockSizesValue" />
-      <Member MemberType="Field" Name="LegalKeySizesValue" />
-      <Member MemberType="Field" Name="ModeValue" />
-      <Member MemberType="Field" Name="PaddingValue" />
-      <Member MemberType="Property" Name="BlockSize" />
-      <Member MemberType="Property" Name="IV" />
-      <Member MemberType="Property" Name="Key" />
-      <Member MemberType="Property" Name="KeySize" />
-      <Member MemberType="Property" Name="LegalBlockSizes" />
-      <Member MemberType="Property" Name="LegalKeySizes" />
-      <Member MemberType="Property" Name="Mode" />
-      <Member MemberType="Property" Name="Padding" />
-      <Member Name="#ctor" />
-      <Member Name="Clear" />
-      <Member Name="CreateDecryptor" />
-      <Member Name="CreateDecryptor(System.Byte[],System.Byte[])" />
-      <Member Name="CreateEncryptor" />
-      <Member Name="CreateEncryptor(System.Byte[],System.Byte[])" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="GenerateIV" />
-      <Member Name="GenerateKey" />
-      <Member Name="ValidKeySize(System.Int32)" />
-      <Member Name="get_BlockSize" />
-      <Member Name="set_BlockSize(System.Int32)" />
-      <Member Name="get_IV" />
-      <Member Name="set_IV(System.Byte[])" />
-      <Member Name="get_Key" />
-      <Member Name="set_Key(System.Byte[])" />
-      <Member Name="get_KeySize" />
-      <Member Name="set_KeySize(System.Int32)" />
-      <Member Name="get_LegalBlockSizes" />
-      <Member Name="get_LegalKeySizes" />
-      <Member Name="get_Mode" />
-      <Member Name="set_Mode(System.Security.Cryptography.CipherMode)" />
-      <Member Name="get_Padding" />
-      <Member Name="set_Padding(System.Security.Cryptography.PaddingMode)" />
-    </Type>
-    <Type Name="System.Security.Cryptography.X509Certificates.X509Certificate" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Byte[])" />
-      <Member Name="#ctor(System.Byte[],System.String)" />
-      <Member Name="#ctor(System.Byte[],System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.String,System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.String,System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.String,System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.IntPtr)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.IntPtr)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Security.Cryptography.X509Certificates.X509Certificate)" />
-      <Member Status="ApiFxInternal" Name="CreateFromCertFile(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="CreateFromCertFile(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="CreateHexString(System.Byte[])" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="Dispose" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="Equals(System.Object)" />
-      <Member Name="Equals(System.Security.Cryptography.X509Certificates.X509Certificate)" />
-      <Member Name="Export(System.Security.Cryptography.X509Certificates.X509ContentType)" />
-      <Member Name="Export(System.Security.Cryptography.X509Certificates.X509ContentType,System.String)" />
-      <!-- SECURESTRING <Member Name="Export(System.Security.Cryptography.X509Certificates.X509ContentType,System.Security.SecureString)" />-->
-      <Member Name="FormatDate(System.DateTime)" />
-      <Member Name="GetCertHash" />
-      <Member Name="GetCertHashString" />
-      <Member Name="GetEffectiveDateString" />
-      <Member Name="GetExpirationDateString" />
-      <Member Name="GetFormat" />
-      <Member Name="GetHashCode" />
-      <!--<Member Name="GetIssuerName" /> OBSOLETE -->
-      <Member Name="GetKeyAlgorithm" />
-      <Member Name="GetKeyAlgorithmParameters" />
-      <Member Name="GetKeyAlgorithmParametersString" />
-      <!--<Member Name="GetName" /> OBSOLETE -->
-      <Member Name="GetPublicKey" />
-      <Member Name="GetPublicKeyString" />
-      <Member Name="GetRawCertData" />
-      <Member Name="GetRawCertDataString" />
-      <Member Name="GetSerialNumber" />
-      <Member Name="GetSerialNumberString" />
-      <Member Name="Import(System.Byte[])" />
-      <Member Name="Import(System.Byte[],System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" />
-      <!-- SECURESTRING <Member Name="Import(System.Byte[],System.Security.SecureString,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" />-->      
-      <Member Status="ApiFxInternal" Name="Import(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="Import(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="Import(System.String,System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="Import(System.String,System.String,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" Condition="FEATURE_LEGACYNETCF" />
-      <!-- SECURESTRING <Member Name="Import(System.String,System.Security.SecureString,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags)" />-->
-      <Member Name="ToString" />
-      <Member Name="ToString(System.Boolean)" />
-      <Member MemberType="Property" Name="CertContext" />
-      <Member Status="ApiFxInternal" Name="get_Handle" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="get_Handle" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="Handle" Condition="not FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="Handle" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="Issuer" />
-      <Member MemberType="Property" Name="NotAfter" />
-      <Member MemberType="Property" Name="NotBefore" />
-      <Member MemberType="Property" Name="RawData" />
-      <Member MemberType="Property" Name="SerialNumber" />
-      <Member MemberType="Property" Name="Subject" />
-    </Type>
-    <Type Name="System.Security.Cryptography.X509Certificates.X509ContentType" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Unknown" />
-      <Member MemberType="Field" Name="Cert" />
-      <Member MemberType="Field" Name="SerializedCert" />
-      <Member MemberType="Field" Name="Pfx" />
-      <Member MemberType="Field" Name="Pkcs12" />
-      <Member MemberType="Field" Name="SerializedStore" />
-      <Member MemberType="Field" Name="Pkcs7" />
-      <Member MemberType="Field" Name="Authenticode" />
-    </Type>
-    <Type Name="System.Security.Cryptography.X509Certificates.X509KeyStorageFlags" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="DefaultKeySet" />
-      <Member MemberType="Field" Name="UserKeySet" />
-      <Member MemberType="Field" Name="MachineKeySet" />
-      <Member MemberType="Field" Name="Exportable" />
-      <Member MemberType="Field" Name="UserProtected" />
-      <Member MemberType="Field" Name="PersistKeySet" />
-    </Type>
-    <Type Name="System.Security.SecureString" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Char*,System.Int32)" />
-      <Member Name="get_Length" />
-      <Member Name="AppendChar(System.Char)" />
-      <Member Name="Clear" />
-      <Member Name="Copy" />
-      <Member Name="Dispose" />
-      <Member Name="IsReadOnly" />
-      <Member Name="MakeReadOnly" />
-      <Member Name="RemoveAt(System.Int32)" />
-      <Member Name="InsertAt(System.Int32,System.Char)" />
-      <Member Name="SetAt(System.Int32,System.Char)" />
     </Type>
     <Type Name="System.Security.SecurityException">
       <Member Name="#ctor" />
@@ -7161,11 +6234,10 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_stringLength" />
       <Member MemberType="Field" Name="Empty" />
       <Member Name="#ctor(System.Char*)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Char*,System.Int32,System.Int32)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="#ctor(System.Char*,System.Int32,System.Int32)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="#ctor(System.Char*,System.Int32,System.Int32)" />
       <Member Name="#ctor(System.Char,System.Int32)" />
       <Member Name="#ctor(System.Char[])" />
-      <Member Name="#ctor(System.Char[],System.Int32,System.Int32)" />      
+      <Member Name="#ctor(System.Char[],System.Int32,System.Int32)" />
       <Member Name="#ctor(System.SByte*)" />
       <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32)" />
       <Member Name="Compare(System.String,System.Int32,System.String,System.Int32,System.Int32,System.Globalization.CultureInfo,System.Globalization.CompareOptions)" />
@@ -7353,17 +6425,14 @@
     </Type>
     <Type Name="System.Text.Decoder">
       <Member Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="Convert(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="Convert(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="Convert(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" />      
+      <Member Name="Convert(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" />
+      <Member Name="Convert(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" />
       <Member Name="get_Fallback" />
       <Member Name="get_FallbackBuffer" />
-      <Member Status="ApiFxInternal" Name="GetCharCount(System.Byte*,System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetCharCount(System.Byte*,System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetCharCount(System.Byte*,System.Int32,System.Boolean)" />
       <Member Name="GetCharCount(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="GetCharCount(System.Byte[],System.Int32,System.Int32,System.Boolean)" />      
-      <Member Status="ApiFxInternal" Name="GetChars(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetChars(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetCharCount(System.Byte[],System.Int32,System.Int32,System.Boolean)" />
+      <Member Name="GetChars(System.Byte*,System.Int32,System.Char*,System.Int32,System.Boolean)" />
       <Member Name="GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32)" />
       <Member Name="GetChars(System.Byte[],System.Int32,System.Int32,System.Char[],System.Int32,System.Boolean)" />
       <Member Name="Reset" />
@@ -7401,14 +6470,6 @@
       <Member MemberType="Property" Name="DefaultString" />
       <Member MemberType="Property" Name="MaxCharCount" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.Text.DecoderReplacementFallbackBuffer">
-      <Member Status="ApiRoot" Name="#ctor(System.Text.DecoderReplacementFallback)" />
-      <Member Status="ApiRoot" Name="Fallback(System.Byte[],System.Int32)" />
-      <Member Status="ApiRoot" Name="get_Remaining" />
-      <Member Status="ApiRoot" Name="GetNextChar" />
-      <Member Status="ApiRoot" Name="Reset" />
-      <Member Status="ApiRoot" MemberType="Property" Name="Remaining" />
-    </Type>
     <Type Name="System.Text.DecoderExceptionFallback">
       <Member Name="#ctor" />
       <Member Name="CreateFallbackBuffer" />
@@ -7416,14 +6477,6 @@
       <Member Name="get_MaxCharCount" />
       <Member Name="GetHashCode" />
       <Member MemberType="Property" Name="MaxCharCount" />
-    </Type>
-    <Type  Status="ApiFxInternal" Name="System.Text.DecoderExceptionFallbackBuffer">
-      <Member Status="ApiRoot" Name="#ctor" />
-      <Member Status="ApiRoot" Name="Fallback(System.Byte[],System.Int32)" />
-      <Member Status="ApiRoot" Name="get_Remaining" />
-      <Member Status="ApiRoot" Name="GetNextChar" />
-      <Member Status="ApiRoot" Name="Throw(System.Byte[],System.Int32)" />
-      <Member Status="ApiRoot" MemberType="Property" Name="Remaining" />
     </Type>
     <Type Name="System.Text.DecoderFallbackException">
       <Member Name="#ctor" />
@@ -7437,16 +6490,13 @@
     </Type>  
     <Type Name="System.Text.Encoder">
       <Member Name="#ctor" />      
-      <Member Status="ApiFxInternal" Name="Convert(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="Convert(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="Convert(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" />
       <Member Name="Convert(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32,System.Int32,System.Boolean,System.Int32@,System.Int32@,System.Boolean@)" />
       <Member Name="get_Fallback" />
       <Member Name="get_FallbackBuffer" />
-      <Member Status="ApiFxInternal" Name="GetByteCount(System.Char*,System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetByteCount(System.Char*,System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetByteCount(System.Char*,System.Int32,System.Boolean)" />
       <Member Name="GetByteCount(System.Char[],System.Int32,System.Int32,System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetBytes(System.Char*,System.Int32,System.Byte*,System.Int32,System.Boolean)" />
       <Member Name="GetBytes(System.Char[],System.Int32,System.Int32,System.Byte[],System.Int32,System.Boolean)" />
       <Member Name="Reset" />
       <Member Name="set_Fallback(System.Text.EncoderFallback)" />
@@ -7484,16 +6534,6 @@
       <Member MemberType="Property" Name="DefaultString" />
       <Member MemberType="Property" Name="MaxCharCount" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.Text.EncoderReplacementFallbackBuffer">
-      <Member Status="ApiRoot" Name="#ctor(System.Text.EncoderReplacementFallback)" />
-      <Member Status="ApiRoot" Name="Fallback(System.Char,System.Char,System.Int32)" />
-      <Member Status="ApiRoot" Name="Fallback(System.Char,System.Int32)" />
-      <Member Status="ApiRoot" Name="get_Remaining" />
-      <Member Status="ApiRoot" Name="GetNextChar" />
-      <Member Status="ApiRoot" Name="MovePrevious" />
-      <Member Status="ApiRoot" Name="Reset" />
-      <Member Status="ApiRoot" MemberType="Property" Name="Remaining" />
-    </Type>
     <Type Name="System.Text.EncoderExceptionFallback">
       <Member Name="#ctor" />
       <Member Name="CreateFallbackBuffer" />
@@ -7501,15 +6541,6 @@
       <Member Name="get_MaxCharCount" />
       <Member Name="GetHashCode" />
       <Member MemberType="Property" Name="MaxCharCount" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Text.EncoderExceptionFallbackBuffer">
-      <Member Status="ApiRoot" Name="#ctor" />
-      <Member Status="ApiRoot" Name="Fallback(System.Char,System.Char,System.Int32)" />
-      <Member Status="ApiRoot" Name="Fallback(System.Char,System.Int32)" />
-      <Member Status="ApiRoot" Name="get_Remaining" />
-      <Member Status="ApiRoot" Name="GetNextChar" />
-      <Member Status="ApiRoot" Name="MovePrevious" />
-      <Member Status="ApiRoot" MemberType="Property" Name="Remaining" />
     </Type>
     <Type Name="System.Text.EncoderFallbackException">
       <Member Name="#ctor" />
@@ -7808,7 +6839,7 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
-    <Type Name="System.Threading.Mutex" Condition="FEATURE_LEGACYNETCF">
+    <Type Name="System.Threading.Mutex">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Boolean)" />
       <Member Name="#ctor(System.Boolean,System.String)" />
@@ -7883,8 +6914,6 @@
       <Member Name="OperationStarted"/>
       <Member Name="OperationCompleted"/>
       <Member Name="SetSynchronizationContext(System.Threading.SynchronizationContext)"/>
-      <Member Status="ApiFxInternal" Name="SetThreadStaticContext(System.Threading.SynchronizationContext)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="SetThreadStaticContext(System.Threading.SynchronizationContext)" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="get_Current"/>
       <Member Name="CreateCopy"/>
       <Member MemberType="Property" Name="Current"/>
@@ -7898,7 +6927,6 @@
       <Member Name="#ctor(System.Threading.ThreadStart)" />
       <Member Name="#ctor(System.Threading.ParameterizedThreadStart)" />
       <Member Name="MemoryBarrier" />
-      <Member Name="Abort" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="Finalize" />
       <Member Name="get_CurrentCulture" />
       <Member Name="get_CurrentThread" />
@@ -7939,7 +6967,6 @@
       <Member Name="QueueUserWorkItem(System.Threading.WaitCallback,System.Object)" />
       <Member Name="SetMaxThreads(System.Int32,System.Int32)" />
       <Member Name="BindHandle(System.Runtime.InteropServices.SafeHandle)" />
-      <Member Status="ApiFxInternal" Name="UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped*)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.UInt32,System.Boolean)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int32,System.Boolean)" />
       <Member Name="RegisterWaitForSingleObject(System.Threading.WaitHandle,System.Threading.WaitOrTimerCallback,System.Object,System.Int64,System.Boolean)" />
@@ -7970,7 +6997,6 @@
     </Type>
     <Type Name="System.Threading.Overlapped">
       <Member Name="#ctor" />            
-      <Member Status="ApiFxInternal" Name="#ctor(System.Int32,System.Int32,System.IntPtr,System.IAsyncResult)" Condition="FEATURE_COMINTEROP" />
       <Member MemberType="Property" Name="AsyncResult" />
       <Member MemberType="Property" Name="OffsetLow" />
       <Member MemberType="Property" Name="OffsetHigh" />
@@ -8051,22 +7077,18 @@
       <Member Name="Close" />
       <Member Name="Dispose" />
       <Member Name="Dispose(System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="get_SafeWaitHandle" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="get_SafeWaitHandle" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="set_SafeWaitHandle(Microsoft.Win32.SafeHandles.SafeWaitHandle)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="set_SafeWaitHandle(Microsoft.Win32.SafeHandles.SafeWaitHandle)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_SafeWaitHandle" />
+      <Member Name="set_SafeWaitHandle(Microsoft.Win32.SafeHandles.SafeWaitHandle)" />
       <Member Name="WaitAny(System.Threading.WaitHandle[])" />
       <Member Name="WaitAny(System.Threading.WaitHandle[],System.Int32)" />
       <Member Name="WaitAny(System.Threading.WaitHandle[],System.TimeSpan)" />
       <Member Name="WaitAll(System.Threading.WaitHandle[])" />
       <Member Name="WaitAll(System.Threading.WaitHandle[],System.Int32)" />
       <Member Name="WaitAll(System.Threading.WaitHandle[],System.TimeSpan)" />
-      <Member  Status="ApiFxInternal" Name="WaitAny(System.Threading.WaitHandle[],System.Int32,System.Boolean)" />
       <Member Name="WaitOne" />
       <Member Name="WaitOne(System.Int32)" />
       <Member Name="WaitOne(System.TimeSpan)" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="SafeWaitHandle" Condition="not FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="SafeWaitHandle" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="SafeWaitHandle" />
     </Type>
    <Type Name="System.Threading.WaitHandleExtensions">
       <Member Name="GetSafeWaitHandle(System.Threading.WaitHandle)" />
@@ -8194,11 +7216,11 @@
       <Member MemberType="Property" Name="Local" />
       <Member MemberType="Property" Name="Utc" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.TimeZoneInfo+AdjustmentRule">
+    <Type Name="System.TimeZoneInfo+AdjustmentRule">
       <!-- CreateAdjustmentRule doesn't have a public contract, but tests and other callers can use Reflection to invoke it, so ensure it is left in mscorlib. -->
       <Member Status="ApiRoot" Name="CreateAdjustmentRule(System.DateTime,System.DateTime,System.TimeSpan,System.TimeZoneInfo+TransitionTime,System.TimeZoneInfo+TransitionTime)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.TimeZoneInfo+TransitionTime">
+    <Type Name="System.TimeZoneInfo+TransitionTime">
     </Type>
     <Type Name="System.Tuple">
       <Member Name="Create&lt;T1&gt;(T1)" />
@@ -8339,24 +7361,19 @@
       <Member Name="Equals(System.Object)" />
       <Member Name="Equals(System.Type)" />
       <Member Name="FindMembers(System.Reflection.MemberTypes,System.Reflection.BindingFlags,System.Reflection.MemberFilter,System.Object)" />
-      <!--
-      <Member Name="get_IsSecurityCritical" />
-      <Member Name="get_IsSecuritySafeCritical" />
-      <Member Name="get_IsSecurityTransparent" />
-      -->
       <Member Name="get_Assembly" />
       <Member Name="get_AssemblyQualifiedName" />
       <Member Name="get_Attributes" />
       <Member Name="get_BaseType" />
       <Member Name="get_ContainsGenericParameters" />
       <Member Name="get_DeclaringType" />
-      <Member Name="get_DeclaringMethod" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_DeclaringMethod" />
       <Member Name="get_DefaultBinder" />
       <Member Name="get_FullName" />
-      <Member Name="get_GenericParameterAttributes" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="get_GenericParameterPosition" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_GenericParameterAttributes" />
+      <Member Name="get_GenericParameterPosition" />
       <Member Name="get_GenericTypeArguments" />
-      <Member Name="get_GUID" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="get_GUID" />
       <Member Name="get_HasElementType" />
       <Member Name="get_IsAbstract" />
       <Member Name="get_IsAnsiClass" />
@@ -8420,8 +7437,8 @@
       <Member Name="GetGenericParameterConstraints" />
       <Member Name="GetGenericTypeDefinition" />
       <Member Name="GetHashCode" />
-      <Member Name="GetInterface(System.String,System.Boolean)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetInterfaceMap(System.Type)" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="GetInterface(System.String,System.Boolean)" />
+      <Member Name="GetInterfaceMap(System.Type)" />
       <Member Name="GetInterfaces" />
       <Member Name="GetMember(System.String)" />
       <Member Name="GetMember(System.String,System.Reflection.BindingFlags)" />
@@ -8467,11 +7484,11 @@
       <Member Name="IsSubclassOf(System.Type)" />
       <Member Name="IsEquivalentTo(System.Type)" />
       <Member Name="IsValueTypeImpl" />
-      <Member Name="MakeArrayType" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="MakeArrayType(System.Int32)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="MakeByRefType" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="MakeArrayType" />
+      <Member Name="MakeArrayType(System.Int32)" />
+      <Member Name="MakeByRefType" />
       <Member Name="MakeGenericType(System.Type[])" />
-      <Member Name="MakePointerType" Condition="FEATURE_LEGACYNETCF" />
+      <Member Name="MakePointerType" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="Assembly" />
       <Member MemberType="Property" Name="AssemblyQualifiedName" />
@@ -8479,13 +7496,13 @@
       <Member MemberType="Property" Name="BaseType" />
       <Member MemberType="Property" Name="ContainsGenericParameters" />
       <Member MemberType="Property" Name="DeclaringType" />
-      <Member MemberType="Property" Name="DeclaringMethod" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="DeclaringMethod" />
       <Member MemberType="Property" Name="DefaultBinder" />
       <Member MemberType="Property" Name="FullName" />
-      <Member MemberType="Property" Name="GenericParameterAttributes" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="GenericParameterPosition" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="GenericParameterAttributes" />
+      <Member MemberType="Property" Name="GenericParameterPosition" />
       <Member MemberType="Property" Name="GenericTypeArguments" />
-      <Member MemberType="Property" Name="GUID" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="GUID" />
       <Member MemberType="Property" Name="HasElementType" />
       <Member MemberType="Property" Name="IsAbstract" />
       <Member MemberType="Property" Name="IsAnsiClass" />
@@ -8797,45 +7814,6 @@
       <Member MemberType="Property" Name="Version" />
     </Type>
 
-<!-- smosier added for security API -->
-    <Type Status="ApiFxInternal" Name="System.Security.SecurityManager">
-      <Member Status="ImplRoot" Name="GetSpecialFlags(System.Security.PermissionSet,System.Security.PermissionSet)" /> <!-- EE -->
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionAttribute">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.Security.Permissions.SecurityAction)" />
-      <Member Name="get_ExternalProcessMgmt" />
-      <Member Name="get_ExternalThreading" />
-      <Member Name="get_MayLeakOnAbort" />
-      <Member Name="get_Resources" />
-      <Member Name="get_SecurityInfrastructure" />
-      <Member Name="get_SelfAffectingProcessMgmt" />
-      <Member Name="get_SelfAffectingThreading" />
-      <Member Name="get_SharedState" />
-      <Member Name="get_Synchronization" />
-      <Member Name="get_UI" />
-      <Member Name="set_ExternalProcessMgmt(System.Boolean)" />
-      <Member Name="set_ExternalThreading(System.Boolean)" />
-      <Member Name="set_MayLeakOnAbort(System.Boolean)" />
-      <Member Name="set_Resources(System.Security.Permissions.HostProtectionResource)" />
-      <Member Name="set_SecurityInfrastructure(System.Boolean)" />
-      <Member Name="set_SelfAffectingProcessMgmt(System.Boolean)" />
-      <Member Name="set_SelfAffectingThreading(System.Boolean)" />
-      <Member Name="set_SharedState(System.Boolean)" />
-      <Member Name="set_Synchronization(System.Boolean)" />
-      <Member Name="set_UI(System.Boolean)" />
-      <Member MemberType="Property" Name="ExternalProcessMgmt" />
-      <Member MemberType="Property" Name="ExternalThreading" />
-      <Member MemberType="Property" Name="MayLeakOnAbort" />
-      <Member MemberType="Property" Name="Resources" />
-      <Member MemberType="Property" Name="SecurityInfrastructure" />
-      <Member MemberType="Property" Name="SelfAffectingProcessMgmt" />
-      <Member MemberType="Property" Name="SelfAffectingThreading" />
-      <Member MemberType="Property" Name="SharedState" />
-      <Member MemberType="Property" Name="Synchronization" />
-      <Member MemberType="Property" Name="UI" />
-    </Type>
-    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionResource" />
 
     <Type Name="System.IO.BinaryReader">
       <Member Name="#ctor(System.IO.Stream)" />
@@ -8903,75 +7881,6 @@
       <Member Name="Write7BitEncodedInt(System.Int32)" />
       <Member MemberType="Property" Name="BaseStream" />
     </Type>
-    <Type Name="System.IO.Directory" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="CreateDirectory(System.String)" />
-      <Member Name="Delete(System.String)" />
-      <Member Name="Delete(System.String,System.Boolean)" />
-      <Member Name="Exists(System.String)" />
-      <Member Name="GetCreationTime(System.String)" />
-      <Member Name="GetCurrentDirectory" />
-      <Member Name="GetDirectories(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetDirectories(System.String,System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFiles(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFiles(System.String,System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFileSystemEntries(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFileSystemEntries(System.String,System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="EnumerateDirectories(System.String)"/>
-      <Member Name="EnumerateDirectories(System.String,System.String)" />
-      <Member Name="EnumerateDirectories(System.String,System.String,System.IO.SearchOption)" />
-      <Member Name="GetDirectoryRoot(System.String)" />
-      <Member Name="EnumerateFiles(System.String)" />
-      <Member Name="EnumerateFiles(System.String,System.String)" />
-      <Member Name="EnumerateFiles(System.String,System.String,System.IO.SearchOption)" />
-      <Member Name="EnumerateFileSystemEntries(System.String)" />
-      <Member Name="EnumerateFileSystemEntries(System.String,System.String)" />
-      <Member Name="EnumerateFileSystemEntries(System.String,System.String,System.IO.SearchOption)" />
-      <Member Name="GetLastAccessTime(System.String)" />
-      <Member Name="GetLastWriteTime(System.String)" />
-      <Member Name="Move(System.String,System.String)" />
-      <Member Status="ApiFxInternal" Name="SetCurrentDirectory(System.String)" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="SetCurrentDirectory(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Status="ApiFxInternal" Name="UnsafeCreateDirectory(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeDelete(System.String,System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="UnsafeExists(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetCurrentDirectory" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetDirectories(System.String,System.String,System.IO.SearchOption)" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetFiles(System.String,System.String,System.IO.SearchOption)" />
-      <Member Status="ApiFxInternal" Name="UnsafeMove(System.String,System.String)" />
-    </Type>
-    <Type Name="System.IO.DirectoryInfo" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.String)" />
-      <Member Name="Create" />
-      <Member Name="CreateSubdirectory(System.String)" />
-      <Member Name="Delete" />
-      <Member Name="Delete(System.Boolean)" />
-      <Member Name="get_Exists" />
-      <Member Name="get_Name" />
-      <Member Name="get_Parent" />
-      <Member Name="get_Root" />
-      <Member Name="GetDirectories" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetDirectories(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFiles" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFiles(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFileSystemInfos" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="GetFileSystemInfos(System.String)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="EnumerateDirectories" />
-      <Member Name="EnumerateDirectories(System.String)"/>
-      <Member Name="EnumerateDirectories(System.String,System.IO.SearchOption)"/>
-      <Member Name="EnumerateFiles"/>
-      <Member Name="EnumerateFiles(System.String)"/>
-      <Member Name="EnumerateFiles(System.String,System.IO.SearchOption)"/>
-      <Member Name="EnumerateFileSystemInfos"/>
-      <Member Name="EnumerateFileSystemInfos(System.String)"/>
-      <Member Name="EnumerateFileSystemInfos(System.String,System.IO.SearchOption)"/>
-      <Member Name="MoveTo(System.String)"  />
-      <Member Status="ApiFxInternal" Name="UnsafeCreateDirectoryInfo(System.String)" />
-      <Member Name="ToString" />
-      <Member MemberType="Property" Name="Exists" />
-      <Member MemberType="Property" Name="Name" />
-      <Member MemberType="Property" Name="Parent" />
-      <Member MemberType="Property" Name="Root" />
-    </Type>
     <Type Name="System.IO.DirectoryNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -8982,110 +7891,6 @@
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
     </Type>
-    <Type Name="System.IO.File" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="AppendAllLines(System.String,System.Collections.Generic.IEnumerable&lt;System.String&gt;)"/>
-      <Member Name="AppendAllLines(System.String,System.Collections.Generic.IEnumerable&lt;System.String&gt;,System.Text.Encoding)"  />
-      <Member Name="AppendAllText(System.String,System.String)"  />
-      <Member Name="AppendAllText(System.String,System.String,System.Text.Encoding)"  />
-      <Member Name="AppendText(System.String)" />
-      <Member Name="Copy(System.String,System.String)" />
-      <Member Name="Copy(System.String,System.String,System.Boolean)" />
-      <Member Name="Create(System.String)" />
-      <Member Name="Create(System.String,System.Int32)" />
-      <Member Name="CreateText(System.String)" />
-      <Member Name="Delete(System.String)" />
-      <Member Name="Exists(System.String)" />
-      <Member Name="GetAttributes(System.String)"/>
-      <Member Name="GetCreationTime(System.String)" />
-      <Member Name="GetLastAccessTime(System.String)" />
-      <Member Name="GetLastWriteTime(System.String)" />
-      <Member Name="Move(System.String,System.String)" />
-      <Member Name="Open(System.String,System.IO.FileMode)" />
-      <Member Name="Open(System.String,System.IO.FileMode,System.IO.FileAccess)" />
-      <Member Name="Open(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare)" />
-      <Member Name="OpenRead(System.String)" />
-      <Member Name="OpenText(System.String)" />
-      <Member Name="OpenWrite(System.String)" />
-      <Member Name="ReadAllBytes(System.String)" />
-      <Member Name="ReadAllText(System.String)" />
-      <Member Name="ReadAllText(System.String,System.Text.Encoding)" />
-      <Member Name="ReadLines(System.String)" />
-      <Member Name="ReadLines(System.String,System.Text.Encoding)" />
-      <Member Status="ApiFxInternal" Name="UnsafeCopy(System.String,System.String,System.Boolean)" />
-      <Member Status="ApiFxInternal" Name="UnsafeDelete(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeExists(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeMove(System.String,System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeReadAllBytes(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeReadAllText(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeWriteAllBytes(System.String,System.Byte[])" />
-      <Member Status="ApiFxInternal" Name="UnsafeWriteAllText(System.String,System.String)" />
-      <Member Name="SetAttributes(System.String,System.IO.FileAttributes)" />
-      <Member Name="WriteAllBytes(System.String,System.Byte[])" />
-      <Member Name="WriteAllLines(System.String,System.Collections.Generic.IEnumerable&lt;System.String&gt;)" />
-      <Member Name="WriteAllLines(System.String,System.Collections.Generic.IEnumerable&lt;System.String&gt;,System.Text.Encoding)" />
-      <Member Name="WriteAllText(System.String,System.String)" />
-      <Member Name="WriteAllText(System.String,System.String,System.Text.Encoding)" />
-    </Type>
-    <Type Name="System.IO.FileAccess" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Read" />
-      <Member MemberType="Field" Name="ReadWrite" />
-      <Member MemberType="Field" Name="value__" />
-      <Member MemberType="Field" Name="Write" />
-    </Type>
-    <Type Name="System.IO.FileAttributes" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Archive" />
-      <Member MemberType="Field" Name="Compressed" />
-      <Member MemberType="Field" Name="Device" />
-      <Member MemberType="Field" Name="Directory" />
-      <Member MemberType="Field" Name="Encrypted" />
-      <Member MemberType="Field" Name="Hidden" />
-      <Member MemberType="Field" Name="Normal" />
-      <Member MemberType="Field" Name="NotContentIndexed" />
-      <Member MemberType="Field" Name="Offline" />
-      <Member MemberType="Field" Name="ReadOnly" />
-      <Member MemberType="Field" Name="ReparsePoint" />
-      <Member MemberType="Field" Name="SparseFile" />
-      <Member MemberType="Field" Name="System" />
-      <Member MemberType="Field" Name="Temporary" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
-    <Type Name="System.IO.FileInfo" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.String)" />
-      <Member Name="AppendText" />
-      <Member Name="CopyTo(System.String)" />
-      <Member Name="CopyTo(System.String,System.Boolean)" />
-      <Member Name="Create" />
-      <Member Name="CreateText" />
-      <Member Name="Delete" />
-      <Member Name="get_Directory" />
-      <Member Name="get_DirectoryName" />
-      <Member Name="get_Exists" />
-      <Member Name="get_Length" />
-      <Member Name="get_Name" />
-      <Member Name="MoveTo(System.String)" />
-      <Member Name="Open(System.IO.FileMode)" />
-      <Member Name="Open(System.IO.FileMode,System.IO.FileAccess)" />
-      <Member Name="Open(System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare)" />
-      <Member Name="OpenRead" />
-      <Member Name="OpenText" />
-      <Member Name="OpenWrite" />
-      <Member Status="ApiFxInternal" Name="UnsafeCreateFileInfo(System.String)" />
-      <Member Name="ToString" />
-      <Member MemberType="Property" Name="Directory" />
-      <Member MemberType="Property" Name="DirectoryName" />
-      <Member MemberType="Property" Name="Exists" />
-      <Member MemberType="Property" Name="Length" />
-      <Member MemberType="Property" Name="Name" />
-    </Type>
-    <Type Name="System.IO.FileMode" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="Append" />
-      <Member MemberType="Field" Name="Create" />
-      <Member MemberType="Field" Name="CreateNew" />
-      <Member MemberType="Field" Name="Open" />
-      <Member MemberType="Field" Name="OpenOrCreate" />
-      <Member MemberType="Field" Name="Truncate" />
-      <Member MemberType="Field" Name="value__" />
-    </Type>
     <Type Name="System.IO.FileNotFoundException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
@@ -9095,83 +7900,6 @@
       <Member Name="get_FileName" />
       <Member MemberType="Property" Name="FileName" />
       <Member Status="ImplRoot" Name="#ctor(System.String,System.String,System.Int32)" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.FileSecurityState"  Condition="not FEATURE_LEGACYNETCFIOSECURITY">
-      <Member Name="EnsureState" />
-      <Member Name="get_Path" />
-      <Member MemberType="Property" Name="Path" />
-    </Type>
-    <Type Name="System.IO.FileShare" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="None" />
-      <Member MemberType="Field" Name="Read" />
-      <Member MemberType="Field" Name="ReadWrite" />
-      <Member MemberType="Field" Name="value__" />
-      <Member MemberType="Field" Name="Write" />
-    </Type>
-    <Type Name="System.IO.FileStream" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor(System.String,System.IO.FileMode)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.Int32,System.Boolean)" />
-      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess)"  />
-      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32)"  />
-      <Member Name="#ctor(Microsoft.Win32.SafeHandles.SafeFileHandle,System.IO.FileAccess,System.Int32,System.Boolean)"  />
-      <Member Name="BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
-      <Member Name="BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="EndRead(System.IAsyncResult)" />
-      <Member Name="EndWrite(System.IAsyncResult)" />
-      <Member Name="Finalize" />
-      <Member Name="Flush" />
-      <Member Name="Flush(System.Boolean)" />
-      <Member Name="FlushAsync(System.Threading.CancellationToken)" />
-      <Member Name="get_CanRead" />
-      <Member Name="get_CanSeek" />
-      <Member Name="get_CanWrite" />
-      <Member Name="get_IsAsync" />
-      <Member Name="get_Length" />
-      <Member Name="get_Name" />
-      <Member Name="get_Position" />
-      <Member Name="get_SafeFileHandle" />
-      <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="ReadByte" />
-      <Member Name="ReadAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)"  />
-      <Member Name="Seek(System.Int64,System.IO.SeekOrigin)" />
-      <Member Name="set_Position(System.Int64)" />
-      <Member Name="SetLength(System.Int64)" />
-      <Member Name="Write(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="WriteAsync(System.Byte[],System.Int32,System.Int32,System.Threading.CancellationToken)"  />
-      <Member Name="WriteByte(System.Byte)" />
-      <Member MemberType="Property" Name="CanRead" />
-      <Member MemberType="Property" Name="CanSeek" />
-      <Member MemberType="Property" Name="CanWrite" />
-      <Member MemberType="Property" Name="Length" />
-      <Member MemberType="Property" Name="Name" />
-      <Member MemberType="Property" Name="Position" />
-    </Type>
-    <Type Name="System.IO.FileSystemInfo" Condition="FEATURE_LEGACYSURFACE">
-      <Member MemberType="Field" Name="FullPath" />
-      <Member MemberType="Field" Name="OriginalPath" />
-      <Member Name="#ctor" />
-      <Member Name="Delete" />
-      <Member Name="get_Attributes" />
-      <Member Name="get_CreationTime" />
-      <Member Name="get_Exists" />
-      <Member Name="get_Extension" />
-      <Member Name="get_FullName" />
-      <Member Name="get_LastAccessTime" />
-      <Member Name="get_LastWriteTime" />
-      <Member Name="get_Name" />
-      <Member Status="ApiFxInternal" Name="get_UnsafeGetFullName" />
-      <Member Name="Refresh" />
-      <Member Name="set_Attributes(System.IO.FileAttributes)" />
-      <Member MemberType="Property" Name="Attributes" />
-      <Member MemberType="Property" Name="Exists" />
-      <Member MemberType="Property" Name="Extension" />
-      <Member MemberType="Property" Name="FullName" />
-      <Member MemberType="Property" Name="Name" />
-      <Member Status="ApiFxInternal" MemberType="Property" Name="UnsafeGetFullName" />
     </Type>
     <Type Name="System.IO.IOException">
       <Member Name="#ctor" />
@@ -9218,31 +7946,6 @@
       <Member MemberType="Property" Name="Length" />
       <Member MemberType="Property" Name="Position" />
       <Member Status="ApiFxInternal" Name="InternalGetOriginAndLength(System.Int32@,System.Int32@)" Condition="FEATURE_COMINTEROP" />
-    </Type>
-    <Type Name="System.IO.Path">
-      <Member MemberType="Field" Name="AltDirectorySeparatorChar" />
-      <Member MemberType="Field" Name="DirectorySeparatorChar" />
-      <Member MemberType="Field" Name="PathSeparator" />
-      <Member MemberType="Field" Name="VolumeSeparatorChar" />
-      <Member Name="ChangeExtension(System.String,System.String)" />
-      <Member Name="Combine(System.String,System.String)" />
-      <Member Name="Combine(System.String,System.String,System.String)"  />
-      <Member Name="Combine(System.String[])"  />
-      <Member Name="GetDirectoryName(System.String)" />
-      <Member Name="GetExtension(System.String)" />
-      <Member Name="GetFileName(System.String)" />
-      <Member Name="GetFileNameWithoutExtension(System.String)" />
-      <Member Name="GetFullPath(System.String)" />
-      <Member Name="GetInvalidPathChars" />
-      <Member Name="GetInvalidFileNameChars"  />
-      <Member Name="GetPathRoot(System.String)" />
-      <Member Name="GetRandomFileName"  />
-      <Member Name="GetTempFileName" />
-      <Member Name="GetTempPath" />
-      <Member Name="HasExtension(System.String)" />
-      <Member Name="IsPathRooted(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetFullPath(System.String)" />
-      <Member Status="ApiFxInternal" Name="UnsafeGetTempFileName" />
     </Type>
     <Type Name="System.IO.PathTooLongException">
       <Member Name="#ctor" />
@@ -9536,7 +8239,6 @@
       <Member Name="#ctor(System.Byte*,System.Int64,System.Int64,System.IO.FileAccess)" />
       <Member Name="#ctor(System.Runtime.InteropServices.SafeBuffer,System.Int64,System.Int64)" />
       <Member Name="#ctor(System.Runtime.InteropServices.SafeBuffer,System.Int64,System.Int64,System.IO.FileAccess)" />
-      <Member Status="ApiFxInternal" Name="#ctor(System.Byte*,System.Int64,System.Int64,System.IO.FileAccess,System.Boolean)" />
       <Member Name="Dispose(System.Boolean)" />
       <Member Name="Flush" />
       <Member Name="get_CanRead" />
@@ -9545,8 +8247,7 @@
       <Member Name="get_Capacity" />        
       <Member Name="get_Length" />
       <Member Name="get_Position" />      
-      <Member Status="ApiFxInternal" Name="get_PositionPointer" Condition="not FEATURE_LEGACYNETCF" /> 
-      <Member Name="get_PositionPointer" Condition="FEATURE_LEGACYNETCF" /> 
+      <Member Name="get_PositionPointer" /> 
       <Member Name="Initialize(System.Byte*,System.Int64,System.Int64,System.IO.FileAccess)" />
       <Member Name="Initialize(System.Runtime.InteropServices.SafeBuffer,System.Int64,System.Int64,System.IO.FileAccess)" />
       <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
@@ -9562,133 +8263,8 @@
       <Member MemberType="Property" Name="Capacity" />
       <Member MemberType="Property" Name="Length" />
       <Member MemberType="Property" Name="Position" /> 
-      <Member MemberType="Property" Name="PositionPointer" Condition="FEATURE_LEGACYNETCF" /> 
+      <Member MemberType="Property" Name="PositionPointer" /> 
     </Type>          
-    <Type Name="System.IO.IsolatedStorage.IsolatedStorageFile" Condition="FEATURE_ISOSTORE">
-      <Member Name="Remove" />
-      <Member Name="GetUserStoreForApplication" />
-      <Member Name="GetUserStoreForSite" />
-      <Member Name="DeleteFile(System.String)" />
-      <Member Name="CreateDirectory(System.String)" />
-      <Member Name="DeleteDirectory(System.String)" />
-      <Member Name="GetFileNames" />      
-      <Member Name="GetFileNames(System.String)" />   
-      <Member Name="GetDirectoryNames" />         
-      <Member Name="GetDirectoryNames(System.String)" />
-      <Member Name="FileExists(System.String)" />
-      <Member Name="DirectoryExists(System.String)" />             
-      <Member Name="OpenFile(System.String,System.IO.FileMode)" />        
-      <Member Name="OpenFile(System.String,System.IO.FileMode,System.IO.FileAccess)" />       
-      <Member Name="OpenFile(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare)" />       
-      <Member Name="CreateFile(System.String)" />         
-      <Member Name="Dispose" />       
-      <Member Name="IncreaseQuotaTo(System.Int64)" />
-      <Member Name="GetCreationTime(System.String)" />
-      <Member Name="GetLastAccessTime(System.String)" />
-      <Member Name="GetLastWriteTime(System.String)" />
-      <Member Name="CopyFile(System.String,System.String)" />
-      <Member Name="CopyFile(System.String,System.String,System.Boolean)" />
-      <Member Name="MoveFile(System.String,System.String)" />
-      <Member Name="MoveDirectory(System.String,System.String)" />
-      <Member MemberType="Property" Name="UsedSize" />    
-      <Member MemberType="Property" Name="Quota" />   
-      <Member MemberType="Property" Name="AvailableFreeSpace" />
-      <Member MemberType="Property" Name="IsEnabled" />
-      <Member Name="get_UsedSize" />      
-      <Member Name="get_AvailableFreeSpace" />    
-      <Member Name="get_Quota" />
-      <Member Name="get_IsEnabled" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.IsolatedStorage.IsolatedStorageFileIOHelperBase" Condition="FEATURE_ISOSTORE"> <!-- FEATURE_LEGACYNETCF -->
-      <Member Status="ApiFxInternal" Name="#ctor" />
-      <Member Status="ApiFxInternal" Name="UnsafeMoveFile(System.String,System.String)" />
-    </Type>
-    <Type Name="System.IO.IsolatedStorage.IsolatedStorageFileStream"  Condition="FEATURE_ISOSTORE">
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.IsolatedStorage.IsolatedStorageFile)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.IsolatedStorage.IsolatedStorageFile)" />
-      <Member Name="#ctor(System.String,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.IO.IsolatedStorage.IsolatedStorageFile)" />
-      <Member MemberType="Property" Name="CanRead" />
-      <Member MemberType="Property" Name="CanSeek" />
-      <Member MemberType="Property" Name="CanWrite" />
-      <Member MemberType="Property" Name="Length" />
-      <Member MemberType="Property" Name="Name" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="Position" />
-      <Member Name="get_CanRead" />
-      <Member Name="get_CanSeek" />
-      <Member Name="get_CanWrite" />
-      <Member Name="get_Length" />
-      <Member Name="get_Name" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="get_Position" />
-      <Member Name="set_Position(System.Int64)" />
-      <Member Name="BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
-      <Member Name="BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)" />
-      <Member Name="Dispose(System.Boolean)" />
-      <Member Name="EndRead(System.IAsyncResult)" />
-      <Member Name="EndWrite(System.IAsyncResult)" />
-      <Member Name="Flush" />
-      <Member Name="Flush(System.Boolean)" />
-      <Member Name="SetLength(System.Int64)" />
-      <Member Name="Read(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="ReadByte" />
-      <Member Name="Seek(System.Int64,System.IO.SeekOrigin)" />
-      <Member Name="Write(System.Byte[],System.Int32,System.Int32)" />
-      <Member Name="WriteByte(System.Byte)" />      
-    </Type>
-    <Type Name="System.IO.IsolatedStorage.IsolatedStorageException" Condition="FEATURE_ISOSTORE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.String)" />
-      <Member Name="#ctor(System.String,System.Exception)" />   
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.IsolatedStorage.IsolatedStorageSecurityOptions" Condition="FEATURE_ISOSTORE"/>
-    <Type Status="ApiFxInternal" Name="System.IO.IsolatedStorage.IsolatedStorageSecurityState" Condition="FEATURE_ISOSTORE">
-      <Member Name="get_AvailableFreeSpace" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="set_AvailableFreeSpace(System.Int64)" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="get_AvailableFreeSpaceComputed" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Name="set_AvailableFreeSpaceComputed(System.Boolean)" Condition="FEATURE_LEGACYNETCF"/>
-      <Member Name="get_Options" />
-      <Member Name="get_Id" />
-      <Member Name="set_Id(System.String)" />
-      <Member Name="get_IsolatedStorageFolderName"  Condition="FEATURE_LEGACYNETCF"/>
-      <Member Name="set_IsolatedStorageFolderName(System.String)"  Condition="FEATURE_LEGACYNETCF"/>
-      <Member Name="get_Group" />
-      <Member Name="set_Group(System.String)" />
-      <Member Name="get_RootUserDirectory" />
-      <Member Name="set_RootUserDirectory(System.String)" />
-      <Member Name="get_UsedSize" />
-      <Member Name="get_Quota" />
-      <Member Name="set_Quota(System.Int64)" />
-      <Member Name="CreateStateToGetRootUserDirectory" />
-      <Member Name="CreateStateToGetGroupAndIdForApplication" />
-      <Member Name="CreateStateToGetGroupAndIdForSite" /> 
-      <Member Name="CreateStateToIncreaseQuotaForGroup(System.String,System.Int64,System.Int64)" />
-      <Member Name="CreateStateToCheckSetInnerException" Condition="not FEATURE_LEGACYNETCF" />
-      <Member Name="CreateStateToGetAvailableFreeSpace" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="CreateStateForIsolatedStorageFolderName" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="AvailableFreeSpace" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="AvailableFreeSpaceComputed" Condition="FEATURE_LEGACYNETCF"/>
-      <Member MemberType="Property" Name="IsolatedStorageFolderName"  Condition="FEATURE_LEGACYNETCF"/>
-      <Member MemberType="Property" Name="Options" />
-      <Member MemberType="Property" Name="Id" />
-      <Member MemberType="Property" Name="Group" />
-      <Member MemberType="Property" Name="RootUserDirectory" />
-      <Member MemberType="Property" Name="UsedSize" />
-      <Member MemberType="Property" Name="Quota" />
-      <Member Status="ApiRoot" Name="EnsureState" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.IO.IsolatedStorage.IsolatedStorageGroup" Condition="FEATURE_ISOSTORE">
-      <Member Name="get_Group" />
-      <Member Name="get_UsedSize" />
-      <Member Name="get_Quota" />
-      <Member Name="get_Enabled" />
-      <Member Name="set_Enabled(System.Boolean)" />
-      <Member MemberType="Property" Name="Group" />
-      <Member MemberType="Property" Name="UsedSize" />
-      <Member MemberType="Property" Name="Quota" />
-      <Member MemberType="Property" Name="Enabled" />
-      <Member Name="Remove" />
-      <Member Name="GetGroups" />
-      <Member Name="RemoveAll" />
-    </Type>
     <Type Name="System.Security.Permissions.SecurityAttribute">
       <Member Name="#ctor(System.Security.Permissions.SecurityAction)" />
       <Member Name="get_Action" />
@@ -10110,14 +8686,7 @@
 
     
     <Type Status="ImplRoot" Name="System.DuplicateWaitObjectException" />
-    <Type Status="ImplRoot" Name="System.IO.FileStreamAsyncResult" >
-      <Member MemberType="Field" Name="_handle" />
-      <Member MemberType="Field" Name="_overlapped" Platform="Win" />
-      <Member MemberType="Field" Name="_EndXxxCalled" />
-      <Member MemberType="Field" Name="_numBytes" />
-      <Member MemberType="Field" Name="_numBufferedBytes" />
-      <Member MemberType="Field" Name="_isWrite" />
-    </Type>
+
     <Type Status="ImplRoot" Name="System.IO.Stream+SynchronousAsyncResult">      
       <Member Name="get_AsyncState" />
       <Member Name="get_AsyncWaitHandle" />
@@ -10150,12 +8719,12 @@
     
     <Type Status="ApiRoot" Name="System.Reflection.LocalVariableInfo">
       <Member Name="#ctor" />
-      <Member Name="get_IsPinned" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="get_LocalIndex" Condition="FEATURE_LEGACYNETCF" />
-      <Member Name="get_LocalType" Condition="FEATURE_LEGACYNETCF" />
-      <Member MemberType="Property" Name="IsPinned" Condition="FEATURE_LEGACYNETCF" />            
-      <Member MemberType="Property" Name="LocalIndex" Condition="FEATURE_LEGACYNETCF" />            
-      <Member MemberType="Property" Name="LocalType" Condition="FEATURE_LEGACYNETCF" />            
+      <Member Name="get_IsPinned" />
+      <Member Name="get_LocalIndex" />
+      <Member Name="get_LocalType" />
+      <Member MemberType="Property" Name="IsPinned" />
+      <Member MemberType="Property" Name="LocalIndex" />
+      <Member MemberType="Property" Name="LocalType" />
     </Type>
     <Type Status="ImplRoot" Name="System.Reflection.MetadataImport">
       <Member Name="ThrowError(System.Int32)" /> <!-- EE -->
@@ -10172,7 +8741,6 @@
       <Member Name="op_Equality(System.Reflection.Emit.ExceptionHandler,System.Reflection.Emit.ExceptionHandler)" />
       <Member Name="op_Inequality(System.Reflection.Emit.ExceptionHandler,System.Reflection.Emit.ExceptionHandler)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.Reflection.Pointer" />
     <Type Name="System.Reflection.ReflectionTypeLoadException">
       <Member Name="#ctor(System.Type[],System.Exception[])" />
       <Member Name="#ctor(System.Type[],System.Exception[],System.String)" />              
@@ -10181,7 +8749,7 @@
       <Member Name="get_LoaderExceptions" />
       <Member Name="get_Types" />
     </Type>
-    <Type Name="System.Reflection.ResourceAttributes" Condition="FEATURE_LEGACYNETCF">
+    <Type Name="System.Reflection.ResourceAttributes">
       <Member MemberType="Field" Name="Private" />
       <Member MemberType="Field" Name="Public" />
     </Type>
@@ -10705,14 +9273,6 @@
       <Member Name="CheckHelper(System.Object,System.Security.PermissionSet,System.Security.PermissionSet,System.Security.CodeAccessPermission,System.Security.PermissionToken,System.RuntimeMethodHandleInternal,System.Reflection.RuntimeAssembly,System.Security.Permissions.SecurityAction)" /> <!-- EE -->
       <Member Name="CheckSetHelper(System.Object,System.Security.PermissionSet,System.Security.PermissionSet,System.Security.PermissionSet,System.RuntimeMethodHandleInternal,System.Reflection.RuntimeAssembly,System.Security.Permissions.SecurityAction)" /> <!-- EE -->
     </Type>
-    <Type Name="System.Security.Cryptography.CryptographicException" Condition="FEATURE_LEGACYSURFACE">
-      <Member Name="#ctor" />
-      <Member Name="#ctor(System.String)" />
-      <Member Name="#ctor(System.String,System.String)" />
-      <Member Name="#ctor(System.String,System.Exception)" />
-      <Member Name="#ctor(System.Int32)" />
-      <Member Name="ThrowCryptographicException(System.Int32)" /> <!-- EE -->
-    </Type>
     <Type Status="ImplRoot" Name="System.Security.DynamicSecurityMethodAttribute" />
     <Type Status="ImplRoot" Name="System.Security.FrameSecurityDescriptor">
       <Member MemberType="Field" Name="m_callerToken" Condition="not FEATURE_PAL" />
@@ -10793,9 +9353,6 @@
     </Type>
     <Type Name="System.Security.UnverifiableCodeAttribute">
       <Member Name="#ctor" />
-    </Type>
-    <Type Status="ApiFxInternal" Name="System.Security.SuppressUnmanagedCodeSecurityAttribute">
-      <Member Name="#ctor"/>
     </Type>
     <Type Name="System.Security.VerificationException" >
       <Member Name="#ctor" />
@@ -11622,9 +10179,6 @@
       <Member MemberType="Field" Name="cAlternateFileName" />
       <Member Name="#ctor" />
     </Type>
-    <Type Status="ApiFxInternal" Name="Microsoft.Win32.Win32Native+SECURITY_ATTRIBUTES">
-      <Member Status="ApiRoot" Name="#ctor" />
-    </Type>
     <!-- PFX Types -->
     <!-- System.Threading.Tasks namespace -->
     <Type Name="System.Threading.Tasks.TaskScheduler">
@@ -12164,10 +10718,7 @@
     </Type>
     <Type Name="System.Threading.ExecutionContext">
       <Member Name="Capture" />
-      <Member Status="ApiFxInternal" Name="IsFlowSuppressed" />
       <Member Name="Run(System.Threading.ExecutionContext,System.Threading.ContextCallback,System.Object)"/>
-      <Member Status="ApiFxInternal" Name="CreateCopy"  />
-      <Member Status="ApiFxInternal" Name="Dispose"  />
     </Type>
     <Type Name="System.Threading.CancellationToken">
       <Member Name="#ctor(System.Boolean)"/>
@@ -12344,6 +10895,10 @@
       <Member Name="get_TraceLevel" />
     </Type>
     <!--End of PFX types -->
+    <Type Name="System.Console">
+      <Member Name="Write(System.String)" />
+      <Member Name="WriteLine(System.String)" />
+      <Member Name="WriteLine" />
+    </Type>
   </Assembly>
 </ThinModel>
- 

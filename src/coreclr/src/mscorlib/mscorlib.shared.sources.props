@@ -325,13 +325,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\cominterfaces.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\Console.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleCancelEventArgs.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleColor.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleKey.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleKeyInfo.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleModifiers.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\ConsoleSpecialKey.cs" />
+    <SystemSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextMarshalException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Convert.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ContextBoundObject.cs" />
