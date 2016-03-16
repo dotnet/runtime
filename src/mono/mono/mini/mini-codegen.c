@@ -456,14 +456,23 @@ mono_print_ji (const MonoJumpInfo *ji)
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {
+	GString *buf = mono_print_ins_index_strbuf (i, ins);
+	printf ("%s\n", buf->str);
+	g_string_free (buf, TRUE);
+}
+
+GString *
+mono_print_ins_index_strbuf (int i, MonoInst *ins)
+{
 	const char *spec = ins_get_spec (ins->opcode);
+	GString *sbuf = g_string_new (NULL);
 	int num_sregs, j;
 	int sregs [MONO_MAX_SRC_REGS];
 
 	if (i != -1)
-		printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
+		g_string_append_printf (sbuf, "\t%-2d %s", i, mono_inst_name (ins->opcode));
 	else
-		printf (" %s", mono_inst_name (ins->opcode));
+		g_string_append_printf (sbuf, " %s", mono_inst_name (ins->opcode));
 	if (spec == MONO_ARCH_CPU_SPEC) {
 		gboolean dest_base = FALSE;
 		switch (ins->opcode) {
@@ -477,16 +486,16 @@ mono_print_ins_index (int i, MonoInst *ins)
 		/* This is a lowered opcode */
 		if (ins->dreg != -1) {
 			if (dest_base)
-				printf (" [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+				g_string_append_printf (sbuf, " [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
 			else
-				printf (" R%d <-", ins->dreg);
+				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
 		}
 		if (ins->sreg1 != -1)
-			printf (" R%d", ins->sreg1);
+			g_string_append_printf (sbuf, " R%d", ins->sreg1);
 		if (ins->sreg2 != -1)
-			printf (" R%d", ins->sreg2);
+			g_string_append_printf (sbuf, " R%d", ins->sreg2);
 		if (ins->sreg3 != -1)
-			printf (" R%d", ins->sreg3);
+			g_string_append_printf (sbuf, " R%d", ins->sreg3);
 
 		switch (ins->opcode) {
 		case OP_LBNE_UN:
@@ -500,39 +509,38 @@ mono_print_ins_index (int i, MonoInst *ins)
 		case OP_LBLE:
 		case OP_LBLE_UN:
 			if (!ins->inst_false_bb)
-				printf (" [B%d]", ins->inst_true_bb->block_num);
+				g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 			else
-				printf (" [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+				g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
 			break;
 		case OP_PHI:
 		case OP_VPHI:
 		case OP_XPHI:
 		case OP_FPHI: {
 			int i;
-			printf (" [%d (", (int)ins->inst_c0);
+			g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
 			for (i = 0; i < ins->inst_phi_args [0]; i++) {
 				if (i)
-					printf (", ");
-				printf ("R%d", ins->inst_phi_args [i + 1]);
+					g_string_append_printf (sbuf, ", ");
+				g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [i + 1]);
 			}
-			printf (")]");
+			g_string_append_printf (sbuf, ")]");
 			break;
 		}
 		case OP_LDADDR:
 		case OP_OUTARG_VTRETADDR:
-			printf (" R%d", ((MonoInst*)ins->inst_p0)->dreg);
+			g_string_append_printf (sbuf, " R%d", ((MonoInst*)ins->inst_p0)->dreg);
 			break;
 		case OP_REGOFFSET:
 		case OP_GSHAREDVT_ARG_REGOFFSET:
-			printf (" + 0x%lx", (long)ins->inst_offset);
+			g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
 			break;
 		default:
 			break;
 		}
 
-		printf ("\n");
 		//g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
-		return;
+		return sbuf;
 	}
 
 	if (spec [MONO_INST_DEST]) {
@@ -540,44 +548,44 @@ mono_print_ins_index (int i, MonoInst *ins)
 		if (is_soft_reg (ins->dreg, bank)) {
 			if (spec [MONO_INST_DEST] == 'b') {
 				if (ins->inst_offset == 0)
-					printf (" [R%d] <-", ins->dreg);
+					g_string_append_printf (sbuf, " [R%d] <-", ins->dreg);
 				else
-					printf (" [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+					g_string_append_printf (sbuf, " [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
 			}
 			else
-				printf (" R%d <-", ins->dreg);
+				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
 		} else if (spec [MONO_INST_DEST] == 'b') {
 			if (ins->inst_offset == 0)
-				printf (" [%s] <-", mono_arch_regname (ins->dreg));
+				g_string_append_printf (sbuf, " [%s] <-", mono_arch_regname (ins->dreg));
 			else
-				printf (" [%s + 0x%lx] <-", mono_arch_regname (ins->dreg), (long)ins->inst_offset);
+				g_string_append_printf (sbuf, " [%s + 0x%lx] <-", mono_arch_regname (ins->dreg), (long)ins->inst_offset);
 		} else
-			printf (" %s <-", mono_regname_full (ins->dreg, bank));
+			g_string_append_printf (sbuf, " %s <-", mono_regname_full (ins->dreg, bank));
 	}
 	if (spec [MONO_INST_SRC1]) {
 		int bank = sreg1_bank (spec);
 		if (is_soft_reg (ins->sreg1, bank)) {
 			if (spec [MONO_INST_SRC1] == 'b')
-				printf (" [R%d + 0x%lx]", ins->sreg1, (long)ins->inst_offset);
+				g_string_append_printf (sbuf, " [R%d + 0x%lx]", ins->sreg1, (long)ins->inst_offset);
 			else
-				printf (" R%d", ins->sreg1);
+				g_string_append_printf (sbuf, " R%d", ins->sreg1);
 		} else if (spec [MONO_INST_SRC1] == 'b')
-			printf (" [%s + 0x%lx]", mono_arch_regname (ins->sreg1), (long)ins->inst_offset);
+			g_string_append_printf (sbuf, " [%s + 0x%lx]", mono_arch_regname (ins->sreg1), (long)ins->inst_offset);
 		else
-			printf (" %s", mono_regname_full (ins->sreg1, bank));
+			g_string_append_printf (sbuf, " %s", mono_regname_full (ins->sreg1, bank));
 	}
 	num_sregs = mono_inst_get_src_registers (ins, sregs);
 	for (j = 1; j < num_sregs; ++j) {
 		int bank = sreg_bank (j, spec);
 		if (is_soft_reg (sregs [j], bank))
-			printf (" R%d", sregs [j]);
+			g_string_append_printf (sbuf, " R%d", sregs [j]);
 		else
-			printf (" %s", mono_regname_full (sregs [j], bank));
+			g_string_append_printf (sbuf, " %s", mono_regname_full (sregs [j], bank));
 	}
 
 	switch (ins->opcode) {
 	case OP_ICONST:
-		printf (" [%d]", (int)ins->inst_c0);
+		g_string_append_printf (sbuf, " [%d]", (int)ins->inst_c0);
 		break;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	case OP_X86_PUSH_IMM:
@@ -591,20 +599,20 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_IXOR_IMM:
 	case OP_SUB_IMM:
 	case OP_STORE_MEMBASE_IMM:
-		printf (" [%d]", (int)ins->inst_imm);
+		g_string_append_printf (sbuf, " [%d]", (int)ins->inst_imm);
 		break;
 	case OP_ADD_IMM:
 	case OP_LADD_IMM:
-		printf (" [%d]", (int)(gssize)ins->inst_p1);
+		g_string_append_printf (sbuf, " [%d]", (int)(gssize)ins->inst_p1);
 		break;
 	case OP_I8CONST:
-		printf (" [%lld]", (long long)ins->inst_l);
+		g_string_append_printf (sbuf, " [%lld]", (long long)ins->inst_l);
 		break;
 	case OP_R8CONST:
-		printf (" [%f]", *(double*)ins->inst_p0);
+		g_string_append_printf (sbuf, " [%f]", *(double*)ins->inst_p0);
 		break;
 	case OP_R4CONST:
-		printf (" [%f]", *(float*)ins->inst_p0);
+		g_string_append_printf (sbuf, " [%f]", *(float*)ins->inst_p0);
 		break;
 	case OP_CALL:
 	case OP_CALL_MEMBASE:
@@ -629,22 +637,22 @@ mono_print_ins_index (int i, MonoInst *ins)
 			 * JIT passes them to backends.
 			 */
 			if (ins->dreg != -1)
-				printf (" R%d <-", ins->dreg);
+				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
 		}
 
 		if (call->method) {
 			char *full_name = mono_method_full_name (call->method, TRUE);
-			printf (" [%s]", full_name);
+			g_string_append_printf (sbuf, " [%s]", full_name);
 			g_free (full_name);
 		} else if (call->fptr_is_patch) {
 			MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
 
-			printf (" ");
+			g_string_append_printf (sbuf, " ");
 			mono_print_ji (ji);
 		} else if (call->fptr) {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 			if (info)
-				printf (" [%s]", info->name);
+				g_string_append_printf (sbuf, " [%s]", info->name);
 		}
 
 		list = call->out_ireg_args;
@@ -656,7 +664,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			hreg = regpair >> 24;
 			reg = regpair & 0xffffff;
 
-			printf (" [%s <- R%d]", mono_arch_regname (hreg), reg);
+			g_string_append_printf (sbuf, " [%s <- R%d]", mono_arch_regname (hreg), reg);
 
 			list = g_slist_next (list);
 		}
@@ -669,7 +677,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			hreg = regpair >> 24;
 			reg = regpair & 0xffffff;
 
-			printf (" [%s <- R%d]", mono_arch_fregname (hreg), reg);
+			g_string_append_printf (sbuf, " [%s <- R%d]", mono_arch_fregname (hreg), reg);
 
 			list = g_slist_next (list);
 		}
@@ -677,7 +685,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	}
 	case OP_BR:
 	case OP_CALL_HANDLER:
-		printf (" [B%d]", ins->inst_target_bb->block_num);
+		g_string_append_printf (sbuf, " [B%d]", ins->inst_target_bb->block_num);
 		break;
 	case OP_IBNE_UN:
 	case OP_IBEQ:
@@ -700,27 +708,27 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_LBLE:
 	case OP_LBLE_UN:
 		if (!ins->inst_false_bb)
-			printf (" [B%d]", ins->inst_true_bb->block_num);
+			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
-			printf (" [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+			g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
 	case OP_GC_LIVENESS_DEF:
 	case OP_GC_LIVENESS_USE:
-		printf (" R%d", (int)ins->inst_c1);
+		g_string_append_printf (sbuf, " R%d", (int)ins->inst_c1);
 		break;
 	case OP_IL_SEQ_POINT:
 	case OP_SEQ_POINT:
-		printf (" il: 0x%x%s", (int)ins->inst_imm, ins->flags & MONO_INST_NONEMPTY_STACK ? ", nonempty-stack" : "");
+		g_string_append_printf (sbuf, " il: 0x%x%s", (int)ins->inst_imm, ins->flags & MONO_INST_NONEMPTY_STACK ? ", nonempty-stack" : "");
 		break;
 	default:
 		break;
 	}
 
 	if (spec [MONO_INST_CLOB])
-		printf (" clobbers: %c", spec [MONO_INST_CLOB]);
-	printf ("\n");
+		g_string_append_printf (sbuf, " clobbers: %c", spec [MONO_INST_CLOB]);
+	return sbuf;
 }
 
 static void
