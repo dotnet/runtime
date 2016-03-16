@@ -12,6 +12,7 @@ if [%1] == [] (
 set clean_targets=
 set clean_src=
 set clean_tools=
+set clean_environment=
 set clean_all=
 set clean_successful=true
 
@@ -45,9 +46,15 @@ if /I [%1] == [/t] (
   goto Next
 )
 
+if /I [%1] == [/e] (
+  set clean_environment=true
+  goto Next
+)
+
 if /I [%1] == [/all] (
   set clean_src=
   set clean_tools=
+  set clean_environment=
   set clean_targets=Clean;CleanPackages;CleanPackagesCache;
   set clean_all=true
   goto Begin
@@ -61,9 +68,10 @@ shift /1
 goto Loop
 
 :Begin
+if /I [%clean_environment%] == [true] (
+  call :CleanEnvironment
+)
 
-echo Running init-tools.cmd
-call %~dp0init-tools.cmd
 
 if /I [%clean_src%] == [true] (
   echo Cleaning src directory ...
@@ -73,6 +81,9 @@ if /I [%clean_src%] == [true] (
 )
 
 if NOT "%clean_targets%" == "" (
+  echo Running init-tools.cmd
+  call %~dp0init-tools.cmd
+  
   echo Running msbuild clean targets "%clean_targets:~0,-1%" ...
   echo. >> %cleanlog% && echo msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog% >> %cleanlog%
   call msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog%
@@ -80,6 +91,7 @@ if NOT "%clean_targets%" == "" (
 )
 
 if /I [%clean_tools%] == [true] (
+  call :CleanEnvironment
   echo Cleaning tools directory ...
   echo. >> %cleanlog% && echo rmdir /s /q %~dp0tools >> %cleanlog%
   rmdir /s /q %~dp0tools >> %cleanlog%
@@ -88,6 +100,7 @@ if /I [%clean_tools%] == [true] (
 )
 
 if /I [%clean_all%] == [true] (
+  call :CleanEnvironment
   echo Cleaning entire working directory ...
   echo. >> %cleanlog% && echo git clean -xdf -e clean.log %~dp0 >> %cleanlog%
   call git clean -xdf -e clean.log %~dp0 >> %cleanlog%
@@ -114,6 +127,7 @@ echo     /p     - Deletes the repo-local nuget package directory.
 echo     /c     - Deletes the user-local nuget package cache.
 echo     /t     - Deletes the tools directory.
 echo     /s     - Deletes the untracked files under src directory (git clean src -xdf).
+echo     /e     - Kills and/or stops the processes that are still running, for example VBCSCompiler.exe
 echo     /all   - Combines all of the above.
 echo.
 echo If no option is specified then clean.cmd /b is implied.
@@ -125,4 +139,11 @@ if NOT [%ERRORLEVEL%]==[0] (
   echo Command exited with ERRORLEVEL %ERRORLEVEL% >> %cleanlog%
   set clean_successful=false
 )
+exit /b
+
+:CleanEnvironment
+REM If VBCSCompiler.exe is running we need to kill it
+echo Stop VBCSCompiler.exe execution.
+echo. >> %cleanlog% && echo Stop VBCSCompiler.exe execution. >> %cleanlog% 
+for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F >> %cleanlog%
 exit /b
