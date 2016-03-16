@@ -38,14 +38,14 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_KeyCollection_Constructor_NullDictionary(int count)
         {
             Assert.Throws<ArgumentNullException>(() => new Dictionary<string, string>.KeyCollection(null));
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_KeyCollection_GetEnumerator(int count)
         {
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
@@ -95,7 +95,7 @@ namespace System.Collections.Tests
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_KeyCollection_CopyTo_ExactlyEnoughSpaceInTypeCorrectArray(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);

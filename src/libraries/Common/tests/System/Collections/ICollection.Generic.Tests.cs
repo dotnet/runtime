@@ -99,7 +99,7 @@ namespace System.Collections.Tests
         #region IsReadOnly
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_IsReadOnly_Validity(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -111,7 +111,7 @@ namespace System.Collections.Tests
         #region Count
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Count_Validity(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -123,7 +123,7 @@ namespace System.Collections.Tests
         #region Add
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_DefaultValue(int count)
         {
             if (DefaultValueAllowed && !IsReadOnly)
@@ -135,7 +135,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_InvalidValueToMiddleOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -152,7 +152,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_InvalidValueToBeginningOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -169,7 +169,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_InvalidValueToEndOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -184,7 +184,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_DuplicateValue(int count)
         {
             if (!IsReadOnly && DuplicateValuesAllowed)
@@ -198,7 +198,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_AfterCallingClear(int count)
         {
             if (!IsReadOnly)
@@ -211,7 +211,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_AfterRemovingAnyValue(int count)
         {
             if (!IsReadOnly)
@@ -236,7 +236,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_AfterRemovingAllItems(int count)
         {
             if (!IsReadOnly)
@@ -251,7 +251,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_ToReadOnlyCollection(int count)
         {
             if (IsReadOnly)
@@ -263,7 +263,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Add_AfterRemoving(int count)
         {
             if (!IsReadOnly)
@@ -284,7 +284,7 @@ namespace System.Collections.Tests
         #region Clear
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Clear(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -301,7 +301,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Clear_Repeatedly(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -326,7 +326,7 @@ namespace System.Collections.Tests
         #region Contains
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_ValidValueOnCollectionNotContainingThatValue(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -338,7 +338,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_ValidValueOnCollectionContainingThatValue(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -347,7 +347,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_DefaultValueOnCollectionNotContainingDefaultValue(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -356,7 +356,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -368,7 +368,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_ValidValueThatExistsTwiceInTheCollection(int count)
         {
             if (DuplicateValuesAllowed && !IsReadOnly)
@@ -382,7 +382,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Contains_InvalidValue_ThrowsArgumentException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -392,7 +392,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void ICollection_Generic_Contains_DefaultValueWhenNotAllowed(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -410,7 +410,7 @@ namespace System.Collections.Tests
         #region CopyTo
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_NullArray_ThrowsArgumentNullException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -418,7 +418,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -428,7 +428,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_IndexEqualToArrayCount_ThrowsArgumentException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -440,7 +440,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowsAnyArgumentException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -449,7 +449,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_NotEnoughSpaceInOffsettedArray_ThrowsArgumentException(int count)
         {
             if (count > 0) // Want the T array to have at least 1 element
@@ -461,7 +461,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_ExactlyEnoughSpaceInArray(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -471,7 +471,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_CopyTo_ArrayIsLargerThanCollection(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -485,7 +485,7 @@ namespace System.Collections.Tests
         #region Remove
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_OnReadOnlyCollection_ThrowsNotSupportedException(int count)
         {
             if (IsReadOnly)
@@ -496,7 +496,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_DefaultValueNotContainedInCollection(int count)
         {
             if (!IsReadOnly && DefaultValueAllowed && !Enumerable.Contains(InvalidValues, default(T)))
@@ -515,7 +515,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_NonDefaultValueNotContainedInCollection(int count)
         {
             if (!IsReadOnly)
@@ -531,7 +531,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_DefaultValueContainedInCollection(int count)
         {
             if (!IsReadOnly && DefaultValueAllowed && !Enumerable.Contains(InvalidValues, default(T)))
@@ -550,7 +550,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_NonDefaultValueContainedInCollection(int count)
         {
             if (!IsReadOnly)
@@ -569,7 +569,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_ValueThatExistsTwiceInCollection(int count)
         {
             if (!IsReadOnly && DuplicateValuesAllowed)
@@ -587,7 +587,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_EveryValue(int count)
         {
             if (!IsReadOnly)
@@ -602,7 +602,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_InvalidValue_ThrowsArgumentException(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);
@@ -614,7 +614,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_Generic_Remove_DefaultValueWhenNotAllowed(int count)
         {
             ICollection<T> collection = GenericICollectionFactory(count);

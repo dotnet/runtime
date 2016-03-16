@@ -26,7 +26,7 @@ namespace System.Collections.Tests
         #region Constructors
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_IDictionary(int count)
         {
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
@@ -35,7 +35,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_IDictionary_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -47,7 +47,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -59,7 +59,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_int(int count)
         {
             IDictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>(count);
@@ -67,7 +67,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_Constructor_int_IEqualityComparer(int count)
         {
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
@@ -83,7 +83,7 @@ namespace System.Collections.Tests
         #region ContainsValue
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ContainsValue_NotPresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary < TKey, TValue> )GenericIDictionaryFactory(count);
@@ -95,7 +95,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ContainsValue_Present(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -108,7 +108,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ContainsValue_DefaultValueNotPresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -116,7 +116,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void Dictionary_Generic_ContainsValue_DefaultValuePresent(int count)
         {
             Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -133,7 +133,7 @@ namespace System.Collections.Tests
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -143,7 +143,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
