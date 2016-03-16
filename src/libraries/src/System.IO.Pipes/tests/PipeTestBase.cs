@@ -55,12 +55,12 @@ namespace System.IO.Pipes.Tests
         }
 
         /// <summary>
-        /// Get a unique pipe name that is guaranteed not to be in use elsewhere
+        /// Get a unique pipe name very unlikely to be in use elsewhere.
         /// </summary>
         /// <returns></returns>
         protected static string GetUniquePipeName()
         {
-            return Guid.NewGuid().ToString();
+            return Path.GetRandomFileName();
         }
 
         /// <summary>
