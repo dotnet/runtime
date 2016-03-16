@@ -3,7 +3,7 @@
 
 This Document is machine-generated from commit 65f7881 on 08/15/15. It might be out of date.
 
-When using these configurations from environment variables, the variable need to have `ComPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `ComPlus_DumpJittedMethods=1` to envvars.
+When using these configurations from environment variables, the variable need to have `COMPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `COMPlus_DumpJittedMethods=1` to envvars.
 
 See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
 
@@ -21,8 +21,8 @@ Name | Description | Type | Class | Default Value | Flags
 `MsiPeekForbid` | Assert on MSI calls | DWORD | INTERNAL | 0 | 
 `ADULazyMemoryRelease` | On by default. Turned off in cases when people try to catch memory leaks, in which case AD unload should be immediately followed by GC) | DWORD | EXTERNAL | 1 | 
 `ADURetryCount` | Controls timeout of AD unload. Used for workarounds when machine is too slow, there are network issues etc. | DWORD | EXTERNAL | | 
-`APPDOMAIN_MANAGER_ASM` | Legacy method to specify the assembly containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPLUS_ / IgnoreHKLM / IgnoreHKCU
-`APPDOMAIN_MANAGER_TYPE` | LegacyMethod to specify the type containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPLUS_  / IgnoreHKLM / IgnoreHKCU
+`APPDOMAIN_MANAGER_ASM` | Legacy method to specify the assembly containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPlus_ / IgnoreHKLM / IgnoreHKCU
+`APPDOMAIN_MANAGER_TYPE` | LegacyMethod to specify the type containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPlus_  / IgnoreHKLM / IgnoreHKCU
 `appDomainManagerAssembly` | Config file switch to specify the assembly for the default AppDomainManager. | STRING | EXTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU
 `appDomainManagerType` | Config file switch to specify the type for the default AppDomainManager. | STRING | EXTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU
 `AppDomainAgilityChecked` | Used to detect AD boundary violations (AD leaks) | DWORD | INTERNAL | | 
@@ -234,7 +234,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitEmitPrintRefRegs` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitExclude` |  | STRING | INTERNAL | | REGUTIL_default
 `JitForceFallback` | Set to non-zero to test NOWAY assert by forcing a retry | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitNoForceFallback` | Set to non-zero to prevent NOWAY assert testing. Overrides COMPLUS_JitForceFallback and JIT stress flags. | DWORD | INTERNAL | 0 | REGUTIL_default
+`JitNoForceFallback` | Set to non-zero to prevent NOWAY assert testing. Overrides COMPlus_JitForceFallback and JIT stress flags. | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitExpensiveDebugCheckLevel` | Level indicates how much checking beyond the default to do in debug builds (currently 1-2) | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitForceProcedureSplitting` |  | STRING | INTERNAL | | REGUTIL_default
 `JitForceVer` |  | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -337,7 +337,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitSsaStress` | Perturb order of processing of blocks in SSA; 0 = no stress; 1 = use method hash; * = supplied value as random hash | DWORD | INTERNAL | 0 | REGUTIL_default
 `AltJitAssertOnNYI` | Controls the AltJit behavior of NYI stuff | DWORD | INTERNAL | 0 | 
 `AltJitAssertOnNYI` | Controls the AltJit behavior of NYI stuff | DWORD | INTERNAL | 1 | 
-`AltJitSkipOnAssert` | If AltJit hits an assert, fall back to the fallback JIT. Useful in conjunction with COMPLUS_ContinueOnAssert=1 | DWORD | INTERNAL | 0 | REGUTIL_default
+`AltJitSkipOnAssert` | If AltJit hits an assert, fall back to the fallback JIT. Useful in conjunction with COMPlus_ContinueOnAssert=1 | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitLargeBranches` | Force using the largest conditional branch format | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitSplitFunctionSize` | On ARM, use this as the maximum function/funclet size for creating function fragments (and creating multiple RUNTIME_FUNCTION entries) | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitRegisterFP` | Control FP enregistration | DWORD | EXTERNAL | 3 | REGUTIL_default
@@ -410,7 +410,7 @@ Name | Description | Type | Class | Default Value | Flags
 `MD_RegMetaBreak` | ASSERT when creating RegMeta class | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_RegMetaDump` | ? Dump MD in 4 functions? | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_TlbImp_BreakOnErr` | ASSERT when importing TLB into MD | DWORD | INTERNAL | 0 | REGUTIL_default
-`MD_TlbImp_BreakOnTypeImport` | ASSERT when importing a type from TLB | STRING | INTERNAL | | (LookupOptions) (REGUTIL_default / DontPrependCOMPLUS_)
+`MD_TlbImp_BreakOnTypeImport` | ASSERT when importing a type from TLB | STRING | INTERNAL | | (LookupOptions) (REGUTIL_default / DontPrependCOMPlus_)
 `MD_UseMinimalDeltas` | ? Some MD modifications when applying EnC? | DWORD | INTERNAL | 1 | REGUTIL_default
 `MD_WinMD_Disable` | Never activate the WinMD import adapter | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_WinMD_AssertOnIllegalUsage` | ASSERT if a WinMD import adapter detects a tool incompatibility | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -534,16 +534,16 @@ Name | Description | Type | Class | Default Value | Flags
 `NGenCopyFromRepository_SetCachedSigningLevel` | Support for test tree ngen.exe flag /CopyFromRepository to also vouch for the output NIs. | DWORD | INTERNAL | 0 | IgnoreConfigFiles
 `performanceScenario` | Activates a set of workload-specific default values for performance settings | STRING | EXTERNAL | | 
 `ProcessNameFormat` | Used by corperfmonext.dll to determine whether to decorate an instance name with the corresponding PID and runtime ID | DWORD | EXTERNAL | (DWORD)-1 | IgnoreHKLM / IgnoreHKCU / IgnoreConfigFiles
-`COR_ENABLE_PROFILING` | Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPLUS_ / IgnoreConfigFiles
-`COR_PROFILER` | Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH` | Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH_32` | Specifies the path to the DLL of profiler to load into currently running 32 bits process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH_64` | Specifies the path to the DLL of profiler to load into currently running 64 bits process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_ENABLE_PROFILING` | CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPLUS_ / IgnoreConfigFiles
-`CORECLR_PROFILER` | CoreCLR only: Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH_32` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH_64` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process | STRING | EXTERNAL | | DontPrependCOMPLUS_
+`COR_ENABLE_PROFILING` | Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPlus_ / IgnoreConfigFiles
+`COR_PROFILER` | Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH` | Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH_32` | Specifies the path to the DLL of profiler to load into currently running 32 bits process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH_64` | Specifies the path to the DLL of profiler to load into currently running 64 bits process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_ENABLE_PROFILING` | CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPlus_ / IgnoreConfigFiles
+`CORECLR_PROFILER` | CoreCLR only: Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH_32` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH_64` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process | STRING | EXTERNAL | | DontPrependCOMPlus_
 `ProfAPI_ProfilerCompatibilitySetting` | Specifies the profiler loading policy (the default is not to load a V2 profiler in V4) | STRING | EXTERNAL | | REGUTIL_default / TrimWhiteSpaceFromStringValue
 `AttachThreadAlwaysOn` | Forces profapi attach thread to be created on startup, instead of on-demand. | DWORD | EXTERNAL | | 
 `MsBetweenAttachCheck` |  | DWORD | EXTERNAL | 500 | 
