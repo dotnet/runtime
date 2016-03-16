@@ -28382,7 +28382,7 @@ RelativePath=JIT\Methodical\refany\_il_dbgseq\_il_dbgseq.exe
 WorkingDir=JIT\Methodical\refany\_il_dbgseq
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_2925;ISSUE_3666
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=Any
 [_il_dbgshortsig.exe_4055]
 RelativePath=JIT\Methodical\refany\_il_dbgshortsig\_il_dbgshortsig.exe
@@ -28466,7 +28466,7 @@ RelativePath=JIT\Methodical\refany\_il_relseq\_il_relseq.exe
 WorkingDir=JIT\Methodical\refany\_il_relseq
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_2925;ISSUE_3666
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=Any
 [_il_relshortsig.exe_4067]
 RelativePath=JIT\Methodical\refany\_il_relshortsig\_il_relshortsig.exe
