@@ -208,4 +208,5 @@ GC/Features/SustainedLowLatency/sustainedlowlatency_race_reverse/sustainedlowlat
 GC/Features/SustainedLowLatency/scenario/scenario.sh
 GC/Features/SustainedLowLatency/sustainedlowlatency_race/sustainedlowlatency_race.sh
 GC/Regressions/dev10bugs/536168/536168/536168.sh
-
+JIT/Regression/CLR-x86-EJIT/V1-M09.5-PDC/b14426/b14426/b14426.sh
+JIT/Performance/CodeQuality/BenchmarksGame/pidigits/pi-digits/pi-digits.sh
