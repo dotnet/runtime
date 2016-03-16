@@ -13,7 +13,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public void OpenConnection_WithAsyncTrue_ThrowsNotSupportedException()
         {
-            var asyncConnectionString = DataTestClass.SQL2005_Northwind + "async=true";
+            var asyncConnectionString = DataTestClass.SQL2005_Northwind + ";async=true";
             Assert.Throws<NotSupportedException>(() => { new SqlConnection(asyncConnectionString); });
         }
 
@@ -70,7 +70,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             var executedProcessList = new List<string>();
 
             //for shared connection we need to add MARS capabilities
-            using (var conn = new SqlConnection(DataTestClass.SQL2005_Northwind + "MultipleActiveResultSets=true;"))
+            using (var conn = new SqlConnection(DataTestClass.SQL2005_Northwind + ";MultipleActiveResultSets=true;"))
             {
                 conn.Open();
                 var task1 = ExecuteCommandWithSharedConnectionAsync(conn, "C", "SELECT top 10 * FROM Orders", executedProcessList);
