@@ -202,6 +202,7 @@ void pal::readdir(const pal::string_t& path, std::vector<pal::string_t>* list)
             // We are interested in files only
             switch (entry->d_type)
             {
+            case DT_DIR:
             case DT_REG:
                 break;
 
