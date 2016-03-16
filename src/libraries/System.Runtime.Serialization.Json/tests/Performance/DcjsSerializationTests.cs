@@ -136,5 +136,15 @@ namespace System.Runtime.Tests.Performance
             var value = new ClassImplementingIXmlSerialiable() { StringValue = "Hello world" };
             RunDcjsSerializationTest(value, 10000);
         }
+
+        [Benchmark]
+        public void SerializeXmlElement()
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(@"<html></html>");
+            XmlElement xmlElement = xmlDoc.CreateElement("Element");
+            xmlElement.InnerText = "Element innertext";
+            RunDcjsSerializationTest(xmlElement, 10000);
+        }
     }
 }
