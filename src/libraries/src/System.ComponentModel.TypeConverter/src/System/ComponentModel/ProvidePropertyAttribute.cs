@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -62,6 +58,7 @@ namespace System.ComponentModel
             }
         }
 
+#if FEATURE_ATTRIBUTE_TYPEID
         /// <devdoc>
         ///    <para>ProvidePropertyAttribute overrides this to include the type name and the property name</para>
         /// </devdoc>
@@ -72,6 +69,7 @@ namespace System.ComponentModel
                 return GetType().FullName + _propertyName;
             }
         }
+#endif
 
         public override bool Equals(object obj)
         {
