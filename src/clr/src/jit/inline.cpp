@@ -527,14 +527,14 @@ void InlineContext::Dump(Compiler* compiler, int indent)
 // for inlining.
 //
 // Arguments
-//   compiler - the compiler instance examining an call for ininling
+//   compiler - the compiler instance examining a call for inlining
 //   call     - the call in question
 //   context  - descrptive string to describe the context of the decision
 
 InlineResult::InlineResult(Compiler*    compiler,
                            GenTreeCall* call,
                            const char*  context)
-    : m_Compiler(compiler)
+    : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
     , m_Caller(nullptr)
@@ -542,12 +542,16 @@ InlineResult::InlineResult(Compiler*    compiler,
     , m_Context(context)
     , m_Reported(false)
 {
+    // Set the compiler instance
+    m_RootCompiler = compiler->impInlineRoot();
+
     // Set the policy
     const bool isPrejitRoot = false;
-    m_Policy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
-    // Get method handle for caller
-    m_Caller = m_Compiler->info.compMethodHnd;
+    // Get method handle for caller. Note we use the
+    // handle for the "immediate" caller here.
+    m_Caller = compiler->info.compMethodHnd;
 
     // Get method handle for callee, if known
     if (m_Call->gtCall.gtCallType == CT_USER_FUNC)
@@ -575,7 +579,7 @@ InlineResult::InlineResult(Compiler*    compiler,
 InlineResult::InlineResult(Compiler*              compiler,
                            CORINFO_METHOD_HANDLE  method,
                            const char*            context)
-    : m_Compiler(compiler)
+    : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(nullptr)
     , m_Caller(nullptr)
@@ -583,9 +587,12 @@ InlineResult::InlineResult(Compiler*              compiler,
     , m_Context(context)
     , m_Reported(false)
 {
+    // Set the compiler instance
+    m_RootCompiler = compiler->impInlineRoot();
+
     // Set the policy
     const bool isPrejitRoot = true;
-    m_Policy = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
+    m_Policy = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 }
 
 //------------------------------------------------------------------------
@@ -621,9 +628,9 @@ void InlineResult::Report()
     if (VERBOSE)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
-        const char* caller = (m_Caller == nullptr) ? "n/a" : m_Compiler->eeGetMethodFullName(m_Caller);
+        const char* caller = (m_Caller == nullptr) ? "n/a" : m_RootCompiler->eeGetMethodFullName(m_Caller);
 
-        callee = (m_Callee == nullptr) ? "n/a" : m_Compiler->eeGetMethodFullName(m_Callee);
+        callee = (m_Callee == nullptr) ? "n/a" : m_RootCompiler->eeGetMethodFullName(m_Callee);
 
         JITDUMP(format, m_Context, ResultString(), ReasonString(), caller, callee);
     }
@@ -666,7 +673,7 @@ void InlineResult::Report()
 
 #endif  // DEBUG
 
-            COMP_HANDLE comp = m_Compiler->info.compCompHnd;
+            COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
         }
     }
@@ -675,8 +682,8 @@ void InlineResult::Report()
     if (IsDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
-        JITLOG_THIS(m_Compiler, (LL_INFO100000, format, m_Context, ResultString(), ReasonString()));
-        COMP_HANDLE comp = m_Compiler->info.compCompHnd;
+        JITLOG_THIS(m_RootCompiler, (LL_INFO100000, format, m_Context, ResultString(), ReasonString()));
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
         comp->reportInliningDecision(m_Caller, m_Callee, Result(), ReasonString());
     }
 }
