@@ -210,17 +210,17 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
     // Set up REGUTIL options.
     // 
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
-    BOOL prependCOMPLUS = !CheckLookupOption(info, DontPrependCOMPLUS_);
+    BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
     
     // 
     // If we aren't favoring config files, we check REGUTIL here.
     // 
     if(CheckLookupOption(info, FavorConfigFile) == FALSE)
     {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS);
+        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
         if(result>0)
             return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPLUS, level);
+        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
         if(result != NULL && result[0] != 0)
         {
             return TRUE;
@@ -265,10 +265,10 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
     // 
     if(CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS);
+        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
         if(result>0)
             return TRUE;
-        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPLUS, level);
+        LPWSTR result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
         if(result != NULL && result[0] != 0)
         {
             return TRUE;
@@ -284,7 +284,7 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
         s_GetPerformanceDefaultValueCallback != NULL &&
         s_GetPerformanceDefaultValueCallback(info.name, &performanceDefaultValue))
     {
-        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS)))
+        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus)))
         {
             if(performanceDefaultValue>0)
                 return TRUE;
@@ -357,14 +357,14 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
     // Set up REGUTIL options.
     // 
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
-    BOOL prependCOMPLUS = !CheckLookupOption(info, DontPrependCOMPLUS_);
+    BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
     
     // 
     // If we aren't favoring config files, we check REGUTIL here.
     // 
     if(CheckLookupOption(info, FavorConfigFile) == FALSE)
     {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS);
+        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
         // TODO: We are ignoring explicitly defined default values to avoid change in behavior. 
         // TODO: Ideally, the following should check the hresult for success.
         if(result != info.defaultValue)
@@ -411,7 +411,7 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
     // 
     if(CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
-        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS);
+        REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus);
         // TODO: We are ignoring explicitly defined default values to avoid change in behavior. 
         // TODO: Ideally, the following should check the hresult for success.
         if(result != info.defaultValue)
@@ -431,7 +431,7 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info)
     {
         // TODO: We ignore explicitly defined default values above, but we do not want to let performance defaults override these.
         // TODO: Ideally, the above would use hresult for success and this check would be removed.
-        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPLUS)))
+        if (!SUCCEEDED(REGUTIL::GetConfigDWORD_DontUse_(info.name, info.defaultValue, &result, level, prependCOMPlus)))
             return performanceDefaultValue;
     }
 
@@ -522,14 +522,14 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     // Set up REGUTIL options.
     // 
     REGUTIL::CORConfigLevel level = GetConfigLevel(info.options);
-    BOOL prependCOMPLUS = !CheckLookupOption(info, DontPrependCOMPLUS_);
+    BOOL prependCOMPlus = !CheckLookupOption(info, DontPrependCOMPlus_);
 
     // 
     // If we aren't favoring config files, we check REGUTIL here.
     // 
     if(result == NULL && CheckLookupOption(info, FavorConfigFile) == FALSE)
     {        
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPLUS, level);
+        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
     }
 
     // 
@@ -563,7 +563,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     if(result==NULL && 
         CheckLookupOption(info, FavorConfigFile) == TRUE)
     {
-        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPLUS, level);
+        result = REGUTIL::GetConfigString_DontUse_(info.name, prependCOMPlus, level);
     }
 
     if ((result != NULL) && CheckLookupOption(info, TrimWhiteSpaceFromStringValue))
@@ -617,7 +617,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
         }
     }
 
-    // Check REGUTIL, both with and without the COMPLUS_ prefix
+    // Check REGUTIL, both with and without the COMPlus_ prefix
     {
         LPWSTR result = NULL;
     

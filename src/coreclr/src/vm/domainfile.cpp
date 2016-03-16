@@ -2352,7 +2352,7 @@ void DomainAssembly::FindNativeImage()
         {
             SString sbuf;
             StackScratchBuffer scratch;
-            sbuf.Printf("COMPLUS_NgenBind_ZapForbid violation: %s.", GetSimpleName());
+            sbuf.Printf("COMPlus_NgenBind_ZapForbid violation: %s.", GetSimpleName());
             DbgAssertDialog(__FILE__, __LINE__, sbuf.GetUTF8(scratch));
         }
 #endif

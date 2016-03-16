@@ -13889,7 +13889,7 @@ static void ProfileDataAllocateTokenDefinitions(ProfileEmitter * pEmitter, Modul
     mdProfileData->size = sizeof(CORBBTPROF_BLOB_ENTRY);
 }
 
-// Responsible for writing out the profile data if the COMPLUS_BBInstr 
+// Responsible for writing out the profile data if the COMPlus_BBInstr 
 // environment variable is set.  This is called when the module is unloaded
 // (usually at shutdown).
 HRESULT Module::WriteMethodProfileDataLogFile(bool cleanup)

@@ -1407,7 +1407,7 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 //             GetThreadGenericFullCheck() to actually be called when GetThread() is
 //             called, given the optimizations around GetThread():
 //             * code:InitThreadManager ensures that non-PAL, debug, x86/x64 builds that
-//                 run with COMPLUS_EnforceEEThreadNotRequiredContracts set are forced to
+//                 run with COMPlus_EnforceEEThreadNotRequiredContracts set are forced to
 //                 use GetThreadGeneric instead of the dynamically generated optimized
 //                 TLS getter.
 //             * The non-PAL, debug, x86/x64 GetThreadGeneric() (implemented in the

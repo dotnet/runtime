@@ -263,7 +263,7 @@ LinearScan::getRegisterRecord(regNumber regNum)
 //    mask      - The current mask of register candidates for a node
 //
 // Return Value:
-//    A possibly-modified mask, based on the value of COMPLUS_JitStressRegs.
+//    A possibly-modified mask, based on the value of COMPlus_JitStressRegs.
 //
 // Notes:
 //    This is the method used to implement the stress options that limit
@@ -8698,7 +8698,7 @@ LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         // Spill "targetReg" to the stack and add its eventual target (otherTargetReg)
                         // to "targetRegsFromStack", which will be handled below.
-                        // NOTE: This condition is very rare.  Setting COMPLUS_JitStressRegs=0x203
+                        // NOTE: This condition is very rare.  Setting COMPlus_JitStressRegs=0x203
                         // has been known to trigger it in JIT SH.
 
                         // First, spill "otherInterval" from targetReg to the stack.

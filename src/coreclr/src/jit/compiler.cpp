@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jittelemetry.h"
 
 #if defined(DEBUG)
-// Column settings for COMPLUS_JitDumpIR.  We could(should) make these programmable.
+// Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE   30 
 #define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
 #define COLUMN_KINDS    110
@@ -993,8 +993,8 @@ void                Compiler::compShutdown()
 #if MEASURE_MEM_ALLOC
 
 #ifdef DEBUG
-    // Under debug, we only dump memory stats when the COMPLUS_* variable is defined.
-    // Under non-debug, we don't have the COMPLUS_* variable, and we always dump it.
+    // Under debug, we only dump memory stats when the COMPlus_* variable is defined.
+    // Under non-debug, we don't have the COMPlus_* variable, and we always dump it.
     if (s_dspMemStats)
 #endif
     {
@@ -1828,7 +1828,7 @@ void Compiler::compSetProcessor()
     opts.compCanUseSSE2 = true;
 
 #ifdef FEATURE_AVX_SUPPORT
-    // COMPLUS_EnableAVX can be used to disable using AVX if available on a target machine.
+    // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
     opts.compCanUseAVX = false;
     if (((compileFlags & CORJIT_FLG_PREJIT) == 0) &&
@@ -2085,7 +2085,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif // !DEBUG
 
 #ifdef ALT_JIT
-    // Take care of COMPLUS_AltJitExcludeAssemblies.
+    // Take care of COMPlus_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
         // First, initialize the AltJitExcludeAssemblies list, but only do it once.
@@ -2120,9 +2120,9 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     bool altJitConfig   = !pfAltJit->isEmpty();
 
     //  If we have a non-empty AltJit config then we change all of these other 
-    //  config values to refer only to the AltJit. Otherwise, a lot of COMPLUS_* variables
+    //  config values to refer only to the AltJit. Otherwise, a lot of COMPlus_* variables
     //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the COMPLUS_AltJit configuration is set.
+    //  debugging the altjit if the COMPlus_AltJit configuration is set.
     //  
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
@@ -2235,7 +2235,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
                     printf("\n");
                     printf("Available specifiers (comma separated):\n");
                     printf("\n");
-                    printf("?          dump out value of COMPLUS_JitDumpIRFormat and this list of values\n");
+                    printf("?          dump out value of COMPlus_JitDumpIRFormat and this list of values\n");
                     printf("\n");
                     printf("linear     linear IR dump (default)\n");
                     printf("tree       tree IR dump (traditional)\n");
@@ -2594,7 +2594,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: COMPLUS_JitDiffableDasm=1
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDiffableDasm=1
         if (JitConfig.DiffableDasm() != 0)
         {
             opts.disDiffable = true;
@@ -3338,7 +3338,7 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 
 #if !defined(_TARGET_AMD64_)
-        // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPLUS_JitFramed variable is set, or
+        // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
@@ -4668,7 +4668,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 #ifdef ALT_JIT
         if (!compIsForInlining() && !opts.altJit)
         {
-            // We're an altjit, but the COMPLUS_AltJit configuration did not say to compile this method,
+            // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
             // so skip it.
             return CORJIT_SKIPPED;  
         }
@@ -4698,7 +4698,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 
 #endif
 
-        // Check for COMPLUS_AgressiveInlining
+        // Check for COMPlus_AgressiveInlining
         if (JitConfig.JitAggressiveInlining())
         {
             compDoAggressiveInlining = true;
@@ -7241,7 +7241,7 @@ BasicBlock*    dFindBlock(unsigned bbNum)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out function in linear IR form
+ *  COMPlus_JitDumpIR support - dump out function in linear IR form
  */
 
 void        cFuncIR(Compiler* comp)
@@ -7261,7 +7261,7 @@ void        cFuncIR(Compiler* comp)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out the format specifiers from COMPLUS_JitDumpIRFormat
+ *  COMPlus_JitDumpIR support - dump out the format specifiers from COMPlus_JitDumpIRFormat
  */
 
 void        dFormatIR()
@@ -7270,13 +7270,13 @@ void        dFormatIR()
 
     if (comp->dumpIRFormat != NULL)
     {
-       printf("COMPLUS_JitDumpIRFormat=%ls", comp->dumpIRFormat);
+       printf("COMPlus_JitDumpIRFormat=%ls", comp->dumpIRFormat);
     }
 }
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out function in linear IR form
+ *  COMPlus_JitDumpIR support - dump out function in linear IR form
  */
 
 void        dFuncIR()
@@ -7286,7 +7286,7 @@ void        dFuncIR()
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop in linear IR form
  */
 
 void        cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
@@ -7326,7 +7326,7 @@ void        cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop in linear IR form
  */
 
 void        dLoopIR(Compiler::LoopDsc* loop)
@@ -7336,7 +7336,7 @@ void        dLoopIR(Compiler::LoopDsc* loop)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop (given loop number) in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop (given loop number) in linear IR form
  */
 
 void        dLoopNumIR(unsigned loopNum)
@@ -7355,7 +7355,7 @@ void        dLoopNumIR(unsigned loopNum)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump spaces to specified tab stop
+ *  COMPlus_JitDumpIR support - dump spaces to specified tab stop
  */
 
 int        dTabStopIR(int curr, int tabstop)
@@ -7375,7 +7375,7 @@ void        cNodeIR(Compiler* comp, GenTree* tree);
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out block in linear IR form
+ *  COMPlus_JitDumpIR support - dump out block in linear IR form
  */
 
 void        cBlockIR(Compiler* comp, BasicBlock* block)
@@ -7528,7 +7528,7 @@ void        cBlockIR(Compiler* comp, BasicBlock* block)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out block in linear IR form
+ *  COMPlus_JitDumpIR support - dump out block in linear IR form
  */
 
 void        dBlockIR(BasicBlock* block)
@@ -7538,7 +7538,7 @@ void        dBlockIR(BasicBlock* block)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node type for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node type for linear IR form
  */
 
 int cTreeTypeIR(Compiler *comp, GenTree *tree)
@@ -7555,7 +7555,7 @@ int cTreeTypeIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node type for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node type for linear IR form
  */
 
 int dTreeTypeIR(GenTree *tree)
@@ -7567,7 +7567,7 @@ int dTreeTypeIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node kind for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node kind for linear IR form
  */
 
 int cTreeKindsIR(Compiler *comp, GenTree *tree)
@@ -7605,7 +7605,7 @@ int cTreeKindsIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node kind for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node kind for linear IR form
  */
 
 int dTreeKindsIR(GenTree *tree)
@@ -7617,7 +7617,7 @@ int dTreeKindsIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node flags for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node flags for linear IR form
  */
 
 int cTreeFlagsIR(Compiler *comp, GenTree *tree)
@@ -8290,7 +8290,7 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node flags for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node flags for linear IR form
  */
 
 int dTreeFlagsIR(GenTree *tree)
@@ -8302,7 +8302,7 @@ int dTreeFlagsIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out SSA number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out SSA number on tree node for linear IR form
  */
 
 int         cSsaNumIR(Compiler *comp, GenTree *tree)
@@ -8329,7 +8329,7 @@ int         cSsaNumIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out SSA number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out SSA number on tree node for linear IR form
  */
 
 int         dSsaNumIR(GenTree *tree)
@@ -8341,7 +8341,7 @@ int         dSsaNumIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out Value Number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out Value Number on tree node for linear IR form
  */
 
 int         cValNumIR(Compiler *comp, GenTree *tree)
@@ -8389,7 +8389,7 @@ int         cValNumIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out Value Number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out Value Number on tree node for linear IR form
  */
 
 int         dValNumIR(GenTree *tree)
@@ -8401,7 +8401,7 @@ int         dValNumIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree leaf node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree leaf node for linear IR form
  */
 
 int         cLeafIR(Compiler *comp, GenTree* tree)
@@ -8849,7 +8849,7 @@ int         cLeafIR(Compiler *comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree leaf node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree leaf node for linear IR form
  */
 
 int         dLeafIR(GenTree* tree)
@@ -8861,7 +8861,7 @@ int         dLeafIR(GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree indir node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree indir node for linear IR form
  */
 
 int         cIndirIR(Compiler *comp, GenTree* tree)
@@ -8881,7 +8881,7 @@ int         cIndirIR(Compiler *comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree indir node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree indir node for linear IR form
  */
 
 int         dIndirIR(GenTree* tree)
@@ -8893,7 +8893,7 @@ int         dIndirIR(GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree operand node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree operand node for linear IR form
  */
 
 int         cOperandIR(Compiler* comp, GenTree* operand)
@@ -9009,7 +9009,7 @@ int         cOperandIR(Compiler* comp, GenTree* operand)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree operand node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree operand node for linear IR form
  */
 
 int         dOperandIR(GenTree* operand)
@@ -9021,7 +9021,7 @@ int         dOperandIR(GenTree* operand)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree list of nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree list of nodes for linear IR form
  */
 
 int         cListIR(Compiler* comp, GenTree* list)
@@ -9053,7 +9053,7 @@ int         cListIR(Compiler* comp, GenTree* list)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree list of nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree list of nodes for linear IR form
  */
 
 int         dListIR(GenTree* list)
@@ -9065,7 +9065,7 @@ int         dListIR(GenTree* list)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
  */
 
 int         cDependsIR(Compiler* comp, GenTree* comma, bool *first)
@@ -9100,7 +9100,7 @@ int         cDependsIR(Compiler* comp, GenTree* comma, bool *first)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
  */
 
 int         dDependsIR(GenTree* comma)
@@ -9115,7 +9115,7 @@ int         dDependsIR(GenTree* comma)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node in linear IR form
  */
 
 void        cNodeIR(Compiler* comp, GenTree* tree)
@@ -9593,7 +9593,7 @@ void        cNodeIR(Compiler* comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree in linear IR form
  */
 
 void        cTreeIR(Compiler* comp, GenTree* tree)
@@ -9643,7 +9643,7 @@ void        cTreeIR(Compiler* comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree in linear IR form
  */
 
 void        dTreeIR(GenTree* tree)
