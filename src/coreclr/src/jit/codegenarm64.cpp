@@ -416,13 +416,19 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP   regsToSaveMask,
                                               int         lowestCalleeSavedOffset,
                                               int         spDelta)
 {
+    assert(spDelta <= 0);
     unsigned regsToSaveCount = genCountBits(regsToSaveMask);
     if (regsToSaveCount == 0)
     {
+        if (spDelta != 0)
+        {
+            // Currently this is the case for varargs only
+            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr);
+        }
         return;
     }
 
-    assert(spDelta <= 0);
     assert((spDelta % 16) == 0);
     assert((regsToSaveMask & RBM_FP) == 0); // we never save FP here
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_LR)); // We also save LR, even though it is not in RBM_CALLEE_SAVED.
@@ -570,13 +576,19 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP   regsToRestoreMask,
                                                  int         lowestCalleeSavedOffset,
                                                  int         spDelta)
 {
+    assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
     if (regsToRestoreCount == 0)
     {
+        if (spDelta != 0)
+        {
+            // Currently this is the case for varargs only
+            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+            genStackPointerAdjustment(spDelta, REG_NA, nullptr);
+        }
         return;
     }
 
-    assert(spDelta >= 0);
     assert((spDelta % 16) == 0);
     assert((regsToRestoreMask & RBM_FP) == 0); // we never restore FP here
     assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_LR)); // We also save LR, even though it is not in RBM_CALLEE_SAVED.
