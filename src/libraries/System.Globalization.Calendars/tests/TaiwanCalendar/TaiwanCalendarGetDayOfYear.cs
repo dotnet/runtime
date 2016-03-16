@@ -2,78 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // System.Globalization.TaiwanCalendar.GetDayOfYear(DateTime)
     public class TaiwanCalendarGetDayOfYear
     {
-        private readonly int[] _DAYS_PER_MONTHS_IN_LEAP_YEAR = new int[13]
+        public static IEnumerable<object[]> GetDayOfYear_TestData()
         {
-            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
-        private readonly int[] _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR = new int[13]
-        {
-            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
-
-        #region PositiveTesting
-        // PosTest1: Verify the day is a random Date
-        [Fact]
-        public void PosTest1()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            Random rand = new Random(-55);
-            int year = rand.Next(tc.MinSupportedDateTime.Year, tc.MaxSupportedDateTime.Year - 1911);
-            int month = rand.Next(1, 12);
-            int day;
-            if (tc.IsLeapYear(year))
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_LEAP_YEAR[month] + 1);
-            }
-            else
-            {
-                day = rand.Next(1, _DAYS_PER_MONTHS_IN_NO_LEAP_YEAR[month] + 1);
-            }
-
-            DateTime dt = new DateTime(year, month, day);
-            int actualDay = getDayOfYear(dt);
-            Assert.Equal(tc.GetDayOfYear(dt), actualDay);
+            yield return new object[] { new TaiwanCalendar().MinSupportedDateTime };
+            yield return new object[] { new TaiwanCalendar().MaxSupportedDateTime };
+            yield return new object[] { TaiwanCalendarUtilities.RandomDateTime() };
+            yield return new object[] { new DateTime(2000, 12, 31) };
         }
 
-        // PosTest2: Verify the DateTime is TaiwanCalendar MinSupportedDateTime
-        [Fact]
-        public void PosTest2()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MinSupportedDateTime;
-            Assert.Equal(1, tc.GetDayOfYear(dt));
-        }
-
-        // PosTest3: Verify the DateTime is TaiwanCalendar MaxSupportDateTime
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = tc.MaxSupportedDateTime;
-            Assert.Equal(365, tc.GetDayOfYear(dt));
-        }
-
-        // PosTest4: Verify the DateTime is leap year
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar tc = new TaiwanCalendar();
-            DateTime dt = new DateTime(2000, 12, 31);
-            Assert.Equal(366, tc.GetDayOfYear(dt));
-        }
-
-        #endregion
-        #region Helper Methods
-        public int getDayOfYear(DateTime time)
+        [Theory]
+        [MemberData(nameof(GetDayOfYear_TestData))]
+        public void GetDayOfYear(DateTime time)
         {
             long TicksPerMillisecond = 10000;
             long TicksPerSecond = TicksPerMillisecond * 1000;
@@ -108,9 +54,9 @@ namespace System.Globalization.CalendarsTests
                 y1 = 3;
             // n = day number within year
             n -= y1 * DaysPerYear;
-            // If day-of-year was requested, return it
-            return (n + 1);
+
+            int expected = n + 1;
+            Assert.Equal(expected, new TaiwanCalendar().GetDayOfYear(time));
         }
-        #endregion
     }
 }

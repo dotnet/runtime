@@ -65,6 +65,7 @@
     <Compile Include="Misc\MiscCalendars.cs" />
     <Compile Include="Misc\Calendars.cs" />
     <Compile Include="PersianCalendar\PersianCalendarTest.cs" />
+    <Compile Include="TaiwanCalendar\TaiwanCalendarUtilities.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddMonths.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddYears.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarDaysAndMonths.cs" />
