@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(OSXNativePath)\System.Security.Cryptography.Native.dylib">
+    <File Include="$(OSXNativePath)System.Security.Cryptography.Native.dylib">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>

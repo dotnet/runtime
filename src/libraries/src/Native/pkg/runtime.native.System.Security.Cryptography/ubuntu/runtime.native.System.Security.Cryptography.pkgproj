@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <File Include="$(UbuntuNativePath)\System.Security.Cryptography.Native.so">
+    <File Include="$(UbuntuNativePath)System.Security.Cryptography.Native.so">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
   </ItemGroup>
