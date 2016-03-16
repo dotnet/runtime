@@ -16,7 +16,7 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTime.MinValue };
             yield return new object[] { DateTime.MaxValue };
             yield return new object[] { new DateTime(2000, 2, 20) };
-            yield return new object[] { new DateTime(s_randomDataGenerator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1)) };
+            yield return new object[] { s_randomDataGenerator.GetDateTime(-55) };
         }
 
         [Theory]

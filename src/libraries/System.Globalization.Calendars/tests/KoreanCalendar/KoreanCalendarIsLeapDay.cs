@@ -9,8 +9,6 @@ namespace System.Globalization.Tests
 {
     public class KoreanCalendarIsLeapDay
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         public static IEnumerable<object[]> IsLeapDay_TestData()
         {
             yield return new object[] { 1, 1, 1, 1 };

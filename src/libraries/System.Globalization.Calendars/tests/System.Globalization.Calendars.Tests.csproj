@@ -106,7 +106,6 @@
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarMaxSupportedDateTime.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarMinSupportedDateTime.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToDateTime.cs" />
-    <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToDateTime2.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarToFourDigitYear.cs" />
     <Compile Include="ThaiBuddhistCalendar\ThaiBuddhistCalendarTwoDigitYearMax.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
