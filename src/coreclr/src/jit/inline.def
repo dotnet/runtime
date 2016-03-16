@@ -55,6 +55,7 @@ INLINE_OBSERVATION(MAXSTACK_TOO_BIG,          bool,   "maxstack too big"  ,     
 INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLEE)
 INLINE_OBSERVATION(NO_METHOD_INFO,            bool,   "cannot get method info",        FATAL,       CALLEE)
 INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLEE)
+INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLEE)
 INLINE_OBSERVATION(RETURN_TYPE_IS_COMPOSITE,  bool,   "has composite return type",     FATAL,       CALLEE)
 INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",         FATAL,       CALLEE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLEE)
@@ -93,6 +94,7 @@ INLINE_OBSERVATION(OPCODE_NORMED,             int,    "next opcode in IL stream"
 INLINE_OBSERVATION(NUMBER_OF_ARGUMENTS,       int,    "number of arguments",           INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_BASIC_BLOCKS,    int,    "number of basic blocks",        INFORMATION, CALLEE)
 INLINE_OBSERVATION(NUMBER_OF_LOCALS,          int,    "number of locals",              INFORMATION, CALLEE)
+INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLEE)
 
 // ------ Caller Corectness ------- 
 
@@ -136,6 +138,7 @@ INLINE_OBSERVATION(LDFLD_NEEDS_HELPER,        bool,   "ldfld needs helper",     
 INLINE_OBSERVATION(LDVIRTFN_ON_NON_VIRTUAL,   bool,   "ldvirtfn on non-virtual",       FATAL,       CALLSITE)
 INLINE_OBSERVATION(NOT_CANDIDATE,             bool,   "not inline candidate",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLSITE)
+INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLSITE)
 INLINE_OBSERVATION(REQUIRES_SAME_THIS,        bool,   "requires same this",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLSITE)
@@ -150,6 +153,7 @@ INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds t
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "execution frequency",           INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IS_PROFITABLE_INLINE,      bool,   "profitable inline",             INFORMATION, CALLSITE)
+INLINE_OBSERVATION(RANDOM_ACCEPT,             bool,   "random accept",                 INFORMATION, CALLSITE)
 
 // ------ Final Sentinel ------- 
 

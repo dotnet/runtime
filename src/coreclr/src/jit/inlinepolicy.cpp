@@ -26,7 +26,22 @@
 
 InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
-    // For now, always create a Legacy policy.
+
+#ifdef DEBUG
+
+    // Optionally install the RandomPolicy.
+    bool useRandomPolicy = compiler->compRandomInlineStress();
+
+    if (useRandomPolicy)
+    {
+        unsigned seed = getJitStressLevel();
+        assert(seed != 0);
+        return new (compiler, CMK_Inlining) RandomPolicy(compiler, isPrejitRoot, seed);
+    }
+
+#endif // DEBUG
+
+    // Use the legacy policy
     InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
 
     return policy;
@@ -659,3 +674,363 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         }
     }
 }
+
+#ifdef DEBUG
+
+//-----------------------
+
+RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
+    : InlinePolicy(isPrejitRoot)
+    , m_Compiler(compiler)
+    , m_Random(nullptr)
+    , m_CodeSize(0)
+    , m_IsForceInline(false)
+    , m_IsForceInlineKnown(false)
+{
+    // If necessary, setup and seed the random state.
+    if (compiler->inlRNG == nullptr)
+    {
+        compiler->inlRNG = new (compiler, CMK_Inlining) CLRRandom();
+
+        unsigned hash = m_Compiler->info.compMethodHash();
+        assert(hash != 0);
+        assert(seed != 0);
+        int hashSeed = static_cast<int>(hash ^ seed);
+        compiler->inlRNG->Init(hashSeed);
+    }
+
+    m_Random = compiler->inlRNG;
+}
+
+//------------------------------------------------------------------------
+// NoteSuccess: handle finishing all the inlining checks successfully
+
+void RandomPolicy::NoteSuccess()
+{
+    assert(InlDecisionIsCandidate(m_Decision));
+    m_Decision = InlineDecision::SUCCESS;
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle a boolean observation with non-fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value of the observation
+void RandomPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    // Check the impact
+    InlineImpact impact = InlGetImpact(obs);
+
+    // As a safeguard, all fatal impact must be
+    // reported via noteFatal.
+    assert(impact != InlineImpact::FATAL);
+
+    // Handle most information here
+    bool isInformation = (impact == InlineImpact::INFORMATION);
+    bool propagate = !isInformation;
+
+    if (isInformation)
+    {
+        switch (obs)
+        {
+        case InlineObservation::CALLEE_IS_FORCE_INLINE:
+            // The RandomPolicy still honors force inlines.
+            //
+            // We may make the force-inline observation more than
+            // once.  All observations should agree.
+            assert(!m_IsForceInlineKnown || (m_IsForceInline == value));
+            m_IsForceInline = value;
+            m_IsForceInlineKnown = true;
+            break;
+
+        case InlineObservation::CALLEE_HAS_SWITCH:
+            // Pass this one on, it should cause inlining to fail.
+            propagate = true;
+            break;
+
+        default:
+            // Ignore the remainder for now
+            break;
+        }
+    }
+
+    if (propagate)
+    {
+        NoteInternal(obs);
+    }
+}
+
+//------------------------------------------------------------------------
+// NoteFatal: handle an observation with fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void RandomPolicy::NoteFatal(InlineObservation obs)
+{
+    // As a safeguard, all fatal impact must be
+    // reported via noteFatal.
+    assert(InlGetImpact(obs) == InlineImpact::FATAL);
+    NoteInternal(obs);
+    assert(InlDecisionIsFailure(m_Decision));
+}
+
+//------------------------------------------------------------------------
+// noteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void RandomPolicy::NoteInt(InlineObservation obs, int value)
+{
+    switch (obs)
+    {
+
+    case InlineObservation::CALLEE_IL_CODE_SIZE:
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
+
+            if (m_IsForceInline)
+            {
+                // Candidate based on force inline
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else
+            {
+                // Candidate, pending profitability evaluation
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+
+            break;
+        }
+
+    default:
+        // Ignore all other information
+        break;
+    }
+}
+
+//------------------------------------------------------------------------
+// NoteDouble: handle an observed double value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void RandomPolicy::NoteDouble(InlineObservation obs, double value)
+{
+    // Ignore for now...
+    (void) value;
+    (void) obs;
+}
+
+//------------------------------------------------------------------------
+// NoteInternal: helper for handling an observation
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void RandomPolicy::NoteInternal(InlineObservation obs)
+{
+    // Note any INFORMATION that reaches here will now cause failure.
+    // Non-fatal INFORMATION observations must be handled higher up.
+    InlineTarget target = InlGetTarget(obs);
+
+    if (target == InlineTarget::CALLEE)
+    {
+        this->SetNever(obs);
+    }
+    else
+    {
+        this->SetFailure(obs);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetFailure: helper for setting a failing decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void RandomPolicy::SetFailure(InlineObservation obs)
+{
+    // Expect a valid observation
+    assert(InlIsValidObservation(obs));
+
+    switch (m_Decision)
+    {
+    case InlineDecision::FAILURE:
+        // Repeated failure only ok if evaluating a prejit root
+        // (since we can't fail fast because we're not inlining)
+        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
+        // (since we can't fail fast from lvaGrabTemp).
+        assert(m_IsPrejitRoot ||
+               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        m_Decision = InlineDecision::FAILURE;
+        m_Observation = obs;
+        break;
+    default:
+        // SUCCESS, NEVER, or ??
+        assert(!"Unexpected m_Decision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetNever: helper for setting a never decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void RandomPolicy::SetNever(InlineObservation obs)
+{
+    // Expect a valid observation
+    assert(InlIsValidObservation(obs));
+
+    switch (m_Decision)
+    {
+    case InlineDecision::NEVER:
+        // Repeated never only ok if evaluating a prejit root
+        assert(m_IsPrejitRoot);
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        m_Decision = InlineDecision::NEVER;
+        m_Observation = obs;
+        break;
+    default:
+        // SUCCESS, FAILURE or ??
+        assert(!"Unexpected m_Decision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetCandidate: helper updating candidacy
+//
+// Arguments:
+//    obs      - the current obsevation
+//
+// Note:
+//    Candidate observations are handled here. If the inline has already
+//    failed, they're ignored. If there's already a candidate reason,
+//    this new reason trumps it.
+
+void RandomPolicy::SetCandidate(InlineObservation obs)
+{
+    // Ignore if this inline is going to fail.
+    if (InlDecisionIsFailure(m_Decision))
+    {
+        return;
+    }
+
+    // We should not have declared success yet.
+    assert(!InlDecisionIsSuccess(m_Decision));
+
+    // Update, overriding any previous candidacy.
+    m_Decision = InlineDecision::CANDIDATE;
+    m_Observation = obs;
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+//
+// Notes:
+//    The random policy makes random decisions about profitablity.
+//    Generally we aspire to inline differently, not necessarily to
+//    inline more.
+
+void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    assert(InlDecisionIsCandidate(m_Decision));
+    assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+
+    // Use a probability curve that roughly matches the observed
+    // behavior of the LegacyPolicy. That way we're inlining
+    // differently but not creating enormous methods.
+    //
+    // We vary a bit at the extremes. The RandomPolicy won't always
+    // inline the small methods (<= 16 IL bytes) and won't always
+    // reject the large methods (> 100 IL bytes).
+
+    unsigned threshold = 0;
+
+    if (m_CodeSize <= 16)
+    {
+        threshold = 75;
+    }
+    else if (m_CodeSize <= 30)
+    {
+        threshold = 50;
+    }
+    else if (m_CodeSize <= 40)
+    {
+        threshold = 40;
+    }
+    else if (m_CodeSize <= 50)
+    {
+        threshold = 30;
+    }
+    else if (m_CodeSize <= 75)
+    {
+        threshold = 20;
+    }
+    else if (m_CodeSize <= 100)
+    {
+        threshold = 10;
+    }
+    else if (m_CodeSize <= 200)
+    {
+        threshold = 5;
+    }
+    else
+    {
+        threshold = 1;
+    }
+
+    unsigned randomValue = m_Random->Next(1, 100);
+
+    // Reject if callee size is over the threshold
+    if (randomValue > threshold)
+    {
+        // Inline appears to be unprofitable
+        JITLOG_THIS(m_Compiler, (LL_INFO100000, "Random rejection (r=%d > t=%d)\n", randomValue, threshold));
+
+        // Fail the inline
+        if (m_IsPrejitRoot)
+        {
+            SetNever(InlineObservation::CALLEE_RANDOM_REJECT);
+        }
+        else
+        {
+            SetFailure(InlineObservation::CALLSITE_RANDOM_REJECT);
+        }
+    }
+    else
+    {
+        // Inline appears to be profitable
+        JITLOG_THIS(m_Compiler, (LL_INFO100000, "Random acceptance (r=%d <= t=%d)\n", randomValue, threshold));
+
+        // Update candidacy
+        if (m_IsPrejitRoot)
+        {
+            SetCandidate(InlineObservation::CALLEE_RANDOM_ACCEPT);
+        }
+        else
+        {
+            SetCandidate(InlineObservation::CALLSITE_RANDOM_ACCEPT);
+        }
+    }
+}
+
+#endif // DEBUG
