@@ -51,7 +51,11 @@
 
       <ToReplace Include="$(PackageTestRuntimeFolder)\*" />
 
+      <!-- In helix xunit tests are run using xunit.console.exe instead of msbuild xunitrunner.
+           This dependency should ideally be added in some project.json. But in the package the assemblies are present in tools folder.
+           Assemblies in tools folder are not resolved during restore. Therefore forcing addition direclty. -->
       <XunitConsoleExe Include="$(PackagesDir)xunit.runner.console\**\xunit.console.exe" />
+      <XunitConsoleExe Include="$(PackagesDir)xunit.runner.console\**\xunit.runner.utility.desktop.dll" />
 
       <ToRemove Include="@(_TestCopyLocalByFileNameWithoutDuplicates)" Condition="'%(_TestCopyLocalByFileNameWithoutDuplicates.Filename)' == 'xunit.performance.core'"/>
       <ToRemove Include="@(_TestCopyLocalByFileNameWithoutDuplicates)" Condition="'%(_TestCopyLocalByFileNameWithoutDuplicates.Filename)' == 'xunit.core'"/>
