@@ -24,8 +24,6 @@
     <FeatureFrameworkInternal>true</FeatureFrameworkInternal>
     <FeatureHijack>true</FeatureHijack>
     <FeatureInteropDebugging Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureInteropDebugging>
-    <FeatureIsostore>true</FeatureIsostore>
-    <FeatureIsostoreLight>true</FeatureIsostoreLight>
     <FeatureIsymReader>true</FeatureIsymReader>
     <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
     <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
@@ -44,8 +42,6 @@
     <FeatureVersioning>true</FeatureVersioning>
     <FeatureVersioningLog>true</FeatureVersioningLog>
     <FeatureWin32Registry>true</FeatureWin32Registry>
-    <FeatureX509>true</FeatureX509>
-    <FeatureX509Securestrings>true</FeatureX509Securestrings>
     <FeatureXPlatDacDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostWindowsx86>
     <FeatureXPlatDacDebugging_HostWindowsAMD64 Condition="'$(TargetArch)' == 'amd64' or '$(TargetArch)' == 'arm64'">true</FeatureXPlatDacDebugging_HostWindowsAMD64>
     <FeatureXPlatDacDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostOneCorex86>
@@ -58,15 +54,12 @@
 
     <FeatureCoreSystem>true</FeatureCoreSystem>
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
-    <FeatureLegacySurface>true</FeatureLegacySurface>
     <FeatureCominterop>true</FeatureCominterop>
     <FeatureICastable>true</FeatureICastable>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
-    <FeatureCrypto>true</FeatureCrypto>
     <FeatureHostAssemblyResolver>true</FeatureHostAssemblyResolver>
     <FeatureLazyCOWPages Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm')">true</FeatureLazyCOWPages>
-    <FeatureLegacyNetCFCrypto>true</FeatureLegacyNetCFCrypto>
     <FeatureLatin1>true</FeatureLatin1>
     <FeatureEncodingNls>true</FeatureEncodingNls>
     <FeatureAscii>true</FeatureAscii>
@@ -112,15 +105,6 @@
     <FeatureCominteropUnmanagedActivation>false</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>false</FeatureCominteropWinRTManagedActivation>
     <FeatureManagedEtw>false</FeatureManagedEtw>
-
-    <!-- Features implemented by fxcore -->
-    <FeatureLegacySurface>false</FeatureLegacySurface>
-    <FeatureCrypto>false</FeatureCrypto>
-    <FeatureLegacyNetCFCrypto>false</FeatureLegacyNetCFCrypto>
-    <FeatureX509>false</FeatureX509>
-    <FeatureX509Securestrings>false</FeatureX509Securestrings>
-    <FeatureIsostore>false</FeatureIsostore>
-    <FeatureIsostoreLight>false</FeatureIsostoreLight>
 
     <FeatureCoreFxGlobalization>true</FeatureCoreFxGlobalization>
   </PropertyGroup>

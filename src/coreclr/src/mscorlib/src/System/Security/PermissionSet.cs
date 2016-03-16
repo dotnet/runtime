@@ -63,7 +63,7 @@ namespace System.Security {
         private static void DEBUG_PRINTSTACK(Exception e)
         {
         #if _DEBUG
-            if (debug) Console.Error.WriteLine((e).StackTrace);
+            if (debug) Console.WriteLine((e).StackTrace);
         #endif
         }
     
