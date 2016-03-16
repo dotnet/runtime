@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
             yield return new object[] { 2004, 2, 29, 1, 1, 1, 0, 1 };
 
             // Random
-            DateTime randomTime = new DateTime(s_randomDataGenerator.GetInt64(-55) % (DateTime.MaxValue.Ticks + 1));
+            DateTime randomTime = s_randomDataGenerator.GetDateTime(-55);
             yield return new object[] { randomTime.Year, randomTime.Month, randomTime.Day, randomTime.Hour, randomTime.Minute, randomTime.Second, randomTime.Millisecond, 1 };
         }
 
