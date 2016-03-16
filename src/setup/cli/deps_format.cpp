@@ -129,23 +129,27 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
             auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&package](const pal::string_t& rid) {
                 return package.second.count(rid);
             });
-            if (iter == fallback_rids.end() || (*iter).empty())
+            if (iter != fallback_rids.end())
             {
-                trace::error(_X("Did not find a matching fallback rid for package %s for the host rid %s"), package.first.c_str(), host_rid.c_str());
-                return false;
+                matched_rid = *iter;
             }
-            matched_rid = *iter;
         }
-        assert(!matched_rid.empty());
+
+        if (matched_rid.empty())
+        {
+            package.second.clear();
+        }
+
         for (auto iter = package.second.begin(); iter != package.second.end(); /* */)
         {
             if (iter->first != matched_rid)
             {
-                 iter = package.second.erase(iter);
+                trace::verbose(_X("Chose %s, so removing rid (%s) specific assets for package %s"), matched_rid.c_str(), iter->first.c_str(), package.first.c_str());
+                iter = package.second.erase(iter);
             }
             else
             {
-                 ++iter;
+                ++iter;
             }
         }
     }
@@ -194,7 +198,6 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
     for (const auto& package : json.at(_X("targets")).at(target_name).as_object())
     {
         // if (package.second.at(_X("type")).as_string() != _X("package")) continue;
-
         const auto& asset_types = package.second.as_object();
         for (int i = 0; i < s_known_asset_types.size(); ++i)
         {
@@ -226,27 +229,24 @@ bool deps_json_t::load_portable(const json_value& json, const pal::string_t& tar
         return false;
     }
 
-    std::vector<pal::string_t> merged;
     auto package_exists = [&rid_assets, &non_rid_assets](const pal::string_t& package) -> bool {
         return rid_assets.count(package) || non_rid_assets.count(package);
     };
-    auto get_relpaths = [&rid_assets, &non_rid_assets, &merged](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
-        if (rid_assets.count(package) && non_rid_assets.count(package))
+    auto get_relpaths = [&rid_assets, &non_rid_assets](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
+
+        // Is there any rid specific assets for this type ("native" or "runtime" or "resources")
+        if (rid_assets.count(package) && !rid_assets[package].empty())
         {
-            const std::vector<pal::string_t>& rel1 = rid_assets[package].begin()->second[type_index];
-            const std::vector<pal::string_t>& rel2 = non_rid_assets[package][type_index];
-            merged.clear();
-            merged.reserve(rel1.size() + rel2.size());
-            merged.insert(merged.end(), rel1.begin(), rel1.end());
-            merged.insert(merged.end(), rel2.begin(), rel2.end());
-            return merged;
+            const auto& assets_by_type = rid_assets[package].begin()->second[type_index];
+            if (!assets_by_type.empty())
+            {
+                return assets_by_type;
+            }
+
+            trace::verbose(_X("There were no rid specific %s asset for %s"), deps_json_t::s_known_asset_types[type_index], package.c_str());
         }
-        else
-        {
-            return rid_assets.count(package)
-                ? rid_assets[package].begin()->second[type_index]
-                : non_rid_assets[package][type_index];
-        }
+
+        return non_rid_assets[package][type_index];
     };
 
     reconcile_libraries_with_targets(json, package_exists, get_relpaths);
