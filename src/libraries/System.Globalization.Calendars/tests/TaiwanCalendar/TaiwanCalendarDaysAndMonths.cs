@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
     public class TaiwanCalendarDaysAndMonths
     {
         [Fact]
-        public void Test1()
+        public void DayNames_MonthNames()
         {
-            string[] edays = {
+            string[] expectedDayNames = 
+            {
                 "\u661F\u671F\u65E5",
                 "\u661F\u671F\u4E00",
                 "\u661F\u671F\u4E8C",
@@ -23,31 +22,20 @@ namespace System.Globalization.CalendarsTests
                 "\u661F\u671F\u4E94",
                 "\u661F\u671F\u516D"
             };
-
-            string[] emonths = GetMonthNames();
-
+            
             DateTimeFormatInfo dtfi = new CultureInfo("zh-TW").DateTimeFormat;
             dtfi.Calendar = new TaiwanCalendar();
-
-            // Actual Day Names and Month Names for TaiwanCalendar
-            string[] adays = dtfi.DayNames;
-            for (int i = 0; i < edays.Length; i++)
-            {
-                Assert.Equal(edays[i], adays[i]);
-            }
-
-            string[] amonths = dtfi.MonthNames;
-            for (int i = 0; i < edays.Length; i++)
-            {
-                Assert.Equal(emonths[i], amonths[i]);
-            }
+            
+            Assert.Equal(expectedDayNames, dtfi.DayNames);
+            Assert.Equal(GetExpectedMonthNames(), dtfi.MonthNames);
         }
 
-        private static string[] GetMonthNames()
+        private static string[] GetExpectedMonthNames()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return new string[] {
+                return new string[] 
+                {
                     "\u4E00\u6708",
                     "\u4E8C\u6708",
                     "\u4E09\u6708",
@@ -66,7 +54,8 @@ namespace System.Globalization.CalendarsTests
             else
             {
                 // CLDR has a digit followed by the month symbol for the month names
-                return new string[] {
+                return new string[] 
+                {
                     "1\u6708",
                     "2\u6708",
                     "3\u6708",
