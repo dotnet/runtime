@@ -526,13 +526,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'default':
                             // Default trigger
-                            if (configuration != 'Checked') {
+                            if (configuration == 'Debug') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test")
                             }
                             break
                         case 'pri1':
+                            // Default trigger
                             if (configuration == 'Release') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test")
                             }
                             break
                         case 'ilrt':
