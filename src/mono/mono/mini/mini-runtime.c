@@ -1893,7 +1893,13 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 			MonoException *tmpEx;
 
 			mono_jit_stats.methods_lookups++;
-			vtable = mono_class_vtable (domain, method->klass);
+
+			vtable = mono_class_vtable_full (domain, method->klass, ex == NULL);
+			if (ex && method->klass->exception_type) {
+				*ex = mono_class_get_exception_for_failure (method->klass);
+				return NULL;
+			}
+
 			g_assert (vtable);
 			tmpEx = mono_runtime_class_init_full (vtable, ex == NULL);
 			if (tmpEx) {
