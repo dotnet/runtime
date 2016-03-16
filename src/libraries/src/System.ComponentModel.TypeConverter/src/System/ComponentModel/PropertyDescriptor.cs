@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Reflection;
+
 namespace System.ComponentModel
 {
     /// <devdoc>
     ///    <para>Provides a description of a property.</para>
     /// </devdoc>
-#if PLACEHOLDER
     public abstract class PropertyDescriptor : MemberDescriptor
-#else
-    public abstract class PropertyDescriptor
-#endif
     {
-#if PLACEHOLDER
         private TypeConverter _converter = null;
         private Hashtable _valueChangedHandlers;
         private object[] _editors;
         private Type[] _editorTypes;
         private int _editorCount;
-#endif
 
         /// <devdoc>
         ///    <para>
@@ -27,14 +24,6 @@ namespace System.ComponentModel
         ///       attributes.
         ///    </para>
         /// </devdoc>
-#if !PLACEHOLDER
-        // TODO: This is a temp constructor to unblock PropertyDescriptorCollection
-        protected PropertyDescriptor(string name, Attribute[] attrs)
-        {
-            Name = name;
-        }
-        public string Name { get; }
-#else
         protected PropertyDescriptor(string name, Attribute[] attrs)
         : base(name, attrs)
         {
@@ -92,7 +81,7 @@ namespace System.ComponentModel
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
                         Type converterType = GetTypeFromName(attr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType))
                         {
                             _converter = (TypeConverter)CreateInstance(converterType);
                         }
@@ -107,6 +96,7 @@ namespace System.ComponentModel
             }
         }
 
+#if PLACEHOLDER
         /// <devdoc>
         ///    <para>
         ///       Gets a value
@@ -145,6 +135,7 @@ namespace System.ComponentModel
                 return attr.Visibility;
             }
         }
+#endif
 
         /// <devdoc>
         ///    <para>
@@ -227,7 +218,7 @@ namespace System.ComponentModel
         protected object CreateInstance(Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
-            ConstructorInfo ctor = type.GetConstructor(typeArgs);
+            ConstructorInfo ctor = type.GetTypeInfo().GetConstructor(typeArgs);
             if (ctor != null)
             {
                 return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });
@@ -324,6 +315,7 @@ namespace System.ComponentModel
             //
             if (editor == null)
             {
+#if FEATURE_EDITORATTRIBUTE
                 for (int i = 0; i < attrs.Count; i++)
                 {
                     EditorAttribute attr = attrs[i] as EditorAttribute;
@@ -344,6 +336,7 @@ namespace System.ComponentModel
                         }
                     }
                 }
+#endif
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.
@@ -426,14 +419,14 @@ namespace System.ComponentModel
             if (ComponentType != null)
             {
                 if ((typeFromGetType == null) ||
-                    (ComponentType.Assembly.FullName.Equals(typeFromGetType.Assembly.FullName)))
+                    (ComponentType.GetTypeInfo().Assembly.FullName.Equals(typeFromGetType.GetTypeInfo().Assembly.FullName)))
                 {
                     int comma = typeName.IndexOf(',');
 
                     if (comma != -1)
                         typeName = typeName.Substring(0, comma);
 
-                    typeFromComponent = ComponentType.Assembly.GetType(typeName);
+                    typeFromComponent = ComponentType.GetTypeInfo().Assembly.GetType(typeName);
                 }
             }
 
@@ -442,10 +435,7 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
-        ///       When overridden in a derived class, gets the current
-        ///       value
-        ///       of the
-        ///       property on a component.
+        ///       When overridden in a derived class, gets the current value of the property on a component.
         ///    </para>
         /// </devdoc>
         public abstract object GetValue(object component);
@@ -459,11 +449,7 @@ namespace System.ComponentModel
         {
             if (component != null && _valueChangedHandlers != null)
             {
-                EventHandler handler = (EventHandler)_valueChangedHandlers[component];
-                if (handler != null)
-                {
-                    handler(component, e);
-                }
+                ((EventHandler)_valueChangedHandlers[component])?.Invoke(component, e);
             }
         }
 
@@ -509,10 +495,7 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
-        ///       When overridden in a derived class, resets the
-        ///       value
-        ///       for this property
-        ///       of the component.
+        ///       When overridden in a derived class, resets the value for this property of the component.
         ///    </para>
         /// </devdoc>
         public abstract void ResetValue(object component);
@@ -528,8 +511,7 @@ namespace System.ComponentModel
         /// <devdoc>
         ///    <para>
         ///       When overridden in a derived class, indicates whether the
-        ///       value of
-        ///       this property needs to be persisted.
+        ///       value of this property needs to be persisted.
         ///    </para>
         /// </devdoc>
         public abstract bool ShouldSerializeValue(object component);
@@ -547,6 +529,5 @@ namespace System.ComponentModel
                 return false;
             }
         }
-#endif
     }
 }

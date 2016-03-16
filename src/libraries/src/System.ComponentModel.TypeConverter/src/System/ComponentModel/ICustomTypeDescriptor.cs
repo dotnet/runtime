@@ -2,17 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Serialization.Formatters;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System;
-using Microsoft.Win32;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
-    ///    <para>Provides an interface that provides custom type information for an 
-    ///       object.</para>
+    ///    <para>Provides an interface that provides custom type information for an object.</para>
     /// </devdoc>
     public interface ICustomTypeDescriptor
     {
@@ -41,7 +34,6 @@ namespace System.ComponentModel
         ///    <para>Gets the default event for this object.</para>
         /// </devdoc>
         EventDescriptor GetDefaultEvent();
-
 
         /// <devdoc>
         ///    <para>Gets the default property for this object.</para>
