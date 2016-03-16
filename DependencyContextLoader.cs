@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal virtual bool IsEntryAssembly(Assembly assembly)
         {
-            return assembly.GetName() == Assembly.GetEntryAssembly().GetName();
+            return assembly.GetName() == Assembly.GetEntryAssembly()?.GetName();
         }
 
         internal virtual Stream GetResourceStream(Assembly assembly, string name)
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static string[] GetHostDepsList()
         {
-            // TODO: Were going to replace this with AppContext.GetData
+            // TODO: We're going to replace this with AppContext.GetData
             var appDomainType = typeof(object).GetTypeInfo().Assembly?.GetType("System.AppDomain");
             var currentDomain = appDomainType?.GetProperty("CurrentDomain")?.GetValue(null);
             var deps = appDomainType?.GetMethod("GetData")?.Invoke(currentDomain, new[] { "APP_CONTEXT_DEPS_FILES" });

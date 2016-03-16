@@ -14,6 +14,10 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public DependencyContext Read(Stream stream)
         {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
             using (var streamReader = new StreamReader(stream))
             {
                 using (var reader = new JsonTextReader(streamReader))

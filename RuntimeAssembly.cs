@@ -15,6 +15,14 @@ namespace Microsoft.Extensions.DependencyModel
 
         public RuntimeAssembly(string assemblyName, string path)
         {
+            if (string.IsNullOrEmpty(assemblyName))
+            {
+                throw new ArgumentException(nameof(assemblyName));
+            }
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException(nameof(path));
+            }
             _assemblyName = assemblyName;
             Path = path;
         }
