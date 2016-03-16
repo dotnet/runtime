@@ -2,77 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    //System.Globalization.KoreanCalendar.IsLeapYear(System.Int32,System.Int32)
     public class KoreanCalendarIsLeapYear
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
-        #region Positive Test Logic
-        // PosTest1:Invoke the method with min date time
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> IsLeapYear_TestData()
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1, 1, 1, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapYear(year, era);
-            bool actualValue;
-            actualValue = kC.IsLeapYear(year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            yield return new object[] { 1, 1 };
+            yield return new object[] { 9999, 1 };
+            yield return new object[] { 1900, 1 };
+            yield return new object[] { 1200, 1 };
         }
 
-        // PosTest2:Invoke the method with max date time
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(IsLeapYear_TestData))]
+        public void IsLeapYear(int year, int era)
         {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(9999, 12, 31, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapYear(year, era);
-            bool actualValue;
-            actualValue = kC.IsLeapYear(year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
+            bool expected = new GregorianCalendar().IsLeapYear(year, era);
+            Assert.Equal(expected, new KoreanCalendar().IsLeapYear(year + 2333, era));
         }
-
-        // PosTest3:Invoke the method with normal date time
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1900, 2, 28, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapYear(year, era);
-            bool actualValue;
-            actualValue = kC.IsLeapYear(year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-
-        // PosTest4:Invoke the method with leap day date time
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar kC = new KoreanCalendar();
-            System.Globalization.Calendar gC = new GregorianCalendar();
-            DateTime dateTime = gC.ToDateTime(1200, 2, 29, 0, 0, 0, 0);
-            int year = dateTime.Year;
-            int era = gC.GetEra(dateTime);
-            bool expectedValue = gC.IsLeapYear(year, era);
-            bool actualValue;
-            actualValue = kC.IsLeapYear(year + 2333, kC.GetEra(dateTime));
-            Assert.Equal(expectedValue, actualValue);
-        }
-        #endregion
     }
 }

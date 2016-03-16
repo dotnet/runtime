@@ -15,7 +15,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddMonths.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddYears.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarEras.cs" />
@@ -45,7 +44,6 @@
     <Compile Include="KoreanCalendar\KoreanCalendarToDateTime.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddMonths.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarAddYears.cs" />
-    <Compile Include="KoreanCalendar\KoreanCalendarCtor.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarEras.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarGetDayOfMonth.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarGetDayOfWeek.cs" />
