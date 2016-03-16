@@ -87,8 +87,10 @@ bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_
 
     args.app_argc -= num_args;
     args.app_argv += num_args;
-    pal::string_t deps_file = opts.count(_X("--depsfile")) ? opts[_X("--depsfile")] : deps_path;
-    pal::string_t probe_path = opts.count(_X("--additionalprobingpath")) ? opts[_X("--additionalprobingpath")] : probe_dir;
+    pal::string_t opts_deps_file = _X("--depsfile");
+    pal::string_t opts_probe_path = _X("--additionalprobingpath");
+    pal::string_t deps_file = opts.count(opts_deps_file) ? opts[opts_deps_file] : deps_path;
+    pal::string_t probe_path = opts.count(opts_probe_path) ? opts[opts_probe_path] : probe_dir;
 
     if (!deps_file.empty())
     {
