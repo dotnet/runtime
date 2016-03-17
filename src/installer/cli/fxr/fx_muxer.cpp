@@ -225,7 +225,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 /* static */
 int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 {
-    trace::error(_X("--- Executing in muxer mode..."));
+    trace::verbose(_X("--- Executing in muxer mode..."));
 
     pal::string_t own_path;
 
@@ -343,7 +343,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             }
             append_path(&sdk_dotnet, _X("dotnet.dll"));
 
-            if (!pal::file_exists(_X("dotnet.dll")))
+            if (!pal::file_exists(sdk_dotnet))
             {
                 trace::error(_X("Could not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
                 return StatusCode::LibHostSdkFindFailure;
