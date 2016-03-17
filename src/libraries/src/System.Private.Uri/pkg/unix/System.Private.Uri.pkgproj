@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Private.Uri.csproj" >
-      <AdditionalProperties>FilterToOSGroup=Linux</AdditionalProperties>
+      <OSGroup>Unix</OSGroup>
     </ProjectReference>
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System\runtime.native.System.pkgproj" />
