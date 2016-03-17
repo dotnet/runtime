@@ -171,10 +171,23 @@ namespace System.Net.Http
             // 407-401-407-401- loop.
             if (proxyAuthScheme != 0)
             {
+                ICredentials proxyCredentials;
+                Uri proxyUri;
+                if (state.Proxy != null)
+                {
+                    proxyCredentials = state.Proxy.Credentials;
+                    proxyUri = state.Proxy.GetProxy(state.RequestMessage.RequestUri);
+                }
+                else
+                {
+                    proxyCredentials = state.DefaultProxyCredentials;
+                    proxyUri = state.RequestMessage.RequestUri;
+                }
+
                 SetWinHttpCredential(
                     state.RequestHandle,
-                    state.Proxy == null ? state.DefaultProxyCredentials : state.Proxy.Credentials,
-                    state.RequestMessage.RequestUri,
+                    proxyCredentials,
+                    proxyUri,
                     proxyAuthScheme,
                     Interop.WinHttp.WINHTTP_AUTH_TARGET_PROXY);
             }
