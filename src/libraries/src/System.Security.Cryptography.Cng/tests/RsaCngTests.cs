@@ -77,5 +77,60 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.True(verified);
             }
         }
+
+        [Fact]
+        public static void RSACng_Ctor_UnusualKeysize_384()
+        {
+            const int ExpectedKeySize = 384;
+
+            byte[] keyBlob = (
+                "525341328001000003000000300000001800000018000000010001DACC22D86E" +
+                "671575032E31F206DCFC192C65E2D51089E5112D096F2882AFDB5B78CDB6572F" +
+                "D2F61DB390472232E3D9F5FADBD7F8A18B3A75A4F6DFAEE3426FD0FF8BAC74B6" +
+                "722DEFDF48144A6D88A780144FCEA66BDCDA50D6071C54E5D0DA5B").HexToByteArray();
+
+            RSAParameters expected = System.Security.Cryptography.Rsa.Tests.TestData.RSA384Parameters;
+            RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
+        }
+
+        [Fact]
+        public static void RSACng_Ctor_UnusualKeysize_1032()
+        {
+            const int ExpectedKeySize = 1032;
+
+            byte[] keyBlob = (
+                "525341320804000003000000810000004100000041000000010001BCACB1A534" +
+                "9D7B35A580AC3B3998EB15EBF900ECB329BF1F75717A00B2199C8A18D791B592" +
+                "B7EC52BD5AF2DB0D3B635F0595753DFF7BA7C9872DBF7E3226DEF44A07CA568D" +
+                "1017992C2B41BFE5EC3570824CF1F4B15919FED513FDA56204AF2034A2D08FF0" +
+                "4C2CCA49D168FA03FA2FA32FCCD3484C15F0A2E5467C76FC760B55090E15300A" +
+                "9D34BA37B6BDA831BC6727B2F7F6D0EFB7B33A99C9AF28CFD625E245A54F251B" +
+                "784C4791ADA585ADB711D9300A3D52B450CC307F55D31E1217B9FFD7450D65C6" +
+                "0DE8B6F54A7756FD1CCBA76CE41EF446D024031EE9C5A40931B07336CFED35A8" +
+                "EE580E19DB8592CB0F266EC69028EB9E98E3E84FF1A459A8A26860A610F5").HexToByteArray();
+
+            RSAParameters expected = System.Security.Cryptography.Rsa.Tests.TestData.RSA1032Parameters;
+            RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
+        }
+
+        private static void RSACng_Ctor_UnusualKeysize(
+            int expectedKeySize,
+            byte[] keyBlob,
+            RSAParameters expectedParameters)
+        {
+            // Pre-condition: Creating a key of this size will fail
+            Assert.Throws<CryptographicException>(() => new RSACng(expectedKeySize));
+
+            using (CngKey cngKey = CngKey.Import(keyBlob, new CngKeyBlobFormat("RSAPRIVATEBLOB")))
+            using (RSACng rsaCng = new RSACng(cngKey))
+            {
+                Assert.Equal(expectedKeySize, rsaCng.KeySize);
+
+                RSAParameters exported = rsaCng.ExportParameters(false);
+
+                Assert.Equal(expectedParameters.Modulus, exported.Modulus);
+                Assert.Equal(expectedParameters.Exponent, exported.Exponent);
+            }
+        }
     }
 }
