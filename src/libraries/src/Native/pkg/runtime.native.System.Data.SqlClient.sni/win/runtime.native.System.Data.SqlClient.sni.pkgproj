@@ -4,17 +4,15 @@
   
   <PropertyGroup>
     <Version>4.0.1</Version>
-    <PackageTargetRuntime>win7-$(PackagePlatform)</PackageTargetRuntime>
+    <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->
+    <IdPrefix>runtime.win7-$(PackagePlatform).</IdPrefix>
   </PropertyGroup>
 
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
   <ItemGroup>
-    <File Include="$(WinNativePath)ProjectK\Runtime\clrcompression.dll">
+    <File Include="$(WinNativePath)sni.dll">
+      <TargetFramework>win7-$(PackagePlatform)</TargetFramework>
       <TargetPath>runtimes/win7-$(PackagePlatform)/native</TargetPath>
-    </File>
-    <!-- use Win10 temporarily as the distinguishing factor, in reality the distinction is app-container vs not. -->
-    <File Include="$(WinNativePath)NetCoreForCoreCLR\native\clrcompression.dll">
-      <TargetPath>runtimes/win10-$(PackagePlatform)/native</TargetPath>
     </File>
   </ItemGroup>
 
