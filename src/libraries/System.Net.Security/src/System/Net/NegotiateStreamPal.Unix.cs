@@ -226,7 +226,7 @@ namespace System.Net.Security
                 throw new PlatformNotSupportedException(SR.net_nego_not_supported_empty_target_with_defaultcreds);
             }
 
-            return EstablishSecurityContext(
+            SecurityStatusPal status = EstablishSecurityContext(
                 negoCredentialsHandle,
                 ref securityContext,
                 spn,
@@ -234,6 +234,18 @@ namespace System.Net.Security
                 ((inSecurityBufferArray != null && inSecurityBufferArray.Length != 0) ? inSecurityBufferArray[0] : null),
                 outSecurityBuffer,
                 ref contextFlags);
+
+            // Confidentiality flag should not be set if not requested
+            if (status.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded)
+            {
+                ContextFlagsPal mask = ContextFlagsPal.Confidentiality;
+                if ((requestedContextFlags & mask) != (contextFlags & mask))
+                {
+                    throw new PlatformNotSupportedException(SR.net_nego_protection_level_not_supported);
+                }
+            }
+
+            return status;
         }
 
         internal static SecurityStatusPal CompleteAuthToken(

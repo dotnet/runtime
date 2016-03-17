@@ -69,8 +69,19 @@ static uint32_t NetSecurityNative_AcquireCredSpNego(uint32_t* minorStatus,
 #else
     gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = &gss_mech_spnego_OID_desc};
 #endif
-    return gss_acquire_cred(
+    uint32_t majorStatus = gss_acquire_cred(
         minorStatus, desiredName, 0, &gss_mech_spnego_OID_set_desc, credUsage, outputCredHandle, nullptr, nullptr);
+
+    // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
+        majorStatus = gss_set_cred_option(minorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
+    }
+#endif
+
+    return majorStatus;
 }
 
 extern "C" uint32_t
@@ -377,8 +388,19 @@ static uint32_t NetSecurityNative_AcquireCredWithPassword(uint32_t* minorStatus,
 #endif
 
     GssBuffer passwordBuffer{.length = passwdLen, .value = password};
-    return gss_acquire_cred_with_password(
+    uint32_t majorStatus = gss_acquire_cred_with_password(
         minorStatus, desiredName, &passwordBuffer, 0, desiredMech, credUsage, outputCredHandle, nullptr, nullptr);
+
+    // call gss_set_cred_option with GSS_KRB5_CRED_NO_CI_FLAGS_X to support Kerberos Sign Only option from *nix client against a windows server
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+    if (majorStatus == GSS_S_COMPLETE)
+    {
+        GssBuffer emptyBuffer = GSS_C_EMPTY_BUFFER;
+        majorStatus = gss_set_cred_option(minorStatus, outputCredHandle, GSS_KRB5_CRED_NO_CI_FLAGS_X, &emptyBuffer);
+    }
+#endif
+
+    return majorStatus;
 }
 
 extern "C" uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
