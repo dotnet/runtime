@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -13,17 +9,15 @@ namespace System.ComponentModel
     ///       Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event.
     ///    </para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     public class RefreshEventArgs : EventArgs
     {
-        private object _componentChanged;
+        private readonly object _componentChanged;
         private Type _typeChanged;
 
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
-        ///       the component that has
-        ///       changed.
+        ///       the component that has changed.
         ///    </para>
         /// </devdoc>
         public RefreshEventArgs(object componentChanged)
@@ -35,8 +29,7 @@ namespace System.ComponentModel
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
-        ///       the type
-        ///       of component that has changed.
+        ///       the type of component that has changed.
         ///    </para>
         /// </devdoc>
         public RefreshEventArgs(Type typeChanged)
@@ -46,9 +39,7 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
-        ///       Gets the component that has changed
-        ///       its properties, events, or
-        ///       extenders.
+        ///       Gets the component that has changed its properties, events, or extenders.
         ///    </para>
         /// </devdoc>
         public object ComponentChanged
@@ -73,4 +64,3 @@ namespace System.ComponentModel
         }
     }
 }
-
