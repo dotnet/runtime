@@ -3,6 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Specialized;
+using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -20,10 +28,8 @@ namespace System.ComponentModel
         private static Hashtable s_providerTypeTable = new Hashtable();      // A direct mapping from type to provider.
         private static volatile Hashtable s_defaultProviders = new Hashtable();      // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
         private static volatile WeakHashtable s_associationTable;
-#endif
-        // A version stamp for our metadata used by property descriptors to know when to rebuild attributes.
-        private static int s_metadataVersion = 0;
-#if PLACEHOLDER
+        private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild
+                                                                      // attributes.
 
 
         // This is an index that we use to create a unique name for a property in the
@@ -90,7 +96,6 @@ namespace System.ComponentModel
                 return typeof(TypeDescriptorInterface);
             }
         }
-#endif
 
         /// <devdoc>
         ///     This value increments each time someone refreshes or changes metadata.
@@ -103,7 +108,6 @@ namespace System.ComponentModel
             }
         }
 
-#if PLACEHOLDER
         /// <include file='doc\TypeDescriptor.uex' path='docs/doc[@for="TypeDescriptor.Refreshed"]/*' />
         /// <devdoc>
         ///    Occurs when Refreshed is raised for a component.
@@ -170,11 +174,10 @@ namespace System.ComponentModel
 
         /// <internalonly/>
         /// <devdoc>
-        ///     Adds an editor table for the given editor base type.
-        ///     ypically, editors are specified as metadata on an object. If no metadata for a
-        ///     equested editor base type can be found on an object, however, the
-        ///     ypeDescriptor will search an editor
-        ///     able for the editor type, if one can be found.
+        ///     Adds an editor table for the given editor base type. Typically, editors are
+        ///     specified as metadata on an object. If no metadata for a requested editor
+        ///     base type can be found on an object, however, the TypeDescriptor will search
+        ///     an editor table for the editor type, if one can be found.
         /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddEditorTable(Type editorBaseType, Hashtable table)
@@ -361,13 +364,13 @@ namespace System.ComponentModel
             // more than one of these, but walk anyway.  Walk in 
             // reverse order so that the most derived takes precidence.
             //
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+            object[] attrs = type.GetTypeInfo().GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false).ToArray();
             bool providerAdded = false;
             for (int idx = attrs.Length - 1; idx >= 0; idx--)
             {
                 TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
                 Type providerType = Type.GetType(pa.TypeName);
-                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                if (providerType != null && typeof(TypeDescriptionProvider).GetTypeInfo().IsAssignableFrom(providerType))
                 {
                     TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
                     Trace("Providers : Default provider found : {0}", providerType.Name);
@@ -379,7 +382,7 @@ namespace System.ComponentModel
             // If we did not add a provider, check the base class.  
             if (!providerAdded)
             {
-                Type baseType = type.BaseType;
+                Type baseType = type.GetTypeInfo().BaseType;
                 if (baseType != null && baseType != type)
                 {
                     CheckDefaultProvider(baseType);
@@ -455,7 +458,7 @@ namespace System.ComponentModel
                 associations.Add(new WeakReference(secondary));
             }
         }
-
+#if PLACEHOLDER
         /// <devdoc>
         ///     This dynamically binds an EventDescriptor to a type.
         /// </devdoc>
@@ -473,7 +476,6 @@ namespace System.ComponentModel
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
 #endif
-
         /// <devdoc>
         ///     This method will search internal tables within TypeDescriptor for 
         ///     a TypeDescriptionProvider object that is associated with the given 
@@ -481,9 +483,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (objectType == null)
             {
                 throw new ArgumentNullException(nameof(objectType));
@@ -522,7 +521,7 @@ namespace System.ComponentModel
 
             return instance;
         }
-
+#if FEATURE_REFLECTPROPERTYDESCRIPTOR
         /// <devdoc>
         ///     This dynamically binds a PropertyDescriptor to a type.
         /// </devdoc>
@@ -561,7 +560,7 @@ namespace System.ComponentModel
             //
             return new ReflectPropertyDescriptor(componentType, oldPropertyDescriptor, attributes);
         }
-
+#endif
         /// <devdoc>
         ///     This  API is used to remove any members from the given
         ///     collection that do not match the attribute array.  If members
@@ -609,17 +608,14 @@ namespace System.ComponentModel
 
             return newMembers;
         }
-#endif
 
         /// <devdoc>
         ///     The GetAssociation method returns the correct object to invoke 
         ///     for the requested type.  It never returns null.  
         /// </devdoc>
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
@@ -632,7 +628,7 @@ namespace System.ComponentModel
 
             object associatedObject = primary;
 
-            if (!type.IsInstanceOfType(primary))
+            if (!type.GetTypeInfo().IsInstanceOfType(primary))
             {
                 // Check our association table for a match.
                 //
@@ -656,7 +652,7 @@ namespace System.ComponentModel
                                     Trace("Associations : Removing dead reference in assocation table");
                                     associations.RemoveAt(idx);
                                 }
-                                else if (type.IsInstanceOfType(secondary))
+                                else if (type.GetTypeInfo().IsInstanceOfType(secondary))
                                 {
                                     Trace("Associations : Associated {0} to {1}", primary.GetType().Name, secondary.GetType().Name);
                                     associatedObject = secondary;
@@ -666,6 +662,7 @@ namespace System.ComponentModel
                     }
                 }
 
+#if FEATURE_IDESIGNERHOST
                 // Not in our table.  We have a default association with a designer 
                 // if that designer is a component.
                 //
@@ -688,7 +685,7 @@ namespace System.ComponentModel
                                 // an object that this PropertyDescriptor can't munch on, but it's
                                 // clearer to use that object instance instead of it's designer.
                                 //
-                                if (designer != null && type.IsInstanceOfType(designer))
+                                if (designer != null && type.GetTypeInfo().IsInstanceOfType(designer))
                                 {
                                     Trace("Associations : Associated {0} to {1}", primary.GetType().Name, designer.GetType().Name);
                                     associatedObject = designer;
@@ -697,6 +694,7 @@ namespace System.ComponentModel
                         }
                     }
                 }
+#endif
             }
 
             return associatedObject;
@@ -884,15 +882,10 @@ namespace System.ComponentModel
         /// </devdoc>
         public static TypeConverter GetConverter(Type type)
         {
-#if PLACEHOLDER
             TypeConverter converter = GetDescriptor(type, "type").GetConverter();
             return converter;
-#else
-            return ReflectTypeDescriptionProvider.GetConverter(type);
-#endif
         }
 
-#if PLACEHOLDER
         /// <devdoc>
         ///     Gets the default event for the specified type of component.
         /// </devdoc>
@@ -1022,7 +1015,6 @@ namespace System.ComponentModel
 
             return NodeFor(component).GetExtendedTypeDescriptor(component);
         }
-        #endif
 
         /// <devdoc>
         ///     Gets an editor with the specified base type for the
@@ -1030,9 +1022,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object GetEditor(object component, Type editorBaseType)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             return GetEditor(component, editorBaseType, false);
         }
 
@@ -1274,7 +1263,8 @@ namespace System.ComponentModel
 
         private static Type GetNodeForBaseType(Type searchType)
         {
-            if (searchType.IsInterface)
+            var typeInfo = searchType.GetTypeInfo();
+            if (typeInfo.IsInterface)
             {
                 return InterfaceType;
             }
@@ -1282,7 +1272,7 @@ namespace System.ComponentModel
             {
                 return null;
             }
-            return searchType.BaseType;
+            return typeInfo.BaseType;
         }
 
         /// <devdoc>
@@ -1298,7 +1288,6 @@ namespace System.ComponentModel
 
             return GetDescriptor(componentType, "componentType").GetProperties();
         }
-#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified type of 
@@ -1306,9 +1295,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (componentType == null)
             {
                 Debug.Fail("COMPAT:  Returning an empty collection, but you should not pass null here");
@@ -1345,7 +1331,6 @@ namespace System.ComponentModel
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
         }
-#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified 
@@ -1354,9 +1339,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             return GetProperties(component, attributes, false);
         }
 
@@ -1508,7 +1490,6 @@ namespace System.ComponentModel
             return NodeFor(type, false);
         }
 
-#endif
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
@@ -1524,7 +1505,7 @@ namespace System.ComponentModel
             //return NodeFor(type).GetReflectionType(type);
         }
 
-#if PLACEHOLDER
+
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
@@ -1668,11 +1649,6 @@ namespace System.ComponentModel
             {
                 Type type = instance.GetType();
 
-                if (type.IsCOMObject)
-                {
-                    type = ComObjectType;
-                }
-
                 if (createDelegator)
                 {
                     node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(type));
@@ -1764,7 +1740,7 @@ namespace System.ComponentModel
                         Type keyType = key as Type;
                         if (keyType == null) keyType = key.GetType();
 
-                        target.Provider = new DelegatingTypeDescriptionProvider(keyType.BaseType);
+                        target.Provider = new DelegatingTypeDescriptionProvider(keyType.GetTypeInfo().BaseType);
                     }
                     else
                     {
@@ -1910,7 +1886,11 @@ namespace System.ComponentModel
                 case PIPELINE_ATTRIBUTES:
                     foreach (Attribute attr in members)
                     {
+#if FEATURE_ATTRIBUTE_TYPEID
                         filterTable[attr.TypeId] = attr;
+#else
+                        filterTable[attr] = attr;
+#endif
                     }
                     cacheResults = componentFilter.FilterAttributes(component, filterTable);
                     break;
@@ -2268,7 +2248,7 @@ namespace System.ComponentModel
                     foreach (DictionaryEntry de in s_providerTable)
                     {
                         Type nodeType = de.Key as Type;
-                        if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
+                        if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                         {
                             TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                             while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -2351,7 +2331,7 @@ namespace System.ComponentModel
                 foreach (DictionaryEntry de in s_providerTable)
                 {
                     Type nodeType = de.Key as Type;
-                    if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
+                    if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -2411,7 +2391,7 @@ namespace System.ComponentModel
                 foreach (DictionaryEntry de in s_providerTable)
                 {
                     Type nodeType = de.Key as Type;
-                    if (nodeType != null && nodeType.Module.Equals(module) || nodeType == typeof(object))
+                    if (nodeType != null && nodeType.GetTypeInfo().Module.Equals(module) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -2458,8 +2438,6 @@ namespace System.ComponentModel
         ///    Clears the properties and events for the specified 
         ///    assembly from the cache.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Machine | ResourceScope.Assembly, ResourceScope.Machine | ResourceScope.Assembly)]
         public static void Refresh(Assembly assembly)
         {
             if (assembly == null)
@@ -2654,14 +2632,19 @@ namespace System.ComponentModel
             Attribute memberAttribute = member.Attributes[attribute.GetType()];
             if (memberAttribute == null)
             {
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 return !attribute.IsDefaultAttribute();
+#else
+                // TODO more reasonable alternative
+                return false;
+#endif
             }
             else
             {
-                return !(attribute.Match(memberAttribute));
+                return !attribute.Equals(memberAttribute);
             }
         }
-#endif
+
         /// <devdoc>
         ///     Sorts descriptors by name of the descriptor.
         /// </devdoc>
@@ -2675,8 +2658,6 @@ namespace System.ComponentModel
 
             //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
-
-#if PLACEHOLDER
 
         /// <devdoc>
         ///     Internal tracing API for debugging type descriptor.
@@ -2752,7 +2733,11 @@ namespace System.ComponentModel
                         bool match = false;
                         for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                         {
+#if FEATURE_ATTRIBUTE_TYPEID
                             if (newArray[existingIdx].TypeId.Equals(newAttrs[idx].TypeId))
+#else
+                            if (newArray[existingIdx].Equals(newAttrs[idx]))
+#endif
                             {
                                 match = true;
                                 newArray[existingIdx] = newAttrs[idx];
@@ -2782,7 +2767,7 @@ namespace System.ComponentModel
                 }
             }
         }
-
+#if PLACEHOLDER
         /// <devdoc>
         ///     This class is a type description provider that works with the IComNativeDescriptorHandler
         ///     interface.
@@ -2956,7 +2941,7 @@ namespace System.ComponentModel
                 }
             }
         }
-
+#endif
         /// <devdoc>
         ///     This is a simple class that is used to store a filtered
         ///     set of members in an object's dictionary cache.  It is
@@ -3038,7 +3023,7 @@ namespace System.ComponentModel
 
             public int Compare(object left, object right)
             {
-                return string.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name, false, CultureInfo.InvariantCulture);
+                return CultureInfo.InvariantCulture.CompareInfo.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name);
             }
         }
 
@@ -3377,7 +3362,6 @@ namespace System.ComponentModel
             ///     Implements GetTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
             /// </devdoc>
-
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
             {
@@ -3386,7 +3370,7 @@ namespace System.ComponentModel
                     throw new ArgumentNullException(nameof(objectType));
                 }
 
-                if (instance != null && !objectType.IsInstanceOfType(instance))
+                if (instance != null && !objectType.GetTypeInfo().IsInstanceOfType(instance))
                 {
                     throw new ArgumentException(nameof(instance));
                 }
@@ -4076,23 +4060,11 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        ///     This is a simple internal type that allows external parties
-        ///     to public ina custom type description provider for COM
-        ///     objects.
-        /// </devdoc>
-        [TypeDescriptionProvider("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, " + AssemblyRef.SystemWindowsForms)]
-        private sealed class TypeDescriptorComObject
-        {
-        }
-
-        /// <devdoc>
         ///     This is a simple internal type that allows external parties to
         ///     register a custom type description provider for all interface types.
         /// </devdoc>
         private sealed class TypeDescriptorInterface
         {
         }
-#endif
     }
 }
-
