@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -193,7 +194,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             context.CompileLibraries.Should().HaveCount(2);
             var project = context.RuntimeLibraries.Should().Contain(l => l.Name == "MyApp").Subject;
             project.Version.Should().Be("1.0.1");
-            project.Assemblies.Should().Contain(a => a.Path == "MyApp.dll");
+            project.RuntimeAssemblyGroups.GetDefaultAssets().Should().Contain("MyApp.dll");
             project.Type.Should().Be("project");
 
 
@@ -202,13 +203,46 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Hash.Should().Be("HASH-System.Banana");
             package.Type.Should().Be("package");
             package.Serviceable.Should().Be(false);
-            package.Assemblies.Should().Contain(a => a.Path == "lib/dotnet5.4/System.Banana.dll");
             package.ResourceAssemblies.Should().Contain(a => a.Path == "System.Banana.resources.dll")
                 .Subject.Locale.Should().Be("en-US");
 
-            var target = package.RuntimeTargets.Should().Contain(t => t.Runtime == "win7-x64").Subject;
-            target.Assemblies.Should().Contain(a => a.Path == "lib/win7/System.Banana.dll");
-            target.NativeLibraries.Should().Contain("lib/win7/Banana.dll");
+            package.RuntimeAssemblyGroups.GetDefaultAssets().Should().Contain("lib/dotnet5.4/System.Banana.dll");
+            package.RuntimeAssemblyGroups.GetRuntimeAssets("win7-x64").Should().Contain("lib/win7/System.Banana.dll");
+            package.NativeLibraryGroups.GetRuntimeAssets("win7-x64").Should().Contain("lib/win7/Banana.dll");
+        }
+
+        [Fact]
+        public void ReadsRuntimeTargetPlaceholdersAsEmptyGroups()
+        {
+            var context = Read(
+@"{
+    ""runtimeTarget"": "".NETStandardApp,Version=v1.5"",
+    ""targets"": {
+        "".NETStandardApp,Version=v1.5"": {
+            ""System.Banana/1.0.0"": {
+                ""runtimeTargets"": {
+                    ""runtime/win7-x64/lib/_._"": { ""assetType"": ""runtime"", ""rid"": ""win7-x64""},
+                    ""runtime/linux-x64/native/_._"": { ""assetType"": ""native"", ""rid"": ""linux-x64""},
+                },
+            }
+        }
+    },
+    ""libraries"":{
+        ""System.Banana/1.0.0"": {
+            ""type"": ""package"",
+            ""serviceable"": false,
+            ""sha512"": ""HASH-System.Banana""
+        },
+    }
+}");
+            context.CompileLibraries.Should().HaveCount(1);
+
+            var package = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Banana").Subject;
+
+            package.RuntimeAssemblyGroups.Should().Contain(g => g.Runtime == "win7-x64")
+                .Which.AssetPaths.Should().BeEmpty();
+            package.NativeLibraryGroups.Should().Contain(g => g.Runtime == "linux-x64")
+                .Which.AssetPaths.Should().BeEmpty();
         }
 
         [Fact]

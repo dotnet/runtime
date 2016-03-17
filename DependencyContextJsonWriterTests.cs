@@ -150,16 +150,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new [] { RuntimeAssembly.Create("Banana.dll")},
-                                        new [] { "runtimes\\linux\\native\\native.so" },
-                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
-                                        new []
-                                        {
-                                            new RuntimeTarget("win7-x64",
-                                                new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
-                                                new [] { "native\\Banana.Win7-x64.so" }
-                                            )
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
                                         },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
@@ -229,16 +228,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new [] { RuntimeAssembly.Create("Banana.dll")},
-                                        new [] { "native.dll" },
-                                        new ResourceAssembly[] {},
-                                        new []
-                                        {
-                                            new RuntimeTarget("win7-x64",
-                                                new [] { RuntimeAssembly.Create("Banana.Win7-x64.dll") },
-                                                new [] { "Banana.Win7-x64.so" }
-                                            )
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
                                         },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "native.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.so")
+                                        },
+                                        new ResourceAssembly[] {},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
@@ -293,10 +291,13 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new [] { RuntimeAssembly.Create("Banana.dll")},
-                                        new [] { "runtimes\\osx\\native\\native.dylib" },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\osx\\native\\native.dylib")
+                                        },
                                         new ResourceAssembly[] {},
-                                        new RuntimeTarget[] {},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")
                                         },
@@ -324,6 +325,58 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void WritesPlaceholderRuntimeTargetsForEmptyGroups()
+        {
+            var result = Save(Create(
+                            "Target",
+                            "runtime",
+                            true,
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "PackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup("win7-x64"),
+                                            new RuntimeAssetGroup("win7-x86", "lib\\x86Support.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup("linux-x64"),
+                                            new RuntimeAssetGroup("osx", "native\\OSXSupport.dylib")
+                                        },
+                                        new ResourceAssembly[] { },
+                                        new Dependency[] { },
+                                        true
+                                    ),
+                            }));
+
+            // targets
+            var targets = result.Should().HavePropertyAsObject("targets").Subject;
+            var target = targets.Should().HavePropertyAsObject("Target").Subject;
+            var library = target.Should().HavePropertyAsObject("PackageName/1.2.3").Subject;
+
+            var runtimeTargets = library.Should().HavePropertyAsObject("runtimeTargets").Subject;
+
+            var winPlaceholder = runtimeTargets.Should().HavePropertyAsObject("runtime/win7-x64/lib/_._").Subject;
+            winPlaceholder.Should().HavePropertyValue("rid", "win7-x64");
+            winPlaceholder.Should().HavePropertyValue("assetType", "runtime");
+
+            var winRuntime = runtimeTargets.Should().HavePropertyAsObject("lib/x86Support.dll").Subject;
+            winPlaceholder.Should().HavePropertyValue("rid", "win7-x64");
+            winPlaceholder.Should().HavePropertyValue("assetType", "runtime");
+
+            var linuxPlaceholder = runtimeTargets.Should().HavePropertyAsObject("runtime/linux-x64/native/_._").Subject;
+            linuxPlaceholder.Should().HavePropertyValue("rid", "linux-x64");
+            linuxPlaceholder.Should().HavePropertyValue("assetType", "native");
+
+            var osxNative = runtimeTargets.Should().HavePropertyAsObject("native/OSXSupport.dylib").Subject;
+            osxNative.Should().HavePropertyValue("rid", "osx");
+            osxNative.Should().HavePropertyValue("assetType", "native");
+        }
+
+        [Fact]
         public void WritesResourceAssembliesForNonPortable()
         {
             var result = Save(Create(
@@ -337,13 +390,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new RuntimeAssembly[] { },
-                                        new string[] { },
+                                        new RuntimeAssetGroup[] { },
+                                        new RuntimeAssetGroup[] { },
                                         new []
                                         {
                                             new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
                                         },
-                                        new RuntimeTarget[] { },
                                         new Dependency[] { },
                                         true
                                     ),
@@ -372,13 +424,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "PackageName",
                                         "1.2.3",
                                         "HASH",
-                                        new RuntimeAssembly[] { },
-                                        new string[] { },
+                                        new RuntimeAssetGroup[] { },
+                                        new RuntimeAssetGroup[] { },
                                         new []
                                         {
                                             new ResourceAssembly("en-US/Fruits.resources.dll", "en-US")
                                         },
-                                        new RuntimeTarget[] { },
                                         new Dependency[] { },
                                         true
                                     ),
@@ -397,7 +448,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void WritesCompilationOptions()
         {
             var result = Save(Create(compilationOptions: new CompilationOptions(
-                defines: new[] {"MY", "DEFINES"},
+                defines: new[] { "MY", "DEFINES" },
                 languageVersion: "C#8",
                 platform: "Platform",
                 allowUnsafe: true,
@@ -422,7 +473,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             options.Should().HavePropertyValue("languageVersion", "C#8");
             options.Should().HavePropertyValue("keyFile", "Key.snk");
             options.Should().HaveProperty("defines")
-                .Subject.Values<string>().Should().BeEquivalentTo(new [] {"MY", "DEFINES" });
+                .Subject.Values<string>().Should().BeEquivalentTo(new[] { "MY", "DEFINES" });
         }
     }
 }
