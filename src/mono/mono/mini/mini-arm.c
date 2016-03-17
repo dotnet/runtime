@@ -2375,6 +2375,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 					} else {
 						int creg;
 
+						cfg->param_area = MAX (cfg->param_area, 8);
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, ARMREG_SP, (cfg->param_area - 8), in->dreg);
 						creg = mono_alloc_ireg (cfg);
 						MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, creg, ARMREG_SP, (cfg->param_area - 8));
@@ -2396,6 +2397,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 					} else {
 						int creg;
 
+						cfg->param_area = MAX (cfg->param_area, 8);
 						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ARMREG_SP, (cfg->param_area - 8), in->dreg);
 						creg = mono_alloc_ireg (cfg);
 						MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, creg, ARMREG_SP, (cfg->param_area - 8));
@@ -2467,6 +2469,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 				/* This should work for soft-float as well */
 
+				cfg->param_area = MAX (cfg->param_area, 8);
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ARMREG_SP, (cfg->param_area - 8), in->dreg);
 				creg = mono_alloc_ireg (cfg);
 				mono_call_inst_add_outarg_reg (cfg, call, creg, ARMREG_R3, FALSE);
