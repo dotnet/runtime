@@ -1661,6 +1661,13 @@
         ]
     },
     {
+        "Name": "System.Unsafe",
+        "Description": "Provides the System.Unsafe class, which provides generic, low-level functionality for manipulating pointers.",
+        "CommonTypes": [
+            "System.Unsafe",
+        ]
+    },
+    {
         "Name": "System.ValueTuple",
         "Description": "Provides the System.ValueTuple structs, which implement the underlying types for C# 7 tuples.",
         "CommonTypes": [
