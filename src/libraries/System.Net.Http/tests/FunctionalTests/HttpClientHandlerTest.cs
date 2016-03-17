@@ -964,7 +964,7 @@ namespace System.Net.Http.Functional.Tests
         #region Proxy tests
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds)
+        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
         {
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
@@ -972,6 +972,15 @@ namespace System.Net.Http.Functional.Tests
                 requireAuth: creds != null && creds != CredentialCache.DefaultCredentials,
                 expectCreds: true);
             Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            const string BasicAuth = "Basic";
+            if (wrapCredsInCache)
+            {
+                Assert.IsAssignableFrom<NetworkCredential>(creds);
+                var cache = new CredentialCache();
+                cache.Add(proxyUrl, BasicAuth, (NetworkCredential)creds);
+                creds = cache;
+            }
 
             using (var handler = new HttpClientHandler() { Proxy = new UseSpecifiedUriWebProxy(proxyUrl, creds) })
             using (var client = new HttpClient(handler))
@@ -983,7 +992,7 @@ namespace System.Net.Http.Functional.Tests
                 TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 Assert.Equal(Encoding.ASCII.GetString(proxyTask.Result.ResponseContent), responseStringTask.Result);
 
-                NetworkCredential nc = creds != null ? creds.GetCredential(proxyUrl, "Basic") : null;
+                NetworkCredential nc = creds?.GetCredential(proxyUrl, BasicAuth);
                 string expectedAuth =
                     nc == null || nc == CredentialCache.DefaultCredentials ? null :
                     string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
@@ -1060,10 +1069,13 @@ namespace System.Net.Http.Functional.Tests
 
         private static IEnumerable<object[]> CredentialsForProxy()
         {
-            yield return new object[] { null };
-            yield return new object[] { new NetworkCredential("username", "password") };
-            yield return new object[] { new NetworkCredential("username", "password", "domain") };
-            yield return new object[] { CredentialCache.DefaultCredentials };
+            yield return new object[] { null, false };
+            foreach (bool wrapCredsInCache in new[] { true, false })
+            {
+                yield return new object[] { CredentialCache.DefaultCredentials, wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
+            }
         }
         #endregion
     }
