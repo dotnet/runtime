@@ -317,7 +317,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("InvalidCookies")]
+        [MemberData(nameof(InvalidCookies))]
         public static void Add_VerificationFailedCookie_Throws(Cookie c)
         {
             CookieContainer cc = new CookieContainer();
@@ -372,7 +372,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("GetCookiesData")]
+        [MemberData(nameof(GetCookiesData))]
         public static void GetCookies_Success(Uri uri, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -446,7 +446,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("GetCookieHeaderData")]
+        [MemberData(nameof(GetCookieHeaderData))]
         public static void GetCookieHeader_Success(Uri uri, string expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -577,7 +577,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("SetCookiesData")]
+        [MemberData(nameof(SetCookiesData))]
         public static void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();
@@ -603,7 +603,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [MemberData("SetCookiesInvalidData")]
+        [MemberData(nameof(SetCookiesInvalidData))]
         public static void SetCookies_InvalidData_Throws(Uri uri, string cookieHeader)
         {
             CookieContainer cc = new CookieContainer();

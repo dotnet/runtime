@@ -56,7 +56,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("IsSuffix_TestData")]
+        [MemberData(nameof(IsSuffix_TestData))]
         public void IsSuffix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected)
         {
             if (options == CompareOptions.None)
