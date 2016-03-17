@@ -99,7 +99,7 @@ prepare_native_build()
     fi
 }
 
-build_managed_corefx()
+build_managed()
 {
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
@@ -116,7 +116,7 @@ build_managed_corefx()
     echo Build Exit Code = $BUILDERRORLEVEL
 }
 
-build_native_corefx()
+build_native()
 {
     # All set to commence the build
 
@@ -376,6 +376,10 @@ if [ "$__BuildOS" != "$__HostOS" ]; then
     __buildnative=false
 fi
 
+if [ ! -e "$__nativeroot" ]; then
+   __buildnative=false
+fi
+
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
@@ -404,7 +408,7 @@ if $__buildnative; then
 
     # Build the corefx native components.
 
-    build_native_corefx
+    build_native
 
     # Build complete
 fi
@@ -417,7 +421,7 @@ if $__buildmanaged; then
 
     # Build the corefx native components.
 
-    build_managed_corefx
+    build_managed
 
     # Build complete
 fi
