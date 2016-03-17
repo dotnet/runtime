@@ -5970,7 +5970,7 @@ mono_object_unbox (MonoObject *obj)
  * @obj: an object
  * @klass: a pointer to a class 
  *
- * Returns: @obj if @obj is derived from @klass
+ * Returns: @obj if @obj is derived from @klass or NULL otherwise.
  */
 MonoObject *
 mono_object_isinst (MonoObject *obj, MonoClass *klass)
@@ -5978,14 +5978,35 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
+	MonoObject *result = mono_object_isinst_checked (obj, klass, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+	
+
+/**
+ * mono_object_isinst_checked:
+ * @obj: an object
+ * @klass: a pointer to a class 
+ * @error: set on error
+ *
+ * Returns: @obj if @obj is derived from @klass or NULL if it isn't.
+ * On failure returns NULL and sets @error.
+ */
+MonoObject *
+mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
+	
 	MonoObject *result = NULL;
 
 	if (!klass->inited)
 		mono_class_init (klass);
 
 	if (mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		result = mono_object_isinst_mbyref_checked (obj, klass, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		result = mono_object_isinst_mbyref_checked (obj, klass, error);
 		return result;
 	}
 

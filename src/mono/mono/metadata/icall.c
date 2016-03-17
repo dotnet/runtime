@@ -203,6 +203,7 @@ ves_icall_System_Array_GetValue (MonoArray *arr, MonoArray *idxs)
 ICALL_EXPORT void
 ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 pos)
 {
+	MonoError error;
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
@@ -211,6 +212,8 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	guint64 u64 = 0;
 	gint64 i64 = 0;
 	gdouble r64 = 0;
+
+	mono_error_init (&error);
 
 	if (value)
 		vc = value->vtable->klass;
@@ -289,19 +292,24 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	}
 
 	if (!ec->valuetype) {
-		if (!mono_object_isinst (value, ec))
+		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, &error));
+		if (mono_error_set_pending_exception (&error))
+			return;
+		if (!castOk)
 			INVALID_CAST;
 		mono_gc_wbarrier_set_arrayref (arr, ea, (MonoObject*)value);
 		return;
 	}
 
-	if (mono_object_isinst (value, ec)) {
+	if (mono_object_isinst_checked (value, ec, &error)) {
 		if (ec->has_references)
 			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
 		else
 			mono_gc_memmove_atomic (ea, (char *)value + sizeof (MonoObject), esize);
 		return;
 	}
+	if (mono_error_set_pending_exception (&error))
+		return;
 
 	if (!vc->valuetype)
 		INVALID_CAST;
@@ -1626,8 +1634,13 @@ ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoReflectionType *type, MonoObje
 	MonoError error;
 	MonoClass *klass = mono_class_from_mono_type (type->type);
 	mono_class_init_checked (klass, &error);
-	mono_error_raise_exception (&error);
-	return mono_object_isinst (obj, klass) != NULL;
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return FALSE;
+	}
+	guint32 result = (mono_object_isinst_checked (obj, klass, &error) != NULL);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 ICALL_EXPORT guint32
@@ -3063,7 +3076,11 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		}
 
 		if (this_arg) {
-			if (!mono_object_isinst (this_arg, m->klass)) {
+			if (!mono_object_isinst_checked (this_arg, m->klass, &error)) {
+				if (!is_ok (&error)) {
+					mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_error_convert_to_exception (&error));
+					return NULL;
+				}
 				char *this_name = mono_type_get_full_name (mono_object_get_class (this_arg));
 				char *target_name = mono_type_get_full_name (m->klass);
 				char *msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
@@ -6452,7 +6469,11 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this_obj, MonoStri
 		return NULL;
 	}
 
-	tp->custom_type_info = (mono_object_isinst (this_obj, mono_defaults.iremotingtypeinfo_class) != NULL);
+	tp->custom_type_info = (mono_object_isinst_checked (this_obj, mono_defaults.iremotingtypeinfo_class, &error) != NULL);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 	tp->remote_class = mono_remote_class (domain, class_name, klass, &error);
 	if (!is_ok (&error)) {
 		mono_error_set_pending_exception (&error);
