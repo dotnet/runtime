@@ -3,12 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Data.SqlTypes;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
-    public class OleDbParametersTest
+    public class ParametersTest
     {
+        private static string _connString = DataTestClass.SQL2008_Northwind;
+
         [Fact]
         public static void CodeCoverageSqlClient()
         {
@@ -92,5 +95,73 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             DataTestClass.AssertThrowsWrapper<ArgumentException>(() => new SqlCommand().Parameters.Remove(new SqlParameter()), "Attempted to remove an SqlParameter that is not contained by this SqlParameterCollection.");
         }
+
+        [Fact]
+        public void Test_WithEnumValue_ShouldInferToUnderlyingType()
+        {
+            using (var conn = new SqlConnection(_connString))
+            {
+                conn.Open();
+                var cmd = new SqlCommand("select @input", conn);
+                cmd.Parameters.AddWithValue("@input", MyEnum.B);
+                object value = cmd.ExecuteScalar();
+                Assert.Equal((MyEnum)value, MyEnum.B);
+            }
+        }
+
+        [Fact]
+        public void Test_WithOutputEnumParameter_ShouldReturnEnum()
+        {
+            using (var conn = new SqlConnection(_connString))
+            {
+                conn.Open();
+                var cmd = new SqlCommand("set @output = @input", conn);
+                cmd.Parameters.AddWithValue("@input", MyEnum.B);
+
+                var outputParam = cmd.CreateParameter();
+                outputParam.ParameterName = "@output";
+                outputParam.DbType = DbType.Int32;
+                outputParam.Direction = ParameterDirection.Output;
+                cmd.Parameters.Add(outputParam);
+
+                cmd.ExecuteNonQuery();
+
+                Assert.Equal((MyEnum)outputParam.Value, MyEnum.B);
+            }
+        }
+
+        [Fact]
+        public void Test_WithDecimalValue_ShouldReturnDecimal()
+        {
+            using (var conn = new SqlConnection(_connString))
+            {
+                conn.Open();
+                var cmd = new SqlCommand("select @foo", conn);
+                cmd.Parameters.AddWithValue("@foo", new SqlDecimal(0.5));
+                var result = (decimal)cmd.ExecuteScalar();
+                Assert.Equal(result, (decimal)0.5);
+            }
+        }
+
+        [Fact]
+        public void Test_WithGuidValue_ShouldReturnGuid()
+        {
+            using (var conn = new SqlConnection(_connString))
+            {
+                conn.Open();
+                var expectedGuid = Guid.NewGuid();
+                var cmd = new SqlCommand("select @input", conn);
+                cmd.Parameters.AddWithValue("@input", expectedGuid);
+                var result = cmd.ExecuteScalar();
+                Assert.Equal(expectedGuid, (Guid)result);
+            }
+        }
+
+        enum MyEnum
+        {
+            A = 1,
+            B = 2
+        }
+
     }
 }
