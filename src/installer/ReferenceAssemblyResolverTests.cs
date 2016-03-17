@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var runtime = new Mock<IRuntimeEnvironment>();
             runtime.SetupGet(r => r.OperatingSystemPlatform).Returns(Platform.Windows);
-            
+
             var environment = EnvironmentMockBuilder.Create()
                 .AddVariable("DOTNET_REFERENCE_ASSEMBLIES_PATH", ReferencePath)
                 .Build();

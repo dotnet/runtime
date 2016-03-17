@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
-    public class DependencyContextTests
+    public class DependencyContextLoaderTests
     {
         [Fact]
         public void MergeMergesLibraries()
@@ -125,10 +125,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 name,
                 "1.1.1",
                 "HASH",
-                new RuntimeAssembly[] { },
-                new string[] { },
+                new RuntimeAssetGroup[] { },
+                new RuntimeAssetGroup[] { },
                 new ResourceAssembly[] { },
-                new RuntimeTarget[] { },
                 new Dependency[] {},
                 false);
         }
