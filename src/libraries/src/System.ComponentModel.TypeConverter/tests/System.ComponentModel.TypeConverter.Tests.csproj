@@ -20,6 +20,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayConverterTests.cs" />
+    <Compile Include="EventDescriptorCollectionTests.cs" />
+    <Compile Include="AttributeCollectionTests.cs" />
     <Compile Include="BooleanConverterTests.cs" />
     <Compile Include="ByteConvertersTests.cs" />
     <Compile Include="CharConverterTests.cs" />
@@ -36,6 +38,7 @@
     <Compile Include="Int64ConverterTests.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
+    <Compile Include="PropertyDescriptorCollectionTests.cs" />
     <Compile Include="SampleClasses.cs" />
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />
