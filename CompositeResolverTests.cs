@@ -10,7 +10,7 @@ using Moq;
 using Xunit;
 using FluentAssertions;
 
-namespace StreamForwarderTests
+namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class CompositeResolverTests
     {
@@ -55,14 +55,7 @@ namespace StreamForwarderTests
                 failTwo.Object
             };
 
-            var library = new CompilationLibrary(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                Enumerable.Empty<string>(),
-                Enumerable.Empty<Dependency>(),
-                false);
+            var library = TestLibraryFactory.Create();
 
             var resolver = new CompositeCompilationAssemblyResolver(resolvers);
             var result = resolver.TryResolveAssemblyPaths(library, null);
@@ -90,14 +83,7 @@ namespace StreamForwarderTests
             };
 
             var assemblies = new List<string>();
-            var library = new CompilationLibrary(
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                Enumerable.Empty<string>(),
-                Enumerable.Empty<Dependency>(),
-                false);
+            var library = TestLibraryFactory.Create();
 
             var resolver = new CompositeCompilationAssemblyResolver(resolvers);
             var result = resolver.TryResolveAssemblyPaths(library, assemblies);
