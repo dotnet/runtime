@@ -34,10 +34,6 @@ namespace System.ComponentModel
 
         private static BooleanSwitch s_traceDescriptor = new BooleanSwitch("TypeDescriptor", "Debug TypeDescriptor.");
 
-#if DEBUG
-        private static BooleanSwitch s_enableValidation = new BooleanSwitch("EnableValidation", "Enable type descriptor Whidbey->RTM validation");
-#endif
-
         // For each stage of our filtering pipeline, the pipeline needs to know
         // what it is filtering.
         private const int PIPELINE_ATTRIBUTES = 0x00;
@@ -600,513 +596,11 @@ namespace System.ComponentModel
                 {
                     return new ExtendedPropertyDescriptor(oldPropertyDescriptor, attributes);
                 }
-#if DEBUG
-                else
-                {
-                    DebugReflectPropertyDescriptor debugReflectDesc = attr.ExtenderProperty as DebugReflectPropertyDescriptor;
-                    if (debugReflectDesc != null)
-                    {
-                        return new DebugExtendedPropertyDescriptor(oldPropertyDescriptor, attributes);
-                    }
-                }
-#endif
             }
 
             // This is either a normal prop or the caller has changed target classes.
             //
             return new ReflectPropertyDescriptor(componentType, oldPropertyDescriptor, attributes);
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.  This method returns true if
-        ///     validation should be performed for the type.
-        /// </devdoc>
-#if DEBUG
-        private static bool DebugShouldValidate(object key)
-        {
-            // Check our switch first.
-            //
-            if (s_enableValidation.Enabled)
-            {
-                while (key != null)
-                {
-                    // We only validate if there are no custom providers all the way
-                    // up the class chain.
-                    TypeDescriptionNode node = s_providerTable[key] as TypeDescriptionNode;
-                    if (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
-                    {
-                        return false;
-                    }
-
-                    if (key is Type)
-                    {
-                        key = GetNodeForBaseType((Type)key);
-                    }
-                    else
-                    {
-                        key = key.GetType();
-                        if (((Type)key).IsCOMObject)
-                        {
-                            key = ComObjectType;
-                        }
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
-#endif
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(Type type, AttributeCollection attributes, AttributeCollection debugAttributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, AttributeCollection debugAttributes)
-        {
-#if DEBUG
-
-            if (attributes.Count >= debugAttributes.Count)
-            {
-                foreach (Attribute a in attributes)
-                {
-                    if (!(a is GuidAttribute) && !(a is ComVisibleAttribute))
-                    {
-                        bool found = false;
-                        bool typeFound = false;
-
-                        // Many attributes don't implement .Equals correctly,
-                        // so they will fail an equality check.  But we want to 
-                        // make sure that common ones like Browsable and ReadOnly
-                        // were correctly picked up.  So only check the ones in
-                        // component model.
-                        if (!a.GetType().FullName.StartsWith("System.Component"))
-                        {
-                            found = true;
-                            break;
-                        }
-
-                        if (!found)
-                        {
-                            foreach (Attribute b in debugAttributes)
-                            {
-                                if (!typeFound && a.GetType() == b.GetType())
-                                {
-                                    typeFound = true;
-                                }
-
-                                // Semitrust may throw here.  
-                                try
-                                {
-                                    if (a.Equals(b))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                catch
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!found && !a.IsDefaultAttribute())
-                        {
-                            if (typeFound)
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} was found but failed equality.  Perhaps attribute .Equals is not implemented correctly?", a.GetType().Name));
-                            }
-                            else
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} should not exist", a.GetType().Name));
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                foreach (Attribute b in debugAttributes)
-                {
-                    // We skip all interop attributes because interface merging has changed on purpose.  
-                    if (!(b is GuidAttribute) && !(b is ComVisibleAttribute) && !(b is InterfaceTypeAttribute) && !(b is ReadOnlyAttribute))
-                    {
-                        bool found = false;
-                        bool typeFound = false;
-
-                        // Many attributes don't implement .Equals correctly,
-                        // so they will fail an equality check.  But we want to 
-                        // make sure that common ones like Browsable and ReadOnly
-                        // were correctly picked up.  So only check the ones in
-                        // component model.
-                        if (!b.GetType().FullName.StartsWith("System.Component"))
-                        {
-                            found = true;
-                            break;
-                        }
-
-                        if (!found)
-                        {
-                            foreach (Attribute a in attributes)
-                            {
-                                if (!typeFound && a.GetType() == b.GetType())
-                                {
-                                    typeFound = true;
-                                }
-
-                                // Semitrust may throw here.  
-                                try
-                                {
-                                    if (b.Equals(a))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                catch
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!found && !b.IsDefaultAttribute())
-                        {
-                            if (!typeFound)
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} should exist", b.GetType().Name));
-                            }
-                        }
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, Type type)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            AttributeCollection debugAttributes = DebugTypeDescriptor.GetAttributes(type);
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, object instance, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            AttributeCollection debugAttributes = DebugTypeDescriptor.GetAttributes(instance, noCustomTypeDesc);
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(TypeConverter converter, Type type)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            TypeConverter debugConverter = DebugTypeDescriptor.GetConverter(type);
-            Debug.Assert(debugConverter.GetType() == converter.GetType(), "TypeDescriptor engine Validation Failure.");
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(TypeConverter converter, object instance, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            TypeConverter debugConverter = DebugTypeDescriptor.GetConverter(instance, noCustomTypeDesc);
-            Debug.Assert(debugConverter.GetType() == converter.GetType(), "TypeDescriptor engine Validation Failure.");
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(EventDescriptorCollection events, Type type, Attribute[] attributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            EventDescriptorCollection debugEvents = DebugTypeDescriptor.GetEvents(type, attributes);
-            Debug.Assert(debugEvents.Count == events.Count, "TypeDescriptor engine Validation Failure. Event counts differ.");
-            foreach (EventDescriptor debugEvt in debugEvents)
-            {
-                EventDescriptor evt = null;
-
-                foreach (EventDescriptor realEvt in events)
-                {
-                    if (realEvt.Name.Equals(debugEvt.Name) && realEvt.EventType == debugEvt.EventType && realEvt.ComponentType == debugEvt.ComponentType)
-                    {
-                        evt = realEvt;
-                        break;
-                    }
-                }
-
-                Debug.Assert(evt != null, "TypeDescriptor engine Validation Failure. Event " + debugEvt.Name + " does not exist or is of the wrong type.");
-                if (evt != null)
-                {
-                    AttributeCollection attrs = evt.Attributes;
-                    if (attrs[typeof(AttributeProviderAttribute)] == null)
-                    {
-                        AttributeCollection debugAttrs = debugEvt.Attributes;
-                        DebugValidate(evt.EventType, attrs, debugAttrs);
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(EventDescriptorCollection events, object instance, Attribute[] attributes, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            EventDescriptorCollection debugEvents = DebugTypeDescriptor.GetEvents(instance, attributes, noCustomTypeDesc);
-            Debug.Assert(debugEvents.Count == events.Count, "TypeDescriptor engine Validation Failure. Event counts differ.");
-            foreach (EventDescriptor debugEvt in debugEvents)
-            {
-                EventDescriptor evt = null;
-
-                foreach (EventDescriptor realEvt in events)
-                {
-                    if (realEvt.Name.Equals(debugEvt.Name) && realEvt.EventType == debugEvt.EventType && realEvt.ComponentType == debugEvt.ComponentType)
-                    {
-                        evt = realEvt;
-                        break;
-                    }
-                }
-
-                Debug.Assert(evt != null, "TypeDescriptor engine Validation Failure. Event " + debugEvt.Name + " does not exist or is of the wrong type.");
-                if (evt != null)
-                {
-                    AttributeCollection attrs = evt.Attributes;
-                    if (attrs[typeof(AttributeProviderAttribute)] == null)
-                    {
-                        AttributeCollection debugAttrs = debugEvt.Attributes;
-                        DebugValidate(evt.EventType, attrs, debugAttrs);
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(PropertyDescriptorCollection properties, Type type, Attribute[] attributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            PropertyDescriptorCollection debugProperties = DebugTypeDescriptor.GetProperties(type, attributes);
-
-            if (debugProperties.Count > properties.Count)
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    if (prop == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should exist.", debugProp.Name, debugProp.GetType().Name));
-                    }
-                }
-            }
-            else if (properties.Count > debugProperties.Count)
-            {
-                foreach (PropertyDescriptor prop in properties)
-                {
-                    PropertyDescriptor debugProp = null;
-
-                    foreach (PropertyDescriptor realProp in debugProperties)
-                    {
-                        if (realProp.Name.Equals(prop.Name) && realProp.PropertyType == prop.PropertyType && realProp.ComponentType == prop.ComponentType)
-                        {
-                            debugProp = realProp;
-                            break;
-                        }
-                    }
-
-                    if (debugProp == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should not exist.", prop.Name, prop.GetType().Name));
-                    }
-                }
-            }
-            else
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    Debug.Assert(prop != null, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} exists but perhaps type mismatched?", debugProp.Name, debugProp.GetType().Name));
-                    if (prop != null)
-                    {
-                        AttributeCollection attrs = prop.Attributes;
-                        if (attrs[typeof(AttributeProviderAttribute)] == null)
-                        {
-                            AttributeCollection debugAttrs = debugProp.Attributes;
-                            DebugValidate(prop.PropertyType, attrs, debugAttrs);
-                        }
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(PropertyDescriptorCollection properties, object instance, Attribute[] attributes, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            PropertyDescriptorCollection debugProperties = DebugTypeDescriptor.GetProperties(instance, attributes, noCustomTypeDesc);
-
-            if (debugProperties.Count > properties.Count)
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    if (prop == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should exist.", debugProp.Name, debugProp.GetType().Name));
-                    }
-                }
-            }
-            else if (properties.Count > debugProperties.Count)
-            {
-                foreach (PropertyDescriptor prop in properties)
-                {
-                    PropertyDescriptor debugProp = null;
-
-                    foreach (PropertyDescriptor realProp in debugProperties)
-                    {
-                        if (realProp.Name.Equals(prop.Name) && realProp.PropertyType == prop.PropertyType && realProp.ComponentType == prop.ComponentType)
-                        {
-                            debugProp = realProp;
-                            break;
-                        }
-                    }
-
-                    if (debugProp == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should not exist.", prop.Name, prop.GetType().Name));
-                    }
-                }
-            }
-            else
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    Debug.Assert(prop != null, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} exists but perhaps type mismatched?", debugProp.Name, debugProp.GetType().Name));
-                    if (prop != null)
-                    {
-                        AttributeCollection attrs = prop.Attributes;
-                        if (attrs[typeof(AttributeProviderAttribute)] == null)
-                        {
-                            AttributeCollection debugAttrs = debugProp.Attributes;
-                            DebugValidate(prop.PropertyType, attrs, debugAttrs);
-                        }
-                    }
-                }
-            }
-#endif
         }
 
         /// <devdoc>
@@ -1261,7 +755,6 @@ namespace System.ComponentModel
             }
 
             AttributeCollection attributes = GetDescriptor(componentType, "componentType").GetAttributes();
-            DebugValidate(attributes, componentType);
             return attributes;
         }
 
@@ -1357,7 +850,6 @@ namespace System.ComponentModel
                 attrs = new AttributeCollection(attrArray);
             }
 
-            DebugValidate(attrs, component, noCustomTypeDesc);
             return attrs;
         }
 
@@ -1425,7 +917,6 @@ namespace System.ComponentModel
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
             TypeConverter converter = GetDescriptor(component, noCustomTypeDesc).GetConverter();
-            DebugValidate(converter, component, noCustomTypeDesc);
             return converter;
         }
 #endif
@@ -1437,7 +928,6 @@ namespace System.ComponentModel
         {
 #if PLACEHOLDER
             TypeConverter converter = GetDescriptor(type, "type").GetConverter();
-            DebugValidate(converter, type);
             return converter;
 #else
             return ReflectTypeDescriptionProvider.GetConverter(type);
@@ -1653,7 +1143,6 @@ namespace System.ComponentModel
                 }
             }
 
-            DebugValidate(events, componentType, attributes);
             return events;
         }
 
@@ -1770,8 +1259,6 @@ namespace System.ComponentModel
                 evts = new EventDescriptorCollection(eventArray, true);
             }
 
-            DebugValidate(evts, component, attributes, noCustomTypeDesc);
-
             return evts;
         }
 
@@ -1881,7 +1368,6 @@ namespace System.ComponentModel
                 }
             }
 
-            DebugValidate(properties, componentType, attributes);
             return properties;
         }
 
@@ -2012,8 +1498,6 @@ namespace System.ComponentModel
                 results.CopyTo(propArray, 0);
                 props = new PropertyDescriptorCollection(propArray, true);
             }
-
-            DebugValidate(props, component, attributes, noCustomTypeDesc);
 
             return props;
         }
@@ -2802,10 +2286,6 @@ namespace System.ComponentModel
 
         private static void Refresh(object component, bool refreshReflectionProvider)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(component);
-#endif
-
             if (component == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -2892,10 +2372,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static void Refresh(Type type)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(type);
-#endif
-
             if (type == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -2960,10 +2436,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static void Refresh(Module module)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(module);
-#endif
-
             if (module == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -3042,8 +2514,6 @@ namespace System.ComponentModel
             {
                 Refresh(mod);
             }
-
-            // Debug type descriptor has the same code, so our call above will handle this.
         }
 
         /// <devdoc>
