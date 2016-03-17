@@ -258,7 +258,7 @@ namespace System.Globalization.Tests
         }
         
         [Theory]
-        [MemberData("Compare_TestData")]
+        [MemberData(nameof(Compare_TestData))]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             if (options == CompareOptions.None)

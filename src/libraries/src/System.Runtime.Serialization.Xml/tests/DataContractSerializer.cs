@@ -1930,7 +1930,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Theory]
-    [MemberData("XmlDictionaryReaderQuotasData")]
+    [MemberData(nameof(XmlDictionaryReaderQuotasData))]
     public static void DCS_XmlDictionaryQuotas(XmlDictionaryReaderQuotas quotas, bool shouldSucceed)
     {
         var input = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><TypeWithTypeWithIntAndStringPropertyProperty><ObjectProperty><SampleInt>10</SampleInt><SampleString>Sample string</SampleString></ObjectProperty></TypeWithTypeWithIntAndStringPropertyProperty>";

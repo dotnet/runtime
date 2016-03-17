@@ -94,8 +94,8 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("LastIndexOf_TestData")]
-        [MemberData("LastIndexOf_U_WithDiaeresis_TestData")]
+        [MemberData(nameof(LastIndexOf_TestData))]
+        [MemberData(nameof(LastIndexOf_U_WithDiaeresis_TestData))]
         public void LastIndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
             if (value.Length == 1)
@@ -157,7 +157,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("LastIndexOf_Aesc_Ligature_TestData")]
+        [MemberData(nameof(LastIndexOf_Aesc_Ligature_TestData))]
         [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void LastIndexOf_Aesc_Ligature(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
