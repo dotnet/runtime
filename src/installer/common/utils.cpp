@@ -74,7 +74,7 @@ pal::string_t get_filename_without_ext(const pal::string_t& path)
     size_t name_pos = path.find_last_of(_X("/\\"));
     size_t dot_pos = path.rfind(_X('.'));
     size_t start_pos = (name_pos == pal::string_t::npos) ? 0 : (name_pos + 1);
-    size_t count = (dot_pos == pal::string_t::npos) ? pal::string_t::npos : (dot_pos - start_pos);
+    size_t count = (dot_pos == pal::string_t::npos || dot_pos < start_pos) ? pal::string_t::npos : (dot_pos - start_pos);
     return path.substr(start_pos, count);
 }
 
