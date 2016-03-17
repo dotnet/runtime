@@ -363,7 +363,7 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
-                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(_requestMessage.RequestUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
+                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
                 NetworkCredential credentials = credentialScheme.Key;
                 if (credentials == CredentialCache.DefaultCredentials)
                 {
