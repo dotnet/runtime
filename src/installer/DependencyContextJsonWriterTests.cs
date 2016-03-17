@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             IReadOnlyList<RuntimeFallbacks> runtimeGraph = null)
         {
             return new DependencyContext(
-                            target ?? string.Empty,
+                            target ?? "DefaultTarget",
                             runtime ?? string.Empty,
                             isPortable ?? false,
                             compilationOptions ?? CompilationOptions.Default,
