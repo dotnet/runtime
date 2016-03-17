@@ -12,7 +12,6 @@ namespace System.ComponentModel
     /// </devdoc>
     public sealed class TypeDescriptor
     {
-#if PLACEHOLDER
         // Note: this is initialized at class load because we 
         // lock on it for thread safety.  It is used from nearly
         // every call to this class, so it will be created soon after
@@ -81,68 +80,6 @@ namespace System.ComponentModel
 
         private TypeDescriptor()
         {
-        }
-
-        /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
-        [Obsolete("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IComNativeDescriptorHandler ComNativeDescriptorHandler
-        {
-            [PermissionSetAttribute(SecurityAction.LinkDemand, Name = "FullTrust")]
-            get
-            {
-                TypeDescriptionNode node = NodeFor(ComObjectType);
-                ComNativeDescriptionProvider provider = null;
-
-                do
-                {
-                    provider = node.Provider as ComNativeDescriptionProvider;
-                    node = node.Next;
-                }
-                while (node != null && provider == null);
-
-                if (provider != null)
-                {
-                    return provider.Handler;
-                }
-
-                return null;
-            }
-            [PermissionSetAttribute(SecurityAction.LinkDemand, Name = "FullTrust")]
-            set
-            {
-                TypeDescriptionNode node = NodeFor(ComObjectType);
-
-                while (node != null && !(node.Provider is ComNativeDescriptionProvider))
-                {
-                    node = node.Next;
-                }
-
-                if (node == null)
-                {
-                    AddProvider(new ComNativeDescriptionProvider(value), ComObjectType);
-                }
-                else
-                {
-                    ComNativeDescriptionProvider provider = (ComNativeDescriptionProvider)node.Provider;
-                    provider.Handler = value;
-                }
-            }
-        }
-
-
-        /// <devdoc>
-        ///     This property returns a Type object that can be passed to the various 
-        ///     AddProvider methods to define a type description provider for COM types.
-        /// </devdoc>
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type ComObjectType
-        {
-            get
-            {
-                return typeof(TypeDescriptorComObject);
-            }
         }
 
         /// <devdoc>
@@ -558,63 +495,6 @@ namespace System.ComponentModel
             {
                 associations.Add(new WeakReference(secondary));
             }
-        }
-
-        /// <devdoc>
-        ///     Creates an instance of the designer associated with the
-        ///     specified component.
-        /// </devdoc>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
-        public static IDesigner CreateDesigner(IComponent component, Type designerBaseType)
-        {
-            Type designerType = null;
-            IDesigner designer = null;
-
-            // Get the set of attributes for this type
-            //
-            AttributeCollection attributes = GetAttributes(component);
-
-            for (int i = 0; i < attributes.Count; i++)
-            {
-                DesignerAttribute da = attributes[i] as DesignerAttribute;
-                if (da != null)
-                {
-                    Type attributeBaseType = Type.GetType(da.DesignerBaseTypeName);
-                    if (attributeBaseType != null && attributeBaseType == designerBaseType)
-                    {
-                        ISite site = component.Site;
-                        bool foundService = false;
-
-                        if (site != null)
-                        {
-                            ITypeResolutionService tr = (ITypeResolutionService)site.GetService(typeof(ITypeResolutionService));
-                            if (tr != null)
-                            {
-                                foundService = true;
-                                designerType = tr.GetType(da.DesignerTypeName);
-                            }
-                        }
-
-                        if (!foundService)
-                        {
-                            designerType = Type.GetType(da.DesignerTypeName);
-                        }
-
-                        Debug.Assert(designerType != null, "It may be okay for the designer not to load, but we failed to load designer for component of type '" + component.GetType().FullName + "' because designer of type '" + da.DesignerTypeName + "'");
-                        if (designerType != null)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (designerType != null)
-            {
-                designer = (IDesigner)SecurityUtils.SecureCreateInstance(designerType, null, true);
-            }
-
-            return designer;
         }
 
         /// <devdoc>
