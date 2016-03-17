@@ -142,7 +142,7 @@ namespace System.Collections.Tests
         #region IsFixedSize
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_IsFixedSize_Validity(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -154,7 +154,7 @@ namespace System.Collections.Tests
         #region IsReadOnly
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_IsReadOnly_Validity(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -166,7 +166,7 @@ namespace System.Collections.Tests
         #region Item Getter
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemGet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             IList list = NonGenericIListFactory(count);
@@ -175,7 +175,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemGet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             IList list = NonGenericIListFactory(count);
@@ -184,7 +184,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemGet_ValidGetWithinListBounds(int count)
         {
             IList list = NonGenericIListFactory(count);
@@ -197,7 +197,7 @@ namespace System.Collections.Tests
         #region Item Setter
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly)
@@ -211,7 +211,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly)
@@ -225,7 +225,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_OnReadOnlyList(int count)
         {
             if (IsReadOnly)
@@ -237,7 +237,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_FirstItemToNonNull(int count)
         {
             if (count > 0 && !IsReadOnly)
@@ -250,7 +250,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_FirstItemToNull(int count)
         {
             if (count > 0 && !IsReadOnly && NullAllowed)
@@ -263,7 +263,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_LastItemToNonNull(int count)
         {
             if (count > 0 && !IsReadOnly)
@@ -277,7 +277,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_LastItemToNull(int count)
         {
             if (count > 0 && !IsReadOnly && NullAllowed)
@@ -291,7 +291,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_DuplicateValues(int count)
         {
             if (count >= 2 && !IsReadOnly && DuplicateValuesAllowed)
@@ -306,7 +306,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_ItemSet_InvalidValue(int count)
         {
             if (!IsReadOnly)
@@ -324,7 +324,7 @@ namespace System.Collections.Tests
         #region Add
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_Null(int count)
         {
             if (NullAllowed && !IsReadOnly)
@@ -336,7 +336,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_InvalidValueToMiddleOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -353,7 +353,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_InvalidValueToBeginningOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -370,7 +370,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_InvalidValueToEndOfCollection(int count)
         {
             if (!IsReadOnly)
@@ -385,7 +385,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_DuplicateValue(int count)
         {
             if (!IsReadOnly)
@@ -402,7 +402,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_AfterCallingClear(int count)
         {
             if (!IsReadOnly)
@@ -415,7 +415,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_AfterRemovingAnyValue(int count)
         {
             if (!IsReadOnly)
@@ -439,7 +439,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_AfterRemovingAllItems(int count)
         {
             if (!IsReadOnly)
@@ -455,7 +455,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_ToReadOnlyCollection(int count)
         {
             if (IsReadOnly)
@@ -467,7 +467,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Add_AfterRemoving(int count)
         {
             if (!IsReadOnly)
@@ -488,7 +488,7 @@ namespace System.Collections.Tests
         #region Clear
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Clear(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -509,7 +509,7 @@ namespace System.Collections.Tests
         #region Contains
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Contains_ValidValueOnCollectionNotContainingThatValue(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -521,7 +521,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_ICollection_NonGeneric_Contains_ValidValueOnCollectionContainingThatValue(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -530,7 +530,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Contains_NullOnCollectionNotContainingNull(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -539,7 +539,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Contains_NullOnCollectionContainingNull(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -551,7 +551,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Contains_ValidValueThatExistsTwiceInTheCollection(int count)
         {
             if (DuplicateValuesAllowed && !IsReadOnly)
@@ -565,7 +565,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Contains_InvalidValue_ThrowsArgumentException(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -579,7 +579,7 @@ namespace System.Collections.Tests
         #region IndexOf
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_NullNotContainedInList(int count)
         {
             if (NullAllowed)
@@ -597,7 +597,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_NullContainedInList(int count)
         {
             if (count > 0 && NullAllowed)
@@ -615,7 +615,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_ValueInCollectionMultipleTimes(int count)
         {
             if (count > 0 && !IsReadOnly && DuplicateValuesAllowed)
@@ -630,7 +630,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_EachValueNoDuplicates(int count)
         {
             // Assumes no duplicate elements contained in the list returned by NonGenericIListFactory
@@ -642,7 +642,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_InvalidValue(int count)
         {
             if (!IsReadOnly)
@@ -656,7 +656,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_IndexOf_ReturnsFirstMatchingValue(int count)
         {
             if (!IsReadOnly)
@@ -682,7 +682,7 @@ namespace System.Collections.Tests
         #region Insert
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly)
@@ -697,7 +697,7 @@ namespace System.Collections.Tests
 
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_IndexGreaterThanListCount_Appends(int count)
         {
             if (!IsReadOnly)
@@ -711,7 +711,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_ToReadOnlyList(int count)
         {
             if (IsReadOnly)
@@ -723,7 +723,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_FirstItemToNonNull(int count)
         {
             if (!IsReadOnly)
@@ -737,7 +737,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_FirstItemToNull(int count)
         {
             if (!IsReadOnly && NullAllowed)
@@ -751,7 +751,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_LastItemToNonNull(int count)
         {
             if (!IsReadOnly)
@@ -766,7 +766,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_LastItemToNull(int count)
         {
             if (!IsReadOnly && NullAllowed)
@@ -781,7 +781,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_DuplicateValues(int count)
         {
             if (!IsReadOnly && DuplicateValuesAllowed)
@@ -797,7 +797,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Insert_InvalidValue(int count)
         {
             if (!IsReadOnly)
@@ -815,7 +815,7 @@ namespace System.Collections.Tests
         #region Remove
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_OnReadOnlyCollection_ThrowsNotSupportedException(int count)
         {
             if (IsReadOnly)
@@ -826,7 +826,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_NullNotContainedInCollection(int count)
         {
             if (!IsReadOnly && NullAllowed && !Enumerable.Contains(InvalidValues, null))
@@ -845,7 +845,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_NonNullNotContainedInCollection(int count)
         {
             if (!IsReadOnly)
@@ -861,7 +861,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_NullContainedInCollection(int count)
         {
             if (!IsReadOnly && NullAllowed && !Enumerable.Contains(InvalidValues, null))
@@ -880,7 +880,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_NonNullContainedInCollection(int count)
         {
             if (!IsReadOnly)
@@ -899,7 +899,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_ValueThatExistsTwiceInCollection(int count)
         {
             if (!IsReadOnly && DuplicateValuesAllowed)
@@ -917,7 +917,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_EveryValue(int count)
         {
             if (!IsReadOnly)
@@ -934,7 +934,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Remove_InvalidValue_ThrowsArgumentException(int count)
         {
             IList collection = NonGenericIListFactory(count);
@@ -950,7 +950,7 @@ namespace System.Collections.Tests
         #region RemoveAt
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_RemoveAt_NegativeIndex_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly)
@@ -964,7 +964,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_RemoveAt_IndexGreaterThanListCount_ThrowsArgumentOutOfRangeException(int count)
         {
             if (!IsReadOnly)
@@ -978,7 +978,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_RemoveAt_OnReadOnlyList(int count)
         {
             if (IsReadOnly)
@@ -990,7 +990,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_RemoveAt_AllValidIndices(int count)
         {
             if (!IsReadOnly)
@@ -1006,7 +1006,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_RemoveAt_ZeroMultipleTimes(int count)
         {
             if (!IsReadOnly)

@@ -154,7 +154,7 @@ namespace System.Collections.Tests
         #region IsFixedSize
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_IsFixedSize_Validity(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
@@ -166,7 +166,7 @@ namespace System.Collections.Tests
         #region IsReadOnly
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_IsReadOnly_Validity(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
@@ -178,7 +178,7 @@ namespace System.Collections.Tests
         #region Item Getter
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemGet_NullKey(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -195,7 +195,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemGet_MissingNonNullKey_ThrowsKeyNotFoundException(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -204,7 +204,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemGet_MissingNullKey_ThrowsKeyNotFoundException(int count)
         {
             if (NullAllowed)
@@ -218,7 +218,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemGet_PresenobjectReturnsCorrecobject(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -233,7 +233,7 @@ namespace System.Collections.Tests
         #region Item Setter
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_NullKey(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -250,7 +250,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_OnReadOnlyDictionary_ThrowsNotSupportedException(int count)
         {
             if (IsReadOnly)
@@ -262,7 +262,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_AddsNewValueWhenNotPresent(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -272,7 +272,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_ReplacesExistingValueWhenPresent(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -289,7 +289,7 @@ namespace System.Collections.Tests
         #region Keys
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Keys_ContainsAllCorrectobjects(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -301,7 +301,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Keys_ModifyingTheDictionaryUpdatesTheCollection(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -311,7 +311,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Keys_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -324,7 +324,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Keys_Enumeration_Reset(int count)
         {
             IEnumerator enumerator = NonGenericIDictionaryFactory(count).Keys.GetEnumerator();
@@ -339,7 +339,7 @@ namespace System.Collections.Tests
         #region Values
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Values_ContainsAllCorrecobjects(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -351,7 +351,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Values_IncludeDuplicatesMultipleTimes(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -368,7 +368,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Values_ModifyingTheDictionaryUpdatesTheCollection(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -378,7 +378,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IDictionary_NonGeneric_Values_Enumeration_ParentDictionaryModifiedInvalidatesEnumerator(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -391,7 +391,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Values_Enumeration_Reset(int count)
         {
             IEnumerator enumerator = NonGenericIDictionaryFactory(count).Values.GetEnumerator();
@@ -406,7 +406,7 @@ namespace System.Collections.Tests
         #region Add
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_OnReadOnlyDictionary_ThrowsNotSupportedException(int count)
         {
             if (IsReadOnly)
@@ -417,7 +417,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NullKey_NullValue(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -436,7 +436,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NullKey_NonNullValue(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -455,7 +455,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NonNullKey_NullValue(int count)
         {
             if (!IsReadOnly)
@@ -470,7 +470,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NonNullKey_NonNulValue(int count)
         {
             if (!IsReadOnly)
@@ -485,7 +485,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_DuplicateKey(int count)
         {
             if (!IsReadOnly)
@@ -502,7 +502,7 @@ namespace System.Collections.Tests
         #region Clear
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_Clear(int count)
         {
             IDictionary collection = NonGenericIDictionaryFactory(count);
@@ -523,7 +523,7 @@ namespace System.Collections.Tests
         #region Contains
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_ValidKeyNotContainedInDictionary(int count)
         {
             if (!IsReadOnly)
@@ -535,7 +535,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_ValidKeyContainedInDictionary(int count)
         {
             if (!IsReadOnly)
@@ -548,7 +548,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_NullKeyNotContainedInDictionary(int count)
         {
             IDictionary dictionary = NonGenericIDictionaryFactory(count);
@@ -568,7 +568,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_NullKeyContainedInDictionary(int count)
         {
             if (NullAllowed && !IsReadOnly)
@@ -586,7 +586,7 @@ namespace System.Collections.Tests
         #region IDictionaryEnumerator
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_IDictionaryEnumerator_Current_FromStartToFinish(int count)
         {
             IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
@@ -601,7 +601,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_IDictionaryEnumerator_Current_ReturnsSameValueOnRepeatedCalls(int count)
         {
             IDictionaryEnumerator enumerator = NonGenericIDictionaryFactory(count).GetEnumerator();
@@ -615,7 +615,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IDictionary_NonGeneric_IDictionaryEnumerator_Current_BeforeFirstMoveNext_UndefinedBehavior(int count)
         {
             object current, key, value, entry;
@@ -637,7 +637,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IDictionary_NonGeneric_IDictionaryEnumerator_Current_AfterEndOfEnumerable_UndefinedBehavior(int count)
         {
             object current, key, value, entry;
@@ -660,7 +660,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public virtual void IDictionary_NonGeneric_IDictionaryEnumerator_Current_ModifiedDuringEnumeration_UndefinedBehavior(int count)
         {
             Assert.All(ModifyEnumerables, ModifyEnumerable =>

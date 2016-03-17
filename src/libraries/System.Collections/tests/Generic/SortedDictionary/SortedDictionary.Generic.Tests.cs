@@ -28,7 +28,7 @@ namespace System.Collections.Tests
         #region Constructors
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_Constructor_IComparer(int count)
         {
             IComparer<TKey> comparer = GetKeyIComparer();
@@ -39,7 +39,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_Constructor_IDictionary(int count)
         {
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
@@ -48,14 +48,14 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_Constructor_NullIDictionary_ThrowsArgumentNullException(int count)
         {
             Assert.Throws<ArgumentNullException>(() => new SortedDictionary<TKey, TValue>((IDictionary<TKey, TValue>)null));
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_Constructor_IDictionary_IComparer(int count)
         {
             IComparer<TKey> comparer = GetKeyIComparer();
@@ -70,7 +70,7 @@ namespace System.Collections.Tests
         #region ContainsValue
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_ContainsValue_NotPresent(int count)
         {
             SortedDictionary<TKey, TValue> dictionary = (SortedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -82,7 +82,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_ContainsValue_Present(int count)
         {
             SortedDictionary<TKey, TValue> dictionary = (SortedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -95,7 +95,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_ContainsValue_DefaultValueNotPresent(int count)
         {
             SortedDictionary<TKey, TValue> dictionary = (SortedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -103,7 +103,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_ContainsValue_DefaultValuePresent(int count)
         {
             SortedDictionary<TKey, TValue> dictionary = (SortedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
@@ -120,7 +120,7 @@ namespace System.Collections.Tests
         #region Ordering
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void SortedDictionary_Generic_DictionaryIsProperlySortedAccordingToComparer(int setLength)
         {
             SortedDictionary<TKey, TValue> set = (SortedDictionary<TKey, TValue>)GenericIDictionaryFactory(setLength);
@@ -136,7 +136,7 @@ namespace System.Collections.Tests
         #region IReadOnlyDictionary<TKey, TValue>.Keys
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
@@ -146,7 +146,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);

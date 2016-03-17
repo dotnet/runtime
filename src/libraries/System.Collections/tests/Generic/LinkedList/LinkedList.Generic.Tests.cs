@@ -487,7 +487,7 @@ namespace System.Collections.Tests
         #region Constructor_IEnumerable
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void LinkedList_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
