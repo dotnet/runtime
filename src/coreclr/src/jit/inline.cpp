@@ -678,7 +678,6 @@ void InlineResult::Report()
         }
     }
 
-
     if (IsDecided())
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";

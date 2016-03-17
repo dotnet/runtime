@@ -10,6 +10,8 @@
 // -- CLASSES --
 //
 // LegacyPolicy        - policy to provide legacy inline behavior
+// RandomPolicy        - randomized inlining
+// DiscretionaryPolicy - legacy variant with uniform size policy
 
 #ifndef _INLINE_POLICY_H_
 #define _INLINE_POLICY_H_
@@ -63,7 +65,6 @@ public:
     void NoteBool(InlineObservation obs, bool value) override;
     void NoteFatal(InlineObservation obs) override;
     void NoteInt(InlineObservation obs, int value) override;
-    void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
@@ -75,7 +76,7 @@ public:
     const char* GetName() const override { return "LegacyPolicy"; }
 #endif
 
-private:
+protected:
 
     // Helper methods
     void NoteInternal(InlineObservation obs);
@@ -123,7 +124,6 @@ public:
     void NoteBool(InlineObservation obs, bool value) override;
     void NoteFatal(InlineObservation obs) override;
     void NoteInt(InlineObservation obs, int value) override;
-    void NoteDouble(InlineObservation obs, double value) override;
 
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
@@ -147,6 +147,29 @@ private:
     unsigned                m_CodeSize;
     bool                    m_IsForceInline :1;
     bool                    m_IsForceInlineKnown :1;
+};
+
+// DiscretionaryPolicy is a variant of the legacy policy.  It differs
+// in that there is no ALWAYS_INLINE class, there is no IL size limit,
+// and in prejit mode, discretionary failures do not set the "NEVER"
+// inline bit.
+//
+// It is useful for gathering data about inline costs.
+
+class DiscretionaryPolicy : public LegacyPolicy
+{
+public:
+
+    // Construct a DiscretionaryPolicy
+    DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot);
+
+    // Policy observations
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy policies
+    bool PropagateNeverToRuntime() const override;
+
+    const char* GetName() const override { return "DiscretionaryPolicy"; }
 };
 
 #endif // DEBUG
