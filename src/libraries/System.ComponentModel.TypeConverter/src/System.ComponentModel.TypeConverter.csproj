@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -6,9 +6,9 @@
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.0</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)'==''">netstandard1.3</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net45'">true</IsPartialFacadeAssembly>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -18,7 +18,7 @@
   
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
-    <!--<Compile Include="System\ComponentModel\AttributeCollection.cs" />-->
+    <Compile Include="System\ComponentModel\AttributeCollection.cs" />
     <!--<Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />-->
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
@@ -41,8 +41,8 @@
     <!--<Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />-->
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
     <Compile Include="System\ComponentModel\EnumConverter.cs" />
-    <!--<Compile Include="System\ComponentModel\EventDescriptor.cs" />-->
-    <!--<Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />-->
+    <Compile Include="System\ComponentModel\EventDescriptor.cs" />
+    <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
     <!--<Compile Include="System\ComponentModel\EventHandlerList.cs" />-->
     <!--<Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />-->
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
     <Compile Include="System\ComponentModel\NullableConverter.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
-    <!--<Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />-->
+    <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <!--<Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />-->
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
     <!--<Compile Include="System\ComponentModel\RefreshEventArgs.cs" />-->

@@ -2,59 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Add(System.Object,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.set_Item(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.set_Item(System.Object,System.Object):System.Void")]
-
-/*
- This class has the HostProtectionAttribute. The purpose of this attribute is to enforce host-specific programming model guidelines, not security behavior. 
- Suppress FxCop message - BUT REVISIT IF ADDING NEW SECURITY ATTRIBUTES.
-*/
-[assembly: SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.PropertyDescriptorCollection")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.get_IsFixedSize():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IEnumerable.GetEnumerator():System.Collections.IEnumerator")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.get_IsFixedSize():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.ICollection.get_SyncRoot():System.Object")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Remove(System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.ICollection.get_IsSynchronized():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.get_IsReadOnly():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.get_Keys():System.Collections.ICollection")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.get_IsReadOnly():System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.Clear():System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.IndexOf(System.Object):System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Contains(System.Object):System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.RemoveAt(System.Int32):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.GetEnumerator():System.Collections.IEnumerator")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Add(System.Object,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Clear():System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.get_Values():System.Collections.ICollection")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.Contains(System.Object):System.Boolean")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.GetEnumerator():System.Collections.IDictionaryEnumerator")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.Remove(System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.get_Item(System.Int32):System.Object")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.set_Item(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.Add(System.Object):System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.CopyTo(System.Array,System.Int32):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.get_Item(System.Object):System.Object")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.set_Item(System.Object,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.Insert(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.ICollection.get_Count():System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection..ctor(System.ComponentModel.PropertyDescriptor[])")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.get_Count():System.Int32")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.get_Item(System.String):System.ComponentModel.PropertyDescriptor")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection..ctor(System.ComponentModel.PropertyDescriptor[],System.Boolean)")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.GetEnumerator():System.Collections.IEnumerator")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.Find(System.String,System.Boolean):System.ComponentModel.PropertyDescriptor")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.Sort(System.String[]):System.ComponentModel.PropertyDescriptorCollection")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Add(System.Object,System.Object):System.Void")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.set_Item(System.Int32,System.Object):System.Void")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.set_Item(System.Object,System.Object):System.Void")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.PropertyDescriptorCollection")]
 
 namespace System.ComponentModel
 {
@@ -63,13 +17,12 @@ namespace System.ComponentModel
     ///       Represents a collection of properties.
     ///    </para>
     /// </devdoc>
-    [System.Security.Permissions.HostProtection(Synchronization = true)]
     public class PropertyDescriptorCollection : ICollection, IList, IDictionary
     {
         /// <devdoc>
         /// An empty PropertyDescriptorCollection that can used instead of creating a new one with no items.
         /// </devdoc>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")] // ReadOnly fields - already shipped.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")] 
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
         private IDictionary _cachedFoundProperties;
@@ -82,6 +35,8 @@ namespace System.ComponentModel
         private bool _needSort = false;
         private bool _readOnly = false;
 
+        private readonly object _internalSyncObject = new object();
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptorCollection'/>
@@ -90,7 +45,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public PropertyDescriptorCollection(PropertyDescriptor[] properties)
         {
-            _properties = properties;
             if (properties == null)
             {
                 _properties = new PropertyDescriptor[0];
@@ -98,6 +52,7 @@ namespace System.ComponentModel
             }
             else
             {
+                _properties = properties;
                 _propCount = properties.Length;
             }
             _propsOwned = true;
@@ -107,7 +62,8 @@ namespace System.ComponentModel
         ///     Initializes a new instance of a property descriptor collection, and allows you to mark the
         ///     collection as read-only so it cannot be modified.
         /// </devdoc>
-        public PropertyDescriptorCollection(PropertyDescriptor[] properties, bool readOnly) : this(properties)
+        public PropertyDescriptorCollection(PropertyDescriptor[] properties, bool readOnly)
+            : this(properties)
         {
             _readOnly = readOnly;
         }
@@ -257,19 +213,25 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        ///    <para>Gets the description of the property with the specified
-        ///       name.</para>
+        ///    <para>Gets the description of the property with the specified name.</para>
         /// </devdoc>
         public virtual PropertyDescriptor Find(string name, bool ignoreCase)
         {
-            lock (this)
+            lock (_internalSyncObject)
             {
                 PropertyDescriptor p = null;
 
                 if (_cachedFoundProperties == null || _cachedIgnoreCase != ignoreCase)
                 {
                     _cachedIgnoreCase = ignoreCase;
-                    _cachedFoundProperties = new HybridDictionary(ignoreCase);
+                    if (ignoreCase)
+                    {
+                        _cachedFoundProperties = new Hashtable(StringComparer.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        _cachedFoundProperties = new Hashtable();
+                    }
                 }
 
                 // first try to find it in the cache
@@ -288,7 +250,7 @@ namespace System.ComponentModel
                 {
                     if (ignoreCase)
                     {
-                        if (String.Equals(_properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(_properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
                         {
                             _cachedFoundProperties[name] = _properties[i];
                             p = _properties[i];
