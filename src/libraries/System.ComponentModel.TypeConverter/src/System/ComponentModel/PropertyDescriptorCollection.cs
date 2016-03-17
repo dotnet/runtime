@@ -35,6 +35,8 @@ namespace System.ComponentModel
         private bool _needSort = false;
         private bool _readOnly = false;
 
+        private readonly object _internalSyncObject = new object();
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.ComponentModel.PropertyDescriptorCollection'/>
@@ -215,7 +217,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public virtual PropertyDescriptor Find(string name, bool ignoreCase)
         {
-            lock (this)
+            lock (_internalSyncObject)
             {
                 PropertyDescriptor p = null;
 
