@@ -713,7 +713,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
 
                 default:
-                    throw new InvalidOperationException("Invalid lvalue for assignment: " + node.Left.NodeType);
+                    throw Error.InvalidLvalue(node.Left.NodeType);
             }
         }
 
@@ -1900,7 +1900,7 @@ namespace System.Linq.Expressions.Interpreter
                     break;
                 }
             }
-            throw new InvalidOperationException("Rethrow requires catch");
+            throw Error.RethrowRequiresCatch();
         }
 
         private void CompileThrowUnaryExpression(Expression expr, bool asVoid)
@@ -2698,7 +2698,7 @@ namespace System.Linq.Expressions.Interpreter
                         Type type = GetMemberType(memberMember.Member);
                         if (memberMember.Member is PropertyInfo && type.GetTypeInfo().IsValueType)
                         {
-                            throw new InvalidOperationException("CannotAutoInitializeValueTypeMemberThroughProperty");
+                            throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(memberMember.Bindings);
                         }
 
                         CompileMember(null, memberMember.Member);
