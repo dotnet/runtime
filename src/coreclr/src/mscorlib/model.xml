@@ -7814,6 +7814,41 @@
       <Member MemberType="Property" Name="Version" />
     </Type>
 
+    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionAttribute">
+      <Member Name="#ctor" />
+      <Member Name="#ctor(System.Security.Permissions.SecurityAction)" />
+      <Member Name="get_ExternalProcessMgmt" />
+      <Member Name="get_ExternalThreading" />
+      <Member Name="get_MayLeakOnAbort" />
+      <Member Name="get_Resources" />
+      <Member Name="get_SecurityInfrastructure" />
+      <Member Name="get_SelfAffectingProcessMgmt" />
+      <Member Name="get_SelfAffectingThreading" />
+      <Member Name="get_SharedState" />
+      <Member Name="get_Synchronization" />
+      <Member Name="get_UI" />
+      <Member Name="set_ExternalProcessMgmt(System.Boolean)" />
+      <Member Name="set_ExternalThreading(System.Boolean)" />
+      <Member Name="set_MayLeakOnAbort(System.Boolean)" />
+      <Member Name="set_Resources(System.Security.Permissions.HostProtectionResource)" />
+      <Member Name="set_SecurityInfrastructure(System.Boolean)" />
+      <Member Name="set_SelfAffectingProcessMgmt(System.Boolean)" />
+      <Member Name="set_SelfAffectingThreading(System.Boolean)" />
+      <Member Name="set_SharedState(System.Boolean)" />
+      <Member Name="set_Synchronization(System.Boolean)" />
+      <Member Name="set_UI(System.Boolean)" />
+      <Member MemberType="Property" Name="ExternalProcessMgmt" />
+      <Member MemberType="Property" Name="ExternalThreading" />
+      <Member MemberType="Property" Name="MayLeakOnAbort" />
+      <Member MemberType="Property" Name="Resources" />
+      <Member MemberType="Property" Name="SecurityInfrastructure" />
+      <Member MemberType="Property" Name="SelfAffectingProcessMgmt" />
+      <Member MemberType="Property" Name="SelfAffectingThreading" />
+      <Member MemberType="Property" Name="SharedState" />
+      <Member MemberType="Property" Name="Synchronization" />
+      <Member MemberType="Property" Name="UI" />
+    </Type>
+    <Type Status="ImplRoot" Name="System.Security.Permissions.HostProtectionResource" />
 
     <Type Name="System.IO.BinaryReader">
       <Member Name="#ctor(System.IO.Stream)" />
