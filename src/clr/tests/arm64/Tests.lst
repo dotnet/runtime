@@ -3938,7 +3938,7 @@ RelativePath=JIT\Directed\perffix\primitivevt\mixed1_cs_ro\mixed1_cs_ro.exe
 WorkingDir=JIT\Directed\perffix\primitivevt\mixed1_cs_ro
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3747;DBG_PASS;REL_PASS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=Any
 [mixed2_cs_d.exe_563]
 RelativePath=JIT\Directed\perffix\primitivevt\mixed2_cs_d\mixed2_cs_d.exe
@@ -24322,7 +24322,7 @@ RelativePath=JIT\Methodical\fp\exgen\10w5d_cs_do\10w5d_cs_do.exe
 WorkingDir=JIT\Methodical\fp\exgen\10w5d_cs_do
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3747;REL_PASS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=Any
 [10w5d_cs_r.exe_3475]
 RelativePath=JIT\Methodical\fp\exgen\10w5d_cs_r\10w5d_cs_r.exe
@@ -24336,7 +24336,7 @@ RelativePath=JIT\Methodical\fp\exgen\10w5d_cs_ro\10w5d_cs_ro.exe
 WorkingDir=JIT\Methodical\fp\exgen\10w5d_cs_ro
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3774;REL_PASS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=Any
 [200w1d-01_cs_d.exe_3477]
 RelativePath=JIT\Methodical\fp\exgen\200w1d-01_cs_d\200w1d-01_cs_d.exe
