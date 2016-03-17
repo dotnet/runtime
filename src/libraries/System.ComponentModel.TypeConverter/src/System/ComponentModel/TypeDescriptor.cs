@@ -120,7 +120,6 @@ namespace System.ComponentModel
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(Type type, params Attribute[] attributes)
         {
@@ -150,7 +149,6 @@ namespace System.ComponentModel
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(object instance, params Attribute[] attributes)
         {
@@ -193,7 +191,6 @@ namespace System.ComponentModel
         ///     will cause the provider to be called to provide type information for 
         ///     all types.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, Type type)
         {
@@ -228,7 +225,6 @@ namespace System.ComponentModel
         ///     because the instance already exists.  This method does not prevent 
         ///     the object from finalizing.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, object instance)
         {
@@ -288,14 +284,6 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(type));
             }
 
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
-
             AddProvider(provider, type);
         }
 
@@ -326,14 +314,6 @@ namespace System.ComponentModel
 
             Type type = instance.GetType();
 
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
-
             AddProvider(provider, instance);
         }
 
@@ -342,8 +322,6 @@ namespace System.ComponentModel
         ///     of a default type description provider attribute for the
         ///     given type.
         /// </devdoc>
-        //See security note below
-        [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private static void CheckDefaultProvider(Type type)
         {
             if (s_defaultProviders == null)
@@ -391,21 +369,7 @@ namespace System.ComponentModel
                 Type providerType = Type.GetType(pa.TypeName);
                 if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
                 {
-                    TypeDescriptionProvider prov;
-
-                    // Security Note: TypeDescriptionProviders are similar to TypeConverters and UITypeEditors in the
-                    // sense that they provide a public API while not necessarily being public themselves. As such,
-                    // we need to allow instantiation of internal TypeDescriptionProviders. See the thread attached
-                    // to VSWhidbey #500522 for a more detailed discussion.
-                    IntSecurity.FullReflection.Assert();
-                    try
-                    {
-                        prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
-                    }
-                    finally
-                    {
-                        CodeAccessPermission.RevertAssert();
-                    }
+                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
                     Trace("Providers : Default provider found : {0}", providerType.Name);
                     AddProvider(prov, type);
                     providerAdded = true;
@@ -431,7 +395,6 @@ namespace System.ComponentModel
         ///     object, GetAssocation will be called to resolve the actual object 
         ///     instance that is related to its type parameter.  
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary)
         {
@@ -496,7 +459,6 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     This dynamically binds an EventDescriptor to a type.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static EventDescriptor CreateEvent(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, name, type, attributes);
@@ -506,7 +468,6 @@ namespace System.ComponentModel
         ///     This creates a new event descriptor identical to an existing event descriptor.  The new event descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static EventDescriptor CreateEvent(Type componentType, EventDescriptor oldEventDescriptor, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
@@ -565,7 +526,6 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     This dynamically binds a PropertyDescriptor to a type.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static PropertyDescriptor CreateProperty(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectPropertyDescriptor(componentType, name, type, attributes);
@@ -575,7 +535,6 @@ namespace System.ComponentModel
         ///     This creates a new property descriptor identical to an existing property descriptor.  The new property descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static PropertyDescriptor CreateProperty(Type componentType, PropertyDescriptor oldPropertyDescriptor, params Attribute[] attributes)
         {
             // We must do some special case work here for extended properties.  If the old property descriptor is really
@@ -919,7 +878,6 @@ namespace System.ComponentModel
             TypeConverter converter = GetDescriptor(component, noCustomTypeDesc).GetConverter();
             return converter;
         }
-#endif
 
         /// <devdoc>
         ///    Gets a type converter for the specified type.
@@ -2519,7 +2477,6 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     The RemoveAssociation method removes an association with an object.  
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary)
         {
@@ -2561,7 +2518,6 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     The RemoveAssociations method removes all associations for a primary object.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociations(object primary)
         {
@@ -2583,7 +2539,6 @@ namespace System.ComponentModel
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, Type type)
         {
@@ -2608,7 +2563,6 @@ namespace System.ComponentModel
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, object instance)
         {
@@ -2652,14 +2606,6 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(type));
             }
 
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
-
             RemoveProvider(provider, type);
         }
 
@@ -2688,14 +2634,6 @@ namespace System.ComponentModel
             }
 
             Type type = instance.GetType();
-
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
 
             RemoveProvider(provider, instance);
         }
