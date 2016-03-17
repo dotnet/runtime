@@ -963,9 +963,15 @@ combinedScenarios.each { scenario ->
                                     break
                                 case 'arm64':
                                     assert scenario == 'default'
+
+                                    // Up the timeout for arm64 jobs.
+                                    Utilities.setJobTimeout(newJob, 360);
                                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
 
-                                    buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                    // Debug runs take too long to run.
+                                    if (lowerConfiguration != "debug") {
+                                       buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                    }
                                     
                                     // Add archival.  No xunit results for arm64 windows
                                     Utilities.addArchival(newJob, "bin/Product/**")
