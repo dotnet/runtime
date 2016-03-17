@@ -22,6 +22,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
     <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.Interop" />
+    <ProjectReference Include="../../System.Runtime/src/redist/System.Runtime.depproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
