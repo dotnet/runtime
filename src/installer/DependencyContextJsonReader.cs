@@ -43,33 +43,58 @@ namespace Microsoft.Extensions.DependencyModel
 
             JObject runtimeTarget = null;
             JObject compileTarget = null;
-            if (targetsObject != null)
+
+            if (targetsObject == null)
             {
-                var compileTargetProperty = targetsObject.Properties()
-                    .FirstOrDefault(p => !IsRuntimeTarget(p.Name));
+                throw new FormatException("Dependency file does not have 'targets' section");
+            }
 
-                compileTarget = (JObject)compileTargetProperty.Value;
-                target = compileTargetProperty.Name;
-
-                if (!string.IsNullOrEmpty(runtimeTargetName))
+            if (!string.IsNullOrEmpty(runtimeTargetName))
+            {
+                runtimeTarget = (JObject) targetsObject[runtimeTargetName];
+                if (runtimeTarget == null)
                 {
-                    runtimeTarget = (JObject) targetsObject[runtimeTargetName];
-                    if (runtimeTarget == null)
-                    {
-                        throw new FormatException($"Target with name {runtimeTargetName} not found");
-                    }
+                    throw new FormatException($"Target with name {runtimeTargetName} not found");
+                }
+            }
+            else
+            {
+                var runtimeTargetProperty = targetsObject.Properties()
+                    .FirstOrDefault(p => IsRuntimeTarget(p.Name));
 
-                    var seperatorIndex = runtimeTargetName.IndexOf(DependencyContextStrings.VersionSeperator);
-                    if (seperatorIndex > -1 && seperatorIndex < runtimeTargetName.Length)
-                    {
-                        runtime = runtimeTargetName.Substring(seperatorIndex + 1);
-                        isPortable = false;
-                    }
+                runtimeTarget = (JObject)runtimeTargetProperty?.Value;
+                runtimeTargetName = runtimeTargetProperty?.Name;
+            }
+
+            if (runtimeTargetName != null)
+            {
+                var seperatorIndex = runtimeTargetName.IndexOf(DependencyContextStrings.VersionSeperator);
+                if (seperatorIndex > -1 && seperatorIndex < runtimeTargetName.Length)
+                {
+                    runtime = runtimeTargetName.Substring(seperatorIndex + 1);
+                    target = runtimeTargetName.Substring(0, seperatorIndex);
+                    isPortable = false;
                 }
                 else
                 {
-                    runtimeTarget = compileTarget;
+                    target = runtimeTargetName;
                 }
+            }
+
+            var ridlessTargetProperty = targetsObject.Properties().FirstOrDefault(p => !IsRuntimeTarget(p.Name));
+            if (ridlessTargetProperty != null)
+            {
+                compileTarget = (JObject)ridlessTargetProperty.Value;
+                if (runtimeTarget == null)
+                {
+                    runtimeTarget = compileTarget;
+                    target = ridlessTargetProperty.Name;
+                }
+            }
+
+            if (runtimeTarget == null)
+            {
+                throw new FormatException("No runtime target found");
             }
 
             return new DependencyContext(
@@ -104,7 +129,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new CompilationOptions(
-                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>(),
+                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>() ?? Enumerable.Empty<string>(),
                 compilationOptionsObject[DependencyContextStrings.LanguageVersionPropertyName]?.Value<string>(),
                 compilationOptionsObject[DependencyContextStrings.PlatformPropertyName]?.Value<string>(),
                 compilationOptionsObject[DependencyContextStrings.AllowUnsafePropertyName]?.Value<bool>(),
