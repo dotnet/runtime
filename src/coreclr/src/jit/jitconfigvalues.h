@@ -55,6 +55,7 @@ CONFIG_INTEGER(JitHashDump, W("JitHashDump"), -1) // Same as JitDump, but for a 
 CONFIG_INTEGER(JitHashDumpIR, W("JitHashDumpIR"), -1) // Same as JitDumpIR, but for a method hash
 CONFIG_INTEGER(JitHashHalt, W("JitHashHalt"), -1) // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, W("JitInlineAdditionalMultiplier"), 0)
+CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
 CONFIG_INTEGER(JitInlineSize, W("JITInlineSize"), DEFAULT_MAX_INLINE_SIZE)
 CONFIG_INTEGER(JitLargeBranches, W("JitLargeBranches"), 0) // Force using the largest conditional branch format
