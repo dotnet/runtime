@@ -886,8 +886,8 @@ mono_cleanup (void)
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
-	mono_images_cleanup ();
 	mono_debug_cleanup ();
+	mono_images_cleanup ();
 	mono_metadata_cleanup ();
 
 	mono_native_tls_free (appdomain_thread_id);
