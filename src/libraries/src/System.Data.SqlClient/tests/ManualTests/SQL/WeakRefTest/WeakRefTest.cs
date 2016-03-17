@@ -43,7 +43,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestReaderNonMars()
         {
-            string connString = DataTestClass.SQL2005_Pubs + "Max Pool Size=1";
+            string connString = DataTestClass.SQL2005_Pubs + ";Max Pool Size=1";
 
             TestReaderNonMarsCase("Case 1: ExecuteReader, Close, ExecuteReader.", connString, ReaderTestType.ReaderClose, ReaderVerificationType.ExecuteReader);
             TestReaderNonMarsCase("Case 2: ExecuteReader, Dispose, ExecuteReader.", connString, ReaderTestType.ReaderDispose, ReaderVerificationType.ExecuteReader);
@@ -67,7 +67,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [Fact]
         public static void TestTransactionSingle()
         {
-            string connString = DataTestClass.SQL2005_Pubs + "Max Pool Size=1";
+            string connString = DataTestClass.SQL2005_Pubs + ";Max Pool Size=1";
 
             TestTransactionSingleCase("Case 1: BeginTransaction, Rollback.", connString, TransactionTestType.TransactionRollback);
             TestTransactionSingleCase("Case 2: BeginTransaction, Dispose.", connString, TransactionTestType.TransactionDispose);
