@@ -112,17 +112,19 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Build(runtimeExports: new[]
             {
-                Export(PackageDescription("Pack.Age",
-                    servicable: true,
-                    hash: "Hash",
-                    version: new NuGetVersion(1, 2, 3),
-                    dependencies: new[]
-                    {
-                        new LibraryRange("System.Collections",
-                            new VersionRange(new NuGetVersion(2, 1, 2)),
-                            LibraryType.ReferenceAssembly,
-                            LibraryDependencyType.Default)
-                    }),
+                Export(
+                    PackageDescription(
+                        "Pack.Age",
+                        servicable: true,
+                        hash: "Hash",
+                        version: new NuGetVersion(1, 2, 3),
+                        dependencies: new[]
+                        {
+                            new LibraryRange("System.Collections",
+                                new VersionRange(new NuGetVersion(2, 1, 2)),
+                                LibraryType.ReferenceAssembly,
+                                LibraryDependencyType.Default)
+                        }),
                     resourceAssemblies: new[]
                     {
                         new LibraryResourceAssembly(
@@ -130,25 +132,26 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             "en-US"
                             )
                     },
-                    runtimeAssemblies: new[]
+                    runtimeAssemblyGroups: new[]
                     {
-                        new LibraryAsset("Dll", "lib/Pack.Age.dll", ""),
+                        new LibraryAssetGroup(
+                            new LibraryAsset("Dll", "lib/Pack.Age.dll", "")),
+                        new LibraryAssetGroup("win8-x64",
+                            new LibraryAsset("Dll", "win8-x64/Pack.Age.dll", ""))
                     },
-                    runtimeTargets: new []
+                    nativeLibraryGroups: new []
                     {
-                        new LibraryRuntimeTarget(
-                            "win8-x64",
-                            new [] { new LibraryAsset("Dll", "win8-x64/Pack.Age.dll", "") },
-                            new [] { new LibraryAsset("Dll", "win8-x64/Pack.Age.native.dll", "") }
-                            )
-                    }
-                    ),
-                Export(ReferenceAssemblyDescription("System.Collections",
-                    version: new NuGetVersion(3, 3, 3)),
-                    runtimeAssemblies: new[]
-                    {
-                        new LibraryAsset("Dll", "", "System.Collections.dll"),
-                    })
+                        new LibraryAssetGroup("win8-x64",
+                            new LibraryAsset("Dll", "win8-x64/Pack.Age.native.dll", ""))
+                    }),
+                Export(
+                    ReferenceAssemblyDescription("System.Collections",
+                        version: new NuGetVersion(3, 3, 3)),
+                        runtimeAssemblyGroups: new[]
+                        {
+                            new LibraryAssetGroup(
+                                new LibraryAsset("Dll", "System.Collections.dll", "System.Collections.dll"))
+                        })
             });
 
             context.RuntimeLibraries.Should().HaveCount(2);
@@ -159,19 +162,18 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             lib.Hash.Should().Be("sha512-Hash");
             lib.Version.Should().Be("1.2.3");
             lib.Dependencies.Should().OnlyContain(l => l.Name == "System.Collections" && l.Version == "3.3.3");
-            lib.Assemblies.Should().OnlyContain(l => l.Path == "lib/Pack.Age.dll");
             lib.ResourceAssemblies.Should().OnlyContain(l => l.Path == "en-US/Pack.Age.resources.dll" && l.Locale == "en-US");
 
-            var target = lib.RuntimeTargets.Should().Contain(t => t.Runtime == "win8-x64").Subject;
-            target.Assemblies.Should().OnlyContain(l => l.Path == "win8-x64/Pack.Age.dll");
-            target.NativeLibraries.Should().OnlyContain(l => l == "win8-x64/Pack.Age.native.dll");
+            lib.RuntimeAssemblyGroups.GetDefaultAssets().Should().OnlyContain(l => l == "lib/Pack.Age.dll");
+            lib.RuntimeAssemblyGroups.GetRuntimeAssets("win8-x64").Should().OnlyContain(l => l == "win8-x64/Pack.Age.dll");
+            lib.NativeLibraryGroups.GetRuntimeAssets("win8-x64").Should().OnlyContain(l => l == "win8-x64/Pack.Age.native.dll");
 
             var asm = context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Collections").Subject;
             asm.Type.Should().Be("referenceassembly");
             asm.Version.Should().Be("3.3.3");
             asm.Hash.Should().BeEmpty();
             asm.Dependencies.Should().BeEmpty();
-            asm.Assemblies.Should().OnlyContain(l => l.Path == "System.Collections.dll");
+            asm.RuntimeAssemblyGroups.GetDefaultAssets().Should().OnlyContain(l => l == "System.Collections.dll");
         }
 
         [Fact]
@@ -292,14 +294,14 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private LibraryExport Export(
             LibraryDescription description,
             IEnumerable<LibraryAsset> compilationAssemblies = null,
-            IEnumerable<LibraryAsset> runtimeAssemblies = null,
-            IEnumerable<LibraryRuntimeTarget> runtimeTargets = null,
+            IEnumerable<LibraryAssetGroup> runtimeAssemblyGroups = null,
+            IEnumerable<LibraryAssetGroup> nativeLibraryGroups = null,
             IEnumerable<LibraryResourceAssembly> resourceAssemblies = null)
         {
             return LibraryExportBuilder.Create(description)
                 .WithCompilationAssemblies(compilationAssemblies)
-                .WithRuntimeAssemblies(runtimeAssemblies)
-                .WithRuntimeTargets(runtimeTargets)
+                .WithRuntimeAssemblyGroups(runtimeAssemblyGroups)
+                .WithNativeLibraryGroups(nativeLibraryGroups)
                 .WithResourceAssemblies(resourceAssemblies)
                 .Build();
         }
