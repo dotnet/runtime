@@ -23,11 +23,6 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 throw new ArgumentException(nameof(version));
             }
-            // Hash could be empty for projects
-            if (hash == null)
-            {
-                throw new ArgumentException(nameof(hash));
-            }
             if (dependencies == null)
             {
                 throw new ArgumentNullException(nameof(dependencies));

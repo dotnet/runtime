@@ -14,20 +14,17 @@ namespace Microsoft.Extensions.DependencyModel
         private static Lazy<string[]> _depsFiles = new Lazy<string[]>(GetHostDepsList);
 
         private const string DepsJsonExtension = ".deps.json";
-        private const string DepsExtension = ".deps";
 
         private readonly string _entryPointDepsLocation;
         private readonly string _runtimeDepsLocation;
         private readonly IFileSystem _fileSystem;
         private readonly IDependencyContextReader _jsonReader;
-        private readonly IDependencyContextReader _csvReader;
 
         public DependencyContextLoader() : this(
             GetDefaultEntrypointDepsLocation(),
             GetDefaultRuntimeDepsLocation(),
             FileSystemWrapper.Default,
-            new DependencyContextJsonReader(),
-            new DependencyContextCsvReader())
+            new DependencyContextJsonReader())
         {
         }
 
@@ -35,14 +32,12 @@ namespace Microsoft.Extensions.DependencyModel
             string entryPointDepsLocation,
             string runtimeDepsLocation,
             IFileSystem fileSystem,
-            IDependencyContextReader jsonReader,
-            IDependencyContextReader csvReader)
+            IDependencyContextReader jsonReader)
         {
             _entryPointDepsLocation = entryPointDepsLocation;
             _runtimeDepsLocation = runtimeDepsLocation;
             _fileSystem = fileSystem;
             _jsonReader = jsonReader;
-            _csvReader = csvReader;
         }
 
         public static DependencyContextLoader Default { get; } = new DependencyContextLoader();
@@ -129,15 +124,6 @@ namespace Microsoft.Extensions.DependencyModel
                 using (var stream = _fileSystem.File.OpenRead(depsJsonFile))
                 {
                     return _jsonReader.Read(stream);
-                }
-            }
-
-            var depsFile = Path.ChangeExtension(assembly.Location, DepsExtension);
-            if (_fileSystem.File.Exists(depsFile))
-            {
-                using (var stream = _fileSystem.File.OpenRead(depsFile))
-                {
-                    return _csvReader.Read(stream);
                 }
             }
 
