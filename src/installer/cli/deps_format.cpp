@@ -232,7 +232,9 @@ bool deps_json_t::load_portable(const json_value& json, const pal::string_t& tar
     auto package_exists = [&rid_assets, &non_rid_assets](const pal::string_t& package) -> bool {
         return rid_assets.count(package) || non_rid_assets.count(package);
     };
-    auto get_relpaths = [&rid_assets, &non_rid_assets](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
+
+    std::vector<pal::string_t> empty;
+    auto get_relpaths = [&rid_assets, &non_rid_assets, &empty](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
 
         // Is there any rid specific assets for this type ("native" or "runtime" or "resources")
         if (rid_assets.count(package) && !rid_assets[package].empty())
@@ -246,7 +248,12 @@ bool deps_json_t::load_portable(const json_value& json, const pal::string_t& tar
             trace::verbose(_X("There were no rid specific %s asset for %s"), deps_json_t::s_known_asset_types[type_index], package.c_str());
         }
 
-        return non_rid_assets[package][type_index];
+        if (non_rid_assets.count(package))
+        {
+            return non_rid_assets[package][type_index];
+        }
+
+        return empty;
     };
 
     reconcile_libraries_with_targets(json, package_exists, get_relpaths);
