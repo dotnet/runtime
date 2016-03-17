@@ -47,7 +47,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("Equals_TestData")]
+        [MemberData(nameof(Equals_TestData))]
         public void Equals(RegionInfo regionInfo1, object obj, bool expected)
         {
             Assert.Equal(expected, regionInfo1.Equals(obj));

@@ -55,7 +55,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData("IsPrefix_TestData")]
+        [MemberData(nameof(IsPrefix_TestData))]
         public void IsPrefix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected)
         {
             if (options == CompareOptions.None)

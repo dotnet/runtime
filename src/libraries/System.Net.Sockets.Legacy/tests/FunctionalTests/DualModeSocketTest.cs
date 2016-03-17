@@ -265,7 +265,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Throws_Data")]
+        [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
@@ -273,7 +273,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Success_Data")]
+        [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Success_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnect_IPAddressListToHost_Success(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
@@ -291,7 +291,7 @@ namespace System.Net.Sockets.Tests
         #region Connect to host string
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -309,7 +309,7 @@ namespace System.Net.Sockets.Tests
         #region Connect to DnsEndPoint
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         private void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -471,7 +471,7 @@ namespace System.Net.Sockets.Tests
         #region BeginConnect to IPAddress[]
 
         [Theory]
-        [MemberData("DualMode_IPAddresses_ListenOn_DualMode_Data")]
+        [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         private void DualModeBeginConnect_IPAddressListToHost_Helper(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
@@ -490,7 +490,7 @@ namespace System.Net.Sockets.Tests
         #region BeginConnect to host string
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeBeginConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -509,7 +509,7 @@ namespace System.Net.Sockets.Tests
         #region BeginConnect to DnsEndPoint
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeBeginConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -615,7 +615,7 @@ namespace System.Net.Sockets.Tests
         #region ConnectAsync to DnsEndPoint
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [PlatformSpecific(PlatformID.Windows)]
         public void DualModeConnectAsync_Instance_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -641,7 +641,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [MemberData("DualMode_Connect_IPAddress_DualMode_Data")]
+        [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         [ActiveIssue(4002, PlatformID.AnyUnix)]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
