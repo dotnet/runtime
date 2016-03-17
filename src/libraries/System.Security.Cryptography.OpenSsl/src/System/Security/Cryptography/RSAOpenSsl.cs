@@ -30,9 +30,9 @@ namespace System.Security.Cryptography
 
             SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
 
-            // Set base.KeySize to avoid throwing an extra Lazy at the GC when
-            // using something other than the default keysize.
-            base.KeySize = BitsPerByte * Interop.Crypto.RsaSize(rsaHandle);
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsaHandle));
             _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
         }
 
@@ -61,8 +61,9 @@ namespace System.Security.Cryptography
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
-            // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
-            base.KeySize = BitsPerByte * Interop.Crypto.RsaSize(rsa);
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsa));
             _key = new Lazy<SafeRsaHandle>(() => rsa);
         }
 

@@ -65,8 +65,25 @@ namespace System.Security.Cryptography
                 Debug.Assert(!keyHandle.IsInvalid);
 
                 _keyHandle = keyHandle;
+
                 int newKeySize = CngKeyLite.GetKeyLength(keyHandle);
-                KeySize = _lastKeySize = newKeySize;
+
+                // Our LegalKeySizes value stores the values that we encoded as being the correct
+                // legal key size limitations for this algorithm, as documented on MSDN.
+                //
+                // But on a new OS version we might not question if our limit is accurate, or MSDN
+                // could have been innacurate to start with.
+                //
+                // Since the key is already loaded, we know that Windows thought it to be valid;
+                // therefore we should set KeySizeValue directly to bypass the LegalKeySizes conformance
+                // check.
+                //
+                // For RSA there are known cases where this change matters. RSACryptoServiceProvider can
+                // create a 384-bit RSA key, which we consider too small to be legal. It can also create
+                // a 1032-bit RSA key, which we consider illegal because it doesn't match our 64-bit
+                // alignment requirement. (In both cases Windows loads it just fine)
+                ForceSetKeySize(newKeySize);
+                _lastKeySize = newKeySize;
             }
         }
     }
