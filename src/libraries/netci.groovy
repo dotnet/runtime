@@ -277,10 +277,7 @@ branchList.each { branchName ->
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
-                            // Workaround an unknown issue in coreclr by freezing the corefx builds on the last working release_windows_nt build
-                            buildNumber('40')
-                            // Remove above and uncomment when fixed.
-                            // latestSuccessful(true)
+                            latestSuccessful(true)
                         }
                     }
                     
@@ -543,10 +540,7 @@ branchList.each { branchName ->
                         includePatterns("bin/Product/${osGroup}*/**")
                         excludePatterns('**/testResults.xml', '**/*.ni.dll')
                         buildSelector {
-                            // Workaround an unknown issue in coreclr by freezing the corefx builds on the last working release_windows_nt build
-                            buildNumber('40')
-                            // Remove above and uncomment when fixed.
-                            // latestSuccessful(true)
+                            latestSuccessful(true)
                         }
                     }
                     
