@@ -37,7 +37,7 @@ namespace System.IO.Compression.Tests
         /// Canterbury Corpus
         /// </summary>
         [Benchmark]
-        [MemberData("CanterburyCorpus")]
+        [MemberData(nameof(CanterburyCorpus))]
         public void Compress_Canterbury(int innerIterations, string fileName, CompressionLevel compressLevel)
         {
             byte[] bytes = File.ReadAllBytes(Path.Combine("GZTestData", "Canterbury", fileName));
@@ -71,7 +71,7 @@ namespace System.IO.Compression.Tests
         /// Canterbury Corpus
         /// </summary>
         [Benchmark]
-        [MemberData("CanterburyCorpus")]
+        [MemberData(nameof(CanterburyCorpus))]
         public void Decompress_Canterbury(int innerIterations, string fileName, CompressionLevel compressLevel)
         {
             string zipFilePath = Path.Combine("GZTestData", "Canterbury", "GZcompressed", fileName + ".gz");

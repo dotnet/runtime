@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
 
         // TestNumberGroupSizesLocale: Verify value of property NumberGroupSizes for specific locales
         [Theory]
-        [MemberData("LocalesToCheck")]
+        [MemberData(nameof(LocalesToCheck))]
         public void TestNumberGroupSizesLocale(string locale)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);

@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Csp.Tests
         private static readonly byte[] s_dataToSign = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 
         [Theory]
-        [MemberData("AlgorithmIdentifiers")]
+        [MemberData(nameof(AlgorithmIdentifiers))]
         public static void AlgorithmLookups(string primaryId, object halg)
         {
             using (var rsa = new RSACryptoServiceProvider())
