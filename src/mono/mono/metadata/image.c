@@ -509,9 +509,19 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 	i = ((MonoImageLoader*)image->loader)->load_tables (image);
 	g_assert (image->heap_guid.data);
-	g_assert (image->heap_guid.size >= 16);
 
-	image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
+	if (!image->metadata_only) {
+		g_assert (image->heap_guid.size >= 16);
+
+		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
+	} else {
+		/* PPDB files have no guid */
+		guint8 empty_guid [16];
+
+		memset (empty_guid, 0, sizeof (empty_guid));
+
+		image->guid = mono_guid_to_string (empty_guid);
+	}
 
 	return i;
 }
