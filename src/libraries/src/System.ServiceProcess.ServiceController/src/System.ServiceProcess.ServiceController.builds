@@ -6,6 +6,9 @@
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.ServiceProcess.ServiceController.csproj">
+      <OSGroup>Unix</OSGroup>
+    </Project>
+    <Project Include="System.ServiceProcess.ServiceController.csproj">
       <TargetGroup>net461</TargetGroup>
     </Project>
   </ItemGroup>

@@ -4,20 +4,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Security.Cryptography.OpenSsl.csproj">
-      <SupportedFramework>netstandardapp1.5</SupportedFramework>
+      <SupportedFramework>netstandardapp1.5;net461;netcore50</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.csproj" >
-      <OSGroup>Linux</OSGroup>
-    </ProjectReference>
+    <ProjectReference Include="..\src\System.Security.Cryptography.OpenSsl.builds" />
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
-
-    <ExcludeDefaultValidateFramework Include="netstandardapp1.5" />
-    <!-- Only supported on windows, so overriding
-         the validation RID's -->
-    <ValidateFramework Include="netstandardapp1.5">
-      <RuntimeIDs>osx.10.11-x64;centos.7.1-x64;ubuntu.14.04-x64;linuxmint.17-x64</RuntimeIDs>
-    </ValidateFramework>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
