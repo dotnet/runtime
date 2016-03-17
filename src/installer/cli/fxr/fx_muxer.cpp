@@ -26,7 +26,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     fx_ver_t specified(-1, -1, -1);
     if (!fx_ver_t::parse(fx_ver, &specified, false))
     {
-        trace::error(_X("The specified runtimeconfig.json version [%s] could not be parsed"), fx_ver.c_str());
+        trace::info(_X("The specified runtimeconfig.json version [%s] could not be parsed"), fx_ver.c_str());
         return pal::string_t();
     }
 
