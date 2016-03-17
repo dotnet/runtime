@@ -42,22 +42,30 @@ REM ============================================================================
 set __DotNetToolDir=%__ThisScriptPath%..\Tools
 set __DotNetCmd=%__DotNetToolDir%\dotnetcli\bin\dotnet.exe
 set __PackageDir=%__ThisScriptPath%..\Packages
-set __JasonFilePath=%__ThisScriptPath%project.json
+set __TmpDir=%Temp%\coreclr_gcstress_%RANDOM%
 
-REM Check if dotnet CLI exists
+REM Check if donet cli exists
 if not exist "%__DotNetToolDir%" (
     echo Directory containing dotnet CLI does not exist: %__DotNetToolDir%
-    exit /b 1
+    goto Fail
 )
 if not exist "%__DotNetCmd%" (
     echo dotnet.exe does not exist: %__DotNetCmd%
-    exit /b 1
+    goto Fail
 )
 
 REM Create directories needed
 if not exist "%__PackageDir%" md "%__PackageDir%"
 if not exist "%__OutputDir%" md "%__OutputDir%"
 
+REM Check and create a temp directory
+if exist "%__TmpDir%" (
+    rmdir /S /Q %__TmpDir%
+)
+mkdir %__TmpDir%
+
+REM Project.json path
+set __JasonFilePath=%__TmpDir%\project.json
 
 REM =========================================================================================
 REM ===
@@ -75,15 +83,16 @@ echo { ^
 
 REM Download the package
 echo Downloading CoreDisTools package
-echo on
-call "%__DotNetCmd%" restore "%__JasonFilePath%" --source https://dotnet.myget.org/F/dotnet-core/ --packages "%__PackageDir%"
-@echo off
+set DOTNETCMD="%__DotNetCmd%" restore "%__JasonFilePath%" --source https://dotnet.myget.org/F/dotnet-core/ --packages "%__PackageDir%"
+echo %DOTNETCMD%
+call %DOTNETCMD%
+if errorlevel 1 goto Fail
 
 REM Get downloaded dll path
-FOR /F "delims=" %%i IN ('dir coredistools.dll /b/s') DO set __LibPath=%%i
+FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s') DO set __LibPath=%%i
 if not exist "%__LibPath%" (
     echo Failed to locate the downloaded library: %__LibPath%
-    exit /b 1
+    goto Fail
 )
 
 REM Copy library to output directory
@@ -91,9 +100,17 @@ echo Copy library: %__LibPath% to %__OutputDir%
 copy /y "%__LibPath%" "%__OutputDir%"
 
 REM Delete temporary files
-del "%__JasonFilePath%"
+if exist "%__TmpDir%" (
+    rmdir /S /Q "%__TmpDir%"
+)
 
 exit /b 0
+
+:Fail
+if exist "%__TmpDir%" (
+    rmdir /S /Q "%__TmpDir%"
+)
+exit /b 1
 
 REM =========================================================================================
 REM ===
