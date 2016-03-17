@@ -94,34 +94,61 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
             m_IsForceInline = value;
             m_IsForceInlineKnown = true;
             break;
+
         case InlineObservation::CALLEE_IS_INSTANCE_CTOR:
             m_IsInstanceCtor = value;
             break;
+
         case InlineObservation::CALLEE_CLASS_PROMOTABLE:
             m_IsFromPromotableValueClass = value;
             break;
+
         case InlineObservation::CALLEE_HAS_SIMD:
             m_HasSimd = value;
             break;
+
         case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
-            m_LooksLikeWrapperMethod = value;
+            // LegacyPolicy ignores this for prejit roots.
+            if (!m_IsPrejitRoot)
+            {
+                m_LooksLikeWrapperMethod = value;
+            }
             break;
+
         case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
-            m_ArgFeedsConstantTest = value;
+            // LegacyPolicy ignores this for prejit roots.
+            if (!m_IsPrejitRoot)
+            {
+                m_ArgFeedsConstantTest = value;
+            }
             break;
+
         case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
-            m_ArgFeedsRangeCheck = value;
+            // LegacyPolicy ignores this for prejit roots.
+            if (!m_IsPrejitRoot)
+            {
+                m_ArgFeedsRangeCheck = value;
+            }
             break;
-        case InlineObservation::CALLEE_IS_MOSTLY_LOAD_STORE:
-            m_MethodIsMostlyLoadStore = value;
-            break;
+
         case InlineObservation::CALLEE_HAS_SWITCH:
-            // Pass this one on, it should cause inlining to fail.
-            propagate = true;
+        case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
+        case InlineObservation::CALLEE_STORES_TO_ARGUMENT:
+            // LegacyPolicy ignores these for prejit roots.
+            if (!m_IsPrejitRoot)
+            {
+                // Pass these on, they should cause inlining to fail.
+                propagate = true;
+            }
             break;
+
         case InlineObservation::CALLSITE_CONSTANT_ARG_FEEDS_TEST:
+            // We shouldn't see this for a prejit root since
+            // we don't know anything about callers.
+            assert(!m_IsPrejitRoot);
             m_ConstantFeedsConstantTest = value;
             break;
+
         case InlineObservation::CALLEE_BEGIN_OPCODE_SCAN:
             {
                 // Set up the state machine, if this inline is
@@ -142,6 +169,18 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 if (m_StateMachine != nullptr)
                 {
                     m_StateMachine->End();
+                }
+
+                // If this function is mostly loads and stores, we
+                // should try harder to inline it.  You can't just use
+                // the percentage test because if the method has 8
+                // instructions and 6 are loads, it's only 75% loads.
+                // This allows for CALL, RET, and one more non-ld/st
+                // instruction.
+                if (((m_InstructionCount - m_LoadStoreCount) < 4) || 
+                    (((double)m_LoadStoreCount/(double)m_InstructionCount) > .90))
+                {
+                    m_MethodIsMostlyLoadStore = true;
                 }
 
                 break;
@@ -249,9 +288,11 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
     case InlineObservation::CALLEE_OPCODE_NORMED:
     case InlineObservation::CALLEE_OPCODE:
         {
+            m_InstructionCount++;
+            OPCODE opcode = static_cast<OPCODE>(value);
+
             if (m_StateMachine != nullptr)
             {
-                OPCODE opcode = static_cast<OPCODE>(value);
                 SM_OPCODE smOpcode = CodeSeqSM::MapToSMOpcode(opcode);
                 noway_assert(smOpcode < SM_COUNT);
                 noway_assert(smOpcode != SM_PREFIX_N);
@@ -269,6 +310,20 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
 
                 m_StateMachine->Run(smOpcode DEBUGARG(0));
             }
+
+            // Look for opcodes that imply loads and stores.
+            // Logic here is as it is to match legacy behavior.
+            if ((opcode >= CEE_LDARG_0  && opcode <= CEE_STLOC_S)  ||
+                (opcode >= CEE_LDARG    && opcode <= CEE_STLOC)    ||
+                (opcode >= CEE_LDNULL   && opcode <= CEE_LDC_R8)   ||
+                (opcode >= CEE_LDIND_I1 && opcode <= CEE_STIND_R8) ||
+                (opcode >= CEE_LDFLD    && opcode <= CEE_STOBJ)    ||
+                (opcode >= CEE_LDELEMA  && opcode <= CEE_STELEM)   ||
+                (opcode == CEE_POP))
+            {
+                m_LoadStoreCount++;
+            }
+
             break;
         }
 
@@ -744,7 +799,9 @@ void RandomPolicy::NoteBool(InlineObservation obs, bool value)
             break;
 
         case InlineObservation::CALLEE_HAS_SWITCH:
-            // Pass this one on, it should cause inlining to fail.
+        case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
+        case InlineObservation::CALLEE_STORES_TO_ARGUMENT:
+            // Pass these on, they should cause inlining to fail.
             propagate = true;
             break;
 
