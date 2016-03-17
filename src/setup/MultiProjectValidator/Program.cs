@@ -27,7 +27,7 @@ namespace MultiProjectValidator
             {
                 projects = ProjectLoader.Load(rootPath);
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 Console.WriteLine("Failed to load projects from path: " + rootPath);
                 return 1;
