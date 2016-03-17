@@ -53,8 +53,10 @@ namespace System.Security.Cryptography
                     return;
                 }
 
-                FreeKey();
+                // Set the KeySize first so that an invalid value doesn't throw away the key
                 base.KeySize = value;
+
+                FreeKey();
                 _key = new Lazy<SafeRsaHandle>(GenerateKey);
             }
         }
