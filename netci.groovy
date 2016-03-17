@@ -104,6 +104,10 @@ def static isCorefxTesting(def scenario) {
     return scenario.substring(0,corefx_prefix.length()) == corefx_prefix
 }
 
+def static isR2R(def scenario) {
+    return (scenario == 'r2r' || scenario == 'pri1r2r')
+}
+
 def static setTestJobTimeOut(newJob, scenario) {
     if (isGCStressRelatedTesting(scenario)) {
         Utilities.setJobTimeout(newJob, 1440)
@@ -112,6 +116,9 @@ def static setTestJobTimeOut(newJob, scenario) {
         Utilities.setJobTimeout(newJob, 360)
     }
     else if (Constants.jitStressModeScenarios.containsKey(scenario)) {
+        Utilities.setJobTimeout(newJob, 240)
+    }
+    else if (isR2R(scenario)) {
         Utilities.setJobTimeout(newJob, 240)
     }
     // Non-test jobs use the default timeout value.
@@ -1104,7 +1111,7 @@ combinedScenarios.each { scenario ->
                     }
                     // For CentOS, we only want Checked pri1 builds.
                     else if (os == 'CentOS7.1') {
-                        if (scenario != 'pri1') {
+                        if (scenario != 'pri1' && scenario != 'r2r' && scenario != 'pri1r2r') {
                             return
                         }
                         if (configuration != 'Checked') {
