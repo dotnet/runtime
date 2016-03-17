@@ -20,20 +20,14 @@
     <Compile Include="CreateTests.cs" />
     <Compile Include="HandleTests.cs" />
     <Compile Include="OpenTests.cs" />
-    <Compile Include="InvasiveCngTests.cs" />
     <Compile Include="ImportExportTests.cs" />
     <Compile Include="PropertyTests.cs" />
     <Compile Include="RsaCngTests.cs" />
     <Compile Include="ECDsaCngTests.cs" />
     <Compile Include="TestData.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
-      <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
-    </Compile>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="InvasiveCngTests.cs" />
 
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
@@ -67,6 +61,14 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
     </Compile>
 
     <Compile Include="RSACngProvider.cs" />
