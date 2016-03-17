@@ -6,11 +6,12 @@
 #include "trace.h"
 #include "libhost.h"
 
-pal::string_t get_runtime_config_json(const pal::string_t& app_path)
+pal::string_t get_runtime_config_from_file(const pal::string_t& file)
 {
-    auto name = get_filename_without_ext(app_path);
+    auto name = get_filename_without_ext(file);
+    name = name.substr(0, name.find(_X('.')));
     auto json_name = name + _X(".runtimeconfig.json");
-    auto json_path = get_directory(app_path);
+    auto json_path = get_directory(file);
 
     append_path(&json_path, json_name.c_str());
     if (pal::file_exists(json_path))
