@@ -27,6 +27,9 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 MonoArray*
 mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error);
 
+MonoArray*
+mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error);
+
 MonoCustomAttrInfo*
 mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, MonoError *error);
 MonoCustomAttrInfo*

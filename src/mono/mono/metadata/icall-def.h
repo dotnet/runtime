@@ -503,7 +503,7 @@ ICALL(ASSEMB_1, "InternalAddModule", ves_icall_System_Reflection_Emit_AssemblyBu
 ICALL(ASSEMB_2, "basic_init", mono_image_basic_init)
 
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
-ICALL(CATTRB_1, "GetBlob", mono_reflection_get_custom_attrs_blob)
+ICALL(CATTRB_1, "GetBlob", ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob)
 
 #ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(DERIVEDTYPE, "System.Reflection.Emit.DerivedType", DERIVEDTYPE_1)

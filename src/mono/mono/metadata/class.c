@@ -3792,6 +3792,7 @@ mono_class_setup_vtable (MonoClass *klass)
 static void
 mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 {
+	MonoError error;
 	MonoMethod **overrides;
 	MonoGenericContext *context;
 	guint32 type_token;
@@ -3842,7 +3843,14 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		 * This is true since we don't do layout all over again for them, we simply inflate
 		 * the layout of the parent.
 		 */
-		mono_reflection_get_dynamic_overrides (klass, &overrides, &onum);
+		mono_reflection_get_dynamic_overrides (klass, &overrides, &onum, &error);
+		if (!is_ok (&error)) {
+			mono_loader_unlock ();
+			g_list_remove (in_setup, klass);
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf("Could not load list of method overrides due to %s", mono_error_get_message (&error)));
+			mono_error_cleanup (&error);
+			return;
+		}
 	} else {
 		/* The following call fails if there are missing methods in the type */
 		/* FIXME it's probably a good idea to avoid this for generic instances. */
