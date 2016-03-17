@@ -47,7 +47,7 @@ namespace System.Collections.Tests
         #region IDictionary tests
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_NullValueWhenDefaultValueIsNonNull(int count)
         {
             IDictionary dictionary = new SortedDictionary<string, int>();
@@ -55,7 +55,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -67,7 +67,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_ItemSet_ValueOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -80,7 +80,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -93,7 +93,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_ValueOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -106,7 +106,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Add_NullValueWhenDefaultTValueIsNonNull(int count)
         {
             if (!IsReadOnly)
@@ -119,7 +119,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_NonGeneric_Contains_KeyOfWrongType(int count)
         {
             if (!IsReadOnly)
@@ -134,7 +134,7 @@ namespace System.Collections.Tests
         #region ICollection tests
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_CopyTo_ArrayOfIncorrectKeyValuePairType(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);
@@ -143,7 +143,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_CopyTo_ArrayOfCorrectKeyValuePairType(int count)
         {
             ICollection collection = NonGenericICollectionFactory(count);

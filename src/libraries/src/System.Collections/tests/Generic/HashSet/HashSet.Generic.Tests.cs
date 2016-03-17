@@ -72,7 +72,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void HashSet_Generic_Constructor_IEnumerable(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
@@ -81,7 +81,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_Constructor_IEnumerable_WithManyDuplicates(int count)
         {
             IEnumerable<T> items = CreateEnumerable(EnumerableType.List, null, count, 0, 0);
@@ -91,7 +91,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_Constructor_HashSet_SparselyFilled(int count)
         {
             HashSet<T> source = (HashSet <T>)CreateEnumerable(EnumerableType.HashSet, null, count, 0, 0);
@@ -112,7 +112,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("EnumerableTestData")]
+        [MemberData(nameof(EnumerableTestData))]
         public void HashSet_Generic_Constructor_IEnumerable_IEqualityComparer(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
@@ -125,7 +125,7 @@ namespace System.Collections.Tests
         #region RemoveWhere
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_RemoveWhere_AllElements(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -134,7 +134,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_RemoveWhere_NoElements(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -144,7 +144,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_RemoveWhere_NewObject(int setLength) // Regression Dev10_624201
         {
             object[] array = new object[2];
@@ -159,7 +159,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_RemoveWhere_NullMatchPredicate(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -171,7 +171,7 @@ namespace System.Collections.Tests
         #region TrimExcess
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_TrimExcess_OnValidSetThatHasntBeenRemovedFrom(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -179,7 +179,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_TrimExcess_Repeatedly(int setLength)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(setLength);
@@ -191,7 +191,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_TrimExcess_AfterRemovingOneElement(int setLength)
         {
             if (setLength > 0)
@@ -210,7 +210,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_TrimExcess_AfterClearingAndAddingSomeElementsBack(int setLength)
         {
             if (setLength > 0)
@@ -228,7 +228,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_TrimExcess_AfterClearingAndAddingAllElementsBack(int setLength)
         {
             if (setLength > 0)
@@ -250,7 +250,7 @@ namespace System.Collections.Tests
         #region CopyTo
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_CopyTo_NegativeCount_ThrowsArgumentOutOfRangeException(int count)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
@@ -260,7 +260,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("ValidCollectionSizes")]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void HashSet_Generic_CopyTo_NoIndexDefaultsToZero(int count)
         {
             HashSet<T> set = (HashSet<T>)GenericISetFactory(count);
