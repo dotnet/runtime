@@ -11,6 +11,20 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class SignVerify
     {
         [Fact]
+        public static void InvalidKeySize_DoesNotInvalidateKey()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+                // A 2049-bit key is hard to describe, none of the providers support it.
+                Assert.ThrowsAny<CryptographicException>(() => rsa.KeySize = 2049);
+
+                Assert.True(rsa.VerifyData(TestData.HelloBytes, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Fact]
         public static void ExpectedSignature_SHA1_384()
         {
             byte[] expectedSignature =
