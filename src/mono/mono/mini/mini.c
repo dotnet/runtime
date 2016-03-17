@@ -3722,7 +3722,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 */
 	mono_compile_create_vars (cfg);
 
+	mono_cfg_dump_create_context (cfg);
+	mono_cfg_dump_begin_group (cfg);
+
 	MONO_TIME_TRACK (mono_jit_stats.jit_method_to_ir, i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE));
+	mono_cfg_dump_ir (cfg, "method-to-ir");
 
 	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
@@ -3784,42 +3788,59 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 * SSA will ignore variables marked VOLATILE.
 	 */
 	MONO_TIME_TRACK (mono_jit_stats.jit_liveness_handle_exception_clauses, mono_liveness_handle_exception_clauses (cfg));
+	mono_cfg_dump_ir (cfg, "liveness_handle_exception_clauses");
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_handle_out_of_line_bblock, mono_handle_out_of_line_bblock (cfg));
+	mono_cfg_dump_ir (cfg, "handle_out_of_line_bblock");
 
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
 	if (!COMPILE_LLVM (cfg)) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_decompose_long_opts, mono_decompose_long_opts (cfg));
+		mono_cfg_dump_ir (cfg, "decompose_long_opts");
 	}
 
 	/* Should be done before branch opts */
-	if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
+	if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP)) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_cprop, mono_local_cprop (cfg));
+		mono_cfg_dump_ir (cfg, "local_cprop");
+	}
 
 	/*
 	 * Should be done after cprop which can do strength reduction on
 	 * some of these ops, after propagating immediates.
 	 */
-	if (cfg->has_emulated_ops)
+	if (cfg->has_emulated_ops) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_emulate_ops, mono_local_emulate_ops (cfg));
+		mono_cfg_dump_ir (cfg, "local_emulate_ops");
+	}
 
-	if (cfg->opt & MONO_OPT_BRANCH)
+	if (cfg->opt & MONO_OPT_BRANCH) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_optimize_branches, mono_optimize_branches (cfg));
+		mono_cfg_dump_ir (cfg, "optimize_branches");
+	}
 
 	/* This must be done _before_ global reg alloc and _after_ decompose */
 	MONO_TIME_TRACK (mono_jit_stats.jit_handle_global_vregs, mono_handle_global_vregs (cfg));
-	if (cfg->opt & MONO_OPT_DEADCE)
+	mono_cfg_dump_ir (cfg, "handle_global_vregs");
+	if (cfg->opt & MONO_OPT_DEADCE) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_deadce, mono_local_deadce (cfg));
-	if (cfg->opt & MONO_OPT_ALIAS_ANALYSIS)
+		mono_cfg_dump_ir (cfg, "local_deadce");
+	}
+	if (cfg->opt & MONO_OPT_ALIAS_ANALYSIS) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_alias_analysis, mono_local_alias_analysis (cfg));
+		mono_cfg_dump_ir (cfg, "local_alias_analysis");
+	}
 	/* Disable this for LLVM to make the IR easier to handle */
-	if (!COMPILE_LLVM (cfg))
+	if (!COMPILE_LLVM (cfg)) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_if_conversion, mono_if_conversion (cfg));
+		mono_cfg_dump_ir (cfg, "if_conversion");
+	}
 
 	mono_threads_safepoint ();
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_bb_ordering, mono_bb_ordering (cfg));
+	mono_cfg_dump_ir (cfg, "bb_ordering");
 
 	if (((cfg->num_varinfo > 2000) || (cfg->num_bblocks > 1000)) && !cfg->compile_aot) {
 		/* 
@@ -3837,6 +3858,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_insert_safepoints, mono_insert_safepoints (cfg));
+	mono_cfg_dump_ir (cfg, "insert_safepoints");
 
 	/* after method_to_ir */
 	if (parts == 1) {
@@ -3866,6 +3888,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !cfg->disable_ssa) {
 #ifndef DISABLE_SSA
 			MONO_TIME_TRACK (mono_jit_stats.jit_ssa_compute, mono_ssa_compute (cfg));
+			mono_cfg_dump_ir (cfg, "ssa_compute");
 #endif
 
 			if (cfg->verbose_level >= 2) {
@@ -3886,6 +3909,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (cfg->comp_done & MONO_COMP_SSA && !COMPILE_LLVM (cfg)) {
 #ifndef DISABLE_SSA
 			MONO_TIME_TRACK (mono_jit_stats.jit_ssa_cprop, mono_ssa_cprop (cfg));
+			mono_cfg_dump_ir (cfg, "ssa_cprop");
 #endif
 		}
 	}
@@ -3894,28 +3918,42 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (cfg->comp_done & MONO_COMP_SSA && !COMPILE_LLVM (cfg)) {
 		//mono_ssa_strength_reduction (cfg);
 
-		if (cfg->opt & MONO_OPT_DEADCE)
+		if (cfg->opt & MONO_OPT_DEADCE) {
 			MONO_TIME_TRACK (mono_jit_stats.jit_ssa_deadce, mono_ssa_deadce (cfg));
+			mono_cfg_dump_ir (cfg, "ssa_deadce");
+		}
 
-		if ((cfg->flags & (MONO_CFG_HAS_LDELEMA|MONO_CFG_HAS_CHECK_THIS)) && (cfg->opt & MONO_OPT_ABCREM))
+		if ((cfg->flags & (MONO_CFG_HAS_LDELEMA|MONO_CFG_HAS_CHECK_THIS)) && (cfg->opt & MONO_OPT_ABCREM)) {
 			MONO_TIME_TRACK (mono_jit_stats.jit_perform_abc_removal, mono_perform_abc_removal (cfg));
+			mono_cfg_dump_ir (cfg, "perform_abc_removal");
+		}
 
 		MONO_TIME_TRACK (mono_jit_stats.jit_ssa_remove, mono_ssa_remove (cfg));
+		mono_cfg_dump_ir (cfg, "ssa_remove");
 		MONO_TIME_TRACK (mono_jit_stats.jit_local_cprop2, mono_local_cprop (cfg));
+		mono_cfg_dump_ir (cfg, "local_cprop2");
 		MONO_TIME_TRACK (mono_jit_stats.jit_handle_global_vregs2, mono_handle_global_vregs (cfg));
-		if (cfg->opt & MONO_OPT_DEADCE)
+		mono_cfg_dump_ir (cfg, "handle_global_vregs2");
+		if (cfg->opt & MONO_OPT_DEADCE) {
 			MONO_TIME_TRACK (mono_jit_stats.jit_local_deadce2, mono_local_deadce (cfg));
+			mono_cfg_dump_ir (cfg, "local_deadce2");
+		}
 
-		if (cfg->opt & MONO_OPT_BRANCH)
+		if (cfg->opt & MONO_OPT_BRANCH) {
 			MONO_TIME_TRACK (mono_jit_stats.jit_optimize_branches2, mono_optimize_branches (cfg));
+			mono_cfg_dump_ir (cfg, "optimize_branches2");
+		}
 	}
 #endif
 
 	if (cfg->comp_done & MONO_COMP_SSA && COMPILE_LLVM (cfg)) {
 		mono_ssa_loop_invariant_code_motion (cfg);
+		mono_cfg_dump_ir (cfg, "loop_invariant_code_motion");
 		/* This removes MONO_INST_FAULT flags too so perform it unconditionally */
-		if (cfg->opt & MONO_OPT_ABCREM)
+		if (cfg->opt & MONO_OPT_ABCREM) {
 			mono_perform_abc_removal (cfg);
+			mono_cfg_dump_ir (cfg, "abc_removal");
+		}
 	}
 
 	/* after SSA removal */
@@ -3933,8 +3971,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_decompose_soft_float (cfg);
 #endif
 	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_vtype_opts, mono_decompose_vtype_opts (cfg));
-	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_decompose_array_access_opts, mono_decompose_array_access_opts (cfg));
+		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
+	}
 
 	if (cfg->got_var) {
 #ifndef MONO_ARCH_GOT_REG
@@ -3989,6 +4029,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 				}
 			}
 			MONO_TIME_TRACK (mono_jit_stats.jit_linear_scan, mono_linear_scan (cfg, vars, regs, &cfg->used_int_regs));
+			mono_cfg_dump_ir (cfg, "linear_scan");
 		}
 	}
 
@@ -3999,6 +4040,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* variables are allocated after decompose, since decompose could create temps */
 	if (!COMPILE_LLVM (cfg)) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_arch_allocate_vars, mono_arch_allocate_vars (cfg));
+		mono_cfg_dump_ir (cfg, "arch_allocate_vars");
 		if (cfg->exception_type)
 			return cfg;
 	}
@@ -4009,12 +4051,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!COMPILE_LLVM (cfg)) {
 		gboolean need_local_opts;
 		MONO_TIME_TRACK (mono_jit_stats.jit_spill_global_vars, mono_spill_global_vars (cfg, &need_local_opts));
+		mono_cfg_dump_ir (cfg, "spill_global_vars");
 
 		if (need_local_opts || cfg->compile_aot) {
 			/* To optimize code created by spill_global_vars */
 			MONO_TIME_TRACK (mono_jit_stats.jit_local_cprop3, mono_local_cprop (cfg));
 			if (cfg->opt & MONO_OPT_DEADCE)
 				MONO_TIME_TRACK (mono_jit_stats.jit_local_deadce3, mono_local_deadce (cfg));
+			mono_cfg_dump_ir (cfg, "needs_local_opts");
 		}
 	}
 
@@ -4060,6 +4104,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #endif
 	} else {
 		MONO_TIME_TRACK (mono_jit_stats.jit_codegen, mono_codegen (cfg));
+		mono_cfg_dump_ir (cfg, "codegen");
 		if (cfg->exception_type)
 			return cfg;
 	}
@@ -4128,6 +4173,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (MONO_METHOD_COMPILE_END_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
+
+	mono_cfg_dump_close_group (cfg);
 
 	return cfg;
 }
