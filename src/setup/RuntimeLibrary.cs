@@ -14,42 +14,41 @@ namespace Microsoft.Extensions.DependencyModel
             string name,
             string version,
             string hash,
-            IEnumerable<RuntimeAssembly> assemblies,
-            IEnumerable<string> nativeLibraries,
+            IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
+            IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
             IEnumerable<ResourceAssembly> resourceAssemblies,
-            IEnumerable<RuntimeTarget> subTargets,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
             : base(type, name, version, hash, dependencies, serviceable)
         {
-            if (assemblies == null)
+            if (runtimeAssemblyGroups == null)
             {
-                throw new ArgumentNullException(nameof(assemblies));
+                throw new ArgumentNullException(nameof(runtimeAssemblyGroups));
             }
-            if (nativeLibraries == null)
+            if (nativeLibraryGroups == null)
             {
-                throw new ArgumentNullException(nameof(nativeLibraries));
+                throw new ArgumentNullException(nameof(nativeLibraryGroups));
             }
             if (resourceAssemblies == null)
             {
                 throw new ArgumentNullException(nameof(resourceAssemblies));
             }
-            if (subTargets == null)
-            {
-                throw new ArgumentNullException(nameof(subTargets));
-            }
-            Assemblies = assemblies.ToArray();
+            RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();
-            RuntimeTargets = subTargets.ToArray();
-            NativeLibraries = nativeLibraries.ToArray();
+            NativeLibraryGroups = nativeLibraryGroups;
+
+            Assemblies = new RuntimeAssembly[0];
+            NativeLibraries = new string[0];
         }
 
+        // Temporary (legacy) properties: https://github.com/dotnet/cli/issues/1998
         public IReadOnlyList<RuntimeAssembly> Assemblies { get; }
-
         public IReadOnlyList<string> NativeLibraries { get; }
 
-        public IReadOnlyList<ResourceAssembly> ResourceAssemblies { get; }
+        public IReadOnlyList<RuntimeAssetGroup> RuntimeAssemblyGroups { get; }
 
-        public IReadOnlyList<RuntimeTarget> RuntimeTargets { get; }
+        public IReadOnlyList<RuntimeAssetGroup> NativeLibraryGroups { get; }
+
+        public IReadOnlyList<ResourceAssembly> ResourceAssemblies { get; }
     }
 }

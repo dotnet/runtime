@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
-    public class DependencyContextJsonReader: IDependencyContextReader
+    public class DependencyContextJsonReader : IDependencyContextReader
     {
         public DependencyContext Read(Stream stream)
         {
@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             var runtimeTargetName = root[DependencyContextStrings.RuntimeTargetPropertyName]?.Value<string>();
 
-            var libraryStubs = ReadLibraryStubs((JObject) root[DependencyContextStrings.LibrariesPropertyName]);
-            var targetsObject = (JObject) root[DependencyContextStrings.TargetsPropertyName];
+            var libraryStubs = ReadLibraryStubs((JObject)root[DependencyContextStrings.LibrariesPropertyName]);
+            var targetsObject = (JObject)root[DependencyContextStrings.TargetsPropertyName];
 
             JObject runtimeTarget = null;
             JObject compileTarget = null;
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (!string.IsNullOrEmpty(runtimeTargetName))
             {
-                runtimeTarget = (JObject) targetsObject[runtimeTargetName];
+                runtimeTarget = (JObject)targetsObject[runtimeTargetName];
                 if (runtimeTarget == null)
                 {
                     throw new FormatException($"Target with name {runtimeTargetName} not found");
@@ -168,39 +168,56 @@ namespace Microsoft.Extensions.DependencyModel
             var name = nameWithVersion.Substring(0, seperatorPosition);
             var version = nameWithVersion.Substring(seperatorPosition + 1);
 
-            var libraryObject = (JObject) property.Value;
+            var libraryObject = (JObject)property.Value;
 
             var dependencies = ReadDependencies(libraryObject);
 
             if (runtime)
             {
-                var runtimeTargets = new List<RuntimeTarget>();
                 var runtimeTargetsObject = (JObject)libraryObject[DependencyContextStrings.RuntimeTargetsPropertyName];
 
                 var entries = ReadRuntimeTargetEntries(runtimeTargetsObject).ToArray();
 
+                var runtimeAssemblyGroups = new List<RuntimeAssetGroup>();
+                var nativeLibraryGroups = new List<RuntimeAssetGroup>();
                 foreach (var ridGroup in entries.GroupBy(e => e.Rid))
                 {
-                    var runtimeAssets = entries.Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
-                        .Select(e => RuntimeAssembly.Create(e.Path))
-                        .ToArray();
-
-                    var nativeAssets = entries.Where(e => e.Type == DependencyContextStrings.NativeAssetType)
+                    var groupRuntimeAssemblies = entries.Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
                         .Select(e => e.Path)
                         .ToArray();
 
-                    runtimeTargets.Add(new RuntimeTarget(
-                        ridGroup.Key,
-                        runtimeAssets,
-                        nativeAssets
-                        ));
+                    if (groupRuntimeAssemblies.Any())
+                    {
+                        runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
+                            ridGroup.Key,
+                            groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
+                    }
+
+                    var groupNativeLibraries = entries.Where(e => e.Type == DependencyContextStrings.NativeAssetType)
+                        .Select(e => e.Path)
+                        .ToArray();
+
+                    if (groupNativeLibraries.Any())
+                    {
+                        nativeLibraryGroups.Add(new RuntimeAssetGroup(
+                            ridGroup.Key,
+                            groupNativeLibraries.Where(a => Path.GetFileName(a) != "_._")));
+                    }
                 }
 
-                var assemblies = ReadAssetList(libraryObject, DependencyContextStrings.RuntimeAssembliesKey)
-                    .Select(RuntimeAssembly.Create)
+                var runtimeAssemblies = ReadAssetList(libraryObject, DependencyContextStrings.RuntimeAssembliesKey)
                     .ToArray();
+                if (runtimeAssemblies.Any())
+                {
+                    runtimeAssemblyGroups.Add(new RuntimeAssetGroup(string.Empty, runtimeAssemblies));
+                }
 
-                var nativeLibraries = ReadAssetList(libraryObject, DependencyContextStrings.NativeLibrariesKey);
+                var nativeLibraries = ReadAssetList(libraryObject, DependencyContextStrings.NativeLibrariesKey)
+                    .ToArray();
+                if(nativeLibraries.Any())
+                {
+                    nativeLibraryGroups.Add(new RuntimeAssetGroup(string.Empty, nativeLibraries));
+                }
 
                 var resourceAssemblies = ReadResourceAssemblies((JObject)libraryObject[DependencyContextStrings.ResourceAssembliesPropertyName]);
 
@@ -209,10 +226,9 @@ namespace Microsoft.Extensions.DependencyModel
                     name: name,
                     version: version,
                     hash: stub.Hash,
-                    assemblies: assemblies,
-                    nativeLibraries: nativeLibraries,
+                    runtimeAssemblyGroups: runtimeAssemblyGroups,
+                    nativeLibraryGroups: nativeLibraryGroups,
                     resourceAssemblies: resourceAssemblies,
-                    subTargets: runtimeTargets.ToArray(),
                     dependencies: dependencies,
                     serviceable: stub.Serviceable);
             }
@@ -258,11 +274,11 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static string[] ReadAssetList(JObject libraryObject, string name)
         {
-            var assembliesObject = (JObject) libraryObject[name];
+            var assembliesObject = (JObject)libraryObject[name];
 
             if (assembliesObject == null)
             {
-                return new string[] {};
+                return new string[] { };
             }
 
             return assembliesObject.Properties().Select(property => property.Name).ToArray();
@@ -270,15 +286,15 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static Dependency[] ReadDependencies(JObject libraryObject)
         {
-            var dependenciesObject = (JObject) libraryObject[DependencyContextStrings.DependenciesPropertyName];
+            var dependenciesObject = (JObject)libraryObject[DependencyContextStrings.DependenciesPropertyName];
 
             if (dependenciesObject == null)
             {
-                return new Dependency[]{ };
+                return new Dependency[] { };
             }
 
             return dependenciesObject.Properties()
-                .Select(property => new Dependency(property.Name, (string) property.Value)).ToArray();
+                .Select(property => new Dependency(property.Name, (string)property.Value)).ToArray();
         }
 
         private Dictionary<string, LibraryStub> ReadLibraryStubs(JObject librariesObject)
@@ -288,7 +304,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 foreach (var libraryProperty in librariesObject)
                 {
-                    var value = (JObject) libraryProperty.Value;
+                    var value = (JObject)libraryProperty.Value;
                     var stub = new LibraryStub
                     {
                         Name = libraryProperty.Key,

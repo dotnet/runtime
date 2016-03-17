@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -95,7 +96,7 @@ namespace Microsoft.Extensions.DependencyModel
             return DependencyContextLoader.Default.Load(assembly);
         }
 
-        private class LibraryMergeEqualityComparer<T>: IEqualityComparer<T> where T:Library
+        private class LibraryMergeEqualityComparer<T> : IEqualityComparer<T> where T : Library
         {
             public bool Equals(T x, T y)
             {
