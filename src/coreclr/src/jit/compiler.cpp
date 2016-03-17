@@ -4785,6 +4785,9 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 #ifdef  DEBUG
         compCurBB               = 0;
         lvaTable                = 0;
+
+        // Reset node ID counter
+        compGenTreeID           = 0;
 #endif
 
         /* Initialize emitter */
@@ -4939,9 +4942,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         {
             s_compMethodsCount++;
         }
-
-        // Reset node ID counter
-        compGenTreeID = 0;
 #endif
 
         if (compIsForInlining())
