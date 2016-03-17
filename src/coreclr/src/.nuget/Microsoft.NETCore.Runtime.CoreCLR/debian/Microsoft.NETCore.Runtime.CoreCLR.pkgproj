@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Version>1.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <PackageTargetRuntime>debian.8.2-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
