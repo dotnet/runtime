@@ -26,7 +26,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 @"{
     ""runtimeTarget"": "".NETStandardApp,Version=v1.5/osx.10.10-x64"",
     ""targets"": {
-        "".NETStandardApp,Version=v1.5"": {},
         "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {},
     }
 }");
@@ -36,20 +35,10 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void DefaultsToPortable()
-        {
-            var context = Read(
-@"{
-}");
-            context.IsPortable.Should().BeTrue();
-        }
-
-        [Fact]
         public void SetsPortableIfRuntimeTargetHasNoRid()
         {
             var context = Read(
 @"{
-   ""runtimeTarget"": "".NETStandardApp,Version=v1.5"",
     ""targets"": {
         "".NETStandardApp,Version=v1.5"": {}
     }
@@ -64,7 +53,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 @"{
    ""runtimeTarget"": "".NETStandardApp,Version=v1.5/osx.10.10-x64"",
     ""targets"": {
-        "".NETStandardApp,Version=v1.5"": {},
         "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {}
     }
 }");
@@ -88,6 +76,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Read(
 @"{
+    ""targets"": {
+        "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {},
+    },
     ""runtimes"": {
         ""osx.10.10-x64"": [ ],
         ""osx.10.11-x64"": [ ""osx"" ],
@@ -237,6 +228,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         ""publicSign"": true,
         ""warningsAsErrors"": true,
         ""optimize"": true
+    },
+    ""targets"": {
+        "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {},
     }
 }");
             context.CompilationOptions.AllowUnsafe.Should().Be(true);
