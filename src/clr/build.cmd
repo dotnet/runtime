@@ -682,7 +682,7 @@ if /i "%__ToolsetDir%" == "" (
     exit /b 1
 )
 
-set PATH=%PATH%;%__ToolsetDir%\cpp\bin
+set PATH=%__ToolsetDir%\cpp\bin;%PATH%
 set LIB=%__ToolsetDir%\OS\lib;%__ToolsetDir%\cpp\lib
 set INCLUDE=^
 %__ToolsetDir%\cpp\inc;^
