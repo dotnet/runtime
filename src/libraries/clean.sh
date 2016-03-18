@@ -75,14 +75,18 @@ do
     shift
 done
 
-echo "Running init-tools.sh"
-$WorkingTreeRoot/init-tools.sh
-
 if [ -n "$CleanTargets" ]
 then
-    echo "Running MSBuild target(s): ${CleanTargets:0:-1}"
-    echo -e "\n$WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:${CleanTargets:0:-1} /nologo /verbosity:minimal /flp:v=detailed;Append;LogFile=$CleanLog" >> $CleanLog
-    $WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:${CleanTargets:0:-1} /nologo /verbosity:minimal "/flp:v=detailed;Append;LogFile=$CleanLog"
+    # Ensure that MSBuild is available
+    echo "Running init-tools.sh"
+    $WorkingTreeRoot/init-tools.sh
+
+    # Trim the trailing semicolon from the targets string
+    CleanTargetsTrimmed=${CleanTargets:0:${#CleanTargets}-1}
+
+    echo "Running MSBuild target(s): $CleanTargetsTrimmed"
+    echo -e "\n$WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed /nologo /verbosity:minimal /flp:v=detailed;Append;LogFile=$CleanLog" >> $CleanLog
+    $WorkingTreeRoot/Tools/corerun $WorkingTreeRoot/Tools/MSBuild.exe $WorkingTreeRoot/build.proj /t:$CleanTargetsTrimmed /nologo /verbosity:minimal "/flp:v=detailed;Append;LogFile=$CleanLog"
     check_exit_status
 fi
 
