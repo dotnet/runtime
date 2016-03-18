@@ -15,6 +15,7 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == ''">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -36,12 +37,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-
   <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
     <TargetingPackReference Include="Windows" />
     <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />

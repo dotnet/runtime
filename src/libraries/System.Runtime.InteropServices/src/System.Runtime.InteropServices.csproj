@@ -10,6 +10,7 @@
     <!-- Force string resources to be excluded for full facades. -->
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != ''">None</ResourcesSourceOutputDirectory>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.5</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -30,12 +31,11 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' != 'netcore50aot'">
     <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net462'">
-    <TargetingPackReference Include="System.Core"  />
+    <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">

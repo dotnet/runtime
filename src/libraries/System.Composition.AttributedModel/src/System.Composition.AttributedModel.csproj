@@ -5,6 +5,7 @@
     <ProjectGuid>{C6257381-C624-494A-A9D9-5586E60856EA}</ProjectGuid>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.AttributedModel</AssemblyName>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

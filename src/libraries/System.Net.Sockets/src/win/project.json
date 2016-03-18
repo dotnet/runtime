@@ -1,6 +1,6 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "System.Collections": "4.0.0",
@@ -22,7 +22,10 @@
         "System.Threading.Overlapped": "4.0.0",
         "System.Threading.Tasks": "4.0.10",
         "System.Threading.ThreadPool": "4.0.10-rc3-23918"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     }
   },
   "runtimes": {

@@ -15,16 +15,14 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.3</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'net46'">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' != 'net46'">unix</PackageTargetRuntime>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
-
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
@@ -34,12 +32,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
-
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\DNS.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NameResolutionUtilities.cs" />
-
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
@@ -59,7 +55,6 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
-    
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
       <Link>Common\System\Net\ContextAwareResult.cs</Link>
@@ -76,29 +71,23 @@
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'net46'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
-
     <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
       <Link>Common\System\Net\IntPtrHelper.cs</Link>
     </Compile>
-
-    <!-- Debug only --> 
+    <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
-
     <!-- Common -->
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
-
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
       <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
@@ -106,11 +95,9 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Windows.cs">
       <Link>Common\System\Net\Internals\SocketException.Windows.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Windows</Link>
     </Compile>
-
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
@@ -138,13 +125,13 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetNameInfoW.cs">
       <Link>Interop\Windows\Winsock\Interop.GetNameInfoW.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoW.cs">
       <Link>Interop\Windows\Winsock\Interop.GetAddrInfoW.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.freeaddrinfo.cs">
       <Link>Interop\Windows\Winsock\Interop.freeaddinfo.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAStartup.cs">
       <Link>Interop\Windows\Winsock\Interop.WSAStartup.cs</Link>
     </Compile>
@@ -153,29 +140,25 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\ProtocolFamily.cs">
       <Link>Interop\Windows\Winsock\ProtocolFamily.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
       <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
-    </Compile>  
+    </Compile>
   </ItemGroup>
-  
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' AND '$(TargetGroup)' != 'net46'">
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.netcore50.cs">
       <Link>Common\System\Net\ContextAwareResult.netcore50.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\Internals\ByteOrder.cs</Link>
     </Compile>
@@ -194,7 +177,6 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
       <Link>Common\System\Net\Internals\SocketException.Unix.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>
     </Compile>
@@ -226,15 +208,12 @@
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
     <TargetingPackReference Include="mscorlib" />
     <TargetingPackReference Include="System" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}</ProjectGuid>
     <AssemblyName>System.Composition.Hosting</AssemblyName>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

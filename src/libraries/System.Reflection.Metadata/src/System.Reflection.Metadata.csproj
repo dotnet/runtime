@@ -13,6 +13,7 @@
     <CLSCompliant>false</CLSCompliant>
     <AssemblyVersion>1.3.0.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants);SRM</DefineConstants>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <PackageDestination Include="lib/netstandard1.1">
