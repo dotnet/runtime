@@ -378,150 +378,144 @@ namespace System.Data.SqlClient
             {
                 throw ADP.InvalidDataType("null");
             }
-            else if (value is DBNull)
+
+            if (value is DBNull)
             {
-                throw ADP.InvalidDataType(typeof(DBNull).Name);
+                throw ADP.InvalidDataType(nameof(DBNull));
             }
-            else if (value is bool)
+            
+            Type dataType = value.GetType();
+            switch (Convert.GetTypeCode(value))
             {
-                return s_metaBit;
+                case TypeCode.Empty:
+                    throw ADP.InvalidDataType(nameof(TypeCode.Empty));
+                case TypeCode.Object:
+                    
+                    if (dataType == typeof (System.Byte[]))
+                    {
+                        if (!inferLen || ((byte[]) value).Length <= TdsEnums.TYPE_SIZE_LIMIT)
+                        {
+                            return MetaVarBinary;
+                        }
+                        else
+                        {
+                            return MetaImage;
+                        }
+                    }
+                    if (dataType == typeof (System.Guid))
+                    {
+                        return s_metaUniqueId;
+                    }
+                    if (dataType == typeof (System.Object))
+                    {
+                        return s_metaVariant;
+                    } 
+                    // check sql types now
+                    if (dataType == typeof (SqlBinary))
+                        return MetaVarBinary;
+                    if (dataType == typeof (SqlBoolean))
+                        return s_metaBit;
+                    if (dataType == typeof (SqlByte))
+                        return s_metaTinyInt;
+                    if (dataType == typeof (SqlBytes))
+                        return MetaVarBinary;
+                    if (dataType == typeof (SqlChars))
+                        return MetaNVarChar;
+                    if (dataType == typeof (SqlDateTime))
+                        return s_metaDateTime;
+                    if (dataType == typeof (SqlDouble))
+                        return s_metaFloat;
+                    if (dataType == typeof (SqlGuid))
+                        return s_metaUniqueId;
+                    if (dataType == typeof (SqlInt16))
+                        return s_metaSmallInt;
+                    if (dataType == typeof (SqlInt32))
+                        return s_metaInt;
+                    if (dataType == typeof (SqlInt64))
+                        return s_metaBigInt;
+                    if (dataType == typeof (SqlMoney))
+                        return s_metaMoney;
+                    if (dataType == typeof (SqlDecimal))
+                        return MetaDecimal;
+                    if (dataType == typeof (SqlSingle))
+                        return s_metaReal;
+                    if (dataType == typeof (SqlXml))
+                        return MetaXml;
+                    if (dataType == typeof (SqlString))
+                    {
+                        return ((inferLen && !((SqlString) value).IsNull)
+                            ? PromoteStringType(((SqlString) value).Value)
+                            : MetaNVarChar);
+                    }
+
+                    if (dataType == typeof (IEnumerable<DbDataRecord>) || dataType == typeof (DataTable))
+                    {
+                        return s_metaTable;
+                    }
+
+                    if (dataType == typeof (TimeSpan))
+                    {
+                        return MetaTime;
+                    }
+
+                    if (dataType == typeof (DateTimeOffset))
+                    {
+                        return MetaDateTimeOffset;
+                    }
+                    
+                    if (streamAllowed)
+                    {
+                        // Derived from Stream ?
+                        if (value is Stream)
+                        {
+                            return MetaVarBinary;
+                        }
+                        // Derived from TextReader ?
+                        if (value is TextReader)
+                        {
+                            return MetaNVarChar;
+                        }
+                        // Derived from XmlReader ? 
+                        if (value is XmlReader)
+                        {
+                            return MetaXml;
+                        }
+                    }
+                    
+                     throw ADP.UnknownDataType(dataType);                    
+                case TypeCode.Boolean:
+                    return s_metaBit;
+                case TypeCode.Char:
+                    throw ADP.InvalidDataType(nameof(TypeCode.Char));
+                case TypeCode.SByte:
+                    throw ADP.InvalidDataType(nameof(TypeCode.SByte));
+                case TypeCode.Byte:
+                    return s_metaTinyInt;
+                case TypeCode.Int16:
+                    return s_metaSmallInt;
+                case TypeCode.UInt16:
+                    throw ADP.InvalidDataType(nameof(TypeCode.UInt16));
+                case TypeCode.Int32:
+                    return s_metaInt;
+                case TypeCode.UInt32:
+                    throw ADP.InvalidDataType(nameof(TypeCode.UInt32));
+                case TypeCode.Int64:
+                    return s_metaBigInt;
+                case TypeCode.UInt64:
+                    throw ADP.InvalidDataType(nameof(TypeCode.UInt64));
+                case TypeCode.Single:
+                    return s_metaReal;
+                case TypeCode.Double:
+                    return s_metaFloat;
+                case TypeCode.Decimal:
+                    return MetaDecimal;
+                case TypeCode.DateTime:
+                    return s_metaDateTime;
+                case TypeCode.String:
+                    return (inferLen ? PromoteStringType((string) value) : MetaNVarChar);
+                default:
+                    throw ADP.UnknownDataType(dataType);
             }
-            else if (value is char)
-            {
-                throw ADP.InvalidDataType(typeof(char).Name);
-            }
-            else if (value is sbyte)
-            {
-                throw ADP.InvalidDataType(typeof(sbyte).Name);
-            }
-            else if (value is byte)
-            {
-                return s_metaTinyInt;
-            }
-            else if (value is short)
-            {
-                return s_metaSmallInt;
-            }
-            else if (value is ushort)
-            {
-                throw ADP.InvalidDataType(typeof(ushort).Name);
-            }
-            else if (value is int)
-            {
-                return s_metaInt;
-            }
-            else if (value is uint)
-            {
-                throw ADP.InvalidDataType(typeof(uint).Name);
-            }
-            else if (value is long)
-            {
-                return s_metaBigInt;
-            }
-            else if (value is ulong)
-            {
-                throw ADP.InvalidDataType(typeof(ulong).Name);
-            }
-            else if (value is float)
-            {
-                return s_metaReal;
-            }
-            else if (value is double)
-            {
-                return s_metaFloat;
-            }
-            else if (value is decimal)
-            {
-                return MetaDecimal;
-            }
-            else if (value is DateTime)
-            {
-                return s_metaDateTime;
-            }
-            else if (value is string)
-            {
-                return (inferLen ? PromoteStringType((string)value) : MetaNVarChar);
-            }
-            else if (value is byte[])
-            {
-                if (!inferLen || ((byte[])value).Length <= TdsEnums.TYPE_SIZE_LIMIT)
-                {
-                    return MetaVarBinary;
-                }
-                else
-                {
-                    return MetaImage;
-                }
-            }
-            else if (value is Guid)
-            {
-                return s_metaUniqueId;
-            }
-            else if (value is SqlBinary)
-                return MetaVarBinary;
-            else if (value is SqlBoolean)
-                return s_metaBit;
-            else if (value is SqlByte)
-                return s_metaTinyInt;
-            else if (value is SqlBytes)
-                return MetaVarBinary;
-            else if (value is SqlChars)
-                return MetaNVarChar;
-            else if (value is SqlDateTime)
-                return s_metaDateTime;
-            else if (value is SqlDouble)
-                return s_metaFloat;
-            else if (value is SqlGuid)
-                return s_metaUniqueId;
-            else if (value is SqlInt16)
-                return s_metaSmallInt;
-            else if (value is SqlInt32)
-                return s_metaInt;
-            else if (value is SqlInt64)
-                return s_metaBigInt;
-            else if (value is SqlMoney)
-                return s_metaMoney;
-            else if (value is SqlDecimal)
-                return MetaDecimal;
-            else if (value is SqlSingle)
-                return s_metaReal;
-            else if (value is SqlXml)
-                return MetaXml;
-            else if (value is SqlString)
-            {
-                return ((inferLen && !((SqlString)value).IsNull) ? PromoteStringType(((SqlString)value).Value) : MetaNVarChar);
-            }
-            else if (value is IEnumerable<DbDataRecord>)
-            {
-                return s_metaTable;
-            }
-            else if (value is TimeSpan)
-            {
-                return MetaTime;
-            }
-            else if (value is DateTimeOffset)
-            {
-                return MetaDateTimeOffset;
-            }
-            else if (streamAllowed)
-            {
-                // Derived from Stream ?
-                if (value is Stream)
-                {
-                    return MetaVarBinary;
-                }
-                // Derived from TextReader ?
-                if (value is TextReader)
-                {
-                    return MetaNVarChar;
-                }
-                // Derived from XmlReader ? 
-                if (value is XmlReader)
-                {
-                    return MetaXml;
-                }
-            }
-            throw ADP.UnknownDataType(value.GetType());
         }
 
         internal static object GetNullSqlValue(Type sqlType)
