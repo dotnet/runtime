@@ -48,6 +48,9 @@ public:
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , m_InstructionCount(0)
         , m_LoadStoreCount(0)
+        , m_CalleeNativeSizeEstimate(0)
+        , m_CallsiteNativeSizeEstimate(0)
+        , m_Multiplier(0.0)
         , m_IsForceInline(false)
         , m_IsForceInlineKnown(false)
         , m_IsInstanceCtor(false)
@@ -99,6 +102,9 @@ protected:
     InlineCallsiteFrequency m_CallsiteFrequency;
     unsigned                m_InstructionCount;
     unsigned                m_LoadStoreCount;
+    int                     m_CalleeNativeSizeEstimate;
+    int                     m_CallsiteNativeSizeEstimate;
+    double                  m_Multiplier;
     bool                    m_IsForceInline :1;
     bool                    m_IsForceInlineKnown :1;
     bool                    m_IsInstanceCtor :1;
@@ -168,12 +174,32 @@ public:
     DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot);
 
     // Policy observations
+    void NoteBool(InlineObservation obs, bool value) override;
     void NoteInt(InlineObservation obs, int value) override;
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
 
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+
+    // Externalize data
+    void DumpData() const override;
+    void DumpSchema() const override;
+
+    // Miscellaneous
     const char* GetName() const override { return "DiscretionaryPolicy"; }
+
+private:
+
+    unsigned    m_Depth;
+    unsigned    m_BlockCount;
+    unsigned    m_Maxstack;
+    unsigned    m_ArgCount;
+    unsigned    m_LocalCount;
+    CorInfoType m_ReturnType;
+    unsigned    m_ThrowCount;
+    unsigned    m_CallCount;
 };
 
 #endif // DEBUG

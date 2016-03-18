@@ -248,6 +248,10 @@ public:
 #ifdef DEBUG
     // Name of the policy
     virtual const char* GetName() const = 0;
+    // Detailed data value dump
+    virtual void DumpData() const { }
+    // Detailed data name dump
+    virtual void DumpSchema() const { }
 #endif
 
 protected:
@@ -412,15 +416,21 @@ public:
     }
 
     // String describing the decision made
-    const char * ResultString() const
+    const char* ResultString() const
     {
         return InlGetDecisionString(m_Policy->GetDecision());
     }
 
     // String describing the reason for the decision
-    const char * ReasonString() const
+    const char* ReasonString() const
     {
         return InlGetObservationString(m_Policy->GetObservation());
+    }
+
+    // Get the policy that evaluated this result.
+    InlinePolicy* GetPolicy() const
+    {
+        return m_Policy;
     }
 
     // SetReported indicates that this particular result doesn't need
@@ -559,8 +569,11 @@ public:
                                      GenTree*      stmt,
                                      InlineResult* inlineResult);
 
-    // Dump the context and all descendants
+    // Dump the full subtree, including failures
     void Dump(Compiler* compiler, int indent = 0);
+
+    // Dump only the success subtree, with rich data
+    void DumpData(Compiler* compiler, int indent = 0);
 
 #endif
 
@@ -590,8 +603,10 @@ private:
     InlineObservation     m_Observation; // what lead to this inline
 
 #ifdef DEBUG
+    InlinePolicy*         m_Policy;      // policy that evaluated this inline
     CORINFO_METHOD_HANDLE m_Callee;      // handle to the method
     unsigned              m_TreeID;      // ID of the GenTreeCall
+    unsigned              m_Ordinal;     // Ordinal number of this inline
     bool                  m_Success;     // true if this was a successful inline
 #endif
 
