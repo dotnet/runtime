@@ -35,12 +35,14 @@ public class IUnknownMarshalingTest
 
     public void GetIUnknownForObjectTest()
     {
+        
         try
         {
             //test null
             IntPtr nullPtr = Marshal.GetIUnknownForObject(null);            
         }
         catch (ArgumentNullException) { }
+        
 
         foreach (object obj in TestObjects)
         {
@@ -93,38 +95,21 @@ public class IUnknownMarshalingTest
 
     public void GetComInterfaceForObjectQueryInterfaceTest()
     {
-        try
-        {
-            //test null
             IntPtr nullPtr = Marshal.GetComInterfaceForObject(null, typeof(object), CustomQueryInterfaceMode.Allow);
-
             if (nullPtr != IntPtr.Zero)
                 throw new Exception("A valid ptr was returned for null object.");
-        }
-        catch (Exception ex)
-        {
-            TestTools.ErrorWriteLine("Failed GetComInterfaceForObjectQueryInterface test.");
-            TestTools.ErrorWriteLine("Exception occurred: {0}", ex);
-        }
 
         foreach (object obj in TestObjects)
         {
             IntPtr ptr = IntPtr.Zero;
-
+            ptr = Marshal.GetComInterfaceForObject(obj, typeof(object), CustomQueryInterfaceMode.Allow);
             try
             {
-                ptr = Marshal.GetComInterfaceForObject(obj, typeof(object), CustomQueryInterfaceMode.Allow);
-
-                if (!Marshal_IUnknown(ptr))
+               if (!Marshal_IUnknown(ptr))
                 {
-                    throw new Exception("Failure on native side. Ref counts do not work as expected");
-                }
-            }
-            catch (Exception ex)
-            {
-                TestTools.ErrorWriteLine("Failed GetComInterfaceForObjectQueryInterface test.");
-                TestTools.ErrorWriteLine("Exception occurred: {0}", ex);
-            }
+                   throw new Exception("Failure on native side. Ref counts do not work as expected");
+                } 
+            }   
             finally
             {
                 if (ptr != IntPtr.Zero)
@@ -210,29 +195,27 @@ public class IUnknownMarshalingTest
         Initialize();
         GetIUnknownForObjectTest();
         GetObjectForIUnknownTest();
-        return TestTools.Pass;
+        return true;
     }
 
     public bool Initialize()
     {
-       
-
-        TestObjects = new object[8];
-
+        TestObjects = new object[7];
         TestObjects[0] = 1;                             //int
         TestObjects[1] = 'a';                           //char
         TestObjects[2] = false;                         //bool
         TestObjects[3] = "string";                      //string
         TestObjects[4] = new TestClass();               //Object of type TestClass 
         TestObjects[5] = new List<int>();               //Projected Type
-        TestObjects[6] = new Nullable<int>(2);          //Nullable Type
-        TestObjects[7] = new PropertySet();             //RCW Type
+        TestObjects[6] = new Nullable<int>(2);          //Nullable Type        
         return true;
     }
 
     public static int Main(String[] unusedArgs)
     {
-        new IUnknownMarshalingTest().RunTests();
+        IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
+        testObj.Initialize();
+        testObj.RunTests();
         return 100;
     }
 
