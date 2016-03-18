@@ -20,7 +20,6 @@
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
     <TargetingPackReference Include="System.Private.Interop" />
   </ItemGroup>
   <ItemGroup>
