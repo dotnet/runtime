@@ -29,7 +29,6 @@
     <Compile Include="System\Linq\Parallel\Enumerables\QueryAggregationOptions.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RangeEnumerable.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\RepeatEnumerable.cs" />
-    <Compile Include="System\Linq\Errors.cs" />
     <Compile Include="System\Linq\Parallel\Merging\ArrayMergeHelper.cs" />
     <Compile Include="System\Linq\Parallel\Merging\AsynchronousChannelMergeEnumerator.cs" />
     <Compile Include="System\Linq\Parallel\Merging\DefaultMergeHelper.cs" />
