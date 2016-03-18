@@ -633,7 +633,7 @@ public:
 #ifdef ALLOW_LOCAL_WORKER
             if (OptimizeCount != 0)
             {
-                GetSvcLogger()->Printf(W("You cannot call OptimizeAssembly twice.  If you are using COMPLUS_NgenLocalWorker, make sure you are only optimizing one assembly.\r\n"));
+                GetSvcLogger()->Printf(W("You cannot call OptimizeAssembly twice.  If you are using COMPlus_NgenLocalWorker, make sure you are only optimizing one assembly.\r\n"));
                 ThrowHR(E_FAIL);
             }
 #else // _DEBUG

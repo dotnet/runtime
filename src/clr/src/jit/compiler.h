@@ -7518,7 +7518,7 @@ public :
         bool                disAsm2;        // Display native code after it is generated using external disassembler
         bool                dspOrder;       // Display names of each of the methods that we ngen/jit
         bool                dspUnwind;      // Display the unwind info output
-        bool                dspDiffable;    // Makes the Jit Dump 'diff-able' (currently uses same COMPLUS_* flag as disDiffable)
+        bool                dspDiffable;    // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
         bool                compLargeBranches; // Force using large conditional branches
         bool                dspGCtbls;      // Display the GC tables
 #endif
@@ -7956,7 +7956,7 @@ public :
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
-    // in debug.  (Perhaps should be under the control of a COMPLUS flag.)
+    // in debug.  (Perhaps should be under the control of a COMPlus_ flag.)
     // These should fail by asserting.
     void                compDoComponentUnitTestsOnce();
 #endif // DEBUG

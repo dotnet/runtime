@@ -32,7 +32,7 @@ unsigned fatal_NYI;
 void DECLSPEC_NORETURN fatal(int errCode)
 {
 #ifdef DEBUG
-    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use COMPLUS_AltJitAssertOnNYI for that.
+    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use COMPlus_AltJitAssertOnNYI for that.
     {
         if (JitConfig.DebugBreakOnVerificationFailure())
         {
@@ -310,13 +310,13 @@ void  __cdecl   assertAbort(const char *why, const char *file, unsigned line)
 
 #ifdef ALT_JIT
     // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
-    // dialog pop-up, or they set COMPLUS_ContinueOnAssert=1 to not emit a pop-up, but just continue.
+    // dialog pop-up, or they set COMPlus_ContinueOnAssert=1 to not emit a pop-up, but just continue.
     // If we're an altjit, we have two options: (1) silently continue, as a normal JIT would, probably
     // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
-    // thus falling back to the fallback JIT. Setting COMPLUS_AltJitSkipOnAssert=1 chooses this "skip"
+    // thus falling back to the fallback JIT. Setting COMPlus_AltJitSkipOnAssert=1 chooses this "skip"
     // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
     // the first assert for any function, but we don't want to kill the whole ngen process on the
-    // first assert (which would happen if you used COMPLUS_NoGuiOnAssert=1 for example).
+    // first assert (which would happen if you used COMPlus_NoGuiOnAssert=1 for example).
     if (JitConfig.AltJitSkipOnAssert() != 0)
     {
         fatal(CORJIT_SKIPPED);
@@ -324,7 +324,7 @@ void  __cdecl   assertAbort(const char *why, const char *file, unsigned line)
 #elif defined(_TARGET_ARM64_)
     // TODO-ARM64-NYI: remove this after the JIT no longer asserts during startup
     //
-    // When we are bringing up the new Arm64 JIT we set COMPLUS_ContinueOnAssert=1 
+    // When we are bringing up the new Arm64 JIT we set COMPlus_ContinueOnAssert=1 
     // We only want to hit one assert then we will fall back to the interpreter.
     //
     bool interpreterFallback = (JitConfig.InterpreterFallback() != 0);

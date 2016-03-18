@@ -4153,7 +4153,7 @@ void                Compiler::optPerformStaticOptimizations(unsigned loopNum, Lo
 //      cloning is allowed to be performed.
 //
 //  Return Value:
-//      Returns true in debug builds if COMPLUS_JitCloneLoops flag is set.
+//      Returns true in debug builds if COMPlus_JitCloneLoops flag is set.
 //      Disabled for retail for now.
 //
 bool                Compiler::optCanCloneLoops()
