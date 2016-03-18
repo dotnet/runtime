@@ -7232,6 +7232,10 @@ ClrDataAccess::GetDacGlobals()
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
+    if (g_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    {
+        return CORDBG_E_UNSUPPORTED;
+    }
     return S_OK;
 #else
     HRESULT status = E_FAIL;
