@@ -42,6 +42,7 @@
     <Compile Include="PipeTestBase.cs" />
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="Performance\Perf.AnonymousPipeStream.cs" />
     <Compile Include="Performance\Perf.NamedPipeStream.cs" />
     <Compile Include="Performance\Perf.PipeTest.cs" />
