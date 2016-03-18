@@ -11,7 +11,7 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> GetByteCount_TestData()
         {
-            string randomString = EncodingHelpers.GetUnicodeString(10);
+            string randomString = EncodingHelpers.GetRandomString(10);
 
             yield return new object[] { string.Empty, 0, 0, 0 };
             yield return new object[] { randomString, 0, randomString.Length, 20 };

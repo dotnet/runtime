@@ -11,7 +11,7 @@ namespace System.Text.Tests
     {
         public static IEnumerable<object[]> GetCharCount_TestData()
         {
-            string randomString = EncodingHelpers.GetUnicodeString(10);
+            string randomString = EncodingHelpers.GetRandomString(10);
             byte[] randomBytes = new UnicodeEncoding().GetBytes(randomString);
             yield return new object[] { randomBytes, 0, randomBytes.Length, randomBytes.Length / 2 };
             yield return new object[] { randomBytes, 0, 0, 0 };
