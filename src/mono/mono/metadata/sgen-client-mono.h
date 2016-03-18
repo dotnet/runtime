@@ -731,7 +731,7 @@ extern MonoNativeTlsKey thread_info_key;
 
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
-#define SGEN_TV_ELAPSED(start,end) ((long)(end-start))
+#define SGEN_TV_ELAPSED(start,end) ((gint64)(end-start))
 
 typedef MonoSemType SgenSemaphore;
 
