@@ -52,7 +52,7 @@
     <Compile Include="StringContentTest.cs" />
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
-    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Http.csproj">
