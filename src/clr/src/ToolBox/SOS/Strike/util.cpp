@@ -62,10 +62,6 @@ IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
 ICorDebugProcess *g_pCorDebugProcess = NULL;
 
-#ifdef FEATURE_PAL
-PFN_CLRDataCreateInstance g_pCLRDataCreateInstance = NULL;
-#endif // FEATURE_PAL
-
 #ifndef IfFailRet
 #define IfFailRet(EXPR) do { Status = (EXPR); if(FAILED(Status)) { return (Status); } } while (0)
 #endif
@@ -4156,8 +4152,10 @@ void ResetGlobals(void)
 
 HRESULT LoadClrDebugDll(void)
 {
+    HRESULT hr = S_OK;
 #ifdef FEATURE_PAL
-    if (g_pCLRDataCreateInstance == NULL)
+    static IXCLRDataProcess* s_clrDataProcess = NULL;
+    if (s_clrDataProcess == NULL)
     {
         int err = PAL_InitializeDLL();
         if(err != 0)
@@ -4173,20 +4171,27 @@ HRESULT LoadClrDebugDll(void)
         {
             return E_FAIL;
         }
-        g_pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
-        if (g_pCLRDataCreateInstance == NULL)
+        PFN_CLRDataCreateInstance pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        if (pCLRDataCreateInstance == NULL)
         {
             FreeLibrary(hdac);
             return E_FAIL;
         }
+        ICLRDataTarget *target = new DataTarget();
+        hr = pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, (void**)&s_clrDataProcess);
+        if (FAILED(hr))
+        {
+            s_clrDataProcess = NULL;
+            return hr;
+        }
+        ULONG32 flags = 0;
+        s_clrDataProcess->GetOtherNotificationFlags(&flags);
+        flags |= (CLRDATA_NOTIFY_ON_MODULE_LOAD | CLRDATA_NOTIFY_ON_MODULE_UNLOAD | CLRDATA_NOTIFY_ON_EXCEPTION);
+        s_clrDataProcess->SetOtherNotificationFlags(flags);
     }
-    ICLRDataTarget *target = new DataTarget();
-    HRESULT hr = g_pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
-    if (FAILED(hr))
-    {
-        g_clrData = NULL;
-        return hr;
-    }
+    g_clrData = s_clrDataProcess;
+    g_clrData->AddRef();
+    g_clrData->Flush();
 #else
     WDBGEXTS_CLR_DATA_INTERFACE Query;
 
@@ -4198,13 +4203,12 @@ HRESULT LoadClrDebugDll(void)
 
     g_clrData = (IXCLRDataProcess*)Query.Iface;
 #endif
-
-    if (FAILED(g_clrData->QueryInterface(__uuidof(ISOSDacInterface), (void**)&g_sos)))
+    hr = g_clrData->QueryInterface(__uuidof(ISOSDacInterface), (void**)&g_sos);
+    if (FAILED(hr))
     {
         g_sos = NULL;
-        return E_FAIL;
+        return hr;
     }
-
     return S_OK;
 }
 
@@ -4767,18 +4771,6 @@ HRESULT InitCorDebugInterface()
 
         // this is a very heavy handed way of reseting
         UninitCorDebugInterface();
-    }
-
-    // Ensure that CLR and DAC are already loaded
-    if ((hr = CheckEEDll()) != S_OK)
-    {
-        EENotLoadedMessage(hr);
-        return hr;
-    }
-    if ((hr = LoadClrDebugDll()) != S_OK)
-    {
-        DACMessage(hr);
-        return hr;
     }
 
     // SOS now has a statically linked version of the loader code that is normally found in mscoree/mscoreei.dll

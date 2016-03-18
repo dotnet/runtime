@@ -231,18 +231,22 @@ HRESULT CheckEEDll();
     if ((Status = ExtQuery(client)) != S_OK) return Status;     \
     if ((Status = ArchQuery()) != S_OK)      return Status;     \
     ControlC = FALSE;                                           \
-    g_bDacBroken = TRUE;
+    g_bDacBroken = TRUE;                                        \
+    g_clrData = NULL;                                           \
+    g_sos = NULL;                                        
 
-#define INIT_API_NODAC()                                        \
-    INIT_API_NOEE()                                             \
+#define INIT_API_EE()                                           \
     if ((Status = CheckEEDll()) != S_OK)                        \
     {                                                           \
         EENotLoadedMessage(Status);                             \
         return Status;                                          \
     }                                                           
 
-#define INIT_API()                                              \
-    INIT_API_NODAC()                                            \
+#define INIT_API_NODAC()                                        \
+    INIT_API_NOEE()                                             \
+    INIT_API_EE()
+
+#define INIT_API_DAC()                                          \
     if ((Status = LoadClrDebugDll()) != S_OK)                   \
     {                                                           \
         DACMessage(Status);                                     \
@@ -255,6 +259,10 @@ HRESULT CheckEEDll();
     ToRelease<ISOSDacInterface> spISD(g_sos);                   \
     ResetGlobals();
 
+#define INIT_API()                                              \
+    INIT_API_NODAC()                                            \
+    INIT_API_DAC()
+
 // Attempt to initialize DAC and SOS globals, but do not "return" on failure.
 // Instead, mark the failure to initialize the DAC by setting g_bDacBroken to TRUE.
 // This should be used from extension commands that should work OK even when no
@@ -263,7 +271,6 @@ HRESULT CheckEEDll();
 // feature.
 #define INIT_API_NO_RET_ON_FAILURE()                            \
     INIT_API_NOEE()                                             \
-    g_clrData = NULL;                                           \
     if ((Status = CheckEEDll()) != S_OK)                        \
     {                                                           \
         ExtOut("Failed to find runtime DLL (%s), 0x%08x\n", MAKEDLLNAME_A("coreclr"), Status); \
