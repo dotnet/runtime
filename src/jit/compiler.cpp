@@ -642,6 +642,7 @@ unsigned            Compiler::s_compMethodsCount = 0; // to produce unique label
 
 /* static */
 bool                Compiler::s_dspMemStats = false;
+bool                Compiler::s_inlDumpDataHeader = false;
 #endif
 
 #ifndef DEBUGGING_SUPPORT
@@ -1261,8 +1262,12 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
-    // Set the inline info and the inline result.
+    // Set the inline info.
     impInlineInfo    = inlineInfo;
+
+#ifdef DEBUG
+    inlLastSuccessfulPolicy = nullptr;
+#endif
 
     eeInfoInitialized = false;
 
@@ -4569,6 +4574,61 @@ void Compiler::compCompileFinish()
     {
         printf("****** DONE compiling %s\n", info.compFullName);
         printf("");         // in our logic this causes a flush
+    }
+
+    // Inliner data display
+    if (JitConfig.JitInlineDumpData() != 0)
+    {
+        // Don't dump anything if limiting is on and we didn't reach
+        // the limit while inlining.
+        //
+        // This serves to filter out duplicate data.
+        const int limit = JitConfig.JitInlineLimit();
+
+        if ((limit < 0) || (fgInlinedCount == static_cast<unsigned>(limit)))
+        {
+            // If there weren't any successful inlines (no limit, or
+            // limit=0 case), we won't have a successful policy, so
+            // fake one up.
+            if (inlLastSuccessfulPolicy == nullptr)
+            {
+                assert(limit <= 0);
+                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+                inlLastSuccessfulPolicy = InlinePolicy::GetPolicy(this, isPrejitRoot);
+            }
+            
+            if (!s_inlDumpDataHeader)
+            {
+                if (limit == 0)
+                {
+                    printf("*** Inline Data: Policy=%s JitInlineLimit=%d ***\n", 
+                           inlLastSuccessfulPolicy->GetName(),
+                           limit);
+                    printf("Method,Version,HotSize,ColdSize,JitTime");
+                    inlLastSuccessfulPolicy->DumpSchema();
+                    printf("\n");
+                }
+                
+                s_inlDumpDataHeader = true;
+            }
+
+            // We'd really like the method identifier to be unique and
+            // durable across crossgen invocations. Not clear how to
+            // accomplish this, so we'll use the token for now.
+            //
+            // Post processing will have to filter out all data from
+            // methods where the root entry appears multiple times.
+            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+            printf("%08X,%u,%u,%u,%u",
+                   currentMethodToken,
+                   fgInlinedCount,
+                   info.compTotalHotCodeSize,
+                   info.compTotalColdCodeSize,
+                   0);
+            inlLastSuccessfulPolicy->DumpData();
+            printf("\n");
+        }
     }
     
     // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
