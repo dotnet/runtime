@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #if defined(__APPLE__) && __APPLE__
 #include <sys/socketvar.h>
 #endif
@@ -2587,4 +2588,17 @@ extern "C" char* SystemNative_GetPeerUserName(intptr_t socket)
     errno = ENOTSUP;
     return nullptr;
 #endif
+}
+
+extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
+{
+    assert(pathOffset != nullptr);
+    assert(pathSize != nullptr);
+    assert(addressSize != nullptr);
+
+    struct sockaddr_un domainSocket;
+
+    *pathOffset = offsetof(struct sockaddr_un, sun_path);
+    *pathSize = sizeof(domainSocket.sun_path);
+    *addressSize = sizeof(domainSocket);
 }
