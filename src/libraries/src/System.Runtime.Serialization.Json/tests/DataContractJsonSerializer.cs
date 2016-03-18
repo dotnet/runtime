@@ -213,6 +213,57 @@ public static partial class DataContractJsonSerializerTests
         {
             Assert.StrictEqual(SerializeAndDeserialize<string>(value, value == null ? "null" : string.Format(@"""{0}""", value.ToString())), value);
         }
+
+        var testStrings = new[]
+        {
+            new { value = "\u0008", baseline = "\\b" }, // BACKSPACE
+            new { value = "\u000C", baseline = "\\f" }, // FORM FEED (FF)
+            new { value = "\u000A", baseline = "\\n" }, // LINE FEED (LF)
+            new { value = "\u000D", baseline = "\\r" }, // CARRIAGE RETURN (CR)
+            new { value = "\u0009", baseline = "\\t" }, // HORIZONTAL TABULATION
+            new { value = "\u0022", baseline = "\\\"" }, // QUOTATION MARK
+            new { value = "\u005C", baseline = "\\\\" }, // REVERSE SOLIDUS
+            new { value = "\u0000", baseline = "\\u0000" }, // NULL
+            new { value = "\u000B", baseline = "\\u000b" }, // LINE TABULATION
+            new { value = "\u000F", baseline = "\\u000f" }, // SHIFT IN
+            new { value = "\u0027", baseline = "'" },
+        };
+
+        foreach(var pair in testStrings)
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<string>(pair.value, string.Format(@"""{0}""", pair.baseline)), pair.value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_StringAsRoot_BackwardCompatibility()
+    {
+        var testStrings = new[]
+        {
+            new { value = "\u0008", text = @"""\u0008""" }, // BACKSPACE
+            new { value = "\u000C", text = @"""\u000c""" }, // FORM FEED (FF)
+            new { value = "\u000A", text = @"""\u000a""" }, // LINE FEED (LF)
+            new { value = "\u000D", text = @"""\u000d""" }, // CARRIAGE RETURN (CR)
+            new { value = "\u0009", text = @"""\u0009""" }, // HORIZONTAL TABULATION
+        };
+
+        var serializer = new DataContractJsonSerializer(typeof(string));
+        foreach(var pair in testStrings)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(ms))
+                {
+                    {
+                        sw.Write(pair.text);
+                        sw.Flush();
+                        ms.Position = 0;
+                        string actual = (string)serializer.ReadObject(ms);
+                        Assert.StrictEqual(pair.value, actual);
+                    }
+                }
+            }
+        }
     }
 
     [Fact]
