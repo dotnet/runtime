@@ -72,7 +72,7 @@ Here are the high level guidelines:
 
 Feature owners reserve the right to call out what they don't want to support on .NET Core. Since .NET Core is a new platform, we don't want to penalize our ability to build a componentized and cross-platform stack by signing up for technologies that are expensive to bring into this world and we don't think are sensible for today's needs.
 
-This list, while not complete, is meant as a reference point. We'll add to it as we refine our porting plan.
+This list, while not complete, is meant as a reference point. We'll add to it as we refine our porting plan. Also, just because something is currently not implemented, doesn't imply it's intentionally unsupported. Feel free to [file an issue](https://github.com/dotnet/corefx/issues/new) to ask for specific APIs and technologies. Porting requests are generally marked as [port-to-core](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aport-to-core).
 
 Technology                 | More information
 ---------------------------|-----------------------------------
@@ -86,7 +86,7 @@ Security Transparency      | [Details](#security-transparency)
 
 **Justification**. AppDomains require runtime support and are generally quite expensive. While still implemented by CoreCLR it's not available in .NET Native and we don't plan on adding this capability.
 
-**Replacement**. AppDomains were used for different features; for isolation we recommend processes and/or containers.
+**Replacement**. AppDomains were used for different features; for isolation we recommend processes and/or containers. For dynamic loading, we provide `AssemblyLoadContext`. Information (such as the name and base directory) is provided by APIs on other types, for instance `AppContext.BaseDirectory `. Some scenarios, such as getting the list of loaded are unsupported as they are inherently fragile.
 
 ### Remoting
 
