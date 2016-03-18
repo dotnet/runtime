@@ -9,337 +9,129 @@ using Xunit;
 public partial class RegexMatchTests
 {
     /*
-    Tested Methods:
-
-        public static Match Match(string input);     Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
-            "aaabbbccc"
-
-        public static Match Match(string input);     Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+"
-            "abcXXXdef"
-
-        public static Match Match(string input);     Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
-            "abcXXXdef" - Negative
-
-        public static Match Match(string input);     Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<  =  XXX ) def "
-            " abcXXXdef "
-        public  static  Match  Match ( string  input ) ; Zero-width  negative  lookbehind  assertion :  Actual - " ( \ \ w ) { 6 } ( ? < ! XXX ) def "
-            " XXXabcdef "
-        public  static  Match  Match ( string  input ) ; Nonbacktracking  subexpression :  Actual - " [ ^ 0 - 9 ] + ( ?>[0-9]+)3"
-            "abc123"
-
+    public Match Match(string input);
+        - Noncapturing group: Actual - "(a+)(?:b*)(ccc)", "aaabbbccc"
+        - Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+", "abcXXXdef"
+        - Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+", "abcXXXdef" - Negative
+        - Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<  =  XXX ) def ", " abcXXXdef "
+        - Zero-width  negative  lookbehind  assertion: Actual - " ( \ \ w ) { 6 } ( ? < ! XXX ) def ", " XXXabcdef "
+        - Nonbacktracking subexpression: Actual - " [ ^ 0 - 9 ] + ( ?>[0-9]+)3", "abc123"
     */
-
     [Fact]
     public static void RegexMatchTestCase4()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        Regex r;
-        Match match;
-        String strMatch1 = "aaabbbccc";
-        Int32[] iMatch1 =
-        {
-        0, 9
-        }
+        string strMatch1 = "aaabbbccc";
+        int[] iMatch1 = { 0, 9 };
+        string[] strGroup1 = { "aaabbbccc", "aaa", "ccc" };
+        int[,] iGroup1 = { { 0, 9 }, { 0, 3 }, { 6, 3 } };
+        string[][] strGrpCap1 = new string[3][];
+        strGrpCap1[0] = new string[] { "aaabbbccc" };
+        strGrpCap1[1] = new string[] { "aaa" };
+        strGrpCap1[2] = new string[] { "ccc" };
+        int[][] iGrpCap1 = new int[3][];
+        iGrpCap1[0] = new int[] { 5, 9 };
+        iGrpCap1[1] = new int[] { 0, 3 };
+        iGrpCap1[2] = new int[] { 6, 3 };
 
-        ;
-        String[] strGroup1 =
-        {
-        "aaabbbccc", "aaa", "ccc"
-        }
+        string strMatch2 = "abcXXXdef";
+        int[] iMatch2 = { 0, 9 };
 
-        ;
-        Int32[,] iGroup1 =
-        {
-        {
-        0, 9
-        }
+        // Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
+        // "aaabbbccc"
+        Regex regex = new Regex("(a+)(?:b*)(ccc)");
+        Match match = regex.Match("aaabbbccc");
+        Assert.True(match.Success);
 
-        , {
-        0, 3
-        }
+        Assert.Equal(strMatch1, match.Value);
+        Assert.Equal(iMatch1[0], match.Index);
+        Assert.Equal(iMatch1[1], match.Length);
 
-        , {
-        6, 3
-        }
-        }
+        Assert.Equal(1, match.Captures.Count);
+        Assert.Equal(strMatch1, match.Captures[0].Value);
+        Assert.Equal(iMatch1[0], match.Captures[0].Index);
+        Assert.Equal(iMatch1[1], match.Captures[0].Length);
 
-        ;
-        String[][] strGrpCap1 = new String[3][];
-        strGrpCap1[0] = new String[]
-        {
-        "aaabbbccc"
-        }
+        Assert.Equal(3, match.Groups.Count);
 
-        ;
-        strGrpCap1[1] = new String[]
-        {
-        "aaa"
-        }
+        // Group 0 always is the Match
+        Assert.Equal(strMatch1, match.Groups[0].Value);
+        Assert.Equal(iMatch1[0], match.Groups[0].Index);
+        Assert.Equal(iMatch1[1], match.Groups[0].Length);
 
-        ;
-        strGrpCap1[2] = new String[]
-        {
-        "ccc"
-        }
+        Assert.Equal(1, match.Groups[0].Captures.Count);
 
-        ;
-        Int32[][] iGrpCap1 = new Int32[3][];
-        iGrpCap1[0] = new Int32[]
-        {
-        5, 9
-        }
+        // Group 0's Capture is always the Match
+        Assert.Equal(strMatch1, match.Groups[0].Captures[0].Value);
+        Assert.Equal(iMatch1[0], match.Groups[0].Captures[0].Index);
+        Assert.Equal(iMatch1[1], match.Groups[0].Captures[0].Length);
 
-        ; //This is ignored
-        iGrpCap1[1] = new Int32[]
+        for (int i = 1; i < match.Groups.Count; i++)
         {
-        0, 3
-        }
+            Assert.Equal(strGroup1[i], match.Groups[i].Value);
+            Assert.Equal(iGroup1[i, 0], match.Groups[i].Index);
+            Assert.Equal(iGroup1[i, 1], match.Groups[i].Length);
 
-        ; //The first half contains the Index and the latter half the Lengths
-        iGrpCap1[2] = new Int32[]
-        {
-        6, 3
-        }
-
-        ; //The first half contains the Index and the latter half the Lengths
-        String strMatch2 = "abcXXXdef";
-        Int32[] iMatch2 =
-        {
-        0, 9
-        }
-
-        ;
-        String[] strGroup2 =
-        {
-        "abcXXXdef"
-        }
-
-        ;
-        Int32[,] iGroup2 =
-        {
-        {
-        0, 9
-        }
-        }
-
-        ;
-        String[][] strGrpCap2 = new String[1][];
-        strGrpCap2[0] = new String[]
-        {
-        "abcXXXdef"
-        }
-
-        ;
-        Int32[][] iGrpCap2 = new Int32[1][];
-        iGrpCap2[0] = new Int32[]
-        {
-        0, 9
-        }
-
-        ; //This is ignored
-        try
-        {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-            // [] public static Match Match(string input);     Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
-            //"aaabbbccc"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_498yg";
-            iCountTestcases++;
-            r = new Regex("(a+)(?:b*)(ccc)");
-            match = r.Match("aaabbbccc");
-            if (!match.Success)
+            Assert.Equal(1, match.Groups[i].Captures.Count);
+            for (int j = 0; j < match.Groups[i].Captures.Count; j++)
             {
-                iCountErrors++;
-                Console.WriteLine("Err_78653refgs! doesnot match");
+                Assert.Equal(strGrpCap1[i][j], match.Groups[i].Captures[j].Value);
+                Assert.Equal(iGrpCap1[i][j], match.Groups[i].Captures[j].Index);
+                Assert.Equal(iGrpCap1[i][match.Groups[i].Captures.Count + j], match.Groups[i].Captures[j].Length);
             }
-            else
-            {
-                if (!match.Value.Equals(strMatch1) || (match.Index != iMatch1[0]) || (match.Length != iMatch1[1]) || (match.Captures.Count != 1))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_98275dsg: unexpected return result");
-                }
-
-                //Match.Captures always is Match
-                if (!match.Captures[0].Value.Equals(strMatch1) || (match.Captures[0].Index != iMatch1[0]) || (match.Captures[0].Length != iMatch1[1]))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_2046gsg! unexpected return result");
-                }
-
-                if (match.Groups.Count != 3)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_75324sg! unexpected return result");
-                }
-
-                //Group 0 always is the Match
-                if (!match.Groups[0].Value.Equals(strMatch1) || (match.Groups[0].Index != iMatch1[0]) || (match.Groups[0].Length != iMatch1[1]) || (match.Groups[0].Captures.Count != 1))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_2046gsg! unexpected return result");
-                }
-
-                //Group 0's Capture is always the Match
-                if (!match.Groups[0].Captures[0].Value.Equals(strMatch1) || (match.Groups[0].Captures[0].Index != iMatch1[0]) || (match.Groups[0].Captures[0].Length != iMatch1[1]))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_2975edg!! unexpected return result");
-                }
-
-                for (int i = 1; i < match.Groups.Count; i++)
-                {
-                    if (!match.Groups[i].Value.Equals(strGroup1[i]) || (match.Groups[i].Index != iGroup1[i, 0]) || (match.Groups[i].Length != iGroup1[i, 1]) || (match.Groups[i].Captures.Count != 1))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_1954eg_" + i + "! unexpected return result, Value = <{0}:{3}>, Index = <{1}:{4}>, Length = <{2}:{5}>", match.Groups[i].Value, match.Groups[i].Index, match.Groups[i].Length, strGroup1[i], iGroup1[i, 0], iGroup1[i, 1]);
-                    }
-
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                    {
-                        if (!match.Groups[i].Captures[j].Value.Equals(strGrpCap1[i][j]) || (match.Groups[i].Captures[j].Index != iGrpCap1[i][j]) || (match.Groups[i].Captures[j].Length != iGrpCap1[i][match.Groups[i].Captures.Count + j]))
-                        {
-                            iCountErrors++;
-                            Console.WriteLine("Err_5072dn_" + i + "_" + j + "! unexpected return result, Value = <{0}:{3}>, Index = <{1}:{4}>, Length = <{2}:{5}>", match.Groups[i].Captures[j].Value, match.Groups[i].Captures[j].Index, match.Groups[i].Captures[j].Length, strGrpCap1[i][j], iGrpCap1[i][j], iGrpCap1[i][match.Groups[i].Captures.Count + j]);
-                        }
-                    }
-                }
-            }
-
-            // [] public static Match Match(string input);     Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+"
-            //"abcXXXdef"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_298vy";
-            iCountTestcases++;
-            r = new Regex(@"abc(?=XXX)\w+");
-            match = r.Match("abcXXXdef");
-            if (!match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_7453efg! doesnot match");
-            }
-            else
-            {
-                if (!match.Value.Equals(strMatch2) || (match.Index != iMatch2[0]) || (match.Length != iMatch2[1]) || (match.Captures.Count != 1))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_827345sdf! unexpected return result");
-                }
-
-                //Match.Captures always is Match
-                if (!match.Captures[0].Value.Equals(strMatch2) || (match.Captures[0].Index != iMatch2[0]) || (match.Captures[0].Length != iMatch2[1]))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_1074sf! unexpected return result");
-                }
-
-                if (match.Groups.Count != 1)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_2175sgg! unexpected return result");
-                }
-
-                //Group 0 always is the Match
-                if (!match.Groups[0].Value.Equals(strMatch2) || (match.Groups[0].Index != iMatch2[0]) || (match.Groups[0].Length != iMatch2[1]) || (match.Groups[0].Captures.Count != 1))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_68217fdgs! unexpected return result");
-                }
-
-                //Group 0's Capture is always the Match
-                if (!match.Groups[0].Captures[0].Value.Equals(strMatch2) || (match.Groups[0].Captures[0].Index != iMatch2[0]) || (match.Groups[0].Captures[0].Length != iMatch2[1]))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_139wn!! unexpected return result");
-                }
-
-                for (int i = 1; i < match.Groups.Count; i++)
-                {
-                    if (!match.Groups[i].Value.Equals(strGroup2[i]) || (match.Groups[i].Index != iGroup2[i, 0]) || (match.Groups[i].Length != iGroup2[i, 1]) || (match.Groups[i].Captures.Count != 1))
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_107vxg_" + i + "! unexpected return result, Value = <{0}:{3}>, Index = <{1}:{4}>, Length = <{2}:{5}>", match.Groups[i].Value, match.Groups[i].Index, match.Groups[i].Length, strGroup2[i], iGroup2[i, 0], iGroup2[i, 1]);
-                    }
-
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                    {
-                        if (!match.Groups[i].Captures[j].Value.Equals(strGrpCap2[i][j]) || (match.Groups[i].Captures[j].Index != iGrpCap2[i][j]) || (match.Groups[i].Captures[j].Length != iGrpCap2[i][match.Groups[i].Captures.Count + j]))
-                        {
-                            iCountErrors++;
-                            Console.WriteLine("Err_745dsgg_" + i + "_" + j + "! unexpected return result, Value = <{0}:{3}>, Index = <{1}:{4}>, Length = <{2}:{5}>", match.Groups[i].Captures[j].Value, match.Groups[i].Captures[j].Index, match.Groups[i].Captures[j].Length, strGrpCap2[i][j], iGrpCap2[i][j], iGrpCap2[i][match.Groups[i].Captures.Count + j]);
-                        }
-                    }
-                }
-            }
-
-            // [] public static Match Match(string input);     Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
-            //"abcXXXdef" - Negative
-            //-----------------------------------------------------------------
-            strLoc = "Loc_746tegd";
-            iCountTestcases++;
-            r = new Regex(@"abc(?!XXX)\w+");
-            match = r.Match("abcXXXdef");
-            if (match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_756tdfg! doesnot match");
-            }
-
-            // [] public static Match Match(string input);     Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
-            //"abcXXXdef"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_563rfg";
-            iCountTestcases++;
-            r = new Regex(@"(\w){6}(?<=XXX)def");
-            match = r.Match("abcXXXdef");
-            if (!match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_1072gdg! doesnot match");
-            }
-
-            // [] public static Match Match(string input);     Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
-            //"XXXabcdef"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_563rfg";
-            iCountTestcases++;
-            r = new Regex(@"(\w){6}(?<!XXX)def");
-            match = r.Match("XXXabcdef");
-            if (!match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_532resgf! doesnot match");
-            }
-
-            // [] public static Match Match(string input);     Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
-            //"abc123"
-            //-----------------------------------------------------------------
-            strLoc = "Loc_563rfg";
-            iCountTestcases++;
-            r = new Regex("[^0-9]+(?>[0-9]+)3");
-            //The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
-            //for it to be a success. For a correct match, remove the last character, '3' from the pattern
-            match = r.Match("abc123");
-            if (match.Success)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_234fsadg! doesnot match");
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
-        }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
         }
 
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
+        // Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+"
+        // "abcXXXdef"
+        regex = new Regex(@"abc(?=XXX)\w+");
+        match = regex.Match("abcXXXdef");
+        Assert.True(match.Success);
+        Assert.Equal(strMatch2, match.Value);
+        Assert.Equal(iMatch2[0], match.Index);
+        Assert.Equal(iMatch2[1], match.Length);
+
+        Assert.Equal(1, match.Captures.Count);
+        Assert.Equal(strMatch2, match.Captures[0].Value);
+        Assert.Equal(iMatch2[0], match.Captures[0].Index);
+        Assert.Equal(iMatch2[1], match.Captures[0].Length);
+
+        Assert.Equal(1, match.Groups.Count);
+
+        // Group 0 always is the Match
+        Assert.Equal(strMatch2, match.Groups[0].Value);
+        Assert.Equal(iMatch2[0], match.Groups[0].Index);
+        Assert.Equal(iMatch2[1], match.Groups[0].Length);
+
+        Assert.Equal(1, match.Groups[0].Captures.Count);
+
+        // Group 0's Capture is always the Match
+        Assert.Equal(strMatch2, match.Groups[0].Captures[0].Value);
+        Assert.Equal(iMatch2[0], match.Groups[0].Captures[0].Index);
+        Assert.Equal(iMatch2[1], match.Groups[0].Captures[0].Length);
+
+        // Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
+        // "abcXXXdef" - Negative
+        regex = new Regex(@"abc(?!XXX)\w+");
+        match = regex.Match("abcXXXdef");
+        Assert.False(match.Success);
+
+        // Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
+        // "abcXXXdef"
+        regex = new Regex(@"(\w){6}(?<=XXX)def");
+        match = regex.Match("abcXXXdef");
+        Assert.True(match.Success);
+
+        // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
+        // "XXXabcdef"
+        regex = new Regex(@"(\w){6}(?<!XXX)def");
+        match = regex.Match("XXXabcdef");
+        Assert.True(match.Success);
+
+        // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
+        // "abc123"
+        // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
+        // for it to be a success. For a correct match, remove the last character, '3' from the pattern
+        regex = new Regex("[^0-9]+(?>[0-9]+)3");
+        match = regex.Match("abc123");
+        Assert.False(match.Success);
     }
 }
