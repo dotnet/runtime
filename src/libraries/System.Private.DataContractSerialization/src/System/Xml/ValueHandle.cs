@@ -667,6 +667,7 @@ namespace System.Xml
             int byteCount = _length;
             bool insufficientSpaceInCharsArray = false;
 
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
             while (true)
             {
                 while (charCount > 0 && byteCount > 0)
@@ -688,7 +689,6 @@ namespace System.Xml
                 int actualByteCount;
                 int actualCharCount;
 
-                UTF8Encoding encoding = new UTF8Encoding(false, true);
                 try
                 {
                     // If we're asking for more than are possibly available, or more than are truly available then we can return the entire thing
