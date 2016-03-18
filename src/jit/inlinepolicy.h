@@ -46,6 +46,8 @@ public:
         , m_StateMachine(nullptr)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
+        , m_InstructionCount(0)
+        , m_LoadStoreCount(0)
         , m_IsForceInline(false)
         , m_IsForceInlineKnown(false)
         , m_IsInstanceCtor(false)
@@ -95,6 +97,8 @@ protected:
     CodeSeqSM*              m_StateMachine;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
+    unsigned                m_InstructionCount;
+    unsigned                m_LoadStoreCount;
     bool                    m_IsForceInline :1;
     bool                    m_IsForceInlineKnown :1;
     bool                    m_IsInstanceCtor :1;
