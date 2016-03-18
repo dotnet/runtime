@@ -16,14 +16,10 @@ namespace System.Net.Security
     //
     // The class maintains the state of the authentication process and the security context.
     // It encapsulates security context and does the real work in authentication and
-    // user data encryption with NEGO SSPI package.
-    //
-    // This is part of the NegotiateStream PAL.
+    // user data encryption
     //
     internal class NegoState
     {
-        private const int ERROR_TRUST_FAILURE = 1790;   // Used to serialize protectionLevel or impersonationLevel mismatch error to the remote side.
-
         private static readonly byte[] s_emptyMessage = new byte[0];
         private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
         private static readonly AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
@@ -38,6 +34,7 @@ namespace System.Net.Security
 
         private int _nestedAuth;
 
+        internal const int ERROR_TRUST_FAILURE = 1790;   // Used to serialize protectionLevel or impersonationLevel mismatch error to the remote side.
         internal const int MaxReadFrameSize = 64 * 1024;
         internal const int MaxWriteDataSize = 63 * 1024; // 1k for the framing and trailer that is always less as per SSPI.
 
@@ -70,6 +67,12 @@ namespace System.Net.Security
             {
                 return NegotiationInfoClass.Negotiate;
             }
+        }
+
+        internal IIdentity GetIdentity()
+        {
+            CheckThrow(true);
+            return NegotiateStreamPal.GetIdentity(_context);
         }
 
         internal void ValidateCreateContext(
@@ -127,13 +130,7 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(servicePrincipalName));
             }
 
-            if (impersonationLevel != TokenImpersonationLevel.Identification &&
-                impersonationLevel != TokenImpersonationLevel.Impersonation &&
-                impersonationLevel != TokenImpersonationLevel.Delegation)
-            {
-                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), impersonationLevel.ToString(), SR.net_auth_supported_impl_levels);
-            }
-
+            NegotiateStreamPal.ValidateImpersonationLevel(impersonationLevel);
             if (_context != null && IsServer != isServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
@@ -149,35 +146,34 @@ namespace System.Net.Security
             _writeSequenceNumber = 0;
             _readSequenceNumber = 0;
 
-            Interop.SspiCli.ContextFlags flags = Interop.SspiCli.ContextFlags.Connection;
+            ContextFlagsPal flags = ContextFlagsPal.Connection;
 
             // A workaround for the client when talking to Win9x on the server side.
             if (protectionLevel == ProtectionLevel.None && !isServer)
             {
                 package = NegotiationInfoClass.NTLM;
             }
-
             else if (protectionLevel == ProtectionLevel.EncryptAndSign)
             {
-                flags |= Interop.SspiCli.ContextFlags.Confidentiality;
+                flags |= ContextFlagsPal.Confidentiality;
             }
             else if (protectionLevel == ProtectionLevel.Sign)
             {
                 // Assuming user expects NT4 SP4 and above.
-                flags |= Interop.SspiCli.ContextFlags.ReplayDetect | Interop.SspiCli.ContextFlags.SequenceDetect | Interop.SspiCli.ContextFlags.InitIntegrity;
+                flags |= (ContextFlagsPal.ReplayDetect | ContextFlagsPal.SequenceDetect | ContextFlagsPal.InitIntegrity);
             }
 
             if (isServer)
             {
                 if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
                 {
-                    flags |= Interop.SspiCli.ContextFlags.AllowMissingBindings;
+                    flags |= ContextFlagsPal.AllowMissingBindings;
                 }
 
                 if (_extendedProtectionPolicy.PolicyEnforcement != PolicyEnforcement.Never &&
                     _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TrustedProxy)
                 {
-                    flags |= Interop.SspiCli.ContextFlags.ProxyBindings;
+                    flags |= ContextFlagsPal.ProxyBindings;
                 }
             }
             else
@@ -185,17 +181,17 @@ namespace System.Net.Security
                 // Server side should not request any of these flags.
                 if (protectionLevel != ProtectionLevel.None)
                 {
-                    flags |= Interop.SspiCli.ContextFlags.MutualAuth;
+                    flags |= ContextFlagsPal.MutualAuth;
                 }
 
                 if (impersonationLevel == TokenImpersonationLevel.Identification)
                 {
-                    flags |= Interop.SspiCli.ContextFlags.InitIdentify;
+                    flags |= ContextFlagsPal.InitIdentify;
                 }
 
                 if (impersonationLevel == TokenImpersonationLevel.Delegation)
                 {
-                    flags |= Interop.SspiCli.ContextFlags.Delegate;
+                    flags |= ContextFlagsPal.Delegate;
                 }
             }
 
@@ -311,48 +307,6 @@ namespace System.Net.Security
             {
                 return _context.IsCompleted && _context.IsValidContext;
             }
-        }
-
-        internal IIdentity GetIdentity()
-        {
-            CheckThrow(true);
-
-            IIdentity result = null;
-            string name = _context.IsServer ? _context.AssociatedName : _context.Spn;
-            string protocol = "NTLM";
-
-            protocol = _context.ProtocolName;
-
-            if (_context.IsServer)
-            {
-                SecurityContextTokenHandle token = null;
-                try
-                {
-                    token = _context.GetContextToken();
-                    string authtype = _context.ProtocolName;
-
-                    // TODO #5241: 
-                    // The following call was also specifying WindowsAccountType.Normal, true.
-                    // WindowsIdentity.IsAuthenticated is no longer supported in CoreFX.
-                    result = new WindowsIdentity(token.DangerousGetHandle(), authtype);
-                    return result;
-                }
-                catch (SecurityException)
-                {
-                    // Ignore and construct generic Identity if failed due to security problem.
-                }
-                finally
-                {
-                    if (token != null)
-                    {
-                        token.Dispose();
-                    }
-                }
-            }
-
-            // On the client we don't have access to the remote side identity.
-            result = new GenericIdentity(name, protocol);
-            return result;
         }
 
         internal void CheckThrow(bool authSucessCheck)
@@ -483,16 +437,16 @@ namespace System.Net.Security
         //
         private void StartSendBlob(byte[] message, LazyAsyncResult lazyResult)
         {
-            Win32Exception win32exception = null;
+            Exception exception = null;
             if (message != s_emptyMessage)
             {
-                message = GetOutgoingBlob(message, ref win32exception);
+                message = GetOutgoingBlob(message, ref exception);
             }
 
-            if (win32exception != null)
+            if (exception != null)
             {
                 // Signal remote side on a failed attempt.
-                StartSendAuthResetSignal(lazyResult, message, win32exception);
+                StartSendAuthResetSignal(lazyResult, message, exception);
                 return;
             }
 
@@ -500,7 +454,7 @@ namespace System.Net.Security
             {
                 if (_context.IsServer && !CheckSpn())
                 {
-                    Exception exception = new AuthenticationException(SR.net_auth_bad_client_creds_or_target_mismatch);
+                    exception = new AuthenticationException(SR.net_auth_bad_client_creds_or_target_mismatch);
                     int statusCode = ERROR_TRUST_FAILURE;
                     message = new byte[8];  //sizeof(long)
 
@@ -516,7 +470,7 @@ namespace System.Net.Security
 
                 if (PrivateImpersonationLevel < _expectedImpersonationLevel)
                 {
-                    Exception exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, _expectedImpersonationLevel.ToString(), PrivateImpersonationLevel.ToString()));
+                    exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, _expectedImpersonationLevel.ToString(), PrivateImpersonationLevel.ToString()));
                     int statusCode = ERROR_TRUST_FAILURE;
                     message = new byte[8];  //sizeof(long)
 
@@ -534,7 +488,7 @@ namespace System.Net.Security
 
                 if (result < _expectedProtectionLevel)
                 {
-                    Exception exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, result.ToString(), _expectedProtectionLevel.ToString()));
+                    exception = new AuthenticationException(SR.Format(SR.net_auth_context_expectation, result.ToString(), _expectedProtectionLevel.ToString()));
                     int statusCode = ERROR_TRUST_FAILURE;
                     message = new byte[8];  //sizeof(long)
 
@@ -642,7 +596,6 @@ namespace System.Net.Security
             // Process Header information.
             if (_framer.ReadHeader.MessageId == FrameHeader.HandshakeErrId)
             {
-                Win32Exception e = null;
                 if (message.Length >= 8)    // sizeof(long)
                 {
                     // Try to recover remote win32 Exception.
@@ -652,23 +605,10 @@ namespace System.Net.Security
                         error = (error << 8) + message[i];
                     }
 
-                    e = new Win32Exception((int)error);
+                    ThrowCredentialException(error);
                 }
 
-                if (e != null)
-                {
-                    if (e.NativeErrorCode == (int)Interop.SecurityStatus.LogonDenied)
-                    {
-                        throw new InvalidCredentialException(SR.net_auth_bad_client_creds, e);
-                    }
-
-                    if (e.NativeErrorCode == ERROR_TRUST_FAILURE)
-                    {
-                        throw new AuthenticationException(SR.net_auth_context_expectation_remote, e);
-                    }
-                }
-
-                throw new AuthenticationException(SR.net_auth_alert, e);
+                throw new AuthenticationException(SR.net_auth_alert, null);
             }
 
             if (_framer.ReadHeader.MessageId == FrameHeader.HandshakeDoneId)
@@ -715,9 +655,7 @@ namespace System.Net.Security
         {
             _framer.WriteHeader.MessageId = FrameHeader.HandshakeErrId;
 
-            Win32Exception win32exception = exception as Win32Exception;
-
-            if (win32exception != null && win32exception.NativeErrorCode == (int)Interop.SecurityStatus.LogonDenied)
+            if (IsLogonDeniedException(exception))
             {
                 if (IsServer)
                 {
@@ -838,20 +776,26 @@ namespace System.Net.Security
             }
         }
 
-        private unsafe byte[] GetOutgoingBlob(byte[] incomingBlob, ref Win32Exception e)
+        internal static bool IsError(SecurityStatusPal status)
         {
-            Interop.SecurityStatus statusCode;
+            return ((int)status.ErrorCode >= (int)SecurityStatusPalErrorCode.OutOfMemory);
+        }
+
+        private unsafe byte[] GetOutgoingBlob(byte[] incomingBlob, ref Exception e)
+        {
+            SecurityStatusPal statusCode;
             byte[] message = _context.GetOutgoingBlob(incomingBlob, false, out statusCode);
 
-            if (((int)statusCode & unchecked((int)0x80000000)) != 0)
+            if (IsError(statusCode))
             {
-                e = new System.ComponentModel.Win32Exception((int)statusCode);
+                e = NegotiateStreamPal.CreateExceptionFromError(statusCode);
+                uint error = (uint)e.HResult;
 
-                message = new byte[8];  //sizeof(long)
+                message = new byte[sizeof(long)];
                 for (int i = message.Length - 1; i >= 0; --i)
                 {
-                    message[i] = (byte)((uint)statusCode & 0xFF);
-                    statusCode = (Interop.SecurityStatus)((uint)statusCode >> 8);
+                    message[i] = (byte)(error & 0xFF);
+                    error = (error >> 8);
                 }
             }
 
@@ -879,6 +823,30 @@ namespace System.Net.Security
             // SSPI seems to ignore this sequence number.
             ++_readSequenceNumber;
             return _context.Decrypt(buffer, offset, count, out newOffset, _readSequenceNumber);
+        }
+
+        internal static void ThrowCredentialException(long error)
+        {
+            Win32Exception e = new Win32Exception((int)error);
+
+            if (e.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied)
+            {
+                throw new InvalidCredentialException(SR.net_auth_bad_client_creds, e);
+            }
+
+            if (e.NativeErrorCode == NegoState.ERROR_TRUST_FAILURE)
+            {
+                throw new AuthenticationException(SR.net_auth_context_expectation_remote, e);
+            }
+
+            throw new AuthenticationException(SR.net_auth_alert, e);
+        }
+
+        internal static bool IsLogonDeniedException(Exception exception)
+        {
+            Win32Exception win32exception = exception as Win32Exception;
+
+            return (win32exception != null) && (win32exception.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied);
         }
     }
 }

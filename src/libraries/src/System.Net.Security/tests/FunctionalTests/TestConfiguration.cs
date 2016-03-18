@@ -20,6 +20,12 @@ namespace System.Net.Security.Tests
         private const string CertificatePassword = "testcertificate";
         private const string TestDataFolder = "TestData";
 
+        public const string Realm = "TEST.COREFX.NET";
+        public const string KerberosUser = "krb_user";
+        public const string DefaultPassword = "password";
+        public const string HostTarget = "TESTHOST/testfqdn.test.corefx.net";
+        public const string HttpTarget = "TESTHTTP";
+
         public static X509Certificate2 GetServerCertificate()
         {
             X509Certificate2Collection certCollection = TestConfiguration.GetServerCertificateCollection();
