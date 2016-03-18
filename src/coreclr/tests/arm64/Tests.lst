@@ -40709,7 +40709,7 @@ RelativePath=managed\Compilation\Compilation\Compilation.exe
 WorkingDir=managed\Compilation\Compilation
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;NATIVE_INTEROP;LONG_RUNNING
+Categories=Pri0;RT;UNSTABLE;NATIVE_INTEROP;LONG_RUNNING
 HostStyle=Any
 [test.exe_5816]
 RelativePath=Regressions\assemblyref\test\test.exe
