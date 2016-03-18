@@ -12961,21 +12961,33 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 	}
 }
 
+struct remove_instantiations_user_data
+{
+	MonoClass *klass;
+	MonoError *error;
+};
+
 static gboolean
 remove_instantiations_of_and_ensure_contents (gpointer key,
 						  gpointer value,
 						  gpointer user_data)
 {
-	MonoError error;
+	struct remove_instantiations_user_data *data = (struct remove_instantiations_user_data*)user_data;
 	MonoType *type = (MonoType*)key;
-	MonoClass *klass = (MonoClass*)user_data;
+	MonoClass *klass = data->klass;
+	gboolean already_failed = !is_ok (data->error);
+	MonoError lerror;
+	MonoError *error = already_failed ? &lerror : data->error;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
 		MonoClass *inst_klass = mono_class_from_mono_type (type);
 		//Ensure it's safe to use it.
-		if (!fix_partial_generic_class (inst_klass, &error)) {
+		if (!fix_partial_generic_class (inst_klass, error)) {
 			mono_class_set_failure (inst_klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			// Marked the class with failure, but since some other instantiation already failed,
+			// just report that one, and swallow the error from this one.
+			if (already_failed)
+				mono_error_cleanup (error);
 		}
 		return TRUE;
 	} else
@@ -13007,6 +13019,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	MonoReflectionType* res;
 	int i, j;
 
+	mono_error_init (&error);
+
 	domain = mono_object_domain (tb);
 	klass = mono_class_from_mono_type (tb->type.type);
 
@@ -13014,22 +13028,28 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * Check for user defined Type subclasses.
 	 */
 	RESOLVE_TYPE (tb->parent, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto failure_unlocked;
 	check_array_for_usertypes (tb->interfaces, &error);
-	mono_error_raise_exception (&error); /*FIXME don't raise here */
+	if (!is_ok (&error))
+		goto failure_unlocked;
 	if (tb->fields) {
 		for (i = 0; i < mono_array_length (tb->fields); ++i) {
 			MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)mono_array_get (tb->fields, gpointer, i);
 			if (fb) {
 				RESOLVE_TYPE (fb->type, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				check_array_for_usertypes (fb->modreq, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				check_array_for_usertypes (fb->modopt, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				if (fb->marshal_info && fb->marshal_info->marshaltyperef) {
 					RESOLVE_TYPE (fb->marshal_info->marshaltyperef, &error);
-					mono_error_raise_exception (&error); /* FIXME don't raise here */
+					if (!is_ok (&error))
+						goto failure_unlocked;
 				}
 			}
 		}
@@ -13039,22 +13059,28 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)mono_array_get (tb->methods, gpointer, i);
 			if (mb) {
 				RESOLVE_TYPE (mb->rtype, &error);
-				mono_error_raise_exception (&error); /* FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				check_array_for_usertypes (mb->return_modreq, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				check_array_for_usertypes (mb->return_modopt, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				check_array_for_usertypes (mb->parameters, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				if (mb->param_modreq)
 					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
 						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
-						mono_error_raise_exception (&error); /*FIXME don't raise here */
+						if (!is_ok (&error))
+							goto failure_unlocked;
 					}
 				if (mb->param_modopt)
 					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
 						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
-						mono_error_raise_exception (&error); /*FIXME don't raise here */
+						if (!is_ok (&error))
+							goto failure_unlocked;
 					}
 			}
 		}
@@ -13064,16 +13090,19 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)mono_array_get (tb->ctors, gpointer, i);
 			if (mb) {
 				check_array_for_usertypes (mb->parameters, &error);
-				mono_error_raise_exception (&error); /*FIXME don't raise here */
+				if (!is_ok (&error))
+					goto failure_unlocked;
 				if (mb->param_modreq)
 					for (j = 0; j < mono_array_length (mb->param_modreq); ++j) {
 						check_array_for_usertypes (mono_array_get (mb->param_modreq, MonoArray*, j), &error);
-						mono_error_raise_exception (&error); /*FIXME don't raise here */
+						if (!is_ok (&error))
+							goto failure_unlocked;
 					}
 				if (mb->param_modopt)
 					for (j = 0; j < mono_array_length (mb->param_modopt); ++j) {
 						check_array_for_usertypes (mono_array_get (mb->param_modopt, MonoArray*, j), &error);
-						mono_error_raise_exception (&error); /*FIXME don't raise here */
+						if (!is_ok (&error))
+							goto failure_unlocked;
 					}
 			}
 		}
@@ -13092,7 +13121,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		mono_loader_unlock ();
 
 		res = mono_type_get_object_checked (mono_object_domain (tb), &klass->byval_arg, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_set_pending_exception (&error);
 
 		return res;
 	}
@@ -13120,7 +13149,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			mono_domain_unlock (domain);
 
 			res = mono_type_get_object_checked (mono_object_domain (tb), &klass->byval_arg, &error);
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			mono_error_set_pending_exception (&error);
 
 			return res;
 		}
@@ -13181,19 +13210,28 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 *
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
-	if (domain->type_hash && klass->generic_container)
-		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of_and_ensure_contents, klass);
+	if (domain->type_hash && klass->generic_container) {
+		struct remove_instantiations_user_data data;
+		data.klass = klass;
+		data.error = &error;
+		mono_error_assert_ok (&error);
+		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of_and_ensure_contents, &data);
+		if (!is_ok (&error))
+			goto failure;
+	}
 
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
-		mono_raise_exception (mono_get_exception_type_load (tb->name, NULL));
+		mono_error_set_type_load_class (&error, klass, "Not a valid enumeration");
+		goto failure_unlocked;
 	}
 
 	res = mono_type_get_object_checked (mono_object_domain (tb), &klass->byval_arg, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto failure_unlocked;
 
 	g_assert (res != (MonoReflectionType*)tb);
 
@@ -13204,7 +13242,8 @@ failure:
 	klass->wastypebuilder = TRUE;
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
-	mono_error_raise_exception (&error);
+failure_unlocked:
+	mono_error_set_pending_exception (&error);
 	return NULL;
 }
 
