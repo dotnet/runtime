@@ -104,7 +104,6 @@ void deps_json_t::reconcile_libraries_with_targets(
 
 pal::string_t get_own_rid()
 {
-#define _STRINGIFY(s) _X(s)
 #if defined(TARGET_RUNTIME_ID)
     return _STRINGIFY(TARGET_RUNTIME_ID);
 #else
