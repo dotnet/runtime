@@ -30,7 +30,7 @@ public partial class FunctionPtr
 
         try
         {
-            Marshal.GetDelegateForFunctionPointer((IntPtr)0, typeof(MyDelegate));
+            Marshal.GetDelegateForFunctionPointer((IntPtr)0, typeof(VoidDelegate));
             retVal = 0;
             Console.WriteLine("Failure - did not receive an exception while passing 0 as the function pointer");
         }

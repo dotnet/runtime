@@ -1,6 +1,5 @@
 
-include_directories(common)  
-
+include_directories(common)
 add_subdirectory(PrimitiveMarshalling/Bool)
 add_subdirectory(PrimitiveMarshalling/UIntPtr)
 add_subdirectory(ArrayMarshalling/BoolArray)
