@@ -222,7 +222,7 @@ void pal::readdir(const pal::string_t& path, std::vector<pal::string_t>* list)
                         continue;
                     }
 
-                    if (!S_ISREG(sb.st_mode))
+                    if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode))
                     {
                         continue;
                     }
