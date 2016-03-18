@@ -2669,7 +2669,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
                     "  Please get a good stack trace of the exception that was thrown first\n"
                     "  (by re-running the app & catching first chance exceptions), find\n"
                     "  the caller of Validate, and file a bug against the owner.\n\n"
-                    "To suppress this assert 'set COMPLUS_SuppressLostExceptionTypeAssert=1'");
+                    "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
                 }
             }
         }

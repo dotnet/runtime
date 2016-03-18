@@ -4332,7 +4332,7 @@ Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (const LclVarDsc *   
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPLUS_JitNoStructPromotion=2 
+    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2 
     if (fgNoStructParamPromotion)
     {
         // The struct parameter is not enregistered
