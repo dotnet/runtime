@@ -6,6 +6,8 @@
 
 #include "pal.h"
 
+#define _STRINGIFY(s) _X(s)
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 pal::string_t get_executable(const pal::string_t& filename);
