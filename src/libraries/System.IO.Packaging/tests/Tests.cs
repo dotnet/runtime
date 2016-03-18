@@ -44,7 +44,9 @@ namespace System.IO.Packaging.Tests
         public void T201_FileFormatException()
         {
             var e = new FileFormatException();
-            Assert.NotNull(e);
+            Assert.NotEmpty(e.Message);
+            Assert.Null(e.SourceUri);
+            Assert.Null(e.InnerException);
         }
 
         [Fact]
@@ -52,7 +54,9 @@ namespace System.IO.Packaging.Tests
         {
             var e2 = new IOException("Test");
             var e = new FileFormatException("Test", e2);
-            Assert.NotNull(e);
+            Assert.Equal("Test", e.Message);
+            Assert.Null(e.SourceUri);
+            Assert.Same(e2, e.InnerException);
         }
 
         [Fact]
@@ -60,7 +64,9 @@ namespace System.IO.Packaging.Tests
         {
             var partUri = new Uri("/idontexist.xml", UriKind.Relative);
             var e = new FileFormatException(partUri);
-            Assert.NotNull(e);
+            Assert.NotEmpty(e.Message);
+            Assert.Same(partUri, e.SourceUri);
+            Assert.Null(e.InnerException);
         }
 
         [Fact]
@@ -68,7 +74,9 @@ namespace System.IO.Packaging.Tests
         {
             Uri partUri = null;
             var e = new FileFormatException(partUri);
-            Assert.NotNull(e);
+            Assert.NotEmpty(e.Message);
+            Assert.Null(e.SourceUri);
+            Assert.Null(e.InnerException);
         }
 
         [Fact]
@@ -76,7 +84,9 @@ namespace System.IO.Packaging.Tests
         {
             var partUri = new Uri("/idontexist.xml", UriKind.Relative);
             var e = new FileFormatException(partUri, "Test");
-            Assert.NotNull(e);
+            Assert.Equal("Test", e.Message);
+            Assert.Same(partUri, e.SourceUri);
+            Assert.Null(e.InnerException);
         }
 
         [Fact]
@@ -85,7 +95,9 @@ namespace System.IO.Packaging.Tests
             var partUri = new Uri("/idontexist.xml", UriKind.Relative);
             var e2 = new IOException("Test");
             var e = new FileFormatException(partUri, e2);
-            Assert.NotNull(e);
+            Assert.NotEmpty(e.Message);
+            Assert.Same(partUri, e.SourceUri);
+            Assert.Same(e2, e.InnerException);
         }
 
         [Fact]
@@ -94,7 +106,9 @@ namespace System.IO.Packaging.Tests
             Uri partUri = null;
             var e2 = new IOException("Test");
             var e = new FileFormatException(partUri, e2);
-            Assert.NotNull(e);
+            Assert.NotEmpty(e.Message);
+            Assert.Null(e.SourceUri);
+            Assert.Same(e2, e.InnerException);
         }
 
         [Fact]
@@ -103,7 +117,9 @@ namespace System.IO.Packaging.Tests
             var partUri = new Uri("/idontexist.xml", UriKind.Relative);
             var e2 = new IOException("Test");
             var e = new FileFormatException(partUri, "Test", e2);
-            Assert.NotNull(e);
+            Assert.Equal("Test", e.Message);
+            Assert.Same(partUri, e.SourceUri);
+            Assert.Same(e2, e.InnerException);
         }
 
         [Fact]
