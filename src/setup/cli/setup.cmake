@@ -37,6 +37,12 @@ else()
     add_compile_options(-Wno-unused-local-typedef)
 endif()
 
+# This is required to map a symbol reference to a matching definition local to the module (.so)
+# containing the reference instead of using definitions from other modules.
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
+endif()
+
 if(CLI_CMAKE_PLATFORM_ARCH_I386)
     add_definitions(-D_TARGET_X86_=1)
 elseif(CLI_CMAKE_PLATFORM_ARCH_AMD64)
