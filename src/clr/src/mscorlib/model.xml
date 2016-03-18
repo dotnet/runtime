@@ -69,7 +69,8 @@
       <Member Name="CreateInstance&lt;T&gt;" />
       <Member Name="CreateInstance(System.Type,System.Boolean)"/>
     </Type>
-    <Type Status="ImplRoot" Name="System.AppDomain">
+    <Type Name="System.AppDomain">
+      <Member Name="get_CurrentDomain" />
       <Member Status="ImplRoot" Name="get_MonitoringIsEnabled" />
       <Member Status="ImplRoot" Name="set_MonitoringIsEnabled(System.Boolean)" />
       <Member Status="ImplRoot" Name="get_MonitoringTotalProcessorTime" />
@@ -109,6 +110,11 @@
       <Member Name="OnDesignerNamespaceResolveEvent(System.String)" Condition="FEATURE_COMINTEROP" />
       <Member MemberType="Property" Name="BaseDirectory" />
       <Member Name="get_BaseDirectory" />
+    </Type>
+    <Type Name="System.AppDomainManager">
+      <Member Name="#ctor" />
+      <Member Name="InitializeNewDomain(System.AppDomainSetup)" />
+      <Member Name="CheckSecuritySettings(System.Security.SecurityState)" />
     </Type>
     <Type Name="System.AppDomainUnloadedException">
       <Member Name="#ctor" />
@@ -3410,6 +3416,8 @@
       <Member Name="IsDynamic" MemberType="Property" />
       <Member Name="Load(System.Reflection.AssemblyName)" />
       <Member Name="Load(System.String)" />
+      <Member Name="Load(System.Byte[])" />
+      <Member Name="Load(System.Byte[],System.Byte[])" />
       <Member Name="ToString" />
       <Member MemberType="Property" Name="DefinedTypes" />
       <Member MemberType="Property" Name="CustomAttributes" />
@@ -3453,6 +3461,8 @@
       <Member Status="ImplRoot" MemberType="Field" Name="m_assembly" />
       <Member Status="ImplRoot" Name="OnModuleResolveEvent(System.String)" /> <!-- EE -->
       <Member Status="ImplRoot" MemberType="Property" Name="DefinedTypes" />
+      <!-- On Windows Phone Assembly.LoadFrom throws a NotSupportedException.  Prevent this internal helper from being stripped by the rewriter so that tests may reflect and call it since they need LoadFrom functionality -->
+      <Member Status="ImplRoot" Name="InternalLoadFrom(System.String,System.Security.Policy.Evidence,System.Byte[],System.Configuration.Assemblies.AssemblyHashAlgorithm,System.Boolean,System.Boolean,System.Threading.StackCrawlMark@)" Condition="FEATURE_WINDOWSPHONE" />
     </Type>
     <Type Name="System.Reflection.TypeInfo">
       <Member Name="#ctor" />      
@@ -7981,6 +7991,26 @@
       <Member MemberType="Property" Name="Length" />
       <Member MemberType="Property" Name="Position" />
       <Member Status="ApiFxInternal" Name="InternalGetOriginAndLength(System.Int32@,System.Int32@)" Condition="FEATURE_COMINTEROP" />
+    </Type>
+    <Type Name="System.IO.Path">
+      <Member MemberType="Field" Name="AltDirectorySeparatorChar" />
+      <Member MemberType="Field" Name="DirectorySeparatorChar" />
+      <Member MemberType="Field" Name="PathSeparator" />
+      <Member MemberType="Field" Name="VolumeSeparatorChar" />
+      <Member Name="ChangeExtension(System.String,System.String)" />
+      <Member Name="Combine(System.String,System.String)" />
+      <Member Name="Combine(System.String,System.String,System.String)"  />
+      <Member Name="Combine(System.String[])"  />
+      <Member Name="GetDirectoryName(System.String)" />
+      <Member Name="GetExtension(System.String)" />
+      <Member Name="GetFileName(System.String)" />
+      <Member Name="GetFileNameWithoutExtension(System.String)" />
+      <Member Name="GetFullPath(System.String)" />
+      <Member Name="GetInvalidPathChars" />
+      <Member Name="GetInvalidFileNameChars"  />
+      <Member Name="GetPathRoot(System.String)" />
+      <Member Name="HasExtension(System.String)" />
+      <Member Name="IsPathRooted(System.String)" />
     </Type>
     <Type Name="System.IO.PathTooLongException">
       <Member Name="#ctor" />
