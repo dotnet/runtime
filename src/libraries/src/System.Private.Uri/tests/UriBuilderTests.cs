@@ -9,6 +9,34 @@ namespace System.Tests
 {
     public class UriBuilderTests
     {
+        //This test tests a case where the Core implementation of UriBuilder differs from Desktop Framework UriBuilder.
+        //The Query property will not longer prepend a ? character if the string being assigned is already prepended.
+        [Fact]
+        public static void TestQuery()
+        {
+            var uriBuilder = new UriBuilder(@"http://foo/bar/baz?date=today");
+
+            Assert.Equal("?date=today", uriBuilder.Query);
+
+            uriBuilder.Query = "?date=yesterday";
+            Assert.Equal(@"?date=yesterday", uriBuilder.Query);
+
+            uriBuilder.Query = "date=tomorrow";
+            Assert.Equal("?date=tomorrow", uriBuilder.Query);
+
+            uriBuilder.Query += @"&place=redmond";
+            Assert.Equal("?date=tomorrow&place=redmond", uriBuilder.Query);
+
+            uriBuilder.Query = null;
+            Assert.Equal("", uriBuilder.Query);
+
+            uriBuilder.Query = "";
+            Assert.Equal("", uriBuilder.Query);
+
+            uriBuilder.Query = "?";
+            Assert.Equal("?", uriBuilder.Query);
+        }
+        
         [Fact]
         public void Ctor_Empty()
         {
@@ -119,7 +147,6 @@ namespace System.Tests
         [InlineData("http", "[::1]", 40, "/", "#fragment?query", "http", "[::1]", "/", "", "#fragment?query")]
         [InlineData("https", "::1]", 60, "/path1/", "?query", "https", "[::1]]", "/path1/", "?query", "")]
         [InlineData("http", "::1", 80, null, "#fragment", "http", "[::1]", "/", "", "#fragment")]
-        [InlineData("http1:http2", "host", 100, "path1", "??query##fragment", "http1", "host", "path1", "??query", "##fragment")]
         [InlineData("http", "", 120, "path1/path2", "?#", "http", "", "path1/path2", "", "")]
         [InlineData("", "host", 140, "path1/path2/path3/", "?", "", "host", "path1/path2/path3/", "", "")]
         [InlineData("", "", 160, @"\path1\path2\path3", "#", "", "", "/path1/path2/path3", "", "")]
@@ -246,7 +273,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData("query", "?query")]
-        [InlineData("?query", "??query")]
         [InlineData("", "")]
         [InlineData(null, "")]
         public void Query_Get_Set(string value, string expected)
