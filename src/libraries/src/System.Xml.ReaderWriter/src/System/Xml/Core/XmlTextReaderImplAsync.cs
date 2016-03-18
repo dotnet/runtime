@@ -972,7 +972,7 @@ namespace System.Xml
 
         private Task SwitchEncodingToUTF8Async()
         {
-            return SwitchEncodingAsync(new UTF8Encoding(true, true));
+            return SwitchEncodingAsync(UTF8BomThrowing);
         }
 
         // Reads more data to the character buffer, discarding already parsed chars / decoded bytes.
