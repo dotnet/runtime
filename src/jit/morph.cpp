@@ -2587,13 +2587,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
     regMaskTP       fltArgSkippedRegMask = RBM_NONE;
 #endif
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-    // On x64, every argument takes up exactly 1 slot, regardless of type.
-    // Only the first 4 slots are enregistered.
-    const unsigned  maxRegArgs    = MAX_REG_ARG;
-#elif defined(_TARGET_X86_)
-    unsigned        maxRegArgs    = MAX_REG_ARG;
-#endif
+#if defined(_TARGET_X86_)
+    unsigned        maxRegArgs    = MAX_REG_ARG;  // X86: non-const, must be calculated
+#else
+    const unsigned  maxRegArgs    = MAX_REG_ARG;  // other arch: fixed constant number 
+#endif 
 
     unsigned        argSlots          = 0;
     unsigned        nonRegPassedStructSlots = 0;
@@ -3124,12 +3122,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     {
                         size = 1;  // Large structs are passed by reference (to a copy)
                     }
-                    // TODO-ARM64-NYI:  There are some additional rules for size=2 structs,
+                    // Note that there are some additional rules for size=2 structs,
                     // (i.e they cannot be split betwen registers and the stack)
                 }
                 else
                 {
-                    size = 1; // On ARM64, all primitives fit in a single (64-bit) 'slot'
+                    size = 1; // On ARM64, all primitive types fit in a single (64-bit) 'slot'
                 }
 #elif defined(_TARGET_ARM_)
                 if (isStructArg)
@@ -3415,7 +3413,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 }
             }
 
-            // This size has now been computed
+            // The 'size' value has now must have been set. (the original value of zero is an invalid value)
             assert(size != 0);
 
             //
@@ -3468,7 +3466,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 {
                     isRegArg = intArgRegNum < MAX_REG_ARG;
                 }
-#else // _TARGET_ARM_
+#elif _TARGET_ARM64_
+                if (passUsingFloatRegs)
+                {
+                    // Check if the last register needed is still in the fp argument register range.
+                    isRegArg = (nextFltArgRegNum + (size - 1)) < MAX_FLOAT_REG_ARG;
+                }
+                else
+                {
+                    // Check if the last register needed is still in the int argument register range.
+                    isRegArg = (intArgRegNum + (size - 1)) < maxRegArgs;
+                }
+#else // not _TARGET_ARM_ or _TARGET_ARM64_
+
 #if defined(UNIX_AMD64_ABI)
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
