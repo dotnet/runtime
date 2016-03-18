@@ -110,6 +110,9 @@
     <ClInclude Include="..\mono\utils\mono-dl.h" />
     <ClInclude Include="..\mono\utils\mono-error-internals.h" />
     <ClInclude Include="..\mono\utils\mono-error.h" />
+    <ClInclude Include="..\mono\utils\mono-log-windows.c" />
+    <ClInclude Include="..\mono\utils\mono-log-common.c" />
+    <ClInclude Include="..\mono\utils\mono-log-posix.c" />
     <ClInclude Include="..\mono\utils\mono-internal-hash.h" />
     <ClInclude Include="..\mono\utils\mono-io-portability.h" />
     <ClInclude Include="..\mono\utils\mono-linked-list-set.h" />

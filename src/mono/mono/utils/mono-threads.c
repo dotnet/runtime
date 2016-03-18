@@ -231,14 +231,14 @@ mono_threads_wait_pending_operations (void)
 		for (i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			InterlockedIncrement (&waits_done);
-			if (!mono_os_sem_timedwait (&suspend_semaphore, SLEEP_DURATION_BEFORE_ABORT, MONO_SEM_FLAGS_NONE))
+			if (!mono_os_sem_timedwait (&suspend_semaphore, sleepAbortDuration, MONO_SEM_FLAGS_NONE))
 				continue;
 			mono_stopwatch_stop (&suspension_time);
 
 			dump_threads ();
 
 			MOSTLY_ASYNC_SAFE_PRINTF ("WAITING for %d threads, got %d suspended\n", (int)pending_suspends, i);
-			g_error ("suspend_thread suspend took %d ms, which is more than the allowed %d ms", (int)mono_stopwatch_elapsed_ms (&suspension_time), SLEEP_DURATION_BEFORE_ABORT);
+			g_error ("suspend_thread suspend took %d ms, which is more than the allowed %d ms", (int)mono_stopwatch_elapsed_ms (&suspension_time), sleepAbortDuration);
 		}
 		mono_stopwatch_stop (&suspension_time);
 		THREADS_SUSPEND_DEBUG ("Suspending %d threads took %d ms.\n", (int)pending_suspends, (int)mono_stopwatch_elapsed_ms (&suspension_time));
