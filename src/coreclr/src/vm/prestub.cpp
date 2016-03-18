@@ -780,15 +780,19 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     CONTRACT_END;
 
     SigTypeContext typeContext;
+    MethodTable* pStubMT;
     if (pTargetMD->HasMethodInstantiation())
     {
         // The pHiddenArg shall be a MethodDesc*
-        SigTypeContext::InitTypeContext(static_cast<MethodDesc *>(pHiddenArg), &typeContext);
+        MethodDesc* pMD = static_cast<MethodDesc *>(pHiddenArg);
+        SigTypeContext::InitTypeContext(pMD, &typeContext);
+        pStubMT = pMD->GetMethodTable();
     }
     else
     {
         // The pHiddenArg shall be a MethodTable*
         SigTypeContext::InitTypeContext(TypeHandle::FromPtr(pHiddenArg), &typeContext);
+        pStubMT = static_cast<MethodTable *>(pHiddenArg);
     }
 
     MetaSig msig(pTargetMD);
@@ -837,7 +841,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pTargetMD->GetSig(&pSig,&cbSig);
     PTR_Module pLoaderModule = pTargetMD->GetLoaderModule();
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pTargetMD->GetLoaderAllocator(),
-                                                            pLoaderModule->GetILStubCache()->GetOrCreateStubMethodTable(pLoaderModule),
+                                                            pStubMT,
                                                             ILSTUB_INSTANTIATINGSTUB, 
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
