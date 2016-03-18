@@ -8,48 +8,45 @@
 
 #include "pal.h"
 #include "trace.h"
-
+#include "deps_format.h"
+#include "deps_entry.h"
 #include "servicing_index.h"
-
-struct deps_entry_t
-{
-    pal::string_t library_type;
-    pal::string_t library_name;
-    pal::string_t library_version;
-    pal::string_t library_hash;
-    pal::string_t asset_type;
-    pal::string_t asset_name;
-    pal::string_t relative_path;
-    bool is_serviceable;
-
-    // Given a "base" dir, yield the relative path in the package layout.
-    bool to_full_path(const pal::string_t& root, pal::string_t* str) const;
-
-    // Given a "base" dir, yield the relative path in the package layout only if
-    // the hash matches contents of the hash file.
-    bool to_hash_matched_path(const pal::string_t& root, pal::string_t* str) const;
-};
+#include "runtime_config.h"
 
 // Probe paths to be resolved for ordering
 struct probe_paths_t
 {
     pal::string_t tpa;
     pal::string_t native;
-    pal::string_t culture;
+    pal::string_t resources;
 };
 
 class deps_resolver_t
 {
 public:
-    deps_resolver_t(const arguments_t& args)
+    deps_resolver_t(const pal::string_t& fx_dir, const runtime_config_t* config, const arguments_t& args)
         : m_svc(args.dotnet_servicing)
-        , m_runtime_svc(args.dotnet_runtime_servicing)
+        , m_fx_dir(fx_dir)
         , m_coreclr_index(-1)
+        , m_portable(config->get_portable())
+        , m_deps(nullptr)
+        , m_fx_deps(nullptr)
     {
-        m_deps_valid = parse_deps_file(args);
+        m_deps_file = args.deps_path;
+        if (m_portable)
+        {
+            m_fx_deps_file = get_fx_deps(fx_dir, config->get_fx_name());
+            m_fx_deps = std::unique_ptr<deps_json_t>(new deps_json_t(false, m_fx_deps_file));
+            m_deps = std::unique_ptr<deps_json_t>(new deps_json_t(true, m_deps_file, m_fx_deps->get_rid_fallback_graph()));
+        }
+        else
+        {
+            m_deps = std::unique_ptr<deps_json_t>(new deps_json_t(false, m_deps_file));
+        }
     }
 
-    bool valid() { return m_deps_valid; }
+
+    bool valid() { return m_deps->is_valid() && (!m_portable || m_fx_deps->is_valid());  }
 
     bool resolve_probe_paths(
       const pal::string_t& app_dir,
@@ -63,11 +60,24 @@ public:
         const pal::string_t& package_dir,
         const pal::string_t& package_cache_dir);
 
+    const pal::string_t& get_fx_deps_file() const
+    {
+        return m_fx_deps_file;
+    }
+    
+    const pal::string_t& get_deps_file() const
+    {
+        return m_deps_file;
+    }
 private:
 
-    bool load();
-
-    bool parse_deps_file(const arguments_t& args);
+    static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
+    {
+        pal::string_t fx_deps = fx_dir;
+        pal::string_t fx_deps_name = pal::to_lower(fx_name) + _X(".deps.json");
+        append_path(&fx_deps, fx_deps_name.c_str());
+        return fx_deps;
+    }
 
     // Resolve order for TPA lookup.
     void resolve_tpa_list(
@@ -86,30 +96,42 @@ private:
         const pal::string_t& clr_dir,
         pal::string_t* output);
 
-    // Populate local assemblies from app_dir listing.
-    void get_local_assemblies(const pal::string_t& dir);
+    // Populate assemblies from the directory.
+    void get_dir_assemblies(
+        const pal::string_t& dir,
+        const pal::string_t& dir_name,
+        std::unordered_map<pal::string_t, pal::string_t>* dir_assemblies);
 
     // Servicing index to resolve serviced assembly paths.
     servicing_index_t m_svc;
 
-    // Runtime servicing directory.
-    pal::string_t m_runtime_svc;
+    // Framework deps file.
+    pal::string_t m_fx_dir;
 
-    // Map of simple name -> full path of local assemblies populated in priority
-    // order of their extensions.
-    std::unordered_map<pal::string_t, pal::string_t> m_local_assemblies;
-
-    // Entries in the dep file
-    std::vector<deps_entry_t> m_deps_entries;
+    // Map of simple name -> full path of local/fx assemblies populated
+    // in priority order of their extensions.
+    std::unordered_map<pal::string_t, pal::string_t> m_sxs_assemblies;
 
     // Special entry for coreclr in the deps entries
     int m_coreclr_index;
 
-    // The dep file path
-    pal::string_t m_deps_path;
+    // The filepath for the app deps
+    pal::string_t m_deps_file;
+    
+    // The filepath for the fx deps
+    pal::string_t m_fx_deps_file;
+
+    // Deps files for the fx
+    std::unique_ptr<deps_json_t> m_fx_deps;
+
+    // Deps files for the app
+    std::unique_ptr<deps_json_t>  m_deps;
 
     // Is the deps file valid
     bool m_deps_valid;
+
+    // Is the deps file portable app?
+    bool m_portable;
 };
 
 #endif // DEPS_RESOLVER_H

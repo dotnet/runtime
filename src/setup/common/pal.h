@@ -15,10 +15,12 @@
 #include <unordered_map>
 #include <memory>
 #include <algorithm>
+#include <cassert>
 
 #if defined(_WIN32)
 
-#include <Windows.h>
+#define NOMINMAX
+#include <windows.h>
 
 #define HOST_EXE_NAME L"corehost.exe"
 #define xerr std::wcerr
@@ -93,10 +95,16 @@ namespace pal
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
 
+    pal::string_t to_string(int value);
+
+    bool getcwd(pal::string_t* recv);
+
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::wcscmp(str1, str2); }
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::wcsncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::_wcsnicmp(str1, str2, len); }
+
+    pal::string_t to_lower(const pal::string_t& in);
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
@@ -126,10 +134,17 @@ namespace pal
     typedef void* dll_t;
     typedef void* proc_t;
 
+    pal::string_t to_string(int value);
+
+    bool getcwd(pal::string_t* recv);
+
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::strcasecmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, int len) { return ::strncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, int len) { return ::strncasecmp(str1, str2, len); }
+
+    pal::string_t to_lower(const pal::string_t& in);
+
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline void err_vprintf(const char_t* format, va_list vl) { ::vfprintf(stderr, format, vl); ::fputc('\n', stderr); }
     inline pal::string_t to_palstring(const std::string& str) { return str; }
