@@ -56,12 +56,19 @@ namespace System.Net.Security
     // Implementation of handles dependable on FreeCredentialsHandle
     //
 #if DEBUG
-    internal sealed class SafeFreeCredentials : DebugSafeHandle
+    internal abstract class SafeFreeCredentials : DebugSafeHandle
     {
 #else
-    internal sealed class SafeFreeCredentials : SafeHandle
+    internal abstract class SafeFreeCredentials : SafeHandle
     {
 #endif
+        protected SafeFreeCredentials(IntPtr handle, bool ownsHandle) : base(handle, ownsHandle)
+        {
+        }
+    }
+
+    internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
+    {
         private SafeX509Handle _certHandle;
         private SafeEvpPKeyHandle _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
@@ -87,7 +94,7 @@ namespace System.Net.Security
             get { return _policy; }
         }
 
-        public SafeFreeCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
+        public SafeFreeSslCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(
@@ -207,14 +214,45 @@ namespace System.Net.Security
     }
 
 #if DEBUG
-    internal sealed class SafeDeleteContext : DebugSafeHandle
+    internal abstract class SafeDeleteContext : DebugSafeHandle
     {
 #else
-    internal sealed class SafeDeleteContext : SafeHandle
+    internal abstract class SafeDeleteContext : SafeHandle
     {
 #endif
-        private readonly SafeFreeCredentials _credential;
-        private readonly SafeSslHandle _sslContext;
+        private SafeFreeCredentials _credential;
+
+        protected SafeDeleteContext(SafeFreeCredentials credential)
+            : base(IntPtr.Zero, true)
+        {
+            Debug.Assert((null != credential), "Invalid credential passed to SafeDeleteContext");
+
+            // When a credential handle is first associated with the context we keep credential
+            // ref count bumped up to ensure ordered finalization. The credential properties
+            // are used in the SSL/NEGO data structures and should survive the lifetime of
+            // the SSL/NEGO context
+            bool ignore = false;
+            _credential = credential;
+            _credential.DangerousAddRef(ref ignore);
+        }
+
+        public override bool IsInvalid
+        {
+            get { return (null == _credential); }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Debug.Assert((null != _credential), "Null credential in SafeDeleteContext");
+            _credential.DangerousRelease();
+            _credential = null;
+            return true;
+        }
+    }
+
+    internal sealed class SafeDeleteSslContext : SafeDeleteContext
+    {
+        private SafeSslHandle _sslContext;
 
         public SafeSslHandle SslContext
         {
@@ -224,18 +262,10 @@ namespace System.Net.Security
             }
         }
 
-        public SafeDeleteContext(SafeFreeCredentials credential, bool isServer, bool remoteCertRequired)
-            : base(IntPtr.Zero, true)
+        public SafeDeleteSslContext(SafeFreeSslCredentials credential, bool isServer, bool remoteCertRequired)
+            : base(credential)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteContext");
-
-            // When a credential handle is first associated with the context we keep credential
-            // ref count bumped up to ensure ordered finalization. The certificate handle and
-            // key handle are used in the SSL data structures and should survive the lifetime of
-            // the SSL context
-            bool gotCredRef = false;
-            _credential = credential;
-            _credential.DangerousAddRef(ref gotCredRef);
+            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
 
             try
             {
@@ -249,11 +279,8 @@ namespace System.Net.Security
             }
             catch(Exception ex)
             {
-                if (gotCredRef)
-                {
-                    _credential.DangerousRelease();
-                }
                 Debug.Write("Exception Caught. - " + ex);
+                Dispose();
                 throw;
             }
         }
@@ -266,26 +293,18 @@ namespace System.Net.Security
             }
         }
 
-        protected override bool ReleaseHandle()
-        {
-            Debug.Assert((null != _credential) && !_credential.IsInvalid, "Invalid credential saved in SafeDeleteContext");
-            _credential.DangerousRelease();
-            return true;
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _sslContext.Dispose();
+                if (null != _sslContext)
+                {
+                    _sslContext.Dispose();
+                    _sslContext = null;
+                }
             }
 
             base.Dispose(disposing);
-        }
-
-        public override string ToString()
-        {
-            return IsInvalid ? String.Empty : handle.ToString();
         }
     }
 
