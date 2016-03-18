@@ -79,8 +79,10 @@ def static setMachineAffinity(def job, def os, def architecture) {
         job.with {
             label('arm64')
         }
+    } else if ((architecture == 'arm' || architecture == 'arm64') && os == 'Ubuntu') {
+        Utilities.setMachineAffinity(job, os, 'arm-cross-latest');
     } else {
-        return Utilities.setMachineAffinity(job, os, 'latest-or-auto');
+        Utilities.setMachineAffinity(job, os, 'latest-or-auto');
     }
 }
 
