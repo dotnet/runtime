@@ -415,3 +415,5 @@ extern "C" Error SystemNative_WaitForSocketEvents(int32_t port, SocketEvent* buf
 extern "C" int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo();
 
 extern "C" char* SystemNative_GetPeerUserName(intptr_t socket);
+
+extern "C" void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
