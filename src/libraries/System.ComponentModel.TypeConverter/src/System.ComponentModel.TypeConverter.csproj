@@ -37,7 +37,7 @@
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
-    <!--<Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />-->
+    <Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
@@ -85,7 +85,7 @@
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
-    <!--<Compile Include="System\ComponentModel\WeakHashtable.cs" />-->
+    <Compile Include="System\ComponentModel\WeakHashtable.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">

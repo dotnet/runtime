@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.ComponentModel {
-    using System;
-    using System.Collections;
-    using System.Reflection;
-    using System.Security.Permissions;
+using System.Collections;
 
+namespace System.ComponentModel {
     /// <devdoc>
     ///     This is a simple type description provider that, when invoked demand
     ///     locates the correct type description provider for the given type and
@@ -15,14 +12,12 @@ namespace System.ComponentModel {
     ///     based providers.  Conceptually it "links" the provider list for one type
     ///     or instance to its corresponding base type.
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     internal sealed class DelegatingTypeDescriptionProvider : TypeDescriptionProvider 
     {
         private Type _type;
 
         /// <devdoc>
-        ///     Creates a new DelegatingTypeDescriptionProvider.  The type is the
-        ///     type we will delegate to.
+        ///     Creates a new DelegatingTypeDescriptionProvider.  The type is the type we will delegate to.
         /// </devdoc>
         internal DelegatingTypeDescriptionProvider(Type type)
         {
@@ -134,4 +129,3 @@ namespace System.ComponentModel {
         }
     }
 }
-

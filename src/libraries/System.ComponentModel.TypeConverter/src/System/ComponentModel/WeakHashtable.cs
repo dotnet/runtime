@@ -2,26 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
+using System.Collections;
 
 namespace System.ComponentModel
 {
-    using System;
-    using System.Collections;
-    using System.Security.Permissions;
-
     /// <devdoc>
     ///     This is a hashtable that stores object keys as weak references.  
     ///     It monitors memory usage and will periodically scavenge the
     ///     hash table to clean out dead references.
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     internal sealed class WeakHashtable : Hashtable
     {
-        private static IEqualityComparer s_comparer = new WeakKeyComparer();
+        private static readonly IEqualityComparer s_comparer = new WeakKeyComparer();
 
         private long _lastGlobalMem;
         private int _lastHashCount;
@@ -211,19 +203,5 @@ namespace System.ComponentModel
                 return _hashCode;
             }
         }
-
-        /* The folowing code has been removed to prevent FXCOP violation
-           It is left here incase it needs to be resurected
-        /// <devdoc>
-        ///     Override of add that wraps a weak reference around the
-        ///     key and performs a scavenge.
-        /// </devdoc>
-        public void AddWeak(object key, object value)
-        {
-            ScavengeKeys();
-            base.Add(new EqualityWeakReference(key), value);
-        }
-        */
     }
 }
-
