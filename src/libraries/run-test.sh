@@ -295,7 +295,7 @@ do
         ((serverGC = 1))
         ;;
         --outerloop)
-        OuterLoop="-trait category=outerloop"
+        OuterLoop=""
         ;;
         *)
         ;;
