@@ -222,6 +222,18 @@ isMSBuildOnNETCoreSupported()
     fi
 }
 
+build_mscorlib_ni()
+{
+    if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
+        echo "Generating native image for mscorlib."
+        $__BinDir/crossgen $__BinDir/mscorlib.dll
+        if [ $? -ne 0 ]; then
+            echo "Failed to generate native image for mscorlib."
+            exit 1
+        fi
+    fi
+}
+
 build_mscorlib()
 {
 
@@ -251,16 +263,20 @@ build_mscorlib()
 
     # The cross build generates a crossgen with the target architecture.
     if [ $__CrossBuild != 1 ]; then
-       if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
-           echo "Generating native image for mscorlib."
-           $__BinDir/crossgen $__BinDir/mscorlib.dll
-           if [ $? -ne 0 ]; then
-               echo "Failed to generate native image for mscorlib."
-               exit 1
-           fi
+       # The architecture of host pc must be same architecture with target.
+       if [[ ( "$__HostArch" == "$__BuildArch" ) ]]; then
+           build_mscorlib_ni
+       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
+           build_mscorlib_ni
+       elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+           build_mscorlib_ni
+       else 
+	   exit 1
        fi
     fi 
 }
+
+
 
 generate_NugetPackages()
 {
@@ -315,25 +331,30 @@ case $CPUName in
     i686)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=x86
+        __HostArch=x86
         ;;
 
     x86_64)
         __BuildArch=x64
+        __HostArch=x64
         ;;
 
     armv7l)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm
+        __HostArch=arm
         ;;
 
     aarch64)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm64
+        __HostArch=arm64
         ;;
 
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __BuildArch=x64
+        __HostArch=x64
         ;;
 esac
 
