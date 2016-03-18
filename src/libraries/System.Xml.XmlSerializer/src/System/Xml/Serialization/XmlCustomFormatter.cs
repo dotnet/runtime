@@ -29,7 +29,14 @@ namespace System.Xml.Serialization
         internal static string FromTime(DateTime value)
         {
             string dateFormat = value.Kind == DateTimeKind.Utc ? "HH:mm:ss.fffffffZ" : "HH:mm:ss.fffffffzzzzzz";
-            return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, dateFormat);
+
+            // On Desktop we do the following convertion by calling XmlConvert.ToString(DateTime value, string format).
+            // This overload, however,  is not available on CoreFx. Calling XmlConvert.ToString(value, format) would
+            // end up using XmlConvert.ToString(DateTimeOffset value, string format), which would generated differnt result.
+            // Therefore here we directly use DateTime.ToString which is used by XmlConvert.ToString(DateTime, string)
+            // on Desktop.
+            DateTime dateTimeValue = DateTime.MinValue + value.TimeOfDay;
+            return dateTimeValue.ToString(dateFormat, DateTimeFormatInfo.InvariantInfo);
         }
 
         internal static string FromDateTime(DateTime value)
