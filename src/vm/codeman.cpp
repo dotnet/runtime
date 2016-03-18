@@ -1558,7 +1558,7 @@ BOOL EEJitManager::LoadJIT()
     s_ngenCompilerDll = m_JITCompiler;
     
 #if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
-    // If COMPLUS_UseLegacyJit=1, then we fall back to compatjit.dll.
+    // If COMPlus_UseLegacyJit=1, then we fall back to compatjit.dll.
     //
     // This fallback mechanism was introduced for Visual Studio "14" Preview, when JIT64 (the legacy JIT) was replaced with
     // RyuJIT. It was desired to provide a fallback mechanism in case comptibility problems (or other bugs)
@@ -1567,7 +1567,7 @@ BOOL EEJitManager::LoadJIT()
     //
     // If this is a compilation process, then we don't allow specifying a fallback JIT. This is a case where, when NGEN'ing,
     // we sometimes need to JIT some things (such as when we are NGEN'ing mscorlib). In that case, we want to use exactly
-    // the same JIT as NGEN uses. And NGEN doesn't follow the COMPLUS_UseLegacyJit=1 switch -- it always uses clrjit.dll.
+    // the same JIT as NGEN uses. And NGEN doesn't follow the COMPlus_UseLegacyJit=1 switch -- it always uses clrjit.dll.
     //
     // Note that we always load and initialize the default JIT. This is to handle cases where obfuscators rely on
     // LoadLibrary("clrjit.dll") returning the module handle of the JIT, and then they call GetProcAddress("getJit") to get
@@ -1644,7 +1644,7 @@ BOOL EEJitManager::LoadJIT()
 
 #ifdef ALLOW_SXS_JIT
 
-    // Do not load altjit.dll unless COMPLUS_AltJit is set.
+    // Do not load altjit.dll unless COMPlus_AltJit is set.
     // Even if the main JIT fails to load, if the user asks for an altjit we try to load it.
     // This allows us to display load error messages for loading altjit.
 

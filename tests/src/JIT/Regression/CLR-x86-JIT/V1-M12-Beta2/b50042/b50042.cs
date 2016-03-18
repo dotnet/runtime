@@ -4,8 +4,8 @@
 //
 
 /*
-set COMPLUS_JitNoRegLoc=1
-set COMPLUS_JitSched=2
+set COMPlus_JitNoRegLoc=1
+set COMPlus_JitSched=2
 */
 namespace Test
 {
