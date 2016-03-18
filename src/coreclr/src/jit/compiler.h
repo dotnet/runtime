@@ -2521,10 +2521,15 @@ public :
     unsigned             lvaPSPSym;           // variable representing the PSPSym
 #endif
 
-    InlineInfo         * impInlineInfo;      
+    InlineInfo*          impInlineInfo;
 
     // Get the maximum IL size allowed for an inline
     unsigned             getImpInlineSize() const { return impInlineSize; }
+
+#ifdef DEBUG
+    unsigned             getInlinedCount() const { return fgInlinedCount; }
+    InlinePolicy*        inlLastSuccessfulPolicy;
+#endif
 
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
@@ -7565,6 +7570,7 @@ public :
 #ifdef DEBUG
 
     static bool             s_dspMemStats;    // Display per-phase memory statistics for every function
+    static bool             s_inlDumpDataHeader;  // Print header schema for inline data
 
     template<typename T>
     T dspPtr(T p)
