@@ -6,6 +6,7 @@
     <Version>4.0.1</Version>
     <!-- use the same naming convention as a runtime package, but don't treat as a runtime dependency -->
     <IdPrefix>runtime.win7-$(PackagePlatform).</IdPrefix>
+    <PackagePlatforms>x64;x86</PackagePlatforms>
   </PropertyGroup>
 
   <!-- These paths are not built in CoreFx, enable when fixing https://github.com/dotnet/corefx/issues/826 -->
