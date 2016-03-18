@@ -200,6 +200,41 @@
             "#import": [ "rhel.7.1", "rhel.7.1-x64" ]
         },
 
+        "ol": {
+            "#import": [ "rhel" ]
+        },
+        "ol-x64": {
+            "#import": [ "ol", "rhel-x64" ]
+        },
+
+        "ol.7": {
+            "#import": [ "ol", "rhel.7" ]
+        },
+        "ol.7-x64": {
+            "#import": [ "ol.7", "ol-x64", "rhel.7-x64" ]
+        },
+
+        "ol.7.0": {
+            "#import": [ "ol.7", "rhel.7.0-x64" ]
+        },
+        "ol.7.0-x64": {
+            "#import": [ "ol.7", "ol.7-x64", "rhel.7.0-x64" ]
+        },
+
+        "ol.7.1": {
+            "#import": [ "ol.7.0", "rhel.7.1" ]
+        },
+        "ol.7.1-x64": {
+            "#import": [ "ol.7.0", "ol.7.0-x64", "rhel.7.1-x64" ]
+        },
+
+        "ol.7.2": {
+            "#import": [ "ol.7.1", "rhel.7.2" ]
+        },
+        "ol.7.2-x64": {
+            "#import": [ "ol.7.1", "ol.7.1-x64", "rhel.7.2-x64" ]
+        },
+
         "centos": {
             "#import": [ "rhel" ]
         },
