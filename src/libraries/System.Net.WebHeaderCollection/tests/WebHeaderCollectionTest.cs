@@ -138,7 +138,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_NullOrEmptyName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>(() => w[name] = "test");
+            Assert.Throws<ArgumentNullException>("name", () => w[name] = "test");
         }
 
         public static object[][] InvalidNames = {
@@ -202,11 +202,13 @@ namespace System.Net.WebHeaderCollectionTests
             Assert.Equal("second", w[secondName]);
         }
 
-        [Fact]
-        public void Remove_BlankName_Throws()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void Remove_NullOrEmptyName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>(() => w.Remove(""));
+            Assert.Throws<ArgumentNullException>("name", () => w.Remove(name));
         }
 
         [Fact]
