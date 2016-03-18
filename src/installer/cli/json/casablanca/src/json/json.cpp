@@ -237,7 +237,7 @@ web::json::value web::json::value::object(bool keep_order)
             );
 }
 
-web::json::value web::json::value::object(std::vector<std::pair<::utility::string_t, value>> fields, bool keep_order)
+web::json::value web::json::value::object(std::vector<std::pair<utility::string_t, value>> fields, bool keep_order)
 {
     std::unique_ptr<details::_Value> ptr = utility::details::make_unique<details::_Object>(std::move(fields), keep_order);
     return web::json::value(std::move(ptr)

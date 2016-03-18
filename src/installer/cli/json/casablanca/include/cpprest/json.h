@@ -313,7 +313,7 @@ public:
         /// <param name="fields">Field names associated with JSON values</param>
         /// <param name="keep_order">Whether to preserve the original order of the fields</param>
         /// <returns>A non-empty JSON object value</returns>
-        static _ASYNCRTIMP json::value __cdecl object(std::vector<std::pair<::utility::string_t, value>> fields, bool keep_order = false);
+        static _ASYNCRTIMP json::value __cdecl object(std::vector<std::pair<utility::string_t, value>> fields, bool keep_order = false);
 
         /// <summary>
         /// Creates an empty JSON array
