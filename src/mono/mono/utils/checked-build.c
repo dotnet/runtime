@@ -202,12 +202,8 @@ checked_build_thread_transition (const char *transition, void *info, int from_st
 	g_ptr_array_add (state->transitions, t);
 }
 
-#endif /* defined(ENABLE_CHECKED_BUILD_THREAD) */
-
-#ifdef ENABLE_CHECKED_BUILD_GC
-
-static void
-assertion_fail (const char *msg, ...)
+void
+mono_fatal_with_history (const char *msg, ...)
 {
 	int i;
 	GString* err = g_string_sized_new (100);
@@ -258,14 +254,14 @@ assert_gc_safe_mode (void)
 	int state;
 
 	if (!cur)
-		assertion_fail ("Expected GC Safe mode but thread is not attached");
+		mono_fatal_with_history ("Expected GC Safe mode but thread is not attached");
 
 	switch (state = mono_thread_info_current_state (cur)) {
 	case STATE_BLOCKING:
 	case STATE_BLOCKING_AND_SUSPENDED:
 		break;
 	default:
-		assertion_fail ("Expected GC Safe mode but was in %s state", mono_thread_state_name (state));
+		mono_fatal_with_history ("Expected GC Safe mode but was in %s state", mono_thread_state_name (state));
 	}
 }
 
@@ -279,7 +275,7 @@ assert_gc_unsafe_mode (void)
 	int state;
 
 	if (!cur)
-		assertion_fail ("Expected GC Unsafe mode but thread is not attached");
+		mono_fatal_with_history ("Expected GC Unsafe mode but thread is not attached");
 
 	switch (state = mono_thread_info_current_state (cur)) {
 	case STATE_RUNNING:
@@ -287,7 +283,7 @@ assert_gc_unsafe_mode (void)
 	case STATE_SELF_SUSPEND_REQUESTED:
 		break;
 	default:
-		assertion_fail ("Expected GC Unsafe mode but was in %s state", mono_thread_state_name (state));
+		mono_fatal_with_history ("Expected GC Unsafe mode but was in %s state", mono_thread_state_name (state));
 	}
 }
 
@@ -301,7 +297,7 @@ assert_gc_neutral_mode (void)
 	int state;
 
 	if (!cur)
-		assertion_fail ("Expected GC Neutral mode but thread is not attached");
+		mono_fatal_with_history ("Expected GC Neutral mode but thread is not attached");
 
 	switch (state = mono_thread_info_current_state (cur)) {
 	case STATE_RUNNING:
@@ -311,7 +307,7 @@ assert_gc_neutral_mode (void)
 	case STATE_BLOCKING_AND_SUSPENDED:
 		break;
 	default:
-		assertion_fail ("Expected GC Neutral mode but was in %s state", mono_thread_state_name (state));
+		mono_fatal_with_history ("Expected GC Neutral mode but was in %s state", mono_thread_state_name (state));
 	}
 }
 
@@ -346,7 +342,7 @@ assert_not_in_gc_critical_region(void)
 
 	CheckState *state = get_state();
 	if (state->in_gc_critical_region > 0) {
-		assertion_fail("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name (mono_thread_info_current_state (mono_thread_info_current ())));
+		mono_fatal_with_history("Expected GC Unsafe mode, but was in %s state", mono_thread_state_name (mono_thread_info_current_state (mono_thread_info_current ())));
 	}
 }
 
@@ -358,7 +354,7 @@ assert_in_gc_critical_region (void)
 
 	CheckState *state = get_state();
 	if (state->in_gc_critical_region == 0)
-		assertion_fail("Expected GC critical region");
+		mono_fatal_with_history("Expected GC critical region");
 }
 
 #endif /* defined(ENABLE_CHECKED_BUILD_GC) */
