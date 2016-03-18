@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
     "System.Diagnostics.Debug": "4.0.0",
     "System.Runtime": "4.0.0",
     "System.Threading": "4.0.0",
@@ -12,13 +12,17 @@
       "dependencies": {
         "System.Diagnostics.Tracing": "4.0.20"
       },
-      "imports": [ "dotnet5.4" ]
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "netstandard1.1": {
       "dependencies": {
         "System.Diagnostics.Tracing": "4.0.0"
       },
-      "imports": [ "dotnet5.2" ]
+      "imports": [
+        "dotnet5.2"
+      ]
     }
   }
 }
