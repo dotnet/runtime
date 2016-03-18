@@ -121,6 +121,8 @@ const pal::char_t* get_arch()
     return _X("x64");
 #elif _TARGET_X86_
     return _X("x86");
+#elif _TARGET_ARM_
+    return _X("arm");
 #else
 #error "Unknown target"
 #endif
