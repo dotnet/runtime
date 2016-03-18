@@ -3903,9 +3903,15 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         {
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             return type;
-#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#elif defined(_TARGET_ARM_)
+            LclVarDsc varDsc = compiler->lvaTable[varNum];
+            return varDsc.lvIsHfaRegArg ? varDsc.GetHfaType() : varDsc.lvType;
+
+    // TODO-ARM64: Do we need the above to handle HFA structs on ARM64?
+
+#else // !_TARGET_ARM_
             return compiler->lvaTable[varNum].lvType;
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)            
+#endif // !_TARGET_ARM_
         }
     } regArgTab [max(MAX_REG_ARG,MAX_FLOAT_REG_ARG)] = { };
 
@@ -4762,7 +4768,6 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     }
 
     /* Finally take care of the remaining arguments that must be enregistered */
-
     while (regArgMaskLive)
     {
         regMaskTP regArgMaskLiveSave = regArgMaskLive;
