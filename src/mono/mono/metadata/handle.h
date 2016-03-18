@@ -94,7 +94,7 @@ mono_handle_elevate (MonoHandle handle)
 	return mono_handle_arena_elevate (mono_handle_arena_current (), handle);
 }
 
-#ifndef CHECKED_BUILD
+#ifndef ENABLE_CHECKED_BUILD
 
 #define mono_handle_obj(handle) ((handle)->__private_obj)
 
