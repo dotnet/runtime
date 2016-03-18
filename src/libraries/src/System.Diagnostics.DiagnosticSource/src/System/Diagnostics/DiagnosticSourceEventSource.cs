@@ -83,26 +83,26 @@ namespace System.Diagnostics
     /// discover what is available.
     /// 
     /// 
-    /// * How data is loged in the EventSource 
+    /// * How data is logged in the EventSource 
     /// 
     /// By default all data from Diagnostic sources is logged to the the DiagnosticEventSouce event called 'Event' 
     /// which has three fields  
     /// 
     ///     string SourceName, 
     ///     string EventName, 
-    ///     IEnumerable<KeyValuePair<string, string>> Argument
+    ///     IEnumerable[KeyValuePair[string, string]] Argument
     /// 
-    /// However to spport start-stop activity tacking, there are six other events that can be used 
+    /// However to support start-stop activity tracking, there are six other events that can be used 
     /// 
     ///     Activity1Start         
     ///     Activity1Stop
     ///     Activity2Start
     ///     Activity2Stop
-    ///     RecActivity1Start
-    ///     RecActivity1Stop
+    ///     RecursiveActivity1Start
+    ///     RecursiveActivity1Stop
     ///     
     /// By using the SourceName/EventName@EventSourceName syntax, you can force particular DiagnosticSource events to
-    /// be logged with one of these EventSource events.   This is useful because the events above have start-stop sematics
+    /// be logged with one of these EventSource events.   This is useful because the events above have start-stop semantics
     /// which means that they create activity IDs that are attached to all logging messages between the start and
     /// the stop (see https://blogs.msdn.microsoft.com/vancem/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features/)
     /// 
@@ -118,11 +118,11 @@ namespace System.Diagnostics
     /// Simmilarly SecurityStart is mapped to Activity2Start.    
     /// 
     /// Note you can map many DiangosticSource events to the same EventSource Event (e.g. Activity1Start).  As long as the
-    /// activityies don't nest, you can reuse the same event name (since the payloads have the DiagnosticSource name which can
+    /// activities don't nest, you can reuse the same event name (since the payloads have the DiagnosticSource name which can
     /// disambiguate).   However if they nest you need to use another EventSource event because the rules of EventSource 
     /// activities state that a start of the same event terminates any existing activity of the same name.   
     /// 
-    /// As its name suggests RecActivit1Start, is marked as recursive and thus can be used when the activity can nest with 
+    /// As its name suggests RecursiveActivit1Start, is marked as recursive and thus can be used when the activity can nest with 
     /// itself.   This should not be a 'top most' activity because it is not 'self healing' (if you miss a stop, then the
     /// activity NEVER ends).   
     /// 
@@ -183,6 +183,7 @@ namespace System.Diagnostics
         {
             WriteEvent(4, SourceName, EventName, Arguments);
         }
+
         /// <summary>
         /// Used to mark the end of an activity 
         /// </summary>
@@ -191,6 +192,7 @@ namespace System.Diagnostics
         {
             WriteEvent(5, SourceName, EventName, Arguments);
         }
+
         /// <summary>
         /// Used to mark the beginning of an activity 
         /// </summary>
@@ -199,6 +201,7 @@ namespace System.Diagnostics
         {
             WriteEvent(6, SourceName, EventName, Arguments);
         }
+
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.  
         /// </summary>
@@ -207,19 +210,21 @@ namespace System.Diagnostics
         {
             WriteEvent(7, SourceName, EventName, Arguments);
         }
+
         /// <summary>
         /// Used to mark the beginning of an activity 
         /// </summary>
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
         {
             WriteEvent(8, SourceName, EventName, Arguments);
         }
+
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.  
         /// </summary>
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-        private void RecActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
@@ -430,7 +435,7 @@ namespace System.Diagnostics
                 {
                     listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, slashIdx - startIdx);
 
-                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx+1, endEventNameIdx - slashIdx-1);
+                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx+1, endEventNameIdx - slashIdx - 1);
                     if (0 <= atIdx)
                     {
                         activityName = filterAndPayloadSpec.Substring(atIdx + 1, endEventNameIdx - atIdx - 1);
