@@ -51,13 +51,13 @@
     <Compile Include="System\ComponentModel\Int16Converter.cs" />
     <Compile Include="System\ComponentModel\Int32Converter.cs" />
     <Compile Include="System\ComponentModel\Int64Converter.cs" />
-    <!--<Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
     <!--<Compile Include="System\ComponentModel\IExtenderProvider.cs" />-->
     <!--<Compile Include="System\ComponentModel\IListSource.cs" />-->
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
     <!--<Compile Include="System\ComponentModel\ITypeDescriptorFilterService.cs" />-->
     <!--<Compile Include="System\ComponentModel\ITypedList.cs" />-->
-    <!--<Compile Include="System\ComponentModel\MemberDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
     <Compile Include="System\ComponentModel\NullableConverter.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />

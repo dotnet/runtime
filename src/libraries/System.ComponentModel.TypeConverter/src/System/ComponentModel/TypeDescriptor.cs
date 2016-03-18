@@ -21,8 +21,10 @@ namespace System.ComponentModel
         private static Hashtable s_providerTypeTable = new Hashtable();      // A direct mapping from type to provider.
         private static volatile Hashtable s_defaultProviders = new Hashtable();      // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
         private static volatile WeakHashtable s_associationTable;
-        private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild
-                                                                      // attributes.
+#endif
+        // A version stamp for our metadata used by property descriptors to know when to rebuild attributes.
+        private static int s_metadataVersion = 0;
+#if PLACEHOLDER
 
 
         // This is an index that we use to create a unique name for a property in the
@@ -155,6 +157,7 @@ namespace System.ComponentModel
                 return typeof(TypeDescriptorInterface);
             }
         }
+#endif
 
         /// <devdoc>
         ///     This value increments each time someone refreshes or changes metadata.
@@ -167,6 +170,7 @@ namespace System.ComponentModel
             }
         }
 
+#if PLACEHOLDER
         /// <include file='doc\TypeDescriptor.uex' path='docs/doc[@for="TypeDescriptor.Refreshed"]/*' />
         /// <devdoc>
         ///    Occurs when Refreshed is raised for a component.
@@ -631,6 +635,7 @@ namespace System.ComponentModel
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
+#endif
 
         /// <devdoc>
         ///     This method will search internal tables within TypeDescriptor for 
@@ -639,6 +644,9 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
+            throw new NotImplementedException();
+        }
+#if PLACEHOLDER
             if (objectType == null)
             {
                 throw new ArgumentNullException("objectType");
@@ -1268,14 +1276,17 @@ namespace System.ComponentModel
 
             return newMembers;
         }
+#endif
 
         /// <devdoc>
         ///     The GetAssociation method returns the correct object to invoke 
         ///     for the requested type.  It never returns null.  
         /// </devdoc>
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
         {
+            throw new NotImplementedException();
+        }
+#if PLACEHOLDER
             if (type == null)
             {
                 throw new ArgumentNullException("type");
@@ -1683,6 +1694,7 @@ namespace System.ComponentModel
 
             return NodeFor(component).GetExtendedTypeDescriptor(component);
         }
+        #endif
 
         /// <devdoc>
         ///     Gets an editor with the specified base type for the
@@ -1690,6 +1702,9 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object GetEditor(object component, Type editorBaseType)
         {
+            throw new NotImplementedException();
+        }
+#if PLACEHOLDER
             return GetEditor(component, editorBaseType, false);
         }
 
@@ -1958,6 +1973,7 @@ namespace System.ComponentModel
 
             return GetDescriptor(componentType, "componentType").GetProperties();
         }
+#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified type of 
@@ -1965,6 +1981,9 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
         {
+            throw new NotImplementedException();
+        }
+#if PLACEHOLDER
             if (componentType == null)
             {
                 Debug.Fail("COMPAT:  Returning an empty collection, but you should not pass null here");
@@ -2002,6 +2021,7 @@ namespace System.ComponentModel
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
         }
+#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified 
@@ -2010,6 +2030,9 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
+            throw new NotImplementedException();
+        }
+#if PLACEHOLDER
             return GetProperties(component, attributes, false);
         }
 
