@@ -1831,7 +1831,7 @@ void                CodeGen::genCodeForBBlist()
         {
             // Unit testing of the ARM64 emitter: generate a bunch of instructions into the last block
             // (it's as good as any, but better than the prolog, which can only be a single instruction
-            // group) then use COMPLUS_JitLateDisasm=* to see if the late disassembler
+            // group) then use COMPlus_JitLateDisasm=* to see if the late disassembler
             // thinks the instructions are the same as we do.
             genArm64EmitterUnitTests();
         }
@@ -6872,7 +6872,7 @@ void        CodeGen::genSetScopeInfo  (unsigned             which,
 
 /*****************************************************************************
  * Unit testing of the ARM64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use COMPLUS_JitLateDisasm=* to see if the late
+ * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
  * disassembler thinks the instructions as the same as we do.
  */
 

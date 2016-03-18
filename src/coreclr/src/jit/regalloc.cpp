@@ -1243,7 +1243,7 @@ regMaskTP            Compiler::rpPredictRegPick(var_types    type,
                     }
                 }
 #endif
-                // See if COMPLUS_JitRegisterFP is restricting this FP register
+                // See if COMPlus_JitRegisterFP is restricting this FP register
                 //
                 if ((restrictMask & regBits) != regBits)
                     continue;

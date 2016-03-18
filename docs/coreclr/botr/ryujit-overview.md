@@ -523,9 +523,9 @@ will match all methods named Main from any class and any number of arguments.
 
 The wildcard character ‘*’ can be used for <ClassName> and <MethodName>. In particular * by itself indicates every method.
 
-## Useful COMPLUS variables
+## Useful COMPlus variables
 
-Below are some of the most useful `COMPLUS` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specific ‘*’ to mean all methods.
+Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specific ‘*’ to mean all methods.
 
 * `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing (see below).
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
