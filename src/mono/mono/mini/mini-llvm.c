@@ -24,8 +24,6 @@
 #define __STDC_CONSTANT_MACROS
 #endif
 
-#include "llvm-c/Core.h"
-#include "llvm-c/ExecutionEngine.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
 
