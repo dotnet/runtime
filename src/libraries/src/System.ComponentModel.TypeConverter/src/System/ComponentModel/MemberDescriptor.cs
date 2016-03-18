@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System;
 using System.Collections;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Reflection;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
@@ -19,13 +15,11 @@ namespace System.ComponentModel
     ///       All attributes must derive from <see cref='System.Attribute'/>.
     ///    </para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MemberDescriptor
     {
-        private string _name;
-        private string _displayName;
-        private int _nameHash;
+        private readonly string _name;
+        private readonly string _displayName;
+        private readonly int _nameHash;
         private AttributeCollection _attributeCollection;
         private Attribute[] _attributes;
         private Attribute[] _originalAttributes;
@@ -36,12 +30,9 @@ namespace System.ComponentModel
         private string _description;
         private object _lockCookie = new object();
 
-
         /// <devdoc>
         ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name
-        ///       "/> and no
-        ///       attributes.
+        ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and no attributes.
         ///    </para>
         /// </devdoc>
         protected MemberDescriptor(string name) : this(name, null)
@@ -50,35 +41,27 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/>
-        ///       and <paramref name="attributes "/>
-        ///       array.
+        ///       Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and <paramref name="attributes "/> array.
         ///    </para>
         /// </devdoc>
         protected MemberDescriptor(string name, Attribute[] attributes)
         {
-            try
+            if (name == null || name.Length == 0)
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.GetString(SR.InvalidMemberName));
-                }
-                _name = name;
-                _displayName = name;
-                _nameHash = name.GetHashCode();
-                if (attributes != null)
-                {
-                    _attributes = attributes;
-                    _attributesFiltered = false;
-                }
+                throw new ArgumentException(SR.InvalidMemberName);
+            }
 
-                _originalAttributes = _attributes;
-            }
-            catch (Exception t)
+            _name = name;
+            _displayName = name;
+            _nameHash = name.GetHashCode();
+
+            if (attributes != null)
             {
-                Debug.Fail(t.ToString());
-                throw t;
+                _attributes = attributes;
+                _attributesFiltered = false;
             }
+
+            _originalAttributes = _attributes;
         }
 
         /// <devdoc>
@@ -187,12 +170,10 @@ namespace System.ComponentModel
             }
         }
 
-
         /// <devdoc>
         ///    <para>
-        ///       Gets the name of the category that the
-        ///       member
-        ///       belongs to, as specified in the <see cref='System.ComponentModel.CategoryAttribute'/>.
+        ///       Gets the name of the category that the member belongs to, as specified 
+        ///       in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         ///    </para>
         /// </devdoc>
         public virtual string Category
@@ -201,7 +182,9 @@ namespace System.ComponentModel
             {
                 if (_category == null)
                 {
+#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                     _category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]).Category;
+#endif
                 }
                 return _category;
             }
@@ -219,7 +202,9 @@ namespace System.ComponentModel
             {
                 if (_description == null)
                 {
+#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                     _description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]).Description;
+#endif
                 }
                 return _description;
             }
@@ -235,7 +220,10 @@ namespace System.ComponentModel
         {
             get
             {
+#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                 return ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
+#endif
+                return false;
             }
         }
 
@@ -281,7 +269,10 @@ namespace System.ComponentModel
         {
             get
             {
+#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                 return (DesignOnlyAttribute.Yes.Equals(Attributes[typeof(DesignOnlyAttribute)]));
+#endif
+                return false;
             }
         }
 
@@ -295,12 +286,15 @@ namespace System.ComponentModel
         {
             get
             {
+#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                 DisplayNameAttribute displayNameAttr = Attributes[typeof(DisplayNameAttribute)] as DisplayNameAttribute;
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
                 {
                     return _displayName;
                 }
                 return displayNameAttr.DisplayName;
+#endif
+                return null;
             }
         }
 
@@ -433,13 +427,9 @@ namespace System.ComponentModel
                     {
                         FillAttributes(list);
                     }
-                    catch (System.Threading.ThreadAbortException)
-                    {
-                        throw;
-                    }
                     catch (Exception e)
                     {
-                        Debug.Fail(_name + ">>" + e.ToString());
+                        Debug.Fail($"{_name}>>{e}");
                     }
                 }
                 else
@@ -451,7 +441,11 @@ namespace System.ComponentModel
 
                 foreach (Attribute attr in list)
                 {
+#if FEATURE_ATTRIBUTE_TYPEID
                     hash[attr.TypeId] = attr;
+#else
+                    hash[attr.GetType()] = attr;
+#endif
                 }
 
                 Attribute[] newAttributes = new Attribute[hash.Values.Count];
@@ -488,13 +482,16 @@ namespace System.ComponentModel
 
             if (publicOnly)
             {
-                result = componentClass.GetMethod(name, args);
+                result = componentClass.GetTypeInfo().GetMethod(name, args);
             }
             else
             {
-                result = componentClass.GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
+#if FEATURE_GETMETHOD_WITHTYPES
+                // This requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not available on .NET Core
+                result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
+#endif
             }
-            if (result != null && !result.ReturnType.IsEquivalentTo(returnType))
+            if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
             {
                 result = null;
             }
@@ -520,12 +517,12 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             return TypeDescriptor.GetAssociation(type, instance);
@@ -545,29 +542,6 @@ namespace System.ComponentModel
             }
 
             return ((IComponent)component).Site;
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       the component
-        ///       that a method should be invoked on.
-        ///    </para>
-        /// </devdoc>
-        [Obsolete("This method has been deprecated. Use GetInvocationTarget instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        protected static object GetInvokee(Type componentClass, object component)
-        {
-            if (componentClass == null)
-            {
-                throw new ArgumentNullException("componentClass");
-            }
-
-            if (component == null)
-            {
-                throw new ArgumentNullException("component");
-            }
-
-            return TypeDescriptor.GetAssociation(componentClass, component);
         }
     }
 }
