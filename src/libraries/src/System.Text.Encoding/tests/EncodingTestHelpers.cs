@@ -210,7 +210,7 @@ namespace System.Text.Tests
         public static string GetString(int length) => GetString(length, length);
         public static string GetString(int minLength, int maxLength) => s_randomGenerator.GetString(-55, false, minLength, maxLength);
 
-        public static string GetUnicodeString(int length)
+        public static string GetRandomString(int length)
         {
             string result = string.Empty;
             int i = 0;

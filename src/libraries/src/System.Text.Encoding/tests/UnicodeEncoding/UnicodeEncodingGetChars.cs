@@ -13,7 +13,7 @@ namespace System.Text.Tests
 
         public static IEnumerable<object[]> GetChars_TestData()
         {
-            string randomString = EncodingHelpers.GetUnicodeString(10);
+            string randomString = EncodingHelpers.GetRandomString(10);
             byte[] randomBytesBasic = new UnicodeEncoding().GetBytes(randomString);
 
             yield return new object[] { randomBytesBasic, 0, randomBytesBasic.Length, new char[randomString.Length], 0, randomBytesBasic.Length / 2 };
