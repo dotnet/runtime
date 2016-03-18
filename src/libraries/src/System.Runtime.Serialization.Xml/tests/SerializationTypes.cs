@@ -1285,7 +1285,7 @@ namespace SerializationTypes
         }
     }
 
-    public class DateTimeDataTypeTimeType
+    public class TypeWithDateTimePropertyAsXmlTime
     {
         DateTime _value;
 
