@@ -130,7 +130,7 @@ RelativePath=GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.exe
 WorkingDir=GC\Scenarios\FinalizeTimeout\FinalizeTimeout
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;ISSUE_3515
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=Any
 [MarshalBoolArrayTest.exe_19]
 RelativePath=Interop\ArrayMarshalling\BoolArray\MarshalBoolArrayTest\MarshalBoolArrayTest.exe
@@ -3938,7 +3938,11 @@ RelativePath=JIT\Directed\perffix\primitivevt\mixed1_cs_ro\mixed1_cs_ro.exe
 WorkingDir=JIT\Directed\perffix\primitivevt\mixed1_cs_ro
 Expected=100
 MaxAllowedDurationSeconds=600
+<<<<<<< HEAD
+Categories=Pri0;EXPECTED_PASS;ISSUE_3747;DBG_PASS;REL_PASS
+=======
 Categories=Pri0;EXPECTED_PASS
+>>>>>>> master
 HostStyle=Any
 [mixed2_cs_d.exe_563]
 RelativePath=JIT\Directed\perffix\primitivevt\mixed2_cs_d\mixed2_cs_d.exe
@@ -12212,28 +12216,28 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i84\mcc_i84.exe
 WorkingDir=JIT\jit64\mcc\interop\mcc_i84
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;EXPECTED_PASS;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [mcc_i85.exe_1745]
 RelativePath=JIT\jit64\mcc\interop\mcc_i85\mcc_i85.exe
 WorkingDir=JIT\jit64\mcc\interop\mcc_i85
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;EXPECTED_PASS;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [mcc_i86.exe_1746]
 RelativePath=JIT\jit64\mcc\interop\mcc_i86\mcc_i86.exe
 WorkingDir=JIT\jit64\mcc\interop\mcc_i86
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;EXPECTED_PASS;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [mcc_i87.exe_1747]
 RelativePath=JIT\jit64\mcc\interop\mcc_i87\mcc_i87.exe
 WorkingDir=JIT\jit64\mcc\interop\mcc_i87
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;EXPECTED_PASS;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [CGRecurseAAA_d.exe_1748]
 RelativePath=JIT\jit64\opt\cg\CGRecurse\CGRecurseAAA_d\CGRecurseAAA_d.exe
@@ -31819,7 +31823,7 @@ RelativePath=JIT\Performance\CodeQuality\Serialization\Deserialize\Deserialize.e
 WorkingDir=JIT\Performance\CodeQuality\Serialization\Deserialize
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE
+Categories=Pri0;EXPECTED_FAIL
 HostStyle=Any
 [Serialize.exe_4546]
 RelativePath=JIT\Performance\CodeQuality\Serialization\Serialize\Serialize.exe
@@ -40681,7 +40685,7 @@ RelativePath=Loader\NativeLibs\FromNativePaths\FromNativePaths.exe
 WorkingDir=Loader\NativeLibs\FromNativePaths
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;RT;EXPECTED_PASS;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [main.exe_5812]
 RelativePath=Loader\regressions\classloader\main\main.exe
@@ -40709,7 +40713,7 @@ RelativePath=managed\Compilation\Compilation\Compilation.exe
 WorkingDir=managed\Compilation\Compilation
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;NATIVE_INTEROP;LONG_RUNNING
+Categories=Pri0;RT;EXPECTED_FAIL;NATIVE_INTEROP
 HostStyle=Any
 [test.exe_5816]
 RelativePath=Regressions\assemblyref\test\test.exe
@@ -58671,7 +58675,7 @@ RelativePath=JIT\Regression\clr-x64-JIT\v4.0\devdiv374539\DevDiv_374539\DevDiv_3
 WorkingDir=JIT\Regression\clr-x64-JIT\v4.0\devdiv374539\DevDiv_374539
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri1;EXPECTED_PASS;LONG_RUNNING
+Categories=Pri1;EXPECTED_PASS
 HostStyle=Any
 [repro177066.exe_8381]
 RelativePath=Loader\binding\assemblies\assemblybugs\177066w\repro177066\repro177066.exe
