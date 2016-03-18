@@ -8,40 +8,13 @@ using Xunit;
 
 public class CharacterClassSubtraction
 {
-    // This tests CharacterClassSubtraction by specifying pattern, input and expected groups
     [Fact]
     public static void CharacterClassSubtractionTestCase()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-
-        try
+        for (int i = 0; i < s_regexTests.Length; i++)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-
-            for (int i = 0; i < s_regexTests.Length; i++)
-            {
-                iCountTestcases++;
-                if (!s_regexTests[i].Run())
-                {
-                    Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2}\n", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
-                    iCountErrors++;
-                }
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
+            Assert.True(s_regexTests[i].Run());
         }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
-        }
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
     }
 
     private static RegexTestCase[] s_regexTests = new RegexTestCase[] {

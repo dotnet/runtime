@@ -14,305 +14,201 @@ public class RegexUnicodeCharTests
 {
     // This test case checks the unicode-aware features in theregex engine.
 
-    private const Int32 MaxUnicodeRange = 2 << 15;//we are adding 0's here?
+    private const int MaxUnicodeRange = 2 << 15;//we are adding 0's here?
 
     [Fact]
     public static void RegexUnicodeChar()
-    {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-
-        Char ch1;
-        List<Char> alstValidChars;
-        List<Char> alstInvalidChars;
-        Int32 iCharCount;
-        Int32 iNonCharCount;
-
-        String pattern;
-        String input;
-        Regex regex;
-        Match match;
-
-        Int32 iNumLoop;
-        Int32 iWordCharLength;
-        Int32 iNonWordCharLength;
-        StringBuilder sbldr1;
-        StringBuilder sbldr2;
-        Random random;
-
-        try
+    {        
+        // Regex engine is Unicode aware now for the \w and \d character classes
+        // \s is not - i.e. it still only recognizes the ASCII space separators, not Unicode ones
+        // The new character classes for this:
+        // [\p{L1}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Pc}]
+        List<char> validChars = new List<char>();
+        List<char> invalidChars = new List<char>();
+        for (int i = 0; i < MaxUnicodeRange; i++)
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-
-            //[]Regex engine is Unicode aware now for the \w and \d character classes
-            // \s is not - i.e. it still only recognizes the ASCII space separators, not Unicode ones
-            // The new character classes for this:
-            //[\p{L1}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Pc}]
-            iCountTestcases++;
-
-            alstValidChars = new List<Char>();
-            alstInvalidChars = new List<Char>();
-            for (int i = 0; i < MaxUnicodeRange; i++)
+            char c = (char)i;
+            switch (CharUnicodeInfo.GetUnicodeCategory(c))
             {
-                ch1 = (Char)i;
-                switch (CharUnicodeInfo.GetUnicodeCategory(ch1))
-                {
-                    case UnicodeCategory.UppercaseLetter:        //Lu
-                    case UnicodeCategory.LowercaseLetter:        //Li
-                    case UnicodeCategory.TitlecaseLetter:        // Lt
-                    case UnicodeCategory.ModifierLetter:         // Lm
-                    case UnicodeCategory.OtherLetter:            // Lo
-                    case UnicodeCategory.DecimalDigitNumber:     // Nd
-                    //                    case UnicodeCategory.LetterNumber:           // ??
-                    //                    case UnicodeCategory.OtherNumber:            // ??
-                    case UnicodeCategory.NonSpacingMark:
-                    //                    case UnicodeCategory.SpacingCombiningMark:   // Mc
-                    case UnicodeCategory.ConnectorPunctuation:   // Pc
-                        alstValidChars.Add(ch1);
-                        break;
-                    default:
-                        alstInvalidChars.Add(ch1);
-                        break;
-                }
+                case UnicodeCategory.UppercaseLetter:        //Lu
+                case UnicodeCategory.LowercaseLetter:        //Li
+                case UnicodeCategory.TitlecaseLetter:        // Lt
+                case UnicodeCategory.ModifierLetter:         // Lm
+                case UnicodeCategory.OtherLetter:            // Lo
+                case UnicodeCategory.DecimalDigitNumber:     // Nd
+                //                    case UnicodeCategory.LetterNumber:           // ??
+                //                    case UnicodeCategory.OtherNumber:            // ??
+                case UnicodeCategory.NonSpacingMark:
+                //                    case UnicodeCategory.SpacingCombiningMark:   // Mc
+                case UnicodeCategory.ConnectorPunctuation:   // Pc
+                    validChars.Add(c);
+                    break;
+                default:
+                    invalidChars.Add(c);
+                    break;
             }
-
-
-
-            //[]\w - we will create strings from valid characters that form \w and make sure that the regex engine catches this.
-            //Build a random string with valid characters followed by invalid characters
-            iCountTestcases++;
-
-            random = new Random(-55);
-
-            pattern = @"\w*";
-            regex = new Regex(pattern);
-
-            iNumLoop = 100;
-            iWordCharLength = 10;
-            iCharCount = alstValidChars.Count;
-            iNonCharCount = alstInvalidChars.Count;
-            iNonWordCharLength = 15;
-
-            for (int i = 0; i < iNumLoop; i++)
-            {
-                sbldr1 = new StringBuilder();
-                sbldr2 = new StringBuilder();
-                for (int j = 0; j < iWordCharLength; j++)
-                {
-                    ch1 = alstValidChars[random.Next(iCharCount)];
-                    sbldr1.Append(ch1);
-                    sbldr2.Append(ch1);
-                }
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                input = sbldr1.ToString();
-                match = regex.Match(input);
-                if (!match.Success
-                    || (match.Index != 0)
-                    || (match.Length != iWordCharLength)
-                    || !(match.Value.Equals(sbldr2.ToString()))
-                )
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_753wfgg_" + i + "! Error detected: input-{0}", input);
-                    Console.WriteLine("Match index={0}, length={1}, value={2}, match.Value.Equals(expected)={3}\n",
-                        match.Index, match.Length, match.Value, match.Value.Equals(sbldr2.ToString()));
-
-                    if (match.Length > iWordCharLength)
-                    {
-                        Console.WriteLine("FAIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n{0}={1}",
-                            (int)match.Value[iWordCharLength], CharUnicodeInfo.GetUnicodeCategory(match.Value[iWordCharLength]));
-                    }
-                }
-
-                match = match.NextMatch();
-                do
-                {
-                    //This is tedious. But we report empty Matches for each of the non-matching characters!!!
-                    //duh!!! because we say so on the pattern - remember what * stands for :-)
-                    if (!match.Value.Equals(String.Empty)
-                        || (match.Length != 0)
-                    )
-                    {
-                        iCountErrors++;
-                        Console.WriteLine("Err_2975sg_" + i + "! Error detected: input-{0}", input);
-                        Console.WriteLine("Match index={0}, length={1}, value={2}\n",
-                            match.Index, match.Length, match.Value);
-                    }
-                    match = match.NextMatch();
-                } while (match.Success);
-            }
-
-            //[]Build a random string with invalid characters followed by valid characters and then again invalid
-            iCountTestcases++;
-
-            random = new Random(-55);
-
-            pattern = @"\w+";
-            regex = new Regex(pattern);
-
-            iNumLoop = 500;
-            iWordCharLength = 10;
-            iCharCount = alstValidChars.Count;
-            iNonCharCount = alstInvalidChars.Count;
-            iNonWordCharLength = 15;
-
-            for (int i = 0; i < iNumLoop; i++)
-            {
-                sbldr1 = new StringBuilder();
-                sbldr2 = new StringBuilder();
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                for (int j = 0; j < iWordCharLength; j++)
-                {
-                    ch1 = alstValidChars[random.Next(iCharCount)];
-                    sbldr1.Append(ch1);
-                    sbldr2.Append(ch1);
-                }
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                input = sbldr1.ToString();
-                match = regex.Match(input);
-
-                if (!match.Success
-                    || (match.Index != iNonWordCharLength)
-                    || (match.Length != iWordCharLength)
-                    || !(match.Value.Equals(sbldr2.ToString()))
-                )
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_2975sgf_" + i + "! Error detected: input-{0}", input);
-                }
-
-                match = match.NextMatch();
-                if (match.Success)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_246sdg_" + i + "! Error detected: input-{0}", input);
-                }
-            }
-
-            alstValidChars = new List<Char>();
-            alstInvalidChars = new List<Char>();
-            for (int i = 0; i < MaxUnicodeRange; i++)
-            {
-                ch1 = (Char)i;
-                switch (CharUnicodeInfo.GetUnicodeCategory(ch1))
-                {
-                    case UnicodeCategory.DecimalDigitNumber:     // Nd
-                        alstValidChars.Add(ch1);
-                        break;
-                    default:
-                        alstInvalidChars.Add(ch1);
-                        break;
-                }
-            }
-
-            //[]\d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.
-            //[]Build a random string with valid characters and then again invalid
-            iCountTestcases++;
-
-            pattern = @"\d+";
-            regex = new Regex(pattern);
-
-            iNumLoop = 100;
-            iWordCharLength = 10;
-            iNonWordCharLength = 15;
-            iCharCount = alstValidChars.Count;
-            iNonCharCount = alstInvalidChars.Count;
-
-            for (int i = 0; i < iNumLoop; i++)
-            {
-                sbldr1 = new StringBuilder();
-                sbldr2 = new StringBuilder();
-                for (int j = 0; j < iWordCharLength; j++)
-                {
-                    ch1 = alstValidChars[random.Next(iCharCount)];
-                    sbldr1.Append(ch1);
-                    sbldr2.Append(ch1);
-                }
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                input = sbldr1.ToString();
-                match = regex.Match(input);
-                if (!match.Success
-                    || (match.Index != 0)
-                    || (match.Length != iWordCharLength)
-                    || !(match.Value.Equals(sbldr2.ToString()))
-                )
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_245sfg_" + i + "! Error detected: input-{0}", input);
-                }
-
-                match = match.NextMatch();
-                if (match.Success)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_29765sg_" + i + "! Error detected: input-{0}", input);
-                }
-            }
-
-            //[]Build a random string with invalid characters, valid and then again invalid
-            iCountTestcases++;
-
-            pattern = @"\d+";
-            regex = new Regex(pattern);
-
-            iNumLoop = 100;
-            iWordCharLength = 10;
-            iNonWordCharLength = 15;
-            iCharCount = alstValidChars.Count;
-            iNonCharCount = alstInvalidChars.Count;
-
-            for (int i = 0; i < iNumLoop; i++)
-            {
-                sbldr1 = new StringBuilder();
-                sbldr2 = new StringBuilder();
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                for (int j = 0; j < iWordCharLength; j++)
-                {
-                    ch1 = alstValidChars[random.Next(iCharCount)];
-                    sbldr1.Append(ch1);
-                    sbldr2.Append(ch1);
-                }
-                for (int j = 0; j < iNonWordCharLength; j++)
-                    sbldr1.Append(alstInvalidChars[random.Next(iNonCharCount)]);
-                input = sbldr1.ToString();
-                match = regex.Match(input);
-                if (!match.Success
-                    || (match.Index != iNonWordCharLength)
-                    || (match.Length != iWordCharLength)
-                    || !(match.Value.Equals(sbldr2.ToString()))
-                )
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_29756tsg_" + i + "! Error detected: input-{0}", input);
-                }
-
-                match = match.NextMatch();
-                if (match.Success)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_27sjhr_" + i + "! Error detected: input-{0}", input);
-                }
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
         }
-        catch (Exception exc_general)
+
+        // \w - we will create strings from valid characters that form \w and make sure that the regex engine catches this.
+        // Build a random string with valid characters followed by invalid characters
+        Random random = new Random(-55);
+        Regex regex = new Regex(@"\w*");
+        
+        int validCharLength = 10;
+        int charCount = validChars.Count;
+        int invalidCharCount = invalidChars.Count;
+        int invalidCharLength = 15;
+
+        for (int i = 0; i < 100; i++)
         {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
+            StringBuilder builder1 = new StringBuilder();
+            StringBuilder builder2 = new StringBuilder();
+            for (int j = 0; j < validCharLength; j++)
+            {
+                char c = validChars[random.Next(charCount)];
+                builder1.Append(c);
+                builder2.Append(c);
+            }
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+
+            string input = builder1.ToString();
+            Match match = regex.Match(input);
+            Assert.True(match.Success);
+
+            Assert.Equal(builder2.ToString(), match.Value);
+            Assert.Equal(0, match.Index);
+            Assert.Equal(validCharLength, match.Length);
+
+            match = match.NextMatch();
+            do
+            {
+                // This is tedious. But we report empty Matches for each of the non-matching characters!!!
+                // duh!!! because we say so on the pattern - remember what * stands for :-)
+                Assert.Equal(string.Empty, match.Value);
+                Assert.Equal(0, match.Length);
+                match = match.NextMatch();
+            } while (match.Success);
         }
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
+
+        // Build a random string with invalid characters followed by valid characters and then again invalid
+        random = new Random(-55);
+        regex = new Regex(@"\w+");
+        
+        validCharLength = 10;
+        charCount = validChars.Count;
+        invalidCharCount = invalidChars.Count;
+        invalidCharLength = 15;
+
+        for (int i = 0; i < 500; i++)
+        {
+            StringBuilder builder1 = new StringBuilder();
+            StringBuilder builder2 = new StringBuilder();
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+            for (int j = 0; j < validCharLength; j++)
+            {
+                char c = validChars[random.Next(charCount)];
+                builder1.Append(c);
+                builder2.Append(c);
+            }
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+            string input = builder1.ToString();
+
+            Match match = regex.Match(input);
+            Assert.True(match.Success);
+
+            Assert.Equal(builder2.ToString(), match.Value);
+            Assert.Equal(invalidCharLength, match.Index);
+            Assert.Equal(validCharLength, match.Length);
+
+            match = match.NextMatch();
+            Assert.False(match.Success);
+        }
+
+        validChars = new List<char>();
+        invalidChars = new List<char>();
+        for (int i = 0; i < MaxUnicodeRange; i++)
+        {
+            char c = (char)i;
+            switch (CharUnicodeInfo.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.DecimalDigitNumber:     // Nd
+                    validChars.Add(c);
+                    break;
+                default:
+                    invalidChars.Add(c);
+                    break;
+            }
+        }
+
+        // \d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.
+        // Build a random string with valid characters and then again invalid
+        regex = new Regex(@"\d+");
+
+        validCharLength = 10;
+        invalidCharLength = 15;
+        charCount = validChars.Count;
+        invalidCharCount = invalidChars.Count;
+
+        for (int i = 0; i < 100; i++)
+        {
+            StringBuilder builder1 = new StringBuilder();
+            StringBuilder builder2 = new StringBuilder();
+            for (int j = 0; j < validCharLength; j++)
+            {
+                char c = validChars[random.Next(charCount)];
+                builder1.Append(c);
+                builder2.Append(c);
+            }
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+            string input = builder1.ToString();
+            Match match = regex.Match(input);
+
+
+            Assert.Equal(builder2.ToString(), match.Value);
+            Assert.Equal(0, match.Index);
+            Assert.Equal(validCharLength, match.Length);
+
+            match = match.NextMatch();
+            Assert.False(match.Success);
+        }
+
+        // Build a random string with invalid characters, valid and then again invalid
+        regex = new Regex(@"\d+");
+        
+        validCharLength = 10;
+        invalidCharLength = 15;
+        charCount = validChars.Count;
+        invalidCharCount = invalidChars.Count;
+
+        for (int i = 0; i < 100; i++)
+        {
+            StringBuilder builder1 = new StringBuilder();
+            StringBuilder builder2 = new StringBuilder();
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+            for (int j = 0; j < validCharLength; j++)
+            {
+                char c = validChars[random.Next(charCount)];
+                builder1.Append(c);
+                builder2.Append(c);
+            }
+            for (int j = 0; j < invalidCharLength; j++)
+                builder1.Append(invalidChars[random.Next(invalidCharCount)]);
+            string input = builder1.ToString();
+
+            Match match = regex.Match(input);
+            Assert.True(match.Success);
+
+            Assert.Equal(builder2.ToString(), match.Value);
+            Assert.Equal(invalidCharLength, match.Index);
+            Assert.Equal(validCharLength, match.Length);
+
+            match = match.NextMatch();
+            Assert.False(match.Success);
+        }
     }
 }
-
-

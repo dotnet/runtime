@@ -12,299 +12,151 @@ public partial class RegexReplaceStringTests
     [Fact]
     public static void RegexReplaceStringTestCase0()
     {
-        //////////// Global Variables used for all tests
-        String strLoc = "Loc_000oo";
-        String strValue = String.Empty;
-        int iCountErrors = 0;
-        int iCountTestcases = 0;
-        Regex r;
-        String s;
-        String sResult;
-        Int32 i;
-        String pattern;
-        String sExp;
-        Match match;
-        try
+        string input = "08/10/99 16:00";
+        Regex regex = new Regex(@"(?<1>\d{1,2})/(?<2>\d{1,2})/(?<3>\d{2,4})\s(?<time>\S+)");
+        Match match = regex.Match(input);
+        string result = regex.Match(input).Result("${time}");
+
+        Assert.Equal("16:00", result);
+
+        result = regex.Match(input).Result("$1");
+        Assert.Equal("08", result);
+
+        result = regex.Match(input).Result("$2");
+        Assert.Equal("10", result);
+
+        result = regex.Match(input).Result("$3");
+        Assert.Equal("99", result);
+
+        // Regex.Replace()
+        input = "08/10/99 16:00";
+        result = Regex.Replace(input, @"[^ ]+\s(?<time>)", "${time}");
+        Assert.Equal("16:00", result);
+        Assert.Equal("08/10/99 16:00", input);
+
+        input = "MiCrOsOfT";
+        result = Regex.Replace(input, "icrosoft", "icrosoft", RegexOptions.IgnoreCase);
+        Assert.Equal("Microsoft", result);
+
+        input = "my dog has fleas";
+        result = Regex.Replace(input, "dog", "CAT", RegexOptions.IgnoreCase);
+        Assert.Equal("my CAT has fleas", result);
+
+        input = "D.Bau";
+        regex = new Regex(@"D\.(.+)");
+        result = regex.Replace(input, "David $1");
+        Assert.Equal("David Bau", result);
+
+        input = "aaaaa";
+        regex = new Regex("a");
+        result = regex.Replace(input, "b", 2);
+        Assert.Equal("bbaaa", result);
+
+        result = regex.Replace(input, "b", 2, 3);
+        Assert.Equal("aaabb", result);
+        
+        // Replace with MatchEvaluators - relevant fn's for this are defined below
+        result = Regex.Replace("Big mountain", "(Big|Small)", new MatchEvaluator(Rep1));
+        Assert.Equal("Huge mountain", result);
+
+        result = Regex.Replace("Small village", "(Big|Small)", new MatchEvaluator(Rep1));
+        Assert.Equal("Tiny village", result);
+
+        if ("i".ToUpper() == "I")
         {
-            /////////////////////////  START TESTS ////////////////////////////
-            ///////////////////////////////////////////////////////////////////
-            // [] Group name checks
-            //-----------------------------------------------------------------
-            strLoc = "Loc_498yg";
-            iCountTestcases++;
-            s = "08/10/99 16:00";
-            r = new Regex(@"(?<1>\d{1,2})/(?<2>\d{1,2})/(?<3>\d{2,4})\s(?<time>\S+)");
-            match = r.Match(s);
-            sResult = r.Match(s).Result("${time}");
-            if (!sResult.Equals("16:00"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_234fsadg! doesnot match, " + sResult);
-            }
-
-            sResult = r.Match(s).Result("$1");
-            if (!sResult.Equals("08"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_234fsadg! doesnot match, " + sResult);
-            }
-
-            sResult = r.Match(s).Result("$2");
-            if (!sResult.Equals("10"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_234fsadg! doesnot match, " + sResult);
-            }
-
-            sResult = r.Match(s).Result("$3");
-            if (!sResult.Equals("99"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_234fsadg! doesnot match, " + sResult);
-            }
-
-            // [] Regex.Replace()
-            //-----------------------------------------------------------------
-            strLoc = "Loc_298vy";
-            iCountTestcases++;
-            s = "08/10/99 16:00";
-            sResult = Regex.Replace(s, @"[^ ]+\s(?<time>)", "${time}");
-            if (!sResult.Equals("16:00") || !s.Equals("08/10/99 16:00"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_0723gsg! doesnot match, " + sResult + " " + s);
-            }
-
-            s = "MiCrOsOfT";
-            sResult = Regex.Replace(s, "icrosoft", "icrosoft", RegexOptions.IgnoreCase);
-            if (!sResult.Equals("Microsoft"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_174ds! doesnot match, " + sResult + " " + s);
-            }
-
-            s = "my dog has fleas";
-            sResult = Regex.Replace(s, "dog", "CAT", RegexOptions.IgnoreCase);
-            if (!sResult.Equals("my CAT has fleas"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_174ds! doesnot match, " + sResult + " " + s);
-            }
-
-            s = "D.Bau";
-            r = new Regex(@"D\.(.+)");
-            sResult = r.Replace(s, "David $1");
-            if (!sResult.Equals("David Bau"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_5734s! doesnot match, " + sResult + " " + s);
-            }
-
-            s = "aaaaa";
-            r = new Regex("a");
-            sResult = r.Replace(s, "b", 2);
-            if (!sResult.Equals("bbaaa"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_78453fgs! doesnot match, " + sResult + " " + s);
-            }
-
-            sResult = r.Replace(s, "b", 2, 3);
-            if (!sResult.Equals("aaabb"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_712ff! doesnot match, " + sResult + " " + s);
-            }
-
-            // [] Replace with MatchEvaluators - relevant fn's for this are defined below
-            //-----------------------------------------------------------------
-            strLoc = "Loc_746tegd";
-            sResult = Regex.Replace("Big mountain", "(Big|Small)", new MatchEvaluator(Rep1));
-            iCountTestcases++;
-            if (!sResult.Equals("Huge mountain"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_452wfdf! doesnot match, " + sResult);
-            }
-
-            sResult = Regex.Replace("Small village", "(Big|Small)", new MatchEvaluator(Rep1));
-            if (!sResult.Equals("Tiny village"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_8420sgf! doesnot match, " + sResult);
-            }
-
-            if ("i".ToUpper() == "I")
-            {
-                sResult = Regex.Replace("bIG horse", "(Big|Small)", new MatchEvaluator(Rep1), RegexOptions.IgnoreCase);
-                if (!sResult.Equals("Huge horse"))
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_232fg! doesnot match, " + sResult);
-                }
-            }
-
-            sResult = Regex.Replace("sMaLl dog", "(Big|Small)", new MatchEvaluator(Rep1), RegexOptions.IgnoreCase);
-            if (!sResult.Equals("Tiny dog"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_073235rdfa! doesnot match, " + sResult);
-            }
-
-            r = new Regex(".+");
-            sResult = r.Replace("XSP_TEST_FAILURE", new MatchEvaluator(Rep2));
-            if (!sResult.Equals("SUCCESS"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_246egsd! doesnot match, " + sResult);
-            }
-
-            r = new Regex("[abcabc]");
-            sResult = r.Replace("abcabc", new MatchEvaluator(Rep3));
-            if (!sResult.Equals("ABCABC"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_75432sg! doesnot match, " + sResult);
-            }
-
-            r = new Regex("[abcabc]");
-            sResult = r.Replace("abcabc", new MatchEvaluator(Rep3), 3);
-            if (!sResult.Equals("ABCabc"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_75432sg! doesnot match, " + sResult);
-            }
-
-            r = new Regex("[abcabc]");
-            sResult = r.Replace("abcabc", new MatchEvaluator(Rep3), 3, 2);
-            if (!sResult.Equals("abCABc"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_75432sg! doesnot match, " + sResult);
-            }
-
-            // [] Replace with group numbers
-            //-----------------------------------------------------------------
-            strLoc = "Loc_563rfg";
-            iCountTestcases++;
-            r = new Regex("([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))");
-            sResult = r.Replace("abcdefghiklmnop", "$15");
-            if (!sResult.Equals("p"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_865rfsg! doesnot match, " + sResult);
-            }
-
-            sResult = r.Replace("abcdefghiklmnop", "$3");
-            if (!sResult.Equals("cdefghiklmnop"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_9752fsf! doesnot match, " + sResult);
-            }
-
-            //Stress
-            pattern = String.Empty;
-            for (i = 0; i < 1000; i++)
-                pattern += "([a-z]";
-            for (i = 0; i < 1000; i++)
-                pattern += ")";
-            s = String.Empty;
-            for (i = 0; i < 200; i++)
-                s += "abcde";
-            r = new Regex(pattern);
-            sResult = r.Replace(s, "$1000");
-            if (!sResult.Equals("e"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_98725rdfsg! doesnot match, " + sResult);
-            }
-
-            sResult = r.Replace(s, "$1");
-            sExp = String.Empty;
-            for (i = 0; i < 200; i++)
-                sExp += "abcde";
-            if (!sResult.Equals(sExp))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_1074wf! doesnot match, " + sResult);
-            }
-
-            //undefined group
-            sResult = Regex.Replace("abc", "([a_z])(.+)", "$3");
-            if (!sResult.Equals("$3"))
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_1074wf! doesnot match, " + sResult);
-            }
-
-            // Regression test:
-            // Regex treating Devanagari matra characters as matching "\b"
-            // Unicode characters in the "Mark, NonSpacing" Category, U+0902=Devanagari sign anusvara, U+0947=Devanagri vowel sign E
-            try
-            {
-                iCountTestcases++;
-                Regex regexRendering = new Regex(@"\u0915\u0930.*?\b", RegexOptions.CultureInvariant | RegexOptions.Singleline);
-                String strBoldedText = regexRendering.Replace("\u092f\u0939 \u0915\u0930 \u0935\u0939 \u0915\u0930\u0947\u0902 \u0939\u0948\u0964", RepBold);
-                String expectedBoldedText = "\u092f\u0939 <b>\u0915\u0930</b> \u0935\u0939 <b>\u0915\u0930\u0947\u0902</b> \u0939\u0948\u0964";
-                if (strBoldedText != expectedBoldedText)
-                {
-                    iCountErrors++;
-                    Console.WriteLine("Err_788921gh! Devanagari matra characters are threated as \"\b\"");
-                    Console.WriteLine("Expected string: {0}\nActual string: {1}", GetUnicodeString(expectedBoldedText), GetUnicodeString(strBoldedText));
-                }
-            }
-            catch (Exception e)
-            {
-                iCountErrors++;
-                Console.WriteLine("Err_788921! Unexpected Exception: " + e);
-            }
-            ///////////////////////////////////////////////////////////////////
-            /////////////////////////// END TESTS /////////////////////////////
-        }
-        catch (Exception exc_general)
-        {
-            ++iCountErrors;
-            Console.WriteLine("Error Err_8888yyy!  strLoc==" + strLoc + ", exc_general==" + exc_general.ToString());
+            result = Regex.Replace("bIG horse", "(Big|Small)", new MatchEvaluator(Rep1), RegexOptions.IgnoreCase);
+            Assert.Equal("Huge horse", result);
         }
 
-        ////  Finish Diagnostics
-        Assert.Equal(0, iCountErrors);
+        result = Regex.Replace("sMaLl dog", "(Big|Small)", new MatchEvaluator(Rep1), RegexOptions.IgnoreCase);
+        Assert.Equal("Tiny dog", result);
+
+        regex = new Regex(".+");
+        result = regex.Replace("XSP_TEST_FAILURE", new MatchEvaluator(Rep2));
+        Assert.Equal("SUCCESS", result);
+
+        regex = new Regex("[abcabc]");
+        result = regex.Replace("abcabc", new MatchEvaluator(Rep3));
+        Assert.Equal("ABCABC", result);
+
+        regex = new Regex("[abcabc]");
+        result = regex.Replace("abcabc", new MatchEvaluator(Rep3), 3);
+        Assert.Equal("ABCabc", result);
+
+        regex = new Regex("[abcabc]");
+        result = regex.Replace("abcabc", new MatchEvaluator(Rep3), 3, 2);
+        Assert.Equal("abCABc", result);
+
+        // Replace with group numbers
+        regex = new Regex("([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z]([a-z])))))))))))))))");
+        result = regex.Replace("abcdefghiklmnop", "$15");
+        Assert.Equal("p", result);
+
+        result = regex.Replace("abcdefghiklmnop", "$3");
+        Assert.Equal("cdefghiklmnop", result);
+
+        // Stress
+        string pattern = string.Empty;
+        for (int i = 0; i < 1000; i++)
+            pattern += "([a-z]";
+        for (int i = 0; i < 1000; i++)
+            pattern += ")";
+        input = string.Empty;
+        for (int i = 0; i < 200; i++)
+            input += "abcde";
+        regex = new Regex(pattern);
+        result = regex.Replace(input, "$1000");
+        Assert.Equal("e", result);
+
+        result = regex.Replace(input, "$1");
+        string sExp = string.Empty;
+        for (int i = 0; i < 200; i++)
+            sExp += "abcde";
+        Assert.Equal(sExp, result);
+
+        // Undefined group
+        result = Regex.Replace("abc", "([a_z])(.+)", "$3");
+        Assert.Equal("$3", result);
+
+        // Regression test:
+        // Regex treating Devanagari matra characters as matching "\b"
+        // Unicode characters in the "Mark, NonSpacing" Category, U+0902=Devanagari sign anusvara, U+0947=Devanagri vowel sign E
+        Regex regexRendering = new Regex(@"\u0915\u0930.*?\b", RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        string strBoldedText = regexRendering.Replace("\u092f\u0939 \u0915\u0930 \u0935\u0939 \u0915\u0930\u0947\u0902 \u0939\u0948\u0964", RepBold);
+        string expectedBoldedText = "\u092f\u0939 <b>\u0915\u0930</b> \u0935\u0939 <b>\u0915\u0930\u0947\u0902</b> \u0939\u0948\u0964";
+        Assert.Equal(expectedBoldedText, strBoldedText);
     }
 
-    public static String Rep1(Match input)
+    public static string Rep1(Match input)
     {
-        String s = String.Empty;
-        if (String.Compare(input.ToString(), "Big", StringComparison.CurrentCultureIgnoreCase) == 0)
-            s = "Huge";
+        if (string.Compare(input.ToString(), "Big", StringComparison.CurrentCultureIgnoreCase) == 0)
+            return "Huge";
         else
-            s = "Tiny";
-        return s;
+            return "Tiny";
     }
 
-    public static String Rep2(Match input)
+    public static string Rep2(Match input)
     {
         return "SUCCESS";
     }
 
-    public static String Rep3(Match input)
+    public static string Rep3(Match input)
     {
-        String s = String.Empty;
-        if (input.ToString().Equals("a"))
-            s = "A";
-        if (input.ToString().Equals("b"))
-            s = "B";
-        if (input.ToString().Equals("c"))
-            s = "C";
-        return s;
+        if (input.Value.Equals("a"))
+            return "A";
+        if (input.Value.Equals("b"))
+            return "B";
+        if (input.Value.Equals("c"))
+            return "C";
+        return string.Empty;
     }
 
-    public static String RepBold(Match m)
+    public static string RepBold(Match m)
     {
-        string str = m.ToString();
-        return String.Format("<b>{0}</b>", str);
+        return string.Format("<b>{0}</b>", m.Value);
     }
 
-    static String GetUnicodeString(String str)
+    private static string GetUnicodeString(string str)
     {
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < str.Length; i++)
@@ -323,6 +175,6 @@ public partial class RegexReplaceStringTests
             }
         }
 
-        return (buffer.ToString());
+        return buffer.ToString();
     }
 }
