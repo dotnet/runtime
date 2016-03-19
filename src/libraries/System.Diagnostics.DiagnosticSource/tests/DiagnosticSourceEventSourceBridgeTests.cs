@@ -688,6 +688,9 @@ namespace System.Diagnostics.Tests
                     wroteEvent = true;
                 }
             }
+           
+            if (eventData.EventName == "EventSourceMessage" && 0 < eventData.Payload.Count) 
+                System.Diagnostics.Debug.WriteLine("EventSourceMessage: " + eventData.Payload[0].ToString());
 
             var otherEventWritten = OtherEventWritten;
             if (otherEventWritten != null && !wroteEvent)
