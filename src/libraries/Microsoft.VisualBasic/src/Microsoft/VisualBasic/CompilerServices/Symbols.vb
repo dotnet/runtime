@@ -1266,7 +1266,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     result = callTarget.Invoke(_instance, callArguments)
 
                 Catch ex As TargetInvocationException When ex.InnerException IsNot Nothing
-                    'For backwards compatiblity, throw the inner exception of a TargetInvocationException.
+                    'For backwards compatibility, throw the inner exception of a TargetInvocationException.
                     Throw ex.InnerException
 
                 End Try

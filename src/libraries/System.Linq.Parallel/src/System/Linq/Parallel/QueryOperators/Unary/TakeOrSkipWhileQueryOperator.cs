@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
     /// index will be accurate for the entire set, since all partitions have finished
     /// scanning.  This is where TakeWhile and SkipWhile differ.  TakeWhile will start at
     /// the beginning of its buffer and yield all elements whose indices are less than
-    /// the lowest-known false index.  SkipWhile, on the other hand, will skipp any such
+    /// the lowest-known false index.  SkipWhile, on the other hand, will skip any such
     /// elements in the buffer, yielding those whose index is greater than or equal to
     /// the lowest-known false index, and then finish yielding any remaining elements in
     /// its data source (since it may have stopped prematurely due to (3) above).

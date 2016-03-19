@@ -559,7 +559,7 @@ namespace System.Collections.Tests
                 IList _ilist = list;
 
                 Assert.False(_ilist.Contains(new LinkedListNode<string>("rah")),
-                    "Err_68850ahiuedpz Expected Contains to return false with inavlid type");
+                    "Err_68850ahiuedpz Expected Contains to return false with invalid type");
             }
 
             #endregion

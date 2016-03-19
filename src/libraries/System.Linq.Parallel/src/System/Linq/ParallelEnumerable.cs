@@ -592,7 +592,7 @@ namespace System.Linq
         /// Projects in parallel each element of a sequence into a new form.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TResult">The type of elements resturned by <b>selector</b>.</typeparam>
+        /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 
@@ -613,7 +613,7 @@ namespace System.Linq
         /// Projects in parallel each element of a sequence into a new form by incorporating the element's index.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TResult">The type of elements resturned by <b>selector</b>.</typeparam>
+        /// <typeparam name="TResult">The type of elements returned by <b>selector</b>.</typeparam>
         /// <param name="source">A sequence of values to invoke a transform function on.</param>
         /// <param name="selector">A transform function to apply to each element.</param>
         /// <returns>A sequence whose elements are the result of invoking the transform function on each 

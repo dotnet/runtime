@@ -75,7 +75,7 @@ enum
 
 static void CloseIfOpen(int fd)
 {
-    // Ignoring errors from close is a deliberate choice and we musn't
+    // Ignoring errors from close is a deliberate choice and we mustn't
     // let close during cleanup on a failure path disturb errno.
     if (fd >= 0)
     {

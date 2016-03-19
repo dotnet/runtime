@@ -53,18 +53,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             // These two things, in combination, suggest that we ensure that all .NET
             // implementations of RSA export their keys to the fixed array size suggested by their
             // KeySize property.
-            RSAParameters diminishedDPParamaters = TestData.DiminishedDPParamaters;
+            RSAParameters diminishedDPParameters = TestData.DiminishedDPParameters;
             RSAParameters exported;
 
             using (RSA rsa = RSAFactory.Create())
             {
-                rsa.ImportParameters(diminishedDPParamaters);
+                rsa.ImportParameters(diminishedDPParameters);
                 exported = rsa.ExportParameters(true);
             }
 
             // DP is the most likely to fail, the rest just otherwise ensure that Export
             // isn't losing data.
-            AssertKeyEquals(ref diminishedDPParamaters, ref exported);
+            AssertKeyEquals(ref diminishedDPParameters, ref exported);
         }
 
         [Fact]

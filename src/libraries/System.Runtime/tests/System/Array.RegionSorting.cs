@@ -9,7 +9,7 @@ using Xunit;
 public static class RegionSorting
 {
     [Fact]
-    public static void SortArrayArayIntIntWithNonZeroIndexAndOffsetStructArrays()
+    public static void SortArrayArrayIntIntWithNonZeroIndexAndOffsetStructArrays()
     {
         Random random = new Random(5);
 
@@ -48,7 +48,7 @@ public static class RegionSorting
     }
 
     [Fact]
-    public static void SortArrayArayIntIntWithNonZeroIndexAndOffsetStructAndRefArray()
+    public static void SortArrayArrayIntIntWithNonZeroIndexAndOffsetStructAndRefArray()
     {
         Random random = new Random(5);
 
@@ -87,7 +87,7 @@ public static class RegionSorting
     }
 
     [Fact]
-    public static void SortArrayArayIntIntWithNonZeroIndexAndOffsetRefAndStructArray()
+    public static void SortArrayArrayIntIntWithNonZeroIndexAndOffsetRefAndStructArray()
     {
         Random random = new Random(5);
 

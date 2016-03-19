@@ -293,7 +293,7 @@ namespace System.Threading.Tasks.Tests
         //the enumerators should be disposed
         private ConcurrentBag<UserActionEnumerator<T>> _allEnumerators = new ConcurrentBag<UserActionEnumerator<T>>();
 
-        //called in the begining of enumerator Move Next 
+        //called in the beginning of enumerator Move Next 
         private Action<int> _moveNextAction = null;
 
         public UserActionEnumerable(List<T> enumerable, Action<int> moveNextAction)

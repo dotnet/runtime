@@ -231,7 +231,7 @@ namespace System.Collections.Tests
             linkedList.Remove(linkedList.First); //Remove when  VS Whidbey: 234648 is resolved		
             linkedList.Remove(linkedList.Last); //Remove when  VS Whidbey: 234648 is resolved
 
-            //[] Verify that the duplicates were removed from the begining of the collection
+            //[] Verify that the duplicates were removed from the beginning of the collection
             currentNode = linkedList.First;
 
             //Verify the duplicates that should have been removed
@@ -244,7 +244,7 @@ namespace System.Collections.Tests
                 currentNode = currentNode.Next;
             }
 
-            Assert.Null(currentNode); //"Err_30878ajid Expceted CurrentNode to be null after moving through entire list"
+            Assert.Null(currentNode); //"Err_30878ajid Expected CurrentNode to be null after moving through entire list"
         }
 
         [Fact]

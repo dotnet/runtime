@@ -329,7 +329,7 @@ namespace System.IO
 
                             //
                             //  If we are at a period, determine if we are allowed to
-                            //  consume it, ie. make sure it is not the last one.
+                            //  consume it, i.e. make sure it is not the last one.
                             //
                             if (!nameFinished && (nameChar == '.'))
                             {
