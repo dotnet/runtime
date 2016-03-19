@@ -1171,7 +1171,5 @@ public class Tests {
 		var m = typeof (Marshal).GetMethod ("PtrToStringAnsi", new Type[] { typeof (IntPtr) });
 
 		return mono_test_marshal_icall_delegate ((IcallDelegate)Delegate.CreateDelegate (typeof (IcallDelegate), m));
-		Console.WriteLine (m);
-		return 0;
 	}
 }
