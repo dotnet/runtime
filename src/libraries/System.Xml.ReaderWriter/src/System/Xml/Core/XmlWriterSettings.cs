@@ -82,7 +82,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Async");
+                CheckReadOnly(nameof(Async));
                 _useAsync = value;
             }
         }
@@ -96,7 +96,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Encoding");
+                CheckReadOnly(nameof(Encoding));
                 _encoding = value;
             }
         }
@@ -110,7 +110,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("DontWriteEncodingTag");
+                CheckReadOnly(nameof(DontWriteEncodingTag));
                 dontWriteEncodingTag = value;
             }
         }
@@ -125,7 +125,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("OmitXmlDeclaration");
+                CheckReadOnly(nameof(OmitXmlDeclaration));
                 _omitXmlDecl = value;
             }
         }
@@ -139,7 +139,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineHandling");
+                CheckReadOnly(nameof(NewLineHandling));
 
                 if ((uint)value > (uint)NewLineHandling.None)
                 {
@@ -158,7 +158,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineChars");
+                CheckReadOnly(nameof(NewLineChars));
 
                 if (value == null)
                 {
@@ -177,7 +177,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("Indent");
+                CheckReadOnly(nameof(Indent));
                 _indent = value ? TriState.True : TriState.False;
             }
         }
@@ -191,7 +191,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("IndentChars");
+                CheckReadOnly(nameof(IndentChars));
 
                 if (value == null)
                 {
@@ -210,7 +210,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NewLineOnAttributes");
+                CheckReadOnly(nameof(NewLineOnAttributes));
                 _newLineOnAttributes = value;
             }
         }
@@ -224,7 +224,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CloseOutput");
+                CheckReadOnly(nameof(CloseOutput));
                 _closeOutput = value;
             }
         }
@@ -240,7 +240,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("ConformanceLevel");
+                CheckReadOnly(nameof(ConformanceLevel));
 
                 if ((uint)value > (uint)ConformanceLevel.Document)
                 {
@@ -259,7 +259,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("CheckCharacters");
+                CheckReadOnly(nameof(CheckCharacters));
                 _checkCharacters = value;
             }
         }
@@ -273,7 +273,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("NamespaceHandling");
+                CheckReadOnly(nameof(NamespaceHandling));
                 if ((uint)value > (uint)(NamespaceHandling.OmitDuplicates))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
@@ -291,7 +291,7 @@ namespace System.Xml
             }
             set
             {
-                CheckReadOnly("WriteEndDocumentOnClose");
+                CheckReadOnly(nameof(WriteEndDocumentOnClose));
                 _writeEndDocumentOnClose = value;
             }
         }
@@ -302,7 +302,7 @@ namespace System.Xml
         //
         public void Reset()
         {
-            CheckReadOnly("Reset");
+            CheckReadOnly(nameof(Reset));
             Initialize();
         }
 
