@@ -1906,13 +1906,13 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
                      if (srcIsUnsigned)
-                         return VNForFloatCon(float(UINT64(arg0Val)));
+                         return VNForFloatCon(FloatingPointUtils::convertUInt64ToFloat(UINT64(arg0Val)));
                      else
                          return VNForFloatCon(float(arg0Val));
                 case TYP_DOUBLE:
                     assert(typ == TYP_DOUBLE);
                      if (srcIsUnsigned)
-                         return VNForDoubleCon(double(UINT64(arg0Val)));
+                         return VNForDoubleCon(FloatingPointUtils::convertUInt64ToDouble(UINT64(arg0Val)));
                      else
                          return VNForDoubleCon(double(arg0Val));
                 default:
