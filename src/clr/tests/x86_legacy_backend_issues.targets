@@ -615,5 +615,11 @@
 		<ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
 			 <Issue>3392</Issue>
 		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8\*">
+			<Issue>3832</Issue>
+		</ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\baseservices\threading\waithandle\waitall\waitallex8a\*">
+			<Issue>3832</Issue>
+		</ExcludeList>
 	</ItemGroup>
 </Project>
