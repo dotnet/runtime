@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Reflection;
@@ -133,7 +132,7 @@ namespace System.Diagnostics
     {
         public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
 
-        private class Keywords
+        public class Keywords
         {
             /// <summary>
             /// Indicates diagnostics messages from DiagnosticSourceEventSource should be included. 
@@ -236,7 +235,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Converts a keyvalue bag to JSON.  Only used on V4.5 EventSources.  
         /// </summary>
-        private static string ToJson(List<KeyValuePair<string, string>> keyValues)
+        private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("{");
@@ -506,7 +505,16 @@ namespace System.Diagnostics
                 }
 
                 if (writeEvent == null)
+                {
+#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = _eventSource.Event;
+#else
+                    writeEvent = delegate (string sourceName, string eventName, IEnumerable<KeyValuePair<string, string>> arguments)
+                    {
+                        _eventSource.EventJson(sourceName, eventName, ToJson(arguments));
+                    };
+#endif
+                }
 
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
                 // to the EventSource.   
@@ -527,11 +535,7 @@ namespace System.Diagnostics
 
                             var outputArgs = this.Morph(evnt.Value);
                             var eventName = evnt.Key;
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                             writeEvent(newListener.Name, eventName, outputArgs);
-#else
-                            _eventSource.EventJson(newListener.Name, eventName, ToJson(outputArgs));
-#endif
                         }), eventNameFilterPredicate);
                         _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
                     }
