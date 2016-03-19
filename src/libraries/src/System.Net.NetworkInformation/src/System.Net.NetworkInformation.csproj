@@ -17,16 +17,14 @@
     <PackageTargetRuntime Condition=" '$(TargetsOSX)' == 'true'">osx.10.10</PackageTargetRuntime>
     <PackageTargetRuntime Condition=" '$(TargetsLinux)' == 'true'">linux</PackageTargetRuntime>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
@@ -38,7 +36,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_netcore50_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
     <Compile Include="System\Net\NetworkInformation\GatewayIPAddressInformation.cs" />
@@ -73,7 +70,6 @@
     <Compile Include="System\Net\NetworkInformation\UnicastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\UnicastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\InternalIPAddressCollection.cs" />
-    
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
@@ -84,7 +80,6 @@
       <Link>Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </Compile>
   </ItemGroup>
-  
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
@@ -105,7 +100,6 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
-    
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
       <Link>Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
@@ -114,13 +108,11 @@
       <Link>Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Windows.cs" />
-    
     <Compile Include="System\Net\NetworkInformation\SafeCancelMibChangeNotify.cs" />
     <Compile Include="System\Net\NetworkInformation\SafeFreeMibTable.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemGatewayIPAddressInformation.cs" />
@@ -140,9 +132,7 @@
     <Compile Include="System\Net\NetworkInformation\SystemUdpStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemUnicastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\TeredoHelper.cs" />
-    
     <!-- Windows Common -->
-    
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -150,12 +140,10 @@
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandleMinusOneIsInvalid.cs">
       <Link>Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs</Link>
     </Compile>
-    
     <!-- System.Net.Internals common -->
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
-    
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
       <Link>Common\System\Net\ContextAwareResult.cs</Link>
@@ -199,7 +187,6 @@
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
-    
     <!-- Common -->
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
@@ -210,7 +197,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
-    
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
@@ -272,9 +258,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
       <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
     </Compile>
-    
   </ItemGroup>
-
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.NetNative.cs" />
@@ -282,12 +266,10 @@
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.NetNative.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.NetNative.cs" />
     <Compile Include="System\Net\NetworkInformation\NetNativeNetworkInterface.cs" />
-    
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.NetNative.cs" >
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.NetNative.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.NetNative.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- Unix -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\IPAddressUtil.cs" />

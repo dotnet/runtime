@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
-    "System.Console": "4.0.0-rc3-23910",
-    "System.IO": "4.0.10",
-    "System.Reflection": "4.0.0",
-    "System.Runtime": "4.0.20",
-    "System.Threading.Tasks": "4.0.10"
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
+    "System.Console": "4.0.0-rc3-23918",
+    "System.IO": "4.1.0-rc3-23918",
+    "System.Reflection": "4.1.0-rc3-23918",
+    "System.Runtime": "4.1.0-rc3-23918",
+    "System.Threading.Tasks": "4.0.11-rc3-23918"
   },
   "frameworks": {
     "dnxcore50": {}

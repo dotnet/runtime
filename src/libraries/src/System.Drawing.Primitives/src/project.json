@@ -1,12 +1,15 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.1": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
-        "System.Diagnostics.Contracts": "4.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
+        "System.Diagnostics.Contracts": "4.0.1-rc3-23918",
         "System.Runtime": "4.0.0",
         "System.Runtime.Extensions": "4.0.0"
-      }
+      },
+      "imports": [
+        "dotnet5.2"
+      ]
     },
     "net46": {
       "dependencies": {

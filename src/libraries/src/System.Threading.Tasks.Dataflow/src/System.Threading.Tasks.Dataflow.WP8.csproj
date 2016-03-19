@@ -10,6 +10,7 @@
     <PackageTargetFramework>netstandard1.0</PackageTargetFramework>
     <ProjectJson>wp8/project.json</ProjectJson>
     <ProjectLockJson>wp8/project.lock.json</ProjectLockJson>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

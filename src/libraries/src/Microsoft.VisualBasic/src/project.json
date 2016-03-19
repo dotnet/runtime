@@ -22,6 +22,10 @@
     "System.Threading.Tasks": "4.0.10"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netstandard1.3": {
+      "imports": [
+        "dotnet5.4"
+      ]
+    }
   }
 }

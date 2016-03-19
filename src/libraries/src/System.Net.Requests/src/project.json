@@ -1,12 +1,13 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
+        "System.Diagnostics.Tracing": "4.0.0",
         "System.IO": "4.0.10",
-        "System.IO.Compression": "4.1.0-rc3-23910",
+        "System.IO.Compression": "4.1.0-rc3-23918",
         "System.Net.Http": "4.0.0",
         "System.Net.Primitives": "4.0.10",
         "System.Net.WebHeaderCollection": "4.0.0",
@@ -14,7 +15,10 @@
         "System.Runtime": "4.0.20",
         "System.Threading": "4.0.10",
         "System.Threading.Tasks": "4.0.10"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "net46": {
       "dependencies": {

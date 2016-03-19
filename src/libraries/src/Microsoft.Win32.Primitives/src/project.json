@@ -5,12 +5,15 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     },
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "System.Runtime": "4.0.20",
         "System.Runtime.InteropServices": "4.0.20"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     }
   }
 }
