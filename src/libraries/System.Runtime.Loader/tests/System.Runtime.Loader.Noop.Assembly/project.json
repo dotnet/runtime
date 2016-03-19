@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20"
+    "System.Runtime": "4.1.0-rc3-23918"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netstandard1.0": {}
   }
 }
