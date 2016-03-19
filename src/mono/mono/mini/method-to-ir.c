@@ -11649,7 +11649,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								INLINE_FAILURE ("class init");
 							if (!mono_runtime_class_init_full (vtable, &cfg->error)) {
 								mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-								g_assert_not_reached ();
 								goto exception_exit;
 							}
 						}
