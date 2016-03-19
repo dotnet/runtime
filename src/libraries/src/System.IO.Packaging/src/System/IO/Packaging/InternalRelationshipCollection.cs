@@ -572,27 +572,13 @@ namespace System.IO.Packaging
         /// <returns>Resolved Uri</returns>
         private Uri GetResolvedTargetUri(Uri target, TargetMode targetMode)
         {
-            if (targetMode == TargetMode.Internal)
-            {
-                Debug.Assert(!target.IsAbsoluteUri, "Uri should be relative at this stage");
+            Debug.Assert(targetMode == TargetMode.Internal);
+            Debug.Assert(!target.IsAbsoluteUri, "Uri should be relative at this stage");
 
-                if (_sourcePart == null) //indicates that the source is the package root
-                    return PackUriHelper.ResolvePartUri(PackUriHelper.PackageRootUri, target);
-                else
-                    return PackUriHelper.ResolvePartUri(_sourcePart.Uri, target);
-            }
+            if (_sourcePart == null) //indicates that the source is the package root
+                return PackUriHelper.ResolvePartUri(PackUriHelper.PackageRootUri, target);
             else
-            {
-                if (target.IsAbsoluteUri)
-                {
-                    if (string.Equals(target.Scheme, PackUriHelper.UriSchemePack))
-                        return PackUriHelper.GetPartUri(target);
-                }
-                else
-                    Debug.Fail("Uri should not be relative at this stage");
-            }
-            // relative to the location of the package.
-            return target;
+                return PackUriHelper.ResolvePartUri(_sourcePart.Uri, target);
         }
 
         //Throws an exception if the relationship part does not have the correct content type
