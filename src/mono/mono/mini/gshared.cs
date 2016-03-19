@@ -1716,6 +1716,23 @@ public class Tests
 		return 0;
 	}
 
+	interface ISmallArg {
+		T foo<T> (string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8,
+				  string s9, string s10, string s11, string s12, string s13, T t);
+	}
+
+	class SmallArgClass : ISmallArg {
+			public T foo<T> (string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8,
+							 string s9, string s10, string s11, string s12, string s13, T t) {
+				return t;
+			}
+		}
+
+	public static int test_1_small_gsharedvt_stack_arg_ios () {
+		ISmallArg o = new SmallArgClass ();
+		return o.foo<int> ("", "", "", "", "", "", "", "", "", "", "", "", "", 1);
+	}
+
 	// Passing vtype normal arguments on the stack
 	public static int test_0_arm64_vtype_stack_args () {
 		IFoo3<EmptyStruct> o = (IFoo3<EmptyStruct>)Activator.CreateInstance (typeof (Foo3<>).MakeGenericType (new Type [] { typeof (EmptyStruct) }));
