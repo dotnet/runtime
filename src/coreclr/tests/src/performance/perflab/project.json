@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-rc2-23816",
+    "System.Reflection": "4.0.10",
+    "xunit": "2.1.0",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0028"
+  },
+  "frameworks": {
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
+  }
+}
