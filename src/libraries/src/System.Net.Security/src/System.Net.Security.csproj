@@ -154,7 +154,6 @@
     <Compile Include="System\Net\SecurityStatusAdapterPal.Windows.cs" />
 	
     <!-- NegotiateStream -->
-    <Compile Include="System\Net\SpnDictionary.cs" />
     <Compile Include="System\Net\NegotiateStreamPal.Windows.cs" />
     <Compile Include="System\Net\ContextFlagsAdapterPal.Windows.cs" />
    
