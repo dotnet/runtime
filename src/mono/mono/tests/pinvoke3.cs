@@ -194,6 +194,11 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_virtual_delegate")]
 	public static extern int mono_test_marshal_virtual_delegate (VirtualDelegate del);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_icall_delegate")]
+	public static extern int mono_test_marshal_icall_delegate (IcallDelegate del);
+
+	public delegate string IcallDelegate (IntPtr p);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -1160,5 +1165,13 @@ public class Tests {
 		Base b = new Derived ();
 
 		return mono_test_marshal_virtual_delegate (b.get_del ());
+	}
+
+	public static int test_0_icall_delegate () {
+		var m = typeof (Marshal).GetMethod ("PtrToStringAnsi", new Type[] { typeof (IntPtr) });
+
+		return mono_test_marshal_icall_delegate ((IcallDelegate)Delegate.CreateDelegate (typeof (IcallDelegate), m));
+		Console.WriteLine (m);
+		return 0;
 	}
 }

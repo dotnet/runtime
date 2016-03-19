@@ -352,7 +352,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	if (delegate->method_is_virtual)
 		method = mono_object_get_virtual_method (delegate->target, method);
 
-	if (mono_method_signature (method)->pinvoke) {
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		const char *exc_class, *exc_arg;
 		gpointer ftnptr;
 
@@ -8226,7 +8226,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	EmitMarshalContext m;
 
 	g_assert (method != NULL);
-	g_assert (!mono_method_signature (method)->pinvoke);
+	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
 	/* 
 	 * FIXME: Should cache the method+delegate type pair, since the same method
