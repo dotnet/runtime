@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Collections.Generic
 {
     //
-    // A binary search tree is a red-black tree if it satifies the following red-black properties:
+    // A binary search tree is a red-black tree if it satisfies the following red-black properties:
     // 1. Every node is either red or black
     // 2. Every leaf (nil node) is black
     // 3. If a node is red, the both its children are black
@@ -375,7 +375,7 @@ namespace System.Collections.Generic
 
             //
             // Search for a node at bottom to insert the new node. 
-            // If we can guanratee the node we found is not a 4-node, it would be easy to do insertion.
+            // If we can guarantee the node we found is not a 4-node, it would be easy to do insertion.
             // We split 4-nodes along the search path.
             // 
             Node current = _root;
@@ -458,8 +458,8 @@ namespace System.Collections.Generic
             }
 
 
-            // Search for a node and then find its succesor. 
-            // Then copy the item from the succesor to the matching node and delete the successor. 
+            // Search for a node and then find its successor. 
+            // Then copy the item from the successor to the matching node and delete the successor. 
             // If a node doesn't have a successor, we can replace it with its left child (if not empty.) 
             // or delete the matching node.
             // 
@@ -490,7 +490,7 @@ namespace System.Collections.Generic
                         if (sibling.IsRed)
                         {
                             // If parent is a 3-node, flip the orientation of the red link. 
-                            // We can acheive this by a single rotation        
+                            // We can achieve this by a single rotation        
                             // This case is converted to one of other cased below.
                             Debug.Assert(!parent.IsRed, "parent must be a black node!");
                             if (parent.Right == sibling)
@@ -768,7 +768,7 @@ namespace System.Collections.Generic
                 newChildOfGreatGrandParent = currentIsOnRight ? RotateLeft(grandParent) : RotateRight(grandParent);
             }
             else
-            {  // different orientaton, double rotation
+            {  // different orientation, double rotation
                 newChildOfGreatGrandParent = currentIsOnRight ? RotateLeftRight(grandParent) : RotateRightLeft(grandParent);
                 // current node now becomes the child of greatgrandparent 
                 parent = greatGrandParent;
@@ -808,7 +808,7 @@ namespace System.Collections.Generic
 
         private static void Merge2Nodes(Node parent, Node child1, Node child2)
         {
-            Debug.Assert(IsRed(parent), "parent must be be red");
+            Debug.Assert(IsRed(parent), "parent must be red");
             // combing two 2-nodes into a 4-node
             parent.IsRed = false;
             child1.IsRed = true;
@@ -836,39 +836,39 @@ namespace System.Collections.Generic
             }
         }
 
-        // Replace the matching node with its succesor.
-        private void ReplaceNode(Node match, Node parentOfMatch, Node succesor, Node parentOfSuccesor)
+        // Replace the matching node with its successor.
+        private void ReplaceNode(Node match, Node parentOfMatch, Node successor, Node parentOfsuccessor)
         {
-            if (succesor == match)
+            if (successor == match)
             {  // this node has no successor, should only happen if right child of matching node is null.
                 Debug.Assert(match.Right == null, "Right child must be null!");
-                succesor = match.Left;
+                successor = match.Left;
             }
             else
             {
-                Debug.Assert(parentOfSuccesor != null, "parent of successor cannot be null!");
-                Debug.Assert(succesor.Left == null, "Left child of succesor must be null!");
-                Debug.Assert((succesor.Right == null && succesor.IsRed) || (succesor.Right.IsRed && !succesor.IsRed), "Succesor must be in valid state");
-                if (succesor.Right != null)
+                Debug.Assert(parentOfsuccessor != null, "parent of successor cannot be null!");
+                Debug.Assert(successor.Left == null, "Left child of successor must be null!");
+                Debug.Assert((successor.Right == null && successor.IsRed) || (successor.Right.IsRed && !successor.IsRed), "Successor must be in valid state");
+                if (successor.Right != null)
                 {
-                    succesor.Right.IsRed = false;
+                    successor.Right.IsRed = false;
                 }
 
-                if (parentOfSuccesor != match)
-                {   // detach succesor from its parent and set its right child
-                    parentOfSuccesor.Left = succesor.Right;
-                    succesor.Right = match.Right;
+                if (parentOfsuccessor != match)
+                {   // detach successor from its parent and set its right child
+                    parentOfsuccessor.Left = successor.Right;
+                    successor.Right = match.Right;
                 }
 
-                succesor.Left = match.Left;
+                successor.Left = match.Left;
             }
 
-            if (succesor != null)
+            if (successor != null)
             {
-                succesor.IsRed = match.IsRed;
+                successor.IsRed = match.IsRed;
             }
 
-            ReplaceChildOfNodeOrRoot(parentOfMatch, match, succesor);
+            ReplaceChildOfNodeOrRoot(parentOfMatch, match, successor);
         }
 
         internal virtual Node FindNode(T item)
@@ -1448,7 +1448,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                //worst case: mark every element in my set and see if i've counted all
+                //worst case: mark every element in my set and see if I've counted all
                 //O(MlogN)
 
                 ElementCount result = CheckUniqueAndUnfoundElements(other, false);
@@ -1497,7 +1497,7 @@ namespace System.Collections.Generic
             }
 
 
-            //worst case: mark every element in my set and see if i've counted all
+            //worst case: mark every element in my set and see if I've counted all
             //O(MlogN).
             ElementCount result = CheckUniqueAndUnfoundElements(other, false);
             return (result.uniqueCount == Count && result.unfoundCount > 0);
@@ -1572,7 +1572,7 @@ namespace System.Collections.Generic
             }
 
 
-            //worst case: mark every element in my set and see if i've counted all
+            //worst case: mark every element in my set and see if I've counted all
             //O(MlogN)
             //slight optimization, put it into a HashSet and then check can do it in O(N+M)
             //but slower in better cases + wastes space
@@ -1613,7 +1613,7 @@ namespace System.Collections.Generic
                 return mineEnded && theirsEnded;
             }
 
-            //worst case: mark every element in my set and see if i've counted all
+            //worst case: mark every element in my set and see if I've counted all
             //O(N) by size of other            
             ElementCount result = CheckUniqueAndUnfoundElements(other, true);
             return (result.uniqueCount == Count && result.unfoundCount == 0);

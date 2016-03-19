@@ -237,7 +237,7 @@ namespace System.Linq.Parallel
 
             internal ArrayIndexRangeEnumerator(T[] data, int partitionCount, int partitionIndex, int maxChunkSize)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data mustn't be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");

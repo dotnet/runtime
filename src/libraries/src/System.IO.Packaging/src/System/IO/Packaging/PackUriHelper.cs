@@ -630,7 +630,7 @@ namespace System.IO.Packaging
 
         //Verifies whether the part name is empty. PartName can be empty in two cases :
         //1. Empty String
-        //2. String with just the begining "/"
+        //2. String with just the beginning "/"
         private static bool IsPartNameEmpty(string partName)
         {
             Debug.Assert(partName != null, "Null reference check for this partName parameter should have been made earlier");

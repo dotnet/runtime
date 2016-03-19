@@ -136,7 +136,7 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation("Read on a deep tree atleast more than 4K boundary", Priority = 2)]
+                //[Variation("Read on a deep tree at least more than 4K boundary", Priority = 2)]
                 public void v2()
                 {
                     ManagedNodeWriter mnw = new ManagedNodeWriter();

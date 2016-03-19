@@ -1638,7 +1638,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             },
         };
 
-        public static readonly RSAParameters DiminishedDPParamaters = new RSAParameters
+        public static readonly RSAParameters DiminishedDPParameters = new RSAParameters
         {
             Modulus = new byte[]
             {

@@ -234,7 +234,7 @@ namespace System.Collections.Tests
                 expectedItem = beforeList[i];
                 foundItem = list.Find(EqualsDelegate);
 
-                Assert.Equal(expectedItem, foundItem); //"Err_282308ahid Verifying value retunred from Find FAILED\n"
+                Assert.Equal(expectedItem, foundItem); //"Err_282308ahid Verifying value returned from Find FAILED\n"
             }
 
             //[] Verify Find returns the first item if the match returns true on every item

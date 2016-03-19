@@ -259,7 +259,7 @@ namespace System.Linq.Parallel.Tests
                 //    yield return new object[] { source, operation };
                 //}
 
-                // Zip is the same as Concat, but has a special check for for matching indices (as compared to unordered)
+                // Zip is the same as Concat, but has a special check for matching indices (as compared to unordered)
                 foreach (LabeledOperation operation in Zip_Ordered_Operation(unordered))
                 {
                     yield return new object[] { source, operation };
