@@ -1352,7 +1352,7 @@ namespace System.Globalization
                     if (info.NumberGroupSeparator.Length > 0)
                     {
                         // We need this array to figure out where to insert the thousands seperator. We would have to traverse the string
-                        // backwords. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
+                        // backwards. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
                         // the thousands seperator so we can get away with traversing forwards. Note we only have to compute upto digPos.
                         // The max is not bound since you can have formatting strings of the form "000,000..", and this
                         // should handle that case too.

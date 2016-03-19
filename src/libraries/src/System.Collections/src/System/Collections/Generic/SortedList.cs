@@ -130,7 +130,7 @@ namespace System.Collections.Generic
         // Constructs a new sorted list containing a copy of the entries in the
         // given dictionary. The elements of the sorted list are ordered according
         // to the IComparable interface, which must be implemented by the
-        // keys of all entries in the the given dictionary as well as keys
+        // keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         // 
         public SortedList(IDictionary<TKey, TValue> dictionary)
@@ -143,7 +143,7 @@ namespace System.Collections.Generic
         // to the given IComparer implementation. If comparer is
         // null, the elements are compared to each other using the
         // IComparable interface, which in that case must be implemented
-        // by the keys of all entries in the the given dictionary as well as keys
+        // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         // 
         public SortedList(IDictionary<TKey, TValue> dictionary, IComparer<TKey> comparer)
@@ -516,7 +516,7 @@ namespace System.Collections.Generic
         private const int MaxArrayLength = 0X7FEFFFFF;
 
         // Ensures that the capacity of this sorted list is at least the given
-        // minimum value. If the currect capacity of the list is less than
+        // minimum value. If the current capacity of the list is less than
         // min, the capacity is increased to twice the current capacity or
         // to min, whichever is larger.
         private void EnsureCapacity(int min)

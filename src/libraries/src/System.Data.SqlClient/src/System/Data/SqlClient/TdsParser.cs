@@ -6827,9 +6827,9 @@ namespace System.Data.SqlClient
                             // if we have an output param, set the value to null so we do not send it across to the server
                             if (param.Direction == ParameterDirection.Output)
                             {
-                                isSqlVal = param.ParamaterIsSqlType;  // We have to forward the TYPE info, we need to know what type we are returning.  Once we null the paramater we will no longer be able to distinguish what type were seeing.
+                                isSqlVal = param.ParameterIsSqlType;  // We have to forward the TYPE info, we need to know what type we are returning.  Once we null the parameter we will no longer be able to distinguish what type were seeing.
                                 param.Value = null;
-                                param.ParamaterIsSqlType = isSqlVal;
+                                param.ParameterIsSqlType = isSqlVal;
                             }
                             else
                             {
@@ -7313,11 +7313,11 @@ namespace System.Data.SqlClient
             }
             else if (param.Direction == ParameterDirection.Output)
             {
-                bool isCLRType = param.ParamaterIsSqlType;  // We have to forward the TYPE info, we need to know what type we are returning.  Once we null the paramater we will no longer be able to distinguish what type were seeing.
+                bool isCLRType = param.ParameterIsSqlType;  // We have to forward the TYPE info, we need to know what type we are returning.  Once we null the parameter we will no longer be able to distinguish what type were seeing.
                 param.Value = null;
                 value = null;
                 typeCode = MSS.ExtendedClrTypeCode.DBNull;
-                param.ParamaterIsSqlType = isCLRType;
+                param.ParameterIsSqlType = isCLRType;
             }
             else
             {

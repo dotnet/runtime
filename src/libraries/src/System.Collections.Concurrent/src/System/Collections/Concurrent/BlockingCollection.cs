@@ -687,7 +687,7 @@ nameof(boundedCapacity), boundedCapacity,
             }
             bool waitForSemaphoreWasSuccessful = false;
 
-            // set the combined token source to the combinedToken paramater if it is not null (came from GetConsumingEnumerable)
+            // set the combined token source to the combinedToken parameter if it is not null (came from GetConsumingEnumerable)
             CancellationTokenSource linkedTokenSource = combinedTokenSource;
             try
             {
@@ -974,8 +974,8 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.ArgumentNullException">If the collections argument is null.</exception>
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
-        /// null element. Also, if atleast one of the collections has been marked complete for adds.</exception>
-        /// <exception cref="System.ObjectDisposedException">If atleast one of the collections has been disposed.</exception>
+        /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
+        /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
         private static int TryAddToAnyCore(BlockingCollection<T>[] collections, T item, int millisecondsTimeout, CancellationToken externalCancellationToken)
         {
             ValidateCollectionsArray(collections, true);
@@ -1343,8 +1343,8 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.ArgumentNullException">If the collections argument is null.</exception>
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
-        /// null element. Also, if atleast one of the collections has been marked complete for adds.</exception>
-        /// <exception cref="System.ObjectDisposedException">If atleast one of the collections has been disposed.</exception>
+        /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
+        /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
         private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             ValidateCollectionsArray(collections, false);
@@ -1377,8 +1377,8 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.ArgumentNullException">If the collections argument is null.</exception>
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
-        /// null element. Also, if atleast one of the collections has been marked complete for adds.</exception>
-        /// <exception cref="System.ObjectDisposedException">If atleast one of the collections has been disposed.</exception>
+        /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
+        /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
         private static int TryTakeFromAnyCoreSlow(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             const int OPERATION_FAILED = -1;
@@ -1752,7 +1752,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
         // Private Helpers.
         /// <summary>Centralizes the logic of validating the timeout input argument.</summary>
         /// <param name="timeout">The TimeSpan to wait for to successfully complete an operation on the collection.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">If the number of millseconds represented by the timeout 
+        /// <exception cref="System.ArgumentOutOfRangeException">If the number of milliseconds represented by the timeout 
         /// TimeSpan is less than 0 or is larger than Int32.MaxValue and not Timeout.Infinite</exception>
         private static void ValidateTimeout(TimeSpan timeout)
         {
@@ -1767,7 +1767,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
         /// <summary>Centralizes the logic of validating the millisecondsTimeout input argument.</summary>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait for to successfully complete an 
         /// operation on the collection.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">If the number of millseconds is less than 0 and not 
+        /// <exception cref="System.ArgumentOutOfRangeException">If the number of milliseconds is less than 0 and not 
         /// equal to Timeout.Infinite.</exception>
         private static void ValidateMillisecondsTimeout(int millisecondsTimeout)
         {

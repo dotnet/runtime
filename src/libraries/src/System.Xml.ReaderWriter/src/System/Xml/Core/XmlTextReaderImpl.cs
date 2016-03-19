@@ -277,7 +277,7 @@ namespace System.Xml
         private const int MaxAttrDuplWalkCount = 250;
         private const int MinWhitespaceLookahedCount = 4096;
 
-        private const string XmlDeclarationBegining = "<?xml";
+        private const string XmlDeclarationBeginning = "<?xml";
 
         //
         // Constructors
@@ -2638,7 +2638,7 @@ namespace System.Xml
                 }
             }
 
-            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBegining) ||
+            if (!XmlConvert.StrEqual(_ps.chars, _ps.charPos, 5, XmlDeclarationBeginning) ||
                  _xmlCharType.IsNameSingleChar(_ps.chars[_ps.charPos + 5])
 #if XML10_FIFTH_EDITION
                  || xmlCharType.IsNCNameHighSurrogateChar(ps.chars[ps.charPos + 5])

@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization.Json
                 throw XmlExceptionHelper.CreateConversionException(ticksvalue, "Int64", exception);
             }
 
-            // Convert from # millseconds since epoch to # of 100-nanosecond units, which is what DateTime understands
+            // Convert from # milliseconds since epoch to # of 100-nanosecond units, which is what DateTime understands
             long ticks = millisecondsSinceUnixEpoch * 10000 + JsonGlobals.unixEpochTicks;
 
             try

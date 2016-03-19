@@ -309,7 +309,7 @@ static bool GetDescriptionValue(const char* description, const char* keyName, si
     const char* keyNameStart = strstr(description, keyName);
     if (keyNameStart != nullptr)
     {
-        // set valueStart to the begining of the value
+        // set valueStart to the beginning of the value
         const char* valueStart = keyNameStart + keyNameLength;
         size_t index = 0;
 
