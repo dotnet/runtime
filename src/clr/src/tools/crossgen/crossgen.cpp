@@ -850,6 +850,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
 #ifdef FEATURE_CORECLR
     SString ssTPAList;  
+
+    if (fCreatePDB)
+    {
+        // While creating PDB, assembly binder gives preference to files in TPA.
+        // This can create difficulties if the input file is not in TPA.
+        // To avoid this issue, put the input file as the first item in TPA.
+        ssTPAList.Append(pwzFilename);
+    }
     
     // Are we compiling mscorlib.dll? 
     bool fCompilingMscorlib = StringEndsWith((LPWSTR)pwzFilename, W("mscorlib.dll"));
