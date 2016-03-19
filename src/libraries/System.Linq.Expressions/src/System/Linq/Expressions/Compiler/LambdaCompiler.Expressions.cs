@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    // emit the with the flags and emit emit expression start
+                    // emit the node with the flags and emit expression start
                     EmitExpression(node, UpdateEmitExpressionStartFlag(flags, CompilationFlags.EmitExpressionStart));
                 }
             }
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions.Compiler
             }
             inner.EmitLambdaBody(_scope, true, flags);
 
-            // 4. Emit writebacks if needed
+            // 4. Emit write-backs if needed
             EmitWriteBack(wb);
         }
 
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
-            // about writebacks or EmitAddress
+            // about write-backs or EmitAddress
             foreach (var arg in node.Arguments)
             {
                 EmitExpression(arg);
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
-            // about writebacks or EmitAddress
+            // about write-backs or EmitAddress
             foreach (var arg in index.Arguments)
             {
                 EmitExpression(arg);
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(callOp, mi);
             }
 
-            // Emit writebacks for properties passed as "ref" arguments
+            // Emit write-backs for properties passed as "ref" arguments
             EmitWriteBack(wb);
         }
 
@@ -465,11 +465,11 @@ namespace System.Linq.Expressions.Compiler
             // static, ref:     call
             // static, value:   call
             // virtual, ref:    callvirt
-            // virtual, value:  call -- eg, double.ToString must be a non-virtual call to be verifiable.
+            // virtual, value:  call -- e.g. double.ToString must be a non-virtual call to be verifiable.
             // instance, ref:   callvirt -- this looks wrong, but is verifiable and gives us a free null check.
             // instance, value: call
             //
-            // We never need to generate a nonvirtual call to a virtual method on a reference type because
+            // We never need to generate a non-virtual call to a virtual method on a reference type because
             // expression trees do not support "base.Foo()" style calling.
             // 
             // We could do an optimization here for the case where we know that the object is a non-null
@@ -490,7 +490,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Emits arguments to a call, and returns an array of writebacks that
+        /// Emits arguments to a call, and returns an array of write-backs that
         /// should happen after the call.
         /// </summary>
         private List<WriteBack> EmitArguments(MethodBase method, IArgumentProvider args)
@@ -499,7 +499,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Emits arguments to a call, and returns an array of writebacks that
+        /// Emits arguments to a call, and returns an array of write-backs that
         /// should happen after the call. For emitting dynamic expressions, we
         /// need to skip the first parameter of the method (the call site).
         /// </summary>
@@ -690,7 +690,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 // Note: the stloc/ldloc pattern is a bit suboptimal, but it
                 // saves us from having to spill stack when assigning to a
-                // byref parameter. We already make this same tradeoff for
+                // byref parameter. We already make this same trade-off for
                 // hoisted variables, see ElementStorage.EmitStore
 
                 LocalBuilder value = GetLocal(variable.Type);

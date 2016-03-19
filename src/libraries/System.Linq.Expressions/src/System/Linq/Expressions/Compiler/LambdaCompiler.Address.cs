@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Emit indexes. We don't allow byref args, so no need to worry
-            // about writebacks or EmitAddress
+            // about write-backs or EmitAddress
             List<LocalBuilder> args = new List<LocalBuilder>();
             foreach (var arg in node.Arguments)
             {

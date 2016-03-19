@@ -120,7 +120,7 @@ namespace System.Linq.Expressions
 
         #endregion
 
-        #region Output an expresstion tree to a string
+        #region Output an expression tree to a string
 
         /// <summary>
         /// Output a given expression tree to a string.

@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Creates a lambda compiler that will compile into the provided Methodbuilder
+        /// Creates a lambda compiler that will compile into the provided MethodBuilder
         /// </summary>
         private LambdaCompiler(AnalyzedTree tree, LambdaExpression lambda, MethodBuilder method)
         {
@@ -277,7 +277,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Creates an unitialized field suitable for private implementation details
+        /// Creates an uninitialized field suitable for private implementation details
         /// Works with DynamicMethods or TypeBuilders.
         /// </summary>
         private MemberExpression CreateLazyInitializedField<T>(string name)

@@ -242,7 +242,7 @@ namespace System.Linq.Expressions
         /// Creates a <see cref="DebugInfoExpression"/> for clearing a sequence point.
         /// </summary>
         /// <param name="document">The <see cref="SymbolDocumentInfo"/> that represents the source file.</param>
-        /// <returns>An instance of <see cref="DebugInfoExpression"/> for clearning a sequence point.</returns>
+        /// <returns>An instance of <see cref="DebugInfoExpression"/> for clearing a sequence point.</returns>
         public static DebugInfoExpression ClearDebugInfo(SymbolDocumentInfo document)
         {
             ContractUtils.RequiresNotNull(document, nameof(document));

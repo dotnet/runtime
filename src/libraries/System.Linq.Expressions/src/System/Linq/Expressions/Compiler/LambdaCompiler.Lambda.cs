@@ -160,7 +160,7 @@ namespace System.Linq.Expressions.Compiler
         /// <param name="parent">The parent scope.</param>
         /// <param name="inlined">true if the lambda is inlined; false otherwise.</param>
         /// <param name="flags">
-        /// The emum to specify if the lambda is compiled with the tail call optimization. 
+        /// The enum to specify if the lambda is compiled with the tail call optimization. 
         /// </param>
         private void EmitLambdaBody(CompilerScope parent, bool inlined, CompilationFlags flags)
         {
