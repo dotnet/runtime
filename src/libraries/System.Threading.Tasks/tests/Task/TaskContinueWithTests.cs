@@ -1257,6 +1257,36 @@ namespace System.Threading.Tasks.Tests
             // These tests will have stack overflowed if they failed.
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestNoDeadlockOnContinueWithExecuteSynchronously(bool useWaitAll)
+        {
+            // Verify that Task.Wait can return before all continuations scheduled
+            // with ExecuteSynchronously complete
+
+            Task task1 = new Task(() => { });
+
+            ManualResetEventSlim mres = new ManualResetEventSlim(false);
+            Task task2 = task1.ContinueWith((_task) => { mres.Wait(); }, TaskContinuationOptions.ExecuteSynchronously);
+
+            task1.Start();
+
+            // Wait should return once the task is complete, regardless of what other 
+            // continuations were scheduled off of it.
+            if (useWaitAll)
+            {
+                Task.WaitAll(task1);
+            }
+            else
+            {
+                task1.Wait();
+            }
+
+            mres.Set(); // Allow continuation to end
+            task2.Wait();
+        }
+
         #endregion
 
         #region Helper Methods
