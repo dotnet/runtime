@@ -4,9 +4,6 @@
 
 namespace System.ComponentModel
 {
-    using System;
-    using System.Security.Permissions;
-
     /// <include file='doc\AttributeProviderAttribute.uex' path='docs/doc[@for="AttributeProviderAttribute"]/*' />
     /// <devdoc>
     /// </devdoc>
@@ -25,7 +22,7 @@ namespace System.ComponentModel
         {
             if (typeName == null)
             {
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             }
 
             _typeName = typeName;
@@ -39,11 +36,11 @@ namespace System.ComponentModel
         {
             if (typeName == null)
             {
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             }
             if (propertyName == null)
             {
-                throw new ArgumentNullException("propertyName");
+                throw new ArgumentNullException(nameof(propertyName));
             }
 
             _typeName = typeName;
@@ -58,7 +55,7 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             _typeName = type.AssemblyQualifiedName;

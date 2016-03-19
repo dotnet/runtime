@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
@@ -49,7 +44,7 @@ namespace System.ComponentModel
             {
                 if (s_action == null)
                 {
-                    s_action = new CategoryAttribute("Action");
+                    s_action = new CategoryAttribute(nameof(Action));
                 }
                 return s_action;
             }
@@ -64,7 +59,7 @@ namespace System.ComponentModel
             {
                 if (s_appearance == null)
                 {
-                    s_appearance = new CategoryAttribute("Appearance");
+                    s_appearance = new CategoryAttribute(nameof(Appearance));
                 }
                 return s_appearance;
             }
@@ -79,7 +74,7 @@ namespace System.ComponentModel
             {
                 if (s_asynchronous == null)
                 {
-                    s_asynchronous = new CategoryAttribute("Asynchronous");
+                    s_asynchronous = new CategoryAttribute(nameof(Asynchronous));
                 }
                 return s_asynchronous;
             }
@@ -94,7 +89,7 @@ namespace System.ComponentModel
             {
                 if (s_behavior == null)
                 {
-                    s_behavior = new CategoryAttribute("Behavior");
+                    s_behavior = new CategoryAttribute(nameof(Behavior));
                 }
                 return s_behavior;
             }
@@ -109,7 +104,7 @@ namespace System.ComponentModel
             {
                 if (s_data == null)
                 {
-                    s_data = new CategoryAttribute("Data");
+                    s_data = new CategoryAttribute(nameof(Data));
                 }
                 return s_data;
             }
@@ -139,7 +134,7 @@ namespace System.ComponentModel
             {
                 if (s_design == null)
                 {
-                    s_design = new CategoryAttribute("Design");
+                    s_design = new CategoryAttribute(nameof(Design));
                 }
                 return s_design;
             }
@@ -154,7 +149,7 @@ namespace System.ComponentModel
             {
                 if (s_dragDrop == null)
                 {
-                    s_dragDrop = new CategoryAttribute("DragDrop");
+                    s_dragDrop = new CategoryAttribute(nameof(DragDrop));
                 }
                 return s_dragDrop;
             }
@@ -169,7 +164,7 @@ namespace System.ComponentModel
             {
                 if (s_focus == null)
                 {
-                    s_focus = new CategoryAttribute("Focus");
+                    s_focus = new CategoryAttribute(nameof(Focus));
                 }
                 return s_focus;
             }
@@ -184,7 +179,7 @@ namespace System.ComponentModel
             {
                 if (s_format == null)
                 {
-                    s_format = new CategoryAttribute("Format");
+                    s_format = new CategoryAttribute(nameof(Format));
                 }
                 return s_format;
             }
@@ -199,7 +194,7 @@ namespace System.ComponentModel
             {
                 if (s_key == null)
                 {
-                    s_key = new CategoryAttribute("Key");
+                    s_key = new CategoryAttribute(nameof(Key));
                 }
                 return s_key;
             }
@@ -214,7 +209,7 @@ namespace System.ComponentModel
             {
                 if (s_layout == null)
                 {
-                    s_layout = new CategoryAttribute("Layout");
+                    s_layout = new CategoryAttribute(nameof(Layout));
                 }
                 return s_layout;
             }
@@ -229,7 +224,7 @@ namespace System.ComponentModel
             {
                 if (s_mouse == null)
                 {
-                    s_mouse = new CategoryAttribute("Mouse");
+                    s_mouse = new CategoryAttribute(nameof(Mouse));
                 }
                 return s_mouse;
             }
@@ -245,7 +240,7 @@ namespace System.ComponentModel
             {
                 if (s_windowStyle == null)
                 {
-                    s_windowStyle = new CategoryAttribute("WindowStyle");
+                    s_windowStyle = new CategoryAttribute(nameof(WindowStyle));
                 }
                 return s_windowStyle;
             }
@@ -255,7 +250,7 @@ namespace System.ComponentModel
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CategoryAttribute'/> 
         /// class with the default category.</para>
         /// </devdoc>
-        public CategoryAttribute() : this("Default")
+        public CategoryAttribute() : this(nameof(Default))
         {
         }
 
@@ -323,19 +318,10 @@ namespace System.ComponentModel
         /// </devdoc>
         protected virtual string GetLocalizedString(string value)
         {
-#if !SILVERLIGHT
-            return (string)SR.GetObject("PropertyCategory" + value);
-#else
-            bool usedFallback;
-            string localizedString = SR.GetString("PropertyCategory" + value, out usedFallback);
-            if (usedFallback) {
-                return null;
-            }
-            return localizedString;
-#endif
+            return SR.GetResourceString("PropertyCategory" + value, null);
         }
 
-#if !SILVERLIGHT
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// </devdoc>
         /// <devdoc>
@@ -349,4 +335,3 @@ namespace System.ComponentModel
 #endif
     }
 }
-

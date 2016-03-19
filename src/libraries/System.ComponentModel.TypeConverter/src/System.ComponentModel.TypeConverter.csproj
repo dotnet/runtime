@@ -15,10 +15,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
+
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
-    <!--<Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />-->
+    <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
     <Compile Include="System\ComponentModel\ByteConverter.cs" />
@@ -34,10 +35,10 @@
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
-    <!--<Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />-->
-    <!--<Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />-->
-    <!--<Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />-->
-    <!--<Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />-->
+    <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
+    <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
+    <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
     <Compile Include="System\ComponentModel\EnumConverter.cs" />
     <Compile Include="System\ComponentModel\EventDescriptor.cs" />
@@ -45,6 +46,7 @@
     <!--<Compile Include="System\ComponentModel\EventHandlerList.cs" />-->
     <!--<Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />-->
     <!--<Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />-->
+    <Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
     <!--<Compile Include="System\ComponentModel\HandledEventArgs.cs" />-->
     <!--<Compile Include="System\ComponentModel\HandledEventHandler.cs" />-->
@@ -52,7 +54,7 @@
     <Compile Include="System\ComponentModel\Int32Converter.cs" />
     <Compile Include="System\ComponentModel\Int64Converter.cs" />
     <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
-    <!--<Compile Include="System\ComponentModel\IExtenderProvider.cs" />-->
+    <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <!--<Compile Include="System\ComponentModel\IListSource.cs" />-->
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
     <!--<Compile Include="System\ComponentModel\ITypeDescriptorFilterService.cs" />-->
@@ -62,7 +64,7 @@
     <Compile Include="System\ComponentModel\NullableConverter.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
-    <!--<Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />-->
+    <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
     <!--<Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />-->
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
@@ -76,7 +78,7 @@
     <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptor.cs" />
     <!--<Compile Include="System\ComponentModel\TypeDescriptionProvider.cs" />-->
-    <!--<Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />-->
+    <Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeListConverter.cs" />
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
