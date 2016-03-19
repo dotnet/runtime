@@ -24,60 +24,7 @@ namespace System.Net
             bool isServer,
             string hostName)
         {
-            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-
-            if (!chain.Build(remoteCertificate))
-            {
-                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-            }
-
-            if (checkCertName)
-            {
-                if (string.IsNullOrEmpty(hostName))
-                {
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-                }
-                else
-                {
-                    int hostnameMatch;
-
-                    using (SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(remoteCertificate.Handle))
-                    {
-                        IPAddress hostnameAsIp;
-
-                        if (IPAddress.TryParse(hostName, out hostnameAsIp))
-                        {
-                            byte[] addressBytes = hostnameAsIp.GetAddressBytes();
-
-                            hostnameMatch = Interop.Crypto.CheckX509IpAddress(
-                                certHandle,
-                                addressBytes,
-                                addressBytes.Length,
-                                hostName,
-                                hostName.Length);
-                        }
-                        else
-                        {
-                            // The IdnMapping converts Unicode input into the IDNA punycode sequence.
-                            // It also does host case normalization.  The bypass logic would be something
-                            // like "all characters being within [a-z0-9.-]+"
-                            //
-                            // Since it's not documented as being thread safe, create a new one each time.
-                            IdnMapping mapping = new IdnMapping();
-                            string matchName = mapping.GetAscii(hostName);
-
-                            hostnameMatch = Interop.Crypto.CheckX509Hostname(certHandle, matchName, matchName.Length);
-                        }
-                    }
-
-                    if (hostnameMatch != 1)
-                    {
-                        Debug.Assert(hostnameMatch == 0, "hostnameMatch should be (0,1) was " + hostnameMatch);
-                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-                    }
-                }
-            }
-            return sslPolicyErrors;
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, hostName);
         }
 
         //

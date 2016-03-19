@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,6 +65,23 @@ namespace System.Net.Http
             {
                 _curlHandler.ClientCertificateOptions = value;
             }
+        }
+
+        public X509Certificate2Collection ClientCertificates
+        {
+            get { return _curlHandler.ClientCertificates; }
+        }
+
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
+        {
+            get { return _curlHandler.ServerCertificateValidationCallback; }
+            set { _curlHandler.ServerCertificateValidationCallback = value; }
+        }
+
+        public bool CheckCertificateRevocationList
+        {
+            get { return _curlHandler.CheckCertificateRevocationList; }
+            set { _curlHandler.CheckCertificateRevocationList = value; }
         }
 
         public DecompressionMethods AutomaticDecompression
