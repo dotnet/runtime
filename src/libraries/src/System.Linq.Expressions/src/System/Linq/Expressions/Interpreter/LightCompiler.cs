@@ -39,10 +39,9 @@ namespace System.Linq.Expressions.Interpreter
 
         internal TryCatchFinallyHandler Parent = null;
 
-        public bool IsFault { get { return ExceptionType == null; } }
-
         internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter filter)
         {
+            Debug.Assert(exceptionType != null);
             StartIndex = start;
             EndIndex = end;
             LabelIndex = labelIndex;
@@ -93,27 +92,29 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString()
         {
-            return String.Format(CultureInfo.InvariantCulture, "{0} [{1}-{2}] [{3}->{4}]",
-                (IsFault ? "fault" : "catch(" + ExceptionType.Name + ")"),
-                StartIndex, EndIndex,
-                HandlerStartIndex, HandlerEndIndex
+            return String.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}-{2}] [{3}->{4}]",
+                ExceptionType.Name, StartIndex, EndIndex, HandlerStartIndex, HandlerEndIndex
             );
         }
     }
 
     internal sealed class TryCatchFinallyHandler
     {
-        internal readonly int TryStartIndex = Instruction.UnknownInstrIndex;
-        internal readonly int TryEndIndex = Instruction.UnknownInstrIndex;
-        internal readonly int FinallyStartIndex = Instruction.UnknownInstrIndex;
-        internal readonly int FinallyEndIndex = Instruction.UnknownInstrIndex;
-        internal readonly int GotoEndTargetIndex = Instruction.UnknownInstrIndex;
+        internal readonly int TryStartIndex;
+        internal readonly int TryEndIndex;
+        internal readonly int FinallyStartIndex;
+        internal readonly int FinallyEndIndex;
+        internal readonly int GotoEndTargetIndex;
 
         private readonly ExceptionHandler[] _handlers;
 
         internal bool IsFinallyBlockExist
         {
-            get { return (FinallyStartIndex != Instruction.UnknownInstrIndex && FinallyEndIndex != Instruction.UnknownInstrIndex); }
+            get
+            {
+                Debug.Assert((FinallyStartIndex != Instruction.UnknownInstrIndex) == (FinallyEndIndex != Instruction.UnknownInstrIndex));
+                return FinallyStartIndex != Instruction.UnknownInstrIndex;
+            }
         }
 
         internal bool IsCatchBlockExist
@@ -128,15 +129,6 @@ namespace System.Linq.Expressions.Interpreter
             : this(tryStart, tryEnd, gotoEndTargetIndex, Instruction.UnknownInstrIndex, Instruction.UnknownInstrIndex, handlers)
         {
             Debug.Assert(handlers != null, "catch blocks should exist");
-        }
-
-        /// <summary>
-        /// No catch blocks
-        /// </summary>
-        internal TryCatchFinallyHandler(int tryStart, int tryEnd, int gotoEndTargetIndex, int finallyStart, int finallyEnd)
-            : this(tryStart, tryEnd, gotoEndTargetIndex, finallyStart, finallyEnd, null)
-        {
-            Debug.Assert(finallyStart != Instruction.UnknownInstrIndex && finallyEnd != Instruction.UnknownInstrIndex, "finally block should exist");
         }
 
         /// <summary>
@@ -163,6 +155,16 @@ namespace System.Linq.Expressions.Interpreter
 
         internal bool HasHandler(InterpretedFrame frame, ref Exception exception, out ExceptionHandler handler)
         {
+#if DEBUG
+            if (exception is RethrowException)
+            {
+                // Unreachable.
+                // Want to assert that this case isn't hit, but an assertion failure here will be eaten because
+                // we are in an exception filter. Therefore return true here and assert in the catch block.
+                handler = null;
+                return true;
+            }
+#endif
             frame.SaveTraceToException(exception);
 
             if (IsCatchBlockExist)
@@ -2038,40 +2040,6 @@ namespace System.Linq.Expressions.Interpreter
             if (node.Handlers.Count > 0)
             {
                 exHandlers = new List<ExceptionHandler>();
-
-                // emulates faults 
-                if (node.Finally == null && node.Handlers.Count == 1)
-                {
-                    var handler = node.Handlers[0];
-                    if (handler.Filter == null && handler.Test == typeof(Exception) && handler.Variable == null)
-                    {
-                        if (EndsWithRethrow(handler.Body))
-                        {
-                            if (hasValue)
-                            {
-                                _instructions.EmitEnterExceptionHandlerNonVoid();
-                            }
-                            else
-                            {
-                                _instructions.EmitEnterExceptionHandlerVoid();
-                            }
-
-                            // at this point the stack balance is prepared for the hidden exception variable:
-                            int handlerLabel = _instructions.MarkRuntimeLabel();
-                            int handlerStart = _instructions.Count;
-
-                            CompileAsVoidRemoveRethrow(handler.Body);
-                            _instructions.EmitLeaveFault(hasValue);
-                            _instructions.MarkLabel(end);
-
-                            exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, null, null));
-                            enterTryInstr.SetTryHandler(new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex, exHandlers.ToArray()));
-                            PopLabelBlock(LabelScopeKind.Try);
-                            return;
-                        }
-                    }
-                }
-
                 foreach (var handler in node.Handlers)
                 {
                     var parameter = handler.Variable ?? Expression.Parameter(handler.Test);
@@ -2132,10 +2100,9 @@ namespace System.Linq.Expressions.Interpreter
                     _locals.UndefineLocal(local, _instructions.Count);
                 }
 
-                if (node.Fault != null)
-                {
-                    throw new PlatformNotSupportedException(SR.FaultBlockNotSupported);
-                }
+                // There was an error-check here that could not have been hit in any case.
+                // Assert in the name of caution.
+                Debug.Assert(node.Fault == null);
             }
 
             if (node.Finally != null)

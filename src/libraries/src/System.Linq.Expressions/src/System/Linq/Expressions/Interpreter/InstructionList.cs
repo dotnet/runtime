@@ -1112,11 +1112,6 @@ namespace System.Linq.Expressions.Interpreter
             Emit(LeaveFinallyInstruction.Instance);
         }
 
-        public void EmitLeaveFault(bool hasValue)
-        {
-            Emit(hasValue ? LeaveFaultInstruction.NonVoid : LeaveFaultInstruction.Void);
-        }
-
         public void EmitEnterExceptionFilter()
         {
             Emit(EnterExceptionFilterInstruction.Instance);

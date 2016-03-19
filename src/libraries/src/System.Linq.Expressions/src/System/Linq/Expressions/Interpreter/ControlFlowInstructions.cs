@@ -392,13 +392,9 @@ namespace System.Linq.Expressions.Interpreter
                     frame.InstructionIndex += instructions[index].Run(frame);
                 }
             }
-            catch (RethrowException)
-            {
-                // a rethrow instruction in the try handler gets to run
-                throw;
-            }
             catch (Exception exception) when (_tryHandler.HasHandler(frame, ref exception, out exHandler))
             {
+                Debug.Assert(!(exception is RethrowException));
                 frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, exception, gotoExceptionHandler: true);
 
 #if FEATURE_THREAD_ABORT
@@ -616,7 +612,6 @@ namespace System.Linq.Expressions.Interpreter
 
         // A variable storing the current exception is pushed to the stack by exception handling.
         // Catch handlers: The value is immediately popped and stored into a local.
-        // Fault handlers: The value is kept on stack during fault handler evaluation.
         public override int ProducedStack { get { return 1; } }
 
         [ExcludeFromCodeCoverage] // Known to be a no-op, this instruction is skipped on execution.
@@ -675,49 +670,6 @@ namespace System.Linq.Expressions.Interpreter
             return GetLabel(frame).Index - frame.InstructionIndex;
         }
     }
-
-    /// <summary>
-    /// The last instruction of a fault exception handler.
-    /// </summary>
-    internal sealed class LeaveFaultInstruction : Instruction
-    {
-        internal static readonly Instruction NonVoid = new LeaveFaultInstruction(true);
-        internal static readonly Instruction Void = new LeaveFaultInstruction(false);
-
-        private readonly bool _hasValue;
-
-        public override string InstructionName
-        {
-            get { return "LeaveFault"; }
-        }
-
-        // The fault block has a value if the body is non-void, but the value is never used.
-        // We compile the body of a fault block as void.
-        // However, we keep the exception object that was pushed upon entering the fault block on the stack during execution of the block
-        // and pop it at the end.
-        public override int ConsumedStack
-        {
-            get { return 1; }
-        }
-
-        // While emitting instructions a non-void try-fault expression is expected to produce a value. 
-        public override int ProducedStack
-        {
-            get { return _hasValue ? 1 : 0; }
-        }
-
-        private LeaveFaultInstruction(bool hasValue)
-        {
-            _hasValue = hasValue;
-        }
-
-        public override int Run(InterpretedFrame frame)
-        {
-            object exception = frame.Pop();
-            throw new RethrowException();
-        }
-    }
-
 
     internal sealed class ThrowInstruction : Instruction
     {

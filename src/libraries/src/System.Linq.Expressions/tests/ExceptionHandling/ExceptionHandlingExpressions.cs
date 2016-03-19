@@ -430,6 +430,60 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, Expression.Lambda<Func<int>>(chain).Compile(useInterpreter)());
         }
 
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void UserEmulatedFaultThroughCatch(bool useInterpreter)
+        {
+            ParameterExpression variable = Expression.Parameter(typeof(int));
+            Func<int> func = Expression.Lambda<Func<int>>(
+                Expression.Block(
+                    new[] { variable },
+                    Expression.TryCatch(
+                        Expression.TryCatch(
+                            Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                            Expression.Catch(typeof(Exception), Expression.Block(Expression.Assign(variable, Expression.Constant(10)), Expression.Rethrow(typeof(int))))
+                            ),
+                            Expression.Catch(typeof(TestException), Expression.Add(variable, Expression.Constant(2)))
+                        )
+                    )
+                ).Compile(useInterpreter);
+            Assert.Equal(12, func());
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void UserEmulatedFaultThroughCatchVoid(bool useInterpreter)
+        {
+            StringBuilder output = new StringBuilder();
+            ConstantExpression builder = Expression.Constant(output);
+            var noTypes = new Type[0];
+            Action act = Expression.Lambda<Action>(
+                Expression.Block(
+                    Expression.TryCatch(
+                        Expression.TryCatch(
+                            Expression.Throw(Expression.Constant(new TestException())),
+                            Expression.Catch(
+                                typeof(Exception),
+                                Expression.Block(
+                                    Expression.Call(builder, "Append", noTypes, Expression.Constant('A')),
+                                    Expression.Rethrow()
+                                    )
+                                )
+                            ),
+                            Expression.Catch(
+                                typeof(TestException),
+                                Expression.Block(
+                                    Expression.Call(builder, "Append", noTypes, Expression.Constant('B')),
+                                    Expression.Empty()
+                                    )
+                                )
+                        )
+                    )
+                ).Compile(useInterpreter);
+            act();
+            Assert.Equal("AB", output.ToString());
+        }
+
         [Fact]
         public void TypeInferred()
         {
