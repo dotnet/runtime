@@ -4812,8 +4812,10 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
     if (!fAtLeastOneNativeModuleFound)
     {
         GetSvcLogger()->Printf(
+            W("Loaded image '%s' (for input file '%s') is not a native image.\n"),
+            pAssembly->GetManifestFile()->GetPath().GetUnicode(),
             pNativeImagePath);
-        return E_FAIL;
+        return CORDBG_E_NO_IMAGE_AVAILABLE;
     }
 
     GetSvcLogger()->Printf(
