@@ -3,13 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
-
-using CURLcode = Interop.Http.CURLcode;
 
 namespace System.Net.Http
 {
@@ -19,13 +16,15 @@ namespace System.Net.Http
         {
             internal readonly GCHandle _gcHandle;
             internal readonly Interop.Ssl.ClientCertCallback _callback;
-            private SafeEvpPKeyHandle _privateKeyHandle = null;
-            private SafeX509Handle _certHandle = null;
+            private readonly X509Certificate2Collection _clientCertificates;
+            private SafeEvpPKeyHandle _privateKeyHandle;
+            private SafeX509Handle _certHandle;
 
-            internal ClientCertificateProvider ()
+            internal ClientCertificateProvider(X509Certificate2Collection clientCertificates)
             {
                 _gcHandle = GCHandle.Alloc(this);
                 _callback = TlsClientCertCallback;
+                _clientCertificates = clientCertificates;
             }
 
             private int TlsClientCertCallback(IntPtr ssl, out IntPtr certHandle, out IntPtr privateKeyHandle)
@@ -39,9 +38,24 @@ namespace System.Net.Http
                     ISet<string> issuerNames = GetRequestCertificateAuthorities(sslHandle);
                     X509Certificate2 certificate;
                     X509Chain chain;
-                    if (!GetClientCertificate(issuerNames, out certificate, out chain))
+
+                    if (_clientCertificates != null) // manual mode
                     {
-                        EventSourceTrace("No certificate or chain");
+                        // If there's one certificate, just use it. Otherwise, try to find the best one.
+                        if (_clientCertificates.Count == 1)
+                        {
+                            certificate = _clientCertificates[0];
+                            chain = TLSCertificateExtensions.BuildNewChain(certificate);
+                        }
+                        else if (!_clientCertificates.TryFindClientCertificate(issuerNames, out certificate, out chain))
+                        {
+                            EventSourceTrace("No manual certificate or chain.");
+                            return 0;
+                        }
+                    }
+                    else if (!GetClientCertificate(issuerNames, out certificate, out chain)) // automatic mode
+                    {
+                        EventSourceTrace("No automatic certificate or chain.");
                         return 0;
                     }
 
