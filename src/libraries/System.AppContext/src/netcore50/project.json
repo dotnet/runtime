@@ -2,12 +2,12 @@
   "frameworks": {
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "Microsoft.TargetingPack.Private.WinRT": "1.0.1",
         "System.Collections": "4.0.0",
         "System.Resources.ResourceManager": "4.0.0",
         "System.Runtime": "4.0.20",
-        "System.Threading": "4.0.0"
+        "System.Threading": "4.0.10"
       }
     }
   },

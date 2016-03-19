@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.CSharp": "4.0.1-rc3-23910",
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
-    "System.Data.Common": "4.0.1-rc3-23910",
-    "System.Text.RegularExpressions": "4.0.10",
+    "Microsoft.CSharp": "4.0.1-rc3-23918",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
+    "System.Data.Common": "4.0.1-rc3-23918",
+    "System.Text.RegularExpressions": "4.0.12-rc3-23918",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },

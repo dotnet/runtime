@@ -1,8 +1,8 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "System.Collections": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
@@ -14,10 +14,13 @@
         "System.Runtime.Extensions": "4.0.10",
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Principal.Windows": "4.0.0-rc3-23910",
+        "System.Security.Principal.Windows": "4.0.0-rc3-23918",
         "System.Threading": "4.0.10",
         "System.Threading.Tasks": "4.0.0"
-      }
+      },
+      "imports": [
+        "dotnet5.4"
+      ]
     },
     "net46": {
       "dependencies": {

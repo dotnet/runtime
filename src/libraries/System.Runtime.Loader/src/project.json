@@ -1,9 +1,12 @@
 {
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.5": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
-      }
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23918"
+      },
+      "imports": [
+        "dotnet5.6"
+      ]
     }
   }
 }

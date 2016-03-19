@@ -1,9 +1,12 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23910",
-    "System.Runtime": "4.0.20",
-    "System.Runtime.Handles": "4.0.0",
-    "System.Security.Claims": "4.0.0",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
+    "System.Linq.Expressions": "4.0.11-rc3-23918",
+    "System.ObjectModel": "4.0.12-rc3-23918",
+    "System.Runtime": "4.1.0-rc3-23918",
+    "System.Runtime.Handles": "4.0.1-rc3-23918",
+    "System.Security.Claims": "4.0.1-rc3-23918",
+    "System.Text.RegularExpressions": "4.0.12-rc3-23918",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
