@@ -481,7 +481,7 @@ namespace Microsoft.SqlServer.Server
     //
     internal class SmiExtendedMetaData : SmiMetaData
     {
-        private string _name;           // context-dependant identifier, ie. parameter name for parameters, column name for columns, etc.
+        private string _name;           // context-dependant identifier, i.e. parameter name for parameters, column name for columns, etc.
 
         // three-part name for typed xml schema and for udt names
         private string _typeSpecificNamePart1;

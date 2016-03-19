@@ -3102,7 +3102,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else
                 {
                     // NaN has some implementation defined bits that differ between platforms.
-                    // Normalize it to produce identical images accross all platforms
+                    // Normalize it to produce identical images across all platforms
                     /*
                      * How do we get here?
                     if (_isnan(result))

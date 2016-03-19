@@ -44,7 +44,7 @@ namespace System.Collections.Tests
             Assert.Equal(expectedItems.Count, list.Count);
 
             //Only verify the indexer. List should be in a good enough state that we
-            //do not have to verify consistancy with any other method.
+            //do not have to verify consistency with any other method.
             for (int i = 0; i < list.Count; ++i)
             {
                 Assert.True(list[i] == null ? expectedItems[i] == null : list[i].Equals(expectedItems[i]));

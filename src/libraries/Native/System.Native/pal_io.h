@@ -479,7 +479,7 @@ extern "C" int32_t SystemNative_FnMatch(const char* pattern, const char* path, F
 /**
  * Seek to a specified location within a seekable stream
  *
- * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
+ * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
  * returns -1 and errno is set.
  */
 extern "C" int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, SeekWhence whence);

@@ -158,7 +158,7 @@ namespace System.IO.Packaging
             }
 
             /// <summary>
-            /// Resets the enumerator to the begining
+            /// Resets the enumerator to the beginning
             /// </summary>
             void IEnumerator.Reset()
             {

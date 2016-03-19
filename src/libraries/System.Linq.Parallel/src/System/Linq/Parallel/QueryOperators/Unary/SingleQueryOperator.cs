@@ -18,7 +18,7 @@ namespace System.Linq.Parallel
     /// Single searches the input to find the sole element that satisfies the (optional)
     /// predicate.  If multiple such elements are found, the caller is responsible for
     /// producing an error.  There is some degree of cross-partition synchronization to
-    /// proactively hault the search if we ever determine there are multiple elements
+    /// proactively halt the search if we ever determine there are multiple elements
     /// satisfying the search in the input.
     /// </summary>
     /// <typeparam name="TSource"></typeparam>

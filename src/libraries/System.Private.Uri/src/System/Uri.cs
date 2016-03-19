@@ -1941,7 +1941,7 @@ namespace System
 
                     if (_syntax.InFact(UriSyntaxFlags.MustHaveAuthority))
                     {
-                        // (V1.0 compatiblity) This will allow http:\\ http:\/ http:/\
+                        // (V1.0 compatibility) This will allow http:\\ http:\/ http:/\
                         if ((first == '/' || first == '\\') && (second == '/' || second == '\\'))
                         {
                             _flags |= Flags.AuthorityFound;

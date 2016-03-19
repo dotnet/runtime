@@ -535,7 +535,7 @@ namespace System.Diagnostics
                         startupInfo.dwFlags = Interop.mincore.StartupInfoOptions.STARTF_USESTDHANDLES;
                     }
 
-                    // set up the creation flags paramater
+                    // set up the creation flags parameter
                     int creationFlags = 0;
                     if (startInfo.CreateNoWindow) creationFlags |= Interop.mincore.StartupInfoOptions.CREATE_NO_WINDOW;
 
