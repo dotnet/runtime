@@ -5527,7 +5527,6 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i + 1)) {
 			klass = mono_class_get_checked (image, (i + 1) | MONO_TOKEN_TYPE_DEF, error);
 			mono_loader_assert_no_error (); /* Plug any leaks */
-			mono_error_assert_ok (error);
 			
 			if (klass) {
 				rt = mono_type_get_object_checked (domain, &klass->byval_arg, error);
