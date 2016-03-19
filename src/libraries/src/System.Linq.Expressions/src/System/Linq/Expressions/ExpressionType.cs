@@ -34,7 +34,7 @@ namespace System.Linq.Expressions
         /// </summary>
         ArrayIndex,
         /// <summary>
-        /// A node that represents represents a method call.
+        /// A node that represents a method call.
         /// </summary>
         Call,
         /// <summary>
