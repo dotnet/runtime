@@ -2,157 +2,51 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarsTests
+namespace System.Globalization.Tests
 {
-    // GregorianCalendar.AddYears(DateTime, int)
     public class GregorianCalendarAddYears
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
+        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
 
-        #region Positive tests
-        // PosTest1: Add zero year to the specified date time
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> AddYears_TestData()
         {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 0;
-            initialTime = DateTime.Now;
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            Assert.Equal(initialTime, resultingTime);
+            yield return new object[] { DateTime.Now, 0 };
+            yield return new object[] { s_calendar.MinSupportedDateTime, 100 };
+            yield return new object[] { s_calendar.MaxSupportedDateTime, -99 };
+            yield return new object[] { new DateTime(s_randomDataGenerator.GetInt64(-55) % s_calendar.MaxSupportedDateTime.Ticks), 1 };
+
+            // February in a leap year
+            yield return new object[] { s_calendar.ToDateTime(2000, 2, 29, 10, 30, 24, 0), 13 };
+            yield return new object[] { s_calendar.ToDateTime(1996, 2, 29, 10, 30, 24, 0), 4 };
+
+            // Month other than February in a leap year
+            yield return new object[] { s_calendar.ToDateTime(1996, 3, 29, 10, 30, 24, 0), 48 };
+
+            // February in a common year
+            yield return new object[] { s_calendar.ToDateTime(1999, 2, 28, 10, 30, 24, 0), 48 };
         }
 
-        // PosTest2: the specified time is MinSupportedDateTime and the number of years added is a normal value
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(AddYears_TestData))]
+        public void AddYears(DateTime time, int years)
         {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 100;
-            initialTime = myCalendar.MinSupportedDateTime;
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
+            DateTime result = s_calendar.AddYears(time, years);
 
-        // PosTest3: the specified time is MaxSupportedDateTime and the number of years added is a normal value
-        [Fact]
-        public void PosTest3()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = -99;
-            initialTime = myCalendar.MaxSupportedDateTime;
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        // PosTest4: the specified time is random value between 0 and MaxSupportedDateTime - 1, years added is a normal value
-        [Fact]
-        public void PosTest4()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 1;
-            long maxTimeInTicks = myCalendar.MaxSupportedDateTime.Ticks;
-            long minTimeInTikcs = myCalendar.MinSupportedDateTime.Ticks;
-            initialTime = new DateTime(_generator.GetInt64(-55) % maxTimeInTicks);
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        // PosTest5: the specified time is February in leap year, years added is a normal value
-        [Fact]
-        public void PosTest5()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 13;
-            initialTime = myCalendar.ToDateTime(2000, 2, 29, 10, 30, 24, 0);
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        // PosTest6: the specified time is February in leap year, years added is a normal value
-        [Fact]
-        public void PosTest6()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 4;
-            initialTime = myCalendar.ToDateTime(1996, 2, 29, 10, 30, 24, 0);
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        // PosTest7: the specified time is any month other than February in leap year, years added is a normal value
-        [Fact]
-        public void PosTest7()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 48;
-            initialTime = myCalendar.ToDateTime(1996, 3, 29, 10, 30, 24, 0);
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        // PosTest8: the specified time is February in common year, years added is a normal value
-        [Fact]
-        public void PosTest8()
-        {
-            DateTime initialTime;
-            int years;
-            DateTime resultingTime;
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            years = 48;
-            initialTime = myCalendar.ToDateTime(1999, 2, 28, 10, 30, 24, 0);
-            resultingTime = myCalendar.AddYears(initialTime, years);
-            VerifyAddyearsResult(myCalendar, initialTime, resultingTime, years);
-        }
-
-        #endregion
-        #region Helper methods for positive tests
-        private void VerifyAddyearsResult(Calendar calendar, DateTime oldTime, DateTime newTime, int years)
-        {
-            int oldYear = calendar.GetYear(oldTime);
-            int oldMonth = calendar.GetMonth(oldTime);
-            int oldDay = calendar.GetDayOfMonth(oldTime);
-            long oldTicksOfDay = oldTime.Ticks % TimeSpan.TicksPerDay;
-            int newYear = calendar.GetYear(newTime);
-            int newMonth = calendar.GetMonth(newTime);
-            int newDay = calendar.GetDayOfMonth(newTime);
-            long newTicksOfDay = newTime.Ticks % TimeSpan.TicksPerDay;
+            int oldYear = s_calendar.GetYear(time);
+            int oldMonth = s_calendar.GetMonth(time);
+            int oldDay = s_calendar.GetDayOfMonth(time);
+            long oldTicksOfDay = time.Ticks % TimeSpan.TicksPerDay;
+            int newYear = s_calendar.GetYear(result);
+            int newMonth = s_calendar.GetMonth(result);
+            int newDay = s_calendar.GetDayOfMonth(result);
+            long newTicksOfDay = result.Ticks % TimeSpan.TicksPerDay;
             Assert.Equal(oldTicksOfDay, newTicksOfDay);
             Assert.False(newDay > oldDay);
             Assert.False(newYear != oldYear + years);
         }
-
-        #endregion
-        #region Helper method for all the tests
-        private string GetParamesInfo(DateTime time, int years)
-        {
-            string str = string.Empty;
-            str += string.Format("\nThe initial time is {0}, number of years added is {1}.", time, years);
-            return str;
-        }
-        #endregion
     }
 }

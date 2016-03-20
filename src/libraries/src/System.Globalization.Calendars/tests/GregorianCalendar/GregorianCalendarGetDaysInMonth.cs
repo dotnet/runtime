@@ -2,226 +2,70 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using Xunit;
 
-namespace System.Globalization.CalendarTests
+using static System.Globalization.Tests.GregorianCalendarTestUtilities;
+
+namespace System.Globalization.Tests
 {
-    // GregorianCalendar.GetDaysInMonth(Int32, Int32)
     public class GregorianCalendarGetDaysInMonth
     {
-        private readonly RandomDataGenerator _generator = new RandomDataGenerator();
+        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
 
-        private static readonly int[] s_daysInMonth365 =
+        private static readonly int[] s_daysInMonthInLeapYear = new int[] { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+        private static readonly int[] s_daysInMonthInCommonYear = new int[] { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+        public static IEnumerable<object[]> GetDaysInMonth_TestData()
         {
-            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
+            int randomMonthNotFebruary = RandomMonthNotFebruary();
 
-        private static readonly int[] s_daysInMonth366 =
-        {
-            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
+            // Leap year, month that isn't February
+            yield return new object[] { RandomLeapYear(), randomMonthNotFebruary, s_daysInMonthInLeapYear[randomMonthNotFebruary] };
 
-        #region Positive tests
-        // PosTest1: leap year, any month other than February
-        [Fact]
-        public void PosTest1()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = GetALeapYear(myCalendar);
-            //Get a random value between 1 and 12 not including 2.
-            do
-            {
-                month = _generator.GetInt32(-55) % 12 + 1;
-            } while (2 == month);
-            expectedDays = s_daysInMonth366[month];
+            // Leap year, February
+            yield return new object[] { RandomLeapYear(), 2, s_daysInMonthInLeapYear[2] };
 
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
+            // Common year, February
+            yield return new object[] { RandomCommonYear(), 2, s_daysInMonthInCommonYear[2] };
+
+            // Common year, month that isn't February
+            yield return new object[] { RandomCommonYear(), randomMonthNotFebruary, s_daysInMonthInCommonYear[randomMonthNotFebruary] };
+
+            // Max supported year
+            int maxYear = s_calendar.MaxSupportedDateTime.Year;
+            int maxYearRandomMonth = RandomMonth();
+            int maxYearExpected = IsLeapYear(maxYear) ? s_daysInMonthInLeapYear[maxYearRandomMonth] : s_daysInMonthInCommonYear[maxYearRandomMonth];
+            yield return new object[] { maxYear, maxYearRandomMonth, maxYearExpected };
+
+            // Min supported year
+            int minYear = s_calendar.MinSupportedDateTime.Year;
+            int minYearRandomMonth = RandomMonth();
+            int minYearExpected = IsLeapYear(minYear) ? s_daysInMonthInLeapYear[minYearRandomMonth] : s_daysInMonthInCommonYear[minYearRandomMonth];
+            yield return new object[] { minYear, minYearRandomMonth, minYearExpected };
+
+            // Random year, random month
+            int randomYear1 = RandomYear();
+            int randomMonth1 = RandomMonth();
+            int randomYearExpected1 = IsLeapYear(randomYear1) ? s_daysInMonthInLeapYear[randomMonth1] : s_daysInMonthInCommonYear[randomMonth1];
+            yield return new object[] { randomYear1, randomMonth1, randomYearExpected1 };
+
+            // Random year, minimum month
+            int randomYear2 = RandomYear();
+            int randomYearExpected2 = IsLeapYear(randomYear2) ? s_daysInMonthInLeapYear[1] : s_daysInMonthInCommonYear[1];
+            yield return new object[] { randomYear2, 1, randomYearExpected2 };
+
+            // Random year, maximum month
+            int randomYear3 = RandomYear();
+            int randomYearExpected3 = IsLeapYear(randomYear3) ? s_daysInMonthInLeapYear[12] : s_daysInMonthInCommonYear[12];
+            yield return new object[] { randomYear3, 12, randomYearExpected3 };
         }
 
-        // PosTest2: leap year, February
-        [Fact]
-        public void PosTest2()
+        [Theory]
+        [MemberData(nameof(GetDaysInMonth_TestData))]
+        public void GetDaysInMonth(int year, int month, int expected)
         {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = GetALeapYear(myCalendar);
-            month = 2;
-            expectedDays = s_daysInMonth366[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
+            Assert.Equal(expected, s_calendar.GetDaysInMonth(year, month));
         }
-
-        // PosTest3: common year, February
-        [Fact]
-        public void PosTest3()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = GetACommonYear(myCalendar);
-            month = 2;
-            expectedDays = s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest4: common year, any month other than February
-        [Fact]
-        public void PosTest4()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = GetACommonYear(myCalendar);
-            //Get a random value between 1 and 12 not including 2.
-            do
-            {
-                month = _generator.GetInt32(-55) % 12 + 1;
-            } while (2 == month);
-            expectedDays = s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest5: Maximum supported year, any month
-        [Fact]
-        public void PosTest5()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            //Get a random month whose value is between 1 and 12
-            month = _generator.GetInt32(-55) % 12 + 1;
-            expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest6: Minimum supported year, any month
-        [Fact]
-        public void PosTest6()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            //Get a random month whose value is between 1 and 12
-            month = _generator.GetInt32(-55) % 12 + 1;
-            expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest7: Any year, any month
-        [Fact]
-        public void PosTest7()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = GetAYear(myCalendar);
-            //Get a random month whose value is between 1 and 12
-            month = _generator.GetInt32(-55) % 12 + 1;
-            expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest8: Any year,  the minimum month
-        [Fact]
-        public void PosTest8()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            month = 1;
-            expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-
-        // PosTest9: Any year,  the maximum month
-        [Fact]
-        public void PosTest9()
-        {
-            System.Globalization.Calendar myCalendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-            int year, month;
-            int expectedDays, actualDays;
-            year = myCalendar.MaxSupportedDateTime.Year;
-            month = 12;
-            expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
-            actualDays = myCalendar.GetDaysInMonth(year, month);
-            Assert.Equal(expectedDays, actualDays);
-        }
-        #endregion
-        
-        #region Helper methods for all the tests
-        //Indicate whether the specified year is leap year or not
-        private bool IsLeapYear(int year)
-        {
-            if (0 == year % 400 || (0 != year % 100 && 0 == (year & 0x3)))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        //Get a random year between minimum supported year and maximum supported year of the specified calendar
-        private int GetAYear(Calendar calendar)
-        {
-            int retVal;
-            int maxYear, minYear;
-            maxYear = calendar.MaxSupportedDateTime.Year;
-            minYear = calendar.MinSupportedDateTime.Year;
-            retVal = minYear + _generator.GetInt32(-55) % (maxYear + 1 - minYear);
-            return retVal;
-        }
-
-        //Get a leap year of the specified calendar
-        private int GetALeapYear(Calendar calendar)
-        {
-            int retVal;
-            // A leap year is any year divisible by 4 except for centennial years(those ending in 00)
-            // which are only leap years if they are divisible by 400.
-            retVal = ~(~GetAYear(calendar) | 0x3); // retVal will be divisible by 4 since the 2 least significant bits will be 0
-            retVal = (0 != retVal % 100) ? retVal : (retVal - retVal % 400); // if retVal is divisible by 100 subtract years from it to make it divisible by 400
-                                                                             // if retVal was 100, 200, or 300 the above logic will result in 0
-            if (0 == retVal)
-            {
-                retVal = 400;
-            }
-
-            return retVal;
-        }
-
-        //Get a common year of the specified calendar
-        private int GetACommonYear(Calendar calendar)
-        {
-            int retVal;
-            do
-            {
-                retVal = GetAYear(calendar);
-            }
-            while ((0 == (retVal & 0x3) && 0 != retVal % 100) || 0 == retVal % 400);
-            return retVal;
-        }
-
-        //Get text representation of the input parameters
-        private string GetParamsInfo(int year, int month)
-        {
-            string str;
-            str = string.Format("\nThe specified month is in {0}-{1}(year-month).", year, month);
-            return str;
-        }
-        #endregion
     }
 }
