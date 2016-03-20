@@ -48,7 +48,7 @@ namespace System.Globalization.CalendarTests
             PosTest(GregorianCalendarTypes.USEnglish);
         }
 
-        // PosTest1: Get the MinSupportedDateTime of Gregorian caleandar
+        // PosTest1: Get the MinSupportedDateTime of Gregorian calendar
         private void PosTest(GregorianCalendarTypes calendarType)
         {
             System.Globalization.Calendar myCalendar = new GregorianCalendar(calendarType);

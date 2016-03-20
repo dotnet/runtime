@@ -27,21 +27,21 @@ namespace System.Runtime.Serialization
         /// Review - XmlDictionaryString(s) representing the XML namespaces for class members.
         ///          statically cached and used from IL generated code. should ideally be Critical.
         ///          marked SecurityRequiresReview to be callable from transparent IL generated code. 
-        ///          not changed to property to avoid regressing performance; any changes to initalization should be reviewed.
+        ///          not changed to property to avoid regressing performance; any changes to initialization should be reviewed.
         /// </SecurityNote>
         public XmlDictionaryString[] ContractNamespaces;
         /// <SecurityNote>
         /// Review - XmlDictionaryString(s) representing the XML element names for class members.
         ///          statically cached and used from IL generated code. should ideally be Critical.
         ///          marked SecurityRequiresReview to be callable from transparent IL generated code. 
-        ///          not changed to property to avoid regressing performance; any changes to initalization should be reviewed.
+        ///          not changed to property to avoid regressing performance; any changes to initialization should be reviewed.
         /// </SecurityNote>
         public XmlDictionaryString[] MemberNames;
         /// <SecurityNote>
         /// Review - XmlDictionaryString(s) representing the XML namespaces for class members.
         ///          statically cached and used when calling IL generated code. should ideally be Critical.
         ///          marked SecurityRequiresReview to be callable from transparent code. 
-        ///          not changed to property to avoid regressing performance; any changes to initalization should be reviewed.
+        ///          not changed to property to avoid regressing performance; any changes to initialization should be reviewed.
         /// </SecurityNote>
         public XmlDictionaryString[] MemberNamespaces;
         [SecurityCritical]

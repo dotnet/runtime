@@ -189,7 +189,7 @@ namespace System.IO.Compression
                     throw new ArgumentOutOfRangeException(nameof(mode));
             }
 
-            // Surpress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
+            // Suppress CA2000: fs gets passed to the new ZipArchive, which stores it internally.
             // The stream will then be owned by the archive and be disposed when the archive is disposed.        
             // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
             // If the ctor throws, we need to close it here.

@@ -35,12 +35,12 @@ namespace System.Globalization.CalendarTests
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
             year = GetALeapYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
             } while (2 == month);
-            //Get a day beween 1 and last day of the month
+            //Get a day between 1 and last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth366[month] + 1;
             ExecutePosTest("001", "002", myCalendar, year, month, day, rule, firstDayOfWeek);
         }
@@ -55,7 +55,7 @@ namespace System.Globalization.CalendarTests
             DayOfWeek firstDayOfWeek;
             year = GetALeapYear(myCalendar);
             month = 2;
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth366[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -72,7 +72,7 @@ namespace System.Globalization.CalendarTests
             DayOfWeek firstDayOfWeek;
             year = GetACommonYear(myCalendar);
             month = 2;
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -88,13 +88,13 @@ namespace System.Globalization.CalendarTests
             CalendarWeekRule rule;
             DayOfWeek firstDayOfWeek;
             year = GetACommonYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
             }
             while (2 == month);
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -110,9 +110,9 @@ namespace System.Globalization.CalendarTests
             CalendarWeekRule rule;
             DayOfWeek firstDayOfWeek;
             year = myCalendar.MaxSupportedDateTime.Year;
-            //Get a random value beween 1 and 12
+            //Get a random value between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -128,9 +128,9 @@ namespace System.Globalization.CalendarTests
             CalendarWeekRule rule;
             DayOfWeek firstDayOfWeek;
             year = myCalendar.MinSupportedDateTime.Year;
-            //Get a random value beween 1 and 12
+            //Get a random value between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -146,9 +146,9 @@ namespace System.Globalization.CalendarTests
             CalendarWeekRule rule;
             DayOfWeek firstDayOfWeek;
             year = this.GetAYear(myCalendar);
-            //Get a random value beween 1 and 12
+            //Get a random value between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
-            //Get a day beween 1 and the last day of the month
+            //Get a day between 1 and the last day of the month
             day = _generator.GetInt32(-55) % s_daysInMonth365[month] + 1;
             rule = (CalendarWeekRule)(_generator.GetInt32(-55) % 3);
             firstDayOfWeek = (DayOfWeek)(_generator.GetInt32(-55) % 7);
@@ -156,7 +156,7 @@ namespace System.Globalization.CalendarTests
         }
 
         #endregion
-        #region Helper methods for postive tests
+        #region Helper methods for positive tests
         private int GetDayOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek, int weekOfYear, Calendar myCalendar)
         {
             int retVal = -367;
@@ -225,7 +225,7 @@ namespace System.Globalization.CalendarTests
         #endregion
         
         #region Helper methods for all the tests
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;
@@ -265,7 +265,7 @@ namespace System.Globalization.CalendarTests
             return retVal;
         }
 
-        //Get text represntation of the input parmeters
+        //Get text representation of the input parameters
         private string GetParamsInfo(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
             string str;

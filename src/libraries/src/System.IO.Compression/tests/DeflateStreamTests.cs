@@ -187,7 +187,7 @@ namespace System.IO.Compression.Tests
             var zip = new DeflateStream(newMs, CompressionMode.Decompress);
             int size = 1024;
             Byte[] bytes = new Byte[size];
-            zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
+            zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
 
             zip.BaseStream.Position = 0;
             await zip.BaseStream.ReadAsync(bytes, 0, size);
@@ -249,7 +249,7 @@ namespace System.IO.Compression.Tests
 
             int size = 1024;
             Byte[] bytes = new Byte[size];
-            baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
+            baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
 
             baseStream.Position = 0;
             await baseStream.ReadAsync(bytes, 0, size);
@@ -952,7 +952,7 @@ namespace System.IO.Compression.Tests
             private bool isSync;
             public ManualResetEventSlim manualResetEvent = new ManualResetEventSlim(false);
 
-            public bool ReadHit = false;  // For validation of the async methods we want to ensure they correctly delegate the the async
+            public bool ReadHit = false;  // For validation of the async methods we want to ensure they correctly delegate the async
             public bool WriteHit = false; // methods of the underlying stream. This bool acts as a toggle to check that they're being used.
 
             public static async Task<ManualSyncMemoryStream> GetStreamFromFileAsync(String testFile, bool sync = false, bool strip = false)

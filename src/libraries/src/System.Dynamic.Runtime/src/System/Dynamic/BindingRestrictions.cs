@@ -98,7 +98,7 @@ namespace System.Dynamic
         /// <summary>
         /// Creates the binding restriction that checks the expression for arbitrary immutable properties.
         /// </summary>
-        /// <param name="expression">The expression expression the restrictions.</param>
+        /// <param name="expression">The expression expressing the restrictions.</param>
         /// <returns>The new binding restrictions.</returns>
         /// <remarks>
         /// By convention, the general restrictions created by this method must only test

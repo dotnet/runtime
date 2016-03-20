@@ -29,7 +29,7 @@ namespace System.Globalization.CalendarTests
             PosTest1(GregorianCalendarTypes.USEnglish);
         }
 
-        // PosTest2: set the TwoDigitYearMax of Gregorian caleandar
+        // PosTest2: set the TwoDigitYearMax of Gregorian calendar
         [Fact]
         public void Test2()
         {

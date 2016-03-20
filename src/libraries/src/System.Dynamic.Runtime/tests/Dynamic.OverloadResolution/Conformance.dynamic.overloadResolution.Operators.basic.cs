@@ -1749,9 +1749,9 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.basic.bug811970.bug811970;
     // <Area>dynamic</Area>
-    // <Title>coversion</Title>
+    // <Title>conversion</Title>
     // <Description>
-    //   Array indexs do not consider non-int conversion operators
+    //   Array indices do not consider non-int conversion operators
     // </Description>
     // <Related Bugs></Related Bugs>
     //<Expects Status=success></Expects>

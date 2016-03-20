@@ -52,7 +52,7 @@ namespace System.IO
         /// <summary>
         /// Extra state used by the file stream when _useAsyncIO is true.  This includes
         /// the semaphore used to serialize all operation, the buffer/offset/count provided by the
-        /// caller for ReadAsync/WriteAsync operations, and the last successul task returned
+        /// caller for ReadAsync/WriteAsync operations, and the last successful task returned
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
         /// Only initialized when <see cref="_useAsyncIO"/> is true.
         /// </summary>
@@ -451,12 +451,12 @@ namespace System.IO
                     FlushWriteBuffer();
 
                     // If DeleteOnClose was requested when constructed, delete the file now.
-                    // (Unix doesn't directly support DeleteOnClose, so we mimick it here.)
+                    // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
                     if (_path != null && (_options & FileOptions.DeleteOnClose) != 0)
                     {
                         // Since we still have the file open, this will end up deleting
                         // it (assuming we're the only link to it) once it's closed, but the
-                        // name will be removed immediatly.
+                        // name will be removed immediately.
                         Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
                     }
                 }

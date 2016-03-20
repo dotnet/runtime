@@ -40,7 +40,7 @@ namespace System.IO.Compression.Tests
             var zip = new GZipStream(ms, CompressionMode.Decompress);
             int size = 1024;
             Byte[] bytes = new Byte[size];
-            zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
+            zip.BaseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.IO.Compression.Tests
 
             int size = 1024;
             Byte[] bytes = new Byte[size];
-            baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writeable as expected
+            baseStream.Read(bytes, 0, size); // This will throw if the underlying stream is not writable as expected
         }
 
         [Fact]
