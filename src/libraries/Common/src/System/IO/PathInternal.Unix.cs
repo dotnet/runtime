@@ -31,7 +31,7 @@ namespace System.IO
 
         internal static bool IsDirectorySeparator(char c)
         {
-            // The alternatie directory separator char is the same as the directory separator,
+            // The alternate directory separator char is the same as the directory separator,
             // so we only need to check one.
             Debug.Assert(Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar);
             return c == Path.DirectorySeparatorChar;

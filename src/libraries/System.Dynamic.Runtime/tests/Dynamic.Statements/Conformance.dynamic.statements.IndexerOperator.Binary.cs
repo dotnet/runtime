@@ -90,7 +90,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.add002.add002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> + </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -218,7 +218,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.and002.and002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> &&  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -345,7 +345,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment0010e.assignment0010e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> >>=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -414,7 +414,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment001e.assignment001e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> +=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -541,7 +541,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment002e.assignment002e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> -=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -668,7 +668,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment003e.assignment003e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> *=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -795,7 +795,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment004e.assignment004e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> /=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -922,7 +922,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment005e.assignment005e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> %=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1049,7 +1049,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment006e.assignment006e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> &=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1176,7 +1176,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment007e.assignment007e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> |=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1303,7 +1303,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment008e.assignment008e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> ^=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1430,7 +1430,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.assignment009e.assignment009e;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> <<=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1615,7 +1615,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.devide002.devide002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> / </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1742,7 +1742,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.equal002.equal002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> ==  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1869,7 +1869,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greater002.greater002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> >  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1996,7 +1996,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.greaterequal002.greaterequal002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> >=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -2436,7 +2436,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.lessequal002.lessequal002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> <=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -2944,7 +2944,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.multi002.multi002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> *  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -3071,7 +3071,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.notequal002.notequal002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> !=  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -3199,7 +3199,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.or002.or002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> ||  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -3326,7 +3326,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.remainder002.remainder002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> %  </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -3580,7 +3580,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOpera
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.IndexerOperator.Binary.sub002.sub002;
     // <Area>operator on dynamic indexer</Area>
-    // <Title> biunary operator  </Title>
+    // <Title> binary operator  </Title>
     // <Description> - </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>

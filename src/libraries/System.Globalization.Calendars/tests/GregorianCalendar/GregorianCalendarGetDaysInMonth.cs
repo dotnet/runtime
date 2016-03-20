@@ -32,7 +32,7 @@ namespace System.Globalization.CalendarTests
             int year, month;
             int expectedDays, actualDays;
             year = GetALeapYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
@@ -79,7 +79,7 @@ namespace System.Globalization.CalendarTests
             int year, month;
             int expectedDays, actualDays;
             year = GetACommonYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
@@ -97,7 +97,7 @@ namespace System.Globalization.CalendarTests
             int year, month;
             int expectedDays, actualDays;
             year = myCalendar.MaxSupportedDateTime.Year;
-            //Get a random month whose value is beween 1 and 12
+            //Get a random month whose value is between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
@@ -112,7 +112,7 @@ namespace System.Globalization.CalendarTests
             int year, month;
             int expectedDays, actualDays;
             year = myCalendar.MaxSupportedDateTime.Year;
-            //Get a random month whose value is beween 1 and 12
+            //Get a random month whose value is between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
@@ -127,7 +127,7 @@ namespace System.Globalization.CalendarTests
             int year, month;
             int expectedDays, actualDays;
             year = GetAYear(myCalendar);
-            //Get a random month whose value is beween 1 and 12
+            //Get a random month whose value is between 1 and 12
             month = _generator.GetInt32(-55) % 12 + 1;
             expectedDays = (IsLeapYear(year)) ? s_daysInMonth366[month] : s_daysInMonth365[month];
             actualDays = myCalendar.GetDaysInMonth(year, month);
@@ -175,7 +175,7 @@ namespace System.Globalization.CalendarTests
             return false;
         }
 
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;
@@ -215,7 +215,7 @@ namespace System.Globalization.CalendarTests
             return retVal;
         }
 
-        //Get text represntation of the input parmeters
+        //Get text representation of the input parameters
         private string GetParamsInfo(int year, int month)
         {
             string str;

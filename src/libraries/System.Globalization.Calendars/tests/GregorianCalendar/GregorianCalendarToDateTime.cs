@@ -42,7 +42,7 @@ namespace System.Globalization.CalendarTests
             ExecutePosTest(myCalendar, year, month, day, hour, minute, second, millisecond, era);
         }
 
-        // PosTest2: the mininum valid date time value
+        // PosTest2: the minimum valid date time value
         [Fact]
         public void PosTest2()
         {
@@ -99,7 +99,7 @@ namespace System.Globalization.CalendarTests
             return false;
         }
 
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;

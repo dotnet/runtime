@@ -337,7 +337,7 @@ namespace System.IO.Tests
         [PlatformSpecific(PlatformID.Windows)]
         public void WindowsTrailingWhiteSpace()
         {
-            // Windows will remove all nonsignificant whitespace in a path
+            // Windows will remove all non-significant whitespace in a path
             DirectoryInfo testDir = Create(GetTestFilePath());
             var components = IOInputs.GetWhiteSpace();
 

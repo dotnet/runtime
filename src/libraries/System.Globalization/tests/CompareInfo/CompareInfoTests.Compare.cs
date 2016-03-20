@@ -352,7 +352,7 @@ namespace System.Globalization.Tests
                     return ch;
                 }
             }
-            return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
+            return char.MinValue; // There are no unassigned Unicode characters from \u0000 - \uFFFF
         }
 
         private static int PredictCompareOrdinalResult(string string1, string string2)

@@ -109,7 +109,7 @@ public static class FailSafeDirectoryOperations
         EnsureDirectoryNotExist(dirInfo.FullName);
         //We want to thrown if the operation failed
         if (Directory.Exists(dirInfo.FullName))
-            throw new ArgumentException("Throwing from FailSafeDirectoryOperations.DeleteDirectoryInfo. Delete unsucccesfull");
+            throw new ArgumentException("Throwing from FailSafeDirectoryOperations.DeleteDirectoryInfo. Delete unsuccessful");
     }
 
 
@@ -146,12 +146,12 @@ public static class FailSafeDirectoryOperations
         EnsureDirectoryNotExist(originalDirName);
         //We want to thrown if the operation failed
         if (Directory.Exists(originalDirName))
-            throw new ArgumentException("Throwing from FailSafeDirectoryOperations.MoveDirectory. Move unsucccesfull");
+            throw new ArgumentException("Throwing from FailSafeDirectoryOperations.MoveDirectory. Move unsuccessful");
         return dirInfo;
     }
 
     /// <summary>
-    /// It can take some time before the Directory.Exists will return false after a direcotry delete/Move
+    /// It can take some time before the Directory.Exists will return false after a directory delete/Move
     /// </summary>
     /// <param name="path"></param>
     private static void EnsureDirectoryNotExist(String path)
@@ -284,7 +284,7 @@ public class ManageFileSystem : IDisposable
             //@TODO!! we should handle this situation in a better way
             if (numOfDirPerDir == 0)
                 numOfDirPerDir = 1;
-            //            Trace.Assert(numOfDirPerDir > 0, "Err_897324g! @TODO handle this scenaior");
+            //            Trace.Assert(numOfDirPerDir > 0, "Err_897324g! @TODO handle this scenario");
             tempDirsForOneLevel = new Dictionary<String, List<String>>();
             foreach (String dir in dirsForOneLevel.Keys)
             //                for (int j = 0; j < dirsForOneLevel.Count; j++)

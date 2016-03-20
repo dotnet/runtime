@@ -31,7 +31,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedValue, actualValue);
         }
 
-        // PosTest2: february in common year
+        // PosTest2: February in common year
         [Fact]
         public void PosTest2()
         {
@@ -93,7 +93,7 @@ namespace System.Globalization.CalendarTests
         #endregion
         
         #region Helper methods for all the tests
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;
@@ -133,7 +133,7 @@ namespace System.Globalization.CalendarTests
             return retVal;
         }
 
-        //Get text represntation of the input parmeters
+        //Get text representation of the input parameters
         private string GetParamsInfo(int year, int month)
         {
             string str;

@@ -119,7 +119,7 @@ public partial class CompareInfoTests
     {
         CompareInfo ci  = CultureInfo.InvariantCulture.CompareInfo;
 
-        // This behavior was for .NET Framework 1.1 compatability.  We early outed for empty source strings
+        // This behavior was for .NET Framework 1.1 comparability.  We early outed for empty source strings
         // even with invalid offsets.
 
         Assert.Equal(0, ci.IndexOf("", "", -1, CompareOptions.None));
@@ -383,10 +383,10 @@ public partial class CompareInfoTests
 
         Assert.Equal(ci.GetHashCode("abc", CompareOptions.OrdinalIgnoreCase), ci.GetHashCode("ABC", CompareOptions.OrdinalIgnoreCase));
 
-        // This behavior of the empty string is specical cased today.
+        // This behavior of the empty string is special-cased today.
         Assert.Equal(0, ci.GetHashCode("", CompareOptions.None));
 
-        // Not much we can assert about the hashcode of a string itself, but we can assume that computing it twice yeilds the same value.
+        // Not much we can assert about the hashcode of a string itself, but we can assume that computing it twice yields the same value.
         int hashCode1 = ci.GetHashCode("abc", CompareOptions.None);
         int hashCode2 = ci.GetHashCode("abc", CompareOptions.None);
 

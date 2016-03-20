@@ -17,7 +17,7 @@ namespace System.Globalization.CalendarTests
         private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
         #region Positive tests
-        // PosTest2: leap year, era is anno Domini
+        // PosTest2: leap year, era is Anno Domini
         [Fact]
         public void PosTest1()
         {
@@ -45,7 +45,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedMonths, actualMonths);
         }
 
-        // PosTest3: common year, era is anno Domini
+        // PosTest3: common year, era is Anno Domini
         [Fact]
         public void PosTest3()
         {
@@ -73,7 +73,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedMonths, actualMonths);
         }
 
-        // PosTest5: any year, era is anno Domini
+        // PosTest5: any year, era is Anno Domini
         [Fact]
         public void PosTest5()
         {
@@ -101,7 +101,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedMonths, actualMonths);
         }
 
-        // PosTest7: Maximum supported year, era is anno Domini
+        // PosTest7: Maximum supported year, era is Anno Domini
         [Fact]
         public void PosTest7()
         {
@@ -129,7 +129,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedMonths, actualMonths);
         }
 
-        // PosTest9: Minimum supported year, era is anno Domini
+        // PosTest9: Minimum supported year, era is Anno Domini
         [Fact]
         public void PosTest9()
         {
@@ -159,7 +159,7 @@ namespace System.Globalization.CalendarTests
         #endregion
         
         #region Helper methods for all the tests
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;
