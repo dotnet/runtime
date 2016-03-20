@@ -12,7 +12,7 @@ namespace Internal.Cryptography
     //
     internal abstract class HashProvider : IDisposable
     {
-        // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
+        // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
         public void AppendHashData(byte[] data, int offset, int count)
         {
             // AppendHashData can be called via exposed APIs (e.g. a type that derives from
@@ -32,7 +32,7 @@ namespace Internal.Cryptography
             AppendHashDataCore(data, offset, count);
         }
 
-        // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
+        // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
         // Argument validation is handled by AppendHashData.
         public abstract void AppendHashDataCore(byte[] data, int offset, int count);
 

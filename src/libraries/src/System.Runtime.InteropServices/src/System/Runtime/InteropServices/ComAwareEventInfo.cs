@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                // we are dealing with a managed object - just add the delegate through relection
+                // we are dealing with a managed object - just add the delegate through reflection
                 _innerEventInfo.RemoveEventHandler(target, handler);
             }
         }

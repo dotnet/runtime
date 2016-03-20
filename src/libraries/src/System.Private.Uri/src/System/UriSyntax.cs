@@ -297,7 +297,7 @@ namespace System
 
         //
         // These are simple internal wrappers that will call virtual protected methods
-        // (to avoid "protected internal" siganures in the public docs)
+        // (to avoid "protected internal" signatures in the public docs)
         //
         internal UriParser InternalOnNewUri()
         {

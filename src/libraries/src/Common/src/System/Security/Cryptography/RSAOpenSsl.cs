@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
         {
             // In the event that a key was loaded via ImportParameters or an IntPtr/SafeHandle
             // it could be outside of the bounds that we currently represent as "legal key sizes".
-            // Since that is our view into the underlying component it can be detatched from the
+            // Since that is our view into the underlying component it can be detached from the
             // component's understanding.  If it said it has opened a key, and this is the size, trust it.
             _skipKeySizeCheck = true;
 
@@ -349,7 +349,7 @@ namespace System.Security.Cryptography
                 using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(s_defaultExponent))
                 {
                     // The documentation for RSA_generate_key_ex does not say that it returns only
-                    // 0 or 1, so the call marshalls it back as a full Int32 and checks for a value
+                    // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
                     // of 1 explicitly.
                     int response = Interop.Crypto.RsaGenerateKeyEx(
                         key,

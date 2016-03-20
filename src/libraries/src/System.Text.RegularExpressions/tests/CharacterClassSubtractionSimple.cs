@@ -19,7 +19,7 @@ public class CharacterClassSubtraction
 
     private static RegexTestCase[] s_regexTests = new RegexTestCase[] {
         /****************************************************************************
-        (A - B) B is a subset of A (ie B only contains chars that are in A)
+        (A - B) B is a subset of A (i.e. B only contains chars that are in A)
         *****************************************************************************/
         new RegexTestCase(@"[abcd-[d]]+", "dddaabbccddd", "aabbcc"),
 
@@ -48,7 +48,7 @@ public class CharacterClassSubtraction
         new RegexTestCase(@"[\P{Nd}-[\p{Ll}]]+", "az09AZ'[]","AZ'[]"),
 
         /****************************************************************************
-        (A - B) B is a superset of A (ie B contains chars that are in A plus other chars that are not in A)
+        (A - B) B is a superset of A (i.e. B contains chars that are in A plus other chars that are not in A)
         *****************************************************************************/
         new RegexTestCase(@"[abcd-[def]]+", "fedddaabbccddd", "aabbcc"),
 
@@ -212,7 +212,7 @@ public class CharacterClassSubtraction
 
         new RegexTestCase(@"[a-zA-Z-[aeiouAEIOU]]+", "aeiouAEIOUbcdfghjklmnpqrstvwxyz", "bcdfghjklmnpqrstvwxyz"),
 
-        //The following is an overly complex way of matching an ip address using char class subtraction
+        //The following is an overly complex way of matching an IP address using char class subtraction
         new RegexTestCase(@"^
         (?<octet>^
             (

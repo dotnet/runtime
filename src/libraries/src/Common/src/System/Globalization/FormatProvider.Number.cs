@@ -567,7 +567,7 @@ namespace System.Globalization
 
             private static bool TrailingZeros(string s, int index)
             {
-                // For compatability, we need to allow trailing zeros at the end of a number string
+                // For compatibility, we need to allow trailing zeros at the end of a number string
                 for (int i = index; i < s.Length; i++)
                 {
                     if (s[i] != '\0')
@@ -1340,7 +1340,7 @@ namespace System.Globalization
                 dig = number.digits;
 
                 // Adjust can be negative, so we make this an int instead of an unsigned int.
-                // Adjust represents the number of characters over the formatting eg. format string is "0000" and you are trying to
+                // Adjust represents the number of characters over the formatting e.g. format string is "0000" and you are trying to
                 // format 100000 (6 digits). Means adjust will be 2. On the other hand if you are trying to format 10 adjust will be
                 // -2 and we'll need to fixup these digits with 0 padding if we have 0 formatting as in this example.
                 int[] thousandsSepPos = new int[4];
@@ -1351,9 +1351,9 @@ namespace System.Globalization
                     // We need to precompute this outside the number formatting loop
                     if (info.NumberGroupSeparator.Length > 0)
                     {
-                        // We need this array to figure out where to insert the thousands seperator. We would have to traverse the string
+                        // We need this array to figure out where to insert the thousands separator. We would have to traverse the string
                         // backwards. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
-                        // the thousands seperator so we can get away with traversing forwards. Note we only have to compute upto digPos.
+                        // the thousands separator so we can get away with traversing forwards. Note we only have to compute up to digPos.
                         // The max is not bound since you can have formatting strings of the form "000,000..", and this
                         // should handle that case too.
 
@@ -1459,7 +1459,7 @@ namespace System.Globalization
                                 {
                                     if (digPos != 0 || decimalWritten)
                                     {
-                                        // For compatability, don't echo repeated decimals
+                                        // For compatibility, don't echo repeated decimals
                                         break;
                                     }
                                     // If the format has trailing zeros or the format has a decimal and digits remain
