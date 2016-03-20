@@ -41,7 +41,7 @@ namespace System.Net
                 length++;
             }
 
-            // Now add the last of the header values to the stringtable.
+            // Now add the last of the header values to the string table.
             if (startIndex < value.Length && length > 0)
             {
                 tempStringCollection.Add(value.SubstringTrim(startIndex, length));

@@ -16,7 +16,7 @@ namespace System.Net.Sockets
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code.</summary>
         public SocketException(int errorCode) : this((SocketError)errorCode)
         {
-            // NOTE: SocketException(SocketError) isn't exposed publically.  As a result, code with a SocketError calls
+            // NOTE: SocketException(SocketError) isn't exposed publicly.  As a result, code with a SocketError calls
             // this ctor, e.g. 
             //     SocketError error = ...;
             //     throw new SocketException((int)error);

@@ -92,7 +92,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetReferencedAssemblies()
         {
-            // It is too brittle to depend on the assmebly references so we simply call the method and check that it does not throw.
+            // It is too brittle to depend on the assembly references so we simply call the method and check that it does not throw.
             AssemblyName[] assemblies = GetExecutingAssembly().GetReferencedAssemblies();
             Assert.NotNull(assemblies);
             Assert.True(assemblies.Length > 0);

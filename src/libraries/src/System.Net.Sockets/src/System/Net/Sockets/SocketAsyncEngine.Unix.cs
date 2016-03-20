@@ -69,7 +69,7 @@ namespace System.Net.Sockets
 
         //
         // Each SocketAsyncContext is associated with a particular "handle" value, used to identify that 
-        // SocketAsyncContext when events are raised.  These handle values are never resused, because we do not have
+        // SocketAsyncContext when events are raised.  These handle values are never reused, because we do not have
         // a way to ensure that we will never see an event for a socket/handle that has been freed.  Instead, we
         // allocate monotonically increasing handle values up to some limit; when we would exceed that limit,
         // we allocate a new SocketAsyncEngine (and thus a new event port) and start the handle values over at zero.
@@ -223,7 +223,7 @@ namespace System.Net.Sockets
                 }
 
                 //
-                // Create the pipe for signalling shutdown, and register for "read" events for the pipe.  Now writing
+                // Create the pipe for signaling shutdown, and register for "read" events for the pipe.  Now writing
                 // to the pipe will send an event to the event loop.
                 //
                 int* pipeFds = stackalloc int[2];

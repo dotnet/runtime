@@ -907,7 +907,7 @@ namespace System.Net
 
                         if (to_add)
                         {
-                            // In 'source' are already orederd.
+                            // In 'source' are already ordered.
                             // If two same cookies come from different 'source' then they
                             // will follow (not replace) each other.
                             destination.InternalAdd(cookie, false);

@@ -172,7 +172,7 @@ namespace System.Security.Authentication.ExtendedProtection
             return c != null ? c.Count : 1;
         }
 
-        // Normalizes any punycode to unicode in an Service Name (SPN) host.
+        // Normalizes any punycode to Unicode in an Service Name (SPN) host.
         // If the algorithm fails at any point then the original input is returned.
         // ServiceName is in one of the following forms:
         // prefix/host

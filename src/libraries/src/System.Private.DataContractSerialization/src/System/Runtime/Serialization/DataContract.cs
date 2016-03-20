@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
 #if NET_NATIVE
         private static DataContract GetGeneratedDataContract(Type type)
         {
-            // this method used to be rewritten by an IL transfrom
+            // this method used to be rewritten by an IL transform
             // with the restructuring for multi-file, it has become a regular method
             DataContract result;
             return s_dataContracts.TryGetValue(type, out result) ? result : null;
@@ -714,7 +714,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            //Silverlight no longer supprts ISerializable and [Serializable] attribute. Use this function to determine if any
+            //Silverlight no longer supports ISerializable and [Serializable] attribute. Use this function to determine if any
             //Serializable types from Orcas needs to be supported in Silverlight 
             private static bool IsTypeSerializable(Type type)
             {
@@ -2030,7 +2030,7 @@ namespace System.Runtime.Serialization
                 {
                     //Ignore any InvalidDataContractException as this phase is a workaround for lack of ISerializable.
                     //InvalidDataContractException may happen as we walk the type hierarchy back to Object and encounter
-                    //types that may not be valid DC. This step is purely for KeyValuePair and shouldnt fail the (de)serialization.
+                    //types that may not be valid DC. This step is purely for KeyValuePair and shouldn't fail the (de)serialization.
                     //Any IDCE in this case fails the serialization/deserialization process which is not the optimal experience.
                 }
 #endif

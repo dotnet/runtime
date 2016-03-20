@@ -123,7 +123,7 @@ namespace System.Reflection.Metadata.Decoding
         // Note that we do not decode the full constructor signature using DecodeMethodSignature
         // but instead decode one parameter at a time as we read the value blob. This is both
         // better perf-wise, but even more important is that we can't actually reason about
-        // a method signature with opaque TType values without adding some unecessary chatter
+        // a method signature with opaque TType values without adding some unnecessary chatter
         // with the provider.
         private ArgumentTypeInfo DecodeFixedArgumentType(ref BlobReader signatureReader, bool isElementType = false)
         {

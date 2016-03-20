@@ -179,7 +179,7 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedValue, actualValue);
         }
 
-        // PosTest14: consturctor in referenced module
+        // PosTest14: constructor in referenced module
         [Fact]
         public void PosTest14()
         {
@@ -198,7 +198,7 @@ namespace System.Reflection.Tests
         {
             private static int s_count = 0;
 
-            //Defualt constructor
+            //Default constructor
             public TestClass1()
             {
                 ++s_count;

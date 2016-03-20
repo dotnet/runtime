@@ -819,7 +819,7 @@ namespace System.Net.Security
                 }
 
                 // Release waiting IO if any. Presumably it should not throw.
-                // Otheriwse application may get not expected type of the exception.
+                // Otherwise application may get not expected type of the exception.
                 FinishHandshake(null, asyncRequest);
                 return;
             }
@@ -1513,7 +1513,7 @@ namespace System.Net.Security
              * ... PCT hello ...
              */
 
-            /* Microsft Unihello starts with
+            /* Microsoft Unihello starts with
              * RECORD_LENGTH_MSB  (ignore)
              * RECORD_LENGTH_LSB  (ignore)
              * SSL2_CLIENT_HELLO  (must be equal)
@@ -1845,7 +1845,7 @@ namespace System.Net.Security
                 //
                 // 3. SetException won't overwrite an already-set _Exception.
                 //
-                // 4. There are three possibilites for _LockReadState and _LockWriteState:
+                // 4. There are three possibilities for _LockReadState and _LockWriteState:
                 //
                 //    a. They were set back to None by the first call to FinishHandshake, and this will set them to
                 //       None again: a no-op.

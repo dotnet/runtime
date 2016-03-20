@@ -195,7 +195,7 @@ namespace System.Reflection.Metadata.Ecma335
     }
 
     /// <summary>
-    /// These contants are all in the byte range and apply to the interpretation of <see cref="Handle.VType"/>,
+    /// These constants are all in the byte range and apply to the interpretation of <see cref="Handle.VType"/>,
     /// </summary>
     internal static class HandleType
     {

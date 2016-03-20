@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization
         [SecurityCritical]
 
         /// <SecurityNote>
-        /// Critical - holds all state used for for (de)serializing known types like System.Enum, System.ValueType, etc.
+        /// Critical - holds all state used for (de)serializing known types like System.Enum, System.ValueType, etc.
         ///            since the data is cached statically, we lock down access to it.
         /// </SecurityNote>
         private class SpecialTypeDataContractCriticalHelper : DataContract.DataContractCriticalHelper
