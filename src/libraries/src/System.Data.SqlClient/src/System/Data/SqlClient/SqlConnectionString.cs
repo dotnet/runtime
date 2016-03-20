@@ -88,7 +88,7 @@ namespace System.Data.SqlClient
             internal const string Connect_Retry_Interval = "connectretryinterval";
         }
 
-        // Constant for the number of duplicate options in the connnection string
+        // Constant for the number of duplicate options in the connection string
 
         private static class SYNONYM
         {

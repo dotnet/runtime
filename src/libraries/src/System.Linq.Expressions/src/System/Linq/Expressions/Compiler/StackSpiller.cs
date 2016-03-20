@@ -863,7 +863,7 @@ namespace System.Linq.Expressions.Compiler
                 for (int j = 0; j < testValues.Count; j++)
                 {
                     // All tests execute at the same stack state as the switch.
-                    // This is guarenteed by the compiler (to simplify spilling)
+                    // This is guaranteed by the compiler (to simplify spilling)
                     Result test = RewriteExpression(testValues[j], stack);
                     action |= test.Action;
 

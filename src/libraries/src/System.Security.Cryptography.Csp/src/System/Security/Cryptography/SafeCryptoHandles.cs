@@ -135,7 +135,7 @@ namespace System.Security.Cryptography
     ///     pointer to a CRYPT_KEY_CTX unmanaged structure whose destructor decrements a refCount. Only when
     ///     the provider refCount is 0 it is deleted. This way, we loose a race in the critical finalization
     ///     of the key handle and provider handle. This also applies to hash handles, which point to a 
-    ///     CRYPT_HASH_CTX. Those strucutres are defined in COMCryptography.h
+    ///     CRYPT_HASH_CTX. Those structure are defined in COMCryptography.h
     /// </summary>
     [SecurityCritical]  // auto-generated
     internal sealed class SafeKeyHandle : SafeHandleZeroOrMinusOneIsInvalid

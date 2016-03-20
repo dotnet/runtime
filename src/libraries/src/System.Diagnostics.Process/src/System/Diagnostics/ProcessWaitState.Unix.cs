@@ -14,7 +14,7 @@ namespace System.Diagnostics
     // We have a few constraints we're working under here:
     // - waitpid is used on Unix to get the exit status (including exit code) of a child process, but the first call
     //   to it after the child has completed will reap the child removing the chance of subsequent calls getting status.
-    // - The Process design allows for multiple indendent Process objects to be handed out, and each of those
+    // - The Process design allows for multiple independent Process objects to be handed out, and each of those
     //   objects may be used concurrently with each other, even if they refer to the same underlying process.
     //   Same with ProcessWaitHandle objects.  This is based on the Windows design where anyone with a handle to the
     //   process can retrieve completion information about that process.
@@ -40,7 +40,7 @@ namespace System.Diagnostics
     //
     // A negative ramification of this is that if a process exits, but there are outstanding wait handles 
     // handed out (and rooted, so they can't be GC'd), and then a new process is created and the pid is recycled, 
-    // new calls to get that process's wait state will get the old processe's wait state.  However, pid recycling
+    // new calls to get that process's wait state will get the old process's wait state.  However, pid recycling
     // will be a more general issue, since pids are the only identifier we have to a process, so if a Process
     // object is created for a particular pid, then that process goes away and a new one comes in with the same pid,
     // our Process object will silently switch to referring to the new pid.  Unix systems typically have a simple
@@ -147,7 +147,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Synchroniation object used to protect all instance state.  Any number of
+        /// Synchronization object used to protect all instance state.  Any number of
         /// Process and ProcessWaitHandle objects may be using a ProcessWaitState
         /// instance concurrently.
         /// </summary>
@@ -430,7 +430,7 @@ namespace System.Diagnostics
                         // PERF NOTE:
                         // At the moment, we never call CheckForExit(true) (which in turn allows
                         // waitpid to block until the child has completed) because we currently call it while
-                        // holdling the _gate lock.  This is probably unnecessary in some situations, and in particular
+                        // holding the _gate lock.  This is probably unnecessary in some situations, and in particular
                         // here if remainingTimeout == Timeout.Infinite. In that case, we should be able to set
                         // _waitInProgress to be a TaskCompletionSource task, and then below outside of the lock
                         // we could do a CheckForExit(blockingAllowed:true) and complete the TaskCompletionSource

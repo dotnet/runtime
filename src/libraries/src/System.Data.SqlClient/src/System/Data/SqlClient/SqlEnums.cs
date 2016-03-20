@@ -27,7 +27,7 @@ namespace System.Data.SqlClient
         internal readonly bool IsFixed;     // true if fixed length, note that sqlchar and sqlbinary are not considered fixed length
         internal readonly bool IsLong;      // true if long
         internal readonly bool IsPlp;       // Column is Partially Length Prefixed (MAX)
-        internal readonly byte Precision;   // maxium precision for numeric types 
+        internal readonly byte Precision;   // maximum precision for numeric types 
         internal readonly byte Scale;
         internal readonly byte TDSType;
         internal readonly byte NullableType;
@@ -740,7 +740,7 @@ namespace System.Data.SqlClient
         private static readonly MetaType s_metaBinary = new MetaType
             (255, 255, -1, false, false, false, TdsEnums.SQLBIGBINARY, TdsEnums.SQLBIGBINARY, MetaTypeName.BINARY, typeof(System.Byte[]), typeof(SqlBinary), SqlDbType.Binary, DbType.Binary, 2);
 
-        // syntatic sugar for the user...timestamps are 8-byte fixed length binary columns
+        // Syntactic sugar for the user...timestamps are 8-byte fixed length binary columns
         private static readonly MetaType s_metaTimestamp = new MetaType
             (255, 255, -1, false, false, false, TdsEnums.SQLBIGBINARY, TdsEnums.SQLBIGBINARY, MetaTypeName.TIMESTAMP, typeof(System.Byte[]), typeof(SqlBinary), SqlDbType.Timestamp, DbType.Binary, 2);
 
@@ -863,7 +863,7 @@ namespace System.Data.SqlClient
             }
             else
             {
-                // note that smalldatetime is days&minutes.
+                // note that smalldatetime is days & minutes.
                 // Adding 30 seconds ensures proper roundup if the seconds are >= 30
                 // The AddSeconds function handles eventual carryover
                 sqlDateTime = new SqlDateTime(dateTime.AddSeconds(30));

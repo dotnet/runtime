@@ -27,7 +27,7 @@ internal partial class Interop
     {
         internal short eventType;
         internal KeyEventRecord keyEvent;
-        // This struct is a union!  Word alighment should take care of padding!
+        // This struct is a union!  Word alignment should take care of padding!
     }
 
 

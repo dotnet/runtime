@@ -83,7 +83,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], -1));
             Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], 2));
 
-            // Chars does not have enough capacity to accomodate result
+            // Chars does not have enough capacity to accommodate result
             Assert.Throws<ArgumentException>("chars", () => new ASCIIEncoding().GetChars(new byte[4], 0, 4, new char[1], 1));
         }
     }

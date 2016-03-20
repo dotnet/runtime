@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tests
                             Predicate<string> predicate = (name) => name == taskName;
                             Predicate<KeyValuePair<string, object>> filter = (keyValue) => keyValue.Key == taskName;
 
-                            // set up the observer to only see events set with the task name as the nname.  
+                            // set up the observer to only see events set with the task name as the name.  
                             var observer = new ObserverToList<TelemData>(result, filter, taskName);
                             using (listener.Subscribe(observer, predicate))
                             {

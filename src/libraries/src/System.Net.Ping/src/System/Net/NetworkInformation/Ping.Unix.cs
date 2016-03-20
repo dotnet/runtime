@@ -176,7 +176,7 @@ namespace System.Net.NetworkInformation
                     long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
                     return new PingReply(
                             address,
-                            null, // Ping utility cannot accomodate these, return null to indicate they were ignored.
+                            null, // Ping utility cannot accommodate these, return null to indicate they were ignored.
                             IPStatus.Success,
                             rtt,
                             Array.Empty<byte>()); // Ping utility doesn't deliver this info.

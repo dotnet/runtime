@@ -7,6 +7,6 @@ namespace System.Diagnostics
     // Intentionally empty class, which is only used to define the public visibility
     public static partial class Debug
     {
-        // Debug members are comming from the common Debug.cs files
+        // Debug members are coming from the common Debug.cs files
     }
 }

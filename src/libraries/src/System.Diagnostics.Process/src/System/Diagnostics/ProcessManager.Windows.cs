@@ -492,7 +492,7 @@ namespace System.Diagnostics
             {
                 case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
                 case Interop.mincore.Errors.ERROR_PARTIAL_COPY:
-                    // It's possible that another thread casued this module to become
+                    // It's possible that another thread caused this module to become
                     // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
                     // move on.
                     break;
@@ -631,7 +631,7 @@ namespace System.Diagnostics
                                 {
                                     // We've found two entries in the perfcounters that claim to be the
                                     // same process.  We throw an exception.  Is this really going to be
-                                    // helpfull to the user?  Should we just ignore?
+                                    // helpful to the user?  Should we just ignore?
 #if FEATURE_TRACESWITCH
                                     Debug.WriteLineIf(Process._processTracing.TraceVerbose, "GetProcessInfos() - found a duplicate process id");
 #endif

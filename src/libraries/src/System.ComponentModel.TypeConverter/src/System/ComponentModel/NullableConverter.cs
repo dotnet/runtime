@@ -9,7 +9,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <devdoc>
-    /// TypeConverter to convert Nullable types to adn from strings or the underlying simple type.
+    /// TypeConverter to convert Nullable types to and from strings or the underlying simple type.
     /// </devdoc>
     public class NullableConverter : TypeConverter
     {

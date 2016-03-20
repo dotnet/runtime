@@ -3219,7 +3219,7 @@ namespace System
                 // ATTN:
                 // This may render problems for unknown schemes, but in general for an authority based Uri
                 // (that has slashes) a path should start with "/"
-                // This becomes more interesting knowning how a file uri is used in "file://c:/path"
+                // This becomes more interesting knowing how a file uri is used in "file://c:/path"
                 // It will be converted to file:///c:/path
                 //
                 // However, even more interesting is that vsmacros://c:\path will not add the third slash in the _canoical_ case

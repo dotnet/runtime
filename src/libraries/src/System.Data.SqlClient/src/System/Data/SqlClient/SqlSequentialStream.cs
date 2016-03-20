@@ -27,7 +27,7 @@ namespace System.Data.SqlClient
             _currentTask = null;
             _disposalTokenSource = new CancellationTokenSource();
 
-            // Safely safely convert the CommandTimeout from seconds to milliseconds
+            // Safely convert the CommandTimeout from seconds to milliseconds
             if ((reader.Command != null) && (reader.Command.CommandTimeout != 0))
             {
                 _readTimeout = (int)Math.Min((long)reader.Command.CommandTimeout * 1000L, (long)Int32.MaxValue);
@@ -274,7 +274,7 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// Checks the the parameters passed into a Read() method are valid
+        /// Checks the parameters passed into a Read() method are valid
         /// </summary>
         /// <param name="buffer"></param>
         /// <param name="index"></param>

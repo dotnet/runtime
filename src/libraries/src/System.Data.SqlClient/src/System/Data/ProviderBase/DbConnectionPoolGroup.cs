@@ -43,7 +43,7 @@ namespace System.Data.ProviderBase
         // PoolGroupStateUninitialized = 0;
         private const int PoolGroupStateActive = 1; // initial state, GetPoolGroup from cache, connection Open
         private const int PoolGroupStateIdle = 2; // all pools are pruned via Clear
-        private const int PoolGroupStateDisabled = 4; // factory pool entry prunning method
+        private const int PoolGroupStateDisabled = 4; // factory pool entry pruning method
 
         internal DbConnectionPoolGroup(DbConnectionOptions connectionOptions, DbConnectionPoolKey key, DbConnectionPoolGroupOptions poolGroupOptions)
         {

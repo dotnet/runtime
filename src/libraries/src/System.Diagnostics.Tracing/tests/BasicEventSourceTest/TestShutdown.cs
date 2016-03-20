@@ -40,7 +40,7 @@ namespace BasicEventSourceTests
             var sessionName = Path.GetFileNameWithoutExtension(dataFileName) + "Session";
             var logger = ADShutdownEventSourceTester.ADShutdownEventSource.Log;
 
-            // Normalze to a full path name.  
+            // Normalize to a full path name.  
             dataFileName = Path.GetFullPath(dataFileName);
             Debug.WriteLine(String.Format("Creating data file {0}", dataFileName));
 
@@ -84,7 +84,7 @@ namespace BasicEventSourceTests
                         hasManifestEvents = true;
                 };
 
-                // Parse all the events as as best we can, and also send unhandled events there as well.  
+                // Parse all the events as best we can, and also send unhandled events there as well.  
                 traceEventSource.Registered.All += onEvent;
                 traceEventSource.Dynamic.All += onEvent;
                 traceEventSource.UnhandledEvent += onEvent;

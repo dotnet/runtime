@@ -151,7 +151,7 @@ namespace System.Data.ProviderBase
             get;
         }
 
-        // this should be abstract but untill it is added to all the providers virtual will have to do
+        // this should be abstract but until it is added to all the providers virtual will have to do
         virtual public string ServerVersionNormalized
         {
             get
@@ -257,7 +257,7 @@ namespace System.Data.ProviderBase
             // if an exception occurs after the state change but before the try block
             // the connection will be stuck in OpenBusy state.  The commented out try-catch
             // block doesn't really help because a ThreadAbort during the finally block
-            // would just refert the connection to a bad state.
+            // would just revert the connection to a bad state.
             // Open->Closed: guarantee internal connection is returned to correct pool
             if (connectionFactory.SetInnerConnectionFrom(owningObject, DbConnectionOpenBusy.SingletonInstance, this))
             {
@@ -311,12 +311,12 @@ namespace System.Data.ProviderBase
 
         virtual internal void PrepareForReplaceConnection()
         {
-            // By default, there is no preperation required
+            // By default, there is no preparation required
         }
 
         virtual protected void PrepareForCloseConnection()
         {
-            // By default, there is no preperation required
+            // By default, there is no preparation required
         }
 
         virtual protected object ObtainAdditionalLocksForClose()
@@ -447,7 +447,7 @@ namespace System.Data.ProviderBase
                 }
                 catch
                 {
-                    // This should occure for all exceptions, even ADP.UnCatchableExceptions.
+                    // This should occur for all exceptions, even ADP.UnCatchableExceptions.
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }

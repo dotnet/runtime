@@ -365,7 +365,7 @@ internal static partial class Interop
             ulong[] threadIds = null;
             var threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
 
-            // We have no way of knowning how many threads the process has (and therefore how big our buffer should be)
+            // We have no way of knowing how many threads the process has (and therefore how big our buffer should be)
             // so while the return value of the function is the same as our buffer size (meaning it completely filled
             // our buffer), double our buffer size and try again. This ensures that we don't miss any threads
             do

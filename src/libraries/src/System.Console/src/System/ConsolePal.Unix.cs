@@ -453,7 +453,7 @@ namespace System
 
         /// <summary>
         /// Gets whether Console.In is redirected.
-        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// We approximate the behavior by checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
@@ -461,7 +461,7 @@ namespace System
         }
 
         /// <summary>Gets whether Console.Out is redirected.
-        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// We approximate the behavior by checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
@@ -469,7 +469,7 @@ namespace System
         }
 
         /// <summary>Gets whether Console.Error is redirected.
-        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// We approximate the behavior by checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
