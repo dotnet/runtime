@@ -183,7 +183,7 @@ namespace System.Dynamic
 
         /// <summary>
         /// Provides the implementation of performing a set index operation.  Derived classes can
-        /// override this method to custmize behavior.  When not overridden the call site requesting
+        /// override this method to customize behavior.  When not overridden the call site requesting
         /// the binder determines the behavior.
         /// </summary>
         /// <param name="binder">The binder provided by the call site.</param>
@@ -198,7 +198,7 @@ namespace System.Dynamic
 
         /// <summary>
         /// Provides the implementation of performing a delete index operation.  Derived classes
-        /// can override this method to custmize behavior.  When not overridden the call site
+        /// can override this method to customize behavior.  When not overridden the call site
         /// requesting the binder determines the behavior.
         /// </summary>
         /// <param name="binder">The binder provided by the call site.</param>

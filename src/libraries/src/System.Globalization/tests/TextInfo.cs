@@ -131,18 +131,18 @@ public class TextInfoTests
         // Unicode defines some codepoints which expand into multiple codepoints
         // when cased (see SpecialCasing.txt from UNIDATA for some examples).  We have never done
         // these sorts of expansions, since it would cause string lengths to change when cased,
-        // which is non-intuative.  In addition, there are some context sensitive mappings which
+        // which is non-intuitive.  In addition, there are some context sensitive mappings which
         // we also don't preform.
         
         TextInfo ti = new CultureInfo(localeName).TextInfo;
 
-        // es-zed does not case to SS when upercased.
+        // es-zed does not case to SS when uppercased.
         Assert.Equal("\u00DF", ti.ToUpper("\u00DF"));
 
         // Ligatures do not expand when cased.
         Assert.Equal("\uFB00", ti.ToUpper("\uFB00"));
 
-        // Precomposed character with no uppercase variaint, we don't want to "decompose" this
+        // Precomposed character with no uppercase variant, we don't want to "decompose" this
         // as part of casing.
         Assert.Equal("\u0149", ti.ToUpper("\u0149"));
 
@@ -156,7 +156,7 @@ public class TextInfoTests
     {
         // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
         // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
-        // casing implementation, which uses collation to understand if we need to do turkish casing or not.
+        // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
 
         TextInfo ti = new CultureInfo("en-US-POSIX").TextInfo;
 

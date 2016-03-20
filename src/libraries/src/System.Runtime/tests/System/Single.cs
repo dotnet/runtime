@@ -300,7 +300,7 @@ public static class SingleTests
 
         nfi.CurrencySymbol = "$";
         nfi.CurrencyGroupSeparator = ",";
-        Assert.True(float.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
+        Assert.True(float.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands positive
         Assert.Equal(1000, i);
 
         Assert.False(float.TryParse("abc", NumberStyles.None, nfi, out i));       // Hex Number negative
@@ -308,7 +308,7 @@ public static class SingleTests
         Assert.False(float.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
         Assert.False(float.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 
-        Assert.True(float.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese postive
+        Assert.True(float.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese positive
         Assert.Equal(-135, i);
 
         Assert.True(float.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));

@@ -433,7 +433,7 @@ public class TupleTests
         //Tuple-8, extended tuple
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
         tupleDriverA.TestNotEqual();
-        //Tuple-9 and Tuple-10 are not necesary because they use the same code path as Tuple-8
+        //Tuple-9 and Tuple-10 are not necessary because they use the same code path as Tuple-8
     }
 
     [Fact]
@@ -465,7 +465,7 @@ public class TupleTests
         //Tuple-8, extended tuple
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, bool, TimeSpan>((short)10000, (int)1000000, (long)10000000, "2008?7?2?", '0', Single.NaN, Double.NegativeInfinity, DateTime.Now);
         tupleDriverA.TestCompareToThrows();
-        //Tuple-9 and Tuple-10 are not necesary because they use the same code path as Tuple-8
+        //Tuple-9 and Tuple-10 are not necessary because they use the same code path as Tuple-8
     }
 
     [Fact]

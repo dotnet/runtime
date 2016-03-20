@@ -9,7 +9,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
     using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder01.Twondorder01;
 
     // <Area>variance</Area>
-    // <Title> Higer order variance</Title>
+    // <Title> Higher order variance</Title>
     // <Description> 2nd order generic types </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
@@ -77,7 +77,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondo
     using ManagedTests.DynamicCSharp.Conformance.dynamic.Variance.complex.Twondorder02.Twondorder02;
 
     // <Area>variance</Area>
-    // <Title> Higer order variance</Title>
+    // <Title> Higher order variance</Title>
     // <Description>declaration tests on interfaces -  2nd order generic types on return type, invariant => contravariant</Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>

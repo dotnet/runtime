@@ -241,7 +241,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.s
 
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
-    // <Description>Simple Declaration of a method with optional parameters. Expressions ued</Description>
+    // <Description>Simple Declaration of a method with optional parameters. Expressions used</Description>
     // <Expects status=success></Expects>
     // <Code>
     public struct Parent

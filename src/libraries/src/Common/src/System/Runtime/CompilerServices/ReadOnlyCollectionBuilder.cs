@@ -453,7 +453,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Creates a <see cref="ReadOnlyCollection{T}"/> containing all of the the elements of the <see cref="ReadOnlyCollectionBuilder{T}"/>,
+        /// Creates a <see cref="ReadOnlyCollection{T}"/> containing all of the elements of the <see cref="ReadOnlyCollectionBuilder{T}"/>,
         /// avoiding copying the elements to the new array if possible. Resets the <see cref="ReadOnlyCollectionBuilder{T}"/> after the
         /// <see cref="ReadOnlyCollection{T}"/> has been created.
         /// </summary>

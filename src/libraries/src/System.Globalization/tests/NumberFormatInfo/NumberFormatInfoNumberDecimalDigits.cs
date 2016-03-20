@@ -62,7 +62,7 @@ namespace System.Globalization.Tests
             int actual = nfi.NumberDecimalDigits;
             int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
 
-            // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
+            // todo: determine if Windows version needs to support "accounting" currency explicitly which contains parenthesis
             Assert.Equal(expected, actual);
         }
 

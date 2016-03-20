@@ -23,7 +23,7 @@ namespace System.Net.Sockets
 
         private bool _ownsSocket;
 
-        // Creates a new instance of the System.Net.Sockets.NetworkStream without initalization.
+        // Creates a new instance of the System.Net.Sockets.NetworkStream without initialization.
         internal NetworkStream()
         {
             _ownsSocket = true;

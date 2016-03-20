@@ -18,7 +18,7 @@ namespace System.Runtime.CompilerServices
 {
     //
     // A CallSite provides a fast mechanism for call-site caching of dynamic dispatch
-    // behvaior. Each site will hold onto a delegate that provides a fast-path dispatch
+    // behavior. Each site will hold onto a delegate that provides a fast-path dispatch
     // based on previous types that have been seen at the call-site. This delegate will
     // call UpdateAndExecute if it is called with types that it hasn't seen before.
     // Updating the binding will typically create (or lookup) a new delegate

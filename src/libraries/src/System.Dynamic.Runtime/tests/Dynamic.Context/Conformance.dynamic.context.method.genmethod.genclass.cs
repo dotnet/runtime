@@ -1128,7 +1128,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmethod.genclass.genclass023.genclass023;
     // <Title> Tests generic class generic method used in static method body.</Title>
     // <Description>
-    // Negtive: dynamic type would not satisfy the constraints.
+    // Negative: dynamic type would not satisfy the constraints.
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -1727,7 +1727,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmethod.genclass.genclass038.genclass038;
     // <Title> Tests generic class generic method used in static method body.</Title>
     // <Description>
-    // Negtive:dynamic type would not satisfy the constraints
+    // Negative:dynamic type would not satisfy the constraints
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
@@ -2218,7 +2218,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmethod.genclass.genclass023a.genclass023a;
     // <Title> Tests generic class generic method used in static method body.</Title>
     // <Description>
-    // Negtive: dynamic type would not satisfy the constraints. Type inference
+    // Negative: dynamic type would not satisfy the constraints. Type inference
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>

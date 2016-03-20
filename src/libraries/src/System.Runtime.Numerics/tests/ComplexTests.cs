@@ -768,7 +768,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void Exp_MaxReal()
         {
-            // On Windows, the result is {double.PostiveInfinity, double.NaN}
+            // On Windows, the result is {double.PositiveInfinity, double.NaN}
             // On Unix, the result is {double.NegativeInfinity, double.NaN}
             // Which one is incorrect should be determined.
             var complex = new Complex(double.MaxValue, 0);

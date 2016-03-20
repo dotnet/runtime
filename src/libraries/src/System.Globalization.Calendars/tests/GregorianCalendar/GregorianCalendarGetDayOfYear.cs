@@ -11,7 +11,7 @@ namespace System.Globalization.CalendarTests
     public class GregorianCalendarGetDayOfYear
     {
         private System.Globalization.Calendar _calendar = new GregorianCalendar();
-        #region Postive Test Case
+        #region Positive Test Case
         // Call GetDayOfYear to get day of year
         [Fact]
         public void PosTest1()

@@ -92,7 +92,7 @@ namespace System.Runtime.CompilerServices
         }
 
 
-        // Adds to end or or inserts items at InsertPosition
+        // Adds to end or inserts items at InsertPosition
         private const int InsertPosition = MaxRules / 2;
 
         private static T[] AddOrInsert(T[] rules, T item)
