@@ -200,7 +200,7 @@ namespace BasicEventSourceTests
                 {
                     Debug.WriteLine("Processing data file " + Path.GetFullPath(_dataFileName));
 
-                    // Parse all the events as as best we can, and also send unhandled events there as well.  
+                    // Parse all the events as best we can, and also send unhandled events there as well.  
                     traceEventSource.Registered.All += OnEventHelper;
                     traceEventSource.Dynamic.All += OnEventHelper;
                     traceEventSource.UnhandledEvents += OnEventHelper;

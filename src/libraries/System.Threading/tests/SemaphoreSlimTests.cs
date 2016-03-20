@@ -436,7 +436,7 @@ namespace System.Threading.Tests
         /// </summary>
         /// <param name="initial">The initial semaphore count</param>
         /// <param name="maximum">The maximum semaphore count</param>
-        /// <param name="action">SemaphoreSlim action to be called before CurentCount</param>
+        /// <param name="action">SemaphoreSlim action to be called before CurrentCount</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
         private static void RunSemaphoreSlimTest5_CurrentCount(int initial, int maximum, SemaphoreSlimActions? action)
         {

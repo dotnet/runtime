@@ -9,7 +9,7 @@ using System.Threading;
 namespace System.Data.SqlClient.SNI
 {
     /// <summary>
-    /// SNI MARS connection. Multiple MARS streams will be overlayed on this connection.
+    /// SNI MARS connection. Multiple MARS streams will be overlaid on this connection.
     /// </summary>
     internal class SNIMarsConnection
     {

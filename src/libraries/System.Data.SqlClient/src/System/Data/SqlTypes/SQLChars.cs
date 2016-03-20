@@ -31,7 +31,7 @@ namespace System.Data.SqlTypes
         //      - m_stream must not be null
         //      - m_rgchBuf could be null or not. if not null, content is garbage, should never look into it.
         //		- m_lCurLen must be x_lNull.
-        // 5) SqlChars contains a Lazy Materialized Blob (ie, StorageState.Delayed)
+        // 5) SqlChars contains a Lazy Materialized Blob (i.e, StorageState.Delayed)
         //
         internal char[] m_rgchBuf;  // Data buffer
         private long _lCurLen; // Current data length

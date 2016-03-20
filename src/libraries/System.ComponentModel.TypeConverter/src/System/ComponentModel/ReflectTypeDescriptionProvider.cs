@@ -170,7 +170,7 @@ namespace System.ComponentModel
             // [A1]
             // class Derived : Base, IDerived
             //
-            // We are retreving attributes in the following order:  A1 - A4.
+            // We are retrieving attributes in the following order:  A1 - A4.
             // Interfaces always lose to types, and interfaces and types
             // must be looked up in the same order.
             TypeConverterAttribute converterAttribute = ReflectTypeDescriptionProvider.GetTypeConverterAttributeIfAny(type);

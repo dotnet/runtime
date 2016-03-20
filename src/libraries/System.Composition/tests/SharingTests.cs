@@ -356,7 +356,7 @@ namespace System.Composition.UnitTests
 
 
         /// <summary>
-        /// CirA root of the composition has to be shared explcitly.
+        /// CirA root of the composition has to be shared explicitly.
         /// </summary>
         [Fact]
         public void CircularBoundarySharingTest()

@@ -116,7 +116,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => new ASCIIEncoding().GetBytes("a", 0, 1, new byte[1], 2));
             Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => new ASCIIEncoding().GetBytes(new char[1], 0, 1, new byte[1], 2));
 
-            // Bytes does not have enough capacity to accomodate result
+            // Bytes does not have enough capacity to accommodate result
             Assert.Throws<ArgumentException>("bytes", () => new ASCIIEncoding().GetBytes("abc", 0, 3, new byte[1], 0));
         }
     }

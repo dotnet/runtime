@@ -87,7 +87,7 @@ enum
     // everywhere.
     PAL_O_ACCESS_MODE_MASK = 0x000F,
 
-    // Flags (combineable)
+    // Flags (combinable)
     // These numeric values are not defined by POSIX and vary across targets.
     PAL_O_CLOEXEC = 0x0010, // Close-on-exec
     PAL_O_CREAT = 0x0020,   // Create file if it doesn't already exist

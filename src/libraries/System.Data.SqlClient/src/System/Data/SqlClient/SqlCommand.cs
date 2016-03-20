@@ -231,7 +231,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                // Don't allow the connection to be changed while in a async opperation.
+                // Don't allow the connection to be changed while in a async operation.
                 if (_activeConnection != value && _activeConnection != null)
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)
@@ -264,7 +264,7 @@ namespace System.Data.SqlClient
                         }
                         finally
                         {
-                            // clean prepare status (even successfull Unprepare does not do that)
+                            // clean prepare status (even successful Unprepare does not do that)
                             _prepareHandle = -1;
                             _execType = EXECTYPE.UNPREPARED;
                         }
@@ -315,7 +315,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                // Don't allow the transaction to be changed while in a async opperation.
+                // Don't allow the transaction to be changed while in a async operation.
                 if (_transaction != value && _activeConnection != null)
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)
@@ -651,7 +651,7 @@ namespace System.Data.SqlClient
                     }
                 }
 
-                // the pending data flag means that we are awaiting a response or are in the middle of proccessing a response
+                // the pending data flag means that we are awaiting a response or are in the middle of processing a response
                 // if we have no pending data, then there is nothing to cancel
                 // if we have pending data, but it is not a result of this command, then we don't cancel either.  Note that
                 // this model is implementable because we only allow one active command at any one time.  This code
@@ -668,12 +668,12 @@ namespace System.Data.SqlClient
 
                 // The lock here is to protect against the command.cancel / connection.close race condition
                 // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and 
-                // the command will no longer be cancelable.  It might be desirable to be able to cancel the close opperation, but this is
+                // the command will no longer be cancelable.  It might be desirable to be able to cancel the close operation, but this is
                 // outside of the scope of Whidbey RTM.  See (SqlConnection::Close) for other lock.
                 lock (connection)
                 {
                     if (connection != (_activeConnection.InnerConnection as SqlInternalConnectionTds))
-                    { // make sure the connection held on the active connection is what we have stored in our temp connection variable, if not between getting "connection" and takeing the lock, the connection has been closed
+                    { // make sure the connection held on the active connection is what we have stored in our temp connection variable, if not between getting "connection" and taking the lock, the connection has been closed
                         return;
                     }
 
@@ -685,7 +685,7 @@ namespace System.Data.SqlClient
 
 
                     if (!_pendingCancel)
-                    { // Do nothing if aleady pending.
+                    { // Do nothing if already pending.
                       // Before attempting actual cancel, set the _pendingCancel flag to false.
                       // This denotes to other thread before obtaining stateObject from the
                       // session pool that there is another thread wishing to cancel.
@@ -728,7 +728,7 @@ namespace System.Data.SqlClient
         override protected void Dispose(bool disposing)
         {
             if (disposing)
-            { // release mananged objects
+            { // release managed objects
                 _cachedMetaData = null;
             }
             // release unmanaged objects
@@ -2010,7 +2010,7 @@ namespace System.Data.SqlClient
                         //
                         // someone changed the command text or the parameter schema so we must unprepare the command
                         //
-                        // remeber that IsDirty includes test for IsPrepared!
+                        // remember that IsDirty includes test for IsPrepared!
                         if (_execType == EXECTYPE.PREPARED)
                         {
                             _hiddenPrepare = true;
@@ -2178,7 +2178,7 @@ namespace System.Data.SqlClient
                             // the handle unless command execution failed.  If fail, move back to pending
                             // state.
                             _inPrepare = false;                  // reset the flag
-                            IsDirty = true;                      // mark command as dirty so it will be prepared next time we're comming through
+                            IsDirty = true;                      // mark command as dirty so it will be prepared next time we're coming through
                             _execType = EXECTYPE.PREPAREPENDING; // reset execution type to pending
                         }
 
@@ -2225,7 +2225,7 @@ namespace System.Data.SqlClient
                             // the handle unless command execution failed.  If fail, move back to pending
                             // state.
                             _inPrepare = false;                  // reset the flag
-                            IsDirty = true;                      // mark command as dirty so it will be prepared next time we're comming through
+                            IsDirty = true;                      // mark command as dirty so it will be prepared next time we're coming through
                             _execType = EXECTYPE.PREPAREPENDING; // reset execution type to pending
                         }
 
@@ -2586,7 +2586,7 @@ namespace System.Data.SqlClient
                 parameter.Validate(ii, CommandType.StoredProcedure == CommandType);
 
                 // func will change type to that with a 4 byte length if the type has a two
-                // byte length and a parameter length > than that expressable in 2 bytes
+                // byte length and a parameter length > than that expressible in 2 bytes
                 if ((!parameter.ValidateTypeLengths().IsPlp) && (parameter.Direction != ParameterDirection.Output))
                 {
                     parameter.FixStreamDataForNonPLP();
@@ -2816,7 +2816,7 @@ namespace System.Data.SqlClient
                 if (!ShouldSendParameter(sqlParam))
                     continue;
 
-                // add our separator for the ith parmeter
+                // add our separator for the ith parameter
                 if (fAddSeperator)
                     paramList.Append(',');
 
@@ -2824,7 +2824,7 @@ namespace System.Data.SqlClient
 
                 MetaType mt = sqlParam.InternalMetaType;
 
-                //for UDTs, get the actual type name. Get only the typename, omitt catalog and schema names.
+                //for UDTs, get the actual type name. Get only the typename, omit catalog and schema names.
                 //in TSQL you should only specify the unqualified type name
 
                 // paragraph above doesn't seem to be correct. Server won't find the type
@@ -2849,7 +2849,7 @@ namespace System.Data.SqlClient
                 else
                 {
                     // func will change type to that with a 4 byte length if the type has a two
-                    // byte length and a parameter length > than that expressable in 2 bytes
+                    // byte length and a parameter length > than that expressible in 2 bytes
                     mt = sqlParam.ValidateTypeLengths();
                     if ((!mt.IsPlp) && (sqlParam.Direction != ParameterDirection.Output))
                     {
@@ -3155,7 +3155,7 @@ namespace System.Data.SqlClient
             // Cancellation is a suggestion, and exceptions should be ignored
             // rather than allowed to be unhandled, as there is no way to route
             // them to the caller.  It would be expected that the error will be
-            // observed anyway from the regular method.  An example is cancelling
+            // observed anyway from the regular method.  An example is canceling
             // an operation on a closed connection.
             try
             {

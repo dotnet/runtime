@@ -17,7 +17,7 @@ namespace System.Data.SqlClient
         // NOTE: This is a very simplistic, lightweight pooler.  It wasn't
         //       intended to handle huge number of items, just to keep track
         //       of the session objects to ensure that they're cleaned up in
-        //       a timely manner, to avoid holding on to an unacceptible 
+        //       a timely manner, to avoid holding on to an unacceptable 
         //       amount of server-side resources in the event that consumers
         //       let their data readers be GC'd, instead of explicitly 
         //       closing or disposing of them
