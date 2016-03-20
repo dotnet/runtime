@@ -707,7 +707,7 @@ namespace System.Xml
                         // We use a decoder so we don't error if we fall across a character boundary
                         actualCharCount = decoder.GetChars(bytes, byteOffset, actualByteCount, chars, charOffset);
 
-                        // We might've gotten zero characters though if < 4 bytes were requested because
+                        // We might have gotten zero characters though if < 4 bytes were requested because
                         // codepoints from U+0000 - U+FFFF can be up to 3 bytes in UTF-8, and represented as ONE char
                         // codepoints from U+10000 - U+10FFFF (last Unicode codepoint representable in UTF-8) are represented by up to 4 bytes in UTF-8 
                         //                                    and represented as TWO chars (high+low surrogate)

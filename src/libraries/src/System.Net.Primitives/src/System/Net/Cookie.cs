@@ -13,7 +13,7 @@ using System.Threading;
 // methods. Internal methods are needed in order to map cookie response headers from the WinRT Windows.Web.Http APIs.
 // Windows.Web.Http is used underneath the System.Net.Http classes on .NET Native. Having other similarly
 // named classes would normally conflict with the public System.Net namespace classes that are also in the 
-// System.Private.Networking dll. So, we need to move the classes to a different namespace. Thoses classes are never
+// System.Private.Networking dll. So, we need to move the classes to a different namespace. Those classes are never
 // exposed up to user code so there isn't a problem.  In the future, we might expose some of the internal methods
 // as new public APIs and then we can remove this duplicate source code inclusion in the binaries.
 #if NETNative_SystemNetHttp
@@ -336,7 +336,7 @@ namespace System.Net
 
         // According to spec we must assume default values for attributes but still
         // keep in mind that we must not include them into the requests.
-        // We also check the validiy of all attributes based on the version and variant (read RFC)
+        // We also check the validity of all attributes based on the version and variant (read RFC)
         //
         // To work properly this function must be called after cookie construction with
         // default (response) URI AND setDefault == true
@@ -468,7 +468,7 @@ namespace System.Net
                     }
                     else if (variant == CookieVariant.Plain)
                     {
-                        // We distiguish between Version0 cookie and other versions on domain issue.
+                        // We distinguish between Version0 cookie and other versions on domain issue.
                         // According to Version0 spec a domain must be just a substring of the hostname.
 
                         if (!IsDomainEqualToHost(domain, host))
@@ -558,7 +558,7 @@ namespace System.Net
 
             if (_portImplicit == false)
             {
-                // Port must match agaist the one from the uri.
+                // Port must match against the one from the uri.
                 valid = false;
                 foreach (int p in _portList)
                 {
@@ -661,7 +661,7 @@ namespace System.Net
         {
             get
             {
-                // PortList will be null if Port Attribute was ommitted in the response.
+                // PortList will be null if Port Attribute was omitted in the response.
                 return _portList;
             }
         }
@@ -1614,7 +1614,7 @@ namespace System.Net
             Cookie cookie = _savedCookie;
             _savedCookie = null;
 
-            // Only the first occurence of an attribute value must be counted.
+            // Only the first occurrence of an attribute value must be counted.
             bool domainSet = false;
             bool pathSet = false;
             bool portSet = false; // Special case: may have no value in header.

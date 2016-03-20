@@ -288,7 +288,7 @@ namespace System.Net
             try
             {
                 //
-                // For app-compat we want to ensure the credential are accessed under >>process<< acount.
+                // For app-compat we want to ensure the credential are accessed under >>process<< account.
                 //
                 return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
                 {

@@ -15,7 +15,7 @@ namespace System.Net.WebSockets
     internal sealed class WinHttpWebSocketState : IDisposable
     {
         // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
-        // the same time for the same handle. Enahnce locking to prevent only WinHttpCloseHandle being called
+        // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
         // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
 
         // The _lock object must be during the execution of any WinHttp function to ensure no race conditions with 
@@ -31,7 +31,7 @@ namespace System.Net.WebSockets
         // A GCHandle for this operation object.
         // This is owned by the callback and will be unpinned by the callback when it determines that
         // no further calls will happen on the callback, i.e. all WinHTTP handles have fully closed via
-        // a WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING notfication being received by the callback.
+        // a WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING notification being received by the callback.
         private GCHandle _operationHandle = new GCHandle();
 
         private volatile WebSocketState _state = WebSocketState.None;

@@ -394,7 +394,7 @@ namespace System
         /// </summary>
         private List<object> _notGen2;
         /// <summary>
-        /// What whas the gen 1 count the last time re restocked?  If it is now greater, then
+        /// What was the gen 1 count the last time re restocked?  If it is now greater, then
         /// we know that all objects are in Gen 2 so we don't have to check.  Should be updated
         /// every time something gets added to the _notGen2 list.
         /// </summary>

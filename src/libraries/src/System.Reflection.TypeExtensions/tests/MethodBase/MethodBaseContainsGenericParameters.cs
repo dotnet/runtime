@@ -170,7 +170,7 @@ namespace System.Reflection.Tests
         {
             Type type = typeof(TestGenericClass<int>);
             MethodBase methodInfo = type.GetMethod("TestVoidMethod");
-            Assert.False(methodInfo.ContainsGenericParameters, "ContainsGenericParameters returns truefor a generic method in a closed generic type");
+            Assert.False(methodInfo.ContainsGenericParameters, "ContainsGenericParameters returns true for a generic method in a closed generic type");
         }
 
         // Positive Test 12: ContainsGenericParameters should return false for a constructor in a non generic type

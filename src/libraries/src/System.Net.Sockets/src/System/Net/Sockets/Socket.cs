@@ -32,7 +32,7 @@ namespace System.Net.Sockets
         private bool _isConnected;
         private bool _isDisconnected;
 
-        // Wwhen the socket is created it will be in blocking mode. We'll only be able to Accept or Connect,
+        // When the socket is created it will be in blocking mode. We'll only be able to Accept or Connect,
         // so we need to handle one of these cases at a time.
         private bool _willBlock = true; // Desired state of the socket from the user.
         private bool _willBlockInternal = true; // Actual win32 state of the socket.
@@ -724,7 +724,7 @@ namespace System.Net.Sockets
             IPEndPoint ipSnapshot = localEP as IPEndPoint;
 
             // For now security is implemented only on IPEndPoint.
-            // If EndPoint is of any other type, unmanaged code permisison is demanded.
+            // If EndPoint is of any other type, unmanaged code permission is demanded.
             if (ipSnapshot != null)
             {
                 // Take a snapshot that will make it immutable and not derived.
@@ -2245,7 +2245,7 @@ namespace System.Net.Sockets
         // 
         //    BeginConnect - Does a async winsock connect, by calling
         //    WSAEventSelect to enable Connect Events to signal an event and
-        //    wake up a callback which involkes a callback.
+        //    wake up a callback which invokes a callback.
         // 
         //     So note: This routine may go pending at which time,
         //     but any case the callback Delegate will be called upon completion
@@ -2258,7 +2258,7 @@ namespace System.Net.Sockets
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive result
+        //    IAsyncResult - Async result used to retrieve result
         internal IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state)
         {
             // Validate input parameters.
@@ -2453,15 +2453,15 @@ namespace System.Net.Sockets
         // Routine Description:
         // 
         //    EndConnect - Called after receiving callback from BeginConnect,
-        //     in order to retrive the result of async call
+        //     in order to retrieve the result of async call
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginConnect call
+        //    AsyncResult - the AsyncResult Returned from BeginConnect call
         // 
         // Return Value:
         // 
-        //    int - Return code from aync Connect, 0 for success, SocketError.NotConnected otherwise
+        //    int - Return code from async Connect, 0 for success, SocketError.NotConnected otherwise
         internal void EndConnect(IAsyncResult asyncResult)
         {
             if (s_loggingEnabled)
@@ -2545,7 +2545,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginSend - Async implimentation of Send call, mirrored after BeginReceive
+        //    BeginSend - Async implementation of Send call, mirrored after BeginReceive
         //    This routine may go pending at which time,
         //    but any case the callback Delegate will be called upon completion
         // 
@@ -2554,12 +2554,12 @@ namespace System.Net.Sockets
         //    WriteBuffer - status line that we wish to parse
         //    Index - Offset into WriteBuffer to begin sending from
         //    Size - Size of Buffer to transmit
-        //    Callback - Delegate function that holds callback, called on completeion of I/O
+        //    Callback - Delegate function that holds callback, called on completion of I/O
         //    State - State used to track callback, set by caller, not required
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive result
+        //    IAsyncResult - Async result used to retrieve result
         internal IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
@@ -2797,7 +2797,7 @@ namespace System.Net.Sockets
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginSend call
+        //    AsyncResult - the AsyncResult Returned from BeginSend call
         // 
         // Return Value:
         // 
@@ -2882,7 +2882,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginSendTo - Async implimentation of SendTo,
+        //    BeginSendTo - Async implementation of SendTo,
         // 
         //    This routine may go pending at which time,
         //    but any case the callback Delegate will be called upon completion
@@ -2894,12 +2894,12 @@ namespace System.Net.Sockets
         //    Size - Size of Buffer to transmit
         //    Flags - Specific Socket flags to pass to winsock
         //    remoteEP - EndPoint to transmit To
-        //    Callback - Delegate function that holds callback, called on completeion of I/O
+        //    Callback - Delegate function that holds callback, called on completion of I/O
         //    State - State used to track callback, set by caller, not required
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive result
+        //    IAsyncResult - Async result used to retrieve result
         internal IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
@@ -3014,7 +3014,7 @@ namespace System.Net.Sockets
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginSend call
+        //    AsyncResult - the AsyncResult Returned from BeginSend call
         // 
         // Return Value:
         // 
@@ -3087,7 +3087,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginReceive - Async implimentation of Recv call,
+        //    BeginReceive - Async implementation of Recv call,
         // 
         //    Called when we want to start an async receive.
         //    We kick off the receive, and if it completes synchronously we'll
@@ -3101,12 +3101,12 @@ namespace System.Net.Sockets
         //    ReadBuffer - status line that we wish to parse
         //    Index - Offset into ReadBuffer to begin reading from
         //    Size - Size of Buffer to recv
-        //    Callback - Delegate function that holds callback, called on completeion of I/O
+        //    Callback - Delegate function that holds callback, called on completion of I/O
         //    State - State used to track callback, set by caller, not required
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive result
+        //    IAsyncResult - Async result used to retrieve result
         internal IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
             SocketError errorCode;
@@ -3365,7 +3365,7 @@ namespace System.Net.Sockets
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginSend call
+        //    AsyncResult - the AsyncResult Returned from BeginSend call
         // 
         // Return Value:
         // 
@@ -3693,7 +3693,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginReceiveFrom - Async implimentation of RecvFrom call,
+        //    BeginReceiveFrom - Async implementation of RecvFrom call,
         // 
         //    Called when we want to start an async receive.
         //    We kick off the receive, and if it completes synchronously we'll
@@ -3707,14 +3707,14 @@ namespace System.Net.Sockets
         //    ReadBuffer - status line that we wish to parse
         //    Index - Offset into ReadBuffer to begin reading from
         //    Request - Size of Buffer to recv
-        //    Flags - Additonal Flags that may be passed to the underlying winsock call
+        //    Flags - Additional Flags that may be passed to the underlying winsock call
         //    remoteEP - EndPoint that are to receive from
-        //    Callback - Delegate function that holds callback, called on completeion of I/O
+        //    Callback - Delegate function that holds callback, called on completion of I/O
         //    State - State used to track callback, set by caller, not required
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive result
+        //    IAsyncResult - Async result used to retrieve result
         internal IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
         {
             if (s_loggingEnabled)
@@ -3856,7 +3856,7 @@ namespace System.Net.Sockets
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginReceiveFrom call
+        //    AsyncResult - the AsyncResult Returned from BeginReceiveFrom call
         // 
         // Return Value:
         // 
@@ -3968,7 +3968,7 @@ namespace System.Net.Sockets
         // 
         // Return Value:
         // 
-        //    IAsyncResult - Async result used to retreive resultant new socket
+        //    IAsyncResult - Async result used to retrieve resultant new socket
         internal IAsyncResult BeginAccept(AsyncCallback callback, object state)
         {
             if (!_isDisconnected)
@@ -4071,12 +4071,12 @@ namespace System.Net.Sockets
         // Routine Description:
         // 
         //    EndAccept -  Called by user code after I/O is done or the user wants to wait.
-        //                 until Async completion, so it provides End handling for aync Accept calls,
+        //                 until Async completion, so it provides End handling for async Accept calls,
         //                 and retrieves new Socket object
         // 
         // Arguments:
         // 
-        //    AsyncResult - the AsyncResult Returned fron BeginAccept call
+        //    AsyncResult - the AsyncResult Returned from BeginAccept call
         // 
         // Return Value:
         // 
@@ -5295,7 +5295,7 @@ namespace System.Net.Sockets
                                 }
                                 else
                                 {
-                                    // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finsh.
+                                    // We got a FIN.  It'd be nice to block for the remainder of the timeout for the handshake to finish.
                                     // Since there's no real way to do that, close the socket with the user's preferences.  This lets
                                     // the user decide how best to handle this case via the linger options.
                                     _handle.CloseAsIs();
@@ -6004,7 +6004,7 @@ namespace System.Net.Sockets
             // inherited the WSAEventSelect() call from the accepting socket.
             // we need to cancel this otherwise the socket will be in non-blocking
             // mode and we cannot force blocking mode using the ioctlsocket() in
-            // Socket.set_Blocking(), since it fails returing 10022 as documented in MSDN.
+            // Socket.set_Blocking(), since it fails returning 10022 as documented in MSDN.
             // (note that the m_AsyncEvent event will not be created in this case.
 
             socket._willBlock = _willBlock;

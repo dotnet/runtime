@@ -9,7 +9,7 @@ using System.Reflection.Internal;
 namespace System.Reflection.Metadata.Ecma335
 {
     /// <summary>
-    /// Provides extension methods for working with certain raw elements of the Ecma 335 metadata tables and heaps.
+    /// Provides extension methods for working with certain raw elements of the ECMA-335 metadata tables and heaps.
     /// </summary>
     public static class MetadataReaderExtensions
     {

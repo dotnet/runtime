@@ -166,6 +166,6 @@ namespace System.Reflection.PortableExecutable
         MemShared = 0x10000000,          // Section is shareable.
         MemExecute = 0x20000000,         // Section is executable.
         MemRead = 0x40000000,            // Section is readable.
-        MemWrite = 0x80000000,           // Section is writeable.
+        MemWrite = 0x80000000,           // Section is writable.
     }
 }
