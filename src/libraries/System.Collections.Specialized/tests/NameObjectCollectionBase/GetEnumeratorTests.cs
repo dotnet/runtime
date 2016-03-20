@@ -89,7 +89,7 @@ namespace System.Collections.Specialized.Tests
             // Attempt to get Current should result in exception
             Assert.Throws<InvalidOperationException>(() => { String curr = (String)en.Current; });
 
-            // Modify collection and then then try MoveNext, Current, Reset
+            // Modify collection and then try MoveNext, Current, Reset
             // new collection
             noc = new MyNameObjectCollection();
             noc.Add("key1", new Foo());
@@ -129,7 +129,7 @@ namespace System.Collections.Specialized.Tests
             noc.IsReadOnly = true;
             Assert.Throws<InvalidOperationException>(() => { en.MoveNext(); });
 
-            // Clear collection and then then try MoveNext, Current, Reset
+            // Clear collection and then try MoveNext, Current, Reset
             // new collection
             noc = new MyNameObjectCollection();
             noc.Add("key1", new Foo());

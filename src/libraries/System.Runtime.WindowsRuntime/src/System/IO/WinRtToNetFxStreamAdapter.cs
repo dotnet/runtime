@@ -474,7 +474,7 @@ namespace System.IO
             // This will cause a CCW to be created for the delegate and the delegate has a reference to its target, i.e. to
             // asyncResult, so asyncResult will not be collected. If we loose the entire AppDomain, then asyncResult and its CCW
             // will be collected but the stub will remain and the callback will fail gracefully. The underlying buffer is the only
-            // item to whcih we expose a direct pointer and this is properly pinned using a mechanism similar to Overlapped.
+            // item to which we expose a direct pointer and this is properly pinned using a mechanism similar to Overlapped.
 
             return asyncResult;
         }

@@ -216,7 +216,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we have named arguments, reorder them for this method.
                     if (_pArguments.fHasExprs)
                     {
-                        // If we dont have EXPRs, its because we're doing a method group conversion.
+                        // If we don't have EXPRs, its because we're doing a method group conversion.
                         // In those scenarios, we never want to add named arguments or optional arguments.
                         if (_bHasNamedArguments)
                         {
@@ -454,7 +454,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
 
-                // Make sure all the names we specified are in the list and we dont have duplicates.
+                // Make sure all the names we specified are in the list and we don't have duplicates.
                 if (!NamedArgumentNamesAppearInParameterList(methprop))
                 {
                     return false;
@@ -778,7 +778,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             /////////////////////////////////////////////////////////////////////////////////
             // Returns true if we can either add enough optional parameters to make the 
-            // argument list match, or if we dont need to at all.
+            // argument list match, or if we don't need to at all.
 
             private bool AddArgumentsForOptionalParameters()
             {
@@ -808,7 +808,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (!methprop.IsParameterOptional(i))
                     {
-                        // We dont have an optional here, but we need to fill it in.
+                        // We don't have an optional here, but we need to fill it in.
                         return false;
                     }
 
@@ -1027,7 +1027,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     if (!inferenceSucceeded)
                     {
-                        if (_results.IsBetterUninferrableResult(_pCurrentTypeArgs))
+                        if (_results.IsBetterUninferableResult(_pCurrentTypeArgs))
                         {
                             TypeArray pTypeVars = methSym.typeVars;
                             if (pTypeVars != null && _pCurrentTypeArgs != null && pTypeVars.size == _pCurrentTypeArgs.size)
@@ -1144,9 +1144,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (containsErrorSym)
                 {
-                    if (_results.IsBetterUninferrableResult(_pCurrentTypeArgs) && _pCurrentSym.IsMethodSymbol())
+                    if (_results.IsBetterUninferableResult(_pCurrentTypeArgs) && _pCurrentSym.IsMethodSymbol())
                     {
-                        // If we're an instance method or we're an extension that has an inferrable instance argument,
+                        // If we're an instance method or we're an extension that has an inferable instance argument,
                         // then mark us down. Note that the extension may not need to infer type args,
                         // so check if we have any type variables at all to begin with.
                         if (!_pCurrentSym.AsMethodSymbol().IsExtension() ||
@@ -1159,7 +1159,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     _pCurrentSym.AsMethodSymbol().Params,
                                     _pArguments))
                         {
-                            _results.GetUninferrableResult().Set(
+                            _results.GetUninferableResult().Set(
                                     _pCurrentSym.AsMethodSymbol(),
                                     _pCurrentType,
                                     _pCurrentTypeArgs);
@@ -1309,7 +1309,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Report inaccessible.
                 if (_results.GetInaccessibleResult())
                 {
-                    // We might have called this, but it is inaccesable...
+                    // We might have called this, but it is inaccessible...
                     GetSemanticChecker().ReportAccessError(_results.GetInaccessibleResult(), _pExprBinder.ContextForMemberLookup(), GetTypeQualifier(_pGroup));
                     return;
                 }
@@ -1342,16 +1342,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we had some invalid arguments for best matching.
                     ReportErrorsForBestMatching(bUseDelegateErrors, nameErr);
                 }
-                else if (_results.GetUninferrableResult() || _mpwiCantInferInstArg)
+                else if (_results.GetUninferableResult() || _mpwiCantInferInstArg)
                 {
-                    if (!_results.GetUninferrableResult())
+                    if (!_results.GetUninferableResult())
                     {
-                        //copy the extension method for which instacne argument type inference failed
-                        _results.GetUninferrableResult().Set(_mpwiCantInferInstArg.Sym.AsMethodSymbol(), _mpwiCantInferInstArg.GetType(), _mpwiCantInferInstArg.TypeArgs);
+                        //copy the extension method for which instance argument type inference failed
+                        _results.GetUninferableResult().Set(_mpwiCantInferInstArg.Sym.AsMethodSymbol(), _mpwiCantInferInstArg.GetType(), _mpwiCantInferInstArg.TypeArgs);
                     }
-                    Debug.Assert(_results.GetUninferrableResult().Sym.IsMethodSymbol());
+                    Debug.Assert(_results.GetUninferableResult().Sym.IsMethodSymbol());
 
-                    MethodSymbol sym = _results.GetUninferrableResult().Meth();
+                    MethodSymbol sym = _results.GetUninferableResult().Meth();
                     TypeArray pCurrentParameters = sym.Params;
                     // if we tried to bind to an extensionmethod and the instance argument Type Inference failed then the method does not exist
                     // on the type at all. this is treated as a lookup error
@@ -1366,7 +1366,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     MethWithType mwtCantInfer = new MethWithType();
-                    mwtCantInfer.Set(_results.GetUninferrableResult().Meth(), _results.GetUninferrableResult().GetType());
+                    mwtCantInfer.Set(_results.GetUninferableResult().Meth(), _results.GetUninferableResult().GetType());
                     GetErrorContext().Error(ErrorCode.ERR_CantInferMethTypeArgs, mwtCantInfer);
                 }
                 else if (_mwtBadArity)
@@ -1433,7 +1433,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
 
-                    // Report possible matches (same name and is accesible). We stored these in m_swtWrongCount.
+                    // Report possible matches (same name and is accessible). We stored these in m_swtWrongCount.
                     for (int i = 0; i < _nWrongCount; i++)
                     {
                         if (GetSemanticChecker().CheckAccess(

@@ -115,21 +115,21 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// generates random list of columns in random order, no repeated columns
         /// </summary>
-        public int[] NextIndicies(int count)
+        public int[] NextIndices(int count)
         {
             if (count <= 0)
                 throw new ArgumentOutOfRangeException("count");
 
-            int[] indicies = new int[count];
+            int[] indices = new int[count];
             for (int c = 0; c < count; c++)
             {
-                indicies[c] = c;
+                indices[c] = c;
             }
 
             // shuffle
-            Shuffle(indicies);
+            Shuffle(indices);
 
-            return indicies;
+            return indices;
         }
 
         /// <summary>

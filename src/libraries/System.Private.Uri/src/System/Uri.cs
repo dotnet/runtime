@@ -942,7 +942,7 @@ namespace System
             else
             {
                 // Return unescaped canonical path
-                // Note we cannot call GetParts here because it has circular dependancy on GelLocalPath method
+                // Note we cannot call GetParts here because it has circular dependency on GelLocalPath method
                 return GetUnescapedParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
             }
         }
@@ -2029,7 +2029,7 @@ namespace System
             if (newHost != null)
                 _string = newHost;
 
-            // conditions where we dont need to go to parseremaining, so we copy the rest of the
+            // conditions where we don't need to go to parseremaining, so we copy the rest of the
             // original string.. and switch offsets
             if ((!_iriParsing && AllowIdn && (((_flags & Flags.IdnHost) != 0) || ((_flags & Flags.UnicodeHost) != 0))) ||
                 (_iriParsing && ((_flags & Flags.HasUnicode) == 0) && AllowIdn && ((_flags & Flags.IdnHost) != 0)))

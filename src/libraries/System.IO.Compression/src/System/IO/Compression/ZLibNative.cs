@@ -89,7 +89,7 @@ namespace System.IO.Compression
         /// appropriately. <code>Fixed</code> prevents the use of dynamic Huffman codes, allowing for a simpler decoder for special applications.</p>
         /// 
         /// <p><strong>For NetFx use:</strong></p>
-        /// <p>We have investigated compression scenarios for a bunch of different requently occuring compression data and found that in all
+        /// <p>We have investigated compression scenarios for a bunch of different requently occurring compression data and found that in all
         /// cases we invesigated so far, <code>DefaultStrategy</code> provided best results</p>
         /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>
         /// </summary>

@@ -210,9 +210,9 @@ namespace System.Xml.Tests
 
         protected void CreateWriter(WriteThru writeThru)
         {
-            //Assumption is that the Create method doesnt throw NullReferenceException and
-            //it is not the goal of this framework to test if they are thrown anywhere.
-            //but if they are thrown thats a problem and they shouldnt be caught but exposed.
+            // Assumption is that the Create method doesn't throw NullReferenceException and
+            // it is not the goal of this framework to test if they are thrown anywhere.
+            // but if they are thrown thats a problem and they shouldnt be caught but exposed.
 
             Log("Writing thru : " + writeThru);
 

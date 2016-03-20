@@ -77,7 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool _isManagedStruct; // Set if the struct is known to be managed (for unsafe code). Set during import.
 
         // Constructors
-        private bool _hasPubNoArgCtor; // Whether it has a public instance ructor taking no args
+        private bool _hasPubNoArgCtor; // Whether it has a public instance constructor taking no args
 
         // private struct members should not be checked for assignment or references
         private bool _hasExternReference;

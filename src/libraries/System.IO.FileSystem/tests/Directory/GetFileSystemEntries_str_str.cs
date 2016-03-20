@@ -247,7 +247,7 @@ namespace System.IO.Tests
                     case '/':
                         Assert.Throws<DirectoryNotFoundException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString())));
                         break;
-                    //We dont throw in V1 too
+                    //We don't throw in V1 too
                     case ':':
                         //History:
                         // 1) we assumed that this will work in all non-9x machine

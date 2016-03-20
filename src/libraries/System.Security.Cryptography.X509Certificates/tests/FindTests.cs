@@ -340,7 +340,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     TimeSpan gap = latestNotBefore - earliestNotAfter;
 
                     // If this assert fails it means our test data was rebuilt and the constraint
-                    // can no longer be satisifed
+                    // can no longer be satisfied
                     Assert.True(gap > TimeSpan.FromSeconds(1));
 
                     DateTime noMatchTime = earliestNotAfter + TimeSpan.FromSeconds(1);
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     TimeSpan gap = latestNotBefore - earliestNotAfter;
 
                     // If this assert fails it means our test data was rebuilt and the constraint
-                    // can no longer be satisifed
+                    // can no longer be satisfied
                     Assert.True(gap > TimeSpan.FromSeconds(1));
 
                     // One second before the latest NotBefore, so one is valid, the other is not yet valid.
@@ -407,7 +407,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     TimeSpan gap = latestNotBefore - earliestNotAfter;
 
                     // If this assert fails it means our test data was rebuilt and the constraint
-                    // can no longer be satisifed
+                    // can no longer be satisfied
                     Assert.True(gap > TimeSpan.FromSeconds(1));
 
                     // One second after the latest NotBefore, both certificates are time-valid
@@ -434,7 +434,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     TimeSpan gap = latestNotBefore - earliestNotAfter;
 
                     // If this assert fails it means our test data was rebuilt and the constraint
-                    // can no longer be satisifed
+                    // can no longer be satisfied
                     Assert.True(gap > TimeSpan.FromSeconds(1));
 
                     // One second after the earliest NotAfter, so one is valid, the other is no longer valid.
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     TimeSpan gap = latestNotBefore - earliestNotAfter;
 
                     // If this assert fails it means our test data was rebuilt and the constraint
-                    // can no longer be satisifed
+                    // can no longer be satisfied
                     Assert.True(gap > TimeSpan.FromSeconds(1));
 
                     // One second before the earliest NotAfter, so both certificates are valid

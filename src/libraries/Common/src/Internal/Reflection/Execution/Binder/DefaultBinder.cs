@@ -858,7 +858,7 @@ namespace Internal.Reflection.Core.Execution.Binder
             int res = FindMostSpecific(m1.GetParameters(), paramOrder1, paramArrayType1,
                                        m2.GetParameters(), paramOrder2, paramArrayType2, types, args);
 
-            // If the match was not ambigous then return the result.
+            // If the match was not ambiguous then return the result.
             if (res != 0)
             {
                 return res;
@@ -886,7 +886,7 @@ namespace Internal.Reflection.Core.Execution.Binder
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 
@@ -912,7 +912,7 @@ namespace Internal.Reflection.Core.Execution.Binder
                 }
             }
 
-            // The match is ambigous.
+            // The match is ambiguous.
             return 0;
         }
 

@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         // These values were defined in src/Native/System.Native/fxerrno.h
         //
-        // They compare against values obtaied via Interop.Sys.GetLastError() not Marshal.GetLastWin32Error()
+        // They compare against values obtained via Interop.Sys.GetLastError() not Marshal.GetLastWin32Error()
         // which obtains the raw errno that varies between unixes. The strong typing as an enum is meant to
         // prevent confusing the two. Casting to or from int is suspect. Use GetLastErrorInfo() if you need to
         // correlate these to the underlying platform values or obtain the corresponding error message.

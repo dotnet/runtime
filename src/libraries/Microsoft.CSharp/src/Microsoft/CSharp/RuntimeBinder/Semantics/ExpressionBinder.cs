@@ -299,7 +299,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 new BinOpSig (PredefinedType.PT_LONG,       PredefinedType.PT_INT,      BinOpMask.Shift,    1, BindShiftOp,             OpSigFlags.Value,       BinOpFuncKind.ShiftOp       ),
                 new BinOpSig (PredefinedType.PT_ULONG,      PredefinedType.PT_INT,      BinOpMask.Shift,    0, BindShiftOp,             OpSigFlags.Value,       BinOpFuncKind.ShiftOp       ),
                 new BinOpSig (PredefinedType.PT_BOOL,       PredefinedType.PT_BOOL,     BinOpMask.BoolNorm, 0, BindBoolBinOp,           OpSigFlags.Value,       BinOpFuncKind.BoolBinOp     ),
-                // Make boolean logical operators liftable so that they dont give funny short circuiting semantics.
+                // Make boolean logical operators liftable so that they don't give funny short circuiting semantics.
                 // This is for DDBugs 677075.
                 new BinOpSig (PredefinedType.PT_BOOL,       PredefinedType.PT_BOOL,     BinOpMask.Logical,  0, BindBoolBinOp,           OpSigFlags.BoolBit,     BinOpFuncKind.BoolBinOp     ),
                 new BinOpSig (PredefinedType.PT_BOOL,       PredefinedType.PT_BOOL,     BinOpMask.Bitwise,  0, BindLiftedBoolBitwiseOp, OpSigFlags.BoolBit,     BinOpFuncKind.BoolBitwiseOp ),
@@ -689,7 +689,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(exprTypeDest.TypeOrNamespace.IsType());
             CType typeDest = exprTypeDest.TypeOrNamespace.AsType();
             pexprDest = null;
-            // If the source is a constant, and cast is really simple (no change in fundemental
+            // If the source is a constant, and cast is really simple (no change in fundamental
             // type, no flags), then create a new constant node with the new type instead of
             // creating a cast node. This allows compile-time constants to be easily recognized.
             EXPR exprConst = exprSrc.GetConst();
@@ -971,7 +971,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // if we are doing a get on this thing, and there is no get, and
-            // most imporantly, we are not leaving the arguments to be bound by the array index
+            // most importantly, we are not leaving the arguments to be bound by the array index
             // then error...
             if ((bindFlags & BindingFlag.BIND_RVALUEREQUIRED) != 0)
             {
@@ -1145,7 +1145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pmethBest == null)
             {
-                // No winner, so its an ambigous call...
+                // No winner, so its an ambiguous call...
                 ErrorContext.Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
 
                 EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, pmethAmbig1.mpwi);
@@ -1772,7 +1772,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 EXPR objNew = tryConvert(pObject, swt.GetType(), CONVERTTYPE.NOUDC);
 
-                // This check ensures that we do not bind to methods in an outerclass
+                // This check ensures that we do not bind to methods in an outer class
                 // which are visible, but whose this pointer is of an incorrect type...
                 // ... also handles case of calling an pObject method on a RefAny value.
                 // WE don't give a great message for this, but it'll do.
@@ -1808,7 +1808,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (isStatic)
             {
-                // If we're static and we dont have an object, or we have an implicit this, 
+                // If we're static and we don't have an object, or we have an implicit this, 
                 // then we're ok. The reason implicit this is ok is because if the user is
                 // just typing something like:
                 //
@@ -1828,7 +1828,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else if (pObject == null)
             {
-                // We're not static, and we dont have an object. This is ok in certain scenarios:
+                // We're not static, and we don't have an object. This is ok in certain scenarios:
                 bool bNonStaticField = InFieldInitializer() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent;
                 bool bAnonymousMethod = InAnonymousMethod() && !InStaticMethod() && ContainingAgg() == swt.Sym.parent && ContainingAgg().IsStruct();
 
@@ -2267,7 +2267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!type.IsArrayType())
             {
                 ppExpandedParams = null;
-                // If we dont have an array sym, we dont have expanded parameters.
+                // If we don't have an array sym, we don't have expanded parameters.
                 return false;
             }
 
@@ -2332,7 +2332,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            // if converting to a float type, this always suceeds...
+            // if converting to a float type, this always succeeds...
             if (ftDest > FUNDTYPE.FT_LASTINTEGRAL)
             {
                 return true;

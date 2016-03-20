@@ -63,7 +63,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // These are for error reporting.
         private SymWithType _swtAmbig;     // An ambiguous symbol.
         private SymWithType _swtInaccess;  // An inaccessible symbol.
-        private SymWithType _swtBad;       // If we're looking for a ructor or indexer, this matched on name, but isn't the right thing.
+        private SymWithType _swtBad;       // If we're looking for a constructor or indexer, this matched on name, but isn't the right thing.
         private SymWithType _swtBogus;     // A bogus member - such as an indexed property.
         private SymWithType _swtBadArity;  // An symbol with the wrong arity.
         private SymWithType _swtAmbigWarn; // An ambiguous symbol, but only warn.
@@ -291,7 +291,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             if (_swtFirst.Sym.IsFieldSymbol() && symCur.IsEventSymbol()
 #if !CSEE                       // The isEvent bit is only set on symbols which come from source...
                                 // This is not a problem for the compiler because the field is only
-                                // accessible in the scope in whcih it is declared,
+                                // accessible in the scope in which it is declared,
                                 // but in the EE we ignore accessibility...
                                 && _swtFirst.Field().isEvent
 #endif
@@ -705,7 +705,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            // if we are reqested with extension methods
+            // if we are requested with extension methods
             _results = new CMemberLookupResults(GetAllTypes(), _name);
 
             return !FError();
