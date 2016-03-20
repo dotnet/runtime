@@ -2,30 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using System.Text;
-using Xunit;
-
 namespace System.Globalization.Tests
 {
     internal static class NumberFormatInfoData
     {
-        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static readonly int s_WindowsVersion = PlatformDetection.WindowsVersion;
-        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly Version s_OSXKernelVersion = GetOSXKernelVersion();
-
-        public static int[] GetNumberGroupSizes(CultureInfo cultureInfo)
+        public static int[] GetNumberGroupSizes(string localeName)
         {
-            if (string.Equals(cultureInfo.Name, "en-US", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(localeName, "en-US", StringComparison.OrdinalIgnoreCase))
             {
                 return new int[] { 3 };
             }
-            if (string.Equals(cultureInfo.Name, "ur-IN", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(localeName, "ur-IN", StringComparison.OrdinalIgnoreCase))
             {
-                if ((s_isWindows && s_WindowsVersion >= 10)
+                if ((PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
                     ||
-                    (s_isOSX && s_OSXKernelVersion >= new Version(15, 0)))
+                    (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0)))
                 {
                     return new int[] { 3 };
                 }
@@ -35,23 +26,23 @@ namespace System.Globalization.Tests
                 }
             }
 
-            throw DateTimeFormatInfoData.GetCultureNotSupportedException(cultureInfo);
+            throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
         }
 
-        internal static string GetNegativeInfinitySymbol(CultureInfo cultureInfo)
+        internal static string GetNegativeInfinitySymbol(string localeName)
         {
-            if (s_isWindows && s_WindowsVersion < 10)
+            if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
             {
-                if (string.Equals(cultureInfo.Name, "en-US", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(localeName, "en-US", StringComparison.OrdinalIgnoreCase))
                 {
                     return "-Infinity";
                 }
-                if (string.Equals(cultureInfo.Name, "fr-FR", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(localeName, "fr-FR", StringComparison.OrdinalIgnoreCase))
                 {
                     return "-Infini";
                 }
 
-                throw DateTimeFormatInfoData.GetCultureNotSupportedException(cultureInfo);
+                throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
             }
             else
             {
@@ -59,28 +50,28 @@ namespace System.Globalization.Tests
             }
         }
 
-        internal static int[] GetCurrencyNegativePatterns(CultureInfo cultureInfo)
+        internal static int[] GetCurrencyNegativePatterns(string localeName)
         {
             // CentOS uses an older ICU than Ubuntu, which means the "Linux" values need to allow for
             // multiple values, since we can't tell which version of ICU we are using, or whether we are
             // on CentOS or Ubuntu.
             // When multiple values are returned, the "older" ICU value is returned last.
 
-            switch (cultureInfo.Name)
+            switch (localeName)
             {
                 case "en-US":
-                    return s_isWindows ? new int[] { 0 } : new int[] { 1, 0 };
+                    return PlatformDetection.IsWindows ? new int[] { 0 } : new int[] { 1, 0 };
 
                 case "en-CA":
-                    return s_isWindows ? new int[] { 1 } : new int[] { 1, 0 };
+                    return PlatformDetection.IsWindows ? new int[] { 1 } : new int[] { 1, 0 };
 
                 case "fa-IR":
-                    return s_isWindows ? new int[] { 3 } : new int[] { 1, 0 };
+                    return PlatformDetection.IsWindows ? new int[] { 3 } : new int[] { 1, 0 };
 
                 case "fr-CD":
-                    if (s_isWindows)
+                    if (PlatformDetection.IsWindows)
                     {
-                        return (s_WindowsVersion < 10) ? new int[] { 4 } : new int[] { 8 };
+                        return (PlatformDetection.WindowsVersion < 10) ? new int[] { 4 } : new int[] { 8 };
                     }
                     else
                     {
@@ -88,33 +79,16 @@ namespace System.Globalization.Tests
                     }
 
                 case "as":
-                    return s_isWindows ? new int[] { 12 } : new int[] { 9 };
+                    return PlatformDetection.IsWindows ? new int[] { 12 } : new int[] { 9 };
 
                 case "es-BO":
-                    return (s_isWindows && s_WindowsVersion < 10) ? new int[] { 14 } : new int[] { 1 };
+                    return (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10) ? new int[] { 14 } : new int[] { 1 };
 
                 case "fr-CA":
-                    return s_isWindows ? new int[] { 15 } : new int[] { 8, 15 };
+                    return PlatformDetection.IsWindows ? new int[] { 15 } : new int[] { 8, 15 };
             }
 
-            throw DateTimeFormatInfoData.GetCultureNotSupportedException(cultureInfo);
+            throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
         }
-        
-        private static Version GetOSXKernelVersion()
-        {
-            if (s_isOSX)
-            {
-                byte[] bytes = new byte[256];
-                IntPtr bytesLength = new IntPtr(bytes.Length);
-                Assert.Equal(0, sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, IntPtr.Zero));
-                string versionString = Encoding.UTF8.GetString(bytes);
-                return Version.Parse(versionString);
-            }
-            
-            return new Version(0, 0, 0);
-        }
-        
-        [DllImport("libc", SetLastError = true)]
-        private static extern int sysctlbyname(string ctlName, byte[] oldp, ref IntPtr oldpLen, byte[] newp, IntPtr newpLen);
     }
 }

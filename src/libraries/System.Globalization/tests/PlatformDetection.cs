@@ -2,54 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 public static class PlatformDetection
 {
-    public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-    public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-    public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+    public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+    public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
-    public static int? s_WindowsVersion;
-    public static int WindowsVersion
+    public static int WindowsVersion { get; } = GetWindowsVersion();
+
+    public static bool IsUbuntu1510 { get; } = GetIsUbuntu1510();
+
+    private static bool GetIsUbuntu1510()
     {
-        get
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            if (!s_WindowsVersion.HasValue)
+            IdVersionPair v = ParseOsReleaseFile();
+
+            if (v.Id == "ubuntu" && v.VersionId == "15.10")
             {
-                s_WindowsVersion = GetWindowsVersion();
+                return true;
             }
-            return s_WindowsVersion.Value;
         }
+        return false;
     }
 
-    private static bool? s_isUbuntu1510;
-    public static bool IsUbuntu1510
-    {
-        get
-        {
-            if (!s_isUbuntu1510.HasValue)
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    IdVersionPair v = ParseOsReleaseFile();
-
-                    if (v.Id == "ubuntu" && v.VersionId == "15.10")
-                    {
-                        s_isUbuntu1510 = true;
-                        return true;
-                    }
-                }
-
-                s_isUbuntu1510 = false;
-            }
-
-            return s_isUbuntu1510.Value;
-        }
-    }
+    public static Version OSXKernelVersion { get; } = GetOSXKernelVersion();
 
     private static IdVersionPair ParseOsReleaseFile()
     {
@@ -76,7 +60,7 @@ public static class PlatformDetection
 
         string versionId = ret.VersionId;
 
-        if (versionId.Length >= 2 && versionId[0] == '"' && versionId[versionId.Length - 1] =='"')
+        if (versionId.Length >= 2 && versionId[0] == '"' && versionId[versionId.Length - 1] == '"')
         {
             // Remove Quotes.
             ret.VersionId = versionId.Substring(1, versionId.Length - 2);
@@ -103,6 +87,23 @@ public static class PlatformDetection
 
         return -1;
     }
+
+    private static Version GetOSXKernelVersion()
+    {
+        if (IsOSX)
+        {
+            byte[] bytes = new byte[256];
+            IntPtr bytesLength = new IntPtr(bytes.Length);
+            Assert.Equal(0, sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, IntPtr.Zero));
+            string versionString = Encoding.UTF8.GetString(bytes);
+            return Version.Parse(versionString);
+        }
+
+        return new Version(0, 0, 0);
+    }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int sysctlbyname(string ctlName, byte[] oldp, ref IntPtr oldpLen, byte[] newp, IntPtr newpLen);
 
     [DllImport("ntdll.dll")]
     private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);

@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -11,80 +10,40 @@ namespace System.Globalization.Tests
 {
     public class NumberFormatInfoPercentPositivePattern
     {
-        // TestDefault: Verify default value of property PercentPositivePattern
-        [Fact]
-        public void TestDefault()
+        public static IEnumerable<object[]> PercentPositivePattern_TestData()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            int expected = nfi.PercentPositivePattern;
-            Assert.Equal(0, expected);
+            yield return new object[] { NumberFormatInfo.InvariantInfo, 0, 0 };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat, 0, 1 };
+            yield return new object[] { new CultureInfo("en-MY").NumberFormat, 1, 1 };
+            yield return new object[] { new CultureInfo("tr").NumberFormat, 2, 2 };
         }
 
-        // TestSetValue: Verify set value of property PercentPositivePattern
-        [Fact]
-        public void TestSetValue()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            for (int i = 0; i <= 3; i++)
-            {
-                nfi.PercentPositivePattern = i;
-                Assert.Equal(i, nfi.PercentPositivePattern);
-            }
-        }
-
-        // TestArgumentOutOfRange: ArgumentOutOfRangeException is not thrown
-        [Fact]
-        public void TestArgumentOutOfRange()
-        {
-            VerificationHelper<ArgumentOutOfRangeException>(-1);
-            VerificationHelper<ArgumentOutOfRangeException>(4);
-        }
-
-        // TestInvalidOperation: InvalidOperationException is not thrown
-        [Fact]
-        public void TestInvalidOperation()
-        {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            NumberFormatInfo nfiReadOnly = NumberFormatInfo.ReadOnly(nfi);
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                nfiReadOnly.PercentPositivePattern = 1;
-            });
-        }
-
-        // TestPercentPositivePatternLocale: Verify value of property PercentPositivePattern for specific locales
         [Theory]
-        [InlineData("en-US", 0, 1)]
-        public void TestPercentPositivePatternLocale(string locale, int expectedWindows, int expectedIcu)
+        [MemberData(nameof(PercentPositivePattern_TestData))]
+        public void PercentPositivePattern_Get(NumberFormatInfo format, int expectedWindows, int expectedIcu)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.PercentPositivePattern;
             int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? expectedWindows : expectedIcu;
-            // todo: determine why some values are different
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, format.PercentPositivePattern);
         }
 
-        // TestPercentPositivePatternLocale2: Verify value of property PercentPositivePattern for specific locales
         [Theory]
-        [InlineData("en-MY", 1)]
-        [InlineData("tr", 2)]
-        public void TestPercentPositivePatternLocale2(string locale, int expected)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void PercentPositivePattern_Set(int newPercentPositivePattern)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int actual = nfi.PercentPositivePattern;
-            Assert.Equal(expected, actual);
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.PercentPositivePattern = newPercentPositivePattern;
+            Assert.Equal(newPercentPositivePattern, format.PercentPositivePattern);
         }
 
-        private void VerificationHelper<T>(int i) where T : Exception
+        [Fact]
+        public void PercentPositivePattern_Set_Invalid()
         {
-            NumberFormatInfo nfi = new NumberFormatInfo();
-            Assert.Throws<T>(() =>
-            {
-                nfi.PercentPositivePattern = i;
-                int actual = nfi.PercentPositivePattern;
-            });
+            Assert.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("PercentPositivePattern", () => new NumberFormatInfo().PercentPositivePattern = 4);
+
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentPositivePattern = 1);
         }
     }
 }
