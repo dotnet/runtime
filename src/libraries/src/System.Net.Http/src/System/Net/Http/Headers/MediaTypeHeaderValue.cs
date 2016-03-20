@@ -157,7 +157,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Caller must remove leading whitespaces. If not, we'll return 0.
+            // Caller must remove leading whitespace. If not, we'll return 0.
             string mediaType = null;
             int mediaTypeLength = MediaTypeHeaderValue.GetMediaTypeExpressionLength(input, startIndex, out mediaType);
 
@@ -230,7 +230,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // If there are no whitespaces between <type> and <subtype> in <type>/<subtype> get the media type using
+            // If there are no whitespace between <type> and <subtype> in <type>/<subtype> get the media type using
             // one Substring call. Otherwise get substrings for <type> and <subtype> and combine them.
             int mediatTypeLength = current + subtypeLength - startIndex;
             if (typeLength + subtypeLength + 1 == mediatTypeLength)
@@ -252,7 +252,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespaces) are allowed.
+            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             // Also no LWS between type and subtype are allowed.
             string tempMediaType;
             int mediaTypeLength = GetMediaTypeExpressionLength(mediaType, 0, out tempMediaType);

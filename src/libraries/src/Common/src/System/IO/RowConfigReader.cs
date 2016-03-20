@@ -99,9 +99,9 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Gets the next occurence of the key in the string, and parses it as an Int32.
+        /// Gets the next occurrence of the key in the string, and parses it as an Int32.
         /// Throws if the key is not found in the remainder of the string, or if the key
-        /// cannot be succesfully parsed into an Int32.
+        /// cannot be successfully parsed into an Int32.
         /// </summary>
         /// <remarks>
         /// This is mainly provided as a helper because most Linux config/info files
@@ -127,7 +127,7 @@ namespace System.IO
         /// </summary>
         /// <param name="data">The key-value row configuration string.</param>
         /// <param name="key">The key to find.</param>
-        /// <returns>The value of the row containing the first occurrance of the key.</returns>
+        /// <returns>The value of the row containing the first occurrence of the key.</returns>
         public static string ReadFirstValueFromString(string data, string key)
         {
             return new RowConfigReader(data).GetNextValue(key);

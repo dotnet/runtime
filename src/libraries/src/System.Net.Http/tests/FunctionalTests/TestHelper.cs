@@ -39,7 +39,7 @@ namespace System.Net.Http.Functional.Tests
             byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
             Assert.Equal(expectedMD5Hash, actualMD5Hash);
 
-            // Verify upload semsntics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
+            // Verify upload semantics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
             if (requestBody != null)
             {
                 bool requestUsedContentLengthUpload =

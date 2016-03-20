@@ -17,7 +17,7 @@ namespace System.Net.Http
     internal sealed class WinHttpRequestState : IDisposable
     {
         // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
-        // the same time for the same handle. Enahnce locking to prevent only WinHttpCloseHandle being called
+        // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
         // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
 
         // The _lock object must be used during the execution of any WinHttp function to ensure no race conditions with 

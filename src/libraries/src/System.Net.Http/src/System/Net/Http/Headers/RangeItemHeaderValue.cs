@@ -159,7 +159,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Caller must remove leading whitespaces. If not, we'll return 0.
+            // Caller must remove leading whitespace. If not, we'll return 0.
             int current = startIndex;
 
             // Try parse the first value of a value pair.
@@ -174,7 +174,7 @@ namespace System.Net.Http.Headers
             current = current + fromLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
 
-            // Afer the first value, the '-' character must follow.
+            // After the first value, the '-' character must follow.
             if ((current == input.Length) || (input[current] != '-'))
             {
                 // We need a '-' character otherwise this can't be a valid range.

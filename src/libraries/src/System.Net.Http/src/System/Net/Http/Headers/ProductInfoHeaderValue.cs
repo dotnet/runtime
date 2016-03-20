@@ -97,7 +97,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
             if (index < input.Length)
             {
-                // There is some invalid leftover data. Normaly BaseHeaderParser.TryParseValue would 
+                // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would 
                 // handle this, but ProductInfoHeaderValue does not derive from BaseHeaderParser.
                 throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, input.Substring(index)));
             }
@@ -114,7 +114,7 @@ namespace System.Net.Http.Headers
             {
                 if (index < input.Length)
                 {
-                    // There is some invalid leftover data. Normaly BaseHeaderParser.TryParseValue would 
+                    // There is some invalid leftover data. Normally BaseHeaderParser.TryParseValue would 
                     // handle this, but ProductInfoHeaderValue does not derive from BaseHeaderParser.
                     return false;
                 }
@@ -137,7 +137,7 @@ namespace System.Net.Http.Headers
 
             int current = startIndex;
 
-            // Caller must remove leading whitespaces.
+            // Caller must remove leading whitespace.
             string comment = null;
             ProductHeaderValue product = null;
             if (input[current] == '(')
@@ -155,7 +155,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                // Trailing whitespaces are removed by GetProductLength().
+                // Trailing whitespace is removed by GetProductLength().
                 int productLength = ProductHeaderValue.GetProductLength(input, current, out product);
 
                 if (productLength == 0)

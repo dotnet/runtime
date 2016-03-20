@@ -277,7 +277,7 @@ namespace System.Net.Mail
                 // The preceding comment was not part of the display name.  Read just the quoted string.
                 index = QuotedStringFormatReader.ReadReverseQuoted(data, firstNonCommentIndex, true);
 
-                Debug.Assert(data[index + 1] == MailBnfHelper.Quote, "Mis-alligned index: " + index);
+                Debug.Assert(data[index + 1] == MailBnfHelper.Quote, "Mis-aligned index: " + index);
 
                 // Do not include the bounding quotes on the display name
                 int leftIndex = index + 2;
@@ -302,7 +302,7 @@ namespace System.Net.Mail
                 // Read until the dividing comma or the end of the line.
                 index = QuotedStringFormatReader.ReadReverseUnQuoted(data, index, true, expectMultipleAddresses);
 
-                Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-alligned index: " + index);
+                Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-aligned index: " + index);
 
                 // Do not include the Comma (if any), and because there were no bounding quotes, 
                 // trim extra whitespace.

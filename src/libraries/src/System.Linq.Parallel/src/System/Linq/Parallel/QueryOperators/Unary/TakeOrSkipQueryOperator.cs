@@ -63,9 +63,9 @@ namespace System.Linq.Parallel
         {
             OrdinalIndexState indexState = Child.OrdinalIndexState;
 
-            if (indexState == OrdinalIndexState.Indexible)
+            if (indexState == OrdinalIndexState.Indexable)
             {
-                return OrdinalIndexState.Indexible;
+                return OrdinalIndexState.Indexable;
             }
 
             if (indexState.IsWorseThan(OrdinalIndexState.Increasing))
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TResult, TKey> inputStream, IPartitionedStreamRecipient<TResult> recipient, bool preferStriping, QuerySettings settings)
         {
-            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
+            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexable, "Don't take this code path if the child is indexable.");
 
             // If the index is not at least increasing, we need to reindex.
             if (_prematureMerge)
@@ -319,8 +319,8 @@ namespace System.Linq.Parallel
         }
 
         //-----------------------------------------------------------------------------------
-        // Query results for a Take or a Skip operator. The results are indexible if the child
-        // results were indexible.
+        // Query results for a Take or a Skip operator. The results are indexable if the child
+        // results were indexable.
         //
 
         class TakeOrSkipQueryOperatorResults : UnaryQueryOperatorResults
