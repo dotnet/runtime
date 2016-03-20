@@ -636,7 +636,7 @@ namespace System.IO.Packaging
         }
 
         // This method validates xsi:type="dcterms:W3CDTF"
-        // The valude of xsi:type is a qualified name. It should have a prefix that matches
+        // The value of xsi:type is a qualified name. It should have a prefix that matches
         //  the xml namespace (ns) within the scope and the name that matches name
         // The comparisons should be case-sensitive comparisons
         internal static void ValidateXsiType(XmlReader reader, Object ns, string name)
@@ -654,7 +654,7 @@ namespace System.IO.Packaging
 
             int index = typeValue.IndexOf(':');
 
-            // The valude of xsi:type is not a qualified name
+            // The value of xsi:type is not a qualified name
             if (index == -1)
             {
                 throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),

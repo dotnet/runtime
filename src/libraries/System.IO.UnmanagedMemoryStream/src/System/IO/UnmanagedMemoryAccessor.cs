@@ -699,7 +699,7 @@ namespace System.IO
 
         // ************** Write Methods ****************/
 
-        // The following 13 WriteXXX methods write a value of type XXX into unmanaged memory at 'positon'. 
+        // The following 13 WriteXXX methods write a value of type XXX into unmanaged memory at 'position'. 
         // The bounds of the unmanaged memory are checked against to ensure that there is enough 
         // space after 'position' to write a value of type XXX.  XXX can be a bool, byte, char, decimal, 
         // double, short, int, long, sbyte, float, ushort, uint, or ulong. 
@@ -1249,7 +1249,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void InternalWrite(Int64 position, byte value)
         {
-            Debug.Assert(CanWrite, "UMA not writeable");
+            Debug.Assert(CanWrite, "UMA not writable");
             Debug.Assert(position >= 0, "position less than 0");
             Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 

@@ -74,7 +74,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
+            CError.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didn't read 5 chars");
             CError.Compare("value", new string(buffer), "Strings don't match");
 
             return TEST_PASS;

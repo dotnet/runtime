@@ -244,7 +244,7 @@ namespace System.Xml
 
             // StartElementContent is always called; therefore, in order to allow shortcut syntax, we save the
             // position of the '>' character.  If WriteEndElement is called and no other characters have been
-            // output, then the '>' character can be be overwritten with the shortcut syntax " />".
+            // output, then the '>' character can be overwritten with the shortcut syntax " />".
             contentPos = bufPos;
         }
 

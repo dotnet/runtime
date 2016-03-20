@@ -42,7 +42,7 @@ public class InternalBufferSizeTests
             unblockHandler.Set();
             Utility.ExpectEvent(eventOccurred, "error");
 
-            // Update InternalBufferSize to accomadate the data
+            // Update InternalBufferSize to accommodate the data
             watcher.InternalBufferSize = watcher.InternalBufferSize * 2;
             unblockHandler.Reset();
 

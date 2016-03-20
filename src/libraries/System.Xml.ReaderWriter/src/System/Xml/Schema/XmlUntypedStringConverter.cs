@@ -44,7 +44,7 @@ namespace System.Xml.Schema
 
         private static readonly string s_untypedStringTypeName = "xdt:untypedAtomic";
 
-        // Static convertor instance
+        // Static converter instance
         internal static XmlUntypedStringConverter Instance = new XmlUntypedStringConverter(true);
 
         private XmlUntypedStringConverter(bool listsAllowed)

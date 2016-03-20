@@ -889,7 +889,7 @@ namespace System.IO.Packaging
                 if (packageMode == FileMode.Truncate)
                     throw new NotSupportedException(SR.UnsupportedCombinationOfModeAccess);
 
-                //Note: FileShare enum is not being verfied at this stage, as we do not interpret the flag in this
+                //Note: FileShare enum is not being verified at this stage, as we do not interpret the flag in this
                 //code at all and just pass it on to the next layer, where the necessary validation can be
                 //performed. Also, there is no meaningful way to check this parameter at this layer, as the
                 //FileShare enumeration is a set of flags and flags/Bit-fields can be combined using a

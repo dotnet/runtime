@@ -71,7 +71,7 @@ namespace OLEDB.Test.ModuleCore
         public CTestException(int result, string message, object actual, object expected, Exception inner)
             : base(message, inner)
         {
-            //Note: iResult is the variation result (ie: TEST_PASS, TEST_FAIL, etc...)
+            //Note: iResult is the variation result (i.e.: TEST_PASS, TEST_FAIL, etc...)
             //Setup the exception
             Result = result;
             Actual = actual;

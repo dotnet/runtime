@@ -168,10 +168,10 @@ namespace System.Xml.Tests
 
                 if (!IsVariationValid)
                 {
-                    //Invalid Case didnt throw exception.
+                    //Invalid Case didn't throw exception.
                     pstate = TestState.Error;
                     DumpVariationInfo();
-                    throw new CTestFailedException("Invalid Variation didnt throw exception");
+                    throw new CTestFailedException("Invalid Variation didn't throw exception");
                 }
                 else
                 {
@@ -253,7 +253,7 @@ namespace System.Xml.Tests
         {
             // Assumption is that the Create method doesn't throw NullReferenceException and
             // it is not the goal of this framework to test if they are thrown anywhere.
-            // but if they are thrown thats a problem and they shouldnt be caught but exposed.
+            // but if they are thrown that's a problem and they shouldn't be caught but exposed.
             try
             {
                 switch (readThru)

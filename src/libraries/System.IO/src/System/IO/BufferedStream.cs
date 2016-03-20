@@ -257,7 +257,7 @@ namespace System.IO
             {
                 // If the underlying stream is not seekable AND we have something in the read buffer, then FlushRead would throw.
                 // We can either throw away the buffer resulting in data loss (!) or ignore the Flush.
-                // (We cannot throw becasue it would be a breaking change.) We opt into ignoring the Flush in that situation.
+                // (We cannot throw because it would be a breaking change.) We opt into ignoring the Flush in that situation.
                 if (!_stream.CanSeek)
                     return;
 
@@ -308,7 +308,7 @@ namespace System.IO
                 if (_readPos < _readLen)
                 {
                     // If the underlying stream is not seekable AND we have something in the read buffer, then FlushRead would throw.
-                    // We can either throw away the buffer resulting in date loss (!) or ignore the Flush. (We cannot throw becasue it
+                    // We can either throw away the buffer resulting in date loss (!) or ignore the Flush. (We cannot throw because it
                     // would be a breaking change.) We opt into ignoring the Flush in that situation.
                     if (!_stream.CanSeek)
                         return;
@@ -548,7 +548,7 @@ namespace System.IO
                     Exception error;
                     bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out error);
 
-                    // If we satistied enough data from the buffer, we can complete synchronously.
+                    // If we satisfied enough data from the buffer, we can complete synchronously.
                     // Reading again for more data may cause us to block if we're using a device with no clear end of file,
                     // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
                     // process's standard output, this can lead to deadlocks involving two processes.              

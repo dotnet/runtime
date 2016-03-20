@@ -26,7 +26,7 @@ namespace System.Xml.Tests
 
             // for function TAXmlDecl_3
             {
-                this.AddChild(new CVariation(TAXmlDecl_3) { Attribute = new Variation("MoveToFirstAttribute/MoveToNextAttribute succesive calls") });
+                this.AddChild(new CVariation(TAXmlDecl_3) { Attribute = new Variation("MoveToFirstAttribute/MoveToNextAttribute successive calls") });
             }
 
 

@@ -957,7 +957,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        // True if and only if the encoding only uses single byte code points.  (Ie, ASCII, 1252, etc)
+        // True if and only if the encoding only uses single byte code points.  (i.e. ASCII, 1252, etc)
         public override bool IsSingleByte
         {
             get

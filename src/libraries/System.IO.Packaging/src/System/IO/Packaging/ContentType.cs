@@ -195,7 +195,7 @@ namespace System.IO.Packaging
         /// This method does a weak comparison of the content types. We only compare the
         /// type and subType values in an ASCII case-insensitive manner.
         /// Parameter and value pairs are not used for the comparison. 
-        /// If you wish to compare the paramters too, then you must get the ParameterValuePairs from
+        /// If you wish to compare the parameters too, then you must get the ParameterValuePairs from
         /// both the ContentType objects and compare each parameter entry.
         /// The allowParameterValuePairs parameter is used to indicate whether the 
         /// comparison is tolerant to parameters being present or no.
@@ -471,9 +471,9 @@ namespace System.IO.Packaging
         /// Validating if the value of a parameter is either a valid token or a 
         /// valid quoted string
         /// </summary>
-        /// <param name="parameterValue">paramter value string</param>
+        /// <param name="parameterValue">parameter value string</param>
         /// <returns>validate parameter value string</returns>
-        /// <exception cref="ArgumentException">If the paramter value is empty</exception>
+        /// <exception cref="ArgumentException">If the parameter value is empty</exception>
         private static string ValidateQuotedStringOrToken(string parameterValue)
         {
             if (String.IsNullOrEmpty(parameterValue))
