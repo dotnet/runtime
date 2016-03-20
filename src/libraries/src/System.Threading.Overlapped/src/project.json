@@ -4,10 +4,7 @@
       "dependencies": {
         "Microsoft.NETCore.Platforms": "1.0.1-rc3-23918",
         "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23918"
-      },
-      "imports": [
-        "dotnet5.1"
-      ]
+      }
     },
     "netcore50": {
       "dependencies": {
