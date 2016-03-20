@@ -116,7 +116,7 @@ namespace System.ComponentModel.DataAnnotations
 
         /// <summary>
         ///     A flag indicating that the attribute requires a non-null
-        ///     <see cref= System.ComponentModel.DataAnnotations.ValidationContext /> to perform validation.
+        ///     <see cref="ValidationContext" /> to perform validation.
         ///     Base class returns false. Override in child classes as appropriate.
         /// </summary>
         public virtual bool RequiresValidationContext
