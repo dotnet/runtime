@@ -33,7 +33,7 @@ namespace System.Xml
         /// <include file='doc\XmlNameTable.uex' path='docs/doc[@for="XmlNameTable.Add"]/*' />
         /// <devdoc>
         ///    <para>Creates a new atom for the characters at the specified range
-        ///       of chararacters in the specified string.</para>
+        ///       of characters in the specified string.</para>
         /// </devdoc>
         public abstract String Add(char[] array, int offset, int length);
 

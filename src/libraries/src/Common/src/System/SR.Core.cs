@@ -38,7 +38,7 @@ namespace System
             return false;
         }
 
-        // TODO: Resouce generation tool should be modified to call this version in release build
+        // TODO: Resource generation tool should be modified to call this version in release build
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static string GetResourceString(string resourceKey)
         {

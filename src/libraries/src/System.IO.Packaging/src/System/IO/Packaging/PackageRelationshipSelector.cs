@@ -131,7 +131,7 @@ namespace System.IO.Packaging
         /// This method returns the list of selected PackageRelationships as per the
         /// given criteria, from a part in the Package provided
         /// </summary>
-        /// <param name="package">Package object from which we get the relationsips</param>
+        /// <param name="package">Package object from which we get the relationships</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">If package parameter is null</exception>
         public List<PackageRelationship> Select(Package package)

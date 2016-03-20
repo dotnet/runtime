@@ -9,7 +9,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    // A MemoryStream represents a Stream in memory (ie, it has no backing store).
+    // A MemoryStream represents a Stream in memory (i.e, it has no backing store).
     // This stream may reduce the need for temporary buffers and files in 
     // an application.  
     // 
@@ -33,7 +33,7 @@ namespace System.IO
         private bool _isOpen;      // Is this stream open or closed?
 
         // <TODO>In V2, if we get support for arrays of more than 2 GB worth of elements,
-        // consider removing this constraing, or setting it to Int64.MaxValue.</TODO>
+        // consider removing this constraint, or setting it to Int64.MaxValue.</TODO>
         private const int MemStreamMaxLength = int.MaxValue;
 
         public MemoryStream()
@@ -467,7 +467,7 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            // This implementation offers beter performance compared to the base class version.
+            // This implementation offers better performance compared to the base class version.
 
             // The parameter checks must be in sync with the base version:
             if (destination == null)
@@ -496,7 +496,7 @@ namespace System.IO
             }
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() or Write() which a subclass might have overriden.  
+            // since it does not call through to Read() or Write() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read/Write) when we are not sure.
             if (GetType() != typeof(MemoryStream))

@@ -661,7 +661,7 @@ namespace System.IO.Packaging
                     if (_requestedStreams != null)
                     {
                         //Adding this extra check here to optimize delete operation
-                        //Everytime we delete a part we close it before deleting to 
+                        //Every time we delete a part we close it before deleting to 
                         //ensure that its deleted in a valid state. However, we do not
                         //need to persist any changes if the part is being deleted.
                         if (!_deleted)
