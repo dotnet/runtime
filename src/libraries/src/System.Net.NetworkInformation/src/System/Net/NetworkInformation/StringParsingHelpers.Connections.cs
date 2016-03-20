@@ -229,7 +229,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        // Simply converst the hex string into a long and uses the IPAddress(long) constructor.
+        // Simply converts the hex string into a long and uses the IPAddress(long) constructor.
         // Strings passed to this method must be 8 or less characters in length (32-bit address).
         private static IPAddress ParseIPv4HexString(string hexAddress)
         {

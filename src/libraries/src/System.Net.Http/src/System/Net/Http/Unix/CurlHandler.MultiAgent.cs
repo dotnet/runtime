@@ -652,7 +652,7 @@ namespace System.Net.Http
                     }
                 }
 
-                // Returing a value other than size fails the callback and forces
+                // Returning a value other than size fails the callback and forces
                 // request completion with an error
                 CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return size - 1;
@@ -688,7 +688,7 @@ namespace System.Net.Http
                     }
                 }
 
-                // Returing a value other than size fails the callback and forces
+                // Returning a value other than size fails the callback and forces
                 // request completion with an error.
                 CurlHandler.EventSourceTrace("Aborting request", easy: easy);
                 return (size > 0) ? size - 1 : 1;

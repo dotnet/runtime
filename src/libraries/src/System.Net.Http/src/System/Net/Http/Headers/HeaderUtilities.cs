@@ -207,7 +207,7 @@ namespace System.Net.Http.Headers
                 return current;
             }
 
-            // If we have a separator, skip the separator and all following whitespaces. If we support
+            // If we have a separator, skip the separator and all following whitespace. If we support
             // empty values, continue until the current character is neither a separator nor a whitespace.
             separatorFound = true;
             current++; // skip delimiter.
