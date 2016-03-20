@@ -14,6 +14,7 @@ pal::string_t strip_file_ext(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
 pal::string_t get_filename_without_ext(const pal::string_t& path);
 void append_path(pal::string_t* path1, const pal::char_t* path2);
+bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path);
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 const pal::char_t* get_arch();

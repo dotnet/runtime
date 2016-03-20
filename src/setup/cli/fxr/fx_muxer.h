@@ -4,6 +4,12 @@
 class runtime_config_t;
 struct fx_ver_t;
 
+int execute_app(
+    const pal::string_t& impl_dll_dir,
+    const corehost_init_t* init,
+    const int argc,
+    const pal::char_t* argv[]);
+
 class fx_muxer_t
 {
 public:

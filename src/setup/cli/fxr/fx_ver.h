@@ -3,6 +3,8 @@
 
 #include "pal.h"
 
+// Note: This is not SemVer (esp., in comparing pre-release part, fx_ver_t does not
+// compare multiple dot separated identifiers individually.) ex: 1.0.0-beta.2 vs. 1.0.0-beta.11
 struct fx_ver_t
 {
     fx_ver_t(int major, int minor, int patch);
@@ -35,6 +37,6 @@ private:
     pal::string_t m_pre;
     pal::string_t m_build;
 
-    static int compare(const fx_ver_t&a, const fx_ver_t& b, bool ignore_build = false);
+    static int compare(const fx_ver_t&a, const fx_ver_t& b);
 };
 

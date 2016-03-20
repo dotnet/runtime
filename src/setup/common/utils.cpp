@@ -4,6 +4,22 @@
 #include "utils.h"
 #include "trace.h"
 
+bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& lib_name, pal::string_t* p_lib_path)
+{
+    pal::string_t lib_path = lib_dir;
+    append_path(&lib_path, lib_name.c_str());
+
+    if (!pal::file_exists(lib_path))
+    {
+        return false;
+    }
+    if (p_lib_path)
+    {
+        *p_lib_path = lib_path;
+    }
+    return true;
+}
+
 bool coreclr_exists_in_dir(const pal::string_t& candidate)
 {
     pal::string_t test(candidate);
