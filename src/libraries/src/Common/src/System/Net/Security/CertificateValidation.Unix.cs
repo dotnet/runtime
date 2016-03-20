@@ -5,10 +5,9 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net;
-using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
-namespace System.Security.Cryptography.X509Certificates
+namespace System.Net.Security
 {
     internal static class CertificateValidation
     {

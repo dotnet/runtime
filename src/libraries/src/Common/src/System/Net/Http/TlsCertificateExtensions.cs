@@ -73,14 +73,25 @@ namespace System.Net.Http
             return isClientAuth && isDigitalSignature;
         }
 
-        internal static X509Chain BuildNewChain(X509Certificate2 certificate)
+        internal static X509Chain BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
         {
             var chain = new X509Chain();
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-            chain.ChainPolicy.ApplicationPolicy.Add(s_clientCertOidInst);
+            if (includeClientApplicationPolicy)
+            {
+                chain.ChainPolicy.ApplicationPolicy.Add(s_clientCertOidInst);
+            }
 
-            return chain.Build(certificate) ? chain : null;
+            if (chain.Build(certificate))
+            {
+                return chain;
+            }
+            else
+            {
+                chain.Dispose();
+                return null;
+            }
         }
 
         /// <summary>
@@ -112,7 +123,7 @@ namespace System.Net.Http
                             return true;
                         }
 
-                        X509Chain chain = BuildNewChain(cert);
+                        X509Chain chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
                         if (chain == null)
                         {
                             continue;
