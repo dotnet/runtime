@@ -101,6 +101,36 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_TypeWithDateTimePropertyAsXmlTime()
+    {
+        DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
+        TypeWithDateTimePropertyAsXmlTime localTimeOjbect = new TypeWithDateTimePropertyAsXmlTime()
+        {
+            Value = localTime
+        };
+
+        // This is how we convert DateTime from time to string.
+        var localTimeDateTime = DateTime.MinValue + localTime.TimeOfDay;
+        string localTimeString = localTimeDateTime.ToString("HH:mm:ss.fffffffzzzzzz", DateTimeFormatInfo.InvariantInfo);
+        TypeWithDateTimePropertyAsXmlTime localTimeOjbectRoundTrip = SerializeAndDeserialize(localTimeOjbect,
+string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
+<TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">{0}</TypeWithDateTimePropertyAsXmlTime>", localTimeString));
+
+        Assert.StrictEqual(localTimeOjbect.Value, localTimeOjbectRoundTrip.Value);
+
+        TypeWithDateTimePropertyAsXmlTime utcTimeOjbect = new TypeWithDateTimePropertyAsXmlTime()
+        {
+            Value = new DateTime(549269870000L, DateTimeKind.Utc)
+        };
+
+        TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeOjbect,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>");
+
+        Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
+    }
+
+    [Fact]
     public static void Xml_DecimalAsRoot()
     {
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
