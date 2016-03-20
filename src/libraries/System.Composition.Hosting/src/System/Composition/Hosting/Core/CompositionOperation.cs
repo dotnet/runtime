@@ -26,7 +26,7 @@ namespace System.Composition.Hosting.Core
         /// context, for the specified activator.
         /// </summary>
         /// <param name="outermostLifetimeContext">Context in which to begin the operation (the operation can flow
-        /// to the parents of the context if requried).</param>
+        /// to the parents of the context if required).</param>
         /// <param name="compositionRootActivator">Activator that will drive the operation.</param>
         /// <returns>The composed object graph.</returns>
         public static object Run(LifetimeContext outermostLifetimeContext, CompositeActivator compositionRootActivator)
@@ -44,7 +44,7 @@ namespace System.Composition.Hosting.Core
 
         /// <summary>
         /// Called during the activation process to specify an action that can run after all
-        /// prerequesite part dependencies have been satisfied.
+        /// prerequisite part dependencies have been satisfied.
         /// </summary>
         /// <param name="action">Action to run.</param>
         public void AddNonPrerequisiteAction(Action action)

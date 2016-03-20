@@ -264,7 +264,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // that we want to use for our agg type's base type. However, in the Symbol chain,
                 // we want the base type to be IFoo<IFoo.T>. Thats why we need to do this little trick.
                 //
-                // If we dont have a generic type definition, then we just need to set our base
+                // If we don't have a generic type definition, then we just need to set our base
                 // class. This is so that if we have a base type that's generic, we'll be
                 // getting the correctly instantiated base type.
 

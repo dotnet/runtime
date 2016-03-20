@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private EXPRTYPEORNAMESPACE _exprTypeDest;
 
             // This is for lambda error reporting. The reason we have this is because we 
-            // store errors for lambda conversions, and then we dont bind the conversion
+            // store errors for lambda conversions, and then we don't bind the conversion
             // again to report errors. Consider the following case:
             //
             // int? x = () => null;

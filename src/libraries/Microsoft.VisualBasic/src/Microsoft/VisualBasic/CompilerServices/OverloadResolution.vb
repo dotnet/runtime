@@ -1565,7 +1565,7 @@ RetryInference:
 
                 Debug.Assert(parameters.Length > 0, "expected some parameters here")  'Candidate collection guarantees this.
 
-                'The named argument mapping table contains indicies into the
+                'The named argument mapping table contains indices into the
                 'parameters array to describe the association between arguments
                 'and parameters.
                 '
@@ -1788,7 +1788,7 @@ skipargument:
 
                 Debug.Assert(parameters.Length > 0, "expected some parameters here")  'Candidate collection guarantees this.
 
-                'The named argument mapping table contains indicies into the
+                'The named argument mapping table contains indices into the
                 'parameters array to describe the association between arguments
                 'and parameters.
                 '

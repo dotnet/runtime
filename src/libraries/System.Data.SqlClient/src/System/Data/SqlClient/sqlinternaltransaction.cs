@@ -457,7 +457,7 @@ namespace System.Data.SqlClient
 
             // NOTE: we'll be called from the TdsParser when it gets appropriate
             // ENVCHANGE events that indicate the transaction has completed, however
-            // we cannot rely upon those events occuring in the case of pre-Yukon
+            // we cannot rely upon those events occurring in the case of pre-Yukon
             // servers (and when we don't go to the wire because the connection
             // is broken) so we can also be called from the Commit/Rollback/Save
             // methods to handle that case as well.

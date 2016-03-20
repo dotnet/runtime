@@ -58,7 +58,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
                 worker.RunWorkerAsync();
 
-                // wait for singal from WhenRunWorkerCompleted
+                // wait for signal from WhenRunWorkerCompleted
                 Assert.True(workerCompletedEvent.Wait(TimeoutLong));
                 Assert.False(worker.IsBusy);
                 Assert.Equal(expectedReportCallsCount, actualReportCallsCount);

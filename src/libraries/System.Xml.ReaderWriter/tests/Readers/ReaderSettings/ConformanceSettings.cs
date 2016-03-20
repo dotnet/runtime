@@ -74,7 +74,7 @@ namespace System.Xml.Tests
             }
 
             if (!valid)
-                throw new CTestFailedException("Invalid case doesnt throw InvalidOperation");
+                throw new CTestFailedException("Invalid case doesn't throw InvalidOperation");
             else
                 return TEST_PASS;
         }

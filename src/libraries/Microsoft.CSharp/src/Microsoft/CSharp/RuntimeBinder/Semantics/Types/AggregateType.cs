@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // AggregateType
     //
-    // Represents a genericructed (or instantiated) type. Parent is the AggregateSymbol.
+    // Represents a generic constructed (or instantiated) type. Parent is the AggregateSymbol.
     // ----------------------------------------------------------------------------
 
     internal partial class AggregateType : CType
@@ -29,8 +29,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public short typeConverterID;
 #endif // !CSEE
 
-        public bool fConstraintsChecked;    // Have theraints been checked yet?
-        public bool fConstraintError;       // Did theraints check produce an error?
+        public bool fConstraintsChecked;    // Have the constraints been checked yet?
+        public bool fConstraintError;       // Did the constraints check produce an error?
 
         // These two flags are used to track hiding within interfaces.
         // Their use and validity is always localized. See e.g. MemberLookup::LookupInInterfaces.
