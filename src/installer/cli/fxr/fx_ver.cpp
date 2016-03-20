@@ -60,22 +60,38 @@ pal::string_t fx_ver_t::as_str()
 }
 
 /* static */
-int fx_ver_t::compare(const fx_ver_t&a, const fx_ver_t& b, bool ignore_build)
+int fx_ver_t::compare(const fx_ver_t&a, const fx_ver_t& b)
 {
     // compare(u.v.w-p+b, x.y.z-q+c)
-    return
-    (a.m_major == b.m_major)
-        ? ((a.m_minor == b.m_minor)
-            ? ((a.m_patch == b.m_patch)
-                ? ((a.m_pre.empty() == b.m_pre.empty())
-                    ? ((a.m_pre.empty())
-                        ? (ignore_build ? 0 : a.m_build.compare(b.m_build))
-                        : a.m_pre.compare(b.m_pre))
-                    : a.m_pre.empty() ? 1 : -1)
-                : (a.m_patch > b.m_patch ? 1 : -1))
-            : (a.m_minor > b.m_minor ? 1 : -1))
-        : ((a.m_major > b.m_major) ? 1 : -1)
-        ;
+    if (a.m_major != b.m_major)
+    {
+        return (a.m_major > b.m_major) ? 1 : -1;
+    }
+
+    if (a.m_minor != b.m_minor)
+    {
+        return (a.m_minor > b.m_minor) ? 1 : -1;
+    }
+
+    if (a.m_patch != b.m_patch)
+    {
+        return (a.m_patch > b.m_patch) ? 1 : -1;
+    }
+
+    if (a.m_pre.empty() != b.m_pre.empty())
+    {
+        // Either a is empty or b is empty
+        return a.m_pre.empty() ? 1 : -1;
+    }
+
+    // Either both are empty or both are non-empty (may be equal)
+    int pre_cmp = a.m_pre.compare(b.m_pre);
+    if (pre_cmp != 0)
+    {
+        return pre_cmp;
+    }
+    
+    return a.m_build.compare(b.m_build);
 }
 
 bool try_stou(const pal::string_t& str, unsigned* num)

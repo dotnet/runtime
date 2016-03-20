@@ -3,43 +3,18 @@
 
 #include "trace.h"
 #include "utils.h"
-#include "corehost.h"
+#include "pal.h"
 #include "fx_ver.h"
 #include "error_codes.h"
-#include "policy_load.h"
-#include <array>
 
 #define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
 
-bool corehost_t::hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
+typedef int(*hostfxr_main_fn) (const int argc, const pal::char_t* argv[]);
+
+pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
 {
-#ifdef COREHOST_PACKAGE_SERVICING
-    pal::string_t svc_dir;
-    if (!pal::getenv(_X("DOTNET_SERVICING"), &svc_dir))
-    {
-        return false;
-    }
-
-    pal::string_t path = svc_dir;
-    append_path(&path, COREHOST_PACKAGE_NAME);
-    append_path(&path, COREHOST_PACKAGE_VERSION);
-    append_path(&path, COREHOST_PACKAGE_COREHOST_RELATIVE_DIR);
-    if (library_exists_in_dir(path, LIBHOST_NAME))
-    {
-        resolved_dir->assign(path);
-    }
-    return true;
-#else
-    return false;
-#endif
-}
-
-pal::string_t corehost_t::resolve_fxr_path(const pal::string_t& own_dir)
-{
-    pal::string_t fxr_path;
-
     pal::string_t fxr_dir = own_dir;
-    append_path(&fxr_dir, _X("dotnethost"));
+    append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
     if (pal::directory_exists(fxr_dir))
     {
@@ -65,28 +40,39 @@ pal::string_t corehost_t::resolve_fxr_path(const pal::string_t& own_dir)
         pal::string_t max_ver_str = max_ver.as_str();
         append_path(&fxr_dir, max_ver_str.c_str());
         trace::info(_X("Detected latest fxr version=[%s]..."), fxr_dir.c_str());
-    }   
 
-    const pal::string_t* dirs[] = { &fxr_dir, &own_dir };
-    for (const auto& dir : dirs)
-    {
-        trace::info(_X("Considering fxr dir=[%s]..."), fxr_dir.c_str());
-        if (policy_load_t::library_exists_in_dir(*dir, LIBFXR_NAME, &fxr_path))
+        pal::string_t ret_path;
+        if (library_exists_in_dir(fxr_dir, LIBFXR_NAME, &ret_path))
         {
-            trace::info(_X("Resolved fxr [%s]..."), fxr_path.c_str());
-            return fxr_path;
+            trace::info(_X("Resolved fxr [%s]..."), ret_path.c_str());
+            return ret_path;
         }
+    }
+
+    pal::string_t fxr_path;
+    if (library_exists_in_dir(own_dir, LIBFXR_NAME, &fxr_path))
+    {
+        trace::info(_X("Resolved fxr [%s]..."), fxr_path.c_str());
+        return fxr_path;
     }
     return pal::string_t();
 }
 
-int corehost_t::resolve_fx_and_execute_app(const pal::string_t& own_dir, const int argc, const pal::char_t* argv[])
+int run(const int argc, const pal::char_t* argv[])
 {
+    pal::string_t own_path;
+    if (!pal::get_own_executable_path(&own_path) || !pal::realpath(&own_path))
+    {
+        trace::error(_X("Failed to locate current executable"));
+        return StatusCode::CoreHostCurExeFindFailure;
+    }
+
     pal::dll_t fxr;
 
-    pal::string_t fxr_path = resolve_fxr_path(own_dir);
+    pal::string_t own_dir = get_directory(own_path);
 
     // Load library
+    pal::string_t fxr_path = resolve_fxr_path(own_dir);
     if (!pal::load_library(fxr_path.c_str(), &fxr))
     {
         trace::info(_X("Load library of %s failed"), fxr_path.c_str());
@@ -98,45 +84,6 @@ int corehost_t::resolve_fx_and_execute_app(const pal::string_t& own_dir, const i
     return main_fn(argc, argv);
 }
 
-int corehost_t::run(const int argc, const pal::char_t* argv[])
-{
-    pal::string_t own_dir;
-    auto mode = detect_operating_mode(argc, argv, &own_dir);
-
-    switch (mode)
-    {
-    case muxer:
-        trace::info(_X("Host operating in Muxer mode"));
-        return resolve_fx_and_execute_app(own_dir, argc, argv);
-
-    case split_fx:
-        {
-            trace::info(_X("Host operating in split mode; own dir=[%s]"), own_dir.c_str());
-            corehost_init_t init(_X(""), _X(""), own_dir, host_mode_t::split_fx, nullptr);
-            return policy_load_t::execute_app(own_dir, &init, argc, argv);
-        }
-
-    case standalone:
-        {
-            trace::info(_X("Host operating from standalone app dir %s"), own_dir.c_str());
-
-            pal::string_t svc_dir;
-            corehost_init_t init(_X(""), _X(""), _X(""), host_mode_t::standalone, nullptr);
-            return policy_load_t::execute_app(
-                hostpolicy_exists_in_svc(&svc_dir) ? svc_dir : own_dir, &init, argc, argv);
-        }
-        return StatusCode::CoreHostLibMissingFailure;
-
-    default:
-        trace::error(_X("Unknown mode detected or could not resolve the mode."));
-        return StatusCode::CoreHostResolveModeFailure;
-    }
-}
-
-#include <cassert>
-
-#include "deps_format.h"
-
 #if defined(_WIN32)
 int __cdecl wmain(const int argc, const pal::char_t* argv[])
 #else
@@ -144,9 +91,6 @@ int main(const int argc, const pal::char_t* argv[])
 #endif
 {
     trace::setup();
-
-    //deps_json_t deps(true, _X("H:\\code\\sharedfx\\PortableApp\\PortableAppWithNative.deps.json"));
-    //deps_json_t deps2(false, _X("H:\\code\\sharedfx\\StandaloneApp\\StandaloneApp.deps.json"));
 
     if (trace::is_enabled())
     {
@@ -157,7 +101,7 @@ int main(const int argc, const pal::char_t* argv[])
         }
         trace::info(_X("}"));
     }
-    corehost_t corehost;
-    return corehost.run(argc, argv);
+
+    return run(argc, argv);
 }
 
