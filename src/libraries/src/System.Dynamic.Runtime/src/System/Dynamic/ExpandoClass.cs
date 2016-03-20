@@ -171,7 +171,7 @@ namespace System.Dynamic
                             }
                             else
                             {
-                                //Ambigous match, stop searching
+                                //Ambiguous match, stop searching
                                 return ExpandoObject.AmbiguousMatchFound;
                             }
                         }

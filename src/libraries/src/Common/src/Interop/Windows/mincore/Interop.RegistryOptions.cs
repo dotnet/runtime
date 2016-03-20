@@ -57,7 +57,7 @@ internal partial class Interop
             internal const int REG_DWORD = 4;               // 32-bit number
             internal const int REG_DWORD_LITTLE_ENDIAN = 4; // 32-bit number (same as REG_DWORD)
             internal const int REG_DWORD_BIG_ENDIAN = 5;    // 32-bit number
-            internal const int REG_LINK = 6;                // Symbolic Link (unicode)
+            internal const int REG_LINK = 6;                // Symbolic Link (Unicode)
             internal const int REG_MULTI_SZ = 7;            // Multiple Unicode strings
             internal const int REG_QWORD = 11;             // 64-bit number
         }

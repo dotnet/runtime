@@ -37,7 +37,7 @@ namespace CoreXml.Test.XLinq
 
                             if (flag)
                             {
-                                TestLog.WriteLine("ReadSubtree doesnt throw InvalidOp Exception on NodeType : " + nodeType);
+                                TestLog.WriteLine("ReadSubtree doesn't throw InvalidOp Exception on NodeType : " + nodeType);
                                 throw new TestException(TestResult.Failed, "");
                             }
 
@@ -68,7 +68,7 @@ namespace CoreXml.Test.XLinq
                                 }
                                 if (flag)
                                 {
-                                    TestLog.WriteLine("ReadSubtree doesnt throw InvalidOp Exception on Attribute Node Type");
+                                    TestLog.WriteLine("ReadSubtree doesn't throw InvalidOp Exception on Attribute Node Type");
                                     throw new TestException(TestResult.Failed, "");
                                 }
 
@@ -121,9 +121,9 @@ namespace CoreXml.Test.XLinq
                     r.Read();
 
                     TestLog.Compare(r.ReadState, ReadState.Interactive, "Reader state is not Interactive");
-                    TestLog.Compare(r.Name, name, "Subreader name doesnt match");
-                    TestLog.Compare(r.Value, value, "Subreader value doesnt match");
-                    TestLog.Compare(r.NodeType.ToString().ToUpperInvariant(), type, "Subreader nodetype doesnt match");
+                    TestLog.Compare(r.Name, name, "Subreader name doesn't match");
+                    TestLog.Compare(r.Value, value, "Subreader value doesn't match");
+                    TestLog.Compare(r.NodeType.ToString().ToUpperInvariant(), type, "Subreader nodetype doesn't match");
                     TestLog.Compare(r.Depth, 0, "Subreader Depth is not zero");
 
                     while (r.Read()) ;
@@ -135,9 +135,9 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Read();
 
-                    TestLog.Compare(DataReader.Name, oname, "Main name doesnt match");
-                    TestLog.Compare(DataReader.Value, ovalue, "Main value doesnt match");
-                    TestLog.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), otype, "Main nodetype doesnt match");
+                    TestLog.Compare(DataReader.Name, oname, "Main name doesn't match");
+                    TestLog.Compare(DataReader.Value, ovalue, "Main value doesn't match");
+                    TestLog.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), otype, "Main nodetype doesn't match");
 
                     DataReader.Dispose();
                 }
@@ -270,9 +270,9 @@ namespace CoreXml.Test.XLinq
 
                     DataReader.Read();
 
-                    TestLog.Compare(DataReader.Name, "ELEMENT_1", "Main name doesnt match");
-                    TestLog.Compare(DataReader.Value, "", "Main value doesnt match");
-                    TestLog.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), "ENDELEMENT", "Main nodetype doesnt match");
+                    TestLog.Compare(DataReader.Name, "ELEMENT_1", "Main name doesn't match");
+                    TestLog.Compare(DataReader.Value, "", "Main value doesn't match");
+                    TestLog.Compare(DataReader.NodeType.ToString().ToUpperInvariant(), "ENDELEMENT", "Main nodetype doesn't match");
 
                     DataReader.Dispose();
                 }

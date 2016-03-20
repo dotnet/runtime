@@ -276,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected Scope m_pOuterScope;
         protected Scope m_pFinallyScope; // innermost finally, or pOuterScope if none...
         protected Scope m_pTryScope;     // innermost try, or pOuterScope if none...
-        protected Scope m_pCatchScope;   // innermose catch, or null if none
+        protected Scope m_pCatchScope;   // innermost catch, or null if none
         protected Scope m_pCurrentScope; // current scope
         protected Scope m_pSwitchScope;  // innermost switch, or null if none
 

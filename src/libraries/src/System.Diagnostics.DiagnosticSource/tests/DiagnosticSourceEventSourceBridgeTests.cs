@@ -347,12 +347,12 @@ namespace System.Diagnostics.Tests
         public void TestNoImplicitTransforms()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
-            using (var diagnosticSourceListener = new DiagnosticListener("TestNoImplictTransformsSource"))
+            using (var diagnosticSourceListener = new DiagnosticListener("TestNoImplicitTransformsSource"))
             {
                 Assert.Equal(0, eventSourceListener.EventCount);
 
                 // use the - prefix to supress the implicit properties.  Thus you should only get propStr and Url.  
-                eventSourceListener.Enable("TestNoImplictTransformsSource/TestEvent1:-propStr;cls.Url");
+                eventSourceListener.Enable("TestNoImplicitTransformsSource/TestEvent1:-propStr;cls.Url");
 
                 /***************************************************************************************/
                 // Emit an event that matches the first pattern. 
@@ -361,7 +361,7 @@ namespace System.Diagnostics.Tests
                     diagnosticSourceListener.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val, propStr2 = "there" });
 
                 Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
-                Assert.Equal("TestNoImplictTransformsSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestNoImplicitTransformsSource", eventSourceListener.LastEvent.SourceName);
                 Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
                 Assert.Equal(2, eventSourceListener.LastEvent.Arguments.Count);
                 Assert.Equal("hi", eventSourceListener.LastEvent.Arguments["propStr"]);

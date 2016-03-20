@@ -89,7 +89,7 @@ namespace System.Collections.Specialized.Tests
                 //
                 if (nvc.AllKeys.Length != cnt + 1)
                 {
-                    Assert.False(true, string.Format("Error, incorrects Keys array", i));
+                    Assert.False(true, string.Format("Error, incorrect Keys array", i));
                 }
 
                 if (Array.IndexOf(nvc.AllKeys, keys[i]) < 0)

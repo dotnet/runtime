@@ -152,7 +152,7 @@ namespace System.Xml
                                 bufBld.Append(highChar);
                                 bufBld.Append(lowChar);
                             }
-                            //else bad ucs-4 char dont convert
+                            //else bad ucs-4 char don't convert
                         }
                         else
                         { //convert to single char

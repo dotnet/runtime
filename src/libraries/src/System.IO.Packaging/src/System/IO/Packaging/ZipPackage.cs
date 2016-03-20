@@ -494,7 +494,7 @@ namespace System.IO.Packaging
             {
                 //Could be an empty zip folder
                 //We decided to ignore zip items that contain a "/" as this could be a folder in a zip archive
-                //Some of the tools support this and some dont. There is no way ensure that the zip item never have 
+                //Some of the tools support this and some don't. There is no way ensure that the zip item never have 
                 //a leading "/", although this is a requirement we impose on items created through our API
                 //Therefore we ignore them at the packaging api level.
                 if (zipItemName.StartsWith(ForwardSlashString, StringComparison.Ordinal))

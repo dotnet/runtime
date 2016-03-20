@@ -190,11 +190,11 @@ namespace System.Collections.Specialized.Tests
             Assert.NotEqual(sync1, orderedDictionary1);
             Assert.NotEqual(sync2, orderedDictionary2);
 
-            // Sync root objects for the same dictionaries are equivilent
+            // Sync root objects for the same dictionaries are equivalent
             Assert.Equal(orderedDictionary1.SyncRoot, orderedDictionary1.SyncRoot);
             Assert.Equal(orderedDictionary2.SyncRoot, orderedDictionary2.SyncRoot);
 
-            // Sync root objects for different dictionaries are not equivilent
+            // Sync root objects for different dictionaries are not equivalent
             Assert.NotEqual(sync1, sync2);
         }
 

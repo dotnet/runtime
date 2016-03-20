@@ -35,7 +35,7 @@ public static class FileSystemDebugInfo
 
     public static bool IsPathAdminAccessOnly(String path, bool treatPathAsFilePath)
     {
-        //we leave invalid paths as valid testcase scenarios and dont filter these
+        //we leave invalid paths as valid testcase scenarios and don't filter these
         //1) We check if the path is root on a system drive
         //2) @TODO WinDir?
         String systemDrive = Environment.GetEnvironmentVariable("SystemDrive");

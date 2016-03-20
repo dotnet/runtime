@@ -131,7 +131,7 @@ namespace XmlCoreTest.Common
             return CreateReader(readerParams);
         }
 
-        //This API doesnt attach a default validation event handler.
+        //This API doesn't attach a default validation event handler.
         public static XmlReader CreateReader(ReaderType readerType, Stream stream, string baseUri, bool enableNormalization)
         {
             return CreateReader(readerType.ToString(), stream, baseUri, enableNormalization, null, null, false);

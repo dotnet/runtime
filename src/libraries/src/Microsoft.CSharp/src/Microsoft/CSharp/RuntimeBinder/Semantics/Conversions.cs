@@ -10,14 +10,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // Encapsulates all logic about convertibility between types.
     //
     // WARNING: These methods do not precisely match the spec.
-    // WARNING: For example most also return true for identiy conversions,
-    // WARNING: FExpRefConv includes all Implict and Explicit reference conversions.
+    // WARNING: For example most also return true for identity conversions,
+    // WARNING: FExpRefConv includes all Implicit and Explicit reference conversions.
 
     internal static class CConversions
     {
         // WARNING: These methods do not precisely match the spec.
-        // WARNING: For example most also return true for identiy conversions,
-        // WARNING: FExpRefConv includes all Implict and Explicit reference conversions.
+        // WARNING: For example most also return true for identity conversions,
+        // WARNING: FExpRefConv includes all Implicit and Explicit reference conversions.
 
         /***************************************************************************************************
             Determine whether there is an implicit reference conversion from typeSrc to typeDst. This is

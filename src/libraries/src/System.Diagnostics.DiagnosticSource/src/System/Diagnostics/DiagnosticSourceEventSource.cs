@@ -41,7 +41,7 @@ namespace System.Diagnostics
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or 
     ///       * EMPTY                     - which turns on all sources
     ///   * a TRANSFORM_SPEC can be 
-    ///       * - TRANSFORM_SPEC - the '-' indicates that implict payload elements should be supressed 
+    ///       * - TRANSFORM_SPEC - the '-' indicates that implicit payload elements should be supressed 
     ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that an payload element 'VARIABLE_NAME' is creatd from PROPERTY_SPEC
     ///       * PROPERTY_SPEC                  - This is a shortcut where VARIABLE_NAME is the LAST property name
     ///   * a PROPERTY_SPEC ca be
@@ -120,7 +120,7 @@ namespace System.Diagnostics
         }
 #endif 
         /// <summary>
-        /// This is only used on V4.5 systems that dont have the ability to log KeyValuePairs directly.
+        /// This is only used on V4.5 systems that don't have the ability to log KeyValuePairs directly.
         /// It will eventually go away, but we should alwasy reserve the ID for this.    
         /// </summary>
         [Event(3, Keywords = Keywords.Events)]
@@ -693,7 +693,7 @@ namespace System.Diagnostics
 
         #endregion
 
-        private FilterAndTransform _specs;      // Tranformation specifications that indicate which sources/events are forwarded.  
+        private FilterAndTransform _specs;      // Transformation specifications that indicate which sources/events are forwarded.  
         #endregion
     }
 }

@@ -46,7 +46,7 @@ public class Directory_Delete_MountVolume
                 File.AppendAllText(debugFileName, String.Format("{0}{1}", scenarioDescription, Environment.NewLine));
 
                 string otherDriveInMachine = IOServices.GetNtfsDriveOtherThanCurrent();
-                //out labs use UIP tools in one drive and dont expect this drive to be used by others. We avoid this problem by not testing if the other drive is not NTFS
+                //out labs use UIP tools in one drive and don't expect this drive to be used by others. We avoid this problem by not testing if the other drive is not NTFS
                 if (FileSystemDebugInfo.IsCurrentDriveNTFS() && otherDriveInMachine != null)
                 {
                     Console.WriteLine(scenarioDescription);
