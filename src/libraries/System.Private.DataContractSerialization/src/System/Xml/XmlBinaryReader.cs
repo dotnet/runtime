@@ -951,7 +951,7 @@ namespace System.Xml
 
                 int offset = BufferReader.ReadBytes(actual);
 
-                // We need to make sure we don't split a unicode surrogate character
+                // We need to make sure we don't split a Unicode surrogate character
                 int byteCount = 0;
                 char ch = (char)BufferReader.GetInt16(offset + actual - sizeof(char));
                 // If the last char is a high surrogate char, then move back

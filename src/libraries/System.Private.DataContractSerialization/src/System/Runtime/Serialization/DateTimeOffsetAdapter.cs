@@ -51,7 +51,7 @@ namespace System.Runtime.Serialization
 
                     //DateTimeKind.Utc and DateTimeKind.Local
                     //Read in deserialized DateTime portion of the DateTimeOffsetAdapter and convert DateTimeKind to Unspecified.
-                    //Apply ofset information read from OffsetMinutes portion of the DateTimeOffsetAdapter.
+                    //Apply offset information read from OffsetMinutes portion of the DateTimeOffsetAdapter.
                     //Return converted DateTimeoffset object.
                     default:
                         DateTimeOffset deserialized = new DateTimeOffset(value.UtcDateTime);

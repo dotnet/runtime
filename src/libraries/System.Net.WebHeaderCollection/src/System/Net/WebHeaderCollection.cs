@@ -365,7 +365,7 @@ namespace System.Net
         // Remove -
         // Routine Description:
         //     Removes give header with validation to see if they are "proper" headers.
-        //     If the header is a speical header, listed in RestrictedHeaders object,
+        //     If the header is a special header, listed in RestrictedHeaders object,
         //     then this call will cause an exception indicating as such.
         // Arguments:
         //     name - header-name to remove

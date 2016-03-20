@@ -42,7 +42,7 @@ namespace System.Reflection.Internal
             }
             catch (AmbiguousMatchException)
             {
-                // This is technically possible even when paramter types are passed
+                // This is technically possible even when parameter types are passed
                 // as the default binder allows for "widening conversions"
                 // which can cause there to be more than one match. However, we
                 // don't expect to hit this as the parameter types we pass are

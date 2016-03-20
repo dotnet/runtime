@@ -275,11 +275,11 @@ namespace System.Net.Primitives.Functional.Tests
             cc.Add(c3);
             Assert.Equal(c3.Port, cc.GetCookies(uri)[0].Port);
 
-            // Adding an older variant shold be rejected
+            // Adding an older variant should be rejected
             cc.Add(c4);
             Assert.Equal(c3.Port, cc.GetCookies(uri)[0].Port);
 
-            // Ensure that although we added 3 cookies, only 1 was actually added (the others were overriden or rejected)
+            // Ensure that although we added 3 cookies, only 1 was actually added (the others were overridden or rejected)
             Assert.Equal(1, cc.Count);
         }
 
@@ -311,7 +311,7 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "П.com") }; // Invalid domain
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") }; // Plain cookie, explicit domain without version doesn't start with '.'
-            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") { Version = 100 } }; // Rfc2965 cookie, explcit domain with version doesn't start with '.'
+            yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, "domain") { Version = 100 } }; // Rfc2965 cookie, explicit domain with version doesn't start with '.'
 
             yield return new[] { new Cookie(DefaultName, DefaultValue, DefaultPath, DefaultDomain) { Comment = ";" } }; // Comment contains reserved characters
         }

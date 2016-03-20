@@ -60,7 +60,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // checks for avilability of Kerberos related infrastructure
+        // checks for availability of Kerberos related infrastructure
         // on the host. Returns true available, false otherwise
         public bool CheckAndClearCredentials(ITestOutputHelper output)
         {

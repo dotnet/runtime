@@ -1013,7 +1013,7 @@ namespace System.Runtime.Serialization.Json
                     text = string.Empty;
                 }
 
-                // do work only when not indenting whitespaces
+                // do work only when not indenting whitespace
                 if (!((_dataType == JsonDataType.Array || _dataType == JsonDataType.Object || _nodeType == JsonNodeType.EndElement) && XmlConverter.IsWhitespace(text)))
                 {
                     StartText();
@@ -1556,7 +1556,7 @@ namespace System.Runtime.Serialization.Json
             // E.g. WriteValue(new int[] { 1, 2, 3}) should be equivalent to WriteString("1 2 3").             
             JsonDataType oldDataType = _dataType;
             // Set attribute mode to String because WritePrimitiveValue might write numerical text.
-            //  Calls to methods that write numbers can't be mixed with calls that write quoted text unless the attribute mode is explictly string.            
+            //  Calls to methods that write numbers can't be mixed with calls that write quoted text unless the attribute mode is explicitly string.            
             _dataType = JsonDataType.String;
             StartText();
             for (int i = 0; i < array.Length; i++)

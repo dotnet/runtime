@@ -2110,7 +2110,7 @@
     <value>Ranges other than bytes are not implemented.</value>
   </data>
   <data name="net_log_cache_multiple_complex_range_not_implemented" xml:space="preserve">
-    <value>Multiple/complexe ranges are not implemented.</value>
+    <value>Multiple/complex ranges are not implemented.</value>
   </data>
   <data name="net_log_digest_hash_algorithm_not_supported" xml:space="preserve">
     <value>The hash algorithm is not supported by Digest authentication: {0}.</value>

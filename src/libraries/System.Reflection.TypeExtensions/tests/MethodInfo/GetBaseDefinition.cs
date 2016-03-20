@@ -28,7 +28,7 @@ namespace System.Reflection.Tests
             Object var = null;
             Object obj = null;
 
-            // [A] Vanila: Class does not extend (other than Object)/implement
+            // [A] Vanilla: Class does not extend (other than Object)/implement
 
             type = Type.GetType("System.Reflection.Tests.Co4611_a3");
             Assert.NotNull(type);
@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
             Assert.Equal(type, mInfo2.DeclaringType);
         }
 
-        // [B1] Abstract clss: abstract method obtained via abstract class;
+        // [B1] Abstract class: abstract method obtained via abstract class;
         // abstract class Ab_Co4611_a1
         [Fact]
         public void Test2()
@@ -248,7 +248,7 @@ namespace System.Reflection.Tests
     }
 
 
-    // classes to refelct upon: 
+    // classes to reflect upon: 
     // Scenario [A]
     internal class Co4611_a3
     {

@@ -250,7 +250,7 @@ namespace System.Net
                     if (!workerResult.HeaderDone)
                     {
                         workerResult.HeaderDone = true;
-                        // This indicates the header has been read succesfully
+                        // This indicates the header has been read successfully
                         _curReadHeader.CopyFrom(workerResult.Buffer, 0, _readVerifier);
                         int payloadSize = _curReadHeader.PayloadSize;
                         if (payloadSize < 0)
@@ -261,7 +261,7 @@ namespace System.Net
 
                         if (payloadSize == 0)
                         {
-                            // report emtpy frame (NOT eof!) to the caller, he might be interested in
+                            // report empty frame (NOT eof!) to the caller, he might be interested in
                             workerResult.InvokeCallback(0);
                             return;
                         }

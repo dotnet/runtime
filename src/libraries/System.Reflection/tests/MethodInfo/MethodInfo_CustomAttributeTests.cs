@@ -11,7 +11,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection.CustomAttributesTests.Data;
 
-// Need to disable warning related to CLS Compliance as using Array as cusom attribute is not CLS compliant
+// Need to disable warning related to CLS Compliance as using Array as custom attribute is not CLS compliant
 #pragma warning disable 3016
 
 namespace System.Reflection.Tests

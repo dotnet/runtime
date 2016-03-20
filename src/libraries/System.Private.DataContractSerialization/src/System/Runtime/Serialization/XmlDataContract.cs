@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
         [SecurityCritical]
 
         /// <SecurityNote>
-        /// Critical - holds all state used for for (de)serializing XML types.
+        /// Critical - holds all state used for (de)serializing XML types.
         ///            since the data is cached statically, we lock down access to it.
         /// </SecurityNote>
         private class XmlDataContractCriticalHelper : DataContract.DataContractCriticalHelper
