@@ -1519,27 +1519,3 @@ mono_thread_info_describe_interrupt_token (MonoThreadInfo *info, GString *text)
 	else
 		g_string_append_printf (text, "waiting");
 }
-
-/* info must be self or be held in a hazard pointer. */
-gboolean
-mono_threads_add_async_job (MonoThreadInfo *info, MonoAsyncJob job)
-{
-	MonoAsyncJob old_job;
-	do {
-		old_job = (MonoAsyncJob) info->service_requests;
-		if (old_job & job)
-			return FALSE;
-	} while (InterlockedCompareExchange (&info->service_requests, old_job | job, old_job) != old_job);
-	return TRUE;
-}
-
-MonoAsyncJob
-mono_threads_consume_async_jobs (void)
-{
-	MonoThreadInfo *info = (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key);
-
-	if (!info)
-		return (MonoAsyncJob) 0;
-
-	return (MonoAsyncJob) InterlockedExchange (&info->service_requests, 0);
-}
