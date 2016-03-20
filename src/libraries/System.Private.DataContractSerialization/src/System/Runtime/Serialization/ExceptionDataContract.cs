@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
              * and their ordering comes from this dictionary.
              * 
              * This dictionary is in the order that the Full Framework declares System.Exceptions members. This order is established
-             * in the Full Framework version of System.Exception's Iserializable interface.
+             * in the Full Framework version of System.Exception's ISerializable interface.
              */
             private static Dictionary<string, string> CreateExceptionFields()
             {
@@ -336,7 +336,7 @@ namespace System.Runtime.Serialization
 
             private bool HasNoConflictWithBaseMembers(DataMember memberContract)
             {
-                //Don't add redundant members, this can happen if a property overrides it's base class implementation. Because the overriden property will appear as "declared" in that type.
+                //Don't add redundant members, this can happen if a property overrides it's base class implementation. Because the overridden property will appear as "declared" in that type.
                 foreach (DataMember dm in BaseContract.Members)
                 {
                     if (dm.Name.Equals(memberContract.Name))
@@ -469,7 +469,7 @@ namespace System.Runtime.Serialization
         [SecuritySafeCritical]
         private Dictionary<string, object> GetExceptionFieldValues(Exception value)
         {
-            // Obtain the unoverrided version of Message
+            // Obtain the unoverridden version of Message
             Type exceptionType = Globals.TypeOfException;
             PropertyInfo messageProperty = exceptionType.GetProperty("Message");
             MethodInfo messageGetter = messageProperty.GetMethod;

@@ -9,7 +9,7 @@ namespace System.Net
         CacheControl = 0,    // general-header [section 4.5]
         Connection = 1,    // general-header [section 4.5]
         Date = 2,    // general-header [section 4.5]
-        KeepAlive = 3,    // general-header [not in rfc]
+        KeepAlive = 3,    // general-header [not in RFC]
         Pragma = 4,    // general-header [section 4.5]
         Trailer = 5,    // general-header [section 4.5]
         TransferEncoding = 6,    // general-header [section 4.5]
@@ -32,7 +32,7 @@ namespace System.Net
         AcceptEncoding = 22,   // request-header [section 5.3]
         AcceptLanguage = 23,   // request-header [section 5.3]
         Authorization = 24,   // request-header [section 5.3]
-        Cookie = 25,   // request-header [not in rfc]
+        Cookie = 25,   // request-header [not in RFC]
         Expect = 26,   // request-header [section 5.3]
         From = 27,   // request-header [section 5.3]
         Host = 28,   // request-header [section 5.3]
@@ -46,7 +46,7 @@ namespace System.Net
         Referer = 36,   // request-header [section 5.3]
         Range = 37,   // request-header [section 5.3]
         Te = 38,   // request-header [section 5.3]
-        Translate = 39,   // request-header [webDAV, not in rfc 2518]
+        Translate = 39,   // request-header [webDAV, not in RFC 2518]
         UserAgent = 40,   // request-header [section 5.3]
     }
 

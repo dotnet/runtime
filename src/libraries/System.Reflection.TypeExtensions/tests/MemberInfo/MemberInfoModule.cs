@@ -117,7 +117,7 @@ namespace System.Reflection.Tests
         {
             private static int s_count = 0;
 
-            //Defualt constructor
+            //Default constructor
             public TestClass1()
             {
                 ++s_count;

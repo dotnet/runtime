@@ -388,7 +388,7 @@ namespace System.Net.Sockets.Tests
     // and assigned to SocketAsyncEventArgs objects for use with each  
     // socket I/O operation.   
     //
-    // This enables bufffers to be easily reused and guards against  
+    // This enables buffers to be easily reused and guards against  
     // fragmenting heap memory. 
     //  
     // The operations exposed on the BufferManager class are not thread safe. 

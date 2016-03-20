@@ -1194,7 +1194,7 @@ namespace System.Net.Sockets
             // through each poll event, and for each that wasn't ready, remove the corresponding Socket from its list.  Technically
             // this is O(n^2), due to removing from the list requiring shifting down all elements after it.  However, this doesn't
             // happen with the most common cases.  If very few sockets were ready, then as we iterate from the end of the list, each
-            // removal will typiclaly be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
+            // removal will typically be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
             // which case we're only doing a small number of O(n) shifts.  It's only for the intermediate case, where a non-trivial
             // number of sockets are ready and a non-trivial number of sockets are not ready that we end up paying the most.  We could
             // avoid these costs by, for example, allocating a side list that we fill with the sockets that should remain, clearing

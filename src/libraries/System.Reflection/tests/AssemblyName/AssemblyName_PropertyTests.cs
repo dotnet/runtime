@@ -106,7 +106,7 @@ namespace System.Reflection.Tests
             Assert.False(n.FullName != expected && n.FullName != extended);
         }
 
-        //Verify AssemblyName.Version for xecuting assembly.
+        //Verify AssemblyName.Version for executing assembly.
         [Fact]
         public void Case8_Version()
         {
@@ -127,7 +127,7 @@ namespace System.Reflection.Tests
             Assert.Null(n.CultureName);
         }
 
-        //Verify AssemblyName.ContentType Deffault
+        //Verify AssemblyName.ContentType Default
         [Fact]
         public void Case10_ContentType()
         {

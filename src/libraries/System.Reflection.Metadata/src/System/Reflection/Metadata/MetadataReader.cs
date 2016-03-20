@@ -170,7 +170,7 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Looks like this function reads beginning of the header described in
-        /// Ecma-335 24.2.1 Metadata root
+        /// ECMA-335 24.2.1 Metadata root
         /// </summary>
         private void ReadMetadataHeader(ref BlobReader memReader, out string versionString)
         {
@@ -228,7 +228,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Reads stream headers described in Ecma-335 24.2.2 Stream header
+        /// Reads stream headers described in ECMA-335 24.2.2 Stream header
         /// </summary>
         private StreamHeader[] ReadStreamHeaders(ref BlobReader memReader)
         {
