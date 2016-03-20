@@ -16,6 +16,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <ProjectJson>win/project.json</ProjectJson>
+    <ProjectLockJson>win/project.lock.json</ProjectLockJson>
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -31,6 +35,7 @@
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
     <Compile Include="Interop.cs" />
+    <Compile Condition="'$(TargetsUnix)' == 'true'" Include="NativeOverlapped.unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
