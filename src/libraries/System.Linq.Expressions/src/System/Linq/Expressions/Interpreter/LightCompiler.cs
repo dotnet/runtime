@@ -30,8 +30,6 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class ExceptionHandler
     {
         public readonly Type ExceptionType;
-        public readonly int StartIndex;
-        public readonly int EndIndex;
         public readonly int LabelIndex;
         public readonly int HandlerStartIndex;
         public readonly int HandlerEndIndex;
@@ -39,11 +37,9 @@ namespace System.Linq.Expressions.Interpreter
 
         internal TryCatchFinallyHandler Parent = null;
 
-        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter filter)
+        internal ExceptionHandler(int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter filter)
         {
             Debug.Assert(exceptionType != null);
-            StartIndex = start;
-            EndIndex = end;
             LabelIndex = labelIndex;
             ExceptionType = exceptionType;
             HandlerStartIndex = handlerStartIndex;
@@ -57,45 +53,10 @@ namespace System.Linq.Expressions.Interpreter
             Parent = tryHandler;
         }
 
-        public bool Matches(Type exceptionType)
-        {
-            if (ExceptionType == null || ExceptionType.IsAssignableFrom(exceptionType))
-            {
-                return true;
-            }
-            return false;
-        }
+        public bool Matches(Type exceptionType) => ExceptionType.IsAssignableFrom(exceptionType);
 
-        public bool IsBetterThan(ExceptionHandler other)
-        {
-            if (other == null) return true;
-
-            Debug.Assert(StartIndex == other.StartIndex && EndIndex == other.EndIndex, "we only need to compare handlers for the same try block");
-            return HandlerStartIndex < other.HandlerStartIndex;
-        }
-
-        internal bool IsInsideTryBlock(int index)
-        {
-            return index >= StartIndex && index < EndIndex;
-        }
-
-        internal bool IsInsideCatchBlock(int index)
-        {
-            return index >= HandlerStartIndex && index < HandlerEndIndex;
-        }
-
-        internal bool IsInsideFinallyBlock(int index)
-        {
-            Debug.Assert(Parent != null);
-            return Parent.IsFinallyBlockExist && index >= Parent.FinallyStartIndex && index < Parent.FinallyEndIndex;
-        }
-
-        public override string ToString()
-        {
-            return String.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}-{2}] [{3}->{4}]",
-                ExceptionType.Name, StartIndex, EndIndex, HandlerStartIndex, HandlerEndIndex
-            );
-        }
+        public override string ToString() =>
+            string.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}->{2}]", ExceptionType.Name, HandlerStartIndex, HandlerEndIndex);
     }
 
     internal sealed class TryCatchFinallyHandler
@@ -1762,11 +1723,6 @@ namespace System.Linq.Expressions.Interpreter
                 node.Target.Type != typeof(void));
         }
 
-        public BranchLabel GetBranchLabel(LabelTarget target)
-        {
-            return ReferenceLabel(target).GetLabel(this);
-        }
-
         public void PushLabelBlock(LabelScopeKind type)
         {
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
@@ -1965,43 +1921,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private bool EndsWithRethrow(Expression expr)
-        {
-            if (expr.NodeType == ExpressionType.Throw)
-            {
-                var node = (UnaryExpression)expr;
-                return node.Operand == null;
-            }
-
-            BlockExpression block = expr as BlockExpression;
-            if (block != null)
-            {
-                return EndsWithRethrow(block.Expressions[block.Expressions.Count - 1]);
-            }
-            return false;
-        }
-
-
-        private void CompileAsVoidRemoveRethrow(Expression expr)
-        {
-            int stackDepth = _instructions.CurrentStackDepth;
-
-            if (expr.NodeType == ExpressionType.Throw)
-            {
-                Debug.Assert(((UnaryExpression)expr).Operand == null);
-                return;
-            }
-
-            var node = (BlockExpression)expr;
-            var end = CompileBlockStart(node);
-
-            CompileAsVoidRemoveRethrow(node.Expressions[node.Expressions.Count - 1]);
-
-            Debug.Assert(stackDepth == _instructions.CurrentStackDepth);
-
-            CompileBlockEnd(end);
-        }
-
         private void CompileTryExpression(Expression expr)
         {
             var node = (TryExpression)expr;
@@ -2094,7 +2013,7 @@ namespace System.Linq.Expressions.Interpreter
                     // keep the value of the body on the stack:
                     _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
 
-                    exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, handler.Test, filter));
+                    exHandlers.Add(new ExceptionHandler(handlerLabel, handlerStart, _instructions.Count, handler.Test, filter));
                     PopLabelBlock(LabelScopeKind.Catch);
 
                     _locals.UndefineLocal(local, _instructions.Count);
