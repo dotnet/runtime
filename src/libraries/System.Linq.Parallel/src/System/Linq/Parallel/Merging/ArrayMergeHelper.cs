@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 namespace System.Linq.Parallel
 {
     /// <summary>
-    /// A special merge helper for indexible queries. Given an indexible query, we know how many elements
+    /// A special merge helper for indexable queries. Given an indexable query, we know how many elements
     /// we'll have in the result set, so we can allocate the array ahead of time. Then, as each result element
     /// is produced, we can directly insert it into the appropriate position in the output array, paying
     /// no extra cost for ordering.
@@ -27,7 +27,7 @@ namespace System.Linq.Parallel
     /// <typeparam name="TInputOutput"></typeparam>
     internal class ArrayMergeHelper<TInputOutput> : IMergeHelper<TInputOutput>
     {
-        private QueryResults<TInputOutput> _queryResults; // Indexible query results
+        private QueryResults<TInputOutput> _queryResults; // Indexable query results
         private TInputOutput[] _outputArray; // The output array.
         private QuerySettings _settings; // Settings for the query.
 

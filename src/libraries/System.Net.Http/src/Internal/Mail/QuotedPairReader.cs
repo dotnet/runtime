@@ -55,7 +55,7 @@ namespace System.Net.Mail
             {
                 if (!permitUnicodeEscaping && data[index] > MailBnfHelper.Ascii7bitMaxValue)
                 {
-                    // Cannot accept quoted unicode
+                    // Cannot accept quoted Unicode
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
                 }
                 // Skip the quoted char, and the odd number of backslashes preceding it

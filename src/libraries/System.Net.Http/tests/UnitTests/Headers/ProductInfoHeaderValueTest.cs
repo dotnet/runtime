@@ -149,8 +149,8 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetRangeLength_DifferentInvalidScenarios_AllReturnZero()
         {
-            CheckInvalidGetProductInfoLength(" p/1.0", 0); // no leading whitespaces allowed
-            CheckInvalidGetProductInfoLength(" (c)", 0); // no leading whitespaces allowed
+            CheckInvalidGetProductInfoLength(" p/1.0", 0); // no leading whitespace allowed
+            CheckInvalidGetProductInfoLength(" (c)", 0); // no leading whitespace allowed
             CheckInvalidGetProductInfoLength("(invalid", 0);
             CheckInvalidGetProductInfoLength("product/", 0);
             CheckInvalidGetProductInfoLength("product/(1.0)", 0);

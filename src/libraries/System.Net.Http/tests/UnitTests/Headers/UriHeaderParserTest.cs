@@ -26,7 +26,7 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("/this/is/a/rel/uri", 0, new Uri("/this/is/a/rel/uri", UriKind.Relative), 18);
             CheckValidParsedValue("!!  http://example.com/path,/ ", 2, new Uri("http://example.com/path,/"), 30);
 
-            // Note that Uri.TryParse(.., UriKind.Relative) doesn't remove whitespaces
+            // Note that Uri.TryParse(.., UriKind.Relative) doesn't remove whitespace
             CheckValidParsedValue("!!  /path/x,/  ", 2, new Uri("  /path/x,/  ", UriKind.Relative), 15);
             CheckValidParsedValue("  http://example.com/path/?query=value   ", 2, new Uri("http://example.com/path/?query=value"), 41);
             CheckValidParsedValue("  http://example.com/path/?query=value \r\n  ", 2, new Uri("http://example.com/path/?query=value"), 43);

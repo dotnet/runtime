@@ -231,7 +231,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Caller must remove leading whitespaces. If not, we'll return 0.
+            // Caller must remove leading whitespace. If not, we'll return 0.
             string dispositionType = null;
             int dispositionTypeLength = GetDispositionTypeExpressionLength(input, startIndex, out dispositionType);
 
@@ -293,7 +293,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespaces) are allowed.
+            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             string tempDispositionType;
             int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out tempDispositionType);
             if ((dispositionTypeLength == 0) || (tempDispositionType.Length != dispositionType.Length))
@@ -357,7 +357,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        // Gets a parameter of the given name and attempts to decode it if nessisary.
+        // Gets a parameter of the given name and attempts to decode it if necessary.
         // Returns null if the parameter is not present or the raw value if the encoding is incorrect.
         private string GetName(string parameter)
         {

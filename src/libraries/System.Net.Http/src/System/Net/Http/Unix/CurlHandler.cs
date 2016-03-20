@@ -688,7 +688,7 @@ nameof(value),
             Debug.Assert(requestContent != null, "request is null");
 
             // Deal with conflict between 'Content-Length' vs. 'Transfer-Encoding: chunked' semantics.
-            // libcurl adds a Tranfer-Encoding header by default and the request fails if both are set.
+            // libcurl adds a Transfer-Encoding header by default and the request fails if both are set.
             if (requestContent.Headers.ContentLength.HasValue)
             {
                 if (chunkedMode)

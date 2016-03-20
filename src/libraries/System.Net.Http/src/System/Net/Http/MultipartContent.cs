@@ -171,13 +171,13 @@ namespace System.Net.Http
         //   write content.CopyTo[Async]
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled 
-        // then the stream will be closed an an exception thrown.
+        // then the stream will be closed an exception thrown.
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(_outputStream == null, "Opperation already in progress");
-            Debug.Assert(_tcs == null, "Opperation already in progress");
-            Debug.Assert(_nextContentIndex == 0, "Opperation already in progress");
+            Debug.Assert(_outputStream == null, "Operation already in progress");
+            Debug.Assert(_tcs == null, "Operation already in progress");
+            Debug.Assert(_nextContentIndex == 0, "Operation already in progress");
 
             // Keep a local copy in case the operation completes and cleans up synchronously.
             TaskCompletionSource<Object> localTcs = new TaskCompletionSource<Object>();
@@ -276,7 +276,7 @@ namespace System.Net.Http
                         }
 
                         TaskCompletionSource<object> lastTcs = CleanupAsync();
-                        lastTcs.TrySetResult(null); // This was the final opperation.
+                        lastTcs.TrySetResult(null); // This was the final operation.
                     });
             }
             catch (Exception ex)

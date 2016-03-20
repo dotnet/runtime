@@ -30,7 +30,7 @@ namespace System.Net.Http.Tests
             // Just make sure the parser calls MailAddressParser with correct parameters (like startIndex must be
             // honored).
 
-            // Note that we still have trailing whitespaces since we don't do the parsing of the email address.
+            // Note that we still have trailing whitespace since we don't do the parsing of the email address.
             CheckValidParsedValue("!!      info@example.com   ", 2, "info@example.com   ", 27);
             CheckValidParsedValue("\r\n \"My name\" info@example.com", 0,
                 "\"My name\" info@example.com", 29);
