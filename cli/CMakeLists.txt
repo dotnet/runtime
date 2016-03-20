@@ -22,7 +22,6 @@ include_directories(./json/casablanca/include)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    libhost.cpp
 
     #deps_format.cpp
     #./json/casablanca/src/json/json.cpp
@@ -33,7 +32,6 @@ set(SOURCES
 
     ./fxr/fx_ver.cpp
     ../corehost.cpp
-    ../policy_load.cpp
     ../common/trace.cpp
     ../common/utils.cpp)
 

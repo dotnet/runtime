@@ -11,8 +11,7 @@
 #include "trace.h"
 #include "runtime_config.h"
 #include "cpprest/json.h"
-#include "corehost.h"
-#include "policy_load.h"
+#include "error_codes.h"
 
 typedef web::json::value json_value;
 
@@ -265,13 +264,13 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
             pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
             corehost_init_t init(_X(""), _X(""), fx_dir, host_mode_t::muxer, &config);
-            return policy_load_t::execute_app(fx_dir, &init, argc, argv);
+            return execute_app(fx_dir, &init, argc, argv);
         }
         else
         {
             trace::verbose(_X("Executing as a standlone app as per config file [%s]"), config_file.c_str());
             corehost_init_t init(_X(""), _X(""), _X(""), host_mode_t::muxer, &config);
-            return policy_load_t::execute_app(get_directory(app_path), &init, argc, argv);
+            return execute_app(get_directory(app_path), &init, argc, argv);
         }
     }
     else
@@ -323,14 +322,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
                 trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
                 pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
                 corehost_init_t init(deps_file, probe_path, fx_dir, host_mode_t::muxer, &config);
-                return policy_load_t::execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
+                return execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
             }
             else
             {
                 trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
                 corehost_init_t init(deps_file, probe_path, _X(""), host_mode_t::muxer, &config);
                 pal::string_t impl_dir = get_directory(app_or_deps);
-                return policy_load_t::execute_app(impl_dir, &init, new_argv.size(), new_argv.data());
+                return execute_app(impl_dir, &init, new_argv.size(), new_argv.data());
             }
         }
         else
@@ -366,20 +365,15 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
                 trace::verbose(_X("Executing dotnet.dll as a portable app as per config file [%s]"), config_file.c_str());
                 pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
                 corehost_init_t init(_X(""), _X(""), fx_dir, host_mode_t::muxer, &config);
-                return policy_load_t::execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
+                return execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
             }
             else
             {
                 trace::verbose(_X("Executing dotnet.dll as a standalone app as per config file [%s]"), config_file.c_str());
                 corehost_init_t init(_X(""), _X(""), _X(""), host_mode_t::muxer, &config);
-                return policy_load_t::execute_app(get_directory(sdk_dotnet), &init, new_argv.size(), new_argv.data());
+                return execute_app(get_directory(sdk_dotnet), &init, new_argv.size(), new_argv.data());
             }
         }
     }
 }
 
-SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
-{
-    trace::setup();
-    return fx_muxer_t().execute(argc, argv);
-}
