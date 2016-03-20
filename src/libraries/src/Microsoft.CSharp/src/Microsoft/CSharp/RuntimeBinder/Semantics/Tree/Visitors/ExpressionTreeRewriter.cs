@@ -1084,8 +1084,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected EXPRCALL GenerateCall(PREDEFMETH pdm, EXPR arg1)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
-            // this should be enforced in an earlier pass and the tranform pass should not 
-            // be handeling this error
+            // this should be enforced in an earlier pass and the transform pass should not 
+            // be handling this error
             if (method == null)
                 return null;
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);

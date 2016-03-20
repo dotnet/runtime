@@ -24,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_OPENTYPE = 0x2,             // Only on EXPRTYPEOF. Indicates that the type is an open type.
         EXF_LABELREFERENCED = 0x2,      // Only on EXPRLABEL. Indicates the label was targeted by a goto.
 #if CSEE
-        EXF_CLASSASSTATICSCHILD = 0x2,  // Only on EXPRCLASS, indicates a synthetized child which is parent of statics
+        EXF_CLASSASSTATICSCHILD = 0x2,  // Only on EXPRCLASS, indicates a synthesized child which is parent of statics
         EXF_DECLASSG = 0x2,             // Only on EK_ASSG
 #endif
         EXF_GENERATEDQMARK = 0x2,       // only on EK_QMARK
@@ -112,7 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         EXF_CANTBENULL = 0x020000,          // indicate this expression can't ever be null (e.g., "this").
         EXF_CHECKOVERFLOW = 0x040000,       // indicates that operation should be checked for overflow
 #if CSEE
-        EXF_THREWEXCEPTION = 0x080000,      // indicates the the expr originally threw an exception
+        EXF_THREWEXCEPTION = 0x080000,      // indicates the expr originally threw an exception
 #endif
         EXF_PUSH_OP_FIRST = 0x100000,       // On any expr, indicates that the first operand must be placed on the stack before
         // anything else - this is needed for multi-ops involving string concat.

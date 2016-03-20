@@ -286,7 +286,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            // the CType in whice the method is being called has no relationship with the 
+            // the CType in which the method is being called has no relationship with the 
             // CType on which the method is defined surely this is NOACCESS and not NOACCESSTHRU
             if (found == false)
                 return ACCESSERROR.ACCESSERROR_NOACCESS;

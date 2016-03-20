@@ -2911,7 +2911,7 @@ namespace System.Data.SqlClient
             }
             finally
             {
-                // pendingCallbacks may be 2 after decrementing, this indicates that a fatal timeout is occuring, and therefore we shouldn't complete the task
+                // pendingCallbacks may be 2 after decrementing, this indicates that a fatal timeout is occurring, and therefore we shouldn't complete the task
                 int pendingCallbacks = DecrementPendingCallbacks(false); // may dispose of GC handle.
                 if ((processFinallyBlock) && (source != null) && (pendingCallbacks < 2))
                 {

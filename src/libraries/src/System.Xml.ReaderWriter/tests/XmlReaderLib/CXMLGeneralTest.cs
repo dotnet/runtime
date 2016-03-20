@@ -257,7 +257,7 @@ namespace System.Xml.Tests
                             nBytes = DataReader.ReadElementContentAsBase64(buffer, 0, 1);
                             break;
                     }
-                    throw new CTestFailedException("ReadContentAsBinHex doesnt throw NotSupportedException");
+                    throw new CTestFailedException("ReadContentAsBinHex doesn't throw NotSupportedException");
                 }
                 catch (NotSupportedException)
                 {

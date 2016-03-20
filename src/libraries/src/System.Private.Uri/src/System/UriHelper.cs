@@ -598,7 +598,7 @@ namespace System
                         }
                         else
                         {
-                            // copy bytes till place where bytes dont match
+                            // copy bytes till place where bytes don't match
                             for (int l = 0; l < k; ++l)
                             {
                                 Debug.Assert(dest.Length > destOffset, "Destination length exceeded destination offset.");

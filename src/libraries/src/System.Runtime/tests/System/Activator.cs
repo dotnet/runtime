@@ -12,7 +12,7 @@ public static class ActivatorTests
     [Fact]
     public static void TestCreateInstance()
     {
-        // Passing null args is equivilent to an empty array of args.
+        // Passing null args is equivalent to an empty array of args.
         Choice1 c = (Choice1)(Activator.CreateInstance(typeof(Choice1), null));
         Assert.Equal(1, c.I);
 

@@ -49,7 +49,7 @@ namespace Microsoft.Win32.RegistryTests
             const int maxValueNameLength = 255;
             Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
 
-            //According to msdn documetation max nesting level exceeds is 510 but actual is 508
+            //According to msdn documentation max nesting level exceeds is 510 but actual is 508
             const int maxNestedLevel = 508;
             string exceedsNestedSubkeyName = string.Join(@"\", Enumerable.Repeat("a", maxNestedLevel));
             Assert.Throws<IOException>(() => TestRegistryKey.CreateSubKey(exceedsNestedSubkeyName, true));

@@ -24,7 +24,7 @@ namespace System.Composition.Hosting.Core
         /// </summary>
         /// <param name="site">A tag describing the dependency site.</param>
         /// <param name="contract">The contract required by the site.</param>
-        /// <param name="isPrerequisite">True if the dependency must be satisifed before corresponding exports can be retrieved; otherwise, false.</param>
+        /// <param name="isPrerequisite">True if the dependency must be satisfied before corresponding exports can be retrieved; otherwise, false.</param>
         /// <returns>Dependencies for all implementations of the contact.</returns>
         public IEnumerable<CompositionDependency> ResolveDependencies(object site, CompositionContract contract, bool isPrerequisite)
         {
@@ -36,11 +36,11 @@ namespace System.Composition.Hosting.Core
         }
 
         /// <summary>
-        /// Resolve a required dependency on exactly one implemenation of a contract.
+        /// Resolve a required dependency on exactly one implementation of a contract.
         /// </summary>
         /// <param name="site">A tag describing the dependency site.</param>
         /// <param name="contract">The contract required by the site.</param>
-        /// <param name="isPrerequisite">True if the dependency must be satisifed before corresponding exports can be retrieved; otherwise, false.</param>
+        /// <param name="isPrerequisite">True if the dependency must be satisfied before corresponding exports can be retrieved; otherwise, false.</param>
         /// <returns>The dependency.</returns>
         public CompositionDependency ResolveRequiredDependency(object site, CompositionContract contract, bool isPrerequisite)
         {
@@ -52,11 +52,11 @@ namespace System.Composition.Hosting.Core
         }
 
         /// <summary>
-        /// Resolve an optional dependency on exactly one implemenation of a contract.
+        /// Resolve an optional dependency on exactly one implementation of a contract.
         /// </summary>
         /// <param name="site">A tag describing the dependency site.</param>
         /// <param name="contract">The contract required by the site.</param>
-        /// <param name="isPrerequisite">True if the dependency must be satisifed before corresponding exports can be retrieved; otherwise, false.</param>
+        /// <param name="isPrerequisite">True if the dependency must be satisfied before corresponding exports can be retrieved; otherwise, false.</param>
         /// <param name="dependency">The dependency, or null.</param>
         /// <returns>True if the dependency could be resolved; otherwise, false.</returns>
         public bool TryResolveOptionalDependency(object site, CompositionContract contract, bool isPrerequisite, out CompositionDependency dependency)

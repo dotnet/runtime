@@ -445,7 +445,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Only call this if you are ALWAYS going to use the returned result (and you're not just going to test and
         // possibly throw away the result)
         // If the conversion is possible it will modify an Anonymous Method expr thus changing results of
-        // future conversions.  It will also produce possible binding errors for method goups.
+        // future conversions.  It will also produce possible binding errors for method groups.
 
         public EXPR tryConvert(EXPR expr, CType dest)
         {
@@ -573,7 +573,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private void CantConvert(EXPR expr, CType dest)
         {
             // Generic "can't convert" error.
-            // Only report if we dont have an error type.
+            // Only report if we don't have an error type.
             if (expr.type != null && !(expr.type is ErrorType))
             {
                 ErrorContext.Error(ErrorCode.ERR_NoExplicitConv, new ErrArg(expr.type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
@@ -609,12 +609,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
  
             (1) (Most permissive) When there is at least one applicable method in the method group.
  
-            (2) (Most restrictive) When all of the following are satisified:
+            (2) (Most restrictive) When all of the following are satisfied:
                 * Overload resolution does not produce an error
                 * The method's parameter types don't require any conversions other than implicit reference
                   conversions.
                 * The method's return type is compatible.
-                * The method's constraints are satisified.
+                * The method's constraints are satisfied.
                 * The method is not conditional.
  
             For (1), it may be the case that an error is produced whenever the conversion is actually used.
@@ -1043,7 +1043,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             // If we have a user-defined conversion that 
                             // does not specify the correct number of parameters, we may
-                            // still get here. At this point, we dont want to consider
+                            // still get here. At this point, we don't want to consider
                             // the broken conversion, so we simply skip it and move on.
                             continue;
                         }

@@ -254,7 +254,7 @@ namespace System.Runtime.Serialization.Json
                 return newList;
             }
             Array array = Array.CreateInstance(type, newList.Count);
-            //Special case byte[] as Int32 cant be implictly converted to byte.
+            //Special case byte[] as Int32 cant be implicitly converted to byte.
             if (type == typeof(Byte))
             {
                 int index = 0;
@@ -285,7 +285,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                //Its either an empty object "{}" or a weakly typed Json Object such as {"a",1;"b";2} which we dont support reading in Orcas
+                //Its either an empty object "{}" or a weakly typed Json Object such as {"a",1;"b";2} which we don't support reading in Orcas
                 return new Object();
             }
         }

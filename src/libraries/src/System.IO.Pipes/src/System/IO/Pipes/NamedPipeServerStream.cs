@@ -113,7 +113,7 @@ namespace System.IO.Pipes
 
             // inheritability will always be None since this private constructor is only called from other constructors from which
             // inheritability is always set to None. Desktop has a public constructor to allow setting it to something else, but Core
-            // doesnt.
+            // doesn't.
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability), SR.ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable);

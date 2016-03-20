@@ -221,7 +221,7 @@ namespace System.Threading.Tasks.Tests
                         itemsExecutedCount, maxItemsPerTask, id));
                 }
                 else
-                { //Since ids dont match, this is the first Task being executed in the CEScheduler Task
+                { //Since ids don't match, this is the first Task being executed in the CEScheduler Task
                     schedulerIDInsideTask.Value = id; //cache the scheduler ID seen by the thread, so other tasks running in same thread can see this
                     itemsExecutedCount.Value = 1;
                 }

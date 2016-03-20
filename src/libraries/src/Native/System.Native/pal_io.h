@@ -237,7 +237,7 @@ enum FileAdvice : int32_t
     PAL_POSIX_FADV_RANDOM = 1,     /* random I/O access */
     PAL_POSIX_FADV_SEQUENTIAL = 2, /* sequential I/O access */
     PAL_POSIX_FADV_WILLNEED = 3,   /* will need specified pages */
-    PAL_POSIX_FADV_DONTNEED = 4,   /* dont need the specified pages */
+    PAL_POSIX_FADV_DONTNEED = 4,   /* don't need the specified pages */
     PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be acessed once */
 };
 

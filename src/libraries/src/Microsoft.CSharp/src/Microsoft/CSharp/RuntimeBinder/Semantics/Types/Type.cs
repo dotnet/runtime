@@ -343,9 +343,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // Given a symbol, determine its fundemental type. This is the type that 
+        // Given a symbol, determine its fundamental type. This is the type that 
         // indicate how the item is stored and what instructions are used to reference 
-        // if. The fundemental types are:
+        // if. The fundamental types are:
         // one of the integral/float types (includes enums with that underlying type)
         // reference type
         // struct/value type
@@ -513,7 +513,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // A few types are considered "simple" types for purposes of conversions and so
-        // on. They are the fundemental types the compiler knows about for operators and
+        // on. They are the fundamental types the compiler knows about for operators and
         // conversions.
         public bool isSimpleType()
         {
@@ -535,7 +535,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        // A few types are considered "numeric" types. They are the fundemental number
+        // A few types are considered "numeric" types. They are the fundamental number
         // types the compiler knows about for operators and conversions.
         public bool isNumericType()
         {
@@ -617,7 +617,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Is this type System.TypedReference or System.ArgIterator?
-        // (used for errors becase these types can't go certain places)
+        // (used for errors because these types can't go certain places)
 
         public bool isSpecialByRefType()
         {
@@ -673,7 +673,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             return true;
                         }
 
-                        // If the struct layout has an error, dont recurse its children.
+                        // If the struct layout has an error, don't recurse its children.
                         if (aggT.IsLayoutError())
                         {
                             aggT.SetUnmanagedStruct(true);

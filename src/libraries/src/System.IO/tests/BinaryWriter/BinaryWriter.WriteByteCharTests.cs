@@ -131,7 +131,7 @@ namespace System.IO.Tests
             byte[] readBytes = reader.ReadBytes(5);
             for (int i = 0; i < 5; i++)
             {
-                //We pretty much dont expect this to work
+                //We pretty much don't expect this to work
                 Assert.NotEqual(readBytes[i], bytes[i]);
             }
 
@@ -459,7 +459,7 @@ namespace System.IO.Tests
         /// They cannot use BinaryReader's ReadChar().  Similarly, data written using Write(char) can't be read back using ReadChars(int).
         /// A high-surrogate is a Unicode code point in the range U+D800 through U+DBFF and a low-surrogate is a Unicode code point in the range U+DC00 through U+DFFF
         /// 
-        /// We dont throw on the second read but then throws continuously - note the loop count difference in the 2 loops
+        /// We don't throw on the second read but then throws continuously - note the loop count difference in the 2 loops
         /// 
         /// BinaryReader was reverting to its original location instead of advancing. This was changed to skip past the char in the surrogate range.
         /// The affected method is InternalReadOneChar (IROC). Note that the work here is slightly complicated by the way surrogates are handled by 

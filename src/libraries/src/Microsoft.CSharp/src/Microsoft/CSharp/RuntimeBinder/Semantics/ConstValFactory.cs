@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // allocates memory for CONSTVALs.
     //
     // One important client of ConstValFactory is the lexer/parser,
-    // so ConstValFactory should not take a dependancy on TYPESYMs
+    // so ConstValFactory should not take a dependency on TYPESYMs
     // or predefined types.
 
     internal sealed class ConstValFactory

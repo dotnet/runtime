@@ -556,7 +556,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     must be a type or a namespace. This EXPR encapsulates that fact. The lhs member is the EXPR 
                     tree that was bound to resolve the type or namespace.
 
-                  TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we dont know
+                  TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we don't know
                     what to bind it to.
 
                   The following three exprs all have a TYPEORNAMESPACE child, which is their fundamental type:
