@@ -195,7 +195,7 @@ namespace System.Text.Tests
             decoder.Reset();
         }
 
-        // PosTest8: Call Convert to convert a unicode character array with Unicode encoder
+        // PosTest8: Call Convert to convert a Unicode character array with Unicode encoder
         [Fact]
         public void PosTest8()
         {
@@ -223,7 +223,7 @@ namespace System.Text.Tests
             decoder.Reset();
         }
 
-        // PosTest9: Call Convert to convert partial of a unicode character array with Unicode encoder
+        // PosTest9: Call Convert to convert partial of a Unicode character array with Unicode encoder
         [Fact]
         public void PosTest9()
         {

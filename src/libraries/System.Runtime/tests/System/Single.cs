@@ -308,7 +308,7 @@ public static class SingleTests
         Assert.False(float.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
         Assert.False(float.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 
-        Assert.True(float.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese positive
+        Assert.True(float.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parentheses positive
         Assert.Equal(-135, i);
 
         Assert.True(float.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));

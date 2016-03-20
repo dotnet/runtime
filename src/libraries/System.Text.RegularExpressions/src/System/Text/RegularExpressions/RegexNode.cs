@@ -36,7 +36,7 @@
 //
 // Finally, some of the different kinds of nodes have data.
 // Two integers (for the looping constructs) are stored in
-// _operands, an an object (either a string or a set)
+// _operands, an object (either a string or a set)
 // is stored in _data
 
 using System.Collections.Generic;
@@ -231,7 +231,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. Once parsed into a tree, noncapturing groups
+        /// Simple optimization. Once parsed into a tree, non-capturing groups
         /// serve no function, so strip them out.
         /// </summary>
         internal RegexNode ReduceGroup()

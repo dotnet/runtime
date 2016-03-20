@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
     /// <remarks>
     ///     Since NCrypt handles do not have a native DuplicateHandle type call, we need to do manual 
     ///     reference counting in managed code whenever we hand out an extra reference to one of these handles.
-    ///     This class wraps up the logic to correctly duplicate and free these handles to simluate a native
+    ///     This class wraps up the logic to correctly duplicate and free these handles to simulate a native
     ///     duplication.
     /// 
     ///     Each open handle object can be thought of as being in one of three states:
@@ -31,7 +31,7 @@ namespace Microsoft.Win32.SafeHandles
     ///                       When all duplicate handles are closed, the holder handle releases the native
     ///                       handle. A holder handle will never be finalized, since this results in a race
     ///                       between the finalizers of the duplicate handles and the holder handle. Instead,
-    ///                       it relies upon all of the duplicate handles to be finalized and decriment the
+    ///                       it relies upon all of the duplicate handles to be finalized and decrement the
     ///                       ref count to zero.  Instances of a holder handle should never be referenced by
     ///                       anything but a duplicate handle.
     /// </remarks>

@@ -178,7 +178,7 @@ namespace System.Runtime.Versioning
 
             string[] components = frameworkName.Split(c_componentSeparator);
 
-            // Identifer and Version are required, Profile is optional.
+            // Identifier and Version are required, Profile is optional.
             if (components.Length < 2 || components.Length > 3)
             {
                 throw new ArgumentException(SR.Argument_FrameworkNameTooShort, nameof(frameworkName));

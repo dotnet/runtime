@@ -667,7 +667,7 @@ namespace System.Net
 #if DEBUG
             static HtmlEntities()
             {
-                // Make sure the inital capacity for s_lookupTable is correct
+                // Make sure the initial capacity for s_lookupTable is correct
                 Debug.Assert(s_lookupTable.Count == Count, $"There should be {Count} HTML entities, but {nameof(s_lookupTable)} has {s_lookupTable.Count} of them.");
             }
 #endif

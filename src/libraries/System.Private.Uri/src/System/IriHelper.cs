@@ -24,7 +24,7 @@ namespace System
         //
         // Check if highSurr and lowSurr are a surrogate pair then 
         // it checks if the combined char is in the range
-        // Takes in isQuery because because iri restrictions for query are different
+        // Takes in isQuery because iri restrictions for query are different
         //
         internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, ref bool surrogatePair, bool isQuery)
         {
@@ -80,7 +80,7 @@ namespace System
         }
 
         //
-        // Check reserved chars according to rfc 3987 in a sepecific component
+        // Check reserved chars according to RFC 3987 in a specific component
         //
         internal static bool CheckIsReserved(char ch, UriComponents component)
         {
@@ -99,7 +99,7 @@ namespace System
             {
                 switch (component)
                 {
-                    // Reserved chars according to rfc 3987
+                    // Reserved chars according to RFC 3987
                     case UriComponents.UserInfo:
                         if (ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@')
                             return true;

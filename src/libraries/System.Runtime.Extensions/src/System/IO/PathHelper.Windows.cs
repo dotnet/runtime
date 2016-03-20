@@ -352,7 +352,7 @@ namespace System.IO
                     outputBuffer.Length = result;
                     if (foundIndex < inputLength - 1)
                     {
-                        // It was a partial find, put the non-existant part of the path back
+                        // It was a partial find, put the non-existent part of the path back
                         outputBuffer.Append(inputBuffer, foundIndex, inputBuffer.Length - foundIndex);
                     }
                 }

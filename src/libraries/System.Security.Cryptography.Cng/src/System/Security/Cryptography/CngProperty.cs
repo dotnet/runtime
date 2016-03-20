@@ -11,7 +11,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///     Wrapper represeting an arbitrary property of a CNG key or provider
+    ///     Wrapper representing an arbitrary property of a CNG key or provider
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]  // The [StructLayout] is here to prevent a spurious ApiReviewer alert. We do not actually depend on the layout of this struct.
     public struct CngProperty : IEquatable<CngProperty>

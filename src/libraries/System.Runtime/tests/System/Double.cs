@@ -312,7 +312,7 @@ public static class DoubleTests
         Assert.False(double.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
         Assert.False(double.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 
-        Assert.True(double.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese positive
+        Assert.True(double.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parentheses positive
         Assert.Equal(-135, i);
 
         Assert.True(double.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));

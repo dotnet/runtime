@@ -50,7 +50,7 @@ namespace System.Globalization
                 // that instead of numberBuffer.digits. This is quite important since numberBuffer.digits is a fixed-buffer size
                 // and BigNumbers can have an arbitrary number of digits.
                 //
-                // Just in case a bug is ever introduced into TryStringToNumber that violates this, set the pointer tha numberBuffer.digits returns
+                // Just in case a bug is ever introduced into TryStringToNumber that violates this, set the pointer that numberBuffer.digits returns
                 // to something that will AV.
                 numberBuffer.overrideDigits = (char*)0x1;
             }
