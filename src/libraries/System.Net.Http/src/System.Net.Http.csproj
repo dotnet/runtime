@@ -160,8 +160,8 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
     <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
     <Compile Include="System\Net\Http\Unix\CurlTransportContext.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\CertificateValidation.Unix.cs">
-      <Link>Common\System\Security\Cryptography\CertificateValidation.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
+      <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>

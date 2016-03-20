@@ -241,8 +241,8 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\SslStreamPal.Unix.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\CertificateValidation.Unix.cs">
-      <Link>Common\System\Security\Cryptography\CertificateValidation.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
+      <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
 
     <!-- NegotiateStream -->    
