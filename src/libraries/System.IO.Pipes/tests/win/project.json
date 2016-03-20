@@ -16,6 +16,7 @@
     "System.Security.Principal": "4.0.1-rc3-23918",
     "System.Text.RegularExpressions": "4.0.12-rc3-23918",
     "System.Threading.Tasks": "4.0.11-rc3-23918",
+    "System.Threading.Overlapped": "4.0.1-rc3-23918",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00187"
   },
@@ -23,5 +24,9 @@
     "dnxcore50": {
       "imports": "portable-net45+win8"
     }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }
