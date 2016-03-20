@@ -68,7 +68,7 @@ namespace System.Text.Tests
                 }
                 else
                 {
-                    // Verify ASCII encoder replacment fallback
+                    // Verify ASCII encoder replacement fallback
                     ++currentByteIndex;
                 }
             }

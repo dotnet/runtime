@@ -28,7 +28,7 @@ namespace System.Text.Encodings.Web
         // and so I think the warning is a bit too aggressive.  
 
         /// <summary>
-        /// Encodes a unicode scalar into a buffer.
+        /// Encodes a Unicode scalar into a buffer.
         /// </summary>
         /// <param name="unicodeScalar">Unicode scalar.</param>
         /// <param name="buffer">The destination of the encoded text.</param>
@@ -52,14 +52,14 @@ namespace System.Text.Encodings.Web
         /// <param name="text">The text buffer to search.</param>
         /// <param name="textLength">The number of characters in the <paramref name="text"/>.</param>
         /// <returns></returns>
-        /// <remarks>This method is seldom called directly. It's used by highe level helper APIs.</remarks>
+        /// <remarks>This method is seldom called directly. It's used by higher level helper APIs.</remarks>
         [CLSCompliant(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public unsafe abstract int FindFirstCharacterToEncode(char* text, int textLength);
 #pragma warning restore
 
         /// <summary>
-        /// Determines if a given unicode scalar will be encoded.
+        /// Determines if a given Unicode scalar will be encoded.
         /// </summary>
         /// <param name="unicodeScalar">Unicode scalar.</param>
         /// <returns>Returns true if the <paramref name="unicodeScalar"/> will be encoded by this encoder, otherwise returns false.</returns>
@@ -69,7 +69,7 @@ namespace System.Text.Encodings.Web
         // this could be a field, but I am trying to make the abstraction pure.
 
         /// <summary>
-        /// Maximum nuber of characters that this encoder can generate for each imput character.
+        /// Maximum number of characters that this encoder can generate for each input character.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract int MaxOutputCharactersPerInputCharacter { get; }
@@ -77,7 +77,7 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Encodes the supplied string and returns the encoded text as a new string.
         /// </summary>
-        /// <param name="value">String to endode.</param>
+        /// <param name="value">String to encode.</param>
         /// <returns>Encoded string.</returns>
         public virtual string Encode(string value)
         {
@@ -204,7 +204,7 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// Encodes the supplied string into a <see cref="TextWriter"/>.
         /// </summary>
-        /// <param name="output">Endoded text is written to this output.</param>
+        /// <param name="output">Encoded text is written to this output.</param>
         /// <param name="value">String to be encoded.</param>
         public void Encode(TextWriter output, string value)
         {
@@ -214,8 +214,8 @@ namespace System.Text.Encodings.Web
         /// <summary>
         ///  Encodes a substring into a <see cref="TextWriter"/>.
         /// </summary>
-        /// <param name="output">Endoded text is written to this output.</param>
-        /// <param name="value">String whose substing is to be encoded.</param>
+        /// <param name="output">Encoded text is written to this output.</param>
+        /// <param name="value">String whose substring is to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>
         public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
@@ -267,7 +267,7 @@ namespace System.Text.Encodings.Web
         /// <summary>
         ///  Encodes characters from an array into a <see cref="TextWriter"/>.
         /// </summary>
-        /// <param name="output">Endoded text is written to the output.</param>
+        /// <param name="output">Encoded text is written to the output.</param>
         /// <param name="value">Array of characters to be encoded.</param>
         /// <param name="startIndex">The index where the substring starts.</param>
         /// <param name="characterCount">Number of characters in the substring.</param>

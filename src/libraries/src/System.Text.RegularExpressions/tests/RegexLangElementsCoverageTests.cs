@@ -413,7 +413,7 @@ public class RegexLangElementsCoverageTests
        new RegexTestCase(@"([a-d]|[e-i]|[^e]|wxyz])+", "\tonce\n upon\0 a- ()*&^%#time?", new string[] {"\tonce\n upon\0 a- ()*&^%#time?", "?"}),
 
         /*********************************************************
-        canonical and noncanonical char class, where one group is in it's
+        canonical and non-canonical char class, where one group is in it's
         simplest form [a-e] and another is more complex .
         *********************************************************/
        new RegexTestCase(@"^(([^b]+ )|(.* ))$", "aaa ", new string[] {"aaa ", "aaa ", "aaa ", ""}),
@@ -451,7 +451,7 @@ public class RegexLangElementsCoverageTests
 
 
         /*********************************************************
-Use special unicode characters
+        Use special Unicode characters
         *********************************************************/
         /*        new RegexTest(@"AE", "\u00C4", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),
                 new RegexTest(@"oe", "\u00F6", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),

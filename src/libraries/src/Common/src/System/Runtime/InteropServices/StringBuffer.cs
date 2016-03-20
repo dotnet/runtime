@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices
         /// This is where the usable data ends.
         /// </summary>
         /// <exception cref="OutOfMemoryException">Thrown if unable to allocate memory when setting.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if the set size in bytes is uint.MaxValue (as space is implicitly reservced for the trailing null).</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the set size in bytes is uint.MaxValue (as space is implicitly reserved for the trailing null).</exception>
         public unsafe uint Length
         {
             get { return _length; }

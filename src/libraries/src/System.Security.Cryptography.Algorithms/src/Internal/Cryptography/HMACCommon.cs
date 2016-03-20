@@ -64,7 +64,7 @@ namespace Internal.Cryptography
         // hash algorithm's block size. (See RFC 2104, section 2)
         public byte[] ActualKey { get; private set; }
 
-        // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
+        // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
         public void AppendHashData(byte[] data, int offset, int count)
         {
             _hMacProvider.AppendHashData(data, offset, count);

@@ -110,7 +110,7 @@ internal static partial class Interop
         /// 
         /// To begin the enumeration, set pCertContext to null. Each iteration replaces pCertContext with
         /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle 
-        /// and returns "false" to indicate the the end of the store has been reached.
+        /// and returns "false" to indicate the end of the store has been reached.
         /// </summary>
         public static bool CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, ref SafeCertContextHandle pCertContext)
         {
@@ -232,7 +232,7 @@ internal static partial class Interop
         /// 
         /// To begin the enumeration, set pCertContext to null. Each iteration replaces pCertContext with
         /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle 
-        /// and returns "false" to indicate the the end of the store has been reached.
+        /// and returns "false" to indicate the end of the store has been reached.
         /// </summary>
         public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, CertFindType dwFindType, void* pvFindPara, ref SafeCertContextHandle pCertContext)
         {

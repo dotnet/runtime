@@ -24,7 +24,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(resourceSource));
             }
 
-            // Portable libraries resources are indexed under the the type full name 
+            // Portable libraries resources are indexed under the type full name 
             _resourcesSubtree = resourceSource.FullName;
             _resourceMap = GetResourceMap(_resourcesSubtree);
         }

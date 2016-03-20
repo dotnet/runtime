@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// 
         ///     Some cultures, specifically using the Um-AlQura calendar cannot convert dates far into
         ///     the future into strings.  If the expiration date of an X.509 certificate is beyond the range
-        ///     of one of these these cases, we need to fall back to a calendar which can express the dates
+        ///     of one of these cases, we need to fall back to a calendar which can express the dates
         /// </summary>
         internal static string FormatDate(DateTime date)
         {

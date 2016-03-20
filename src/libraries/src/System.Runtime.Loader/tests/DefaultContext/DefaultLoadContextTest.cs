@@ -62,7 +62,7 @@ namespace System.Runtime.Loader.Tests
             // We should have successfully loaded the assembly in default context.
             Assert.NotNull(assemblyExpected);
 
-            // And make sure the simplename matches
+            // And make sure the simple name matches
             Assert.Equal(assemblyExpected.GetName().Name, assemblyName);
 
             // Unwire the Resolving event.

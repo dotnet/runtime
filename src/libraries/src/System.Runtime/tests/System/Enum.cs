@@ -111,7 +111,7 @@ public static class EnumTests
     [InlineData(unchecked((int)(0xffffff80u)), "Min")]
     [InlineData(true, "One")]
     [InlineData((char)1, "One")]
-    [InlineData(SimpleEnum.Red, "One")] // API doesnt't care if you pass in a completely different enum
+    [InlineData(SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
     public static void TestGetNameNonIntegralTypes(object value, string expected)
     {
         /*

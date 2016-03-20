@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 
         private class Invalid : AsymmetricAlgorithm
         {
-            // Valid algorithsm must override LegalKeySizes
+            // Valid algorithms must override LegalKeySizes
         }
 
         private class Trivial : AsymmetricAlgorithm
