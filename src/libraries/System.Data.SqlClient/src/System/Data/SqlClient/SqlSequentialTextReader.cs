@@ -121,7 +121,7 @@ namespace System.Data.SqlClient
                 _peekedChar = -1;
             }
 
-            // If we need more data and there is data avaiable, read
+            // If we need more data and there is data available, read
             charsRead += InternalRead(buffer, index + charsRead, charsNeeded);
 
             return charsRead;
@@ -442,7 +442,7 @@ namespace System.Data.SqlClient
         }
 
         /// <summary>
-        /// Checks the the parameters passed into a Read() method are valid
+        /// Checks the parameters passed into a Read() method are valid
         /// </summary>
         /// <param name="buffer"></param>
         /// <param name="index"></param>

@@ -20,7 +20,7 @@ namespace Microsoft.SqlServer.Server
 
 
         private static bool[,] s_isSetterAccessValid = {
-            // Setters as columns (abreviated from XetterTypeCode names)
+            // Setters as columns (abbreviated from XetterTypeCode names)
             // SqlDbTypes as rows
             //      Current difference between setters and getters is that character setters do
             //      not need to support SetBytes

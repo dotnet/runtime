@@ -107,10 +107,10 @@ namespace System.Data.SqlClient
         // Connection Resiliency
         private bool _sessionRecoveryRequested;
         internal bool _sessionRecoveryAcknowledged;
-        internal SessionData _currentSessionData; // internal for use from TdsParser only, otehr should use CurrentSessionData property that will fix database and language
+        internal SessionData _currentSessionData; // internal for use from TdsParser only, other should use CurrentSessionData property that will fix database and language
         private SessionData _recoverySessionData;
 
-        // The erros in the transient error set are contained in
+        // The errors in the transient error set are contained in
         // https://azure.microsoft.com/en-us/documentation/articles/sql-database-develop-error-messages/#transient-faults-connection-loss-and-other-temporary-errors
         private static readonly HashSet<int> s_transientErrors = new HashSet<int>
         {
@@ -179,7 +179,7 @@ namespace System.Data.SqlClient
         // 2. _parserLock will also be taken during close (to prevent closing in the middle of a write)
         // 3. Whenever you have the _parserLock and are calling a method that would cause the connection to close if it failed (with the exception of any writing method), you MUST set ThreadHasParserLockForClose to true
         //      * This is to prevent the connection deadlocking with itself (since you already have the _parserLock, and Closing the connection will attempt to re-take that lock)
-        //      * It is safe to set ThreadHasParserLockForClose to true when writing as well, but it is unneccesary
+        //      * It is safe to set ThreadHasParserLockForClose to true when writing as well, but it is unnecessary
         //      * If you have a method that takes _parserLock, it is a good idea check ThreadHasParserLockForClose first (if you don't expect _parserLock to be taken by something higher on the stack, then you should at least assert that it is false)
         // 4. ThreadHasParserLockForClose is thread-specific - this means that you must set it to false before returning a Task, and set it back to true in the continuation
         // 5. ThreadHasParserLockForClose should only be modified if you currently own the _parserLock
@@ -266,7 +266,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            // Necessary but not sufficient condition for thread to have lock (since sempahore may be obtained by any thread)            
+            // Necessary but not sufficient condition for thread to have lock (since semaphore may be obtained by any thread)            
             internal bool ThreadMayHaveLock()
             {
                 return Monitor.IsEntered(_semaphore) || _semaphore.CurrentCount == 0;
@@ -294,7 +294,7 @@ namespace System.Data.SqlClient
         private string _routingDestination = null;
         
 
-        // although the new password is generally not used it must be passed to the c'tor
+        // although the new password is generally not used it must be passed to the ctor
         // the new Login7 packet will always write out the new password (or a length of zero and no bytes if not present)
         //
         internal SqlInternalConnectionTds(
@@ -348,7 +348,7 @@ namespace System.Data.SqlClient
             {
                 var timeout = TimeoutTimer.StartSecondsTimeout(connectionOptions.ConnectTimeout);
 
-                // If transient fault handling is enabled then we can retry the login upto the ConnectRetryCount.
+                // If transient fault handling is enabled then we can retry the login up to the ConnectRetryCount.
                 int connectionEstablishCount = applyTransientFaultHandling ? connectionOptions.ConnectRetryCount + 1 : 1;
                 int transientRetryIntervalInMilliSeconds = connectionOptions.ConnectRetryInterval * 1000; // Max value of transientRetryInterval is 60*1000 ms. The max value allowed for ConnectRetryInterval is 60
                 for (int i = 0; i < connectionEstablishCount; i++)
@@ -1026,8 +1026,8 @@ namespace System.Data.SqlClient
         {
             return (TdsEnums.LOGON_FAILED == exc.Number) // actual logon failed, i.e. bad password
                 || (TdsEnums.PASSWORD_EXPIRED == exc.Number) // actual logon failed, i.e. password isExpired
-                || (TdsEnums.IMPERSONATION_FAILED == exc.Number)  // Insuficient privelege for named pipe, among others
-                || exc._doNotReconnect; // Exception explicitly supressed reconnection attempts
+                || (TdsEnums.IMPERSONATION_FAILED == exc.Number)  // Insufficient privilege for named pipe, among others
+                || exc._doNotReconnect; // Exception explicitly suppressed reconnection attempts
         }
 
         // Attempt to login to a host that does not have a failover partner
@@ -1451,7 +1451,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        // called by SqlConnection.RepairConnection which is a relatevly expensive way of repair inner connection
+        // called by SqlConnection.RepairConnection which is a relatively expensive way of repair inner connection
         // prior to execution of request, used from EnlistTransaction, EnlistDistributedTransaction and ChangeDatabase
         internal bool GetSessionAndReconnectIfNeeded(SqlConnection parent, int timeout = 0)
         {
@@ -1518,7 +1518,7 @@ namespace System.Data.SqlClient
             switch (rec.type)
             {
                 case TdsEnums.ENV_DATABASE:
-                    // If connection is not open and recovery is not in progresss, store the server value as the original.
+                    // If connection is not open and recovery is not in progress, store the server value as the original.
                     if (!_fConnectionOpen && _recoverySessionData == null)
                     {
                         _originalDatabase = rec.newValue;
@@ -1528,7 +1528,7 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_LANG:
-                    // If connection is not open and recovery is not in progresss, store the server value as the original.
+                    // If connection is not open and recovery is not in progress, store the server value as the original.
                     if (!_fConnectionOpen && _recoverySessionData == null)
                     {
                         _originalLanguage = rec.newValue;

@@ -18,8 +18,8 @@ namespace Microsoft.SqlServer.Server
         //  All setters are valid for SqlDbType.Variant
 
         // SetVariantMetaData is used to set the precise type of data just before pushing 
-        //  data into a variant type via one one of the other setters. It 
-        //  is only valid to set metadata with a SqlDbType that associated with with the 
+        //  data into a variant type via one of the other setters. It 
+        //  is only valid to set metadata with a SqlDbType that associated with the 
         //  data setter that will be called.
         //  Since LOBs, Udt's and fixed-length types are not currently stored in a variant, 
         //  the following pairs are the only setters/sqldbtypes that need this call:

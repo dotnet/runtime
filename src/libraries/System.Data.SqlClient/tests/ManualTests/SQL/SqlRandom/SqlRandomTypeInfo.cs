@@ -59,7 +59,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// creates a column with random size/precision/scale values, where applicable.
         /// </summary>
-        /// <remarks>this method is overriden for some types to create columns with random size/precision</remarks>
+        /// <remarks>this method is overridden for some types to create columns with random size/precision</remarks>
         public virtual SqlRandomTableColumn CreateRandomColumn(SqlRandomizer rand, SqlRandomColumnOptions options)
         {
             return CreateDefaultColumn(options);
@@ -119,7 +119,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         protected abstract string GetTSqlTypeDefinitionInternal(SqlRandomTableColumn columnInfo);
 
         /// <summary>
-        /// creates random, but valud value for the type, based on the given column definition
+        /// creates random, but valued value for the type, based on the given column definition
         /// </summary>
         public object CreateRandomValue(SqlRandomizer rand, SqlRandomTableColumn columnInfo)
         {
@@ -195,7 +195,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// helper method to compare two byte arrays
         /// </summary>
-        /// <remarks>I considered use of Generics here, but switched to explicit typed version due to performace overhead.
+        /// <remarks>I considered use of Generics here, but switched to explicit typed version due to performance overhead.
         /// When using generic version, there is no way to quickly compare two values (expected[i] == actual[i]), and using
         /// Equals method performs boxing, increasing the time spent on this method.</remarks>
         private bool CompareByteArray(byte[] expected, byte[] actual, bool allowIncomplete = false, byte paddingValue = 0)
@@ -234,7 +234,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// helper method to compare two char arrays
         /// </summary>
-        /// <remarks>I considered use of Generics here, but switched to explicit typed version due to performace overhead.
+        /// <remarks>I considered use of Generics here, but switched to explicit typed version due to performance overhead.
         /// When using generic version, there is no way to quickly compare two values (expected[i] == actual[i]), and using
         /// Equals method performs boxing, increasing the time spent on this method.</remarks>
         private bool CompareCharArray(char[] expected, char[] actual, bool allowIncomplete = false, char paddingValue = ' ')

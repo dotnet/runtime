@@ -2321,7 +2321,7 @@ namespace System.Data.SqlClient
                     }
                     else
                     {
-                        // Legitmate InvalidCast, rethrow
+                        // Legitimate InvalidCast, rethrow
                         throw;
                     }
                 }
@@ -2358,7 +2358,7 @@ namespace System.Data.SqlClient
 
                 for (int i = 0; i < copyLen; i++)
                 {
-                    // Get the usable, TypeSystem-compatible value from the iternal buffer
+                    // Get the usable, TypeSystem-compatible value from the internal buffer
                     values[_metaData.indexMap[i]] = GetValueFromSqlBufferInternal(_data[i], _metaData[i]);
 
                     // If this is sequential access, then we need to wipe the internal buffer
@@ -3176,7 +3176,7 @@ namespace System.Data.SqlClient
                     var metaType = _metaData[currentColumn].metaType;
                     if ((metaType.IsLong) || (metaType.IsPlp) || (metaType.SqlDbType == SqlDbType.Udt) || (metaType.SqlDbType == SqlDbType.Structured))
                     {
-                        // Plp, Udt and TVP types have an unknownable size - so return that the estimate failed
+                        // Plp, Udt and TVP types have an unknowable size - so return that the estimate failed
                         return false;
                     }
                     int maxHeaderSize;
@@ -3713,7 +3713,7 @@ namespace System.Data.SqlClient
 
                     if (TryReadColumnHeader(i))
                     {
-                        // Only once we have read upto where we need to be can we check the cancellation tokens (otherwise we will be in an unknown state)
+                        // Only once we have read up to where we need to be can we check the cancellation tokens (otherwise we will be in an unknown state)
 
                         if (cancellationToken.IsCancellationRequested)
                         {
@@ -3727,7 +3727,7 @@ namespace System.Data.SqlClient
                         }
                         else
                         {
-                            // Upto the correct column - continue to read
+                            // Up to the correct column - continue to read
                             SwitchToAsyncWithoutSnapshot();
                             int totalBytesRead;
                             var readTask = GetBytesAsyncReadDataStage(i, buffer, index, length, timeout, true, cancellationToken, timeoutToken, out totalBytesRead);

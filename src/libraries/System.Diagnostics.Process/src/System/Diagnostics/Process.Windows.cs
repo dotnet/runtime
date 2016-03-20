@@ -180,7 +180,7 @@ namespace System.Diagnostics
                     // the exit code out after calling ReadToEnd() or standard output or standard error. In order
                     // to allow 259 to function as a valid exit code and to break as few people as possible that
                     // took the ReadToEnd dependency, we check for an exit code before doing the more correct
-                    // check to see if we have been signalled.
+                    // check to see if we have been signaled.
                     if (Interop.mincore.GetExitCodeProcess(handle, out localExitCode) && localExitCode != Interop.mincore.HandleOptions.STILL_ACTIVE)
                     {
                         _exitCode = localExitCode;
@@ -600,7 +600,7 @@ namespace System.Diagnostics
                             retVal = Interop.mincore.CreateProcess(
                                     null,                // we don't need this since all the info is in commandLine
                                     commandLine,         // pointer to the command line string
-                                    ref unused_SecAttrs, // address to process security attributes, we don't need to inheriat the handle
+                                    ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
                                     ref unused_SecAttrs, // address to thread security attributes.
                                     true,                // handle inheritance flag
                                     creationFlags,       // creation flags

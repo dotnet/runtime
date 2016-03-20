@@ -38,7 +38,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             connectionFail.OpenAsync().ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnFaulted).Wait();
             connectionFail.OpenAsync(source.Token).ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnFaulted).Wait();
 
-            // Verify base implementation does not call Open when passed an already cancelled cancelation token
+            // Verify base implementation does not call Open when passed an already cancelled cancellation token
             source.Cancel();
             DataTestClass.AssertEqualsWithDescription(ConnectionState.Closed, connection.State, "Connection state should have been marked as Closed");
             connection.OpenAsync(source.Token).ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnCanceled).Wait();
@@ -97,7 +97,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             commandFail.ExecuteScalarAsync().ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnFaulted).Wait();
             commandFail.ExecuteScalarAsync(source.Token).ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnFaulted).Wait();
 
-            // Verify base implementation does not call Open when passed an already cancelled cancelation token
+            // Verify base implementation does not call Open when passed an already cancelled cancellation token
             source.Cancel();
             command.LastCommand = "Nothing";
             command.ExecuteNonQueryAsync(source.Token).ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnCanceled).Wait();
@@ -109,7 +109,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             command.ExecuteScalarAsync(source.Token).ContinueWith((t) => { }, TaskContinuationOptions.OnlyOnCanceled).Wait();
             DataTestClass.AssertEqualsWithDescription("Nothing", command.LastCommand, "Expected last command to be 'Nothing'");
 
-            // Verify cancelation
+            // Verify cancellation
             command.WaitForCancel = true;
             source = new CancellationTokenSource();
             Task.Factory.StartNew(() => { command.WaitForWaitingForCancel(); source.Cancel(); });

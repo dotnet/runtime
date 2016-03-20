@@ -39,7 +39,7 @@ namespace System.Data.SqlClient
         public const string VIA = "via";
         public const string LPC = "lpc";
 
-        // network function string contants
+        // network function string constants
         public const string INIT_SSPI_PACKAGE = "InitSSPIPackage";
         public const string INIT_SESSION = "InitSession";
         public const string CONNECTION_GET_SVR_USER = "ConnectionGetSvrUser";
@@ -214,7 +214,7 @@ namespace System.Data.SqlClient
 
         //    Loginrec defines
         public const byte MAX_LOG_NAME = 30;              // TDS 4.2 login rec max name length
-        public const byte MAX_PROG_NAME = 10;              // max length of loginrec progran name
+        public const byte MAX_PROG_NAME = 10;              // max length of loginrec program name
         public const byte SEC_COMP_LEN = 8;               // length of security compartments
         public const byte MAX_PK_LEN = 6;               // max length of TDS packet size
         public const byte MAX_NIC_SIZE = 6;               // The size of a MAC or client address
@@ -227,15 +227,15 @@ namespace System.Data.SqlClient
         public const int COLLATION_INFO_LEN = 4;
 
         /*
-                public const byte INT4_LSB_HI   = 0;     // lsb is low byte (eg 68000)
-                //    public const byte INT4_LSB_LO   = 1;     // lsb is low byte (eg VAX)
-                public const byte INT2_LSB_HI   = 2;     // lsb is low byte (eg 68000)
-                //    public const byte INT2_LSB_LO   = 3;     // lsb is low byte (eg VAX)
-                public const byte FLT_IEEE_HI   = 4;     // lsb is low byte (eg 68000)
+                public const byte INT4_LSB_HI   = 0;     // lsb is low byte (e.g. 68000)
+                //    public const byte INT4_LSB_LO   = 1;     // lsb is low byte (e.g. VAX)
+                public const byte INT2_LSB_HI   = 2;     // lsb is low byte (e.g. 68000)
+                //    public const byte INT2_LSB_LO   = 3;     // lsb is low byte (e.g. VAX)
+                public const byte FLT_IEEE_HI   = 4;     // lsb is low byte (e.g. 68000)
                 public const byte CHAR_ASCII    = 6;     // ASCII character set
-                public const byte TWO_I4_LSB_HI = 8;     // lsb is low byte (eg 68000
-                //    public const byte TWO_I4_LSB_LO = 9;     // lsb is low byte (eg VAX)
-                //    public const byte FLT_IEEE_LO   = 10;    // lsb is low byte (eg MSDOS)
+                public const byte TWO_I4_LSB_HI = 8;     // lsb is low byte (e.g. 68000
+                //    public const byte TWO_I4_LSB_LO = 9;     // lsb is low byte (e.g. VAX)
+                //    public const byte FLT_IEEE_LO   = 10;    // lsb is low byte (e.g. MSDOS)
                 public const byte FLT4_IEEE_HI  = 12;    // IEEE 4-byte floating point -lsb is high byte
                 //    public const byte FLT4_IEEE_LO  = 13;    // IEEE 4-byte floating point -lsb is low byte
                 public const byte TWO_I2_LSB_HI = 16;    // lsb is high byte

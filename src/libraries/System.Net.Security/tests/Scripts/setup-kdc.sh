@@ -255,7 +255,7 @@ case ${OS} in
              echo "Installing krb5-server.."
              zypper --non-interactive install krb5-server krb5-client krb5-devel
              if [ $? -ne 0 ]; then
-                 echo "Error occured during installation, aborting"
+                 echo "Error occurred during installation, aborting"
                  exit 1
              fi
          else

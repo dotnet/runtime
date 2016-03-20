@@ -534,7 +534,7 @@ namespace System.Net.Security
         // When re-handshaking the "old" key decrypted data are queued until the handshake is done.
         // When stream calls for decryption we will feed it queued data left from "old" encryption key.
         //
-        // Must be called under the lock in case concurent handshake is going.
+        // Must be called under the lock in case concurrent handshake is going.
         //
         internal int CheckOldKeyDecryptedData(byte[] buffer, int offset, int count)
         {
@@ -624,12 +624,12 @@ namespace System.Net.Security
         {
             lock (this)
             {
-                // Note we are already inside the read, so checking for already going concurent handshake.
+                // Note we are already inside the read, so checking for already going concurrent handshake.
                 _lockReadState = LockHandshake;
 
                 if (_pendingReHandshake)
                 {
-                    // A concurent handshake is pending, resume.
+                    // A concurrent handshake is pending, resume.
                     FinishRead(buffer);
                     return;
                 }
@@ -1228,7 +1228,7 @@ namespace System.Net.Security
 
             if (lockState != LockHandshake)
             {
-                // Proceed, no concurent handshake is ongoing so no need for a lock.
+                // Proceed, no concurrent handshake is ongoing so no need for a lock.
                 return CheckOldKeyDecryptedData(buffer, offset, count);
             }
 
