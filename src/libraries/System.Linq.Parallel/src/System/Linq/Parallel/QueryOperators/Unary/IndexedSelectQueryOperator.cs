@@ -183,8 +183,8 @@ namespace System.Linq.Parallel
         }
 
         //-----------------------------------------------------------------------------------
-        // Query results for an indexed Select operator. The results are indexible if the child
-        // results were indexible.
+        // Query results for an indexed Select operator. The results are indexable if the child
+        // results were indexable.
         //
 
         class IndexedSelectQueryOperatorResults : UnaryQueryOperatorResults

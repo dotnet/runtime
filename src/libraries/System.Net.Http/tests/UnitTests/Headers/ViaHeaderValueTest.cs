@@ -206,7 +206,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetViaLength_DifferentInvalidScenarios_AllReturnZero()
         {
-            CheckInvalidGetViaLength(" 1.1 host", 0); // no leading whitespaces allowed
+            CheckInvalidGetViaLength(" 1.1 host", 0); // no leading whitespace allowed
             CheckInvalidGetViaLength("1=host", 0);
             CheckInvalidGetViaLength("1.1 host (invalid_comment", 0);
             CheckInvalidGetViaLength("=", 0);

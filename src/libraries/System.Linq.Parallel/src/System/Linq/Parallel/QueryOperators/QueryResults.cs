@@ -41,7 +41,7 @@ namespace System.Linq.Parallel
         internal abstract void GivePartitionedStream(IPartitionedStreamRecipient<T> recipient);
 
         //-----------------------------------------------------------------------------------
-        // Returns whether the query results are indexible. If this property is true, the
+        // Returns whether the query results are indexable. If this property is true, the
         // user can call GetElement(index) and ElementsCount. If it is false, both
         // GetElement(index) and ElementsCount should throw InvalidOperationException.
         //
@@ -61,7 +61,7 @@ namespace System.Linq.Parallel
 
         internal virtual T GetElement(int index)
         {
-            Debug.Fail("GetElement property is not supported by non-indexible query results");
+            Debug.Fail("GetElement property is not supported by non-indexable query results");
             throw new NotSupportedException();
         }
 
@@ -76,7 +76,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                Debug.Fail("ElementsCount property is not supported by non-indexible query results");
+                Debug.Fail("ElementsCount property is not supported by non-indexable query results");
                 throw new NotSupportedException();
             }
         }

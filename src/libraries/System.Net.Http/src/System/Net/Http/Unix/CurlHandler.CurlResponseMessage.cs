@@ -303,7 +303,7 @@ namespace System.Net.Http
                     if (cancellationToken.CanBeCanceled)
                     {
                         // If the cancellation token is cancelable, then we need to register for cancellation.
-                        // We creat a special CancelableReadState that carries with it additional info:
+                        // We create a special CancelableReadState that carries with it additional info:
                         // the cancellation token and the registration with that token.  When cancellation
                         // is requested, we schedule a work item that tries to remove the read state
                         // from being pending, canceling it in the process.  This needs to happen under the

@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 // methods. Internal methods are needed in order to map cookie response headers from the WinRT Windows.Web.Http APIs.
 // Windows.Web.Http is used underneath the System.Net.Http classes on .NET Native. Having other similarly
 // named classes would normally conflict with the public System.Net namespace classes that are also in the 
-// System.Private.Networking dll. So, we need to move the classes to a different namespace. Thoses classes are never
+// System.Private.Networking dll. So, we need to move the classes to a different namespace. Those classes are never
 // exposed up to user code so there isn't a problem.  In the future, we might expose some of the internal methods
 // as new public APIs and then we can remove this duplicate source code inclusion in the binaries.
 #if NETNative_SystemNetHttp

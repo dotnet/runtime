@@ -170,7 +170,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetWarningLength_DifferentInvalidScenarios_AllReturnZero()
         {
-            CheckInvalidWarningViaLength(" 123 host", 0); // no leading whitespaces allowed
+            CheckInvalidWarningViaLength(" 123 host", 0); // no leading whitespace allowed
 
             // No delimiter between two values
             CheckInvalidWarningViaLength("123host \"t\"", 0);

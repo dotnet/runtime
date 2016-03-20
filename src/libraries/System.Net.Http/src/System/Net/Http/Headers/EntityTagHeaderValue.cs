@@ -134,7 +134,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Caller must remove leading whitespaces. If not, we'll return 0.
+            // Caller must remove leading whitespace. If not, we'll return 0.
             bool isWeak = false;
             int current = startIndex;
 
@@ -171,7 +171,7 @@ namespace System.Net.Http.Headers
                 parsedValue = new EntityTagHeaderValue();
                 if (tagLength == input.Length)
                 {
-                    // Most of the time we'll have strong ETags without leading/trailing whitespaces.
+                    // Most of the time we'll have strong ETags without leading/trailing whitespace.
                     Debug.Assert(startIndex == 0);
                     Debug.Assert(!isWeak);
                     parsedValue._tag = input;

@@ -135,7 +135,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetProductLength_DifferentInvalidScenarios_AllReturnZero()
         {
-            CheckInvalidGetProductLength(" custom", 0); // no leading whitespaces allowed
+            CheckInvalidGetProductLength(" custom", 0); // no leading whitespace allowed
             CheckInvalidGetProductLength("custom/", 0);
             CheckInvalidGetProductLength("custom/[", 0);
             CheckInvalidGetProductLength("=", 0);

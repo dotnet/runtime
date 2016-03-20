@@ -471,7 +471,7 @@ namespace System.Net.Http
                     bool isCancellationRequested = cancellationTokenSource.Token.IsCancellationRequested;
 
                     // contentTask.Exception is always != null if IsFaulted is true. However, we need to access the
-                    // Exception property, otherwise the Task considers the excpetion as "unhandled" and will throw in
+                    // Exception property, otherwise the Task considers the exception as "unhandled" and will throw in
                     // its finalizer.
                     if (contentTask.IsFaulted)
                     {

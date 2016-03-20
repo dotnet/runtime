@@ -465,7 +465,7 @@ namespace System.Net.Http
                                     // processing. So, it would always be storing all cookies in its internal container.
                                     // Putting HttpOnly cookies in the .NET CookieContainer would cause problems later
                                     // when the .NET layer tried to add them on outgoing requests and conflicted with
-                                    // the WinRT nternal cookie processing.
+                                    // the WinRT internal cookie processing.
                                     //
                                     // With support for WinRT CookieUsageBehavior, cookie processing is turned off
                                     // within the WinRT layer. This allows us to process cookies using only the .NET

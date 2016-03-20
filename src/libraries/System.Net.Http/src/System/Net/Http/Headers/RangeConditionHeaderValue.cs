@@ -124,7 +124,7 @@ namespace System.Net.Http.Headers
 
             int current = startIndex;
 
-            // Caller must remove leading whitespaces.
+            // Caller must remove leading whitespace.
             DateTimeOffset date = DateTimeOffset.MinValue;
             EntityTagHeaderValue entityTag = null;
 
@@ -135,7 +135,7 @@ namespace System.Net.Http.Headers
 
             if ((firstChar == '\"') || (((firstChar == 'w') || (firstChar == 'W')) && (secondChar == '/')))
             {
-                // trailing whitespaces are removed by GetEntityTagLength()
+                // trailing whitespace is removed by GetEntityTagLength()
                 int entityTagLength = EntityTagHeaderValue.GetEntityTagLength(input, current, out entityTag);
 
                 if (entityTagLength == 0)
@@ -159,7 +159,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                // If we got a valid date, then the parser consumed the whole string (incl. trailing whitespaces).
+                // If we got a valid date, then the parser consumed the whole string (incl. trailing whitespace).
                 current = input.Length;
             }
 

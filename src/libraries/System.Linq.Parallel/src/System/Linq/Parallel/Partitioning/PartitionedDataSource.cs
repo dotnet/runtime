@@ -53,7 +53,7 @@ namespace System.Linq.Parallel
             : base(
                 partitionCount,
                 Util.GetDefaultComparer<int>(),
-                source is IList<T> ? OrdinalIndexState.Indexible : OrdinalIndexState.Correct)
+                source is IList<T> ? OrdinalIndexState.Indexable : OrdinalIndexState.Correct)
         {
             InitializePartitions(source, partitionCount, useStriping);
         }

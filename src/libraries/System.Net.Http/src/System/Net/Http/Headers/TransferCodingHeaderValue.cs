@@ -89,7 +89,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // Caller must remove leading whitespaces. If not, we'll return 0.
+            // Caller must remove leading whitespace. If not, we'll return 0.
             int valueLength = HttpRuleParser.GetTokenLength(input, startIndex);
 
             if (valueLength == 0)

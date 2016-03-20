@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
         }
 
         // /proc/net/route contains some information about gateway addresses,
-        // and seperates the information about by each interface.
+        // and separates the information about by each interface.
         public GatewayIPAddressInformationCollection GetGatewayAddresses()
         {
             List<GatewayIPAddressInformation> innerCollection

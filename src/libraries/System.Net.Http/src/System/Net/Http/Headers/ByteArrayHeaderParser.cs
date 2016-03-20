@@ -8,7 +8,7 @@ using System.Diagnostics.Contracts;
 namespace System.Net.Http.Headers
 {
     // Don't derive from BaseHeaderParser since parsing the Base64 string is delegated to Convert.FromBase64String() 
-    // which will remove leading, trailing, and whitespaces in the middle of the string.
+    // which will remove leading, trailing, and whitespace in the middle of the string.
     internal class ByteArrayHeaderParser : HttpHeaderParser
     {
         internal static readonly ByteArrayHeaderParser Parser = new ByteArrayHeaderParser();

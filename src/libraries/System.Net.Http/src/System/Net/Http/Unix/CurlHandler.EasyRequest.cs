@@ -125,7 +125,7 @@ namespace System.Net.Http
                 // Now ensure it's published.
                 bool result = TrySetResult(_responseMessage);
                 Debug.Assert(result || Task.Status == TaskStatus.RanToCompletion,
-                    "If the task was already completed, it should have been completed succesfully; " +
+                    "If the task was already completed, it should have been completed successfully; " +
                     "we shouldn't be completing as successful after already completing as failed.");
             }
 
