@@ -35,7 +35,7 @@ namespace System.IO.Pipes.Tests
                 var ctx = new CancellationTokenSource();
                 Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
                 await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
-                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token)); // testing Token overload; ctx is not cancelled in this test
+                await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token)); // testing Token overload; ctx is not canceled in this test
             }
         }
 

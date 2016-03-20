@@ -1038,7 +1038,7 @@ namespace System.Xml
             byte* s_CharData = (byte*)GCHandle.Alloc(s_xmlCharTypeData, GCHandleType.Pinned).AddrOfPinnedObject();
 
             // we never free this memory. we avoid allocate this memory in the managed heap and pinning it to reduce 
-            // the presure on the GC
+            // the pressure on the GC
             for (int i = 0; i < 256; i++)
             {
                 s_PageIndexes[i] = (IntPtr)(s_CharData + s_Indexes[i]);

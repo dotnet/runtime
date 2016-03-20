@@ -451,7 +451,7 @@ namespace System.IO
 
             if (_charBytes == null)
             {
-                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need atmost 2 bytes/char here? 
+                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
             }
             if (_singleChar == null)
             {

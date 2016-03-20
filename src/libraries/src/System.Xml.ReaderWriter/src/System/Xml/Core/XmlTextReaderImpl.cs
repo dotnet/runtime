@@ -112,7 +112,7 @@ namespace System.Xml
 
         #region Later Init Fileds
 
-        //later init means in the construction stage, do not opend filestream and do not read any data from Stream/TextReader
+        //later init means in the construction stage, do not open filestream and do not read any data from Stream/TextReader
         //the purpose is to make the Create of XmlReader do not block on IO.
         private class LaterInitParam
         {
@@ -253,7 +253,7 @@ namespace System.Xml
 
         // Outer XmlReader exposed to the user - either XmlTextReader or XmlTextReaderImpl (when created via XmlReader.Create).
         // Virtual methods called from within XmlTextReaderImpl must be called on the outer reader so in case the user overrides
-        // some of the XmlTextReader methods we will call the overriden version.
+        // some of the XmlTextReader methods we will call the overridden version.
         private XmlReader _outerReader;
 
 
@@ -4232,7 +4232,7 @@ namespace System.Xml
                         case '<':
                             Throw(pos, SR.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
                             break;
-                        // entity referece
+                        // entity reference
                         case '&':
                             if (pos - _ps.charPos > 0)
                             {
@@ -5351,7 +5351,7 @@ namespace System.Xml
                     pos++;
                 }
 
-                // posibbly end of comment or cdata section
+                // possibly end of comment or cdata section
                 if (chars[pos] == stopChar)
                 {
                     if (chars[pos + 1] == stopChar)
@@ -6890,7 +6890,7 @@ namespace System.Xml
             _ps.entity = entity;
             _ps.entityId = _nextEntityId++;
 
-            // register entity for recursion checkes
+            // register entity for recursion checks
             if (entity != null)
             {
                 if (_currentEntities == null)
@@ -7521,7 +7521,7 @@ namespace System.Xml
 
         /// <summary>
         /// This method should be called every time the reader is about to consume some number of
-        ///   characters from the input. It will count it agains the security counters and
+        ///   characters from the input. It will count it against the security counters and
         ///   may throw if some of the security limits are exceeded.
         /// </summary>
         /// <param name="characters">Number of characters to be consumed.</param>

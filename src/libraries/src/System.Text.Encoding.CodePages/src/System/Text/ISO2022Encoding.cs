@@ -17,7 +17,7 @@
 // IsAlwaysNormalized ???
 // Regarding Normalization for ISO-2022-JP (50220, 50221, 50222), its the same rules as EUCJP
 //  Forms KC & KD are precluded because of things like halfwidth Katakana that has compatibility mappings
-//  Form D is precluded because of 0x00a8, which changes to space + dierises.
+//  Form D is precluded because of 0x00a8, which changes to space + dieresis.
 // 
 // Note: I think that IsAlwaysNormalized should probably return true for form C for Japanese 20932 based CPs.
 //
@@ -27,7 +27,7 @@
 // IsAlwaysNormalized ???
 // Regarding Normalization for ISO-2022-CN (50227, 50229) & HZ-GB2312 (52936) I think is similar to the Japanese case.
 //  Forms KC & KD are precluded because of things like halfwidth Katakana that has compatibility mappings
-//  Form D is precluded because of 0x00a8, which changes to space + dierises.
+//  Form D is precluded because of 0x00a8, which changes to space + dieresis.
 //
 // Note: I think that IsAlwaysNormalized should probably return true for form C for Chinese 20936 based CPs.
 //
@@ -1041,7 +1041,7 @@ namespace System.Text
                     // MLang treated JIS 0208 '*' lead byte like a single halfwidth katakana
                     // escape, so use 0x8e00 as katakana lead byte and keep same trail byte.
                     // 0x2a lead byte range is normally unused in JIS 0208, so shouldn't have
-                    // any wierd compatibility issues.
+                    // any weird compatibility issues.
                     if ((b2Bytes == true) && ((iBytes & 0xff00) == 0x2a00))
                     {
                         iBytes = (ushort)(iBytes & 0xff);

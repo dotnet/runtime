@@ -109,7 +109,7 @@ namespace System.IO.Packaging
             //        underlying package by some other means, and the user wants to 
             //        access the updated part. This is currently not possible as the
             //        underlying zip i/o layer does not allow for FileShare.ReadWrite. 
-            //  2. Also, its not a straighforward task to determine if a new part was 
+            //  2. Also, its not a straightforward task to determine if a new part was 
             //     added as we need to look for atomic as well as interleaved parts and 
             //     this has to be done in a case sensitive manner. So, effectively
             //     we will have to go through the entire list of zip items to determine
@@ -292,7 +292,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="path">File path to the container.</param>
         /// <param name="packageFileMode">Container is opened in the specified mode if possible</param>
-        /// <param name="packageFileAccess">Container is opened with the speficied access if possible</param>
+        /// <param name="packageFileAccess">Container is opened with the specified access if possible</param>
         /// <param name="share">Container is opened with the specified share if possible</param>
 
         internal ZipPackage(string path, FileMode packageFileMode, FileAccess packageFileAccess, FileShare share)
@@ -556,7 +556,7 @@ namespace System.IO.Packaging
 
         /// <summary>
         /// ExtensionComparer
-        /// The Extensions are stored in the Default Dicitonary in their original form, 
+        /// The Extensions are stored in the Default Dictionary in their original form, 
         /// however they are compared in a normalized manner.
         /// Equivalence for extensions in the content type stream, should follow
         /// the same rules as extensions of partnames. Also, by the time this code is invoked, 
@@ -568,8 +568,8 @@ namespace System.IO.Packaging
         {
             bool IEqualityComparer<string>.Equals(string extensionA, string extensionB)
             {
-                Debug.Assert(extensionA != null, "extenstion should not be null");
-                Debug.Assert(extensionB != null, "extenstion should not be null");
+                Debug.Assert(extensionA != null, "extension should not be null");
+                Debug.Assert(extensionB != null, "extension should not be null");
 
                 //Important Note: any change to this should be made in accordance 
                 //with the rules for comparing/normalizing partnames. 
@@ -580,7 +580,7 @@ namespace System.IO.Packaging
 
             int IEqualityComparer<string>.GetHashCode(string extension)
             {
-                Debug.Assert(extension != null, "extenstion should not be null");
+                Debug.Assert(extension != null, "extension should not be null");
 
                 //Important Note: any change to this should be made in accordance 
                 //with the rules for comparing/normalizing partnames.

@@ -2936,13 +2936,13 @@ namespace System.Xml
         private string GetValueWithStrippedSpaces()
         {
             Debug.Assert(_curPos == 0 || _chars[_curPos - 1] == '"' || _chars[_curPos - 1] == '\'');
-            // We cannot StripSpaces directly in the buffer - we need the original value inthe buffer intact so that the internal subset value is correct
+            // We cannot StripSpaces directly in the buffer - we need the original value in the buffer intact so that the internal subset value is correct
             string val = (_stringBuilder.Length == 0) ? new string(_chars, _tokenStartPos, _curPos - _tokenStartPos - 1) : _stringBuilder.ToString();
             return StripSpaces(val);
         }
 
         //
-        // Parsing buffer maintainance methods
+        // Parsing buffer maintenance methods
         //
         private int ReadData()
         {

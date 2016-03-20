@@ -77,7 +77,7 @@ namespace System.IO
             // Close the directory handle.  This will cause the async operation to stop processing.
             // This operation doesn't need to be atomic because the API will deal with a closed
             // handle appropriately. If we get here while asynchronously waiting on a change notification, 
-            // closing the directory handle should cause ReadDirectoryChangesCallback be be called,
+            // closing the directory handle should cause ReadDirectoryChangesCallback be called,
             // cleaning up the operation.  Note that it's critical to also null out the handle.  If the
             // handle is currently in use in a P/Invoke, it will have its reference count temporarily
             // increased, such that the disposal operation won't take effect and close the handle

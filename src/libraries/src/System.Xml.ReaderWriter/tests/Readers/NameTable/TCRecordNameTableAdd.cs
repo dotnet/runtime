@@ -110,7 +110,7 @@ namespace System.Xml.Tests
 
             // for function Variation_17
             {
-                this.AddChild(new CVariation(Variation_17) { Attribute = new Variation("Add new string, get object using permutations of upper & lowecase, should be null") { Pri = 0 } });
+                this.AddChild(new CVariation(Variation_17) { Attribute = new Variation("Add new string, get object using permutations of upper & lowercase, should be null") { Pri = 0 } });
             }
 
 

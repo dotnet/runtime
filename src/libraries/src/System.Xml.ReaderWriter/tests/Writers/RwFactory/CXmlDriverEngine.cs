@@ -93,7 +93,7 @@ namespace System.Xml.Tests
             {
                 _parseError = null;
 
-                // get controll file
+                // get control file
                 string cmdSpecFile = null;
                 if (CModCmdLine.CmdLine.ContainsKey(CMD_SPEC_LTM_KEY))
                     cmdSpecFile = (string)CModCmdLine.CmdLine[CMD_SPEC_LTM_KEY];
@@ -418,7 +418,7 @@ namespace System.Xml.Tests
 
         private static XElement MergeSections(XElement parent, XElement child)
         {
-            // check inheritace rules
+            // check inheritance rules
             XAttribute attr = child.Attribute("Inheritance");
             string Inheritance = "";
             if (attr != null)

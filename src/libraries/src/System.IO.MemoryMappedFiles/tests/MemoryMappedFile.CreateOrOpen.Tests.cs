@@ -103,7 +103,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         /// <summary>
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
-        /// focusing on on accesses that don't involve execute permissions.
+        /// focusing on accesses that don't involve execute permissions.
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]
@@ -164,7 +164,7 @@ namespace System.IO.MemoryMappedFiles.Tests
 
         /// <summary>
         /// Test various combinations of arguments to CreateOrOpen, validating the created maps each time they're created,
-        /// focusing on on accesses that involve execute permissions.
+        /// focusing on accesses that involve execute permissions.
         /// </summary>
         [PlatformSpecific(PlatformID.Windows)]
         [Theory]

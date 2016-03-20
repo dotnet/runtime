@@ -234,7 +234,7 @@ namespace System.IO.Tests
                 Assert.Throws<ObjectDisposedException>(() => ums.CopyTo(destination));
             }
 
-            // copying to non-writeable stream should throw
+            // copying to non-writable stream should throw
             using (var manager = new UmsManager(FileAccess.Read, testData))
             {
                 UnmanagedMemoryStream ums = manager.Stream;
@@ -307,7 +307,7 @@ namespace System.IO.Tests
                 await Assert.ThrowsAsync<ObjectDisposedException>(() => ums.CopyToAsync(destination));
             }
 
-            // cpoying to non-writeable stream should throw
+            // copying to non-writable stream should throw
             using (var manager = new UmsManager(FileAccess.Read, testData))
             {
                 UnmanagedMemoryStream ums = manager.Stream;

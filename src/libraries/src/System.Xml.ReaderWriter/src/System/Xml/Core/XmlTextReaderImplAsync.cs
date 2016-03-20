@@ -2658,7 +2658,7 @@ namespace System.Xml
                         case '<':
                             Throw(pos, SR.Xml_BadAttributeChar, XmlException.BuildCharExceptionArgs('<', '\0'));
                             break;
-                        // entity referece
+                        // entity reference
                         case '&':
                             if (pos - _ps.charPos > 0)
                             {
@@ -4009,7 +4009,7 @@ namespace System.Xml
                     pos++;
                 }
 
-                // posibbly end of comment or cdata section
+                // possibly end of comment or cdata section
                 if (chars[pos] == stopChar)
                 {
                     if (chars[pos + 1] == stopChar)
