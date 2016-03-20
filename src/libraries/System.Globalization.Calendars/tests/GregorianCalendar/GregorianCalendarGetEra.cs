@@ -19,7 +19,7 @@ namespace System.Globalization.CalendarTests
         private const int c_CURRENT_ERA = 0;
 
         #region Positive tests
-        // PosTest1: the speicified time is in leap year, February
+        // PosTest1: the specified time is in leap year, February
         [Fact]
         public void PosTest1()
         {
@@ -35,7 +35,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest2: the speicified time is in leap year, any month other than February
+        // PosTest2: the specified time is in leap year, any month other than February
         [Fact]
         public void PosTest2()
         {
@@ -44,7 +44,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedEra, actualEra;
             year = GetALeapYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
@@ -55,7 +55,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest3: the speicified time is in common year, February
+        // PosTest3: the specified time is in common year, February
         [Fact]
         public void PosTest3()
         {
@@ -71,7 +71,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest4: the speicified time is in common year, any month other than February
+        // PosTest4: the specified time is in common year, any month other than February
         [Fact]
         public void PosTest4()
         {
@@ -80,7 +80,7 @@ namespace System.Globalization.CalendarTests
             DateTime time;
             int expectedEra, actualEra;
             year = GetACommonYear(myCalendar);
-            //Get a random value beween 1 and 12 not including 2.
+            //Get a random value between 1 and 12 not including 2.
             do
             {
                 month = _generator.GetInt32(-55) % 12 + 1;
@@ -91,7 +91,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest5: the speicified time is in minimum supported year, any month
+        // PosTest5: the specified time is in minimum supported year, any month
         [Fact]
         public void PosTest5()
         {
@@ -107,7 +107,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest6: the speicified time is in maximum supported year, any month
+        // PosTest6: the specified time is in maximum supported year, any month
         [Fact]
         public void PosTest6()
         {
@@ -123,7 +123,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest7: the speicified time is in any year, minimum month
+        // PosTest7: the specified time is in any year, minimum month
         [Fact]
         public void PosTest7()
         {
@@ -139,7 +139,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest8: the speicified time is in any year, maximum month
+        // PosTest8: the specified time is in any year, maximum month
         [Fact]
         public void PosTest8()
         {
@@ -155,7 +155,7 @@ namespace System.Globalization.CalendarTests
             Assert.Equal(expectedEra, actualEra);
         }
 
-        // PosTest9: the speicified time is in any year, any month
+        // PosTest9: the specified time is in any year, any month
         [Fact]
         public void PosTest9()
         {
@@ -184,7 +184,7 @@ namespace System.Globalization.CalendarTests
             return false;
         }
 
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;
@@ -224,7 +224,7 @@ namespace System.Globalization.CalendarTests
             return retVal;
         }
 
-        //Get text represntation of the input parmeters
+        //Get text representation of the input parameters
         private string GetParamsInfo(int year)
         {
             string str;
@@ -232,7 +232,7 @@ namespace System.Globalization.CalendarTests
             return str;
         }
 
-        //Get text represntation of the input parmeters
+        //Get text representation of the input parameters
         private string GetParamsInfo(DateTime time)
         {
             string str;

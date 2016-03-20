@@ -253,9 +253,9 @@ public class Directory_Delete_MountVolume
             }
 
             //@WATCH - potentially dangerous code - can delete the whole drive!!
-            //scenario 3.4: we call delete on parent directory of the mounted volume, the parent directoriy will have some other directories and files
+            //scenario 3.4: we call delete on parent directory of the mounted volume, the parent directory will have some other directories and files
             //Current drive is mounted on current directory
-            scenarioDescription = "Scenario 3.4 - we call delete on parent directory of the mounted volume, the parent directoriy will have some other directories and files";
+            scenarioDescription = "Scenario 3.4 - we call delete on parent directory of the mounted volume, the parent directory will have some other directories and files";
             try
             {
                 if (FileSystemDebugInfo.IsCurrentDriveNTFS())
@@ -306,10 +306,10 @@ public class Directory_Delete_MountVolume
             }
 
             //@WATCH - potentially dangerous code - can delete the whole drive!!
-            //scenario 3.5: we call delete on parent directory of the mounted volume, the parent directoriy will have some other directories and files
+            //scenario 3.5: we call delete on parent directory of the mounted volume, the parent directory will have some other directories and files
             //we call a different directory than the first
             //Current drive is mounted on current directory
-            scenarioDescription = "Scenario 3.5 - we call delete on parent directory of the mounted volume, the parent directoriy will have some other directories and files";
+            scenarioDescription = "Scenario 3.5 - we call delete on parent directory of the mounted volume, the parent directory will have some other directories and files";
             try
             {
                 if (FileSystemDebugInfo.IsCurrentDriveNTFS())

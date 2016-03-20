@@ -208,7 +208,7 @@
     <value>Cannot create entries on an archive opened in read mode.</value>
   </data>
   <data name="CreateModeCapabilities" xml:space="preserve">
-    <value>Cannot use create mode on a non-writeable stream.</value>
+    <value>Cannot use create mode on a non-writable stream.</value>
   </data>
   <data name="CreateModeCreateEntryWhileOpen" xml:space="preserve">
     <value>Entries cannot be created while previously created entries are still open.</value>

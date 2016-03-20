@@ -101,7 +101,7 @@ namespace System.Globalization.Tests
             // Note that we can get a negative value.  It's ok since we are going to make it a positive value when calculating the offset.
             int dayForJan1 = (int)gregorianCalendar.GetDayOfWeek(time) - (dayOfYear % 7);
 
-            // Now, calucalte the offset.  Substract the first day of week from the dayForJan1.  And make it a positive value.
+            // Now, calculate the offset.  Subtract the first day of week from the dayForJan1.  And make it a positive value.
             int offset = (firstDayOfWeek - dayForJan1 + 14) % 7;
             if (offset != 0 && offset >= fullDays)
             {

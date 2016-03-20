@@ -10,7 +10,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -48,7 +48,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -88,7 +88,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -128,7 +128,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -166,7 +166,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -211,7 +211,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -249,7 +249,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -289,7 +289,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -329,7 +329,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -367,7 +367,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -412,7 +412,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -450,7 +450,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -490,7 +490,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -530,7 +530,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -568,7 +568,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -620,7 +620,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -658,7 +658,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -698,7 +698,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -738,7 +738,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent
@@ -776,7 +776,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
     // <Area>Use of Named parameters</Area>
     // <Title>Use of Named Parameters</Title>
-    // <Description>Parameters are genericly typed</Description>
+    // <Description>Parameters are generically typed</Description>
     // <Expects status=success></Expects>
     // <Code>
     public class Parent

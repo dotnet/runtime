@@ -131,7 +131,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                // Before returning, make sure to release input buffer if necesary:
+                // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
                     DeallocateInputBufferHandle();
             }

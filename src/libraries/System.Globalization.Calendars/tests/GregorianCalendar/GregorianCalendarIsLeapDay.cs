@@ -118,7 +118,7 @@ namespace System.Globalization.CalendarTests
             return false;
         }
 
-        //Get a random year beween minmum supported year and maximum supported year of the specified calendar
+        //Get a random year between minimum supported year and maximum supported year of the specified calendar
         private int GetAYear(Calendar calendar)
         {
             int retVal;

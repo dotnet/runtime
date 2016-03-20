@@ -87,7 +87,7 @@ namespace System.IO
             }
         }
 
-        /* Creates an instance of the the parent directory */
+        /* Creates an instance of the parent directory */
         public DirectoryInfo Directory
         {
             get

@@ -121,7 +121,7 @@ namespace System.IO
 
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
-        // The file is opened with ReadWrite accessand cannot be opened by another 
+        // The file is opened with ReadWrite access and cannot be opened by another 
         // application until it has been closed.  An IOException is thrown if the 
         // directory specified doesn't exist.
         //

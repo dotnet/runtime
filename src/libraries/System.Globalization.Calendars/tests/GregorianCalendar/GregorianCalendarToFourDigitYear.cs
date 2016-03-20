@@ -40,7 +40,7 @@ namespace System.Globalization.CalendarTests
             PosTest2(GregorianCalendarTypes.USEnglish);
         }
 
-        // PosTest3: two-digit year is mininum supported two-digit year
+        // PosTest3: two-digit year is minimum supported two-digit year
         [Fact]
         public void Test3()
         {
@@ -86,7 +86,7 @@ namespace System.Globalization.CalendarTests
         }
 
         #endregion
-        #region Helper methods for positve tests
+        #region Helper methods for positive tests
         private int GetExpectedFourDigitYear(Calendar calendar, int twoDigitYear)
         {
             int expectedFourDigitYear;
