@@ -401,7 +401,7 @@ namespace System.Data.SqlClient
 
             // ROLLBACK takes either a save point name or a transaction name.  It will rollback the
             // transaction to either the save point with the save point name or begin with the
-            // transacttion name.  NOTE: for simplicity it is possible to give all save point names
+            // transaction name.  NOTE: for simplicity it is possible to give all save point names
             // the same name, and ROLLBACK will simply rollback to the most recent save point with the
             // save point name.
             if (ADP.IsEmpty(transactionName))
@@ -427,7 +427,7 @@ namespace System.Data.SqlClient
 
             // ROLLBACK takes either a save point name or a transaction name.  It will rollback the
             // transaction to either the save point with the save point name or begin with the
-            // transacttion name.  So, to rollback a nested transaction you must have a save point.
+            // transaction name.  So, to rollback a nested transaction you must have a save point.
             // SAVE TRANSACTION MUST HAVE AN ARGUMENT!!!  Save Transaction without an arg throws an
             // exception from the server.  So, an overload for SaveTransaction without an arg doesn't make
             // sense to have.  Save Transaction does not affect the transaction level.

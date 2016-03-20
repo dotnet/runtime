@@ -1442,7 +1442,7 @@ namespace System.Xml
             }
         }
 
-        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accomodate
+        // Following methods do not check whether pDst is beyond the bufSize because the buffer was allocated with a OVERFLOW to accommodate
         // for the writes of small constant-length string as below.
 
         // Entitize '<' as "&lt;".  Return an updated pointer.

@@ -15,9 +15,9 @@ namespace System.Diagnostics
     /// 
     ///   1) It allows debuggers to inject code via Function evaluation.  This is the purpose of the
     ///   BreakPointWithDebuggerFuncEval function in the 'OnEventCommand' method.   Basically even in
-    ///   release code, debuggers can place a breakpoint in this method and and then trigger the
+    ///   release code, debuggers can place a breakpoint in this method and then trigger the
     ///   DiagnosticSourceEventSource via ETW.  Thus from outside the process you can get a hook that
-    ///   is guarenteed to happen BEFORE any DiangosticSource events (if the process is just starting)
+    ///   is guaranteed to happen BEFORE any DiangosticSource events (if the process is just starting)
     ///   or as soon as possible afterward if it is on attach.
     ///   
     ///   2) It provides a 'bridge' that allows DiagnosticSource messages to be forwarded to EventListers
@@ -41,8 +41,8 @@ namespace System.Diagnostics
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or 
     ///       * EMPTY                     - which turns on all sources
     ///   * a TRANSFORM_SPEC can be 
-    ///       * - TRANSFORM_SPEC - the '-' indicates that implicit payload elements should be supressed 
-    ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that an payload element 'VARIABLE_NAME' is creatd from PROPERTY_SPEC
+    ///       * - TRANSFORM_SPEC - the '-' indicates that implicit payload elements should be suppressed 
+    ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that a payload element 'VARIABLE_NAME' is created from PROPERTY_SPEC
     ///       * PROPERTY_SPEC                  - This is a shortcut where VARIABLE_NAME is the LAST property name
     ///   * a PROPERTY_SPEC ca be
     ///       * PROPERTY_NAME                  - fetches a property from the DiagnosticSource payload object
@@ -57,10 +57,10 @@ namespace System.Diagnostics
     /// 'TestEvent2' in BridgeTestSource2.   In the first case, because the transform did not begin with a - 
     /// any primitive type/string of 'TestEvent1's payload will be serialized into the output.  In addition if
     /// there a property of the payload object called 'cls' which in turn has a property 'Point' which in turn
-    /// has a property 'X' then that data is also put in the output with the name cls_Point_X.   Simmilarly 
+    /// has a property 'X' then that data is also put in the output with the name cls_Point_X.   Similarly 
     /// if cls.Point.Y exists, then that value will also be put in the output with the name cls_Point_Y.
     /// 
-    /// For the 'BridgeTestSource2/TestEvent2' event, becasue the - was specified NO implicit fields will be 
+    /// For the 'BridgeTestSource2/TestEvent2' event, because the - was specified NO implicit fields will be 
     /// generated, but if there is a property call 'cls' which has a property 'Url' then that will be placed in
     /// the output with the name 'Url' (since that was the last property name used and no Variable= clause was 
     /// specified. 
@@ -70,14 +70,14 @@ namespace System.Diagnostics
     ///     "BridgeTestSource1\r\n" + 
     ///     "BridgeTestSource2"
     ///     
-    /// This will enable all events for the BridgeTestSource1 and BridgeTestSource2 sources.   Any string/primtive 
+    /// This will enable all events for the BridgeTestSource1 and BridgeTestSource2 sources.   Any string/primitive 
     /// properties of any of the events will be serialized into the output.  
     /// 
     /// Example:
     /// 
     ///     ""
     ///     
-    /// This turns on all DiagnosticSources Any string/primtive properties of any of the events will be serialized 
+    /// This turns on all DiagnosticSources Any string/primitive properties of any of the events will be serialized 
     /// into the output.   This is not likely to be a good idea as it will be very verbose, but is useful to quickly
     /// discover what is available.
     /// 
@@ -121,7 +121,7 @@ namespace System.Diagnostics
 #endif 
         /// <summary>
         /// This is only used on V4.5 systems that don't have the ability to log KeyValuePairs directly.
-        /// It will eventually go away, but we should alwasy reserve the ID for this.    
+        /// It will eventually go away, but we should always reserve the ID for this.    
         /// </summary>
         [Event(3, Keywords = Keywords.Events)]
         private void EventJson(string SourceName, string EventName, string ArgmentsJson)
@@ -232,11 +232,11 @@ namespace System.Diagnostics
         /// <summary>
         /// FilterAndTransform represents on transformation specification from a DiagnosticsSource
         /// to EventSource's 'Event' method.    (e.g.  MySource/MyEvent:out=prop1.prop2.prop3).
-        /// Its main method is 'Morph' which takes a DiagnosticSource object and morphss it into
+        /// Its main method is 'Morph' which takes a DiagnosticSource object and morphs it into
         /// a list of string,string key value pairs.   
         /// 
         /// This method also contains that static 'Create/Destroy FilterAndTransformList, which
-        /// simply parse a seriese of transformation specifications.  
+        /// simply parse a series of transformation specifications.  
         /// </summary>
         internal class FilterAndTransform
         {
@@ -305,7 +305,7 @@ namespace System.Diagnostics
             /// <summary>
             /// Creates one FilterAndTransform specification from filterAndPayloadSpec starting at 'startIdx' and ending just before 'endIdx'. 
             /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
-            /// For convience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.  
+            /// For convenience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.  
             /// </summary>
             public FilterAndTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource, FilterAndTransform next)
             {
@@ -345,7 +345,7 @@ namespace System.Diagnostics
                 // If the transform spec begins with a - it means you don't want implicit transforms. 
                 if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
                 {
-                    _eventSource.Message("DiagnosticSource: supressing implicit transforms.");
+                    _eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
                     _noImplicitTransforms = true;
                     startTransformIdx++;
                 }
@@ -448,7 +448,7 @@ namespace System.Diagnostics
                             _implicitTransforms = Reverse(newSerializableArgs);
                         }
 
-                        // Fetch all the fields that are alread serializable
+                        // Fetch all the fields that are already serializable
                         if (_implicitTransforms != null)
                         {
                             for (var serializableArg = _implicitTransforms; serializableArg != null; serializableArg = serializableArg.Next)
@@ -488,7 +488,7 @@ namespace System.Diagnostics
 
             private IDisposable _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear. 
             private Subscriptions _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
-            private bool _noImplicitTransforms;                    // Listner can say they don't want implicit transforms.  
+            private bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.  
             private Type _expectedArgType;                         // This is the type where 'implicitTransforms is built for'
             private TransformSpec _implicitTransforms;             // payload to include because the DiagnosticSource's object fields are already serializable 
             private TransformSpec _explicitTransforms;             // payload to include because the user explicitly indicated how to fetch the field.  
@@ -497,9 +497,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Transform spec represents a string that decribes how to extact a piece of data from
+        /// Transform spec represents a string that describes how to extract a piece of data from
         /// the DiagnosticSource payload.   An example string is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3
-        /// It has a Next field so they can be chained togehter in a linked list.  
+        /// It has a Next field so they can be chained together in a linked list.  
         /// </summary>
         internal class TransformSpec
         {
@@ -565,15 +565,15 @@ namespace System.Diagnostics
 
             #region private 
             /// <summary>
-            /// A PropertySpec resprents information needed to fetch a property from 
-            /// and efficienctly.   Thus it represents a '.PROP' in a TransformSpec
+            /// A PropertySpec represents information needed to fetch a property from 
+            /// and efficiently.   Thus it represents a '.PROP' in a TransformSpec
             /// (and a transformSpec has a list of these).  
             /// </summary>
             internal class PropertySpec
             {
                 /// <summary>
                 /// Make a new PropertySpec for a property named 'propertyName'. 
-                /// For convinience you can set he 'next' field to form a linked
+                /// For convenience you can set he 'next' field to form a linked
                 /// list of PropertySpecs. 
                 /// </summary>
                 public PropertySpec(string propertyName, PropertySpec next = null)
@@ -612,7 +612,7 @@ namespace System.Diagnostics
                 {
                     /// <summary>
                     /// Create a property fetcher from a .NET Reflection PropertyInfo class that
-                    /// represents a property of a paritcular type.  
+                    /// represents a property of a particular type.  
                     /// </summary>
                     public static PropertyFetch FetcherForProperty(PropertyInfo propertyInfo)
                     {
@@ -659,7 +659,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// CallbackObserver is a adapter class that creats an observer (which you can pass
+        /// CallbackObserver is a adapter class that creates an observer (which you can pass
         /// to IObservable.Subscribe), and calls the given callback every time the 'next' 
         /// operation on the IObserver happens. 
         /// </summary>

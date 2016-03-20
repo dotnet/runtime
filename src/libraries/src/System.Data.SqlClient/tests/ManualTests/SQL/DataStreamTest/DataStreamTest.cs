@@ -747,7 +747,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                     DataTestClass.AssertEqualsWithDescription((long)536198, cbTotal, "FAILED: cbTotal result did not have expected value");
 
-                    // test sequential accces reading everything
+                    // test sequential access reading everything
                     cbTotal = 0;
                     using (reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                     {
@@ -907,7 +907,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         DataTestClass.AssertEqualsWithDescription((long)20, cb, "FAILED: Did not receive expected number of bytes");
                     }
 
-                    // close connetion while in the middle of a read
+                    // close connection while in the middle of a read
                     using (reader = cmd.ExecuteReader(CommandBehavior.SequentialAccess))
                     {
                         reader.Read();

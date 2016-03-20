@@ -169,7 +169,7 @@ namespace System.Data.ProviderBase
             //  and GetConnection on the pool checking the pool state.  Clearing the pool in this window
             //  will switch the pool into the ShuttingDown state, and GetConnection will return null.
             //  There is probably a better solution involving locking the pool/group, but that entails a major
-            //  re-design of the connection pooling synchronization, so is post-poned for now.
+            //  re-design of the connection pooling synchronization, so is postponed for now.
 
             // Use retriesLeft to prevent CPU spikes with incremental sleep
             // start with one msec, double the time every retry

@@ -266,7 +266,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         public void DumpRow(TextWriter output, object[] row)
         {
             if (row == null || row.Length != _columns.Length)
-                throw new ArgumentException("Row lentgh does not match the columns");
+                throw new ArgumentException("Row length does not match the columns");
 
             for (int i = 0; i < _columnNames.Length - 1; i++)
             {
@@ -286,7 +286,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     }
                     else if (val is string)
                     {
-                        val = string.Format("[Lenthg={0}]", ((string)val).Length);
+                        val = string.Format("[Length={0}]", ((string)val).Length);
                     }
                     else
                     {

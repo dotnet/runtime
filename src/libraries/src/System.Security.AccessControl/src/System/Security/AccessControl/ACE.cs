@@ -73,7 +73,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         //
-        // The 'byte' type is used to accomodate user-defined,
+        // The 'byte' type is used to accommodate user-defined,
         // as well as well-known ACE types.
         //
 

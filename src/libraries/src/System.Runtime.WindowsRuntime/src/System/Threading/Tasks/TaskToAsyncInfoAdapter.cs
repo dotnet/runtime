@@ -163,7 +163,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates an IAsyncInfo from the Task object. The specified task represents the future encapsulated by this IAsyncInfo.
         /// The specified CancellationTokenSource and Progress are assumed to be the source of the specified Task's cancellation and
-        /// the Progress that receives reports from teh specified Task.
+        /// the Progress that receives reports from the specified Task.
         /// </summary>
         /// <param name="underlyingTask">The Task whose operation is represented by this IAsyncInfo</param>
         /// <param name="underlyingCancelTokenSource">The cancellation control for the cancellation token observed

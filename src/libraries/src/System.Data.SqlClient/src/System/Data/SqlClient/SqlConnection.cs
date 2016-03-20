@@ -452,7 +452,7 @@ namespace System.Data.SqlClient
             // CloseConnection() now handles the lock
 
             // The SqlInternalConnectionTds is set to OpenBusy during close, once this happens the cast below will fail and 
-            // the command will no longer be cancelable.  It might be desirable to be able to cancel the close opperation, but this is
+            // the command will no longer be cancelable.  It might be desirable to be able to cancel the close operation, but this is
             // outside of the scope of Whidbey RTM.  See (SqlCommand::Cancel) for other lock.
             InnerConnection.CloseConnection(this, ConnectionFactory);
         }
@@ -718,7 +718,7 @@ namespace System.Data.SqlClient
             return runningReconnect;
         }
 
-        // this is straightforward, but expensive method to do connection resiliency - it take locks and all prepartions as for TDS request
+        // this is straightforward, but expensive method to do connection resiliency - it take locks and all preparations as for TDS request
         partial void RepairInnerConnection()
         {
             WaitForPendingReconnection();

@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Compiler
 
         // Until we have more information, default to a leave instruction,
         // which always works. Note: leave spills the stack, so we need to
-        // ensure that StackSpiller has guarenteed us an empty stack at this
+        // ensure that StackSpiller has guaranteed us an empty stack at this
         // point. Otherwise Leave and Branch are not equivalent
         private OpCode _opCode = OpCodes.Leave;
 

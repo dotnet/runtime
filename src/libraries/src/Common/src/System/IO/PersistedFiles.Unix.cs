@@ -106,7 +106,7 @@ namespace System.IO
             if (!string.IsNullOrEmpty(userHomeDirectory))
                 return userHomeDirectory;
 
-            // In initialization conditions, however, the "HOME" enviroment variable may 
+            // In initialization conditions, however, the "HOME" environment variable may 
             // not yet be set. For such cases, consult with the password entry.
             unsafe
             {

@@ -41,7 +41,7 @@ namespace System.Data.SqlTypes
         //      - m_stream must not be null
         //      - m_rgbBuf could be null or not. if not null, content is garbage, should never look into it.
         //		- m_lCurLen must be x_lNull.
-        // 5) SqlBytes contains a Lazy Materialized Blob (ie, StorageState.Delayed)
+        // 5) SqlBytes contains a Lazy Materialized Blob (i.e, StorageState.Delayed)
         //
         internal byte[] m_rgbBuf;   // Data buffer
         private long _lCurLen; // Current data length
@@ -705,7 +705,7 @@ namespace System.Data.SqlTypes
         protected override void Dispose(bool disposing)
         {
             // When m_sb is null, it means the stream has been closed, and
-            // any opearation in the future should fail.
+            // any operation in the future should fail.
             // This is the only case that m_sb is null.
             try
             {

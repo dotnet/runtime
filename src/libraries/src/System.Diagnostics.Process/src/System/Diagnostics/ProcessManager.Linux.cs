@@ -152,7 +152,7 @@ namespace System.Diagnostics
             catch (IOException)
             {
                 // Between the time that we get an ID and the time that we try to read the associated 
-                // directoies and files in procfs, the process could be gone.
+                // directories and files in procfs, the process could be gone.
             }
 
             // Finally return what we've built up
