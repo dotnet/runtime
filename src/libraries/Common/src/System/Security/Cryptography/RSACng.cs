@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
             // legal key size limitations for this algorithm, as documented on MSDN.
             //
             // But on a new OS version we might not question if our limit is accurate, or MSDN
-            // could have been innacurate to start with.
+            // could have been inaccurate to start with.
             //
             // Since the key is already loaded, we know that Windows thought it to be valid;
             // therefore we should set KeySizeValue directly to bypass the LegalKeySizes conformance

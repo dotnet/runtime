@@ -12,7 +12,7 @@ using Xunit;
 
 public class RegexUnicodeCharTests
 {
-    // This test case checks the unicode-aware features in theregex engine.
+    // This test case checks the Unicode-aware features in the regex engine.
 
     private const int MaxUnicodeRange = 2 << 15;//we are adding 0's here?
 

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // The RegexReplacement class represents a substitution string for
-// use when using regexs to search/replace, etc. It's logically
+// use when using regexes to search/replace, etc. It's logically
 // a sequence intermixed (1) constant strings and (2) group numbers.
 
 using System.Collections.Generic;

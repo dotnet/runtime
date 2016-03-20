@@ -10,12 +10,12 @@ public partial class RegexMatchTests
 {
     /*
     public Match Match(string input);
-        - Noncapturing group: Actual - "(a+)(?:b*)(ccc)", "aaabbbccc"
+        - Non-capturing group: Actual - "(a+)(?:b*)(ccc)", "aaabbbccc"
         - Zero-width positive lookahead assertion: Actual - "abc(?=XXX)\\w+", "abcXXXdef"
         - Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+", "abcXXXdef" - Negative
         - Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<  =  XXX ) def ", " abcXXXdef "
         - Zero-width  negative  lookbehind  assertion: Actual - " ( \ \ w ) { 6 } ( ? < ! XXX ) def ", " XXXabcdef "
-        - Nonbacktracking subexpression: Actual - " [ ^ 0 - 9 ] + ( ?>[0-9]+)3", "abc123"
+        - Non-backtracking subexpression: Actual - " [ ^ 0 - 9 ] + ( ?>[0-9]+)3", "abc123"
     */
     [Fact]
     public static void RegexMatchTestCase4()
@@ -36,7 +36,7 @@ public partial class RegexMatchTests
         string strMatch2 = "abcXXXdef";
         int[] iMatch2 = { 0, 9 };
 
-        // Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
+        // Non-capturing group : Actual - "(a+)(?:b*)(ccc)"
         // "aaabbbccc"
         Regex regex = new Regex("(a+)(?:b*)(ccc)");
         Match match = regex.Match("aaabbbccc");
@@ -126,7 +126,7 @@ public partial class RegexMatchTests
         match = regex.Match("XXXabcdef");
         Assert.True(match.Success);
 
-        // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
+        // Non-backtracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
         // "abc123"
         // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
         // for it to be a success. For a correct match, remove the last character, '3' from the pattern

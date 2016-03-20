@@ -4,7 +4,7 @@
 
 namespace System
 {
-    // Used to control whether absolute absolute or relative URIs are used
+    // Used to control whether absolute or relative URIs are used
     public enum UriKind
     {
         RelativeOrAbsolute  = 0,
@@ -29,11 +29,11 @@ namespace System
         NormalizedHost = 0x100,
 
         // This will also return respective delimiters for scheme, userinfo or port
-        // Valid only for a single componet requests.
+        // Valid only for a single component requests.
         KeepDelimiter = 0x40000000,
 
         // This is used by GetObjectData and can also be used directly.
-        // Works for both absolute and relaitve Uris
+        // Works for both absolute and relative Uris
         SerializationInfoString = unchecked((int)0x80000000),
 
         // Shortcuts for general cases

@@ -106,7 +106,7 @@ namespace System.Numerics.Tests
             VerifyComparison(BigInteger.One, (Int32)(1), 0);
 
 
-            //1 Inputs Arround the boundry of UInt32
+            //1 Inputs Around the boundary of UInt32
             // -1 * UInt32.MaxValue, -1 * UInt32.MaxValue
             VerifyComparison(-1L * (BigInteger)UInt32.MaxValue - 1, -1L * (BigInteger)UInt32.MaxValue - 1, 0);
 

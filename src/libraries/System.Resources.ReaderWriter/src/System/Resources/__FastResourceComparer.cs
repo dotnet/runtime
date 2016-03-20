@@ -20,7 +20,7 @@ namespace System.Resources
             return FastResourceComparer.HashFunction(key);
         }
 
-        // This hash function MUST be publically documented with the resource
+        // This hash function MUST be publicly documented with the resource
         // file format, AND we may NEVER change this hash function's return 
         // value (without changing the file format).
         internal static int HashFunction(String key)
