@@ -68,7 +68,7 @@ namespace System.IO.Pipes
         /// Win32 note: this gets used for dwPipeMode. CreateNamedPipe allows you to specify PIPE_TYPE_BYTE/MESSAGE
         /// and PIPE_READMODE_BYTE/MESSAGE independently, but this sets type and readmode to match.
         /// </param>
-        /// <param name="options">PipeOption enum: None, Asynchronous, or Writethrough
+        /// <param name="options">PipeOption enum: None, Asynchronous, or Write-through
         /// Win32 note: this gets passed in with dwOpenMode to CreateNamedPipe. Asynchronous corresponds to 
         /// FILE_FLAG_OVERLAPPED option. PipeOptions enum doesn't expose FIRST_PIPE_INSTANCE option because
         /// this sets that automatically based on the number of instances specified.

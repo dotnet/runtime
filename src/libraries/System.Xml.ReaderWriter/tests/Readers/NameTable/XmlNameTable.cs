@@ -943,7 +943,7 @@ namespace System.Xml.Tests
         }
 
 
-        [Variation("Add new string, get object using permutations of upper & lowecase, should be null", Pri = 0)]
+        [Variation("Add new string, get object using permutations of upper & lowercase, should be null", Pri = 0)]
         public int Variation_17()
         {
             ReloadSource();

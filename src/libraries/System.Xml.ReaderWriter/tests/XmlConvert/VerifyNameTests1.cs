@@ -37,7 +37,7 @@ namespace System.Xml.Tests
             AddChild(new CVariation(v4) { Attribute = new Variation("VerifyXmlChars.Name with two colons") { Params = new object[] { 5, false } } });
             AddChild(new CVariation(v5) { Attribute = new Variation("VerifyPublicId.multiple non letter characters with :") { Params = new object[] { 6, false } } });
             AddChild(new CVariation(v5) { Attribute = new Variation("VerifyWhitespace.multiple non letter characters with :") { Params = new object[] { 7, true } } });
-            AddChild(new CVariation(v5) { Attribute = new Variation("VerifyName.multiple non letter characterse with :") { Params = new object[] { 2, false } } });
+            AddChild(new CVariation(v5) { Attribute = new Variation("VerifyName.multiple non letter characters with :") { Params = new object[] { 2, false } } });
             AddChild(new CVariation(v5) { Attribute = new Variation("VerifyNCName.multiple non letter characters with :") { Params = new object[] { 3, true } } });
             AddChild(new CVariation(v5) { Attribute = new Variation("VerifyXmlChars.multiple non letter characters with :") { Params = new object[] { 5, false } } });
             AddChild(new CVariation(v5) { Attribute = new Variation("VerifyNMTOKEN.multiple non letter characters with :") { Params = new object[] { 1, false } } });

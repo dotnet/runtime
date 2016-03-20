@@ -118,7 +118,7 @@ namespace System.IO.Packaging
                 {
                     // if we are mapping what was used as a new namespace to a newer name,
                     // scan the _newNamespaces dictionary and update the entries. We collect
-                    // a list to avoid updating the dictonary during enumeration.
+                    // a list to avoid updating the dictionary during enumeration.
                     List<string> keysToUpdate = new List<string>();
 
                     foreach (KeyValuePair<string, string> pair in _namespaceMap)

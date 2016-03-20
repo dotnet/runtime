@@ -53,7 +53,7 @@ namespace OLEDB.Test.ModuleCore
         {
             _clsid = GetType().ToString();
 
-            //The attribute should take precendence
+            //The attribute should take precedence
             if (this.Owner == null)
                 this.Owner = owner;
             if (this.Version <= 0)
@@ -195,11 +195,11 @@ namespace OLEDB.Test.ModuleCore
             bool bSort = false;
 
             //Normally the reflection Type.GetMethods() api returns the methods in order 
-            //of how thery appear in the code.  But it will change that order depending 
+            //of how they appear in the code.  But it will change that order depending 
             //upon if there are virtual functions, which are returned first before other
             //non-virtual functions.  Then there are also many times were people want multiple 
             //source files, so its totally up the compiler on how it pulls in the files (*.cs).
-            //So we have added the support of specifing an id=x, as an attribute so you can have
+            //So we have added the support of specifying an id=x, as an attribute so you can have
             //then sorted and displayed however your see fit.
             if (bSort)
                 Children.Sort(/*Default sort is based upon IComparable of each item*/);
@@ -215,9 +215,9 @@ namespace OLEDB.Test.ModuleCore
 
         protected virtual string FilterScope(string xpath)
         {
-            //Basically we want to allow either simply filtering at the variation node (ie: no scope),
+            //Basically we want to allow either simply filtering at the variation node (i.e.: no scope),
             //in which case we'll just add the 'assumed' scope, or allow filtering at any level.  
-            //We also want to be consitent with the XmlDriver in which all filters are predicates only.
+            //We also want to be consistent with the XmlDriver in which all filters are predicates only.
             string varfilter = "//Variation[{0}]";
             if (xpath != null)
             {
@@ -236,9 +236,9 @@ namespace OLEDB.Test.ModuleCore
         public CTestCase CurTestCase
         {
             //Return the current testcase:
-            //Note: We do this so that within global functions (ie: at the module level) the user can 
+            //Note: We do this so that within global functions (i.e.: at the module level) the user can 
             //have know which testcase/variation were in, without having to pass this state from
-            //execute arround
+            //execute around
             get { return _curtestcase; }
             set { _curtestcase = value; }
         }

@@ -610,7 +610,7 @@ namespace System.Xml.Tests
             dt = dt.AddTicks(9999999);
             span = TimeZoneInfo.Local.GetUtcOffset(dt);
             expDateTime = String.Format("0001-01-01T23:59:59.9999999{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
-            CError.Compare(XmlConvert.ToString(dt), expDateTime, "milisecs");
+            CError.Compare(XmlConvert.ToString(dt), expDateTime, "millisecs");
 
             dt = new DateTime(2002, 12, 30, 23, 15, 55);
             span = TimeZoneInfo.Local.GetUtcOffset(dt);
@@ -674,7 +674,7 @@ namespace System.Xml.Tests
             expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
                 String.Format("0001-01-01T23:59:59.9999999-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
                 String.Format("0001-01-01T23:59:59.9999999+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
-            CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "milisecs");
+            CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "millisecs");
 
             // new 05/2002
             dt = new DateTime(2002, 12, 30, 23, 15, 55);
@@ -926,7 +926,7 @@ namespace System.Xml.Tests
 
             dto = new DateTimeOffset(1, 1, 1, 23, 59, 59, TimeSpan.Zero);
             dto = dto.AddTicks(9999999);
-            CError.Equals(XmlConvert.ToString(dto), "0001-01-01T23:59:59.9999999Z", "milisecs");
+            CError.Equals(XmlConvert.ToString(dto), "0001-01-01T23:59:59.9999999Z", "millisecs");
 
             dto = new DateTimeOffset(2002, 12, 30, 23, 15, 55, TimeSpan.Zero);
             CError.Equals(XmlConvert.ToString(dto), "2002-12-30T23:15:55Z", "datetimeOffset4");

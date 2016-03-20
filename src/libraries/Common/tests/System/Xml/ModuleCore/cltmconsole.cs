@@ -28,17 +28,17 @@ namespace OLEDB.Test.ModuleCore
             CError.Write(ch.ToString());
         }
 
-        //Overlaods - We also implement "string" since its much more effiencent and TextWriter will call this instead
+        //Overloads - We also implement "string" since its much more efficient and TextWriter will call this instead
         public override void Write(string strText)
         {
             CError.Write(strText);
         }
 
-        //Overlaods - We also implement "string" since its much more effiencent and TextWriter will call this instead
+        //Overloads - We also implement "string" since its much more efficient and TextWriter will call this instead
         public override void Write(char[] ch)
         {
             //Note: This is a workaround the TextWriter::Write(char[]) that incorrectly 
-            //writes 1 char at a time, which means \r\n is written sperately and then gets fixed
+            //writes 1 char at a time, which means \r\n is written separately and then gets fixed
             //up to be two carriage returns!
             if (ch != null)
             {

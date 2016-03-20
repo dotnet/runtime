@@ -246,9 +246,9 @@ namespace System.IO.Packaging
             string file = Path.GetFileName(partName);
 
             Debug.Assert((partName.Length - file.Length) > 0,
-                "The partname may not be wellformed");
+                "The partname may not be well-formed");
 
-            // Get the parname without the last segment
+            // Get the partname without the last segment
             partName = partName.Substring(0, partName.Length - file.Length);
 
             partName = Path.Combine(partName, s_relationshipPartSegmentName, file); // Adding the "_rels" segment and the last segment back
@@ -303,13 +303,13 @@ namespace System.IO.Packaging
                 string partNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
 
                 Debug.Assert((path.Length - partNameWithoutExtension.Length - s_relationshipPartExtensionName.Length - 1) > 0,
-                    "The partname may not be wellformed");
+                    "The partname may not be well-formed");
 
                 //Get the part name without the last segment
                 path = path.Substring(0, path.Length - partNameWithoutExtension.Length - s_relationshipPartExtensionName.Length - 1);
 
                 Debug.Assert((path.Length - s_relationshipPartSegmentName.Length) > 0,
-                    "The partname may not be wellformed");
+                    "The partname may not be well-formed");
 
                 path = path.Substring(0, path.Length - s_relationshipPartSegmentName.Length); // Removing rels segment
                 path = Path.Combine(path, partNameWithoutExtension);        // Adding the last segment without ".rels" extension
@@ -486,7 +486,7 @@ namespace System.IO.Packaging
             if (argumentException != null)
                 return argumentException;
 
-            //We test if the URI is wellformed and refined.
+            //We test if the URI is well-formed and refined.
             //The relative URI that was passed to us may not be correctly escaped and so we test that.
             //Also there might be navigation "/../" present in the URI which we need to detect.
             string wellFormedPartName =
@@ -604,7 +604,7 @@ namespace System.IO.Packaging
             Uri safeUnescapedUri;
 
             // Step 1: Get the safe-unescaped form of the URI first. This will unescape all the characters
-            // that can be safely un-escaped, unreserved characters, unicode characters, etc.
+            // that can be safely un-escaped, unreserved characters, Unicode characters, etc.
             if (!partUri.IsAbsoluteUri)
             {
                 //We assume a well formed part uri has been passed to this method
@@ -863,7 +863,7 @@ namespace System.IO.Packaging
             {
                 bool result = false;
 
-                //exit early if the partUri does not end with the relationship extention
+                //exit early if the partUri does not end with the relationship extension
                 if (!NormalizedPartUriString.EndsWith(s_relationshipPartUpperCaseExtension, StringComparison.Ordinal))
                     return false;
 
@@ -916,7 +916,7 @@ namespace System.IO.Packaging
 
             //Returns the normalized string for the part uri.            
             //Currently normalizing the PartUriString consists of only one step - 
-            //1. Take the wellformed and escaped partUri string and case fold to UpperInvariant            
+            //1. Take the well-formed and escaped partUri string and case fold to UpperInvariant            
             private string GetNormalizedPartUriString()
             {
                 //Case Fold the partUri string to Invariant Upper case (this helps us perform case insensitive comparison)
