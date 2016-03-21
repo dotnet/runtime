@@ -55,10 +55,6 @@
         <CDefines Condition="'$(FeatureIsymReader)' == 'true'">$(CDefines);FEATURE_ISYM_READER</CDefines>
         <CDefines Condition="'$(FeatureLazyCOWPages)' == 'true'">$(CDefines);FEATURE_LAZY_COW_PAGES</CDefines>
         <CDefines Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(CDefines);FEATURE_LEAK_CULTURE_INFO</CDefines>
-        <CDefines Condition="'$(FeatureLegacyNetCF)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF</CDefines>
-        <CDefines Condition="'$(FeatureLegacyNetCFCrypto)' == 'true'">$(CDefines);FEATURE_LEGACYNETCFCRYPTO</CDefines>
-        <CDefines Condition="'$(FeatureLegacyNetCFDbgHostControl)' == 'true'">$(CDefines);FEATURE_LEGACYNETCF_DBG_HOST_CONTROL</CDefines> 
-        <CDefines Condition="'$(FeatureLegacyNetCFFAS)' == 'true'">$(CDefines);FEATURE_LEGACYNETCFFAS</CDefines>
         <CDefines Condition="'$(FeatureLegacySurface)' == 'true'">$(CDefines);FEATURE_LEGACYSURFACE</CDefines>
         <CDefines Condition="'$(FeatureLoaderOptimization)' == 'true'">$(CDefines);FEATURE_LOADER_OPTIMIZATION</CDefines>
         <CDefines Condition="'$(FeatureMacl)' == 'true'">$(CDefines);FEATURE_MACL</CDefines>
@@ -173,9 +169,6 @@
         <DefineConstants Condition="'$(FeatureIsostoreLight)' == 'true'">$(DefineConstants);FEATURE_ISOSTORE_LIGHT</DefineConstants>
         <DefineConstants Condition="'$(FeatureLatin1)' == 'true'">$(DefineConstants);FEATURE_LATIN1</DefineConstants>
         <DefineConstants Condition="'$(FeatureLeakCultureInfo)' == 'true'">$(DefineConstants);FEATURE_LEAK_CULTURE_INFO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLegacyNetCF)' == 'true'">$(DefineConstants);FEATURE_LEGACYNETCF</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLegacyNetCFCrypto)' == 'true'">$(DefineConstants);FEATURE_LEGACYNETCFCRYPTO</DefineConstants>
-        <DefineConstants Condition="'$(FeatureLegacyNetCFFAS)' == 'true'">$(DefineConstants);FEATURE_LEGACYNETCFFAS</DefineConstants>
         <DefineConstants Condition="'$(FeatureLegacySurface)' == 'true'">$(DefineConstants);FEATURE_LEGACYSURFACE</DefineConstants>
         <DefineConstants Condition="'$(FeatureLoaderOptimization)' == 'true'">$(DefineConstants);FEATURE_LOADER_OPTIMIZATION</DefineConstants>
         <DefineConstants Condition="'$(FeatureMacl)' == 'true'">$(DefineConstants);FEATURE_MACL</DefineConstants>
