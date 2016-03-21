@@ -127,9 +127,7 @@ namespace System
 
         public IntPtr Value
         {
-#if !FEATURE_LEGACYNETCF
             [SecurityCritical]
-#endif
             get
             {
                 return m_type != null ? m_type.m_handle : IntPtr.Zero;
@@ -675,19 +673,9 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal RuntimeType MakeByRef()
         {
-#if FEATURE_LEGACYNETCF
-            try {
-#endif
-                RuntimeType type = null;
-                MakeByRef(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
-                return type;
-#if FEATURE_LEGACYNETCF
-            } catch(Exception) {
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    return null;
-                throw;
-            }
-#endif
+            RuntimeType type = null;
+            MakeByRef(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
+            return type;
         }
        
         [System.Security.SecurityCritical]  // auto-generated
@@ -1006,11 +994,7 @@ namespace System
 
         public IntPtr Value
         {
-#if FEATURE_LEGACYNETCF
-            [SecuritySafeCritical]
-#else
             [SecurityCritical]
-#endif
             get
             {
                 return m_value != null ? m_value.Value.Value : IntPtr.Zero;
@@ -1516,11 +1500,7 @@ namespace System
 
         public IntPtr Value
         {
-#if FEATURE_LEGACYNETCF
-            [SecuritySafeCritical]
-#else
             [SecurityCritical]
-#endif
             get
             {
                 return m_ptr != null ? m_ptr.Value.Value : IntPtr.Zero;
@@ -2085,12 +2065,6 @@ namespace System
         [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool CompareSig(Signature sig1, Signature sig2);
-
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecuritySafeCritical]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareSigForAppCompat(Signature left, RuntimeType typeLeft, Signature right, RuntimeType typeRight); 
-#endif
 
         [System.Security.SecuritySafeCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
