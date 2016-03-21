@@ -5,7 +5,6 @@
         "System.Collections": "4.0.0",
         "System.Collections.NonGeneric": "4.0.0",
         "System.ComponentModel": "4.0.0",
-        "System.ComponentModel.Primitives": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.0",
