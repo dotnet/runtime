@@ -447,7 +447,7 @@ namespace System.ComponentModel
 
             if (primary == secondary)
             {
-                throw new ArgumentException(SR.GetString(SR.TypeDescriptorSameAssociation));
+                throw new ArgumentException(SR.TypeDescriptorSameAssociation);
             }
 
             if (s_associationTable == null)
@@ -482,7 +482,7 @@ namespace System.ComponentModel
                     WeakReference r = (WeakReference)associations[idx];
                     if (r.IsAlive && r.Target == secondary)
                     {
-                        throw new ArgumentException(SR.GetString(SR.TypeDescriptorAlreadyAssociated));
+                        throw new ArgumentException(SR.TypeDescriptorAlreadyAssociated);
                     }
                 }
             }
@@ -537,7 +537,7 @@ namespace System.ComponentModel
 
                 if (argTypes.Length != args.Length)
                 {
-                    throw new ArgumentException(SR.GetString(SR.TypeDescriptorArgsCountMismatch));
+                    throw new ArgumentException(SR.TypeDescriptorArgsCountMismatch);
                 }
             }
 
@@ -1038,7 +1038,7 @@ namespace System.ComponentModel
 
             if (component is IUnimplemented)
             {
-                throw new NotSupportedException(SR.GetString(SR.TypeDescriptorUnsupportedRemoteObject, component.GetType().FullName));
+                throw new NotSupportedException(SR.Format(SR.TypeDescriptorUnsupportedRemoteObject, component.GetType().FullName));
             }
 
 
@@ -2055,7 +2055,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
                         }
                         cacheValue = new AttributeCollection(attrArray);
                         break;
@@ -2068,7 +2068,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
                         }
                         cacheValue = new PropertyDescriptorCollection(propArray, true);
                         break;
@@ -2081,7 +2081,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
                         }
                         cacheValue = new EventDescriptorCollection(eventArray, true);
                         break;
@@ -3347,7 +3347,7 @@ namespace System.ComponentModel
 
                     if (argTypes.Length != args.Length)
                     {
-                        throw new ArgumentException(SR.GetString(SR.TypeDescriptorArgsCountMismatch));
+                        throw new ArgumentException(SR.TypeDescriptorArgsCountMismatch);
                     }
                 }
 
@@ -3501,9 +3501,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     AttributeCollection attrs = desc.GetAttributes();
-                    if (attrs == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
+                    if (attrs == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
                     return attrs;
                 }
 
@@ -3525,7 +3525,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     string name = desc.GetClassName();
                     if (name == null) name = _instance.GetType().FullName;
                     return name;
@@ -3549,7 +3549,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetComponentName();
                 }
 
@@ -3571,9 +3571,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     TypeConverter converter = desc.GetConverter();
-                    if (converter == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                    if (converter == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
                     return converter;
                 }
 
@@ -3595,7 +3595,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetDefaultEvent();
                 }
 
@@ -3617,7 +3617,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetDefaultProperty();
                 }
 
@@ -3644,7 +3644,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetEditor(editorBaseType);
                 }
 
@@ -3666,9 +3666,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     EventDescriptorCollection events = desc.GetEvents();
-                    if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                    if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     return events;
                 }
 
@@ -3695,9 +3695,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     EventDescriptorCollection evts = desc.GetEvents(attributes);
-                    if (evts == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                    if (evts == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     return evts;
                 }
 
@@ -3719,9 +3719,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     PropertyDescriptorCollection properties = desc.GetProperties();
-                    if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                    if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     return properties;
                 }
 
@@ -3748,9 +3748,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     PropertyDescriptorCollection properties = desc.GetProperties(attributes);
-                    if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                    if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     return properties;
                 }
 
@@ -3772,7 +3772,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     object owner = desc.GetPropertyOwner(pd);
                     if (owner == null) owner = _instance;
                     return owner;
@@ -3818,9 +3818,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         attrs = desc.GetAttributes();
-                        if (attrs == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
+                        if (attrs == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
                     }
 
                     return attrs;
@@ -3846,7 +3846,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         name = desc.GetClassName();
                         if (name == null) name = _objectType.FullName;
                     }
@@ -3874,7 +3874,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         name = desc.GetComponentName();
                     }
 
@@ -3901,9 +3901,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         converter = desc.GetConverter();
-                        if (converter == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                        if (converter == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
                     }
 
                     return converter;
@@ -3929,7 +3929,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         defaultEvent = desc.GetDefaultEvent();
                     }
 
@@ -3956,7 +3956,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         defaultProperty = desc.GetDefaultProperty();
                     }
 
@@ -3988,7 +3988,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         editor = desc.GetEditor(editorBaseType);
                     }
 
@@ -4015,9 +4015,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         events = desc.GetEvents();
-                        if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                        if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     }
 
                     return events;
@@ -4043,9 +4043,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         events = desc.GetEvents(attributes);
-                        if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                        if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     }
 
                     return events;
@@ -4071,9 +4071,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         properties = desc.GetProperties();
-                        if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                        if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     }
 
                     return properties;
@@ -4099,9 +4099,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         properties = desc.GetProperties(attributes);
-                        if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                        if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     }
 
                     return properties;
@@ -4127,7 +4127,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         owner = desc.GetPropertyOwner(pd);
                         if (owner == null) owner = _instance;
                     }
