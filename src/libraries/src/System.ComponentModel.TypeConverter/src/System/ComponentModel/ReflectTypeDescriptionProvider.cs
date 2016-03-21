@@ -102,7 +102,7 @@ namespace System.ComponentModel
 #if PLACEHOLDER
             if (editorBaseType == null)
             {
-                throw new ArgumentNullException("editorBaseType");
+                throw new ArgumentNullException(nameof(editorBaseType));
             }
 
             if (table == null)

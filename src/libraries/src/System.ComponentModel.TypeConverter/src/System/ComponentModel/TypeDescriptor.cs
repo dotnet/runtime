@@ -126,12 +126,12 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (attributes == null)
             {
-                throw new ArgumentNullException("attributes");
+                throw new ArgumentNullException(nameof(attributes));
             }
 
             TypeDescriptionProvider existingProvider = GetProvider(type);
@@ -156,12 +156,12 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             if (attributes == null)
             {
-                throw new ArgumentNullException("attributes");
+                throw new ArgumentNullException(nameof(attributes));
             }
 
             TypeDescriptionProvider existingProvider = GetProvider(instance);
@@ -199,12 +199,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             lock (s_providerTable)
@@ -234,12 +234,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
             bool refreshNeeded;
 
@@ -280,12 +280,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
@@ -316,12 +316,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             Type type = instance.GetType();
@@ -437,12 +437,12 @@ namespace System.ComponentModel
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             if (secondary == null)
             {
-                throw new ArgumentNullException("secondary");
+                throw new ArgumentNullException(nameof(secondary));
             }
 
             if (primary == secondary)
@@ -525,14 +525,14 @@ namespace System.ComponentModel
 #if PLACEHOLDER
             if (objectType == null)
             {
-                throw new ArgumentNullException("objectType");
+                throw new ArgumentNullException(nameof(objectType));
             }
 
             if (argTypes != null)
             {
                 if (args == null)
                 {
-                    throw new ArgumentNullException("args");
+                    throw new ArgumentNullException(nameof(args));
                 }
 
                 if (argTypes.Length != args.Length)
@@ -663,12 +663,12 @@ namespace System.ComponentModel
 #if PLACEHOLDER
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             object associatedObject = primary;
@@ -1033,7 +1033,7 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentException("component");
+                throw new ArgumentException(nameof(component));
             }
 
             if (component is IUnimplemented)
@@ -1059,7 +1059,7 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentException("component");
+                throw new ArgumentException(nameof(component));
             }
 
             return NodeFor(component).GetExtendedTypeDescriptor(component);
@@ -1087,7 +1087,7 @@ namespace System.ComponentModel
         {
             if (editorBaseType == null)
             {
-                throw new ArgumentNullException("editorBaseType");
+                throw new ArgumentNullException(nameof(editorBaseType));
             }
 
             return GetDescriptor(component, noCustomTypeDesc).GetEditor(editorBaseType);
@@ -1100,7 +1100,7 @@ namespace System.ComponentModel
         {
             if (editorBaseType == null)
             {
-                throw new ArgumentNullException("editorBaseType");
+                throw new ArgumentNullException(nameof(editorBaseType));
             }
 
             return GetDescriptor(type, "type").GetEditor(editorBaseType);
@@ -1310,7 +1310,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public static string GetFullComponentName(object component)
         {
-            if (component == null) throw new ArgumentNullException("component");
+            if (component == null) throw new ArgumentNullException(nameof(component));
             return GetProvider(component).GetFullComponentName(component);
         }
 
@@ -1514,7 +1514,7 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             return NodeFor(type, true);
@@ -1532,7 +1532,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             return NodeFor(instance, true);
@@ -1560,7 +1560,7 @@ namespace System.ComponentModel
             throw new NotImplementedException();
             //if (type == null)
             //{
-            //    throw new ArgumentNullException("type");
+            //    throw new ArgumentNullException(nameof(type));
             //}
 
             //return NodeFor(type).GetReflectionType(type);
@@ -1575,7 +1575,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             return NodeFor(instance).GetReflectionType(instance);
@@ -2525,12 +2525,12 @@ namespace System.ComponentModel
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             if (secondary == null)
             {
-                throw new ArgumentNullException("secondary");
+                throw new ArgumentNullException(nameof(secondary));
             }
 
             Hashtable assocTable = s_associationTable;
@@ -2567,7 +2567,7 @@ namespace System.ComponentModel
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             Hashtable assocTable = s_associationTable;
@@ -2589,12 +2589,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             // Walk the nodes until we find the right one, and then remove it.
@@ -2614,12 +2614,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             // Walk the nodes until we find the right one, and then remove it.
@@ -2644,12 +2644,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
@@ -2679,12 +2679,12 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             Type type = instance.GetType();
@@ -2732,7 +2732,7 @@ namespace System.ComponentModel
             throw new NotImplementedException();
             //if (infos == null)
             //{
-            //    throw new ArgumentNullException("infos");
+            //    throw new ArgumentNullException(nameof(infos));
             //}
 
             //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
@@ -2885,7 +2885,7 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 if (instance == null)
@@ -2895,7 +2895,7 @@ namespace System.ComponentModel
 
                 if (!objectType.IsInstanceOfType(instance))
                 {
-                    throw new ArgumentException("instance");
+                    throw new ArgumentException(nameof(instance));
                 }
 
                 return new ComNativeTypeDescriptor(_handler, instance);
@@ -3218,7 +3218,7 @@ namespace System.ComponentModel
             {
                 if (editorBaseType == null)
                 {
-                    throw new ArgumentNullException("editorBaseType");
+                    throw new ArgumentNullException(nameof(editorBaseType));
                 }
 
                 object editor = _primary.GetEditor(editorBaseType);
@@ -3335,14 +3335,14 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 if (argTypes != null)
                 {
                     if (args == null)
                     {
-                        throw new ArgumentNullException("args");
+                        throw new ArgumentNullException(nameof(args));
                     }
 
                     if (argTypes.Length != args.Length)
@@ -3362,7 +3362,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return Provider.GetCache(instance);
@@ -3376,7 +3376,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return new DefaultExtendedTypeDescriptor(this, instance);
@@ -3386,7 +3386,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return Provider.GetExtenderProviders(instance);
@@ -3405,7 +3405,7 @@ namespace System.ComponentModel
             {
                 if (component == null)
                 {
-                    throw new ArgumentNullException("component");
+                    throw new ArgumentNullException(nameof(component));
                 }
 
                 return Provider.GetFullComponentName(component);
@@ -3419,7 +3419,7 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 return Provider.GetReflectionType(objectType, instance);
@@ -3429,7 +3429,7 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 return Provider.GetRuntimeType(objectType);
@@ -3445,12 +3445,12 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 if (instance != null && !objectType.IsInstanceOfType(instance))
                 {
-                    throw new ArgumentException("instance");
+                    throw new ArgumentException(nameof(instance));
                 }
 
                 return new DefaultTypeDescriptor(this, objectType, instance);
@@ -3460,7 +3460,7 @@ namespace System.ComponentModel
             {
                 if (type == null)
                 {
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
                 }
                 return Provider.IsSupportedType(type);
             }
@@ -3628,7 +3628,7 @@ namespace System.ComponentModel
                 {
                     if (editorBaseType == null)
                     {
-                        throw new ArgumentNullException("editorBaseType");
+                        throw new ArgumentNullException(nameof(editorBaseType));
                     }
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3970,7 +3970,7 @@ namespace System.ComponentModel
                 {
                     if (editorBaseType == null)
                     {
-                        throw new ArgumentNullException("editorBaseType");
+                        throw new ArgumentNullException(nameof(editorBaseType));
                     }
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
