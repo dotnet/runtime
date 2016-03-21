@@ -7,6 +7,7 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageAsRefAndLib Condition="'$(TargetGroup)'=='net46'">true</PackageAsRefAndLib>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
