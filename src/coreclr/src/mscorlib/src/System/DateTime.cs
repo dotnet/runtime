@@ -920,14 +920,6 @@ namespace System {
                 long ticks = 0;
                 ticks = GetSystemTimeAsFileTime();
 
-#if FEATURE_LEGACYNETCF
-            // Windows Phone 7.0/7.1 return the ticks up to millisecond, not up to the 100th nanosecond.
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                long ticksms = ticks / TicksPerMillisecond;
-                ticks = ticksms * TicksPerMillisecond;
-            }
-#endif
                 return new DateTime( ((UInt64)(ticks + FileTimeOffset)) | KindUtc);
             }
         }

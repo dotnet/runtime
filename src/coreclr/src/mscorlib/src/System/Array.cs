@@ -1001,14 +1001,7 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
 
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                return MangoArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
-            else
-                return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
-#else
             return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
-#endif
         }
 
         public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput,TOutput> converter) {
@@ -1808,15 +1801,8 @@ namespace System {
                         return;
                     }
                 }
-                
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    MangoArraySortHelper<T>.Default.Sort(array, index, length, comparer);                
-                else
-                    ArraySortHelper<T>.Default.Sort(array, index, length, comparer);                
-#else
+
                 ArraySortHelper<T>.Default.Sort(array, index, length, comparer);                
-#endif
             }
         }
 
@@ -1844,14 +1830,7 @@ namespace System {
                     return;
                 }
 
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    MangoArraySortHelper<TKey>.Default.Sort<TValue>(keys, items, index, length, comparer);
-                else
-                    ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, index, length, comparer);
-#else
                 ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, index, length, comparer);
-#endif
             }
         }
 

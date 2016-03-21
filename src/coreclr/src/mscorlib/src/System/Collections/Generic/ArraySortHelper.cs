@@ -470,15 +470,7 @@ namespace System.Collections.Generic
 
             try
             {
-#if FEATURE_LEGACYNETCF
-                // Pre-Apollo Windows Phone call the overload that sorts the keys, not values this achieves the same result
-                if (comparer == null && CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    comparer = Comparer<T>.Default;
-
-                if (comparer == null || (comparer == Comparer<T>.Default && !CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)) {
-#else
                 if (comparer == null || comparer == Comparer<T>.Default) {
-#endif
 
 #if FEATURE_CORECLR
                     // Since QuickSort and IntrospectiveSort produce different sorting sequence for equal keys the upgrade 

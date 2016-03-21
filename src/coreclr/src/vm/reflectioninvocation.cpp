@@ -521,34 +521,8 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
 
     HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refThis);
 
-#ifdef FEATURE_LEGACYNETCF
-    BOOL fNetCFCompat = GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8;
-#else
-    const BOOL fNetCFCompat = FALSE;
-#endif
-
     MethodTable* pVMT;
     bool bNeedAccessCheck;
-    
-    if (fNetCFCompat && !thisTH.IsNull() && thisTH.IsArray())
-    {
-        ArrayTypeDesc *atd = thisTH.AsArray();
-        if (atd->GetTypeParam().IsArray())
-        {
-            // We could do this, but Mango doesn't support creating 
-            // arrays of arrays here
-            COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
-        }
- 
-        INT32 rank = atd->GetRank();
-        INT32* lengths = (INT32*) _alloca(sizeof(INT32) * rank);
-        for (INT32 i = 0; i < rank; ++i)
-        {
-            lengths[i] = 0;
-        }
-        rv = AllocateArrayEx(thisTH, lengths, rank);
-        goto Exit;
-    }
 
     // Get the type information associated with refThis
     if (thisTH.IsNull() || thisTH.IsTypeDesc())
@@ -736,8 +710,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             }
         }
     }
-    
-Exit:
+
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
 }

@@ -578,11 +578,6 @@ namespace System.Reflection
             if (defaultValue == DBNull.Value)
             {
                 #region Handle case if no default value was found
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    defaultValue = null;
-                else
-#endif
                 if (IsOptional)
                 {
                     // If the argument is marked as optional then the default value is Missing.Value.

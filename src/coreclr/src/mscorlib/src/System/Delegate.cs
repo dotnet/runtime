@@ -349,23 +349,6 @@ namespace System {
             return CreateDelegate(type, target, method, ignoreCase, true);
         }
 
-#if FEATURE_LEGACYNETCF
-        private static void CheckGetMethodInfo_Quirk(Type type, Type target, String method, BindingFlags bindingFlags)
-        {
-            ParameterInfo[] parameters = type.GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance).GetParameters();
-
-            Type[] types = new Type[parameters.Length];
-            for (Int32 i = 0; i < parameters.Length; i++)
-                types[i] = parameters[i].ParameterType;
-    
-            MethodInfo mInfo = target.GetMethod(method, bindingFlags, null, types, null);
-            if (mInfo == null)
-                throw new MissingMethodException(target.FullName, method);
-        }    
-#endif
- 
-
-            
         // V1 API.
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static Delegate CreateDelegate(Type type, Object target, String method, bool ignoreCase, bool throwOnBindFailure)
@@ -383,15 +366,6 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), "type");
             if (!rtType.IsDelegate())
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"),"type");
-
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                CheckGetMethodInfo_Quirk(type, target.GetType(), method,
-                                         BindingFlags.NonPublic | 
-                                         BindingFlags.Public | 
-                                         BindingFlags.Instance |
-                                         (ignoreCase?BindingFlags.IgnoreCase:0));
-#endif
 
             Delegate d = InternalAlloc(rtType);
             // This API existed in v1/v1.1 and only expected to create closed
@@ -449,15 +423,6 @@ namespace System {
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), "target");
             if (!rtType.IsDelegate())
                 throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"),"type");
-
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                CheckGetMethodInfo_Quirk(type, target, method,
-                                         BindingFlags.NonPublic | 
-                                         BindingFlags.Public | 
-                                         BindingFlags.Static | 
-                                         (ignoreCase?BindingFlags.IgnoreCase:0));
-#endif
 
             Delegate d = InternalAlloc(rtType);
             // This API existed in v1/v1.1 and only expected to create open
@@ -701,13 +666,6 @@ namespace System {
         [System.Security.SecurityCritical]
         internal static Delegate UnsafeCreateDelegate(RuntimeType rtType, RuntimeMethodInfo rtMethod, Object firstArgument, DelegateBindingFlags flags)
         {
-
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                if(rtMethod.IsGenericMethodDefinition)
-                    throw new MissingMethodException(rtMethod.DeclaringType.FullName, rtMethod.Name);
-#endif
-
             Delegate d = InternalAlloc(rtType);
 
             if (d.BindToMethodInfo(firstArgument, rtMethod, rtMethod.GetDeclaringTypeInternal(), flags))

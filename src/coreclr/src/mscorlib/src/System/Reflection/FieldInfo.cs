@@ -517,11 +517,6 @@ namespace System.Reflection
                 {
                     if (target == null)
                     {
-#if FEATURE_LEGACYNETCF
-                        if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                            throw new ArgumentNullException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
-                        else
-#endif
                         throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
                     }
                     else

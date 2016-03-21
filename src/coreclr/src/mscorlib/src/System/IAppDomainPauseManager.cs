@@ -20,23 +20,8 @@ namespace System
     using System.Runtime.Versioning;
     using System.Runtime.CompilerServices;
 
-#if FEATURE_LEGACYNETCFFAS
     [System.Security.SecurityCritical]
-    public interface IAppDomainPauseManager
-    {
-        void Pausing();
-        void Paused();
-        void Resuming();
-        void Resumed();
-    }
-#endif
-
-    [System.Security.SecurityCritical]
-#if FEATURE_LEGACYNETCFFAS
-    public class AppDomainPauseManager : IAppDomainPauseManager
-#else
     internal class AppDomainPauseManager
-#endif
     {
         [System.Security.SecurityCritical]
         public AppDomainPauseManager()

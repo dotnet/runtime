@@ -2803,17 +2803,6 @@ namespace System {
 
 #endif // FEATURE_REMOTING        
 
-#if FEATURE_LEGACYNETCFFAS
-        public static IAppDomainPauseManager PauseManager
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                return AppDomainPauseManager.Instance;
-            }
-        }
-#endif // FEATURE_LEGACYNETCFFAS
-
 #if !FEATURE_CORECLR
         //
         // Called by the VM if ICLRExecutionManager::Pause is called with the PAUSE_APP_DOMAINS flag.

@@ -596,14 +596,7 @@ namespace System {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
             if (indexes != null && !Contract.ForAll(indexes, delegate(Type t) { return t != null; }))
             {
-                Exception e;  // Written this way to pass the Code Contracts style requirements.
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    e = new NullReferenceException();
-                else
-#endif
-                    e = new ArgumentNullException("indexes");
-                throw e;
+                throw new ArgumentNullException("indexes");
             }
             if (match == null || match.Length == 0)
                 throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), "match");
