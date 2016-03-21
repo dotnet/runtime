@@ -885,6 +885,8 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context, M
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
 
+	res->is_transient = TRUE;
+
 	mono_error_init (error);
 
 	for (i = 0; i < header->num_locals; ++i) {
@@ -2827,20 +2829,7 @@ mono_method_get_header_checked (MonoMethod *method, MonoError *error)
 			return NULL;
 		}
 
-		mono_image_lock (img);
-
-		if (imethod->header) {
-			mono_metadata_free_mh (iheader);
-			mono_image_unlock (img);
-			return imethod->header;
-		}
-
-		mono_memory_barrier ();
-		imethod->header = iheader;
-
-		mono_image_unlock (img);
-
-		return imethod->header;
+		return iheader;
 	}
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
