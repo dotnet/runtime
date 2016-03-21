@@ -232,7 +232,7 @@ extern "C" void NetSecurityNative_ReleaseGssBuffer(void* buffer, uint64_t length
     assert(buffer != nullptr);
 
     uint32_t minorStatus;
-    GssBuffer gssBuffer{.length = length, .value = buffer};
+    GssBuffer gssBuffer{.length = static_cast<size_t>(length), .value = buffer};
     gss_release_buffer(&minorStatus, &gssBuffer);
 }
 
