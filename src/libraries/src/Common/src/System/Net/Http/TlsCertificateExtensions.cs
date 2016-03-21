@@ -73,6 +73,27 @@ namespace System.Net.Http
             return isClientAuth && isDigitalSignature;
         }
 
+        internal static X509Chain BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
+        {
+            var chain = new X509Chain();
+            chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            if (includeClientApplicationPolicy)
+            {
+                chain.ChainPolicy.ApplicationPolicy.Add(s_clientCertOidInst);
+            }
+
+            if (chain.Build(certificate))
+            {
+                return chain;
+            }
+            else
+            {
+                chain.Dispose();
+                return null;
+            }
+        }
+
         /// <summary>
         ///   Returns a new collection containing valid client certificates from the given X509Certificate2Collection
         /// </summary>
@@ -102,13 +123,8 @@ namespace System.Net.Http
                             return true;
                         }
 
-                        X509Chain chain = new X509Chain();
-                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-                        chain.ChainPolicy.ApplicationPolicy.Add(s_clientCertOidInst);
-
-                        // We will just build the certificate chain
-                        if (!chain.Build(cert))
+                        X509Chain chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
+                        if (chain == null)
                         {
                             continue;
                         }
