@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tests
                 // Turn on events with both implicit and explicit types You can have whitespace 
                 // before and after each spec.   Use \n rather than \r\n 
                 eventSourceListener.Enable(
-                    "  LinuxNewLineConventionsSource/TestEvent1:-cls_Point_X=cls.Point.X\n" + 
+                    "  LinuxNewLineConventionsSource/TestEvent1:-cls_Point_X=cls.Point.X\n" +
                     "  LinuxNewLineConventionsSource/TestEvent2:-cls_Url=cls.Url\n"
                     );
 
@@ -412,7 +412,7 @@ namespace System.Diagnostics.Tests
                 // This is just to make debugging easier.  
                 var messages = new List<string>();
 
-                eventSourceListener.OtherEventWritten += delegate(EventWrittenEventArgs evnt)
+                eventSourceListener.OtherEventWritten += delegate (EventWrittenEventArgs evnt)
                 {
                     if (evnt.EventName == "Message")
                     {
@@ -425,6 +425,76 @@ namespace System.Diagnostics.Tests
                 eventSourceListener.Enable("TestMessagesSource/TestEvent1:-cls.Url");
                 Assert.Equal(0, eventSourceListener.EventCount);
                 Assert.True(3 <= messages.Count);
+            }
+        }
+
+        /// <summary>
+        /// Tests the feature to send the messsages as EventSource Activities.  
+        /// </summary>
+        [Fact]
+        public void TestActivities()
+        {
+            using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+            using (var diagnosticSourceListener = new DiagnosticListener("TestActivitiesSource"))
+            {
+                Assert.Equal(0, eventSourceListener.EventCount);
+                eventSourceListener.Enable(
+                    "TestActivitiesSource/TestActivity1Start@Activity1Start\r\n" +
+                    "TestActivitiesSource/TestActivity1Stop@Activity1Stop\r\n" + 
+                    "TestActivitiesSource/TestActivity2Start@Activity2Start\r\n" +
+                    "TestActivitiesSource/TestActivity2Stop@Activity2Stop\r\n" + 
+                    "TestActivitiesSource/TestEvent\r\n"
+                    );
+
+                // Start activity 1
+                diagnosticSourceListener.Write("TestActivity1Start", new { propStr = "start" });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity1Start", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestActivity1Start", eventSourceListener.LastEvent.EventName);
+                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Start nested activity 2
+                diagnosticSourceListener.Write("TestActivity2Start", new { propStr = "start" });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity2Start", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestActivity2Start", eventSourceListener.LastEvent.EventName);
+                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("start", eventSourceListener.LastEvent.Arguments["propStr"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Send a normal event 
+                diagnosticSourceListener.Write("TestEvent", new { propStr = "event" });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Event", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestEvent", eventSourceListener.LastEvent.EventName);
+                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("event", eventSourceListener.LastEvent.Arguments["propStr"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Stop nested activity 2
+                diagnosticSourceListener.Write("TestActivity2Stop", new { propStr = "stop" });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity2Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestActivity2Stop", eventSourceListener.LastEvent.EventName);
+                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
+
+                // Stop activity 1
+                diagnosticSourceListener.Write("TestActivity1Stop", new { propStr = "stop" });
+                Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                Assert.Equal("Activity1Stop", eventSourceListener.LastEvent.EventSourceEventName);
+                Assert.Equal("TestActivitiesSource", eventSourceListener.LastEvent.SourceName);
+                Assert.Equal("TestActivity1Stop", eventSourceListener.LastEvent.EventName);
+                Assert.Equal(1, eventSourceListener.LastEvent.Arguments.Count);
+                Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
+                eventSourceListener.ResetEventCountAndLastEvent();
             }
         }
     }
@@ -464,8 +534,11 @@ namespace System.Diagnostics.Tests
 
         public int EventCount;
         public DiagnosticSourceEvent LastEvent;
-        public DiagnosticSourceEvent SecondLast;
+#if DEBUG 
+        // Here just for debugging.  Lets you see the last 3 events that were sent.  
+        public DiagnosticSourceEvent SecondLast;  
         public DiagnosticSourceEvent ThirdLast;
+#endif 
 
         /// <summary>
         /// Sets the EventCount to 0 and LastEvent to null
@@ -474,8 +547,10 @@ namespace System.Diagnostics.Tests
         {
             EventCount = 0;
             LastEvent = null;
+#if DEBUG
             SecondLast = null;
             ThirdLast = null;
+#endif
         }
 
         /// <summary>
@@ -489,8 +564,10 @@ namespace System.Diagnostics.Tests
             if (Filter != null && !Filter(anEvent))
                 return;
 
+#if DEBUG 
             ThirdLast = SecondLast;
             SecondLast = LastEvent;
+#endif
 
             EventCount++;
             LastEvent = anEvent;
@@ -506,6 +583,9 @@ namespace System.Diagnostics.Tests
         public string SourceName;
         public string EventName;
         public Dictionary<string, string> Arguments;
+
+        // Not typically important. 
+        public string EventSourceEventName;    // This is the name of the EventSourceEvent that carried the data.   Only important for activities.  
 
         public override string ToString()
         {
@@ -579,13 +659,14 @@ namespace System.Diagnostics.Tests
             var eventWritten = EventWritten;
             if (eventWritten != null)
             {
-                if (eventData.EventName == "Event" && eventData.Payload.Count == 3)
+                if (eventData.Payload.Count == 3 && (eventData.EventName == "Event" || eventData.EventName.Contains("Activity")))
                 {
                     Debug.Assert(eventData.PayloadNames[0] == "SourceName");
                     Debug.Assert(eventData.PayloadNames[1] == "EventName");
                     Debug.Assert(eventData.PayloadNames[2] == "Arguments");
 
                     var anEvent = new DiagnosticSourceEvent();
+                    anEvent.EventSourceEventName = eventData.EventName;
                     anEvent.SourceName = eventData.Payload[0].ToString();
                     anEvent.EventName = eventData.Payload[1].ToString();
                     anEvent.Arguments = new Dictionary<string, string>();
@@ -607,6 +688,9 @@ namespace System.Diagnostics.Tests
                     wroteEvent = true;
                 }
             }
+           
+            if (eventData.EventName == "EventSourceMessage" && 0 < eventData.Payload.Count) 
+                System.Diagnostics.Debug.WriteLine("EventSourceMessage: " + eventData.Payload[0].ToString());
 
             var otherEventWritten = OtherEventWritten;
             if (otherEventWritten != null && !wroteEvent)

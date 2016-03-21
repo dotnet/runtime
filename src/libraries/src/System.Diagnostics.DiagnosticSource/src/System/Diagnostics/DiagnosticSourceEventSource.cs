@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Reflection;
@@ -37,6 +36,7 @@ namespace System.Diagnostics
     ///       * EVENT_NAME : TRANSFORM_SPEC
     ///       * EMPTY - turns on all sources with implicit payload elements. 
     ///   * an EVENTNAME can be  
+    ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME @ EVENT_SOURCE_EVENTNAME  - give the name as well as the EventSource event to log it under.  
     ///       * DIAGNOSTIC_SOURCE_NAME / DIAGNOSTC_EVENT_NAME   
     ///       * DIAGNOSTIC_SOURCE_NAME    - which wildcards every event in the Diagnostic source or 
     ///       * EMPTY                     - which turns on all sources
@@ -47,7 +47,7 @@ namespace System.Diagnostics
     ///   * a PROPERTY_SPEC ca be
     ///       * PROPERTY_NAME                  - fetches a property from the DiagnosticSource payload object
     ///       * PROPERTY_NAME . PROPERTY NAME  - fetches a sub-property of the object. 
-    ///
+    /// 
     /// Example1:
     /// 
     ///    "BridgeTestSource1/TestEvent1:cls_Point_X=cls.Point.X;cls_Point_Y=cls.Point.Y\r\n" + 
@@ -81,6 +81,50 @@ namespace System.Diagnostics
     /// into the output.   This is not likely to be a good idea as it will be very verbose, but is useful to quickly
     /// discover what is available.
     /// 
+    /// 
+    /// * How data is logged in the EventSource 
+    /// 
+    /// By default all data from Diagnostic sources is logged to the the DiagnosticEventSouce event called 'Event' 
+    /// which has three fields  
+    /// 
+    ///     string SourceName, 
+    ///     string EventName, 
+    ///     IEnumerable[KeyValuePair[string, string]] Argument
+    /// 
+    /// However to support start-stop activity tracking, there are six other events that can be used 
+    /// 
+    ///     Activity1Start         
+    ///     Activity1Stop
+    ///     Activity2Start
+    ///     Activity2Stop
+    ///     RecursiveActivity1Start
+    ///     RecursiveActivity1Stop
+    ///     
+    /// By using the SourceName/EventName@EventSourceName syntax, you can force particular DiagnosticSource events to
+    /// be logged with one of these EventSource events.   This is useful because the events above have start-stop semantics
+    /// which means that they create activity IDs that are attached to all logging messages between the start and
+    /// the stop (see https://blogs.msdn.microsoft.com/vancem/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features/)
+    /// 
+    /// For example the specification 
+    ///     
+    ///     "MyDiagnosticSource/RequestStart@Activity1Start\r\n" + 
+    ///     "MyDiagnosticSource/RequestStop@Activity1Stop\r\n" + 
+    ///     "MyDiagnosticSource/SecurityStart@Activity2Start\r\n" + 
+    ///     "MyDiagnosticSource/SecurityStop@Activity2Stop\r\n" 
+    /// 
+    /// Defines that RequestStart will be logged with the EventSource Event Activity1Start (and the cooresponding stop) which
+    /// means that all events caused between these two markers will have an activity ID assocatied with this start event.  
+    /// Simmilarly SecurityStart is mapped to Activity2Start.    
+    /// 
+    /// Note you can map many DiangosticSource events to the same EventSource Event (e.g. Activity1Start).  As long as the
+    /// activities don't nest, you can reuse the same event name (since the payloads have the DiagnosticSource name which can
+    /// disambiguate).   However if they nest you need to use another EventSource event because the rules of EventSource 
+    /// activities state that a start of the same event terminates any existing activity of the same name.   
+    /// 
+    /// As its name suggests RecursiveActivity1Start, is marked as recursive and thus can be used when the activity can nest with 
+    /// itself.   This should not be a 'top most' activity because it is not 'self healing' (if you miss a stop, then the
+    /// activity NEVER ends).   
+    /// 
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.  
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
@@ -88,7 +132,7 @@ namespace System.Diagnostics
     {
         public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
 
-        private class Keywords
+        public class Keywords
         {
             /// <summary>
             /// Indicates diagnostics messages from DiagnosticSourceEventSource should be included. 
@@ -129,13 +173,69 @@ namespace System.Diagnostics
             WriteEvent(3, SourceName, EventName, ArgmentsJson);
         }
 
+#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
+        /// <summary>
+        /// Used to mark the beginning of an activity 
+        /// </summary>
+        [Event(4, Keywords = Keywords.Events)]
+        private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(4, SourceName, EventName, Arguments);
+        }
+
+        /// <summary>
+        /// Used to mark the end of an activity 
+        /// </summary>
+        [Event(5, Keywords = Keywords.Events)]
+        private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(5, SourceName, EventName, Arguments);
+        }
+
+        /// <summary>
+        /// Used to mark the beginning of an activity 
+        /// </summary>
+        [Event(6, Keywords = Keywords.Events)]
+        private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(6, SourceName, EventName, Arguments);
+        }
+
+        /// <summary>
+        /// Used to mark the end of an activity that can be recursive.  
+        /// </summary>
+        [Event(7, Keywords = Keywords.Events)]
+        private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(7, SourceName, EventName, Arguments);
+        }
+
+        /// <summary>
+        /// Used to mark the beginning of an activity 
+        /// </summary>
+        [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+        private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(8, SourceName, EventName, Arguments);
+        }
+
+        /// <summary>
+        /// Used to mark the end of an activity that can be recursive.  
+        /// </summary>
+        [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
+        private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string>> Arguments)
+        {
+            WriteEvent(9, SourceName, EventName, Arguments);
+        }
+#endif
+
         #region private
 
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Converts a keyvalue bag to JSON.  Only used on V4.5 EventSources.  
         /// </summary>
-        private static string ToJson(List<KeyValuePair<string, string>> keyValues)
+        private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("{");
@@ -317,6 +417,7 @@ namespace System.Diagnostics
 
                 string listenerNameFilter = null;       // Means WildCard. 
                 string eventNameFilter = null;          // Means WildCard.
+                string activityName = null;
 
                 var startTransformIdx = startIdx;
                 var endEventNameIdx = endIdx;
@@ -332,13 +433,22 @@ namespace System.Diagnostics
                 if (0 <= slashIdx)
                 {
                     listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, slashIdx - startIdx);
-                    eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, endEventNameIdx - slashIdx - 1);
+
+                    var atIdx = filterAndPayloadSpec.IndexOf('@', slashIdx+1, endEventNameIdx - slashIdx - 1);
+                    if (0 <= atIdx)
+                    {
+                        activityName = filterAndPayloadSpec.Substring(atIdx + 1, endEventNameIdx - atIdx - 1);
+                        eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, atIdx - slashIdx - 1);
+                    }
+                    else
+                    {
+                        eventNameFilter = filterAndPayloadSpec.Substring(slashIdx + 1, endEventNameIdx - slashIdx - 1);
+                    }
                 }
                 else if (startIdx < endEventNameIdx)
                 {
                     listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, endEventNameIdx - startIdx);
                 }
-
 
                 _eventSource.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
 
@@ -374,6 +484,38 @@ namespace System.Diagnostics
                     }
                 }
 
+                Action<string, string, IEnumerable<KeyValuePair<string, string>>> writeEvent = null;
+                if (activityName != null && activityName.Contains("Activity"))
+                {
+                    MethodInfo writeEventMethodInfo = typeof(DiagnosticSourceEventSource).GetTypeInfo().GetDeclaredMethod(activityName);
+                    if (writeEventMethodInfo != null)
+                    {
+                        // This looks up the activityName (which needs to be a name of an event on DiagnosticSourceEventSource
+                        // like Activity1Start and returns that method).   This allows us to have a number of them and this code
+                        // just works.  
+                        try
+                        {
+                            writeEvent = (Action<string, string, IEnumerable<KeyValuePair<string, string>>>)
+                                writeEventMethodInfo.CreateDelegate(typeof(Action<string, string, IEnumerable<KeyValuePair<string, string>>>), _eventSource);
+                        }
+                        catch (Exception) { }
+                    }
+                    if (writeEvent == null)
+                        _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
+                }
+
+                if (writeEvent == null)
+                {
+#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
+                    writeEvent = _eventSource.Event;
+#else
+                    writeEvent = delegate (string sourceName, string eventName, IEnumerable<KeyValuePair<string, string>> arguments)
+                    {
+                        _eventSource.EventJson(sourceName, eventName, ToJson(arguments));
+                    };
+#endif
+                }
+
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
                 // to the EventSource.   
                 _diagnosticsListenersSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(delegate (DiagnosticListener newListener)
@@ -392,11 +534,8 @@ namespace System.Diagnostics
                                 return;
 
                             var outputArgs = this.Morph(evnt.Value);
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-                            _eventSource.Event(newListener.Name, evnt.Key, outputArgs);
-#else
-                            _eventSource.EventJson(newListener.Name, evnt.Key, ToJson(outputArgs));
-#endif
+                            var eventName = evnt.Key;
+                            writeEvent(newListener.Name, eventName, outputArgs);
                         }), eventNameFilterPredicate);
                         _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
                     }
@@ -648,7 +787,7 @@ namespace System.Diagnostics
                 }
 
                 private string _propertyName;
-                private Type _expectedType;                 
+                private Type _expectedType;
                 private PropertyFetch _fetchForExpectedType;
                 #endregion
             }
