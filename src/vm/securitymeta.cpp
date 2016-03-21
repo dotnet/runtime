@@ -1612,15 +1612,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
 
     AssemblySecurityDescriptor *pAssemSecDesc = static_cast<AssemblySecurityDescriptor*>(pAssembly->GetSecurityDescriptor());
 
-#ifdef FEATURE_LEGACYNETCF
-    // Legacy Mango apps have incorrect transparency attributes, so quirk to ignore them and force
-    // opportunistic criticality
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8 && !pAssemSecDesc->IsMicrosoftPlatform())
-    {
-        moduleFlags = ModuleSecurityDescriptorFlags_IsOpportunisticallyCritical | ModuleSecurityDescriptorFlags_IsAPTCA;
-    }
-#endif // FEATURE_LEGACYNETCF
-
     // We shouldn't be both all transparent and all critical
     const ModuleSecurityDescriptorFlags invalidMask = ModuleSecurityDescriptorFlags_IsAllCritical |
                                                       ModuleSecurityDescriptorFlags_IsAllTransparent;

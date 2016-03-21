@@ -2398,17 +2398,6 @@ namespace System {
             if (inArray == null)
                 throw new ArgumentNullException("inArray");
 
-#if FEATURE_LEGACYNETCF
-            Contract.EndContractBlock();
-
-            // throw FormatException, to ensure compatibility with Mango Apps.
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                if(inArray.Length == 0) {
-                     throw new FormatException();
-                }
-            }
-#endif
-
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length", Environment.GetResourceString("ArgumentOutOfRange_Index"));
 
@@ -2418,9 +2407,7 @@ namespace System {
             if (offset > inArray.Length - length)
                 throw new ArgumentOutOfRangeException("offset", Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
 
-#if !FEATURE_LEGACYNETCF  // Our compat workaround above breaks CCRewrite's rules on valid contracts.
             Contract.EndContractBlock();
-#endif
 
             unsafe {
                 fixed (Char* inArrayPtr = inArray) {

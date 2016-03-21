@@ -1147,14 +1147,6 @@ namespace System {
                     PlatformID id = PlatformID.Unix;
 #else
                     PlatformID id = PlatformID.Win32NT;
-
-#if FEATURE_LEGACYNETCF
-                    // return platform as WinCE, to ensure apps earlier than WP8 works as expected. 
-                    if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    {
-                        id = PlatformID.WinCE;
-                    }
-#endif
 #endif // PLATFORM_UNIX
 
                     Version v =  new Version(osvi.MajorVersion, osvi.MinorVersion, osvi.BuildNumber, (osviEx.ServicePackMajor << 16) |osviEx.ServicePackMinor);

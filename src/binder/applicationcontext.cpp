@@ -459,13 +459,7 @@ namespace BINDER_SPACE
             SAFE_NEW(pNewAssemblyIdentity, AssemblyIdentityUTF8);
             sTextualIdentity.SetUTF8(szTextualIdentity);
 
-
-            BOOL fWindowsPhone7 = false;
-#ifdef FEATURE_LEGACYNETCF
-            fWindowsPhone7 = RuntimeIsLegacyNetCF(GetAppDomainId());
-#endif // FEATURE_LEGACYNETCF
-
-            IF_FAIL_GO(TextualIdentityParser::Parse(sTextualIdentity, pNewAssemblyIdentity, fWindowsPhone7));
+            IF_FAIL_GO(TextualIdentityParser::Parse(sTextualIdentity, pNewAssemblyIdentity));
             IF_FAIL_GO(m_assemblyIdentityCache.Add(szTextualIdentity, pNewAssemblyIdentity));
 
             pNewAssemblyIdentity->PopulateUTF8Fields();
