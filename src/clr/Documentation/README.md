@@ -57,6 +57,7 @@ Testing and Debugging CoreCLR
 - [Testing Changes on Linux, OS X, and FreeBSD](building/unix-test-instructions.md)
 - [Testing with CoreFX](building/testing-with-corefx.md)
 - [.NET Performance Data Collection Script](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect)
+- [Creating native images](building/crossgen.md)
 
 Book of the Runtime
 ===================
