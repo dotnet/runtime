@@ -90,7 +90,9 @@
 namespace Microsoft.Win32 {
     using System;
     using System.Security;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Text;
     using System.Configuration.Assemblies;
     using System.Runtime.Remoting;
@@ -2330,23 +2332,12 @@ namespace Microsoft.Win32 {
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern int LsaFreeReturnBuffer(IntPtr handle);
 
-#if FEATURE_IMPERSONATION || FEATURE_CORECLR
+#if FEATURE_IMPERSONATION
         [DllImport (ADVAPI32, CharSet=CharSet.Unicode, SetLastError=true)]
         internal static extern 
         bool OpenProcessToken (
             [In]     IntPtr                     ProcessToken,
             [In]     TokenAccessLevels          DesiredAccess,
-            [Out]    out SafeAccessTokenHandle  TokenHandle);
-#endif
-
-#if FEATURE_CORECLR
-        [DllImport (ADVAPI32, CharSet=CharSet.Unicode, SetLastError=true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern 
-        bool OpenThreadToken (
-            [In]     IntPtr                     ThreadHandle,
-            [In]     TokenAccessLevels          DesiredAccess,
-            [In, MarshalAs(UnmanagedType.Bool)]     bool OpenAsSelf,
             [Out]    out SafeAccessTokenHandle  TokenHandle);
 #endif
 
