@@ -14,7 +14,9 @@ namespace System.Threading
     using System;
     using System.Security;
     using System.Runtime.Remoting;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Collections;
     using System.Collections.Generic;
     using System.Reflection;
