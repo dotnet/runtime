@@ -254,7 +254,7 @@ rather than the underlying integral type.
 
 Often, various UNIX flavors offer the same API from the point-of-view of compatibility
 with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out
-differently, constants cn have different numeric values, exports can
+differently, constants can have different numeric values, exports can
 be named differently, etc. There are not only differences between operating systems
 (Mac OS X vs. Ubuntu vs. FreeBSD), but also differences related to the underlying
 processor architecture (x64 vs. x86 vs. ARM).
