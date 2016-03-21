@@ -121,7 +121,7 @@ namespace System.Diagnostics
     /// disambiguate).   However if they nest you need to use another EventSource event because the rules of EventSource 
     /// activities state that a start of the same event terminates any existing activity of the same name.   
     /// 
-    /// As its name suggests RecursiveActivit1Start, is marked as recursive and thus can be used when the activity can nest with 
+    /// As its name suggests RecursiveActivity1Start, is marked as recursive and thus can be used when the activity can nest with 
     /// itself.   This should not be a 'top most' activity because it is not 'self healing' (if you miss a stop, then the
     /// activity NEVER ends).   
     /// 
