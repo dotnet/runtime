@@ -505,7 +505,7 @@ namespace System.ComponentModel
 
             if (newProp == null)
             {
-                throw new ArgumentException("value");
+                throw new ArgumentException(nameof(value));
             }
             Add(newProp);
         }
@@ -571,7 +571,7 @@ namespace System.ComponentModel
 
                 if (value != null && !(value is PropertyDescriptor))
                 {
-                    throw new ArgumentException("value");
+                    throw new ArgumentException(nameof(value));
                 }
 
                 int index = -1;
@@ -598,7 +598,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    throw new ArgumentException("key");
+                    throw new ArgumentException(nameof(key));
                 }
 
                 if (index == -1)
@@ -752,7 +752,7 @@ namespace System.ComponentModel
 
                 if (value != null && !(value is PropertyDescriptor))
                 {
-                    throw new ArgumentException("value");
+                    throw new ArgumentException(nameof(value));
                 }
 
                 EnsurePropsOwned();
