@@ -65,9 +65,6 @@
     <FeatureAscii>true</FeatureAscii>
     <FeatureUtf7>true</FeatureUtf7>
     <FeatureUtf32>true</FeatureUtf32>
-    <FeatureLegacyNetCFDbgHostControl>true</FeatureLegacyNetCFDbgHostControl>
-    <FeatureLegacyNetCFFAS>true</FeatureLegacyNetCFFAS>
-    <FeatureLegacyNetCF>true</FeatureLegacyNetCF>
     <FeatureRandomizedStringHashing>true</FeatureRandomizedStringHashing>
     <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>

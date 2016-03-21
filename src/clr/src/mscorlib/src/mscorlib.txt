@@ -930,8 +930,6 @@ Cryptography_InvalidKeySize = Specified key is not a valid size for this algorit
 Cryptography_PasswordDerivedBytes_FewBytesSalt = Salt is not at least eight bytes.
 Cryptography_PKCS7_InvalidPadding = Padding is invalid and cannot be removed.
 Cryptography_UnknownHashAlgorithm='{0}' is not a known hash algorithm.
-Cryptography_LegacyNetCF_UnknownError = Unknown Error '{0}'.
-Cryptography_LegacyNetCF_CSP_CouldNotAcquire = CryptoAPI cryptographic service provider (CSP) for this implementation could not be acquired.
 
 #if FEATURE_CRYPTO
 Cryptography_Config_EncodedOIDError = Encoded OID length is too large (greater than 0x7f bytes).

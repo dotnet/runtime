@@ -86,15 +86,7 @@ enum CorJitFlag
     CORJIT_FLG_GCPOLL_CALLS        = 0x00000040, // Emit calls to JIT_POLLGC for thread suspension.
     CORJIT_FLG_MCJIT_BACKGROUND    = 0x00000080, // Calling from multicore JIT background thread, do not call JitComplete
 
-#if defined(FEATURE_LEGACYNETCF)
-
-    CORJIT_FLG_NETCF_QUIRKS        = 0x00000100, // Mimic .NetCF JIT's quirks for generated code (currently just inlining heuristics)
-
-#else // FEATURE_LEGACYNETCF
-
     CORJIT_FLG_UNUSED1             = 0x00000100,
-
-#endif // FEATURE_LEGACYNETCF
 
 #if defined(_TARGET_X86_)
 

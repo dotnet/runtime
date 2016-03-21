@@ -122,11 +122,6 @@ class Zapper
     SString                 m_appPaths;
     SString                 m_appNiPaths;
     SString                 m_platformWinmdPaths;
-
-#ifdef FEATURE_LEGACYNETCF
-    bool                    m_appCompatWP8;    // Whether we're using quirks mode for binding with NetCF semantics.
-#endif
-
 #endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 
     bool                    m_fForceFullTrust;
@@ -447,11 +442,6 @@ class Zapper
     void SetAppPaths(LPCWSTR pwzAppPaths);
     void SetAppNiPaths(LPCWSTR pwzAppNiPaths);
     void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
-
-#ifdef FEATURE_LEGACYNETCF
-    void SetAppCompatWP8(bool val);
-#endif
-
     void SetForceFullTrust(bool val);
 #endif // FEATURE_CORECLR || CROSSGEN_COMPILE
 

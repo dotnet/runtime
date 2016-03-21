@@ -794,10 +794,6 @@ BaseDomain::BaseDomain()
     m_reJitMgr.PreInit(this == (BaseDomain *) g_pSharedDomainMemory);
 #endif
 
-#ifdef FEATURE_CORECLR
-    m_CompatMode = APPDOMAINCOMPAT_NONE;
-#endif
-    
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -14164,23 +14160,6 @@ BOOL AppDomain::IsImageFullyTrusted(PEImage* pPEImage)
     return IsImageFromTrustedPath(pPEImage);
 }
 
-#ifdef FEATURE_LEGACYNETCF
-BOOL RuntimeIsLegacyNetCF(DWORD adid)
-{
-    AppDomain * pAppDomain = GetAppDomain();
-
-    _ASSERTE(adid == 0 || adid == pAppDomain->GetId().m_dwId);
-
-    if (pAppDomain == NULL)
-        return FALSE;
-
-    if (pAppDomain->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        return TRUE;
-
-    return FALSE;
-}
-#endif
-
 #endif //FEATURE_CORECLR
 
 #endif //!DACCESS_COMPILE
@@ -14869,13 +14848,6 @@ void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatf
     ((CompilationDomain*)pDomain)->SetWinrtApplicationContext(emptString);
 #endif
 }
-
-#ifdef FEATURE_LEGACYNETCF
-void ZapperSetAppCompatWP8(ICorCompilationDomain *pDomain)
-{
-    ((CompilationDomain*)pDomain)->SetAppDomainCompatMode(BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8);
-}
-#endif
 
 #endif
 

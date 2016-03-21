@@ -10585,64 +10585,6 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
     return metadataBuffer;
 }
 
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-//---------------------------------------------------------------------------------------
-//
-// Called on the helper thread to send a pause notification to the host
-//
-//
-//    This is called on the helper-thread, or a thread pretending to be the helper-thread.
-//    The debuggee should be synchronized. This callback to the host is only supported
-//    on Windows Phone as a replacement for some legacy NetCF behavior. In general I don't
-//    like being the transport between the VS debugger and the host, so don't use
-//    this as precedent that we should start making more callbacks for them. In the future
-//    the debugger and host should make alternative arrangements such as window messages,
-//    out of proc event signaling, or any other IPC mechanism.
-//
-//    This should be deprecated as soon as mixed-mode debugging is available. The 
-//    end goal on phone is to pause the UI thread while VS is in the break state. That
-//    will be accomplished by a mixed-mode debugger suspending all native threads when
-//    it breaks rather than having us send a special message.
-//
-//---------------------------------------------------------------------------------------
-VOID Debugger::InvokeLegacyNetCFHostPauseCallback()
-{
-    IHostNetCFDebugControlManager* pHostCallback = CorHost2::GetHostNetCFDebugControlManager();
-    if(pHostCallback != NULL)
-    {
-        pHostCallback->NotifyPause(0);
-    }
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Called on the helper thread to send a resume notification to the host
-//
-//
-//    This is called on the helper-thread, or a thread pretending to be the helper-thread.
-//    The debuggee should be synchronized. This callback to the host is only supported
-//    on Windows Phone as a replacement for some legacy NetCF behavior. In general I don't
-//    like being the transport between the VS debugger and the host, so don't use
-//    this as precedent that we should start making more callbacks for them. In the future
-//    the debugger and host should make alternative arrangements such as window messages,
-//    out of proc event signaling, or any other IPC mechanism.
-//
-//    This should be deprecated as soon as mixed-mode debugging is available. The 
-//    end goal on phone is to pause the UI thread while VS is in the break state. That
-//    will be accomplished by a mixed-mode debugger suspending all native threads when
-//    it breaks rather than having us send a special message.
-//
-//---------------------------------------------------------------------------------------
-VOID Debugger::InvokeLegacyNetCFHostResumeCallback()
-{
-    IHostNetCFDebugControlManager* pHostCallback = CorHost2::GetHostNetCFDebugControlManager();
-    if(pHostCallback != NULL)
-    {
-        pHostCallback->NotifyResume(0);
-    }
-}
-#endif //FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-
 //---------------------------------------------------------------------------------------
 //
 // Handle an IPC event from the Debugger.
@@ -11715,34 +11657,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
 
         break;
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    case DB_IPCE_NETCF_HOST_CONTROL_PAUSE:
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::HIPCE Handling DB_IPCE_NETCF_HOST_CONTROL_PAUSE\n"));
-            InvokeLegacyNetCFHostPauseCallback();
-
-            DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
-            InitIPCEvent(pResult, DB_IPCE_NETCF_HOST_CONTROL_PAUSE_RESULT, NULL, NULL);
-            pResult->hr = S_OK;
-            m_pRCThread->SendIPCReply();
-        }
-
-        break;
-
-    case DB_IPCE_NETCF_HOST_CONTROL_RESUME:
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::HIPCE Handling DB_IPCE_NETCF_HOST_CONTROL_RESUME\n"));
-            InvokeLegacyNetCFHostResumeCallback();
-
-            DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
-            InitIPCEvent(pResult, DB_IPCE_NETCF_HOST_CONTROL_RESUME_RESULT, NULL, NULL);
-            pResult->hr = S_OK;
-            m_pRCThread->SendIPCReply();
-        }
-
-        break;
-#endif // FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
 
     default:
         // We should never get an event that we don't know about.

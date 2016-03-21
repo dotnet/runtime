@@ -211,10 +211,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
 
-#ifdef FEATURE_LEGACYNETCF
-        zap->SetAppCompatWP8(!!(dwFlags & NGENWORKER_FLAGS_APPCOMPATWP8));
-#endif
-
         g_fNGenMissingDependenciesOk = !!(dwFlags & NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK);
 
 #ifdef FEATURE_WINMD_RESILIENT
@@ -1977,10 +1973,6 @@ void ZapperSetPlatformAssembliesPaths(SString &platformAssembliesPaths);
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths);
 #endif
 
-#ifdef FEATURE_LEGACYNETCF
-void ZapperSetAppCompatWP8(ICorCompilationDomain *pDomain);
-#endif
-
 void Zapper::CreateCompilationDomain()
 {
 #if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
@@ -2021,13 +2013,6 @@ void Zapper::CreateCompilationDomain()
         // TPA-based binding
         // Add the trusted paths and apppath to the binding list
         ZapperSetBindingPaths(m_pDomain, m_trustedPlatformAssemblies, m_platformResourceRoots, m_appPaths, m_appNiPaths);
-    }
-#endif
-
-#ifdef FEATURE_LEGACYNETCF
-    if (m_appCompatWP8)
-    {
-        ZapperSetAppCompatWP8(m_pDomain);
     }
 #endif
 }
@@ -3760,16 +3745,6 @@ ZapImage * Zapper::CompileModule(CORINFO_MODULE_HANDLE hModule,
 
     module->Open(hModule, pAssemblyEmit);
 
-#ifdef FEATURE_LEGACYNETCF
-    // Need to check for a native header to avoid throwing in cases where the NI has loaded,
-    // such as when we run crossgen a second time with IBC tuning enabled
-    if (!module->m_ModuleDecoder.IsILOnly() && !module->m_ModuleDecoder.HasNativeHeader())
-    {
-        if (!m_appCompatWP8)
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-    }
-#endif
-
     //
     //  input module.
     //
@@ -4057,13 +4032,6 @@ void Zapper::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
 {
     m_platformWinmdPaths.Set(pwzPlatformWinmdPaths);
 }
-
-#ifdef FEATURE_LEGACYNETCF
-void Zapper::SetAppCompatWP8(bool val)
-{
-    m_appCompatWP8 = val;
-}
-#endif
 
 void Zapper::SetForceFullTrust(bool val)
 {
