@@ -92,10 +92,6 @@ namespace System {
             _Revision = v.Revision;
         }
 
-#if FEATURE_LEGACYNETCF
-        //required for Mango AppCompat
-        [System.Runtime.CompilerServices.FriendAccessAllowed]
-#endif
         public Version() 
         {
             _Major = 0;
@@ -140,29 +136,13 @@ namespace System {
         {
             if (version == null)
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                    throw new ArgumentOutOfRangeException();
-                } else {
-#endif
-                    return 1;
-#if FEATURE_LEGACYNETCF
-                }
-#endif
+                return 1;
             }
 
             Version v = version as Version;
             if (v == null)
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                    throw new InvalidCastException(Environment.GetResourceString("Arg_MustBeVersion"));
-                } else {
-#endif
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeVersion"));
-#if FEATURE_LEGACYNETCF
-                }
-#endif                
+                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeVersion"));
             }
 
             if (this._Major != v._Major)

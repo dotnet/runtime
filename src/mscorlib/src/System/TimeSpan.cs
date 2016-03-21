@@ -424,7 +424,7 @@ namespace System {
                 return true;
             return CompatibilitySwitches.IsNetFx40TimeSpanLegacyFormatMode;
 #else
-            return CompatibilitySwitches.IsAppEarlierThanSilverlight4;
+            return false;
 #endif // !FEATURE_CORECLR
         }
 

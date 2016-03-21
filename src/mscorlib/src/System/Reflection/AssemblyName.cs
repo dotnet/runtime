@@ -283,11 +283,7 @@ namespace System.Reflection {
         {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
-                String name = nToString();
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && string.IsNullOrEmpty(name))
-                    return base.ToString();
-
-                return name;
+                return nToString();
             }
         }
     
