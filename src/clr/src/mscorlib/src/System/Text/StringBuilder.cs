@@ -590,12 +590,6 @@ namespace System.Text {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
 
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (charCount == 0))
-            {
-                return this;
-            }
-
             if (value == null) {
                 if (startIndex == 0 && charCount == 0) {
                     return this;
@@ -686,12 +680,6 @@ namespace System.Text {
             }
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
 
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (count == 0)){
-                return this;
-            }
-
-        
             //If the value being added is null, eat the null
             //and return.
             if (value == null) {

@@ -125,21 +125,6 @@ namespace System.Reflection
 #if FEATURE_WINDOWSPHONE
             throw new NotSupportedException(Environment.GetResourceString("NotSupported_WindowsPhone", "Assembly.LoadFrom"));
 #else
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly) {
-                    string caller = new System.Diagnostics.StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
-
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             return RuntimeAssembly.InternalLoadFrom(
@@ -870,7 +855,7 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-#if FEATURE_LEGACYNETCF
+#if FEATURE_CORECLR
         internal virtual bool IsProfileAssembly
         {
             [System.Security.SecurityCritical]
@@ -879,7 +864,7 @@ namespace System.Reflection
                 throw new NotImplementedException();
             }
         }
-#endif // FEATURE_LEGACYNETCF
+#endif // FEATURE_CORECLR
 
         public virtual IList<CustomAttributeData> GetCustomAttributesData()
         {
@@ -2547,7 +2532,7 @@ namespace System.Reflection
             newGrant = granted; newDenied = denied;
         }
 
-#if FEATURE_LEGACYNETCF
+#if FEATURE_CORECLR
         [System.Security.SecurityCritical]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -2563,7 +2548,7 @@ namespace System.Reflection
                 return GetIsProfileAssembly(GetNativeHandle());
             }
         }
-#endif // FEATURE_LEGACYNETCF
+#endif // FEATURE_CORECLR
 
         [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -2877,17 +2862,6 @@ namespace System.Reflection
 
             if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    if (retAssembly == this)
-                    {
-                        if (throwOnFileNotFound)
-                            throw new FileNotFoundException();
-                        return null;
-                    }
-                }
-#endif
                 throw new FileNotFoundException(String.Format(culture, Environment.GetResourceString("IO.FileNotFound_FileName"), an.Name));
             }
 
