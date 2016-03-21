@@ -11,6 +11,11 @@
     <AssemblyName>System.Runtime.Serialization.Xml.Tests</AssemblyName>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
     <IncludePerformanceTests>true</IncludePerformanceTests>
+    <UseProjectReferences>true</UseProjectReferences>
+  </PropertyGroup>
+  <PropertyGroup Condition="!$(UseProjectReferences)" >
+    <ProjectJson>Performance/project.json</ProjectJson>
+    <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Performance\DcsDeserializationTests.cs" />
@@ -33,6 +38,20 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="$(UseProjectReferences)">
+    <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">		
+      <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>		
+      <Name>System.Private.DataContractSerialization</Name>		
+    </ProjectReference>		
+    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">		
+      <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>		
+      <Name>System.Runtime.Serialization.Primitives</Name>		
+    </ProjectReference>		
+    <ProjectReference Include="..\..\System.Xml.XmlSerializer\src\System.Xml.XmlSerializer.csproj">		
+      <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>		
+      <Name>System.Xml.XmlSerializer</Name>		
+    </ProjectReference>		
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
