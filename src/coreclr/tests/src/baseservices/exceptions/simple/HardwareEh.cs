@@ -59,7 +59,7 @@ public class HardwareEh
 		retVal = PosTest9() && retVal;
 // The current stack overflow behavior is to rip the process
 //		retVal = PosTest10() && retVal;
-		retVal = PosTest11() && retVal;
+//		retVal = PosTest11() && retVal;
 		retVal = PosTest12() && retVal;
 		retVal = PosTest13() && retVal;
 		retVal = PosTest14() && retVal;
@@ -115,7 +115,7 @@ public class HardwareEh
 	public bool PosTest8() { return ExceptionTest(8, "OverflowException (int64)", typeof(OverflowException), new TestDelegate(ILHelper.Int64Overflow) ); }
 	public bool PosTest9() { return ExceptionTest(9, "OverflowException (int32)", typeof(OverflowException), new TestDelegate(ILHelper.Int32Overflow) ); }
 //	public bool PosTest10() { return ExceptionTest(10, "StackOverflow", typeof(StackOverflowException),  new TestDelegate( GobbleStack )); }
-	public bool PosTest11() { return ExceptionTest(11, "OutOfMemory", typeof(OutOfMemoryException),  
+/*	public bool PosTest11() { return ExceptionTest(11, "OutOfMemory", typeof(OutOfMemoryException),  
 								delegate()
 								{
                                     List<object> list;
@@ -125,7 +125,7 @@ public class HardwareEh
 										// allocate memory (86 meg chunks)
 										list.Add( new byte[8388608]);
 									}
-								} ); }
+								} ); } */
 	public bool PosTest12() { return ExceptionTest(12, "IndexOutOfRange (single dim [less than])", typeof(IndexOutOfRangeException),  
 								delegate()
 								{
