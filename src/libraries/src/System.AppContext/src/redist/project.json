@@ -1,13 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Targets": "1.0.0",
     "System.AppContext": "4.0.0"
   },
   "frameworks": {
     "net46": { },
-    "netcore50": { }
   },
-  "runtimes": {
-    "win8": { }
-  }
 }

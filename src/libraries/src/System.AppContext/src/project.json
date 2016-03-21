@@ -8,6 +8,11 @@
         "dotnet5.6"
       ]
     },
+    "netcore50": {
+      "dependencies": {
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
+      }
+    },
     "net462": {
       "dependencies": {
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
