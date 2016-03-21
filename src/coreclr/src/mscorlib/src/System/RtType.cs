@@ -475,8 +475,9 @@ namespace System
 
                                     Volatile.Write(ref m_cacheComplete, true);
                                 }
-// We want the behavior where the results are returned in the same order on the phone
-#if !FEATURE_LEGACYNETCF
+                                else
+// We want the behavior where the results are returned in the same order
+#if !FEATURE_CORECLR
                                 else
 #endif
                                 list = m_allMembers;

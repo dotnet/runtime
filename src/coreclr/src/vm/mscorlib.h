@@ -467,16 +467,16 @@ DEFINE_METHOD(CONTEXT,              RESERVE_SLOT,           ReserveSlot,        
 DEFINE_CLASS(CONTEXT_BOUND_OBJECT,  System,                 ContextBoundObject)
 
 
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 DEFINE_CLASS(CSP_PARAMETERS,        Cryptography,           CspParameters)
 
 DEFINE_FIELD(CSP_PARAMETERS,        PROVIDER_TYPE,          ProviderType)
 DEFINE_FIELD(CSP_PARAMETERS,        PROVIDER_NAME,          ProviderName)
 DEFINE_FIELD(CSP_PARAMETERS,        KEY_CONTAINER_NAME,     KeyContainerName)
 DEFINE_FIELD(CSP_PARAMETERS,        FLAGS,                  m_flags)
-#endif //FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+#endif //FEATURE_CRYPTO
 
-#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO)
 DEFINE_CLASS(CRYPTO_EXCEPTION,      Cryptography,           CryptographicException)
 DEFINE_METHOD(CRYPTO_EXCEPTION,     THROW,                  ThrowCryptographicException, SM_Int_RetVoid)
 #endif // FEATURE_X509 || FEATURE_CRYPTO
