@@ -19,7 +19,7 @@ struct _MonoSimpleBasicBlock {
 };
 
 MonoSimpleBasicBlock*
-mono_basic_block_split (MonoMethod *method, MonoError *error);
+mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *header);
 
 void
 mono_basic_block_free (MonoSimpleBasicBlock *bb);
