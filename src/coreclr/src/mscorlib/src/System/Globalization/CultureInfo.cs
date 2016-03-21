@@ -330,24 +330,10 @@ namespace System.Globalization {
             }
             Contract.EndContractBlock();
 
-#if FEATURE_LEGACYNETCF
-            // Windows Phone 7 and 7.1 do not support Bengali.  When running on Windows Phone 8,
-            // WinPhone 7.x apps get the old Mango text stack, not the Apollo text stack.  The Mango
-            // text stack cannot display characters in Bengali, such as the culture's native name.
-            // Phone apps are already written to catch an exception here and bypass this culture.
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 &&
-                (name == "bn" || name == "bn-BD" || name == "bn-IN" ||  name == "ml" || name == "or"))
-                throw new ArgumentException(Environment.GetResourceString("Argument_CultureNotSupported"));
-#endif
-
             // Get our data providing record
             this.m_cultureData = CultureData.GetCultureData(name, useUserOverride);
 
             if (this.m_cultureData == null) {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    throw new PlatformNotSupportedException(Environment.GetResourceString("Argument_CultureNotSupported"));
-#endif
                 throw new CultureNotFoundException("name", name, Environment.GetResourceString("Argument_CultureNotSupported"));
             }
 
@@ -899,21 +885,6 @@ namespace System.Globalization {
                 s_DefaultThreadCurrentUICulture = value;
             }
         }
-
-#if FEATURE_LEGACYNETCF
-        //
-        // Helper methods to set default thread culture without security demand. Used
-        // by NetCF compatibility quirk. See comment in Thread.CurrentUICulture setter for details.
-        //
-        internal static void SetCurrentUICultureQuirk(CultureInfo value) {
-            s_DefaultThreadCurrentUICulture = value;
-        }
-
-        internal static void SetCurrentCultureQuirk(CultureInfo value) {
-            s_DefaultThreadCurrentCulture = value;
-        }
-#endif
-
 
         ////////////////////////////////////////////////////////////////////////
         //

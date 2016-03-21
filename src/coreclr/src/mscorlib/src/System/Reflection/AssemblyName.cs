@@ -217,12 +217,7 @@ namespace System.Reflection {
         // will fail to load.
         public byte[] GetPublicKey()
         {
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && _PublicKey == null)
-                return EmptyArray<Byte>.Value;
-            else
-#endif
-                return _PublicKey;
+            return _PublicKey;
         }
 
         public void SetPublicKey(byte[] publicKey)

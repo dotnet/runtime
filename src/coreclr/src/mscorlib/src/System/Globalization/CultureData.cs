@@ -1194,14 +1194,6 @@ namespace System.Globalization
                         {
                             this.sLocalizedDisplayName = this.SLOCALIZEDLANGUAGE;
                         }
-#if FEATURE_LEGACYNETCF
-                        // NetCF renders Invariant DisplayName differently from Windows
-                        // Quirk it for NetCF apps
-                        else if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && object.ReferenceEquals(this, s_Invariant))
-                        {
-                            this.sLocalizedDisplayName = this.SLOCALIZEDLANGUAGE;
-                        }
-#endif
                         else
                         {
                             // We have to make the neutral distinction in case the OS returns a specific name
