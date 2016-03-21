@@ -1267,10 +1267,15 @@ namespace System.Threading.Tasks.Tests
 
             Task task1 = new Task(() => { });
 
-            ManualResetEventSlim mres = new ManualResetEventSlim(false);
-            Task task2 = task1.ContinueWith((_task) => { mres.Wait(); }, TaskContinuationOptions.ExecuteSynchronously);
+            var barrier = new Barrier(2);
+            Task task2 = task1.ContinueWith((_task) => 
+            {
+                barrier.SignalAndWait(); // alert caller that we've started running
+                barrier.SignalAndWait(); // wait for caller to be done waiting
+            }, TaskContinuationOptions.ExecuteSynchronously);
 
             task1.Start();
+            barrier.SignalAndWait(); // wait for task to start running
 
             // Wait should return once the task is complete, regardless of what other 
             // continuations were scheduled off of it.
@@ -1283,7 +1288,7 @@ namespace System.Threading.Tasks.Tests
                 task1.Wait();
             }
 
-            mres.Set(); // Allow continuation to end
+            barrier.SignalAndWait(); // alert task that we're done waiting
             task2.Wait();
         }
 
