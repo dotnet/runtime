@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This is a helper class for pack:// Uris. This is a part of the 
-//  Metro Packaging Layer
-//
-//-----------------------------------------------------------------------------
-
 using System.Diagnostics;
 using System.Text;
 
@@ -20,24 +12,6 @@ namespace System.IO.Packaging
     /// </summary>
     public static class PackUriHelper
     {
-        //------------------------------------------------------
-        //
-        //  Public Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-
         #region Public Methods
 
         /// <summary>
@@ -323,24 +297,6 @@ namespace System.IO.Packaging
 
         #endregion Public Methods
 
-        //------------------------------------------------------
-        //
-        //  Public Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-
         #region Internal Properties
 
         internal static Uri PackageRootUri
@@ -352,13 +308,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Properties
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Methods
 
         internal static bool TryValidatePartUri(Uri partUri, out ValidatedPartUri validatedPartUri)
@@ -430,20 +380,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-        //------------------------------------------------------
-        //
-        //  Internal Events
-        //
-        //------------------------------------------------------
-        // None
-
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
-
+        
         #region Private Methods
 
         private static readonly char[] HexUpperChars = {
@@ -642,13 +579,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Private Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Members
 
         //we use this dummy URI to resolve relative URIs treating the container as the authority.

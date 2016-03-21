@@ -27,11 +27,6 @@ namespace System.IO.Packaging
     /// </summary>
     internal class InternalRelationshipCollection : IEnumerable<PackageRelationship>
     {
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
         #region IEnumerable
         /// <summary>
         /// Returns an enumerator over all the relationships for a Package or a PackagePart
@@ -61,12 +56,7 @@ namespace System.IO.Packaging
         }
 
         #endregion
-
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
+        
         #region Internal Methods
         /// <summary>
         /// Constructor
@@ -189,11 +179,6 @@ namespace System.IO.Packaging
 
         #endregion Internal Methods
 
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
         #region Private Methods
         /// <summary>
         /// Constructor
@@ -651,11 +636,6 @@ namespace System.IO.Packaging
 
         #endregion Private Properties
 
-        //------------------------------------------------------
-        //
-        //  Private Members
-        //
-        //------------------------------------------------------
         #region Private Members
         private List<PackageRelationship> _relationships;
         private bool _dirty;    // true if we have uncommitted changes to _relationships

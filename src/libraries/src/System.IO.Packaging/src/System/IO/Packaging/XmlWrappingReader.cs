@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/***************************************************************************\
-*
-* File: XmlWrappingReader.cs
-*
-* Purpose:  
-*
-\***************************************************************************/
-
 using System;
 using System.Xml;
 using System.Xml.Schema;
@@ -20,25 +12,16 @@ namespace System.IO.Packaging
 {
     internal class XmlWrappingReader : XmlReader, IXmlLineInfo, IXmlNamespaceResolver
     {
-        //
-        // Fields
-        //
         protected XmlReader _reader;
         protected IXmlLineInfo _readerAsIXmlLineInfo;
         protected IXmlNamespaceResolver _readerAsResolver;
-
-        // 
-        // Constructor
-        //
+        
         internal XmlWrappingReader(XmlReader baseReader)
         {
             Debug.Assert(baseReader != null);
             Reader = baseReader;
         }
 
-        //
-        // XmlReader implementation
-        //
         public override XmlReaderSettings Settings { get { return _reader.Settings; } }
         public override XmlNodeType NodeType { get { return _reader.NodeType; } }
         public override string Name { get { return _reader.Name; } }
@@ -185,10 +168,7 @@ namespace System.IO.Packaging
                 return (_readerAsIXmlLineInfo == null) ? 0 : _readerAsIXmlLineInfo.LinePosition;
             }
         }
-
-        //
-        //  Protected methods
-        //
+        
         protected XmlReader Reader
         {
             get
