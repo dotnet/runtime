@@ -304,13 +304,6 @@ namespace System.IO {
 #if !NEW_EXPERIMENTAL_ASYNC_IO
             return BlockingBeginRead(buffer, offset, count, callback, state);
 #else
-
-            // Mango did not do Async IO.
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                return BlockingBeginRead(buffer, offset, count, callback, state);
-            }
-
             // To avoid a race with a stream's position pointer & generating race conditions 
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -377,12 +370,6 @@ namespace System.IO {
 #if !NEW_EXPERIMENTAL_ASYNC_IO
             return BlockingEndRead(asyncResult);
 #else
-            // Mango did not do async IO.
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                return BlockingEndRead(asyncResult);
-            }
-
             var readTask = _activeReadWriteTask;
 
             if (readTask == null)
@@ -473,13 +460,6 @@ namespace System.IO {
 #if !NEW_EXPERIMENTAL_ASYNC_IO
             return BlockingBeginWrite(buffer, offset, count, callback, state);
 #else
-
-            // Mango did not do Async IO.
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                return BlockingBeginWrite(buffer, offset, count, callback, state);
-            }
-
             // To avoid a race condition with a stream's position pointer & generating conditions 
             // with internal buffer indexes in our own streams that 
             // don't natively support async IO operations when there are multiple 
@@ -589,15 +569,7 @@ namespace System.IO {
 
 #if !NEW_EXPERIMENTAL_ASYNC_IO
             BlockingEndWrite(asyncResult);
-#else            
-
-            // Mango did not do Async IO.
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                BlockingEndWrite(asyncResult);
-                return;
-            }            
-
+#else
             var writeTask = _activeReadWriteTask;
             if (writeTask == null)
             {

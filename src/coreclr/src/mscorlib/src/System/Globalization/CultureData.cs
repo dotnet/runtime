@@ -513,23 +513,6 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                // WinCE named some locales differently than Windows.
-                if (cultureName.Equals("iw", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "he";
-                } 
-                else if (cultureName.Equals("tl", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "fil";
-                }
-                else if (cultureName.Equals("english", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "en";
-                }
-            }
-
             // Try the hash table first
             String hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
             Dictionary<String, CultureData> tempHashTable = s_cachedCultures;

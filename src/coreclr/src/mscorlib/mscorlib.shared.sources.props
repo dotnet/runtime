@@ -402,7 +402,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\PlatformID.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\PlatformNotSupportedException.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\Platforms.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Progress.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Random.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\RankException.cs" />
@@ -415,7 +414,6 @@
     <SystemSources Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Single.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\System\SupportedPlatformsAttribute.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\ThreadAttributes.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeoutException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
@@ -1026,9 +1024,9 @@
   <ItemGroup>
     <XmlSources Include="$(BclSourcesRoot)\System\Security\SecurityElement.cs" />
     <XmlSources Include="$(BclSourcesRoot)\System\Security\XMLSyntaxException.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true' or '$(FeatureLegacyNetCFCrypto)' == 'true'" Include="$(BclSourcesRoot)\System\Security\SecurityDocument.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true' or '$(FeatureLegacyNetCFCrypto)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Parser.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true' or '$(FeatureLegacyNetCFCrypto)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Tokenizer.cs" />
+    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\SecurityDocument.cs" />
+    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Parser.cs" />
+    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Tokenizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Win32Sources Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
@@ -1127,7 +1125,6 @@
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\Partitioner.cs" />
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\OrderablePartitioner.cs" />
     <GenericsSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\PartitionerStatic.cs" />
-    <GenericsSources Condition="'$(FeatureLegacyNetCF)'=='true'" Include="$(BclSourcesRoot)\System\Collections\Generic\MangoArraySortHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <SafehandleSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
