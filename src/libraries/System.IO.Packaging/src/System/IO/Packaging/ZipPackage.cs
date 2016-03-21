@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//-----------------------------------------------------------------------------
-//
-// Description:
-//  This is a sub class of the abstract class for Package. 
-//  This implementation is specific to Zip file format.
-//
-//-----------------------------------------------------------------------------
-
 using System;
 using System.Collections.Generic;
 using System.Xml;                   //Required for Content Type File manipulation
@@ -25,24 +17,6 @@ namespace System.IO.Packaging
     /// </summary>
     public sealed class ZipPackage : Package
     {
-        //------------------------------------------------------
-        //
-        //  Public Constructors
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Public Properties
-        //
-        //------------------------------------------------------
-        // None      
-        //------------------------------------------------------
-        //
-        //  Public Methods
-        //
-        //------------------------------------------------------
-
         #region Public Methods
 
         #region PackagePart Methods
@@ -272,19 +246,7 @@ namespace System.IO.Packaging
         #endregion Other Methods
 
         #endregion Public Methods
-
-        //------------------------------------------------------
-        //
-        //  Public Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Internal Constructors
-        //
-        //------------------------------------------------------
-
+        
         #region Internal Constructors
 
         /// <summary>
@@ -384,12 +346,6 @@ namespace System.IO.Packaging
 
         #endregion Internal Constructors
 
-        //------------------------------------------------------
-        //
-        //  Internal Methods
-        //
-        //------------------------------------------------------
-
         #region Internal Methods
 
         // More generic function than GetZipItemNameFromPartName. In particular, it will handle piece names.
@@ -448,13 +404,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-        //------------------------------------------------------
-        //
-        //  Internal Properties
-        //
-        //------------------------------------------------------
-        
+                
         internal FileMode PackageFileMode
         {
             get
@@ -462,18 +412,6 @@ namespace System.IO.Packaging
                 return _packageFileMode;
             }
         }
-
-        //------------------------------------------------------
-        //
-        //  Internal Events
-        //
-        //------------------------------------------------------
-        // None
-        //------------------------------------------------------
-        //
-        //  Private Methods
-        //
-        //------------------------------------------------------
 
         #region Private Methods
 
@@ -519,13 +457,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Private Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
+        
         #region Private Members
 
         private const int InitialPartListSize = 50;
@@ -545,15 +477,7 @@ namespace System.IO.Packaging
         private static readonly ExtensionEqualityComparer s_extensionEqualityComparer = new ExtensionEqualityComparer();
 
         #endregion Private Members
-
-        //------------------------------------------------------
-        //
-        //  Private Types
-        //
-        //------------------------------------------------------
-
-        #region Private Class
-
+        
         /// <summary>
         /// ExtensionComparer
         /// The Extensions are stored in the Default Dictionary in their original form, 
@@ -590,16 +514,12 @@ namespace System.IO.Packaging
             }
         }
 
-        #region ContentTypeHelper Class
-
         /// <summary>
         /// This is a helper class that maintains the Content Types File related to 
         /// this ZipPackage.        
         /// </summary>
         private class ContentTypeHelper
         {
-            #region Constructor
-
             /// <summary>
             /// Initialize the object without uploading any information from the package.
             /// Complete initialization in read mode also involves calling ParseContentTypesFile
@@ -630,11 +550,7 @@ namespace System.IO.Packaging
                 //_contentTypeStreamPieces - an interleaved part
                 //_contentTypeStreamExists - defaults to false - not yet found
             }
-
-            #endregion Constructor
-
-            #region Internal Properties
-
+            
             internal static string ContentTypeFileName
             {
                 get
@@ -642,11 +558,7 @@ namespace System.IO.Packaging
                     return s_contentTypesFile;
                 }
             }
-
-            #endregion Internal Properties
-
-            #region Internal Methods
-
+            
             //Adds the Default entry if it is the first time we come across
             //the extension for the partUri, does nothing if the content type
             //corresponding to the default entry for the extension matches or
@@ -776,11 +688,7 @@ namespace System.IO.Packaging
                     }
                 }
             }
-
-            #endregion Internal Methods
-
-            #region Private Methods
-
+            
             private void EnsureOverrideDictionary()
             {
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
@@ -911,8 +819,6 @@ namespace System.IO.Packaging
             // Process the attributes for the Default tag
             private void ProcessDefaultTagAttributes(XmlReader reader)
             {
-                #region Default Tag
-
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Default> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
@@ -935,15 +841,11 @@ namespace System.IO.Packaging
                 //Skip the EndElement for Default Tag
                 if (!reader.IsEmptyElement)
                     ProcessEndElement(reader, s_defaultTagName);
-
-                #endregion Default Tag
             }
 
             // Process the attributes for the Default tag
             private void ProcessOverrideTagAttributes(XmlReader reader)
             {
-                #region Override Tag
-
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Override> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
@@ -969,8 +871,6 @@ namespace System.IO.Packaging
                 //Skip the EndElement for Override Tag
                 if (!reader.IsEmptyElement)
                     ProcessEndElement(reader, s_overrideTagName);
-
-                #endregion Override Tag
             }
 
             //If End element is present for Relationship then we process it
@@ -1049,11 +949,7 @@ namespace System.IO.Packaging
                 if (attributeValue == null)
                     throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
-
-            #endregion Private Methods
-
-            #region Member Variables
-
+            
             private Dictionary<PackUriHelper.ValidatedPartUri, ContentType> _overrideDictionary;
             private Dictionary<string, ContentType> _defaultDictionary;
             private ZipArchive _zipArchive;
@@ -1079,12 +975,6 @@ namespace System.IO.Packaging
             private static readonly string s_overrideTagName = "Override";
             private static readonly string s_partNameAttributeName = "PartName";
             private static readonly string s_temporaryPartNameWithoutExtension = "/tempfiles/sample.";
-
-            #endregion Member Variables 
         }
-
-        #endregion ContentTypeHelper Class
-
-        #endregion Private Class
     }
 }
