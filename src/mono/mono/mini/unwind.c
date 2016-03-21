@@ -652,8 +652,12 @@ mono_unwind_cleanup (void)
 
 		g_free (cached);
 	}
-
 	g_free (cached_info);
+
+	for (GSList *cursor = cached_info_list; cursor != NULL; cursor = cursor->next)
+		g_free (cursor->data);
+
+	g_slist_free (cached_info_list);
 }
 
 /*
@@ -708,9 +712,9 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 
 		mono_memory_barrier ();
 
-		cached_info = new_table;
-
 		cached_info_list = g_slist_prepend (cached_info_list, cached_info);
+
+		cached_info = new_table;
 
 		cached_info_size *= 2;
 	}
