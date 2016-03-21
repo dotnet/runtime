@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
         {
             try
             {
-                Task<PingReply> t = RawSocketPermissions.CanUseRawSockets() ?
+                Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
                     SendWithPingUtility(address, buffer, timeout, options);
                 return await t.ConfigureAwait(false);
