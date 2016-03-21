@@ -5,7 +5,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,6 +80,9 @@ namespace System.Net.Http
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
+        private X509Certificate2Collection _clientCertificates;
+        private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
+        private bool _checkCertificateRevocationList;
 
         private object LockObject { get { return _agent; } }
 
@@ -188,6 +193,31 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _clientCertificateOption = value;
+            }
+        }
+
+        internal X509Certificate2Collection ClientCertificates
+        {
+            get { return _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection()); }
+        }
+
+        internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
+        {
+            get { return _serverCertificateValidationCallback; }
+            set
+            {
+                CheckDisposedOrStarted();
+                _serverCertificateValidationCallback = value;
+            }
+        }
+
+        public bool CheckCertificateRevocationList
+        {
+            get { return _checkCertificateRevocationList; }
+            set
+            {
+                CheckDisposedOrStarted();
+                _checkCertificateRevocationList = value;
             }
         }
 
