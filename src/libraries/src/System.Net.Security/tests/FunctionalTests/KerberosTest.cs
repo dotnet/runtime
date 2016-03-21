@@ -364,14 +364,25 @@ namespace System.Net.Security.Tests
                 Task serverTask = server.PollMessageAsync(2);
                 Task[] msgTasks = new Task[3];
                 msgTasks[0] = client.WriteAsync(_firstMessage, 0, _firstMessage.Length).ContinueWith((t) =>
-                    client.WriteAsync(_secondMessage, 0, _secondMessage.Length));
-                msgTasks[1] =  client.ReadAsync(firstRecvBuffer, 0, firstRecvBuffer.Length).ContinueWith((t) =>
-                    client.ReadAsync(secondRecvBuffer, 0, secondRecvBuffer.Length));
+                    client.WriteAsync(_secondMessage, 0, _secondMessage.Length)).Unwrap();
+                msgTasks[1] = ReadAllAsync(client, firstRecvBuffer, 0, firstRecvBuffer.Length).ContinueWith((t) =>
+                   ReadAllAsync(client, secondRecvBuffer, 0, secondRecvBuffer.Length)).Unwrap();
                 msgTasks[2] = serverTask;
                 finished = Task.WaitAll(msgTasks, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Messages sent and received in the allotted time");
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "The first message received is as expected");
                 Assert.True(_secondMessage.SequenceEqual(secondRecvBuffer), "The second message received is as expected");
+            }
+        }
+
+        private static async Task ReadAllAsync(Stream source, byte[] buffer, int offset, int count)
+        {
+            while (count > 0)
+            {
+                int bytesRead = await source.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+                if (bytesRead == 0) break;
+                offset += bytesRead;
+                count -= bytesRead;
             }
         }
 
