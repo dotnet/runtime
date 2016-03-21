@@ -9,7 +9,10 @@ namespace System.Net.Sockets.Tests
     public static class Configuration
     {
         // Timeout values in milliseconds.
-        public static readonly int PassingTestTimeout = 5000;
-        public static readonly int FailingTestTimeout = 100;  
+        public const int PassingTestTimeout = 5000;
+        public const int FailingTestTimeout = 100;
+
+        // Number of redundant UDP packets to send to increase test reliability
+        public const int UDPRedundancy = 10;
     }
 }
