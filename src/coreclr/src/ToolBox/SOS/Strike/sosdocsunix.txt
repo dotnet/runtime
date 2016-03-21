@@ -29,7 +29,7 @@ DumpStackObjects (dso)             IP2MD (ip2md)
 DumpHeap (dumpheap)                u (clru)
 DumpVC                             DumpStack (dumpstack)
 GCRoot (gcroot)                    EEStack (eestack)
-PrintException (pe)                CLRStack (clrstack) 
+PrintException (pe)                ClrStack (clrstack) 
                                    GCInfo
                                    EHInfo
                                    bpmd (bpmd)
