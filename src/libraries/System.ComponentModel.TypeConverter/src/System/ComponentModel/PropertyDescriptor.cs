@@ -96,7 +96,6 @@ namespace System.ComponentModel
             }
         }
 
-#if PLACEHOLDER
         /// <devdoc>
         ///    <para>
         ///       Gets a value
@@ -135,7 +134,6 @@ namespace System.ComponentModel
                 return attr.Visibility;
             }
         }
-#endif
 
         /// <devdoc>
         ///    <para>
