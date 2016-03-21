@@ -285,9 +285,9 @@ mono_threads_reset_blocking_end (void *cookie, void* stackdata)
 		int level = coop_tls_pop (&desired_cookie);
 		//g_warning("Leaving reset nest; back to level %d; desired cookie %d; received cookie %d\n", level, desired_cookie, received_cookie);
 		if (level < 0)
-			g_error_with_history ("Expected cookie %d but found no stack at all\n", desired_cookie);
+			mono_fatal_with_history ("Expected cookie %d but found no stack at all\n", desired_cookie);
 		if (desired_cookie != received_cookie)
-			g_error_with_history ("Expected cookie %d but received %d\n", desired_cookie, received_cookie);
+			mono_fatal_with_history ("Expected cookie %d but received %d\n", desired_cookie, received_cookie);
 	} else // Notice this matches the line after the endif
 #endif
 	{
