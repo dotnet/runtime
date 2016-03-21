@@ -9,7 +9,9 @@
     <CLSCompliant>false</CLSCompliant>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'net46'">None</ResourcesSourceOutputDirectory>
-    <PackageTargetRuntime Condition="'$(TargetGroup)' == ''">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == '' AND '$(TargetsWindows)' == 'true'">win</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)' == ''">netstandard1.3</PackageTargetFramework>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
@@ -17,7 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\DataProtectionScope.cs" />
     <Compile Include="System\Security\Cryptography\ProtectedData.cs" />
 
