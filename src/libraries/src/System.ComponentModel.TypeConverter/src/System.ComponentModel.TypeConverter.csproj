@@ -85,6 +85,11 @@
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <!--<Compile Include="System\ComponentModel\WeakHashtable.cs" />-->
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">
+      <Name>System.ComponentModel.TypeConverter.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
