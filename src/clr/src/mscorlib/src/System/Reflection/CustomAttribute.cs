@@ -1860,20 +1860,6 @@ namespace System.Reflection
             IntPtr blobStart = caRecord.blob.Signature;
             IntPtr blobEnd = (IntPtr)((byte*)blobStart + caRecord.blob.Length);
 
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                try
-                {
-                    // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
-                    attributeType = decoratedModule.ResolveType(scope.GetParentToken(caRecord.tkCtor), null, null) as RuntimeType;
-                }
-                catch(Exception)
-                {
-                    return false;
-                }
-            }
-            else
-#endif
             // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
             attributeType = decoratedModule.ResolveType(scope.GetParentToken(caRecord.tkCtor), null, null) as RuntimeType;
 
