@@ -19,7 +19,6 @@ namespace System.Globalization
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     using System.Security;
-    using System.Security.Principal;
 
     //
     // List of culture data

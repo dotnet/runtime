@@ -1048,12 +1048,8 @@
     <InteropTceadaptergenSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\TCEAdapterGen\TCEAdapterGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\GenericIdentity.cs" />
-    <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\GenericPrincipal.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IIdentity.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\IPrincipal.cs" />
-    <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\PrincipalPolicy.cs" />
-    <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\TokenAccessLevels.cs" />
     <SecurityPrincipalSources Include="$(BclSourcesRoot)\System\Security\Principal\TokenImpersonationLevel.cs" />
   </ItemGroup>
   <ItemGroup>

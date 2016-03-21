@@ -23,7 +23,6 @@ namespace System.Threading
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
-    using System.Security.Principal;
     using System.Security;
     using System.Diagnostics.Contracts;
     

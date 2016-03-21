@@ -29,7 +29,9 @@ namespace System {
 #endif    
     using System.Security;
     using System.Security.Permissions;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Security.Policy;
     using System.Security.Util;
     using System.Collections;
