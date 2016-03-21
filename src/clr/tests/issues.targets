@@ -1,7 +1,7 @@
 <Project DefaultTargets = "GetListOfTestCmds"
     xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\**\lifetime2.cmd" >
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2\lifetime2.cmd" >
              <Issue>1037</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\V1-M09.5-PDC\b14426\b14426\*" >
