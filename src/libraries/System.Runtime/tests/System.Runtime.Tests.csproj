@@ -44,7 +44,6 @@
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\DateTime.cs" />
     <Compile Include="System\DateTimeOffset.cs" />
-    <Compile Include="System\DateTimeOffset.UnixTimeConversions.cs" />
     <Compile Include="System\Decimal.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Double.cs" />
