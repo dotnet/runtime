@@ -88,9 +88,9 @@
 #include "mdaassistants.h"
 #endif
 
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 #include "cryptography.h"
-#endif // FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+#endif // FEATURE_CRYPTO
 
 #ifndef FEATURE_CORECLR
 #include "securityprincipal.h"

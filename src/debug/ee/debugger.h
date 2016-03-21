@@ -2061,11 +2061,6 @@ public:
     void Terminate();
     void Continue();
 
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    VOID InvokeLegacyNetCFHostPauseCallback();
-    VOID InvokeLegacyNetCFHostResumeCallback();
-#endif
-
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
     DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
