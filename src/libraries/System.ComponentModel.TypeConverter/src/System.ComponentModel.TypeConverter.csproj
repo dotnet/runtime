@@ -37,6 +37,7 @@
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
+    <!--<Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />-->
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
@@ -50,6 +51,7 @@
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
     <!--<Compile Include="System\ComponentModel\HandledEventArgs.cs" />-->
     <!--<Compile Include="System\ComponentModel\HandledEventHandler.cs" />-->
+    <!--<Compile Include="System\ComponentModel\Design\IDesignerHost.cs" />-->
     <Compile Include="System\ComponentModel\Int16Converter.cs" />
     <Compile Include="System\ComponentModel\Int32Converter.cs" />
     <Compile Include="System\ComponentModel\Int64Converter.cs" />
