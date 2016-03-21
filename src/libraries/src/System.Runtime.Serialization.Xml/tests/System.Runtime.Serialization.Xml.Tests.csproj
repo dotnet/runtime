@@ -16,6 +16,8 @@
     <Compile Include="Performance\DcsDeserializationTests.cs" />
     <Compile Include="Performance\DcsSerializationTests.cs" />
     <Compile Include="Performance\XmlUTF8TextReaderTests.cs" />
+    <Compile Include="Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="Performance\DcsPerformanceTest.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SerializationTypes.CoreCLR.cs" />
