@@ -26,21 +26,6 @@ public partial class CompareInfoTests
     }
 
     [Theory]
-    [MemberData(nameof(CompareToData))]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
-    public static void Compare(string localeName, string left, string right, int expected, CompareOptions options)
-    {
-        CompareInfo ci = CompareInfo.GetCompareInfo(localeName);        
-        
-        Assert.Equal(expected, Math.Sign(ci.Compare(left, right, options)));
-
-        if (options == CompareOptions.None)
-        {
-            Assert.Equal(expected, Math.Sign(ci.Compare(left, right)));
-        }
-    }
-
-    [Theory]
     [InlineData(null, -1)]
     [InlineData("", -1)]
     [InlineData("abc", -1)]
@@ -87,31 +72,6 @@ public partial class CompareInfoTests
         Assert.Throws<ArgumentException>(() => ci.Compare("a", "b", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
         Assert.Throws<ArgumentException>(() => ci.Compare("a", "b", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
         Assert.Throws<ArgumentException>(() => ci.Compare("a", "b", (CompareOptions)(-1)));
-    }
-
-    [Theory]
-    [MemberData(nameof(IndexOfData))]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
-    public static void IndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
-    {
-        CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
-
-        Assert.Equal(expectedResult, ci.IndexOf(source, value, options));
-
-        if (value.Length == 1)
-        {
-            Assert.Equal(expectedResult, ci.IndexOf(source, value[0], options));
-        }
-
-        if (options == CompareOptions.None)
-        {
-            Assert.Equal(expectedResult, ci.IndexOf(source, value));
-        }
-
-        if (value.Length == 1 && options == CompareOptions.None)
-        {
-            Assert.Equal(expectedResult, ci.IndexOf(source, value[0]));
-        }
     }
 
     [Fact]
@@ -193,32 +153,7 @@ public partial class CompareInfoTests
         Assert.Throws<ArgumentException>(() => ci.IndexOf("abc", "a", (CompareOptions)(-1)));
         Assert.Throws<ArgumentException>(() => ci.IndexOf("abc", "a", CompareOptions.StringSort));
     }
-
-    [Theory]
-    [MemberData(nameof(LastIndexOfData))]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
-    public static void LastIndexOf(string localeName, string source, string value, int expectedResult, CompareOptions options)
-    {
-        CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
-
-        Assert.Equal(expectedResult, ci.LastIndexOf(source, value, options));
-
-        if (value.Length == 1)
-        {
-            Assert.Equal(expectedResult, ci.LastIndexOf(source, value[0], options));
-        }
-
-        if (options == CompareOptions.None)
-        {
-            Assert.Equal(expectedResult, ci.LastIndexOf(source, value));
-        }
-
-        if (value.Length == 1 && options == CompareOptions.None)
-        {
-            Assert.Equal(expectedResult, ci.LastIndexOf(source, value[0]));
-        }
-    }
-
+    
     [Theory]
     [InlineData("", 'a', 1)]
     [InlineData("abc", 'a', -1)]
@@ -287,16 +222,6 @@ public partial class CompareInfoTests
         Assert.Throws<ArgumentException>(() => ci.LastIndexOf("abc", "a", CompareOptions.StringSort));
     }
 
-    [Theory]
-    [MemberData(nameof(IsPrefixData))]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
-    public static void IsPrefix(string localeName, string source, string prefix, bool expectedResult, CompareOptions options)
-    {
-        CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
-
-        Assert.Equal(expectedResult, ci.IsPrefix(source, prefix, options));
-    }
-
     [Fact]
     public static void IsPrefixBadCompareOptions()
     {
@@ -322,17 +247,7 @@ public partial class CompareInfoTests
         Assert.Throws<ArgumentNullException>(() => ci.IsPrefix(null, null));
         Assert.Throws<ArgumentNullException>(() => ci.IsPrefix(null, null, CompareOptions.Ordinal));
     }
-
-    [Theory]
-    [MemberData(nameof(IsSuffixData))]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
-    public static void IsSuffix(string localeName, string source, string suffix, bool expectedResult, CompareOptions options)
-    {
-        CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
-
-        Assert.Equal(expectedResult, ci.IsSuffix(source, suffix, options));
-    }
-
+    
     [Fact]
     public static void IsSuffixBadCompareOptions()
     {

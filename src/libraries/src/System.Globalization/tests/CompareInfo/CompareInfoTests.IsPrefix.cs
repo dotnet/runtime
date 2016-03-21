@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -13,7 +12,7 @@ namespace System.Globalization.Tests
         private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        
+
         public static IEnumerable<object[]> IsPrefix_TestData()
         {
             // Empty strings
@@ -73,7 +72,7 @@ namespace System.Globalization.Tests
             IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, true);
             IsPrefix(s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false);
         }
-        
+
         [Fact]
         [ActiveIssue(5463, PlatformID.AnyUnix)]
         public void IsPrefix_UnassignedUnicode()
@@ -86,23 +85,25 @@ namespace System.Globalization.Tests
         public void IsPrefix_Invalid()
         {
             // Source is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix(null, ""));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix(null, "", CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsPrefix(null, ""));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsPrefix(null, "", CompareOptions.None));
 
             // Value is null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix("", null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix("", null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("prefix", () => s_invariantCompare.IsPrefix("", null));
+            Assert.Throws<ArgumentNullException>("prefix", () => s_invariantCompare.IsPrefix("", null, CompareOptions.None));
 
             // Source and prefix are null
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix(null, null));
-            Assert.Throws<ArgumentNullException>(() => s_invariantCompare.IsPrefix(null, null, CompareOptions.None));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsPrefix(null, null));
+            Assert.Throws<ArgumentNullException>("source", () => s_invariantCompare.IsPrefix(null, null, CompareOptions.None));
 
             // Options are invalid
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.StringSort));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)0x11111111));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.StringSort));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)(-1)));
+            Assert.Throws<ArgumentException>("options", () => s_invariantCompare.IsPrefix("Test's", "Tests", (CompareOptions)0x11111111));
         }
-        
+
         private static char UnassignedUnicodeCharacter()
         {
             for (char ch = '\uFFFF'; ch > '\u0000'; ch++)
