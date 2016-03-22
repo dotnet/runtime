@@ -18,7 +18,7 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void XsDeSerializationTest(int iterations, TestType testType, TestSize testSize, SerializerType serializerType)
+        public void XsDeSerializationTest(int iterations, TestType testType, int testSize, SerializerType serializerType)
         {
             PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, serializerType, testType, testSize, XsSerializerFactory.GetInstance());
         }
