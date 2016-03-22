@@ -29,13 +29,19 @@ namespace System.Text.Unicode
 
         /// <summary>
         /// Helper method which creates a bitmap of all characters which are
-        /// defined per version 7.0.0 of the Unicode specification.
+        /// defined per the Unicode specification.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static uint[] CreateDefinedCharacterBitmap()
         {
             // The stream should be exactly 8KB in size.
-            var stream = typeof(UnicodeHelpers).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Resources.unicode-8.0.0-defined-characters.bin");
+            var stream = typeof(UnicodeRange).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Resources.unicode8definedcharacters.bin");
+
+            if (stream == null)
+            {
+                throw new BadImageFormatException();
+            }
+
             if (stream.Length != 8 * 1024)
             {
                 Environment.FailFast("Corrupt data detected.");
