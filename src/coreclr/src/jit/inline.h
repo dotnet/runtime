@@ -245,14 +245,16 @@ public:
     // Policy policies
     virtual bool PropagateNeverToRuntime() const = 0;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     // Name of the policy
     virtual const char* GetName() const = 0;
     // Detailed data value dump
-    virtual void DumpData() const { }
+    virtual void DumpData(FILE* file) const { }
     // Detailed data name dump
-    virtual void DumpSchema() const { }
-#endif
+    virtual void DumpSchema(FILE* file) const { }
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 protected:
 
@@ -562,7 +564,7 @@ public:
     static InlineContext* NewSuccess(Compiler*   compiler,
                                      InlineInfo* inlineInfo);
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // New context for a failing inline
     static InlineContext* NewFailure(Compiler *    compiler,
@@ -575,7 +577,7 @@ public:
     // Dump only the success subtree, with rich data
     void DumpData(Compiler* compiler, int indent = 0);
 
-#endif
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Get the parent context for this context.
     InlineContext* GetParent() const
@@ -602,13 +604,15 @@ private:
     BYTE*                 m_Code;        // address of IL buffer for the method
     InlineObservation     m_Observation; // what lead to this inline
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     InlinePolicy*         m_Policy;      // policy that evaluated this inline
     CORINFO_METHOD_HANDLE m_Callee;      // handle to the method
     unsigned              m_TreeID;      // ID of the GenTreeCall
     unsigned              m_Ordinal;     // Ordinal number of this inline
     bool                  m_Success;     // true if this was a successful inline
-#endif
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 };
 
