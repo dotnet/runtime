@@ -13,7 +13,6 @@ namespace System.Globalization.Tests
         private const int MinTwoDigitYear = 0;
 
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
 
         public static IEnumerable<object[]> ToFourDigitYear_TestData()
         {
@@ -30,27 +29,27 @@ namespace System.Globalization.Tests
             foreach (GregorianCalendarTypes calendarType in calendarTypes)
             {
                 // 0-99
-                int randomTwoDigitYear = s_randomDataGenerator.GetInt32(-55) % (MaxTwoDigitYear + 1);
-                yield return new object[] { calendarType, randomTwoDigitYear, GetExpectedFourDigitYear(calendarType, randomTwoDigitYear) };
+                yield return new object[] { calendarType, s_randomDataGenerator.GetInt32(-55) % (MaxTwoDigitYear + 1) };
 
                 // Min two digit year
-                yield return new object[] { calendarType, MinTwoDigitYear, GetExpectedFourDigitYear(calendarType, MinTwoDigitYear) };
+                yield return new object[] { calendarType, MinTwoDigitYear };
 
                 // Max two digit year
-                yield return new object[] { calendarType, MaxTwoDigitYear, GetExpectedFourDigitYear(calendarType, MaxTwoDigitYear) };
+                yield return new object[] { calendarType, MaxTwoDigitYear };
             }
         }
 
         [Theory]
         [MemberData(nameof(ToFourDigitYear_TestData))]
-        private void ToFourDigitYear(GregorianCalendarTypes calendarType, int year, int expected)
+        private void ToFourDigitYear(GregorianCalendarTypes calendarType, int year)
         {
-            Assert.Equal(expected, new GregorianCalendar(calendarType).ToFourDigitYear(year));
+            Calendar calendar = new GregorianCalendar(calendarType);
+            int expected = GetExpectedFourDigitYear(calendar, year);
+            Assert.Equal(expected, calendar.ToFourDigitYear(year));
         }
 
-        private static int GetExpectedFourDigitYear(GregorianCalendarTypes calendarType, int twoDigitYear)
+        private static int GetExpectedFourDigitYear(Calendar calendar, int twoDigitYear)
         {
-            GregorianCalendar calendar = new GregorianCalendar(calendarType);
             int expectedFourDigitYear = calendar.TwoDigitYearMax - calendar.TwoDigitYearMax % 100 + twoDigitYear;
             if (expectedFourDigitYear > calendar.TwoDigitYearMax)
             {

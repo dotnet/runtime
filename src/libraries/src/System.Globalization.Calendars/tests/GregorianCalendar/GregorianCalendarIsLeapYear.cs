@@ -11,34 +11,23 @@ namespace System.Globalization.Tests
 {
     public class GregorianCalendarIsLeapYear
     {
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-
         public static IEnumerable<object[]> IsLeapYear_TestData()
         {
-            // Leap year
-            yield return new object[] { RandomLeapYear(), true };
+            // Random years
+            yield return new object[] { RandomLeapYear() };
+            yield return new object[] { RandomCommonYear() };
+            yield return new object[] { RandomYear() };
 
-            // Common year
-            yield return new object[] { RandomCommonYear(), false };
-
-            // Random year
-            int randomYear = RandomYear();
-            yield return new object[] { randomYear, IsLeapYear(randomYear) };
-
-            // Maximum supported year
-            int maxYear = s_calendar.MaxSupportedDateTime.Year;
-            yield return new object[] { maxYear, IsLeapYear(maxYear) };
-
-            // Minimum supported year
-            int minYear = s_calendar.MinSupportedDateTime.Year;
-            yield return new object[] { minYear, IsLeapYear(minYear) };
+            // Boundary years
+            yield return new object[] { 9999 };
+            yield return new object[] { 1 };
         }
 
         [Theory]
         [MemberData(nameof(IsLeapYear_TestData))]
-        public void IsLeapYearTest(int year, bool expected)
+        public void IsLeapYearTest(int year)
         {
-            Assert.Equal(expected, s_calendar.IsLeapYear(year, 1));
+            Assert.Equal(IsLeapYear(year), new GregorianCalendar().IsLeapYear(year, 1));
         }
     }
 }

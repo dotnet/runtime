@@ -11,44 +11,24 @@ namespace System.Globalization.Tests
 {
     public class GregorianCalendarGetDaysInYear
     {
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-
-        private const int DaysInLeapYear = 366;
-        private const int DaysInCommonYear = 365;
-
         public static IEnumerable<object[]> GetDaysInYear_TestData()
         {
-            // Leap year
-            yield return new object[] { RandomLeapYear(), DaysInLeapYear };
+            // Random years
+            yield return new object[] { RandomLeapYear() };
+            yield return new object[] { RandomCommonYear() };
+            yield return new object[] { RandomYear() };
 
-            // Common year
-            yield return new object[] { RandomCommonYear(), DaysInCommonYear };
-
-            // Random year
-            int randomYear = RandomYear();
-            yield return new object[] { randomYear, IsLeapYear(randomYear) ? DaysInLeapYear : DaysInCommonYear };
-
-            // Maximum supported year
-            int maxYear = s_calendar.MaxSupportedDateTime.Year;
-            yield return new object[] { maxYear, IsLeapYear(maxYear) ? DaysInLeapYear : DaysInCommonYear };
-
-            // Minimum supported year
-            int minYear = s_calendar.MaxSupportedDateTime.Year;
-            yield return new object[] { minYear, IsLeapYear(minYear) ? DaysInLeapYear : DaysInCommonYear };
+            // Boundary years
+            yield return new object[] { 9999  };
+            yield return new object[] { 1 };
         }
 
         [Theory]
         [MemberData(nameof(GetDaysInYear_TestData))]
-        public void GetDaysInYear(int year, int expected)
+        public void GetDaysInYear(int year)
         {
-            Assert.Equal(expected, s_calendar.GetDaysInYear(year));
-        }
-
-        [Fact]
-        public void GetDaysInYear_Invalid()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => s_calendar.GetDaysInYear(s_calendar.MinSupportedDateTime.Year - 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => s_calendar.GetDaysInYear(s_calendar.MaxSupportedDateTime.Year + 1));
+            int expected = IsLeapYear(year) ? 366 : 365;
+            Assert.Equal(expected, new GregorianCalendar().GetDaysInYear(year));
         }
     }
 }
