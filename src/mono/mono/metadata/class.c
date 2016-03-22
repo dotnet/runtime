@@ -8325,6 +8325,7 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
+	MonoError error;
 	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!klass->inited)
 		mono_class_init (klass);
@@ -8358,12 +8359,18 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		}
 
 		/* interface_offsets might not be set for dynamic classes */
-		if (oklass->ref_info_handle && !oklass->interface_bitmap)
+		if (oklass->ref_info_handle && !oklass->interface_bitmap) {
 			/* 
 			 * oklass might be a generic type parameter but they have 
 			 * interface_offsets set.
 			 */
- 			return mono_reflection_call_is_assignable_to (oklass, klass);
+ 			gboolean result = mono_reflection_call_is_assignable_to (oklass, klass, &error);
+			if (!is_ok (&error)) {
+				mono_error_cleanup (&error);
+				return FALSE;
+			}
+			return result;
+		}
 		if (!oklass->interface_bitmap)
 			/* Happens with generic instances of not-yet created dynamic types */
 			return FALSE;
@@ -8371,7 +8378,6 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return TRUE;
 
 		if (mono_class_has_variant_generic_params (klass)) {
-			MonoError error;
 			int i;
 			mono_class_setup_interfaces (oklass, &error);
 			if (!mono_error_ok (&error)) {
