@@ -23,7 +23,6 @@
 #ifdef FEATURE_VERSIONING_LOG
 #include "bindinglog.hpp"
 #endif // FEATURE_VERSIONING_LOG
-#include "compatibility.hpp"
 #include "utils.hpp"
 #include "variables.hpp"
 #include "stringarraylist.h"
@@ -46,10 +45,6 @@
 #endif
 
 BOOL IsCompilationProcess();
-
-#ifdef FEATURE_LEGACYNETCF
-extern BOOL RuntimeIsLegacyNetCF(DWORD adid);
-#endif
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 #include "clrprivbindercoreclr.h"
@@ -92,11 +87,6 @@ namespace BINDER_SPACE
             AssemblyVersion *pRequestedVersion = pRequestedName->GetVersion();
             AssemblyVersion *pFoundVersion = pFoundName->GetVersion();
 
-            bool fWindowsPhone7 = false;
-#ifdef FEATURE_LEGACYNETCF
-            fWindowsPhone7 = RuntimeIsLegacyNetCF(pApplicationContext->GetAppDomainId()) == TRUE;
-#endif
-
             //
             // If the AssemblyRef has no version, we can treat it as requesting the most accommodating version (0.0.0.0). In
             // that case, skip version checking and allow the bind.
@@ -105,41 +95,31 @@ namespace BINDER_SPACE
             {
                 return hr;
             }
-            
 
             //
-            // Windows Phone 7 Quirk:
+            // This if condition is paired with the one above that checks for pRequestedName
+            // not having an assembly version.  If we didn't exit in the above if condition,
+            // and satisfy this one's requirements, we're in a situation where the assembly
+            // Ref has a version, but the Def doesn't, which cannot succeed a bind
             //
-            // NetCF does not respect version numbers when binding unsigned assemblies.  If you ask
-            // for a version you can get any version back, including an unversioned assembly.
-            //
-            if (!fWindowsPhone7 || pRequestedName->IsStronglyNamed())
+            _ASSERTE(pRequestedName->HaveAssemblyVersion());
+            if (!pFoundName->HaveAssemblyVersion())
             {
-                //
-                // This if condition is paired with the one above that checks for pRequestedName
-                // not having an assembly version.  If we didn't exit in the above if condition,
-                // and satisfy this one's requirements, we're in a situation where the assembly
-                // Ref has a version, but the Def doesn't, which cannot succeed a bind
-                //
-                _ASSERTE(pRequestedName->HaveAssemblyVersion());
-                if (!pFoundName->HaveAssemblyVersion())
-                {
-                    hr = FUSION_E_APP_DOMAIN_LOCKED;
-                }
-                else if (pRequestedVersion->IsEqualFeatureVersion(pFoundVersion))
-                {
-                    // Now service version matters
-                    if (pRequestedVersion->IsLargerServiceVersion(pFoundVersion))
-                    {
-                        hr = FUSION_E_APP_DOMAIN_LOCKED;
-                    }
-                }
-                else if (pRequestedVersion->IsLargerFeatureVersion(pFoundVersion))
+                hr = FUSION_E_APP_DOMAIN_LOCKED;
+            }
+            else if (pRequestedVersion->IsEqualFeatureVersion(pFoundVersion))
+            {
+                // Now service version matters
+                if (pRequestedVersion->IsLargerServiceVersion(pFoundVersion))
                 {
                     hr = FUSION_E_APP_DOMAIN_LOCKED;
                 }
             }
-            
+            else if (pRequestedVersion->IsLargerFeatureVersion(pFoundVersion))
+            {
+                hr = FUSION_E_APP_DOMAIN_LOCKED;
+            }
+
             if (pApplicationContext->IsTpaListProvided() && hr == FUSION_E_APP_DOMAIN_LOCKED)
             {
                 // For our new binding models, use a more descriptive error code than APP_DOMAIN_LOCKED for bind
@@ -929,15 +909,10 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
         BINDER_LOG_ENTER(W("AssemblyBinder::BindByName"));
         PathString assemblyDisplayName;
-        ReleaseHolder<AssemblyName> pRetargetedAssemblyName;
-        BOOL fIsRetargeted = FALSE;
-
-        // Apply retargeting
-        IF_FAIL_GO(Compatibility::Retarget(pAssemblyName, &pRetargetedAssemblyName, &fIsRetargeted));
 
         // Look for already cached binding failure (ignore PA, every PA will lock the context)
-        pRetargetedAssemblyName->GetDisplayName(assemblyDisplayName,
-                                                AssemblyName::INCLUDE_VERSION);
+        pAssemblyName->GetDisplayName(assemblyDisplayName,
+                                      AssemblyName::INCLUDE_VERSION);
 
         hr = pApplicationContext->GetFailureCache()->Lookup(assemblyDisplayName);
         if (FAILED(hr))
@@ -953,18 +928,18 @@ namespace BINDER_SPACE
         else if (hr == S_FALSE)
         {
             // workaround: Special case for byte arrays. Rerun the bind to create binding log.
-            pRetargetedAssemblyName->SetIsDefinition(TRUE);
+            pAssemblyName->SetIsDefinition(TRUE);
             hr = S_OK;
         }
 
-        if (!Assembly::IsValidArchitecture(pRetargetedAssemblyName->GetArchitecture()))
+        if (!Assembly::IsValidArchitecture(pAssemblyName->GetArchitecture()))
         {
             // Assembly reference contains wrong architecture
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
         }
 
        IF_FAIL_GO(BindLocked(pApplicationContext,
-                              pRetargetedAssemblyName,
+                              pAssemblyName,
                               dwBindFlags,
                               excludeAppPaths,
                               pBindResult));
@@ -1014,8 +989,6 @@ namespace BINDER_SPACE
         BINDER_LOG_ENTER(W("AssemblyBinder::BindWhereRef"));
 
         ReleaseHolder<Assembly> pAssembly;
-        ReleaseHolder<AssemblyName> pRetargetedAssemblyName;
-        BOOL fIsRetargeted = FALSE;
         BindResult lockedBindResult;
 
         // Look for already cached binding failure
@@ -1045,33 +1018,16 @@ namespace BINDER_SPACE
         AssemblyName *pAssemblyName;
         pAssemblyName = pAssembly->GetAssemblyName();
 
-        IF_FAIL_GO(Compatibility::Retarget(pAssemblyName, &pRetargetedAssemblyName, &fIsRetargeted));
-
         if (!fNgenExplicitBind)
         {
             IF_FAIL_GO(BindLockedOrService(pApplicationContext,
-                                           pRetargetedAssemblyName,
+                                           pAssemblyName,
                                            excludeAppPaths,
                                            &lockedBindResult));
             if (lockedBindResult.HaveResult())
             {
                 pBindResult->SetResult(&lockedBindResult);
                 GO_WITH_HRESULT(S_OK);
-            }
-
-            else if (fIsRetargeted)
-            {
-                // We did not find retargeted assembly.
-                // Check that assembly we have does match (must have retargetable property set).
-                ReleaseHolder<AssemblyName> pClonedAssemblyName;
-
-                IF_FAIL_GO(pRetargetedAssemblyName->Clone(&pClonedAssemblyName));
-                pClonedAssemblyName->SetIsRetargetable(TRUE);
-
-                if (!pClonedAssemblyName->Equals(pAssemblyName, AssemblyName::INCLUDE_VERSION))
-                {
-                    IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
-                }
             }
         }
 
@@ -1241,17 +1197,8 @@ namespace BINDER_SPACE
     {
         DWORD dwIncludeFlags = AssemblyName::INCLUDE_DEFAULT;
 
-        bool fWindowsPhone7 = false;
-#ifdef FEATURE_LEGACYNETCF
-        fWindowsPhone7 = RuntimeIsLegacyNetCF(pApplicationContext->GetAppDomainId()) == TRUE;
-#endif
-
-        if (!tpaListAssembly || (fWindowsPhone7 && tpaListAssembly))
+        if (!tpaListAssembly)
         {
-            //
-            // On Windows Phone 7, exclude culture comparisons when requesting an uncultured
-            // assembly for app compat reasons (there are main app assemblies with spurious cultures)
-            //
             SString &culture = pRequestedAssemblyName->GetCulture();
             if (culture.IsEmpty() || culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
             {
