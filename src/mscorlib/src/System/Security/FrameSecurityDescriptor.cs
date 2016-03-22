@@ -15,7 +15,6 @@ namespace System.Security {
     using System.Diagnostics.Contracts;
 #if !FEATURE_PAL
     using Microsoft.Win32.SafeHandles;
-    using System.Security.Principal;
 #endif    
      //FrameSecurityDescriptor.cs
     //
