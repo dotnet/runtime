@@ -329,8 +329,10 @@ InlineContext::InlineContext()
     , m_Code(nullptr)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
 #ifdef DEBUG
+    , m_Policy(nullptr)
     , m_Callee(nullptr)
     , m_TreeID(0)
+    , m_Ordinal(0)
     , m_Success(true)
 #endif
 {
@@ -396,8 +398,10 @@ InlineContext* InlineContext::NewSuccess(Compiler*   compiler,
     calleeContext->m_Offset = stmt->AsStmt()->gtStmtILoffsx;
     calleeContext->m_Observation = inlineInfo->inlineResult->GetObservation();
 #ifdef DEBUG
+    calleeContext->m_Policy = inlineInfo->inlineResult->GetPolicy();
     calleeContext->m_Callee = inlineInfo->fncHandle;
     calleeContext->m_TreeID = inlineInfo->inlineResult->GetCall()->gtTreeID;
+    calleeContext->m_Ordinal = compiler->getInlinedCount();
 #endif
 
     return calleeContext;
@@ -485,11 +489,14 @@ void InlineContext::Dump(Compiler* compiler, int indent)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
     }
 
+    mdMethodDef calleeToken =
+        compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+
     // Dump this node
     if (m_Parent == nullptr)
     {
         // Root method
-        printf("Inlines into %s\n", calleeName);
+        printf("Inlines into %08X %s\n", calleeToken, calleeName);
     }
     else
     {
@@ -504,12 +511,14 @@ void InlineContext::Dump(Compiler* compiler, int indent)
 
         if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("[IL=???? TR=%06u] [%s%s] %s\n", m_TreeID, inlineResult, inlineReason, calleeName);
+            printf("[%u IL=???? TR=%06u %08X] [%s%s] %s\n", m_Ordinal, m_TreeID, calleeToken,
+                   inlineResult, inlineReason, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("[IL=%04d TR=%06u] [%s%s] %s\n", offset, m_TreeID, inlineResult, inlineReason, calleeName);
+            printf("[%u IL=%04d TR=%06u %08X] [%s%s] %s\n", m_Ordinal, offset, m_TreeID, calleeToken,
+                   inlineResult, inlineReason, calleeName);
         }
     }
 
@@ -517,6 +526,51 @@ void InlineContext::Dump(Compiler* compiler, int indent)
     if (m_Child != nullptr)
     {
         m_Child->Dump(compiler, indent + 2);
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpData: Dump a successful InlineContext entry, detailed data, and
+//  any successful descendant inlines
+//
+// Arguments:
+//    compiler - compiler instance doing inlining
+//    indent   - indentation level for this node
+
+void InlineContext::DumpData(Compiler* compiler, int indent)
+{
+    // Handle fact that siblings are in reverse order.
+    if (m_Sibling != nullptr)
+    {
+        m_Sibling->DumpData(compiler, indent);
+    }
+
+    const char* calleeName = compiler->eeGetMethodFullName(m_Callee);
+
+    if (m_Parent == nullptr)
+    {
+        // Root method... cons up a policy so we can display the name
+        InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
+        printf("\nInlines [%u] into \"%s\" [%s]\n", compiler->getInlinedCount(), calleeName, policy->GetName());
+    }
+    else if (m_Success)
+    {
+        const char* inlineReason = InlGetObservationString(m_Observation);
+
+        for (int i = 0; i < indent; i++)
+        {
+            printf(" ");
+        }
+
+        printf("%u,\"%s\",\"%s\"", m_Ordinal, inlineReason, calleeName);
+        m_Policy->DumpData();
+        printf("\n");
+    }
+
+    // Recurse to first child
+    if (m_Child != nullptr)
+    {
+        m_Child->DumpData(compiler, indent + 2);
     }
 }
 
@@ -621,6 +675,13 @@ void InlineResult::Report()
     m_Reported = true;
 
 #ifdef DEBUG
+
+    // Stash a pointer to the latest successful policy for later stats
+    // reporting.
+    if (IsSuccess())
+    {
+        m_RootCompiler->inlLastSuccessfulPolicy = GetPolicy();
+    }
 
     const char* callee = nullptr;
 
