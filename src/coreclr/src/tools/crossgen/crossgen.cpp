@@ -159,11 +159,6 @@ void PrintUsageHelper()
        W("    /ReadyToRun          - Generate images resilient to the runtime and\n")
        W("                           dependency versions\n")
 #endif
-#ifdef FEATURE_LEGACYNETCF
-       W(" Compatability Modes\n")
-       W("    /PreWP8App           - Set the Windows Phone 8 \"Quirks\" mode, namely AppDomainCompatSwitch=\n")
-       W("                           WindowsPhone_3.7.0.0 or WindowsPhone_3.8.0.0.\n")
-#endif
 #ifdef FEATURE_WINMD_RESILIENT
        W(" WinMD Parameters\n")
        W("    /WinMDResilient - Generate images resilient to WinMD dependency changes.\n")
@@ -530,12 +525,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             //
             // We dont explicitly set the flag here again so that if "/PartialTrust" is specified, then it will successfully override the default
             // fulltrust behaviour.
-        }
-#endif
-#ifdef FEATURE_LEGACYNETCF
-        else if (MatchParameter(*argv, W("PreWP8App")))
-        {
-            dwFlags |= NGENWORKER_FLAGS_APPCOMPATWP8;
         }
 #endif
 #ifdef FEATURE_WINMD_RESILIENT

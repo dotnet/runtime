@@ -517,22 +517,6 @@ namespace System.Threading {
 #pragma warning restore 618
         public void Abort()
         {
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly)
-                {
-                    string caller = new StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
             AbortInternal();
         }
 
@@ -1104,14 +1088,6 @@ namespace System.Threading {
                     nativeInitCultureAccessors();
 #endif
 
-#if FEATURE_LEGACYNETCF && !FEATURE_COREFX_GLOBALIZATION
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    // Maintain legacy NetCF Behavior where setting the value for one thread impacts all threads.
-                    CultureInfo.SetCurrentUICultureQuirk(value);
-                    return;
-                }
-#endif
                 if (!AppContextSwitches.NoAsyncCurrentCulture)
                 {
                     if (s_asyncLocalCurrentUICulture == null)
@@ -1219,14 +1195,6 @@ namespace System.Threading {
                     nativeInitCultureAccessors();
 #endif
 
-#if FEATURE_LEGACYNETCF && !FEATURE_COREFX_GLOBALIZATION
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    // See comment in CurrentUICulture setter
-                    CultureInfo.SetCurrentCultureQuirk(value);
-                    return;
-                }
-#endif
                 if (!AppContextSwitches.NoAsyncCurrentCulture)
                 {
                     if (s_asyncLocalCurrentCulture == null)

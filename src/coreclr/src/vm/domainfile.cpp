@@ -3804,13 +3804,6 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
     {
         dacfFlags |= DACF_USER_OVERRIDE;
     }
-#ifdef FEATURE_LEGACYNETCF
-    else
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-    {
-        // NetCF did not respect the DebuggableAttribute
-    }
-#endif
     else
     {
         IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));

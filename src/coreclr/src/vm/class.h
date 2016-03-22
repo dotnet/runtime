@@ -1677,18 +1677,6 @@ public:
         /* no op */
     }
 #endif
-#ifdef FEATURE_LEGACYNETCF
-    DWORD IsTypeValidOnNetCF()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_TYPE_VALID_ON_NETCF);
-    }
-    void SetTypeValidOnNetCF()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages(&m_VMFlags), VMFLAG_TYPE_VALID_ON_NETCF);
-    }
-#endif
     DWORD HasNonPublicFields()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2158,9 +2146,6 @@ public:
         VMFLAG_ISNESTED                        = 0x00000080,
 #ifdef FEATURE_REMOTING
         VMFLAG_CANNOT_BE_BLITTED_BY_OBJECT_CLONER = 0x00000100,  // This class has GC type fields, or implements ISerializable or has non-Serializable fields
-#endif
-#ifdef FEATURE_LEGACYNETCF
-        VMFLAG_TYPE_VALID_ON_NETCF              = 0x00000100,    // This type would succesfully load on NetCF
 #endif
 
         VMFLAG_IS_EQUIVALENT_TYPE              = 0x00000200,

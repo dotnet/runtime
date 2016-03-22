@@ -4473,12 +4473,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
                 // been obfuscated so that they have duplicate private typedefs.
                 // We must allow this for old assemblies for app compat reasons
 #ifdef FEATURE_CORECLR
-#ifdef FEATURE_LEGACYNETCF
-                if (!RuntimeIsLegacyNetCF(0))
-#endif
-                {
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-                }
+                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
 #else
                 LPCSTR pszVersion = NULL;
                 if (FAILED(pModule->GetMDImport()->GetVersionString(&pszVersion)))
