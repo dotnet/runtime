@@ -2,6 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+.macro LEAF_ENTRY Name, Section
+        .thumb_func
+        .global C_FUNC(\Name)
+        .type \Name, %function
+C_FUNC(\Name):
+        .fnstart
+.endm
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -17,14 +25,6 @@
         .thumb_func
         .global C_FUNC(\Name)
 C_FUNC(\Name):
-.endm
-
-.macro LEAF_ENTRY Name, Section
-        .thumb_func
-        .global C_FUNC(\Name)
-        .type \Name, %function
-C_FUNC(\Name):
-        .fnstart
 .endm
 
 .macro LEAF_END_MARKED Name, Section
@@ -204,8 +204,20 @@ C_FUNC(\Name\()_End):
         mov \Register, sp
 .endm
 
+.macro EPILOG_STACK_FREE Size
+        add sp, sp, \Size
+.endm
+
 .macro EPILOG_STACK_RESTORE Register
         mov sp, \Register
+.endm
+
+.macro EPILOG_BRANCH Target
+        b \Target
+.endm
+
+.macro EPILOG_BRANCH_REG reg
+        bx \reg
 .endm
 
 .macro EPILOG_POP RegList
