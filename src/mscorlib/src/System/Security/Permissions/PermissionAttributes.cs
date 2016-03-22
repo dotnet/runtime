@@ -77,12 +77,8 @@ namespace System.Security.Permissions
         internal SecurityAction m_action;
         /// <internalonly/>
         internal bool m_unrestricted;
-#if FEATURE_LEGACYNETCF
-        public
-#else
-        protected
-#endif
-            SecurityAttribute( SecurityAction action ) 
+
+        protected SecurityAttribute( SecurityAction action ) 
         {
             m_action = action;
         }
@@ -122,12 +118,7 @@ namespace System.Security.Permissions
 #endif
     public abstract class CodeAccessSecurityAttribute : SecurityAttribute
     {
-#if FEATURE_LEGACYNETCF
-        public
-#else
-        protected
-#endif
-            CodeAccessSecurityAttribute( SecurityAction action )
+        protected CodeAccessSecurityAttribute( SecurityAction action )
             : base( action )
         {
         }
