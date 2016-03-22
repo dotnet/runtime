@@ -21,4 +21,4 @@ add_dependencies(osxbundlerun
     coreclr
 )
 
-install (TARGETS osxbundlerun DESTINATION .)
+install_clr(osxbundlerun)

@@ -444,7 +444,7 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
     add_subdirectory(tracepointprovider)
 
     # Install the static eventprovider library
-    install (TARGETS eventprovider DESTINATION lib)
+    install(TARGETS eventprovider DESTINATION lib)
     """)
     topCmake.close()
 
@@ -481,11 +481,11 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
     tracepointprovider_Cmake.write("""    )
 
     target_link_libraries(coreclrtraceptprovider
-                         -llttng-ust
+                          -llttng-ust
     )
 
-   #Install the static coreclrtraceptprovider library
-   install (TARGETS coreclrtraceptprovider DESTINATION .)
+    # Install the static coreclrtraceptprovider library
+    install_clr(coreclrtraceptprovider)
    """)
     tracepointprovider_Cmake.close()
 
