@@ -24,7 +24,7 @@ internal partial class Interop
         // Instead of doing complicated and dangerous logic to determine if this may or may not occur,
         // we simply assume the worst and reserve a bigger buffer. This way we may use a bit more memory,
         // but we will always be safe.
-        private static int AdjustNumberOfChars(int numChars)
+        private static int CharCountToByteCount(int numChars)
         {
             return numChars * 2;
         }
@@ -34,7 +34,7 @@ internal partial class Interop
         internal static int GetConsoleTitle(out string title, out int titleLength)
         {
             int lastError = 0;
-            StringBuilder sb = new StringBuilder(AdjustNumberOfChars(InitialBufferSizeInChars + 1));
+            StringBuilder sb = new StringBuilder(CharCountToByteCount(InitialBufferSizeInChars + 1));
             int len = GetConsoleTitle(sb, sb.Capacity);
 
             if (len <= 0)
@@ -53,7 +53,7 @@ internal partial class Interop
                 if (len > InitialBufferSizeInChars)
                 {
                     // We need to increase the sb capacity and retry.
-                    sb.Capacity = AdjustNumberOfChars(len + 1);
+                    sb.Capacity = CharCountToByteCount(len + 1);
                     len = GetConsoleTitle(sb, sb.Capacity);
                     if (len <= 0)
                     {
