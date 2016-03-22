@@ -32,7 +32,6 @@ namespace System.Globalization {
     using System.Security.Permissions;
     using Microsoft.Win32;
     using System.Security;
-    using System.Security.Principal;
     using System.Diagnostics.Contracts;
 
     //

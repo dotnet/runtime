@@ -17,7 +17,9 @@ namespace System.Security
     using Microsoft.Win32.SafeHandles;
     using System.Threading;
     using System.Runtime.Remoting;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Collections;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
