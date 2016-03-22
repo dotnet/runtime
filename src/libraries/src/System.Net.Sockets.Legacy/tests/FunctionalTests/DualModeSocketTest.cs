@@ -1099,8 +1099,12 @@ namespace System.Net.Sockets.Tests
             Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using (SocketUdpServer server = new SocketUdpServer(listenOn, dualModeServer, out port))
             {
-                int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
-                Assert.Equal(1, sent);
+                // Send a few packets, in case they aren't delivered reliably.
+                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                {
+                    int sent = client.SendTo(new byte[1], new IPEndPoint(connectTo, port));
+                    Assert.Equal(1, sent);
+                }
 
                 bool success = server.WaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
@@ -1187,10 +1191,14 @@ namespace System.Net.Sockets.Tests
             Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using (SocketUdpServer server = new SocketUdpServer(listenOn, dualModeServer, out port))
             {
-                IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
+                // Send a few packets, in case they aren't delivered reliably.
+                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                {
+                    IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
 
-                int sent = client.EndSendTo(async);
-                Assert.Equal(1, sent);
+                    int sent = client.EndSendTo(async);
+                    Assert.Equal(1, sent);
+                }
 
                 bool success = server.WaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout); // Make sure the bytes were received
                 if (!success)
@@ -1281,26 +1289,31 @@ namespace System.Net.Sockets.Tests
         private void DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
         {
             int port;
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
             Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using (SocketUdpServer server = new SocketUdpServer(listenOn, dualModeServer, out port))
             {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(connectTo, port);
-                args.SetBuffer(new byte[1], 0, 1);
-                args.UserToken = waitHandle;
-                args.Completed += AsyncCompleted;
-
-                bool async = client.SendToAsync(args);
-                if (async)
+                for (int i = 0; i < Configuration.UDPRedundancy; i++)
                 {
-                    Assert.True(waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timeout while waiting for connection");
-                }
+                    using (ManualResetEvent waitHandle = new ManualResetEvent(false))
+                    {
+                        SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                        args.RemoteEndPoint = new IPEndPoint(connectTo, port);
+                        args.SetBuffer(new byte[1], 0, 1);
+                        args.UserToken = waitHandle;
+                        args.Completed += AsyncCompleted;
 
-                Assert.Equal(1, args.BytesTransferred);
-                if (args.SocketError != SocketError.Success)
-                {
-                    throw new SocketException((int)args.SocketError);
+                        bool async = client.SendToAsync(args);
+                        if (async)
+                        {
+                            Assert.True(waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timeout while waiting for connection");
+                        }
+
+                        Assert.Equal(1, args.BytesTransferred);
+                        if (args.SocketError != SocketError.Success)
+                        {
+                            throw new SocketException((int)args.SocketError);
+                        }
+                    }
                 }
 
                 bool success = server.WaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout); // Make sure the bytes were received
@@ -2541,7 +2554,11 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-                    socket.SendTo(new byte[1], new IPEndPoint(_connectTo, _port));
+
+                    for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                    {
+                        socket.SendTo(new byte[1], new IPEndPoint(_connectTo, _port));
+                    }
                 }
                 catch (SocketException)
                 {

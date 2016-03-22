@@ -22,6 +22,7 @@ namespace System.Net.Sockets.Tests
 
         private static void SendToRecvFrom_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
         {
+            // TODO #5185: Harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
             const int AckTimeout = 1000;
@@ -96,6 +97,7 @@ namespace System.Net.Sockets.Tests
 
         private static void SendToRecvFromAPM_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
         {
+            // TODO #5185: Harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
             const int AckTimeout = 1000;

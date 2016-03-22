@@ -20,7 +20,11 @@ namespace System.Net.Sockets.Tests
 
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                    sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
+
+                    for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                    {
+                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
+                    }
 
                     IPPacketInformation packetInformation;
                     SocketFlags flags = SocketFlags.None;
