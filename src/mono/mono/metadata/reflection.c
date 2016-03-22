@@ -6862,13 +6862,13 @@ register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynam
 	CACHE_OBJECT (MonoReflectionModuleBuilder *, module, res, NULL);
 }
 
-void
-mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
+static gboolean
+image_module_basic_init (MonoReflectionModuleBuilder *moduleb, MonoError *error)
 {
 	MonoDynamicImage *image = moduleb->dynamic_image;
 	MonoReflectionAssemblyBuilder *ab = moduleb->assemblyb;
+	mono_error_init (error);
 	if (!image) {
-		MonoError error;
 		int module_count;
 		MonoImage **new_modules;
 		MonoImage *ass;
@@ -6880,10 +6880,10 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		 */
 		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
 		name = mono_string_to_utf8 (ab->name);
-		fqname = mono_string_to_utf8_checked (moduleb->module.fqname, &error);
-		if (!mono_error_ok (&error)) {
+		fqname = mono_string_to_utf8_checked (moduleb->module.fqname, error);
+		if (!is_ok (error)) {
 			g_free (name);
-			mono_error_raise_exception (&error);
+			return FALSE;
 		}
 		image = create_dynamic_mono_image (ab->dynamic_assembly, name, fqname);
 
@@ -6905,6 +6905,15 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		ass->modules = new_modules;
 		ass->module_count ++;
 	}
+	return TRUE;
+}
+
+void
+mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
+{
+	MonoError error;
+	(void) image_module_basic_init (moduleb, &error);
+	mono_error_set_pending_exception (&error);
 }
 
 void
@@ -6965,7 +6974,7 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	MonoError error;
 	MonoReflectionModule *result;
 	result = mono_module_get_object_checked (domain, image, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -7017,7 +7026,7 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	MonoError error;
 	MonoReflectionModule *result;
 	result = mono_module_file_get_object_checked (domain, image, table_index, &error);
-	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -7151,7 +7160,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
 	MonoError error;
 	MonoReflectionType *ret = mono_type_get_object_checked (domain, type, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 
 	return ret;
 }
@@ -7289,7 +7298,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	MonoError error;
 	MonoReflectionMethod *ret = NULL;
 	ret = mono_method_get_object_checked (domain, method, refclass, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return ret;
 }
 
@@ -7411,7 +7420,7 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	MonoError error;
 	MonoReflectionField *result;
 	result = mono_field_get_object_checked (domain, klass, field, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -7477,7 +7486,7 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 	MonoError error;
 	MonoReflectionProperty *result;
 	result = mono_property_get_object_checked (domain, klass, property, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -7522,7 +7531,7 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	MonoError error;
 	MonoReflectionEvent *result;
 	result = mono_event_get_object_checked (domain, klass, event, &error);
-	mono_error_raise_exception (&error);
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -7784,7 +7793,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	MonoError error;
 	MonoReflectionMethodBody *result = mono_method_body_get_object_checked (domain, method, &error);
-	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -9868,7 +9877,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 {
 	MonoError error;
 	MonoCustomAttrInfo *result = mono_custom_attrs_from_index_checked (image, idx, &error);
-	mono_error_cleanup (&error); /* FIXME a better public API that doesn't swallow the error. */
+	mono_error_cleanup (&error);
 	return result;
 }
 /**
@@ -9989,7 +9998,7 @@ mono_custom_attrs_from_class (MonoClass *klass)
 {
 	MonoError error;
 	MonoCustomAttrInfo *result = mono_custom_attrs_from_class_checked (klass, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10023,7 +10032,7 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
 	MonoError error;
 	MonoCustomAttrInfo *result = mono_custom_attrs_from_assembly_checked (assembly, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10060,7 +10069,7 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
 	MonoError error;
 	MonoCustomAttrInfo * result = mono_custom_attrs_from_property_checked (klass, property, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10084,7 +10093,7 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
 	MonoError error;
 	MonoCustomAttrInfo * result = mono_custom_attrs_from_event_checked (klass, event, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10108,7 +10117,7 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
 	MonoError error;
 	MonoCustomAttrInfo * result = mono_custom_attrs_from_field_checked (klass, field, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10142,7 +10151,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 {
 	MonoError error;
 	MonoCustomAttrInfo *result = mono_custom_attrs_from_param_checked (method, param, &error);
-	mono_error_cleanup (&error); /* FIXME want a better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -10242,7 +10251,7 @@ mono_custom_attrs_get_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
 	MonoError error;
 	MonoObject *res = mono_custom_attrs_get_attr_checked (ainfo, attr_klass, &error);
-	g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+	mono_error_assert_ok (&error); /*FIXME proper error handling*/
 	return res;
 }
 
@@ -10482,7 +10491,7 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj)
 	MonoError error;
 	MonoArray* result;
 	result = mono_reflection_get_custom_attrs_data_checked (obj, &error);
-	mono_error_cleanup (&error); /* FIXME new API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -11289,7 +11298,7 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 {
 	MonoError error;
 	MonoArray *result = mono_reflection_get_custom_attrs_blob_checked (assembly, ctor, ctorArgs, properties, propValues, fields, fieldValues, &error);
-	mono_error_cleanup (&error); /* FIXME better API that doesn't swallow the error */
+	mono_error_cleanup (&error);
 	return result;
 }
 
@@ -13442,10 +13451,9 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 }
 
 
-MonoArray *
-mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
+static MonoArray *
+reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig, MonoError *error)
 {
-	MonoError error;
 	MonoReflectionModuleBuilder *module = sig->module;
 	MonoDynamicImage *assembly = module != NULL ? module->dynamic_image : NULL;
 	guint32 na = sig->arguments ? mono_array_length (sig->arguments) : 0;
@@ -13453,8 +13461,10 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 	MonoArray *result;
 	SigBuffer buf;
 
-	check_array_for_usertypes (sig->arguments, &error);
-	mono_error_raise_exception (&error); /* FIXME: don't raise here */
+	mono_error_init (error);
+
+	check_array_for_usertypes (sig->arguments, error);
+	return_val_if_nok (error, NULL);
 
 	sigbuffer_init (&buf, 32);
 
@@ -13463,8 +13473,8 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 	if (assembly != NULL){
 		for (i = 0; i < na; ++i) {
 			MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType*, i);
-			encode_reflection_type (assembly, type, &buf, &error);
-			if (!is_ok (&error)) goto fail;
+			encode_reflection_type (assembly, type, &buf, error);
+			if (!is_ok (error)) goto fail;
 		}
 	}
 
@@ -13475,30 +13485,39 @@ mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 	return result;
 fail:
 	sigbuffer_free (&buf);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return NULL;
 }
 
 MonoArray *
-mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
+mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
 {
 	MonoError error;
+	MonoArray *result = reflection_sighelper_get_signature_local (sig, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
+static MonoArray *
+reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig, MonoError *error)
+{
 	MonoDynamicImage *assembly = sig->module->dynamic_image;
 	guint32 na = sig->arguments ? mono_array_length (sig->arguments) : 0;
 	guint32 buflen, i;
 	MonoArray *result;
 	SigBuffer buf;
 
-	check_array_for_usertypes (sig->arguments, &error);
-	mono_error_raise_exception (&error); /* FIXME: don't raise here */
+	mono_error_init (error);
+
+	check_array_for_usertypes (sig->arguments, error);
+	return_val_if_nok (error, NULL);
 
 	sigbuffer_init (&buf, 32);
 
 	sigbuffer_add_value (&buf, 0x06);
 	for (i = 0; i < na; ++i) {
 		MonoReflectionType *type = mono_array_get (sig->arguments, MonoReflectionType*, i);
-		encode_reflection_type (assembly, type, &buf, &error);
-		if (!is_ok (&error))
+		encode_reflection_type (assembly, type, &buf, error);
+		if (!is_ok (error))
 			goto fail;
 	}
 
@@ -13510,8 +13529,16 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 	return result;
 fail:
 	sigbuffer_free (&buf);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
 	return NULL;
+}
+
+MonoArray *
+mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
+{
+	MonoError error;
+	MonoArray *result = reflection_sighelper_get_signature_field (sig, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 typedef struct {
