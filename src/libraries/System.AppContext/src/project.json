@@ -10,7 +10,7 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23910"
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23921"
       }
     },
     "net462": {
