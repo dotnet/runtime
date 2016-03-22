@@ -267,9 +267,5 @@
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
 
-#if defined(_TARGET_ARM64_)
-#define FEATURE_INTERPRETER
-#endif // defined(_TARGET_ARM64_)
-
 #endif // !defined(CROSSGEN_COMPILE)
 
