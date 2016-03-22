@@ -77,7 +77,7 @@ mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 	bridge_callbacks = *callbacks;
 
 	if (!bridge_processor.reset_data)
-		sgen_old_bridge_init (&bridge_processor);
+		sgen_new_bridge_init (&bridge_processor);
 }
 
 static gboolean
