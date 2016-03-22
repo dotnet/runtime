@@ -580,8 +580,7 @@ void        CodeGen::instGetAddrMode(GenTreePtr    addr,
         else
             *indScale = 0;
 
-        *cns = compiler->eeGetArrayDataOffset(addr->gtArrElem.gtArrElemType)
-            + 2 * sizeof(int) * addr->gtArrElem.gtArrRank;
+        *cns = compiler->eeGetMDArrayDataOffset(addr->gtArrElem.gtArrElemType, addr->gtArrElem.gtArrRank);
     }
     else if (addr->gtOper == GT_LEA)
     {
