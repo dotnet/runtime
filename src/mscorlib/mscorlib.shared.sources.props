@@ -958,14 +958,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\CommonEnums.cs" />
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\ISoapMessage.cs" />
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\IFieldInfo.cs" />
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\SerTrace.cs" />
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\SoapMessage.cs" />
-    <SerializationFormattersSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\Formatters\SoapFault.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <RemotingSources Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -1023,10 +1015,6 @@
   </ItemGroup>
   <ItemGroup>
     <XmlSources Include="$(BclSourcesRoot)\System\Security\SecurityElement.cs" />
-    <XmlSources Include="$(BclSourcesRoot)\System\Security\XMLSyntaxException.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\SecurityDocument.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Parser.cs" />
-    <XmlSources Condition="'$(FeatureCasPolicy)' == 'true'" Include="$(BclSourcesRoot)\System\Security\Util\Tokenizer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Win32Sources Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
