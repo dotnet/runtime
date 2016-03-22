@@ -10,7 +10,6 @@ using Xunit;
 
 public static unsafe class AttributeTests
 {
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/2037", PlatformID.AnyUnix)]
     [Fact]
     [StringValue("\uDFFF")]
     public static void StringArgument_InvalidCodeUnits_FallbackUsed()
