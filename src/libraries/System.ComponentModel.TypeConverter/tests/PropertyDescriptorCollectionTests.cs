@@ -223,6 +223,14 @@ namespace System.ComponentModel.Tests
                 }
             }
 
+            public override bool IsReadOnly
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
             public override Type PropertyType
             {
                 get

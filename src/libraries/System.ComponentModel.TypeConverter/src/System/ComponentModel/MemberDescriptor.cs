@@ -182,9 +182,7 @@ namespace System.ComponentModel
             {
                 if (_category == null)
                 {
-#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                     _category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]).Category;
-#endif
                 }
                 return _category;
             }
@@ -202,9 +200,7 @@ namespace System.ComponentModel
             {
                 if (_description == null)
                 {
-#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                     _description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]).Description;
-#endif
                 }
                 return _description;
             }
@@ -220,10 +216,7 @@ namespace System.ComponentModel
         {
             get
             {
-#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                 return ((BrowsableAttribute)Attributes[typeof(BrowsableAttribute)]).Browsable;
-#endif
-                return false;
             }
         }
 
@@ -261,23 +254,6 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
-        ///       Determines whether this member should be set only at
-        ///       design time as specified in the <see cref='System.ComponentModel.DesignOnlyAttribute'/>.
-        ///    </para>
-        /// </devdoc>
-        public virtual bool DesignTimeOnly
-        {
-            get
-            {
-#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
-                return (DesignOnlyAttribute.Yes.Equals(Attributes[typeof(DesignOnlyAttribute)]));
-#endif
-                return false;
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
         ///       Gets the name that can be displayed in a window like a
         ///       properties window.
         ///    </para>
@@ -286,15 +262,16 @@ namespace System.ComponentModel
         {
             get
             {
-#if REMOVE_WHEN_ATTRIBUTE_IS_AVAILABLE
                 DisplayNameAttribute displayNameAttr = Attributes[typeof(DisplayNameAttribute)] as DisplayNameAttribute;
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
+#else
+                if (displayNameAttr == null)
+#endif
                 {
                     return _displayName;
                 }
                 return displayNameAttr.DisplayName;
-#endif
-                return null;
             }
         }
 
@@ -486,9 +463,13 @@ namespace System.ComponentModel
             }
             else
             {
+                // The original impementation requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not 
+                // available on .NET Core. The replacement will use the default BindingFlags, which may miss some methods that had been found
+                // on .NET Framework.
 #if FEATURE_GETMETHOD_WITHTYPES
-                // This requires the method https://msdn.microsoft.com/en-us/library/5fed8f59(v=vs.110).aspx which is not available on .NET Core
                 result = componentClass.GetTypeInfo().GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
+#else
+                result = componentClass.GetTypeInfo().GetMethod(name, args);
 #endif
             }
             if (result != null && !result.ReturnType.GetTypeInfo().IsEquivalentTo(returnType))
