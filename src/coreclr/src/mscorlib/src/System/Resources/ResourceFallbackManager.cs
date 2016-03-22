@@ -93,40 +93,31 @@ namespace System.Resources
 
 // Added but disabled from desktop in .NET 4.0, stayed disabled in .NET 4.5
 #if FEATURE_CORECLR
-#if FEATURE_LEGACYNETCF
-            if(!CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
+            // 2. user preferred cultures, omitting starting culture if tried already
+            //    Compat note: For console apps, this API will return cultures like Arabic
+            //    or Hebrew that are displayed right-to-left.  These don't work with today's 
+            //    CMD.exe.  Since not all apps can short-circuit RTL languages to look at
+            //    US English resources, we're exposing an appcompat flag for this, to make the
+            //    osFallbackArray an empty array, mimicing our V2 behavior.  Apps should instead
+            //    be using CultureInfo.GetConsoleFallbackUICulture, and then test whether that
+            //    culture's code page can be displayed on the console, and if not, they should
+            //    set their culture to their neutral resources language.
+            //    Note: the app compat switch will omit the OS Preferred fallback culture.
+            //    Compat note 2:  This feature breaks certain apps dependent on fallback to neutral
+            //    resources.  See extensive note in GetResourceFallbackArray.  
+            CultureInfo[] osFallbackArray = LoadPreferredCultures();
+            if (osFallbackArray != null)
             {
-#endif // FEATURE_LEGACYNETCF
-
-                // 2. user preferred cultures, omitting starting culture if tried already
-                //    Compat note: For console apps, this API will return cultures like Arabic
-                //    or Hebrew that are displayed right-to-left.  These don't work with today's 
-                //    CMD.exe.  Since not all apps can short-circuit RTL languages to look at
-                //    US English resources, we're exposing an appcompat flag for this, to make the
-                //    osFallbackArray an empty array, mimicing our V2 behavior.  Apps should instead
-                //    be using CultureInfo.GetConsoleFallbackUICulture, and then test whether that
-                //    culture's code page can be displayed on the console, and if not, they should
-                //    set their culture to their neutral resources language.
-                //    Note: the app compat switch will omit the OS Preferred fallback culture.
-                //    Compat note 2:  This feature breaks certain apps dependent on fallback to neutral
-                //    resources.  See extensive note in GetResourceFallbackArray.  
-                CultureInfo[] osFallbackArray = LoadPreferredCultures();
-                if (osFallbackArray != null)
+                foreach (CultureInfo ci in osFallbackArray)
                 {
-                    foreach (CultureInfo ci in osFallbackArray)
+                    // only have to check starting culture and immediate parent for now.
+                    // in Dev10, revisit this policy.
+                    if (m_startingCulture.Name != ci.Name && m_startingCulture.Parent.Name != ci.Name)
                     {
-                        // only have to check starting culture and immediate parent for now.
-                        // in Dev10, revisit this policy.
-                        if (m_startingCulture.Name != ci.Name && m_startingCulture.Parent.Name != ci.Name)
-                        {
-                            yield return ci;
-                        }
+                        yield return ci;
                     }
                 }
-#if FEATURE_LEGACYNETCF
             }
-#endif // FEATURE_LEGACYNETCF
-
 #endif // FEATURE_CORECLR
 
             // 3. invariant
