@@ -40,9 +40,6 @@
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestExtensions.cs">
       <Link>SocketCommon\SocketTestExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
-      <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
     </Compile>

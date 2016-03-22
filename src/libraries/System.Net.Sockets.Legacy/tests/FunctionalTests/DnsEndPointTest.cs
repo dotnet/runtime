@@ -14,12 +14,14 @@ namespace System.Net.Sockets.Tests
         // Port 8 is unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
         private const int UnusedPort = 8;
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [PlatformSpecific(PlatformID.Windows)]
-        public void Socket_ConnectDnsEndPoint_Success()
+        public void Socket_ConnectDnsEndPoint_Success(SocketImplementationType type)
         {
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             sock.Connect(new DnsEndPoint("localhost", port));
@@ -81,12 +83,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [PlatformSpecific(PlatformID.Windows)]
-        public void Socket_BeginConnectDnsEndPoint_Success()
+        public void Socket_BeginConnectDnsEndPoint_Success(SocketImplementationType type)
         {
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", port), null, null);
@@ -142,12 +146,14 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [PlatformSpecific(PlatformID.Windows)]
-        public void Socket_ConnectAsyncDnsEndPoint_Success()
+        public void Socket_ConnectAsyncDnsEndPoint_Success(SocketImplementationType type)
         {
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("localhost", port);
@@ -224,14 +230,16 @@ namespace System.Net.Sockets.Tests
             sock.Dispose();
         }
 
-        [Fact]
-        public void Socket_StaticConnectAsync_Success()
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void Socket_StaticConnectAsync_Success(SocketImplementationType type)
         {
             Assert.True(Capability.IPv6Support() && Capability.IPv4Support());
 
             int port4, port6;
-            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port4);
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port6);
+            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port4);
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(type, IPAddress.IPv6Loopback, out port6);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("127.0.0.1", port4);

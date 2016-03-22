@@ -36,7 +36,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support());
 
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("localhost", port);
@@ -125,10 +125,10 @@ namespace System.Net.Sockets.Tests
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
 
             int port;
-            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port);
 
             int port6;
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port6);
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.IPv6Loopback, out port6);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("localhost", port);

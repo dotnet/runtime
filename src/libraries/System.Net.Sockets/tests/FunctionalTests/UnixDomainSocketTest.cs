@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
                 endPoint = new UnixDomainSocketEndPoint(path);
                 try
                 {
-                    server = SocketTestServer.SocketTestServerFactory(endPoint, ProtocolType.Unspecified);
+                    server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, endPoint, ProtocolType.Unspecified);
                     break;
                 }
                 catch (SocketException)
