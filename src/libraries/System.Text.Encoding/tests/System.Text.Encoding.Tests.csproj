@@ -37,6 +37,7 @@
     <Compile Include="Encoder\EncoderCtor.cs" />
     <Compile Include="Encoder\EncoderGetByteCount2.cs" />
     <Compile Include="Encoder\EncoderGetBytes2.cs" />
+    <Compile Include="NegativeEncodingTests.cs" />
     <Compile Include="EncodingTestHelpers.cs" />
     <Compile Include="Encoding\ConvertUnicodeEncodings.cs" />
     <Compile Include="Encoding\Encoding.cs" />

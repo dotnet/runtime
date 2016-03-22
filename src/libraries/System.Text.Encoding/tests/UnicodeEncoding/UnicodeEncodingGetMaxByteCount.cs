@@ -26,11 +26,5 @@ namespace System.Text.Tests
         {
             Assert.Equal(expected, new UnicodeEncoding().GetMaxByteCount(charCount));
         }
-
-        [Fact]
-        public void GetMaxByteCount_Invalid()
-        {
-            EncodingHelpers.GetMaxByteCount_Invalid(new UnicodeEncoding());
-        }
     }
 }

@@ -26,11 +26,5 @@ namespace System.Text.Tests
         {
             EncodingHelpers.GetBytes(new UnicodeEncoding(), source, index, count, bytes, byteIndex, expected);
         }
-        
-        [Fact]
-        public void GetBytes_Invalid()
-        {
-            EncodingHelpers.GetBytes_Invalid(new UnicodeEncoding());
-        }
     }
 }

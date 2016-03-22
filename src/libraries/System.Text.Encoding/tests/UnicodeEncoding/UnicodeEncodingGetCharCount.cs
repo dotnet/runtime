@@ -25,11 +25,5 @@ namespace System.Text.Tests
         {
             EncodingHelpers.GetCharCount(new UnicodeEncoding(), bytes, index, count, expected);
         }
-        
-        [Fact]
-        public void GetCharCount_Invalid()
-        {
-            EncodingHelpers.GetCharCount_Invalid(new UnicodeEncoding());
-        }
     }
 }
