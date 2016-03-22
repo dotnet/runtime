@@ -15084,9 +15084,7 @@ void                Compiler::fgMorph()
     DBEXEC(VERBOSE, fgDispBasicBlocks(true));
 #endif
 
-#ifdef FEATURE_CLRSQM
-    RecordSqmStateAtEndOfInlining();  // Record "start" values for post-inlining cycles and elapsed time.
-#endif // FEATURE_CLRSQM
+    RecordStateAtEndOfInlining();  // Record "start" values for post-inlining cycles and elapsed time.
 
 #ifdef DEBUG
     /* Inliner could add basic blocks. Check that the flowgraph data is up-to-date */

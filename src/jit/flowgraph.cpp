@@ -29,8 +29,11 @@ void                Compiler::fgInit()
 
     fgFirstBBScratch             = nullptr;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     fgInlinedCount               = 0;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+#ifdef DEBUG
     fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
 #endif // DEBUG
 
@@ -21971,8 +21974,11 @@ void       Compiler::fgInvokeInlineeCompiler(GenTreeCall*  call,
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     ++fgInlinedCount;
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+#ifdef DEBUG
 
     if (verbose || fgPrintInlinedMethods)
     {
