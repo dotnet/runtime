@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Security;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-
+using CoreFXTestLibrary;
 
 public class TestClass
 {
