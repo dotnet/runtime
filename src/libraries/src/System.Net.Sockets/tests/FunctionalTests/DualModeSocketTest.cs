@@ -447,25 +447,32 @@ namespace System.Net.Sockets.Tests
         private void DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             int port;
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
             Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out port))
             {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(connectTo, port);
-                args.SetBuffer(new byte[1], 0, 1);
-                args.UserToken = waitHandle;
-                args.Completed += AsyncCompleted;
+                // Send a few packets, in case they aren't delivered reliably.
+                for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                {
+                    using (ManualResetEvent waitHandle = new ManualResetEvent(false))
+                    {
+                        SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                        args.RemoteEndPoint = new IPEndPoint(connectTo, port);
+                        args.SetBuffer(new byte[1], 0, 1);
+                        args.UserToken = waitHandle;
+                        args.Completed += AsyncCompleted;
 
-                bool async = client.SendToAsync(args);
-                if (async)
-                {
-                    Assert.True(waitHandle.WaitOne(5000), "Timeout while waiting for connection");
-                }
-                Assert.Equal(1, args.BytesTransferred);
-                if (args.SocketError != SocketError.Success)
-                {
-                    throw new SocketException((int)args.SocketError);
+                        bool async = client.SendToAsync(args);
+                        if (async)
+                        {
+                            Assert.True(waitHandle.WaitOne(5000), "Send completed in alotted time");
+                        }
+
+                        Assert.Equal(1, args.BytesTransferred);
+                        if (args.SocketError != SocketError.Success)
+                        {
+                            throw new SocketException((int)args.SocketError);
+                        }
+                    }
                 }
 
                 bool success = server.WaitHandle.WaitOne(Configuration.FailingTestTimeout); // Make sure the bytes were received
@@ -916,11 +923,14 @@ namespace System.Net.Sockets.Tests
                 {
                     Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
 
-                    SocketAsyncEventArgs e = new SocketAsyncEventArgs();
-                    e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
-                    e.SetBuffer(new byte[1], 0, 1);
+                    for (int i = 0; i < Configuration.UDPRedundancy; i++)
+                    {
+                        SocketAsyncEventArgs e = new SocketAsyncEventArgs();
+                        e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
+                        e.SetBuffer(new byte[1], 0, 1);
 
-                    socket.SendToAsync(e);
+                        socket.SendToAsync(e);
+                    }
                 }
                 catch (SocketException)
                 {

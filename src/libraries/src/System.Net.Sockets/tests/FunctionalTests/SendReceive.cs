@@ -30,6 +30,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SendToRecvFromAsync_Datagram_UDP_MemberData))]
         public void SendToRecvFromAsync_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
         {
+            // TODO #5185: harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
             const int AckTimeout = 1000;
