@@ -107,7 +107,8 @@ add_dir_to_install(){
 
     for file in "${dir_files[@]}"
     do
-        add_system_file_placement "${rel_install_path}/${file}" "${INSTALL_ROOT}/$rel_install_path/$file"
+        file_rel_dir="$(dirname $file)"
+        add_system_file_placement "${rel_install_path}/${file}" "${INSTALL_ROOT}/$rel_install_path/${file_rel_dir}"
     done
 }
 
