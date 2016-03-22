@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddMonths.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddYears.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarEras.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="GregorianCalendar\GregorianCalendarIsLeapYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarMaxSupportedDateTime.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarMinSupportedDateTime.cs" />
+    <Compile Include="GregorianCalendar\GregorianCalendarTests.Utilities.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarToDateTime.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarToFourDigitYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarTwoDigitYearMax.cs" />
