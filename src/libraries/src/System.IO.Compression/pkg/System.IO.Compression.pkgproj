@@ -9,15 +9,29 @@
       <SupportedFramework>net46;netcore50;netstandardapp1.5</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Compression.builds" />
-    <InboxOnTargetFramework Include="net45" />
+    <InboxOnTargetFramework Include="net45">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
-    <InboxOnTargetFramework Include="MonoAndroid10" />
-    <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="MonoAndroid10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="MonoTouch10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinios10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinmac20">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarintvos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinwatchos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
 
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.IO.Compression\runtime.native.System.IO.Compression.pkgproj" />
   </ItemGroup>

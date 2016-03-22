@@ -14,8 +14,12 @@
     <ProjectReference Include="$(NativePackagePath)\runtime.native.System.Security.Cryptography\runtime.native.System.Security.Cryptography.pkgproj" />
   </ItemGroup>
   <ItemGroup>
-    <InboxOnTargetFramework Include="monoandroid10" />
-    <InboxOnTargetFramework Include="monotouch10" />
+    <InboxOnTargetFramework Include="monoandroid10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="monotouch10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
@@ -24,10 +28,18 @@
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="Xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="xamarinios10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="Xamarinmac20">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarintvos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="xamarinwatchos10">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
     <!-- TODO: Bring in Microsoft.Net.Http on older platforms -->
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
