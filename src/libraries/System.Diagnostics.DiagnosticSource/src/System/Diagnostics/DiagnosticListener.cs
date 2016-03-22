@@ -31,6 +31,10 @@ namespace System.Diagnostics
     /// 
     /// If you need to see 'everything' you can subscribe to the 'AllListeners' event that
     /// will fire for every live DiagnosticListener in the appdomain (past or present). 
+    /// 
+    /// Please See the DiagnosticSource Users Guide 
+    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// for instructions on its use.  
     /// </summary>
     public class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object>>, IDisposable
     {
