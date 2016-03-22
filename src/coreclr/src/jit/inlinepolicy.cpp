@@ -177,7 +177,7 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
                 // instructions and 6 are loads, it's only 75% loads.
                 // This allows for CALL, RET, and one more non-ld/st
                 // instruction.
-                if (((m_InstructionCount - m_LoadStoreCount) < 4) || 
+                if (((m_InstructionCount - m_LoadStoreCount) < 4) ||
                     (((double)m_LoadStoreCount/(double)m_InstructionCount) > .90))
                 {
                     m_MethodIsMostlyLoadStore = true;
@@ -664,14 +664,14 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     assert(InlDecisionIsCandidate(m_Decision));
     assert(m_Observation == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
 
-    const int calleeNativeSizeEstimate = DetermineNativeSizeEstimate();
-    const int callsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
-    const double multiplier = DetermineMultiplier();
-    const int threshold = (int)(callsiteNativeSizeEstimate * multiplier);
+    m_CalleeNativeSizeEstimate = DetermineNativeSizeEstimate();
+    m_CallsiteNativeSizeEstimate = DetermineCallsiteNativeSizeEstimate(methodInfo);
+    m_Multiplier = DetermineMultiplier();
+    const int threshold = (int)(m_CallsiteNativeSizeEstimate * m_Multiplier);
 
-    JITDUMP("calleeNativeSizeEstimate=%d\n", calleeNativeSizeEstimate)
-    JITDUMP("callsiteNativeSizeEstimate=%d\n", callsiteNativeSizeEstimate);
-    JITDUMP("benefit multiplier=%g\n", multiplier);
+    JITDUMP("calleeNativeSizeEstimate=%d\n", m_CalleeNativeSizeEstimate)
+    JITDUMP("callsiteNativeSizeEstimate=%d\n", m_CallsiteNativeSizeEstimate);
+    JITDUMP("benefit multiplier=%g\n", m_Multiplier);
     JITDUMP("threshold=%d\n", threshold);
 
 #if DEBUG
@@ -680,16 +680,16 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 #endif
 
     // Reject if callee size is over the threshold
-    if (calleeNativeSizeEstimate > threshold)
+    if (m_CalleeNativeSizeEstimate > threshold)
     {
         // Inline appears to be unprofitable
         JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
                      "Native estimate for function size exceedsn threshold"
                      " for inlining %g > %g (multiplier = %g)\n",
-                     calleeNativeSizeEstimate / sizeDescaler,
+                     m_CalleeNativeSizeEstimate / sizeDescaler,
                      threshold / sizeDescaler,
-                     multiplier));
+                     m_Multiplier));
 
         // Fail the inline
         if (m_IsPrejitRoot)
@@ -708,9 +708,9 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
                     (LL_INFO100000,
                      "Native estimate for function size is within threshold"
                      " for inlining %g <= %g (multiplier = %g)\n",
-                     calleeNativeSizeEstimate / sizeDescaler,
+                     m_CalleeNativeSizeEstimate / sizeDescaler,
                      threshold / sizeDescaler,
-                     multiplier));
+                     m_Multiplier));
 
         // Update candidacy
         if (m_IsPrejitRoot)
@@ -732,6 +732,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 // Arguments:
 //    compiler -- compiler instance doing the inlining (root compiler)
 //    isPrejitRoot -- true if this compiler is prejitting the root method
+//    seed -- seed value for the random number generator
 
 RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
     : InlinePolicy(isPrejitRoot)
@@ -1084,8 +1085,42 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     : LegacyPolicy(compiler, isPrejitRoot)
+    , m_Depth(0)
+    , m_BlockCount(0)
+    , m_Maxstack(0)
+    , m_ArgCount(0)
+    , m_LocalCount(0)
+    , m_ReturnType(CORINFO_TYPE_UNDEF)
+    , m_ThrowCount(0)
+    , m_CallCount(0)
 {
     // Empty
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle an observed boolean value
+//
+// Arguments:
+//    obs      - the current obsevation
+//    value    - the value being observed
+
+void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    switch(obs)
+    {
+    case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
+        m_LooksLikeWrapperMethod = value;
+
+    case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
+        m_ArgFeedsConstantTest = value;
+
+    case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
+        m_ArgFeedsRangeCheck = value;
+        break;
+
+    default:
+        LegacyPolicy::NoteBool(obs, value);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1121,9 +1156,38 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
             break;
         }
 
+    case InlineObservation::CALLEE_OPCODE:
+        {
+            OPCODE opcode = static_cast<OPCODE>(value);
+            switch (opcode)
+            {
+            case CEE_THROW:
+            case CEE_RETHROW:
+                m_ThrowCount++;
+                break;
+            case CEE_CALL:
+            case CEE_CALLI:
+            case CEE_CALLVIRT:
+                m_CallCount++;
+                break;
+            default:
+                break;
+            }
+
+            LegacyPolicy::NoteInt(obs, value);
+            break;
+        }
+
     case InlineObservation::CALLEE_MAXSTACK:
+        m_Maxstack = value;
+        break;
+
     case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
-        // Ignore these
+        m_BlockCount = value;
+        break;
+
+    case InlineObservation::CALLSITE_DEPTH:
+        m_Depth = value;
         break;
 
     default:
@@ -1144,6 +1208,96 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
     bool propagate = (m_Observation != InlineObservation::CALLEE_NOT_PROFITABLE_INLINE);
 
     return propagate;
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+
+void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    // Punt if we're inlining and we've reached the acceptance limit.
+    int limit = JitConfig.JitInlineLimit();
+
+    if (!m_IsPrejitRoot &&
+        (limit >= 0) && 
+        (m_RootCompiler->getInlinedCount() >= static_cast<unsigned>(limit)))
+    {
+        SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+
+    // Make some additional observations
+    m_ArgCount = methodInfo->args.numArgs;
+    m_LocalCount = methodInfo->locals.numArgs;
+    m_ReturnType = methodInfo->args.retType;
+
+    // delegate to LegacyPolicy for now
+    LegacyPolicy::DetermineProfitability(methodInfo);
+}
+
+//------------------------------------------------------------------------
+// DumpSchema: dump names for all the supporting data for the
+// inline decision in CSV format.
+
+void DiscretionaryPolicy::DumpSchema() const
+{
+    printf(",Codesize");
+    printf(",CallsiteFrequency");
+    printf(",InstructionCount");
+    printf(",LoadStoreCount");
+    printf(",Depth");
+    printf(",BlockCount");
+    printf(",Maxstack");
+    printf(",ArgCount");
+    printf(",LocalCount");
+    printf(",ReturnType");
+    printf(",ThrowCount");
+    printf(",CallCount");
+    printf(",IsForceInline");
+    printf(",IsInstanceCtor");
+    printf(",IsFromPromotableValueClass");
+    printf(",HasSimd");
+    printf(",LooksLikeWrapperMethod");
+    printf(",ArgFeedsConstantTest");
+    printf(",IsMostlyLoadStore");
+    printf(",ArgFeedsRangeCheck");
+    printf(",ConstantFeedsConstantTest");
+    printf(",CalleeNativeSizeEstimate");
+    printf(",CallsiteNativeSizeEstimate");
+}
+
+//------------------------------------------------------------------------
+// DumpData: dump all the supporting data for the inline decision
+// in CSV format.
+
+void DiscretionaryPolicy::DumpData() const
+{
+    printf(",%u", m_CodeSize);
+    printf(",%u", m_CallsiteFrequency);
+    printf(",%u", m_InstructionCount);
+    printf(",%u", m_LoadStoreCount);
+    printf(",%u", m_Depth);
+    printf(",%u", m_BlockCount);
+    printf(",%u", m_Maxstack);
+    printf(",%u", m_ArgCount);
+    printf(",%u", m_LocalCount);
+    printf(",%u", m_ReturnType);
+    printf(",%u", m_ThrowCount);
+    printf(",%u", m_CallCount);
+    printf(",%u", m_IsForceInline ? 1 : 0);
+    printf(",%u", m_IsInstanceCtor ? 1 : 0);
+    printf(",%u", m_IsFromPromotableValueClass ? 1 : 0);
+    printf(",%u", m_HasSimd ? 1 : 0);
+    printf(",%u", m_LooksLikeWrapperMethod ? 1 : 0);
+    printf(",%u", m_ArgFeedsConstantTest ? 1 : 0);
+    printf(",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
+    printf(",%u", m_ArgFeedsRangeCheck ? 1 : 0);
+    printf(",%u", m_ConstantFeedsConstantTest ? 1 : 0);
+    printf(",%d", m_CalleeNativeSizeEstimate);
+    printf(",%d", m_CallsiteNativeSizeEstimate);
 }
 
 #endif // DEBUG
