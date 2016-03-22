@@ -90,7 +90,6 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
     <Compile Include="DateTimeStyles\DateTimeStylesTests.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoClone.cs" />
-    <Compile Include="NumberFormatInfo\NumberFormatInfoCtor.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalSeparator.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyGroupSeparator.cs" />

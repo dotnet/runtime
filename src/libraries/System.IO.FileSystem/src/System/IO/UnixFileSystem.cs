@@ -64,7 +64,7 @@ namespace System.IO
                 }
                 else
                 {
-                    // The operation failed.  Within reason, ty to determine which path caused the problem 
+                    // The operation failed.  Within reason, try to determine which path caused the problem 
                     // so we can throw a detailed exception.
                     string path = null;
                     bool isDirectory = false;

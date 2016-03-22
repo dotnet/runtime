@@ -64,7 +64,7 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         internal static extern int getsid(int pid);
 
-        [DllImport("api-ms-win-core-processthreads-l1-1-2.dll")]
+        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
         internal static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
 
         [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
