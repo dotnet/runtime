@@ -14,6 +14,7 @@ namespace System.Runtime.Serialization
         DataContractSerializer,
         DataContractJsonSerializer,
         XmlSerializer,
+        JsonNet
     }
 
     public enum TestType
@@ -32,7 +33,6 @@ namespace System.Runtime.Serialization
         void Init(object obj);
         void Serialize(object obj, Stream s);
         void Deserialize(Stream s);
-        void Deserialize(string s);
     }
 
     public abstract class SerializerFactory
@@ -49,8 +49,8 @@ namespace System.Runtime.Serialization
 
         public static IEnumerable<object[]> PerformanceMemberData(SerializerType serializerType)
         {
-            yield return new object[] { 10000, TestType.ByteArray, 1024, serializerType };
-            yield return new object[] { 100, TestType.ByteArray, 1024 * 1024, serializerType };
+            yield return new object[] { 100, TestType.ByteArray, 1024, serializerType };
+            yield return new object[] { 5, TestType.ByteArray, 1024 * 1024, serializerType };
             yield return new object[] { 10000, TestType.String, 128, serializerType };
             yield return new object[] { 10000, TestType.String, 1024, serializerType };
             yield return new object[] { 1000, TestType.ListOfInt, 128, serializerType };
@@ -59,7 +59,7 @@ namespace System.Runtime.Serialization
             yield return new object[] { 1000, TestType.Dictionary, 128, serializerType };
             yield return new object[] { 100, TestType.Dictionary, 1024, serializerType };
             yield return new object[] { 10, TestType.SimpleType, 1, serializerType };
-            yield return new object[] { 20, TestType.SimpleType, 15, serializerType };
+            yield return new object[] { 1, TestType.SimpleType, 15, serializerType };
             yield return new object[] { 10000, TestType.ISerializable, -1, serializerType };
             yield return new object[] { 10000, TestType.XmlElement, -1, serializerType };
         }
