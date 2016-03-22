@@ -64,14 +64,11 @@ else()
     if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
         target_link_libraries(crossgen ${STATIC_MT_VCRT_LIB})
     endif()
-
-    # We will generate PDB only for the debug configuration
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/crossgen.pdb DESTINATION PDB)
-
 endif(CLR_CMAKE_PLATFORM_UNIX)
-
-install (TARGETS crossgen DESTINATION .)
 
 add_subdirectory(../../zap/crossgen ../../zap/crossgen)
 add_subdirectory(../../vm/crossgen ../../vm/crossgen)
 add_subdirectory(../../vm/crossgen_mscorlib ../../vm/crossgen_mscorlib)
+
+# add the install targets
+install_clr(crossgen)
