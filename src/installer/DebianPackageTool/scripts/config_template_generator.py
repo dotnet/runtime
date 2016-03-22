@@ -66,7 +66,7 @@ def generate_changelog(config_data, template_dir, package_version=None, package_
     
     # Allow for Version Override
     config_package_version = release_data["package_version"]
-    package_version = config_package_version
+    package_version = package_version or config_package_version
 
     template_dict = dict(\
         PACKAGE_VERSION=package_version,
