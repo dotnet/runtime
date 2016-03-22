@@ -13,7 +13,9 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
             yield return new object[] { new CultureInfo("en-US").NumberFormat, new int[] { 3 } };
-            yield return new object[] { new CultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
+            
+            if (!PlatformDetection.IsWindows7)
+                yield return new object[] { new CultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
         }
 
         [Theory]
@@ -37,11 +39,9 @@ namespace System.Globalization.Tests
         public void CurrencyGroupSizes_Set_Invalid()
         {
             Assert.Throws<ArgumentNullException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = null);
-
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { -1, 1, 2 });
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 98, 99, 100 });
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 0, 1, 2 });
-
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyGroupSizes = new int[] { 1, 2, 3 });
         }
     }
