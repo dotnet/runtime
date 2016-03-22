@@ -31,11 +31,6 @@ namespace System.Xml.XmlSerializer.Tests.Performance
     {
         private Serialization.XmlSerializer _serializer;
 
-        public void Deserialize(string s)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Deserialize(Stream stream)
         {
             // Assumption: Deserialize() is always called after Init()

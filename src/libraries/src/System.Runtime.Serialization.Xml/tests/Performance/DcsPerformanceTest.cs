@@ -30,11 +30,6 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
     {
         private DataContractSerializer _serializer;
 
-        public void Deserialize(string s)
-        {
-            throw new NotImplementedException();
-        }
-
         public void Deserialize(Stream stream)
         {
             // Assumption: Deserialize() is always called after Init()

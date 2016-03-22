@@ -21,5 +21,17 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
         {
             PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, serializerType, testType, testSize, DcjsSerializerFactory.GetInstance());
         }
+
+        public static IEnumerable<object[]> SerializeMemberDataJsonNet()
+        {
+            return PerformanceTestCommon.PerformanceMemberData(SerializerType.JsonNet);
+        }
+
+        [Benchmark]
+        [MemberData(nameof(SerializeMemberDataJsonNet))]
+        public void JsonNetDeSerializationTest(int iterations, TestType testType, int testSize, SerializerType serializerType)
+        {
+            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, serializerType, testType, testSize, DcjsSerializerFactory.GetInstance());
+        }
     }
 }
