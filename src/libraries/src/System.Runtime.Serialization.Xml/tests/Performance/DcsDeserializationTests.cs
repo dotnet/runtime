@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcsDeSerializationTest(int iterations, TestType testType, TestSize testSize, SerializerType serializerType)
+        public void DcsDeSerializationTest(int iterations, TestType testType, int testSize, SerializerType serializerType)
         {
             PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, serializerType, testType, testSize, DcsSerializerFactory.GetInstance());
         }

@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcjsSerializationTest(int iterations, TestType testType, TestSize testSize, SerializerType serializerType)
+        public void DcjsSerializationTest(int iterations, TestType testType, int testSize, SerializerType serializerType)
         {
             PerformanceTestCommon.RunSerializationPerformanceTest(iterations, serializerType, testType, testSize, DcjsSerializerFactory.GetInstance());
         }
