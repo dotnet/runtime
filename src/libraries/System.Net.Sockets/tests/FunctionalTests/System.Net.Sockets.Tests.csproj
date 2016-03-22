@@ -16,6 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AcceptAsync.cs" />
+    <Compile Include="AgnosticListenerTest.cs" />
     <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
@@ -24,14 +25,22 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="IPPacketInformationTest.cs" />
+    <Compile Include="LingerStateTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
+    <Compile Include="ReceiveMessageFrom.cs" />
+    <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SelectTest.cs" />
+    <Compile Include="SendPacketsAsync.cs" />
+    <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="SendReceive.cs" />
+    <Compile Include="SelectAndPollTests.cs" />
+    <Compile Include="TimeoutTest.cs" />
     <Compile Include="TcpClientTest.cs" />
     <Compile Include="Shutdown.cs" />
+    <Compile Include="SocketAPMExtensions.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
-    <Compile Include="SocketTestServerAPMMock.cs" />
+    <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
@@ -48,6 +57,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
       <Link>SocketCommon\SocketTestServerAsync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAPM.cs">
+      <Link>SocketCommon\SocketTestServerAPM.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketImplementationType.cs">
       <Link>SocketCommon\SocketImplementationType.cs</Link>
@@ -67,6 +79,12 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketAPMExtensions.cs">
+      <Link>Common\System\Net\Sockets\SocketAPMExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
