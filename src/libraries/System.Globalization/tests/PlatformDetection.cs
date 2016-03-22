@@ -12,6 +12,7 @@ using Xunit;
 public static class PlatformDetection
 {
     public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    public static bool IsWindows7 { get; } =  IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
     public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
     public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
@@ -83,6 +84,19 @@ public static class PlatformDetection
             osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
             Assert.Equal(0, RtlGetVersion(out osvi));
             return (int)osvi.dwMajorVersion;
+        }
+
+        return -1;
+    }
+    
+    private static int GetWindowsMinorVersion()
+    {
+        if (IsWindows)
+        {
+            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            Assert.Equal(0, RtlGetVersion(out osvi));
+            return (int)osvi.dwMinorVersion;
         }
 
         return -1;
