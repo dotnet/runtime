@@ -1818,6 +1818,13 @@ major_start_major_collection (void)
 			sweep_block (block);
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
+		/*
+		 * Swept blocks that have a null free_list are full. Evacuation is not
+		 * effective on these blocks since we expect them to have high usage anyway,
+		 * given that the survival rate for majors is relatively high.
+		 */
+		if (evacuate_block_obj_sizes [block->obj_size_index] && !block->free_list)
+			block->is_to_space = TRUE;
 	} END_FOREACH_BLOCK_NO_LOCK;
 
 	if (lazy_sweep)
