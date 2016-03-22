@@ -16,14 +16,16 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
-        [Fact]
-        public void Success()
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void Success(SocketImplementationType type)
         {
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
 
             int port6;
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port6);
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(type, IPAddress.IPv6Loopback, out port6);
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 

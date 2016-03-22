@@ -16,15 +16,17 @@ namespace System.Net.Sockets.Tests
             handle.Set();
         }
 
-        [Fact]
-        public void Success()
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        public void Success(SocketImplementationType type)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
             if (Socket.OSSupportsIPv4)
             {
                 int port;
-                using (SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port))
+                using (SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port))
                 {
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
@@ -45,7 +47,7 @@ namespace System.Net.Sockets.Tests
             if (Socket.OSSupportsIPv6)
             {
                 int port;
-                using (SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port))
+                using (SocketTestServer.SocketTestServerFactory(type, IPAddress.IPv6Loopback, out port))
                 {
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);

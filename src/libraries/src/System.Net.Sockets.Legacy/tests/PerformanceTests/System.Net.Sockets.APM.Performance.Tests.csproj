@@ -21,9 +21,6 @@
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.DefaultAPMFactoryConfiguration.cs">
-      <Link>SocketCommon\SocketTestServer.DefaultAPMFactoryConfiguration.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
       <Link>SocketCommon\SocketTestServerAsync.cs</Link>
     </Compile>

@@ -35,7 +35,7 @@ namespace System.Net.Sockets.Tests
             AutoResetEvent completed = new AutoResetEvent(false);
 
             int port;
-            using (SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port))
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
@@ -60,7 +60,7 @@ namespace System.Net.Sockets.Tests
             AutoResetEvent completed = new AutoResetEvent(false);
 
             int port;
-            using (SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port))
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.IPv6Loopback, out port))
             {
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
