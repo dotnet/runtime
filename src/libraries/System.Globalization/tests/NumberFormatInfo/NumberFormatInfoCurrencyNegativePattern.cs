@@ -33,7 +33,17 @@ namespace System.Globalization.Tests
         [InlineData("fr-CA")]
         public void CurrencyNegativePattern_Get(string locale)
         {
-            NumberFormatInfo format = new CultureInfo(locale).NumberFormat;
+            CultureInfo culture; 
+            try
+            {
+                culture = new CultureInfo(locale);
+            }
+            catch(CultureNotFoundException)
+            {
+                return; // ignore unsupported culture
+            }
+            
+            NumberFormatInfo format = culture.NumberFormat;
             Assert.Contains(format.CurrencyNegativePattern, NumberFormatInfoData.GetCurrencyNegativePatterns(locale));
         }
 
