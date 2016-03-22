@@ -1392,7 +1392,7 @@ gboolean
 mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token);
 
 void
-mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args);
+ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethod *method, MonoReflectionAssembly *assembly, gpointer data, guint32 data_length, MonoArray **ctor_args, MonoArray ** named_args);
 
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType *ref, MonoError *error);
