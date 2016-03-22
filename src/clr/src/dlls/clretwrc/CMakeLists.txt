@@ -20,8 +20,4 @@ add_library_clr(clretwrc SHARED
 )
 
 # add the install targets
-install (TARGETS clretwrc DESTINATION .)
-
-if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/clretwrc.pdb DESTINATION PDB)
-endif(WIN32)
+install_clr(clretwrc)
