@@ -31,14 +31,14 @@
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
 
-    <!-- Using lib/dotnet here.  There is no TFM for this since it is a runtime itself. -->
+    <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
     <File Include="@(ArchitectureSpecificLibFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/dotnet</TargetPath>
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
     </File>
 
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/dotnet</TargetPath>
+      <TargetPath>ref/netstandard1.0</TargetPath>
     </File>
 
     <File Include="@(ArchitectureSpecificToolFile)">
