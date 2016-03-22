@@ -551,14 +551,6 @@ namespace System
             // Delegate rest of error checking to the other functions
             TypeCode typeCode = Convert.GetTypeCode(value);
 
-            // NetCF doesn't support char and boolean conversion
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 &&
-                ((typeCode == TypeCode.Boolean) || (typeCode == TypeCode.Char)))
-            {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
-            }
-
-
             switch (typeCode)
             {
                 case TypeCode.Int32 :
