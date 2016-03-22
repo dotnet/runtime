@@ -12,42 +12,34 @@ namespace System.Globalization.Tests
     public class GregorianCalendarIsLeapDay
     {
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
 
         public static IEnumerable<object[]> IsLeapDay_TestData()
         {
             int randomYear = RandomYear();
             int randomMonth = RandomMonth();
-            int randomDay =  RandomDay(randomYear, randomMonth);
 
             // 29th February on a leap year
-            yield return new object[] { RandomLeapYear(), 2, 29, true };
+            yield return new object[] { RandomLeapYear(), 2, 29 };
 
             // 28th February on a common year
-            yield return new object[] { RandomCommonYear(), 2, 28, false };
+            yield return new object[] { RandomCommonYear(), 2, 28 };
 
             // Any day, any month, any day
-            bool randomExpected = IsLeapYear(randomYear) && randomMonth == 2 && randomDay == 29;
-            yield return new object[] { randomYear, randomMonth, randomDay, randomExpected };
+            yield return new object[] { randomYear, randomMonth, RandomDay(randomYear, randomMonth) };
 
             // Any day, any month in the maximum supported year
-            int maxYear = s_calendar.MaxSupportedDateTime.Year;
-            int maxRandomDay = RandomDay(maxYear, randomMonth);
-            bool maxExpected = IsLeapYear(maxYear) && randomMonth == 2 && maxRandomDay == 29;
-            yield return new object[] { maxYear, randomMonth, maxRandomDay, maxExpected };
+            yield return new object[] { 9999, randomMonth, RandomDay(9999, randomMonth) };
 
             // Any day, any month in the minimum supported year
-            int minYear = s_calendar.MaxSupportedDateTime.Year;
-            int minRandomDay = RandomDay(minYear, randomMonth);
-            bool minExpected = IsLeapYear(minYear) && randomMonth == 2 && minRandomDay == 29;
-            yield return new object[] { minYear, randomMonth, minRandomDay, minExpected };
+            yield return new object[] { 1, randomMonth, RandomDay(1, randomMonth) };
         }
 
         [Theory]
         [MemberData(nameof(IsLeapDay_TestData))]
-        public void IsLeapDay(int year, int month, int day, bool expected)
+        public void IsLeapDay(int year, int month, int day)
         {
-            Assert.Equal(expected, s_calendar.IsLeapDay(year, month, day, 1));
+            bool expected = IsLeapYear(year) && month == 2 && day == 29;
+            Assert.Equal(expected, new GregorianCalendar().IsLeapDay(year, month, day, 1));
         }
     }
 }

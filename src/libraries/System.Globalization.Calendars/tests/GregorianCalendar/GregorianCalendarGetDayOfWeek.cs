@@ -11,23 +11,23 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetDayOfWeek_TestData()
         {
-            yield return new object[] { new DateTime(2007, 1, 1), DayOfWeek.Monday };
-            yield return new object[] { new DateTime(2006, 2, 28), DayOfWeek.Tuesday };
-            yield return new object[] { new DateTime(2006, 3, 1), DayOfWeek.Wednesday };
-            yield return new object[] { new DateTime(2006, 8, 31), DayOfWeek.Thursday };
-            yield return new object[] { new DateTime(2008, 2, 29), DayOfWeek.Friday };
-            yield return new object[] { new DateTime(2006, 12, 30), DayOfWeek.Saturday };
-            yield return new object[] { new DateTime(2006, 12, 31), DayOfWeek.Sunday };
-            yield return new object[] { DateTime.MaxValue, DayOfWeek.Friday };
-            yield return new object[] { DateTime.MinValue, DayOfWeek.Monday };
-            yield return new object[] { new DateTime(2000, 2, 29), DayOfWeek.Tuesday };
+            yield return new object[] { new DateTime(2007, 1, 1) };
+            yield return new object[] { new DateTime(2006, 2, 28) };
+            yield return new object[] { new DateTime(2006, 3, 1) };
+            yield return new object[] { new DateTime(2006, 8, 31) };
+            yield return new object[] { new DateTime(2008, 2, 29) };
+            yield return new object[] { new DateTime(2006, 12, 30) };
+            yield return new object[] { new DateTime(2006, 12, 31) };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { new DateTime(2000, 2, 29) };
         }
 
         [Theory]
         [MemberData(nameof(GetDayOfWeek_TestData))]
-        public void GetDayOfWeek(DateTime time, DayOfWeek expected)
+        public void GetDayOfWeek(DateTime time)
         {
-            Assert.Equal(expected, new GregorianCalendar().GetDayOfWeek(time));
+            Assert.Equal(time.DayOfWeek, new GregorianCalendar().GetDayOfWeek(time));
         }
     }
 }
