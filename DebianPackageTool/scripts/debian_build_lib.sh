@@ -105,7 +105,10 @@ add_dir_to_install(){
 
     _copy_files_to_package "$copy_from_dir" "$rel_install_path" "${dir_files[@]}"
 
-    add_system_dir_placement "$rel_install_path" "${INSTALL_ROOT}/$rel_install_path"
+    for file in "${dir_files[@]}"
+    do
+        add_system_file_placement "${rel_install_path}/${file}" "${INSTALL_ROOT}/$rel_install_path"
+    done
 }
 
 # Usage: _copy_files_to_package {local files root directory} {relative directory in package to copy to} "${filepath_array[@]}"
