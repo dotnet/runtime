@@ -122,13 +122,6 @@ static BOOL GetStaticFieldElementTypeForFieldDef(Module * pModule, IMDInternalIm
     HRESULT hr = pImport->GetCustomAttributeByName((mdToken)field,
                                                     g_ThreadStaticAttributeClassName,
                                                     NULL, NULL);
-
-#if defined(FEATURE_LEGACYNETCF)
-    // Replicate quirk from code:CMiniMd::CommonGetCustomAttributeByNameEx
-    if (FAILED(hr) && RuntimeIsLegacyNetCF(0))
-        hr = S_FALSE;
-#endif
-
     IfFailThrow(hr);
 
     // Use one set of variables for regular statics, and the other set for thread statics

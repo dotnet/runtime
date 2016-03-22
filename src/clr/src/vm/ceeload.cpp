@@ -2902,12 +2902,6 @@ BOOL Module::IsNoStringInterning()
         // Default is string interning
         BOOL fNoStringInterning = FALSE;
 
-#ifdef FEATURE_LEGACYNETCF
-        // NetCF ignored this attribute
-        if (GetAppDomain()->GetAppDomainCompatMode() != BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-#endif
-
         HRESULT hr;
         
         // This flag applies to assembly, but it is stored on module so it can be cached in ngen image
@@ -2940,10 +2934,6 @@ BOOL Module::IsNoStringInterning()
                 fNoStringInterning = TRUE;
             }
         }
-
-#ifdef FEATURE_LEGACYNETCF
-        }
-#endif
 
 #ifdef _DEBUG
         static ConfigDWORD g_NoStringInterning;

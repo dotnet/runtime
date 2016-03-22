@@ -871,12 +871,6 @@ void QCALLTYPE COMModule::GetType(QCall::ModuleHandle pModule, LPCWSTR wszName, 
 
         BOOL prohibitAsmQualifiedName = TRUE;
 
-#ifdef FEATURE_LEGACYNETCF
-        // // NetCF type name parser allowed assembly name to be overriden here
-        if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-            prohibitAsmQualifiedName = FALSE;
-#endif
-
         // Load the class from this assembly (fail if it is in a different one).
         retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, pAssembly->IsIntrospectionOnly(), prohibitAsmQualifiedName, NULL, FALSE, &keepAlive);
     }

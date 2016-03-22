@@ -2016,11 +2016,6 @@ AccessCheckOptions::AccessCheckType InvokeUtil::GetInvocationAccessCheckType(BOO
         // There is no security concern because we are in Full Trust.
         return AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
 
-#ifdef FEATURE_LEGACYNETCF
-    if (pAppDomain->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        return AccessCheckOptions::kRestrictedMemberAccess;
-#endif // FEATURE_LEGACYNETCF
-
     return AccessCheckOptions::kMemberAccess;
 
 #else // !FEATURE_CORECLR
