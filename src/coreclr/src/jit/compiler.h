@@ -6397,7 +6397,10 @@ public :
 
     CORINFO_EE_INFO *           eeGetEEInfo();
 
+    // Gets the offset of a SDArray's first element
     unsigned                    eeGetArrayDataOffset(var_types type);
+    // Gets the offset of a MDArray's first element
+    unsigned                    eeGetMDArrayDataOffset(var_types type, unsigned rank);
 
     GenTreePtr                  eeGetPInvokeCookie(CORINFO_SIG_INFO *szMetaSig);
 
