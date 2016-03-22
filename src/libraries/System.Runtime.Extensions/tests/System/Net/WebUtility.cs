@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Tests
@@ -84,7 +85,7 @@ namespace System.Net.Tests
             string encoded = WebUtility.UrlEncode(value);
             Assert.Equal(value, WebUtility.UrlDecode(encoded));
         }
-        
+
         [Fact]
         public static void UrlDecodeToBytes_NullEncodedValue_ReturnsNull()
         {
@@ -103,9 +104,26 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[1], 0, 3)); // Count > bytes.Length
         }
 
-        public static IEnumerable<object[]> Url_EncodeToBytes_TestData()
+        [Theory]
+        [InlineData("a", 0, 1)]
+        [InlineData("a", 1, 0)]
+        [InlineData("abc", 0, 3)]
+        [InlineData("abc", 1, 2)]
+        [InlineData("abc", 1, 1)]
+        [InlineData("abcd", 1, 2)]
+        [InlineData("abcd", 2, 2)]
+        public static void UrlEncodeToBytes_NothingToExpand_OutputMatchesSubInput(string inputString, int offset, int count)
         {
-            yield return new object[] { null, 0, 0, null };
+            byte[] inputBytes = Encoding.UTF8.GetBytes(inputString);
+            byte[] subInputBytes = new byte[count];
+            Buffer.BlockCopy(inputBytes, offset, subInputBytes, 0, count);
+            Assert.Equal(inputString.Length, inputBytes.Length);
+
+            byte[] outputBytes = WebUtility.UrlEncodeToBytes(inputBytes, offset, count);
+
+            Assert.NotSame(inputBytes, outputBytes);
+            Assert.Equal(count, outputBytes.Length);
+            Assert.Equal(subInputBytes, outputBytes);
         }
 
         [Theory]
