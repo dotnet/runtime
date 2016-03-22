@@ -39,9 +39,11 @@ public class TextInfoTests
         Assert.Equal('\u2603', ti.ToUpper('\u2603'));
         Assert.Equal("\u2603", ti.ToUpper("\u2603"));
 
-        // DESERT SMALL LETTER LONG I has an upperc case variant.
-        Assert.Equal("\U00010400", ti.ToUpper("\U00010428"));
-
+        if (PlatformDetection.IsWindows7)
+            Assert.Equal("\U00010428", ti.ToUpper("\U00010428"));
+        else
+            Assert.Equal("\U00010400", ti.ToUpper("\U00010428")); // DESERT SMALL LETTER LONG I has an upperc case variant.
+        
         // RAINBOW (outside the BMP and does not case)
         Assert.Equal("\U0001F308", ti.ToLower("\U0001F308"));
 
@@ -84,9 +86,11 @@ public class TextInfoTests
         // SNOWMAN, which does not have a lower case variant.
         Assert.Equal('\u2603', ti.ToLower('\u2603'));
         Assert.Equal("\u2603", ti.ToLower("\u2603"));
-
-        // DESERT CAPITAL LETTER LONG I has a lower case variant.
-        Assert.Equal("\U00010428", ti.ToLower("\U00010400"));
+       
+        if (PlatformDetection.IsWindows7)
+            Assert.Equal("\U00010400", ti.ToLower("\U00010400"));
+        else
+            Assert.Equal("\U00010428", ti.ToLower("\U00010400")); // DESERT CAPITAL LETTER LONG I has a lower case variant.
 
         // RAINBOW (outside the BMP and does not case)
         Assert.Equal("\U0001F308", ti.ToLower("\U0001F308"));
