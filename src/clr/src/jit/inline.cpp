@@ -328,13 +328,13 @@ InlineContext::InlineContext()
     , m_Offset(BAD_IL_OFFSET)
     , m_Code(nullptr)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
     , m_Callee(nullptr)
     , m_TreeID(0)
     , m_Ordinal(0)
     , m_Success(true)
-#endif
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 {
     // Empty
 }
@@ -357,9 +357,11 @@ InlineContext* InlineContext::NewRoot(Compiler* compiler)
 {
     InlineContext* rootContext = new (compiler, CMK_Inlining) InlineContext;
 
-#if defined(DEBUG)
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     rootContext->m_Callee = compiler->info.compMethodHnd;
-#endif
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     return rootContext;
 }
@@ -397,17 +399,28 @@ InlineContext* InlineContext::NewSuccess(Compiler*   compiler,
     calleeContext->m_Child = nullptr;
     calleeContext->m_Offset = stmt->AsStmt()->gtStmtILoffsx;
     calleeContext->m_Observation = inlineInfo->inlineResult->GetObservation();
-#ifdef DEBUG
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     calleeContext->m_Policy = inlineInfo->inlineResult->GetPolicy();
     calleeContext->m_Callee = inlineInfo->fncHandle;
+    // +1 here since we construct this context when we know the inline
+    // will happen -- but it hasn't actually happened yet, so the count
+    // reflects the number of inlines before this one.
+    calleeContext->m_Ordinal = compiler->fgInlinedCount + 1;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+#if defined(DEBUG)
+
     calleeContext->m_TreeID = inlineInfo->inlineResult->GetCall()->gtTreeID;
-    calleeContext->m_Ordinal = compiler->getInlinedCount();
-#endif
+
+#endif // defined(DEBUG)
 
     return calleeContext;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // NewFailure: construct an InlineContext for a failing inline
@@ -456,7 +469,12 @@ InlineContext* InlineContext::NewFailure(Compiler*     compiler,
     failedContext->m_Observation = inlineResult->GetObservation();
     failedContext->m_Callee = inlineResult->GetCallee();
     failedContext->m_Success = false;
+
+#if defined(DEBUG)
+
     failedContext->m_TreeID = inlineResult->GetCall()->gtTreeID;
+
+#endif // defined(DEBUG)
 
     return failedContext;
 }
@@ -486,7 +504,13 @@ void InlineContext::Dump(Compiler* compiler, int indent)
     }
     else
     {
+
+#if defined(DEBUG)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
+#else
+        calleeName = "callee";
+#endif // defined(DEBUG)
+
     }
 
     mdMethodDef calleeToken =
@@ -545,13 +569,17 @@ void InlineContext::DumpData(Compiler* compiler, int indent)
         m_Sibling->DumpData(compiler, indent);
     }
 
+#if defined(DEBUG)
     const char* calleeName = compiler->eeGetMethodFullName(m_Callee);
+#else
+    const char* calleeName = "callee";
+#endif // defined(DEBUG)
 
     if (m_Parent == nullptr)
     {
         // Root method... cons up a policy so we can display the name
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
-        printf("\nInlines [%u] into \"%s\" [%s]\n", compiler->getInlinedCount(), calleeName, policy->GetName());
+        printf("\nInlines [%u] into \"%s\" [%s]\n", compiler->fgInlinedCount, calleeName, policy->GetName());
     }
     else if (m_Success)
     {
@@ -563,7 +591,7 @@ void InlineContext::DumpData(Compiler* compiler, int indent)
         }
 
         printf("%u,\"%s\",\"%s\"", m_Ordinal, inlineReason, calleeName);
-        m_Policy->DumpData();
+        m_Policy->DumpData(stdout);
         printf("\n");
     }
 
@@ -574,7 +602,7 @@ void InlineContext::DumpData(Compiler* compiler, int indent)
     }
 }
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // InlineResult: Construct an InlineResult to evaluate a particular call
@@ -674,7 +702,7 @@ void InlineResult::Report()
 
     m_Reported = true;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // Stash a pointer to the latest successful policy for later stats
     // reporting.
@@ -683,6 +711,9 @@ void InlineResult::Report()
         m_RootCompiler->inlLastSuccessfulPolicy = GetPolicy();
     }
 
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+#ifdef DEBUG
     const char* callee = nullptr;
 
     // Optionally dump the result

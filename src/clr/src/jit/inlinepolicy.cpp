@@ -39,6 +39,10 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) RandomPolicy(compiler, isPrejitRoot, seed);
     }
 
+#endif // DEBUG
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     // Optionally install the DiscretionaryPolicy.
     bool useDiscretionaryPolicy = JitConfig.JitInlinePolicyDiscretionary() != 0;
 
@@ -47,7 +51,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
         return new (compiler, CMK_Inlining) DiscretionaryPolicy(compiler, isPrejitRoot);
     }
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Use the legacy policy
     InlinePolicy* policy = new (compiler, CMK_Inlining) LegacyPolicy(compiler, isPrejitRoot);
@@ -1076,6 +1080,10 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 }
 
+#endif // DEBUG
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
 //------------------------------------------------------------------------
 // DiscretionaryPolicy: construct a new DiscretionaryPolicy
 //
@@ -1223,7 +1231,7 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
 
     if (!m_IsPrejitRoot &&
         (limit >= 0) && 
-        (m_RootCompiler->getInlinedCount() >= static_cast<unsigned>(limit)))
+        (m_RootCompiler->fgInlinedCount >= static_cast<unsigned>(limit)))
     {
         SetFailure(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
         return;
@@ -1241,63 +1249,69 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
 //------------------------------------------------------------------------
 // DumpSchema: dump names for all the supporting data for the
 // inline decision in CSV format.
+//
+// Arguments:
+//    file -- file to write to
 
-void DiscretionaryPolicy::DumpSchema() const
+void DiscretionaryPolicy::DumpSchema(FILE* file) const
 {
-    printf(",Codesize");
-    printf(",CallsiteFrequency");
-    printf(",InstructionCount");
-    printf(",LoadStoreCount");
-    printf(",Depth");
-    printf(",BlockCount");
-    printf(",Maxstack");
-    printf(",ArgCount");
-    printf(",LocalCount");
-    printf(",ReturnType");
-    printf(",ThrowCount");
-    printf(",CallCount");
-    printf(",IsForceInline");
-    printf(",IsInstanceCtor");
-    printf(",IsFromPromotableValueClass");
-    printf(",HasSimd");
-    printf(",LooksLikeWrapperMethod");
-    printf(",ArgFeedsConstantTest");
-    printf(",IsMostlyLoadStore");
-    printf(",ArgFeedsRangeCheck");
-    printf(",ConstantFeedsConstantTest");
-    printf(",CalleeNativeSizeEstimate");
-    printf(",CallsiteNativeSizeEstimate");
+    fprintf(file, ",ILSize");
+    fprintf(file, ",CallsiteFrequency");
+    fprintf(file, ",InstructionCount");
+    fprintf(file, ",LoadStoreCount");
+    fprintf(file, ",Depth");
+    fprintf(file, ",BlockCount");
+    fprintf(file, ",Maxstack");
+    fprintf(file, ",ArgCount");
+    fprintf(file, ",LocalCount");
+    fprintf(file, ",ReturnType");
+    fprintf(file, ",ThrowCount");
+    fprintf(file, ",CallCount");
+    fprintf(file, ",IsForceInline");
+    fprintf(file, ",IsInstanceCtor");
+    fprintf(file, ",IsFromPromotableValueClass");
+    fprintf(file, ",HasSimd");
+    fprintf(file, ",LooksLikeWrapperMethod");
+    fprintf(file, ",ArgFeedsConstantTest");
+    fprintf(file, ",IsMostlyLoadStore");
+    fprintf(file, ",ArgFeedsRangeCheck");
+    fprintf(file, ",ConstantFeedsConstantTest");
+    fprintf(file, ",CalleeNativeSizeEstimate");
+    fprintf(file, ",CallsiteNativeSizeEstimate");
 }
 
 //------------------------------------------------------------------------
 // DumpData: dump all the supporting data for the inline decision
 // in CSV format.
+//
+// Arguments:
+//    file -- file to write to
 
-void DiscretionaryPolicy::DumpData() const
+void DiscretionaryPolicy::DumpData(FILE* file) const
 {
-    printf(",%u", m_CodeSize);
-    printf(",%u", m_CallsiteFrequency);
-    printf(",%u", m_InstructionCount);
-    printf(",%u", m_LoadStoreCount);
-    printf(",%u", m_Depth);
-    printf(",%u", m_BlockCount);
-    printf(",%u", m_Maxstack);
-    printf(",%u", m_ArgCount);
-    printf(",%u", m_LocalCount);
-    printf(",%u", m_ReturnType);
-    printf(",%u", m_ThrowCount);
-    printf(",%u", m_CallCount);
-    printf(",%u", m_IsForceInline ? 1 : 0);
-    printf(",%u", m_IsInstanceCtor ? 1 : 0);
-    printf(",%u", m_IsFromPromotableValueClass ? 1 : 0);
-    printf(",%u", m_HasSimd ? 1 : 0);
-    printf(",%u", m_LooksLikeWrapperMethod ? 1 : 0);
-    printf(",%u", m_ArgFeedsConstantTest ? 1 : 0);
-    printf(",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
-    printf(",%u", m_ArgFeedsRangeCheck ? 1 : 0);
-    printf(",%u", m_ConstantFeedsConstantTest ? 1 : 0);
-    printf(",%d", m_CalleeNativeSizeEstimate);
-    printf(",%d", m_CallsiteNativeSizeEstimate);
+    fprintf(file, ",%u", m_CodeSize);
+    fprintf(file, ",%u", m_CallsiteFrequency);
+    fprintf(file, ",%u", m_InstructionCount);
+    fprintf(file, ",%u", m_LoadStoreCount);
+    fprintf(file, ",%u", m_Depth);
+    fprintf(file, ",%u", m_BlockCount);
+    fprintf(file, ",%u", m_Maxstack);
+    fprintf(file, ",%u", m_ArgCount);
+    fprintf(file, ",%u", m_LocalCount);
+    fprintf(file, ",%u", m_ReturnType);
+    fprintf(file, ",%u", m_ThrowCount);
+    fprintf(file, ",%u", m_CallCount);
+    fprintf(file, ",%u", m_IsForceInline ? 1 : 0);
+    fprintf(file, ",%u", m_IsInstanceCtor ? 1 : 0);
+    fprintf(file, ",%u", m_IsFromPromotableValueClass ? 1 : 0);
+    fprintf(file, ",%u", m_HasSimd ? 1 : 0);
+    fprintf(file, ",%u", m_LooksLikeWrapperMethod ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsConstantTest ? 1 : 0);
+    fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsRangeCheck ? 1 : 0);
+    fprintf(file, ",%u", m_ConstantFeedsConstantTest ? 1 : 0);
+    fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
+    fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
 }
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
