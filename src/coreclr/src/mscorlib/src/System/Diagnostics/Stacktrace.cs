@@ -560,25 +560,41 @@ namespace System.Diagnostics {
                         sb.Append(']');    
                     }
 
-                    // arguments printing
-                    sb.Append('(');
-                    ParameterInfo[] pi = mb.GetParameters();
-                    bool fFirstParam = true;
-                    for (int j = 0; j < pi.Length; j++)
+                    ParameterInfo[] pi = null;
+#if FEATURE_CORECLR
+                    try
                     {
-                        if (fFirstParam == false)
-                            sb.Append(", ");
-                        else
-                            fFirstParam = false;
+#endif
+                        pi = mb.GetParameters();
+#if FEATURE_CORECLR
+                    }
+                    catch
+                    {
+                        // The parameter info cannot be loaded, so we don't
+                        // append the parameter list.
+                    }
+#endif
+                    if (pi != null)
+                    {
+                        // arguments printing
+                        sb.Append('(');
+                        bool fFirstParam = true;
+                        for (int j = 0; j < pi.Length; j++)
+                        {
+                            if (fFirstParam == false)
+                                sb.Append(", ");
+                            else
+                                fFirstParam = false;
 
-                        String typeName = "<UnknownType>";
-                        if (pi[j].ParameterType != null)
-                            typeName = pi[j].ParameterType.Name;
-                        sb.Append(typeName);
-                        sb.Append(' ');
-                        sb.Append(pi[j].Name);
-                    }   
-                    sb.Append(')');
+                            String typeName = "<UnknownType>";
+                            if (pi[j].ParameterType != null)
+                                typeName = pi[j].ParameterType.Name;
+                            sb.Append(typeName);
+                            sb.Append(' ');
+                            sb.Append(pi[j].Name);
+                        }   
+                        sb.Append(')');
+                    }
 
                     // source location printing
                     if (displayFilenames && (sf.GetILOffset() != -1))
