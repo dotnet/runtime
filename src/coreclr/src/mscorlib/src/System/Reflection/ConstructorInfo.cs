@@ -562,12 +562,6 @@ namespace System.Reflection
             // ctor is generic or on a generic class
             else if (declaringType.ContainsGenericParameters)
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                    throw new ArgumentException(
-                        String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateGenericEx"), declaringType));
-                else
-#endif
                 throw new MemberAccessException(
                     String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateGenericEx"), declaringType));
             }

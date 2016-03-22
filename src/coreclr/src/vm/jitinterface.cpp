@@ -1453,43 +1453,6 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
     return (CorInfoHelpFunc)helper;
 }
 
-#ifdef FEATURE_LEGACYNETCF
-void CheckValidTypeOnNetCF(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Do this quirk for application assemblies only
-    if (pMT->GetAssembly()->GetManifestFile()->IsProfileAssembly())
-        return;
-
-    if (pMT->GetClass()->IsTypeValidOnNetCF())
-        return;
-
-    DWORD dwStaticsSizeOnNetCF = 0;
-
-    //
-    // NetCF had 64k limit on total size of statics per class. This limit
-    // is easy to reach by initialized data in C#. Apps took dependency
-    // on type load exceptions being thrown in this case.
-    //
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::STATIC_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        DWORD fldSize = pFD->LoadSize();
-
-        // Simulate NetCF behaviour that caused size to wrap around
-        dwStaticsSizeOnNetCF += (UINT16)fldSize;
-
-        if (dwStaticsSizeOnNetCF > 0xFFFF)
-            COMPlusThrow(kTypeLoadException);
-    }
-
-    // Cache the result of the check
-    pMT->GetClass()->SetTypeValidOnNetCF();
-}
-#endif // FEATURE_LEGACYNETCF
-
-
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1520,11 +1483,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     pResult->offset = pField->GetOffset();
     if (pField->IsStatic())
     {
-#ifdef FEATURE_LEGACYNETCF
-        if (pFieldMT->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-            CheckValidTypeOnNetCF(pFieldMT);
-#endif
-
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
 
         if (pField->IsRVA())
@@ -3943,18 +3901,6 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     if (pFD == NULL)
     {
-#ifdef FEATURE_LEGACYNETCF
-        // For methods, NetCF always triggers static constructor as side-effect of JITing, essentially ignoring before field init.
-        if (pTypeToInitMT->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-            // This quirk assumes that RunCCTorAsIfNGenImageExists() is TRUE. It would need to be replicated in more places 
-            // if it was not the case.
-            _ASSERTE(pTypeToInitMT->RunCCTorAsIfNGenImageExists());
-
-            fIgnoreBeforeFieldInit = true;
-        }
-#endif
-
         if (!fIgnoreBeforeFieldInit && pTypeToInitMT->GetClass()->IsBeforeFieldInit())
         {
             // We can wait for field accesses to run .cctor
@@ -7304,20 +7250,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     {
         Module *    pCalleeModule   = pCallee->GetModule();
 
-#ifdef FEATURE_LEGACYNETCF
-        if (m_pMethodBeingCompiled->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-            // NetCF did not allow cross-assembly inlining (except for mscorlib)
-            // and leaf methods
-            Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
-            Assembly *  pOrigCallerAssembly = pOrigCallerModule->GetAssembly();
-            if ((pCalleeAssembly != pOrigCallerAssembly) && !pCalleeAssembly->IsSystem())
-            {
-                dwRestrictions |= INLINE_RESPECT_BOUNDARY;
-            }
-        }
-#endif // FEATURE_LEGACYNETCF
-
 #ifdef FEATURE_PREJIT
         Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
 
@@ -7945,17 +7877,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule());
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule()->GetClassLoader());
-
-#ifdef FEATURE_LEGACYNETCF
-    // NetCF did not implement tail calls
-    if (m_pMethodBeingCompiled->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-    {
-
-        result = false;
-        szFailReason = "Windows Phone OS 7 compatibility";
-        goto exit;
-    }
-#endif // FEATURE_LEGACYNETCF
 
     // If the caller is the static constructor (.cctor) of a class which has a ComImport base class
     // somewhere up the class hierarchy, then we cannot make the call into a tailcall.  See
@@ -11735,14 +11656,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
              flags |= CORJIT_FLG_FRAMED;
          }
     }
-
-#ifdef FEATURE_LEGACYNETCF
-    // for "AppDomainCompatSwitch" == "WindowsPhone_3.7.0.0" or "AppDomainCompatSwitch" == "WindowsPhone_3.8.0.0"
-    // This is when we need to generate code that more closely resembles
-    // what the WinPhone 7.0/7.1/7.5 NetCF JIT used to generate.
-    if (ftn->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        flags |= CORJIT_FLG_NETCF_QUIRKS;
-#endif // FEATURE_LEGACYNETCF
 
     return flags;
 }
