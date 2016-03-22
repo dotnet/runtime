@@ -316,7 +316,18 @@ namespace System.Net
 
             // nothing to expand?
             if (cSpaces == 0 && cUnsafe == 0)
-                return bytes;
+            {
+                if (0 == offset && bytes.Length == count)
+                {
+                    return bytes;
+                }
+                else
+                {
+                    var subarray = new byte[count];
+                    Buffer.BlockCopy(bytes, offset, subarray, 0, count);
+                    return subarray;
+                }
+            }
 
             // expand not 'safe' characters into %XX, spaces to +s
             byte[] expandedBytes = new byte[count + cUnsafe * 2];
