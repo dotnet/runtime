@@ -11,83 +11,83 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckByteShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteShiftTest(bool useInterpreter)
         {
             byte[] array = new byte[] { 0, 1, byte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyByteShift(array[i]);
+                VerifyByteShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteShiftTest(bool useInterpreter)
         {
             sbyte[] array = new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifySByteShift(array[i]);
+                VerifySByteShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortShiftTest(bool useInterpreter)
         {
             ushort[] array = new ushort[] { 0, 1, ushort.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyUShortShift(array[i]);
+                VerifyUShortShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortShiftTest(bool useInterpreter)
         {
             short[] array = new short[] { 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyShortShift(array[i]);
+                VerifyShortShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntShiftTest(bool useInterpreter)
         {
             uint[] array = new uint[] { 0, 1, uint.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyUIntShift(array[i]);
+                VerifyUIntShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntShiftTest(bool useInterpreter)
         {
             int[] array = new int[] { 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyIntShift(array[i]);
+                VerifyIntShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongShiftTest(bool useInterpreter)
         {
             ulong[] array = new ulong[] { 0, 1, ulong.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyULongShift(array[i]);
+                VerifyULongShift(array[i], useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongShiftTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongShiftTest(bool useInterpreter)
         {
             long[] array = new long[] { 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < array.Length; i++)
             {
-                VerifyLongShift(array[i]);
+                VerifyLongShift(array[i], useInterpreter);
             }
         }
 
@@ -97,16 +97,16 @@ namespace System.Linq.Expressions.Tests
 
         private static int[] s_shifts = new[] { int.MinValue, -1, 0, 1, 2, 31, 32, 63, 64, int.MaxValue };
 
-        private static void VerifyByteShift(byte a)
+        private static void VerifyByteShift(byte a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyByteShift(a, b, true);
-                VerifyByteShift(a, b, false);
+                VerifyByteShift(a, b, true, useInterpreter);
+                VerifyByteShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyByteShift(byte a, int b, bool left)
+        private static void VerifyByteShift(byte a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(
@@ -121,55 +121,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            byte etResult = default(byte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            byte csResult = default(byte);
-            Exception csException = null;
-            try
-            {
-                csResult = (byte)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((byte)(left ? a << b : a >> b), f());
         }
 
-        private static void VerifySByteShift(sbyte a)
+        private static void VerifySByteShift(sbyte a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifySByteShift(a, b, true);
-                VerifySByteShift(a, b, false);
+                VerifySByteShift(a, b, true, useInterpreter);
+                VerifySByteShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifySByteShift(sbyte a, int b, bool left)
+        private static void VerifySByteShift(sbyte a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<sbyte>> e =
                 Expression.Lambda<Func<sbyte>>(
@@ -184,55 +150,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<sbyte> f = e.Compile();
+            Func<sbyte> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            sbyte etResult = default(sbyte);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            sbyte csResult = default(sbyte);
-            Exception csException = null;
-            try
-            {
-                csResult = (sbyte)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((sbyte)(left ? a << b : a >> b), f());
         }
 
-        private static void VerifyUShortShift(ushort a)
+        private static void VerifyUShortShift(ushort a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyUShortShift(a, b, true);
-                VerifyUShortShift(a, b, false);
+                VerifyUShortShift(a, b, true, useInterpreter);
+                VerifyUShortShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyUShortShift(ushort a, int b, bool left)
+        private static void VerifyUShortShift(ushort a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<ushort>> e =
                 Expression.Lambda<Func<ushort>>(
@@ -247,55 +179,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<ushort> f = e.Compile();
+            Func<ushort> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            ushort etResult = default(ushort);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            ushort csResult = default(ushort);
-            Exception csException = null;
-            try
-            {
-                csResult = (ushort)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((ushort)(left ? a << b : a >> b), f());
         }
 
-        private static void VerifyShortShift(short a)
+        private static void VerifyShortShift(short a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyShortShift(a, b, true);
-                VerifyShortShift(a, b, false);
+                VerifyShortShift(a, b, true, useInterpreter);
+                VerifyShortShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyShortShift(short a, int b, bool left)
+        private static void VerifyShortShift(short a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<short>> e =
                 Expression.Lambda<Func<short>>(
@@ -310,55 +208,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<short> f = e.Compile();
+            Func<short> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            short etResult = default(short);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            short csResult = default(short);
-            Exception csException = null;
-            try
-            {
-                csResult = (short)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal((short)(left ? a << b : a >> b), f());
         }
 
-        private static void VerifyUIntShift(uint a)
+        private static void VerifyUIntShift(uint a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyUIntShift(a, b, true);
-                VerifyUIntShift(a, b, false);
+                VerifyUIntShift(a, b, true, useInterpreter);
+                VerifyUIntShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyUIntShift(uint a, int b, bool left)
+        private static void VerifyUIntShift(uint a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<uint>> e =
                 Expression.Lambda<Func<uint>>(
@@ -373,55 +237,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<uint> f = e.Compile();
+            Func<uint> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            uint etResult = default(uint);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            uint csResult = default(uint);
-            Exception csException = null;
-            try
-            {
-                csResult = (uint)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(left ? a << b : a >> b, f());
         }
 
-        private static void VerifyIntShift(int a)
+        private static void VerifyIntShift(int a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyIntShift(a, b, true);
-                VerifyIntShift(a, b, false);
+                VerifyIntShift(a, b, true, useInterpreter);
+                VerifyIntShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyIntShift(int a, int b, bool left)
+        private static void VerifyIntShift(int a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
@@ -436,55 +266,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<int> f = e.Compile();
+            Func<int> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            int etResult = default(int);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            int csResult = default(int);
-            Exception csException = null;
-            try
-            {
-                csResult = (int)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(left ? a << b : a >> b, f());
         }
 
-        private static void VerifyULongShift(ulong a)
+        private static void VerifyULongShift(ulong a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyULongShift(a, b, true);
-                VerifyULongShift(a, b, false);
+                VerifyULongShift(a, b, true, useInterpreter);
+                VerifyULongShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyULongShift(ulong a, int b, bool left)
+        private static void VerifyULongShift(ulong a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<ulong>> e =
                 Expression.Lambda<Func<ulong>>(
@@ -499,55 +295,21 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<ulong> f = e.Compile();
+            Func<ulong> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            ulong etResult = default(ulong);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            ulong csResult = default(ulong);
-            Exception csException = null;
-            try
-            {
-                csResult = (ulong)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(left ? a << b : a >> b, f());
         }
 
-        private static void VerifyLongShift(long a)
+        private static void VerifyLongShift(long a, bool useInterpreter)
         {
             foreach (var b in s_shifts)
             {
-                VerifyLongShift(a, b, true);
-                VerifyLongShift(a, b, false);
+                VerifyLongShift(a, b, true, useInterpreter);
+                VerifyLongShift(a, b, false, useInterpreter);
             }
         }
 
-        private static void VerifyLongShift(long a, int b, bool left)
+        private static void VerifyLongShift(long a, int b, bool left, bool useInterpreter)
         {
             Expression<Func<long>> e =
                 Expression.Lambda<Func<long>>(
@@ -562,43 +324,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(b, typeof(int)))
                     );
 
-            Func<long> f = e.Compile();
+            Func<long> f = e.Compile(useInterpreter);
 
-            // shift with expression tree
-            long etResult = default(long);
-            Exception etException = null;
-            try
-            {
-                etResult = f();
-            }
-            catch (Exception ex)
-            {
-                etException = ex;
-            }
-
-            // shift with real IL
-            long csResult = default(long);
-            Exception csException = null;
-            try
-            {
-                csResult = (long)(left ? a << b : a >> b);
-            }
-            catch (Exception ex)
-            {
-                csException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (etException != null || csException != null)
-            {
-                Assert.NotNull(etException);
-                Assert.NotNull(csException);
-                Assert.Equal(csException.GetType(), etException.GetType());
-            }
-            else
-            {
-                Assert.Equal(csResult, etResult);
-            }
+            Assert.Equal(left ? a << b : a >> b, f());
         }
 
         #endregion
