@@ -9,6 +9,10 @@ namespace System.Diagnostics
     /// <summary>
     /// This is the basic API to 'hook' parts of the framework.   It is like an EventSource
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
+    /// 
+    /// Please See the DiagnosticSource Users Guide 
+    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// for instructions on its use.  
     /// </summary>
     public abstract class DiagnosticSource
     { 
