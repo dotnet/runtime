@@ -33,12 +33,17 @@ class UTC(datetime.tzinfo):
         return datetime.timedelta(0)
 
 # Generation Functions
-def generate_and_write_all(config_data, template_dir, output_dir, package_version=None):
+def generate_and_write_all(config_data, template_dir, output_dir, package_name=None, package_version=None):
     try:
-        changelog_contents = generate_changelog(config_data, template_dir, package_version=package_version)
-        control_contents = generate_control(config_data, template_dir)
+        changelog_contents = generate_changelog(
+            config_data, 
+            template_dir, 
+            package_name=package_name, 
+            package_version=package_version)
+
+        control_contents = generate_control(config_data, template_dir, package_name=package_name)
         copyright_contents = generate_copyright(config_data, template_dir)
-        symlink_contents = generate_symlinks(config_data)
+        symlink_contents = generate_symlinks(config_data, package_name=package_name)
     except Exception as exc:
       print exc
       help_and_exit("Error: Generation Failed, check your config file.")
@@ -49,20 +54,19 @@ def generate_and_write_all(config_data, template_dir, output_dir, package_versio
 
     # Symlink File is optional
     if symlink_contents:
-        symlink_filename = get_symlink_filename(config_data)
+        symlink_filename = get_symlink_filename(config_data, package_name=package_name)
         write_file(symlink_contents, output_dir, symlink_filename)
 
     return
 
-def generate_changelog(config_data, template_dir, package_version=None):
+def generate_changelog(config_data, template_dir, package_version=None, package_name=None):
     template = get_template(template_dir, FILE_CHANGELOG)
 
     release_data = config_data["release"]
     
     # Allow for Version Override
     config_package_version = release_data["package_version"]
-    if package_version is None:
-        package_version = config_package_version
+    package_version = config_package_version
 
     template_dict = dict(\
         PACKAGE_VERSION=package_version,
@@ -70,7 +74,7 @@ def generate_changelog(config_data, template_dir, package_version=None):
         CHANGELOG_MESSAGE=release_data["changelog_message"],
         URGENCY=release_data.get("urgency", "low"),
 
-        PACKAGE_NAME=config_data["package_name"],
+        PACKAGE_NAME=package_name or config_data["package_name"],
         MAINTAINER_NAME=config_data["maintainer_name"],
         MAINTAINER_EMAIL=config_data["maintainer_email"], 
         DATE=datetime.datetime.now(UTC()).strftime(CHANGELOG_DATE_FORMAT)
@@ -80,7 +84,7 @@ def generate_changelog(config_data, template_dir, package_version=None):
 
     return contents
 
-def generate_control(config_data, template_dir):
+def generate_control(config_data, template_dir, package_name=None):
     template = get_template(template_dir, FILE_CONTROL)
 
     dependency_data = config_data.get("debian_dependencies", None)
@@ -104,7 +108,7 @@ def generate_control(config_data, template_dir):
         DEPENDENT_PACKAGES=dependency_str,
         CONFLICT_PACKAGES=conflict_str,
 
-        PACKAGE_NAME=config_data["package_name"],
+        PACKAGE_NAME=package_name or config_data["package_name"],
         MAINTAINER_NAME=config_data["maintainer_name"],
         MAINTAINER_EMAIL=config_data["maintainer_email"]
     )
@@ -128,9 +132,9 @@ def generate_copyright(config_data, template_dir):
 
     return contents
 
-def generate_symlinks(config_data):
+def generate_symlinks(config_data, package_name=None):
     symlink_entries = []
-    package_root_path = get_package_root(config_data)
+    package_root_path = get_package_root(config_data, package_name=package_name)
 
     symlink_data = config_data.get("symlinks", dict())
 
@@ -143,12 +147,14 @@ def generate_symlinks(config_data):
     return '\n'.join(symlink_entries)
     
 # Helper Functions
-def get_package_root(config_data):
-    package_name = config_data["package_name"]
-    return PACKAGE_ROOT_FORMAT.format(package_name=package_name)
+def get_package_root(config_data, package_name=None):
+    config_install_root = config_data.get("install_root", None)
+    package_name = package_name or config_data["package_name"]
 
-def get_symlink_filename(config_data):
-    package_name = config_data["package_name"]
+    return config_install_root or PACKAGE_ROOT_FORMAT.format(package_name=package_name)
+
+def get_symlink_filename(config_data, package_name=None):
+    package_name = package_name or config_data["package_name"]
     return FILE_SYMLINK_FORMAT.format(package_name=package_name)
 
 def get_dependendent_packages_string(debian_dependency_data):
@@ -201,7 +207,7 @@ def help_and_exit(msg):
     sys.exit(1)
 
 def print_usage():
-    print "Usage: config_template_generator.py [config file path] [template directory path] [output directory] (package version)"
+    print "Usage: config_template_generator.py [config file path] [template directory path] [output directory] (package name) (package version)"
 
 def parse_and_validate_args():
     if len(sys.argv) < 4:
@@ -211,10 +217,14 @@ def parse_and_validate_args():
     config_path = sys.argv[1]
     template_dir = sys.argv[2]
     output_dir = sys.argv[3]
+    name_override = None
     version_override = None
     
     if len(sys.argv) >= 5:
-        version_override = sys.argv[4]
+        name_override = sys.argv[4]
+
+    if len(sys.argv) >= 6:
+        version_override = sys.argv[5]
 
     if not os.path.isfile(config_path):
         help_and_exit("Error: Invalid config file path")
@@ -225,16 +235,14 @@ def parse_and_validate_args():
     if not os.path.isdir(output_dir):
         help_and_exit("Error: Invalid output directory path")
 
-    return (config_path, template_dir, output_dir, version_override)
-
-
+    return (config_path, template_dir, output_dir, name_override, version_override)
 
 def execute():
-    config_path, template_dir, output_dir, version_override = parse_and_validate_args()
+    config_path, template_dir, output_dir, name_override, version_override = parse_and_validate_args()
 
     config_data = load_json(config_path)
 
-    generate_and_write_all(config_data, template_dir, output_dir, package_version=version_override)
+    generate_and_write_all(config_data, template_dir, output_dir, package_name = name_override, package_version=version_override)
 
 if __name__ == "__main__":
     execute()
