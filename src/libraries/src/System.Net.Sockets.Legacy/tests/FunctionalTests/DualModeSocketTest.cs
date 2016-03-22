@@ -21,6 +21,13 @@ namespace System.Net.Sockets.Tests
 
         private readonly ITestOutputHelper _log;
 
+        private static IPAddress[] s_validIPv6Loopbacks = new IPAddress[] 
+        {
+            new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 0, 0, 1 }, 0),  // ::127.0.0.1
+            IPAddress.Loopback.MapToIPv6(),                                                     // ::ffff:127.0.0.1
+            IPAddress.IPv6Loopback                                                              // ::1
+        };
+
         public DualMode(ITestOutputHelper output)
         {
             _log = TestLogging.GetInstance();
@@ -901,7 +908,14 @@ namespace System.Net.Sockets.Tests
                     Assert.True(clientSocket.Connected);
                     AssertDualModeEnabled(clientSocket, listenOn);
                     Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-                    Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+                    if (connectTo == IPAddress.Loopback)
+                    {
+                        Assert.Contains(((IPEndPoint)clientSocket.LocalEndPoint).Address, s_validIPv6Loopbacks);
+                    }
+                    else
+                    {
+                        Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+                    }
                 }
                 catch (ObjectDisposedException) { }
                 catch (SocketException) { }
@@ -1006,7 +1020,14 @@ namespace System.Net.Sockets.Tests
                 Assert.True(clientSocket.Connected);
                 AssertDualModeEnabled(clientSocket, listenOn);
                 Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+                if (connectTo == IPAddress.Loopback)
+                {
+                    Assert.Contains(((IPEndPoint)clientSocket.LocalEndPoint).Address, s_validIPv6Loopbacks);
+                }
+                else
+                {
+                    Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+                }
             }
         }
 
