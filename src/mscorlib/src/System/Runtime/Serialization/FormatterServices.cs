@@ -19,7 +19,9 @@ namespace System.Runtime.Serialization {
     using System.Collections.Generic;
     using System.Security;    
     using System.Security.Permissions;
+#if FEATURE_SERIALIZATION
     using System.Runtime.Serialization.Formatters;
+#endif
     using System.Runtime.Remoting;
     using System.Runtime.CompilerServices;
     using System.Runtime.Versioning;
@@ -31,7 +33,7 @@ namespace System.Runtime.Serialization {
 
     [System.Runtime.InteropServices.ComVisible(true)]
     public static class FormatterServices {
-#if FEATURE_SERIALIZATION        
+#if FEATURE_SERIALIZATION
         internal static Dictionary<MemberHolder, MemberInfo[]> m_MemberInfoTable = new Dictionary<MemberHolder, MemberInfo[]>(32);
         [System.Security.SecurityCritical]
         private static bool unsafeTypeForwardersIsEnabled = false;
@@ -228,11 +230,11 @@ namespace System.Runtime.Serialization {
       
         static readonly Type[] advancedTypes = new Type[]{
             typeof(System.DelegateSerializationHolder),
-#if FEATURE_REMOTING                        
+#if FEATURE_REMOTING
             typeof(System.Runtime.Remoting.ObjRef),
             typeof(System.Runtime.Remoting.IEnvoyInfo),
             typeof(System.Runtime.Remoting.Lifetime.ISponsor),
-#endif            
+#endif
         };
   
         public static void CheckTypeSecurity(Type t,  TypeFilterLevel securityLevel) {            
@@ -276,7 +278,7 @@ namespace System.Runtime.Serialization {
             if (!(type is RuntimeType)) {
                 throw new SerializationException(Environment.GetResourceString("Serialization_InvalidType", type.ToString()));
             }
-#if FEATURE_REMOTING            
+#if FEATURE_REMOTING
             if (Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Messaging.ConstructionCall)) || 
                 Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Messaging.LogicalCallContext)) ||
                 Object.ReferenceEquals(type, typeof(System.Runtime.Remoting.Contexts.SynchronizationAttribute)))
