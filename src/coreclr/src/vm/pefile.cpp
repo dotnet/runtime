@@ -266,57 +266,6 @@ BOOL PEFile::CanLoadLibrary()
     return IsILOnly();
 }
 
-
-#ifdef FEATURE_CORECLR
-void PEFile::ValidateImagePlatformNeutrality()
-{
-    STANDARD_VM_CONTRACT;
-
-    //--------------------------------------------------------------------------------
-    // There are no useful applications of the "/platform" switch for CoreCLR.
-    // CoreCLR will do the conservative thing and by default only accept appbase assemblies
-    // compiled with "/platform:anycpu" (or no "/platform" switch at all.)
-    // However, with hosting flags it is possible to suppress this check and allow
-    // platform specific assemblies. This was primarily added to support C++/CLI
-    // generated assemblies build with /CLR:PURE flags. This was a need for the CoreSystem
-    // server work.
-    //
-    // We do allow Platform assemblies to have platform specific code (because they
-    // in fact do have such code.   
-    //--------------------------------------------------------------------------------
-    if (!(GetAssembly()->IsProfileAssembly()) && !GetAppDomain()->AllowPlatformSpecificAppAssemblies())
-    {
-        
-        DWORD machine, kind;
-        BOOL fMachineOk,fPlatformFlagsOk;
-
-#ifdef FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
-        if (ShouldTreatNIAsMSIL() && GetILimage()->HasNativeHeader())
-        {
-            GetILimage()->GetNativeILPEKindAndMachine(&kind, &machine);                 
-        }
-        else       
-#endif // FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
-        {
-            //The following function gets the kind and machine given by the IL image. 
-            //In the case of NGened images- It gets the original kind and machine of the IL image
-            //from the copy maintained by  NI
-            GetPEKindAndMachine(&kind, &machine);       
-        } 
-        
-        fMachineOk = (machine == IMAGE_FILE_MACHINE_I386);
-        fPlatformFlagsOk = ((kind & (peILonly | pe32Plus | pe32BitRequired)) == peILonly);
-
-        if (!(fMachineOk &&
-              fPlatformFlagsOk))
-        {
-            // This exception matches what the desktop OS hook throws - unfortunate that this is so undescriptive.
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-    }
-}
-#endif
-
 #ifdef FEATURE_MIXEDMODE
 
 #ifndef CROSSGEN_COMPILE
@@ -595,11 +544,6 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
     // See if we've already loaded it.
     if (CheckLoaded(allowNativeSkip))
     {
-#ifdef FEATURE_CORECLR
-        if (!IsResource() && !IsDynamic())
-            ValidateImagePlatformNeutrality();
-#endif //FEATURE_CORECLR
-
 #ifdef FEATURE_MIXEDMODE
         // Prevent loading C++/CLI images into multiple runtimes in the same process. Note that if ILOnly images
         // stop being LoadLibrary'ed, the check for pure 2.0 C++/CLI images will need to be done somewhere else.
@@ -617,10 +561,6 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
         GetILimage()->LoadNoMetaData(IsIntrospectionOnly());
         RETURN;
     }
-
-#ifdef FEATURE_CORECLR
-    ValidateImagePlatformNeutrality();
-#endif //FEATURE_CORECLR
 
 #if !defined(_WIN64)
     if (!HasNativeImage() && (!GetILimage()->Has32BitNTHeaders()) && !IsIntrospectionOnly())
@@ -4397,72 +4337,10 @@ BOOL PEAssembly::IsProfileAssembly()
     // from the old Silverlight binder, people took advantage of it and we cannot easily get rid of it now. See DevDiv #710462.
     //
     BOOL bProfileAssembly = IsSourceGAC() && (IsSystem() || m_bIsOnTpaList);
-    if(!AppX::IsAppXProcess())
-    {
-        bProfileAssembly |= IsSourceGAC() && IsSilverlightPlatformStrongNameSignature();
-    }
 
     m_fProfileAssembly = bProfileAssembly ? 1 : -1;
     return bProfileAssembly;
 }
-
-BOOL PEAssembly::IsSilverlightPlatformStrongNameSignature()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (IsDynamic())
-        return FALSE;
-
-    DWORD cbPublicKey;
-    const BYTE *pbPublicKey = static_cast<const BYTE *>(GetPublicKey(&cbPublicKey));
-    if (pbPublicKey == nullptr)
-    {
-        return false;
-    }
-
-    if (StrongNameIsSilverlightPlatformKey(pbPublicKey, cbPublicKey))
-        return true;
-
-#ifdef FEATURE_STRONGNAME_TESTKEY_ALLOWED
-    if (StrongNameIsTestKey(pbPublicKey, cbPublicKey))
-        return true;
-#endif
-
-    return false;
-}
-
-#ifdef FEATURE_STRONGNAME_TESTKEY_ALLOWED
-BOOL PEAssembly::IsProfileTestAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return IsSourceGAC() && IsTestKeySignature();
-}
-
-BOOL PEAssembly::IsTestKeySignature()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsDynamic())
-        return FALSE;
-
-    DWORD cbPublicKey;
-    const BYTE *pbPublicKey = static_cast<const BYTE *>(GetPublicKey(&cbPublicKey));
-    if (pbPublicKey == nullptr)
-    {
-        return false;
-    }
-
-    return StrongNameIsTestKey(pbPublicKey, cbPublicKey);
-}
-#endif // FEATURE_STRONGNAME_TESTKEY_ALLOWED
-
 #endif // FEATURE_CORECLR
 
 // ------------------------------------------------------------

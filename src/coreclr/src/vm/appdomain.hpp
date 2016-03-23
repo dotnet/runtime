@@ -2867,66 +2867,6 @@ public:
         return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
     }
 
-#if defined(FEATURE_CORECLR)    
-    void SetEnablePInvokeAndClassicComInterop()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP;
-    }
-
-    BOOL EnablePInvokeAndClassicComInterop()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP);
-    }
-
-    void SetAllowPlatformSpecificAppAssemblies()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= ENABLE_SKIP_PLAT_CHECKS;
-    }
-
-    BOOL AllowPlatformSpecificAppAssemblies()
-    {
-        LIMITED_METHOD_CONTRACT;
-        if(IsCompilationDomain())
-            return TRUE;
-
-        return (m_dwFlags & ENABLE_SKIP_PLAT_CHECKS);
-    }
-
-    void SetAllowLoadFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= ENABLE_ASSEMBLY_LOADFILE;
-    }
-
-    BOOL IsLoadFileAllowed()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & ENABLE_ASSEMBLY_LOADFILE);
-    }
-
-    void DisableTransparencyEnforcement()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= DISABLE_TRANSPARENCY_ENFORCEMENT;
-    }
-
-    BOOL IsTransparencyEnforcementDisabled()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & DISABLE_TRANSPARENCY_ENFORCEMENT);
-    }
-#endif // defined(FEATURE_CORECLR)
-
     void SetPassiveDomain()
     {
         LIMITED_METHOD_CONTRACT;
