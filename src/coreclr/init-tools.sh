@@ -107,6 +107,8 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     $__DOTNET_CMD restore "$__PROJECT_JSON_FILE" --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE
  fi
 
- sh $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+ # On ubuntu 14.04, /bin/sh (symbolic link) calls /bin/dash by default.
+ $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+
  chmod a+x $__TOOLRUNTIME_DIR/corerun
 fi
