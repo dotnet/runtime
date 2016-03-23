@@ -332,17 +332,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Fact]
-        public void FinallyDoesNotDetermineValueSomethingCaughtInterpreted()
-        {
-            TryExpression finally2 = Expression.TryCatchFinally(
-                Expression.Throw(Expression.Constant(new ArgumentException()), typeof(int)),
-                Expression.Constant(2),
-                Expression.Catch(typeof(ArgumentException), Expression.Constant(3))
-                );
-            Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(true)());
-        }
-
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         [ActiveIssue(3838)]

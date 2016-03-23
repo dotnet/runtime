@@ -113,61 +113,33 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(listInit, listInit.ReduceAndCheck());
         }
 
-        [Fact]
-        public void InitializeVoidAddCompiler()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void InitializeVoidAdd(bool useInterpreter)
         {
             Expression<Func<List<int>>> listInit = () => new List<int> { 1, 2, 4, 16, 42 };
-            Func<List<int>> func = listInit.Compile(false);
+            Func<List<int>> func = listInit.Compile(useInterpreter);
             Assert.Equal(new[] { 1, 2, 4, 16, 42 }, func());
         }
 
-        [Fact]
-        public void InitializeVoidAddInterpreter()
-        {
-            Expression<Func<List<int>>> listInit = () => new List<int> { 1, 2, 4, 16, 42 };
-            Func<List<int>> func = listInit.Compile(true);
-            Assert.Equal(new[] { 1, 2, 4, 16, 42 }, func());
-        }
-
-        [Fact]
-        public void InitializeNonVoidAddCompiler()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void InitializeNonVoidAdd(bool useInterpreter)
         {
             Expression<Func<HashSet<int>>> hashInit = () => new HashSet<int> { 1, 2, 4, 16, 42 };
-            Func<HashSet<int>> func = hashInit.Compile(false);
+            Func<HashSet<int>> func = hashInit.Compile(useInterpreter);
             Assert.Equal(new[] { 1, 2, 4, 16, 42 }, func().OrderBy(i => i));
         }
 
-        [Fact]
-        public void InitializeNonVoidAddInterpreter()
-        {
-            Expression<Func<HashSet<int>>> hashInit = () => new HashSet<int> { 1, 2, 4, 16, 42 };
-            Func<HashSet<int>> func = hashInit.Compile(true);
-            Assert.Equal(new[] { 1, 2, 4, 16, 42 }, func().OrderBy(i => i));
-        }
-
-        [Fact]
-        public void InitializeTwoParameterAddCompiler()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void InitializeTwoParameterAdd(bool useInterpreter)
         {
             Expression<Func<Dictionary<string, int>>> dictInit = () => new Dictionary<string, int>
             {
                 { "a", 1 }, {"b", 2 }, {"c", 3 }
             };
-            Func<Dictionary<string, int>> func = dictInit.Compile(false);
-            var expected = new Dictionary<string, int>
-            {
-                { "a", 1 }, {"b", 2 }, {"c", 3 }
-            };
-            Assert.Equal(expected.OrderBy(kvp => kvp.Key), func().OrderBy(kvp => kvp.Key));
-        }
-
-        [Fact]
-        public void InitializeTwoParameterAddInterpreter()
-        {
-            Expression<Func<Dictionary<string, int>>> dictInit = () => new Dictionary<string, int>
-            {
-                { "a", 1 }, {"b", 2 }, {"c", 3 }
-            };
-            Func<Dictionary<string, int>> func = dictInit.Compile(true);
+            Func<Dictionary<string, int>> func = dictInit.Compile(useInterpreter);
             var expected = new Dictionary<string, int>
             {
                 { "a", 1 }, {"b", 2 }, {"c", 3 }
