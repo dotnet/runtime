@@ -38,10 +38,7 @@ namespace System.ComponentModel
         // no name on its site.  Should be very rare.
         private static int s_collisionIndex;
 
-        private static BooleanSwitch s_traceDescriptor = new BooleanSwitch("TypeDescriptor", "Debug TypeDescriptor.");
-
-        // For each stage of our filtering pipeline, the pipeline needs to know
-        // what it is filtering.
+        // For each stage of our filtering pipeline, the pipeline needs to know what it is filtering.
         private const int PIPELINE_ATTRIBUTES = 0x00;
         private const int PIPELINE_PROPERTIES = 0x01;
         private const int PIPELINE_EVENTS = 0x02;
@@ -2665,7 +2662,8 @@ namespace System.ComponentModel
         [Conditional("DEBUG")]
         internal static void Trace(string message, params object[] args)
         {
-            Debug.WriteLineIf(s_traceDescriptor.Enabled, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
+            // TODO Determine the value this tracing adds
+            Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
         }
 
         /// <devdoc>
