@@ -720,8 +720,9 @@ namespace System.Linq.Expressions.Tests
             Expression<Predicate<Atom>> d = atom => atom && atom[atom];
         }
 
-        [Fact]
-        public static void Lambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Lambda(bool useInterpreter)
         {
             var paramI = Expression.Parameter(typeof(int), "i");
             var paramJ = Expression.Parameter(typeof(double), "j");
@@ -736,7 +737,7 @@ namespace System.Linq.Expressions.Tests
             lambda = (Expression<Func<int, double, decimal, short, int>>)((int i, double j, decimal k, short l) => i);
 
             Assert.Equal(typeof(Func<int, double, decimal, short, Func<int, double, decimal, short, int>>),
-                Expression.Lambda(lambda, new[] { paramI, paramJ, paramK, paramL }).Compile().GetType());
+                Expression.Lambda(lambda, new[] { paramI, paramJ, paramK, paramL }).Compile(useInterpreter).GetType());
 
             Assert.False(String.IsNullOrEmpty(lambda.ToString()));
         }
@@ -1292,8 +1293,9 @@ namespace System.Linq.Expressions.Tests
             var s = q.ToString();
         }
 
-        [Fact]
-        public static void DynamicSequenceQuery()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DynamicSequenceQuery(bool useInterpreter)
         {
             ParameterExpression i = Expression.Parameter(typeof(int[]), "i");
             var e = Expression.Lambda<Func<int[], IEnumerable<int>>>(
@@ -1311,7 +1313,7 @@ namespace System.Linq.Expressions.Tests
                   );
 
             string result = "";
-            foreach (var x in e.Compile()(new[] { 1, 2, 3 }))
+            foreach (var x in e.Compile(useInterpreter)(new[] { 1, 2, 3 }))
                 result += ", " + x.ToString();
 
             Assert.Equal(", 1, 2, 3", result);
@@ -1835,15 +1837,16 @@ namespace System.Linq.Expressions.Tests
             public override string ToString() { return value.ToString(); }
         }
 
-        [Fact(Skip = "870811")]
-        public static void TestAndAlso()
+        [Theory(Skip = "870811")]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TestAndAlso(bool useInterpreter)
         {
             AndAlso a1 = new AndAlso(true);
             Func<AndAlso> f1 = () => a1 && !a1;
             AndAlso r1 = f1();
 
             Expression<Func<AndAlso>> e = () => a1 && !a1;
-            AndAlso r2 = e.Compile()();
+            AndAlso r2 = e.Compile(useInterpreter)();
 
             Assert.Equal(r2.value, r1.value);
         }
@@ -1865,17 +1868,19 @@ namespace System.Linq.Expressions.Tests
             public static bool operator false(TC1 a) { return false; }
         }
 
-        [Fact]
-        public static void ObjectCallOnValueType()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ObjectCallOnValueType(bool useInterpreter)
         {
             object st_local = new TC1();
             var mi = typeof(object).GetMethod("ToString");
             var lam = Expression.Lambda<Func<string>>(Expression.Call(Expression.Constant(st_local), mi, null), null);
-            var f = lam.Compile();
+            var f = lam.Compile(useInterpreter);
         }
 
-        [Fact]
-        public static void AndAlsoLift()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AndAlsoLift(bool useInterpreter)
         {
             TC1? tc1 = new TC1("lhs", 324589);
             TC1? tc2 = new TC1("rhs", 324589);
@@ -1892,7 +1897,7 @@ namespace System.Linq.Expressions.Tests
                     new Expression[] { left, right }),
                Enumerable.Empty<ParameterExpression>());
 
-            Func<TC1?> f1 = e1.Compile();
+            Func<TC1?> f1 = e1.Compile(useInterpreter);
             Assert.NotNull(f1());
             Assert.Equal(f1().Value.Name, "And");
 
@@ -1903,7 +1908,7 @@ namespace System.Linq.Expressions.Tests
                     new Expression[] { left, right }),
                Enumerable.Empty<ParameterExpression>());
 
-            Func<TC1?> f2 = e2.Compile();
+            Func<TC1?> f2 = e2.Compile(useInterpreter);
             Assert.NotNull(f2());
             Assert.Equal(f2().Value.Name, "lhs");
 
@@ -1987,8 +1992,9 @@ namespace System.Linq.Expressions.Tests
             public Customer(int zip, string name) { this.zip = zip; this.name = name; }
         }
 
-        [Fact]
-        public static void Writeback()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Writeback(bool useInterpreter)
         {
             CustomerWriteBack a = new CustomerWriteBack();
             var t = typeof(CustomerWriteBack);
@@ -2001,7 +2007,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Lambda<Func<int>>(
                         Expression.Call(typeof(CustomerWriteBack).GetMethod("Funct1"), new[] { Expression.Property(null, typeof(CustomerWriteBack).GetProperty("Prop")) }),
                         null);
-            var f1 = e1.Compile();
+            var f1 = e1.Compile(useInterpreter);
             int result = f1();
             Assert.Equal(5, result);
 
@@ -2012,7 +2018,7 @@ namespace System.Linq.Expressions.Tests
                      new Expression[] { Expression.Property(Expression.Constant(a, typeof(CustomerWriteBack)), pi) }
                      ),
                  null);
-            var f = e.Compile();
+            var f = e.Compile(useInterpreter);
             var r = f();
             Assert.Equal(a.m_x, "Changed");
 
@@ -2023,13 +2029,14 @@ namespace System.Linq.Expressions.Tests
                      new Expression[] { Expression.Property(Expression.Constant(a, typeof(CustomerWriteBack)), piCust) }
                      ),
                  null);
-            var f2 = e2.Compile();
+            var f2 = e2.Compile(useInterpreter);
             var r2 = f2();
             Assert.True(a.Cust.zip == 90008 && a.Cust.name == "SreeCho");
         }
 
-        [Fact]
-        public static void UnaryPlus()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void UnaryPlus(bool useInterpreter)
         {
             ConstantExpression ce = Expression.Constant((UInt16)10);
 
@@ -2051,21 +2058,22 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<Complex>>(
                     Expression.UnaryPlus(Expression.Constant(comp, typeof(Complex))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Complex> f1 = e1.Compile();
+            Func<Complex> f1 = e1.Compile(useInterpreter);
             Complex comp1 = f1();
             Assert.True((comp1.x == comp.x + 1 && comp1.y == comp.y + 1));
 
             Expression<Func<Complex, Complex>> testExpr = (x) => +x;
             Assert.Equal(testExpr.ToString(), "x => +x");
-            var v = testExpr.Compile();
+            var v = testExpr.Compile(useInterpreter);
         }
 
         private struct S
         {
         }
 
-        [Fact]
-        public static void CompileRelationOveratorswithIsLiftToNullTrue()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CompileRelationOveratorswithIsLiftToNullTrue(bool useInterpreter)
         {
             int? x = 10;
             int? y = 2;
@@ -2074,37 +2082,37 @@ namespace System.Linq.Expressions.Tests
 
             Expression<Func<int?, int?, bool?>> e = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.GreaterThan(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            var f = e.Compile();
+            var f = e.Compile(useInterpreter);
             var r = f(x, y);
             Assert.True(r.Value);
 
             Expression<Func<int?, int?, bool?>> e1 = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.LessThan(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            f = e1.Compile();
+            f = e1.Compile(useInterpreter);
             r = f(x, y);
             Assert.False(r.Value);
 
             Expression<Func<int?, int?, bool?>> e2 = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.GreaterThanOrEqual(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            f = e2.Compile();
+            f = e2.Compile(useInterpreter);
             r = f(x, y);
             Assert.True(r.Value);
 
             Expression<Func<int?, int?, bool?>> e3 = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.Equal(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            f = e3.Compile();
+            f = e3.Compile(useInterpreter);
             r = f(x, y);
             Assert.False(r.Value);
 
             Expression<Func<int?, int?, bool?>> e4 = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.LessThanOrEqual(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            f = e4.Compile();
+            f = e4.Compile(useInterpreter);
             r = f(x, y);
             Assert.False(r.Value);
 
             Expression<Func<int?, int?, bool?>> e5 = Expression.Lambda<Func<int?, int?, bool?>>(
                 Expression.NotEqual(p1, p2, true, null), new ParameterExpression[] { p1, p2 });
-            f = e5.Compile();
+            f = e5.Compile(useInterpreter);
             r = f(x, y);
             Assert.True(r.Value);
 
@@ -2116,7 +2124,7 @@ namespace System.Linq.Expressions.Tests
                     true,
                     null),
                 null);
-            var f6 = e6.Compile();
+            var f6 = e6.Compile(useInterpreter);
             Assert.Null(f6());
         }
 
@@ -2153,8 +2161,9 @@ namespace System.Linq.Expressions.Tests
             public AnonHelperClass1(Expression<Func<decimal>> mem1) { this.mem1 = mem1; }
         }
 
-        [Fact(Skip = "870811")]
-        public static void NewExpressionwithMemberAssignInit()
+        [Theory(Skip = "870811")]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewExpressionwithMemberAssignInit(bool useInterpreter)
         {
             var s = "Bad Mojo";
             int val = 10;
@@ -2166,7 +2175,7 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<TestClass>> e = Expression.Lambda<Func<TestClass>>(
                Expression.New(constructor, expressions, members),
                Enumerable.Empty<ParameterExpression>());
-            Func<TestClass> f = e.Compile();
+            Func<TestClass> f = e.Compile(useInterpreter);
             Assert.True(object.Equals(f(), new TestClass(s, val)));
 
             List<MemberInfo> members1 = new List<MemberInfo>();
@@ -2176,7 +2185,7 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<TestClass>> e1 = Expression.Lambda<Func<TestClass>>(
                Expression.New(constructor, expressions, members1),
                Enumerable.Empty<ParameterExpression>());
-            Func<TestClass> f1 = e1.Compile();
+            Func<TestClass> f1 = e1.Compile(useInterpreter);
             Assert.True(object.Equals(f1(), new TestClass(s, val)));
             MemberInfo mem1 = typeof(AnonHelperClass1).GetField("mem1");
             LambdaExpression ce1 = Expression.Lambda(Expression.Constant(45m, typeof(decimal)));
@@ -2189,27 +2198,30 @@ namespace System.Linq.Expressions.Tests
             Assert.NotNull(result);
         }
 
-        [Fact]
-        public static void TypeAsNullableToObject()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TypeAsNullableToObject(bool useInterpreter)
         {
             Expression<Func<object>> e = Expression.Lambda<Func<object>>(Expression.TypeAs(Expression.Constant(0, typeof(int?)), typeof(object)));
-            Func<object> f = e.Compile(); // System.ArgumentException: Unhandled unary: TypeAs
+            Func<object> f = e.Compile(useInterpreter); // System.ArgumentException: Unhandled unary: TypeAs
             Assert.Equal(0, f());
         }
 
-        [Fact]
-        public static void TypesIsConstantValueType()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TypesIsConstantValueType(bool useInterpreter)
         {
             Expression<Func<bool>> e = Expression.Lambda<Func<bool>>(Expression.TypeIs(Expression.Constant(5), typeof(object)));
-            Func<bool> f = e.Compile();
+            Func<bool> f = e.Compile(useInterpreter);
             Assert.True(f());
         }
 
-        [Fact]
-        public static void ConstantEmitsValidIL()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConstantEmitsValidIL(bool useInterpreter)
         {
             Expression<Func<byte>> e = Expression.Lambda<Func<byte>>(Expression.Constant((byte)0), Enumerable.Empty<ParameterExpression>());
-            Func<byte> f = e.Compile();
+            Func<byte> f = e.Compile(useInterpreter);
             Assert.Equal((byte)0, f());
         }
 
@@ -2221,403 +2233,406 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void Casts()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Casts(bool useInterpreter)
         {
             // System.ValueType to value type
-            Assert.Equal(10, TestCast<System.ValueType, int>(10));
+            Assert.Equal(10, TestCast<System.ValueType, int>(10, useInterpreter));
 
             // System.ValueType to enum type
-            Assert.Equal(ExpressionType.Add, TestCast<System.ValueType, ExpressionType>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<System.ValueType, ExpressionType>(ExpressionType.Add, useInterpreter));
 
             // System.Enum to enum type
-            Assert.Equal(ExpressionType.Add, TestCast<System.Enum, ExpressionType>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<System.Enum, ExpressionType>(ExpressionType.Add, useInterpreter));
 
             // System.ValueType to nullable value type
-            Assert.Equal(10, TestCast<System.ValueType, int?>(10));
+            Assert.Equal(10, TestCast<System.ValueType, int?>(10, useInterpreter));
 
             // System.ValueType to nullable enum type
-            Assert.Equal(ExpressionType.Add, TestCast<System.ValueType, ExpressionType?>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<System.ValueType, ExpressionType?>(ExpressionType.Add, useInterpreter));
 
             // System.Enum to nullable enum type
-            Assert.Equal(ExpressionType.Add, TestCast<System.Enum, ExpressionType?>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<System.Enum, ExpressionType?>(ExpressionType.Add, useInterpreter));
 
             // Enum to System.Enum
-            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType, System.Enum>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType, System.Enum>(ExpressionType.Add, useInterpreter));
 
             // Enum to System.ValueType
-            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType, System.ValueType>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType, System.ValueType>(ExpressionType.Add, useInterpreter));
 
             // nullable enum to System.Enum
-            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType?, System.Enum>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType?, System.Enum>(ExpressionType.Add, useInterpreter));
 
             // nullable enum to System.ValueType
-            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType?, System.ValueType>(ExpressionType.Add));
+            Assert.Equal(ExpressionType.Add, TestCast<ExpressionType?, System.ValueType>(ExpressionType.Add, useInterpreter));
 
             // nullable to object (box)
-            Assert.Equal(10, TestCast<int?, object>(10));
+            Assert.Equal(10, TestCast<int?, object>(10, useInterpreter));
 
             // object to nullable (unbox)
-            Assert.Equal(10, TestCast<object, int?>(10));
+            Assert.Equal(10, TestCast<object, int?>(10, useInterpreter));
 
             // nullable to interface (box + cast)
-            TestCast<int?, IComparable>(10);
+            TestCast<int?, IComparable>(10, useInterpreter);
 
             // interface to nullable (unbox)
-            TestCast<IComparable, int?>(10);
+            TestCast<IComparable, int?>(10, useInterpreter);
 
             // interface to interface
-            TestCast<IComparable, IEquatable<int>>(10);
-            TestCast<IEquatable<int>, IComparable>(10);
+            TestCast<IComparable, IEquatable<int>>(10, useInterpreter);
+            TestCast<IEquatable<int>, IComparable>(10, useInterpreter);
 
             // value type to object (box)
-            Assert.Equal(10, TestCast<int, object>(10));
+            Assert.Equal(10, TestCast<int, object>(10, useInterpreter));
 
             // object to value type (unbox)
-            Assert.Equal(10, TestCast<object, int>(10));
+            Assert.Equal(10, TestCast<object, int>(10, useInterpreter));
 
             // tests with user defined struct
-            TestCast<ValueType, MyStruct>(new MyStruct());
-            TestCast<MyStruct, ValueType>(new MyStruct());
-            TestCast<object, MyStruct>(new MyStruct());
-            TestCast<MyStruct, object>(new MyStruct());
-            TestCast<IComparable, MyStruct>(new MyStruct());
-            TestCast<MyStruct, IComparable>(new MyStruct());
-            TestCast<ValueType, MyStruct?>(new MyStruct());
-            TestCast<MyStruct?, ValueType>(new MyStruct());
-            TestCast<object, MyStruct?>(new MyStruct());
-            TestCast<MyStruct?, object>(new MyStruct());
-            TestCast<IComparable, MyStruct?>(new MyStruct());
-            TestCast<MyStruct?, IComparable>(new MyStruct());
+            TestCast<ValueType, MyStruct>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct, ValueType>(new MyStruct(), useInterpreter);
+            TestCast<object, MyStruct>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct, object>(new MyStruct(), useInterpreter);
+            TestCast<IComparable, MyStruct>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct, IComparable>(new MyStruct(), useInterpreter);
+            TestCast<ValueType, MyStruct?>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct?, ValueType>(new MyStruct(), useInterpreter);
+            TestCast<object, MyStruct?>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct?, object>(new MyStruct(), useInterpreter);
+            TestCast<IComparable, MyStruct?>(new MyStruct(), useInterpreter);
+            TestCast<MyStruct?, IComparable>(new MyStruct(), useInterpreter);
         }
 
-        private static S TestCast<T, S>(T value)
+        private static S TestCast<T, S>(T value, bool useInterpreter)
         {
-            Func<S> d = Expression.Lambda<Func<S>>(Expression.Convert(Expression.Constant(value, typeof(T)), typeof(S))).Compile();
+            Func<S> d = Expression.Lambda<Func<S>>(Expression.Convert(Expression.Constant(value, typeof(T)), typeof(S))).Compile(useInterpreter);
             return d();
         }
 
-        [Fact]
-        public static void Conversions()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Conversions(bool useInterpreter)
         {
-            Assert.Equal((byte)10, TestConvert<byte, byte>(10));
-            Assert.Equal((byte)10, TestConvert<sbyte, byte>(10));
-            Assert.Equal((byte)10, TestConvert<short, byte>(10));
-            Assert.Equal((byte)10, TestConvert<ushort, byte>(10));
-            Assert.Equal((byte)10, TestConvert<int, byte>(10));
-            Assert.Equal((byte)10, TestConvert<uint, byte>(10));
-            Assert.Equal((byte)10, TestConvert<long, byte>(10));
-            Assert.Equal((byte)10, TestConvert<ulong, byte>(10));
-            Assert.Equal((byte)10, TestConvert<float, byte>(10.0f));
-            Assert.Equal((byte)10, TestConvert<float, byte>(10.0f));
-            Assert.Equal((byte)10, TestConvert<double, byte>(10.0));
-            Assert.Equal((byte)10, TestConvert<double, byte>(10.0));
-            Assert.Equal((byte)10, TestConvert<decimal, byte>(10m));
-            Assert.Equal((byte)10, TestConvert<decimal, byte>(10m));
+            Assert.Equal((byte)10, TestConvert<byte, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<sbyte, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<short, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<ushort, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<int, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<uint, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<long, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<ulong, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<float, byte>(10.0f, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<float, byte>(10.0f, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<double, byte>(10.0, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<double, byte>(10.0, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<decimal, byte>(10m, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<decimal, byte>(10m, useInterpreter));
 
-            Assert.Equal((short)10, TestConvert<byte, short>(10));
-            Assert.Equal((short)10, TestConvert<sbyte, short>(10));
-            Assert.Equal((short)10, TestConvert<short, short>(10));
-            Assert.Equal((short)10, TestConvert<ushort, short>(10));
-            Assert.Equal((short)10, TestConvert<int, short>(10));
-            Assert.Equal((short)10, TestConvert<uint, short>(10));
-            Assert.Equal((short)10, TestConvert<long, short>(10));
-            Assert.Equal((short)10, TestConvert<ulong, short>(10));
-            Assert.Equal((short)10, TestConvert<float, short>(10.0f));
-            Assert.Equal((short)10, TestConvert<double, short>(10.0));
-            Assert.Equal((short)10, TestConvert<decimal, short>(10m));
+            Assert.Equal((short)10, TestConvert<byte, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<sbyte, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<short, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<ushort, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<int, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<uint, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<long, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<ulong, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<float, short>(10.0f, useInterpreter));
+            Assert.Equal((short)10, TestConvert<double, short>(10.0, useInterpreter));
+            Assert.Equal((short)10, TestConvert<decimal, short>(10m, useInterpreter));
 
-            Assert.Equal((int)10, TestConvert<byte, int>(10));
-            Assert.Equal((int)10, TestConvert<sbyte, int>(10));
-            Assert.Equal((int)10, TestConvert<short, int>(10));
-            Assert.Equal((int)10, TestConvert<ushort, int>(10));
-            Assert.Equal((int)10, TestConvert<int, int>(10));
-            Assert.Equal((int)10, TestConvert<uint, int>(10));
-            Assert.Equal((int)10, TestConvert<long, int>(10));
-            Assert.Equal((int)10, TestConvert<ulong, int>(10));
-            Assert.Equal((int)10, TestConvert<float, int>(10.0f));
-            Assert.Equal((int)10, TestConvert<double, int>(10.0));
-            Assert.Equal((int)10, TestConvert<decimal, int>(10m));
+            Assert.Equal((int)10, TestConvert<byte, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<sbyte, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<short, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<ushort, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<int, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<uint, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<long, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<ulong, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<float, int>(10.0f, useInterpreter));
+            Assert.Equal((int)10, TestConvert<double, int>(10.0, useInterpreter));
+            Assert.Equal((int)10, TestConvert<decimal, int>(10m, useInterpreter));
 
-            Assert.Equal((long)10, TestConvert<byte, long>(10));
-            Assert.Equal((long)10, TestConvert<sbyte, long>(10));
-            Assert.Equal((long)10, TestConvert<short, long>(10));
-            Assert.Equal((long)10, TestConvert<ushort, long>(10));
-            Assert.Equal((long)10, TestConvert<int, long>(10));
-            Assert.Equal((long)10, TestConvert<uint, long>(10));
-            Assert.Equal((long)10, TestConvert<long, long>(10));
-            Assert.Equal((long)10, TestConvert<ulong, long>(10));
-            Assert.Equal((long)10, TestConvert<float, long>(10.0f));
-            Assert.Equal((long)10, TestConvert<double, long>(10.0));
-            Assert.Equal((long)10, TestConvert<decimal, long>(10m));
+            Assert.Equal((long)10, TestConvert<byte, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<sbyte, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<short, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<ushort, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<int, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<uint, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<long, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<ulong, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<float, long>(10.0f, useInterpreter));
+            Assert.Equal((long)10, TestConvert<double, long>(10.0, useInterpreter));
+            Assert.Equal((long)10, TestConvert<decimal, long>(10m, useInterpreter));
 
-            Assert.Equal((double)10, TestConvert<byte, double>(10));
-            Assert.Equal((double)10, TestConvert<sbyte, double>(10));
-            Assert.Equal((double)10, TestConvert<short, double>(10));
-            Assert.Equal((double)10, TestConvert<ushort, double>(10));
-            Assert.Equal((double)10, TestConvert<int, double>(10));
-            Assert.Equal((double)10, TestConvert<uint, double>(10));
-            Assert.Equal((double)10, TestConvert<long, double>(10));
-            Assert.Equal((double)10, TestConvert<ulong, double>(10));
-            Assert.Equal((double)10, TestConvert<float, double>(10.0f));
-            Assert.Equal((double)10, TestConvert<double, double>(10.0));
-            Assert.Equal((double)10, TestConvert<decimal, double>(10m));
+            Assert.Equal((double)10, TestConvert<byte, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<sbyte, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<short, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<ushort, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<int, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<uint, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<long, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<ulong, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<float, double>(10.0f, useInterpreter));
+            Assert.Equal((double)10, TestConvert<double, double>(10.0, useInterpreter));
+            Assert.Equal((double)10, TestConvert<decimal, double>(10m, useInterpreter));
 
-            Assert.Equal((decimal)10, TestConvert<byte, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<sbyte, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<short, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<ushort, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<int, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<uint, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<long, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<ulong, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<float, decimal>(10.0f));
-            Assert.Equal((decimal)10, TestConvert<double, decimal>(10.0));
-            Assert.Equal((decimal)10, TestConvert<decimal, decimal>(10m));
+            Assert.Equal((decimal)10, TestConvert<byte, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<sbyte, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<short, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<ushort, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<int, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<uint, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<long, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<ulong, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<float, decimal>(10.0f, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<double, decimal>(10.0, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<decimal, decimal>(10m, useInterpreter));
 
             // nullable to non-nullable
-            Assert.Equal((byte)10, TestConvert<byte?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<sbyte?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<short?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<ushort?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<int?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<uint?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<long?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<ulong?, byte>(10));
-            Assert.Equal((byte)10, TestConvert<float?, byte>(10.0f));
-            Assert.Equal((byte)10, TestConvert<float?, byte>(10.0f));
-            Assert.Equal((byte)10, TestConvert<double?, byte>(10.0));
-            Assert.Equal((byte)10, TestConvert<double?, byte>(10.0));
-            Assert.Equal((byte)10, TestConvert<decimal?, byte>(10m));
-            Assert.Equal((byte)10, TestConvert<decimal?, byte>(10m));
+            Assert.Equal((byte)10, TestConvert<byte?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<sbyte?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<short?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<ushort?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<int?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<uint?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<long?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<ulong?, byte>(10, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<float?, byte>(10.0f, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<float?, byte>(10.0f, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<double?, byte>(10.0, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<double?, byte>(10.0, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<decimal?, byte>(10m, useInterpreter));
+            Assert.Equal((byte)10, TestConvert<decimal?, byte>(10m, useInterpreter));
 
-            Assert.Equal((short)10, TestConvert<byte?, short>(10));
-            Assert.Equal((short)10, TestConvert<sbyte?, short>(10));
-            Assert.Equal((short)10, TestConvert<short?, short>(10));
-            Assert.Equal((short)10, TestConvert<ushort?, short>(10));
-            Assert.Equal((short)10, TestConvert<int?, short>(10));
-            Assert.Equal((short)10, TestConvert<uint?, short>(10));
-            Assert.Equal((short)10, TestConvert<long?, short>(10));
-            Assert.Equal((short)10, TestConvert<ulong?, short>(10));
-            Assert.Equal((short)10, TestConvert<float?, short>(10.0f));
-            Assert.Equal((short)10, TestConvert<double?, short>(10.0));
-            Assert.Equal((short)10, TestConvert<decimal?, short>(10m));
+            Assert.Equal((short)10, TestConvert<byte?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<sbyte?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<short?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<ushort?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<int?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<uint?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<long?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<ulong?, short>(10, useInterpreter));
+            Assert.Equal((short)10, TestConvert<float?, short>(10.0f, useInterpreter));
+            Assert.Equal((short)10, TestConvert<double?, short>(10.0, useInterpreter));
+            Assert.Equal((short)10, TestConvert<decimal?, short>(10m, useInterpreter));
 
-            Assert.Equal((int)10, TestConvert<byte?, int>(10));
-            Assert.Equal((int)10, TestConvert<sbyte?, int>(10));
-            Assert.Equal((int)10, TestConvert<short?, int>(10));
-            Assert.Equal((int)10, TestConvert<ushort?, int>(10));
-            Assert.Equal((int)10, TestConvert<int?, int>(10));
-            Assert.Equal((int)10, TestConvert<uint?, int>(10));
-            Assert.Equal((int)10, TestConvert<long?, int>(10));
-            Assert.Equal((int)10, TestConvert<ulong?, int>(10));
-            Assert.Equal((int)10, TestConvert<float?, int>(10.0f));
-            Assert.Equal((int)10, TestConvert<double?, int>(10.0));
-            Assert.Equal((int)10, TestConvert<decimal?, int>(10m));
+            Assert.Equal((int)10, TestConvert<byte?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<sbyte?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<short?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<ushort?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<int?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<uint?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<long?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<ulong?, int>(10, useInterpreter));
+            Assert.Equal((int)10, TestConvert<float?, int>(10.0f, useInterpreter));
+            Assert.Equal((int)10, TestConvert<double?, int>(10.0, useInterpreter));
+            Assert.Equal((int)10, TestConvert<decimal?, int>(10m, useInterpreter));
 
-            Assert.Equal((long)10, TestConvert<byte?, long>(10));
-            Assert.Equal((long)10, TestConvert<sbyte?, long>(10));
-            Assert.Equal((long)10, TestConvert<short?, long>(10));
-            Assert.Equal((long)10, TestConvert<ushort?, long>(10));
-            Assert.Equal((long)10, TestConvert<int?, long>(10));
-            Assert.Equal((long)10, TestConvert<uint?, long>(10));
-            Assert.Equal((long)10, TestConvert<long?, long>(10));
-            Assert.Equal((long)10, TestConvert<ulong?, long>(10));
-            Assert.Equal((long)10, TestConvert<float?, long>(10.0f));
-            Assert.Equal((long)10, TestConvert<double?, long>(10.0));
-            Assert.Equal((long)10, TestConvert<decimal?, long>(10m));
+            Assert.Equal((long)10, TestConvert<byte?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<sbyte?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<short?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<ushort?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<int?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<uint?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<long?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<ulong?, long>(10, useInterpreter));
+            Assert.Equal((long)10, TestConvert<float?, long>(10.0f, useInterpreter));
+            Assert.Equal((long)10, TestConvert<double?, long>(10.0, useInterpreter));
+            Assert.Equal((long)10, TestConvert<decimal?, long>(10m, useInterpreter));
 
-            Assert.Equal((double)10, TestConvert<byte?, double>(10));
-            Assert.Equal((double)10, TestConvert<sbyte?, double>(10));
-            Assert.Equal((double)10, TestConvert<short?, double>(10));
-            Assert.Equal((double)10, TestConvert<ushort?, double>(10));
-            Assert.Equal((double)10, TestConvert<int?, double>(10));
-            Assert.Equal((double)10, TestConvert<uint?, double>(10));
-            Assert.Equal((double)10, TestConvert<long?, double>(10));
-            Assert.Equal((double)10, TestConvert<ulong?, double>(10));
-            Assert.Equal((double)10, TestConvert<float?, double>(10.0f));
-            Assert.Equal((double)10, TestConvert<double?, double>(10.0));
-            Assert.Equal((double)10, TestConvert<decimal?, double>(10m));
+            Assert.Equal((double)10, TestConvert<byte?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<sbyte?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<short?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<ushort?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<int?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<uint?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<long?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<ulong?, double>(10, useInterpreter));
+            Assert.Equal((double)10, TestConvert<float?, double>(10.0f, useInterpreter));
+            Assert.Equal((double)10, TestConvert<double?, double>(10.0, useInterpreter));
+            Assert.Equal((double)10, TestConvert<decimal?, double>(10m, useInterpreter));
 
-            Assert.Equal((decimal)10, TestConvert<byte?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<sbyte?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<short?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<ushort?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<int?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<uint?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<long?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<ulong?, decimal>(10));
-            Assert.Equal((decimal)10, TestConvert<float?, decimal>(10.0f));
-            Assert.Equal((decimal)10, TestConvert<double?, decimal>(10.0));
-            Assert.Equal((decimal)10, TestConvert<decimal?, decimal>(10m));
+            Assert.Equal((decimal)10, TestConvert<byte?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<sbyte?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<short?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<ushort?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<int?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<uint?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<long?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<ulong?, decimal>(10, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<float?, decimal>(10.0f, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<double?, decimal>(10.0, useInterpreter));
+            Assert.Equal((decimal)10, TestConvert<decimal?, decimal>(10m, useInterpreter));
 
             // non-nullable to nullable
-            Assert.Equal((byte?)10, TestConvert<byte, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<sbyte, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<short, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<ushort, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<int, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<uint, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<long, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<ulong, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<float, byte?>(10.0f));
-            Assert.Equal((byte?)10, TestConvert<float, byte?>(10.0f));
-            Assert.Equal((byte?)10, TestConvert<double, byte?>(10.0));
-            Assert.Equal((byte?)10, TestConvert<double, byte?>(10.0));
-            Assert.Equal((byte?)10, TestConvert<decimal, byte?>(10m));
-            Assert.Equal((byte?)10, TestConvert<decimal, byte?>(10m));
+            Assert.Equal((byte?)10, TestConvert<byte, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<sbyte, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<short, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<ushort, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<int, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<uint, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<long, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<ulong, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<float, byte?>(10.0f, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<float, byte?>(10.0f, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<double, byte?>(10.0, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<double, byte?>(10.0, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<decimal, byte?>(10m, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<decimal, byte?>(10m, useInterpreter));
 
-            Assert.Equal((short?)10, TestConvert<byte, short?>(10));
-            Assert.Equal((short?)10, TestConvert<sbyte, short?>(10));
-            Assert.Equal((short?)10, TestConvert<short, short?>(10));
-            Assert.Equal((short?)10, TestConvert<ushort, short?>(10));
-            Assert.Equal((short?)10, TestConvert<int, short?>(10));
-            Assert.Equal((short?)10, TestConvert<uint, short?>(10));
-            Assert.Equal((short?)10, TestConvert<long, short?>(10));
-            Assert.Equal((short?)10, TestConvert<ulong, short?>(10));
-            Assert.Equal((short?)10, TestConvert<float, short?>(10.0f));
-            Assert.Equal((short?)10, TestConvert<double, short?>(10.0));
-            Assert.Equal((short?)10, TestConvert<decimal, short?>(10m));
+            Assert.Equal((short?)10, TestConvert<byte, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<sbyte, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<short, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<ushort, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<int, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<uint, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<long, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<ulong, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<float, short?>(10.0f, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<double, short?>(10.0, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<decimal, short?>(10m, useInterpreter));
 
-            Assert.Equal((int?)10, TestConvert<byte, int?>(10));
-            Assert.Equal((int?)10, TestConvert<sbyte, int?>(10));
-            Assert.Equal((int?)10, TestConvert<short, int?>(10));
-            Assert.Equal((int?)10, TestConvert<ushort, int?>(10));
-            Assert.Equal((int?)10, TestConvert<int, int?>(10));
-            Assert.Equal((int?)10, TestConvert<uint, int?>(10));
-            Assert.Equal((int?)10, TestConvert<long, int?>(10));
-            Assert.Equal((int?)10, TestConvert<ulong, int?>(10));
-            Assert.Equal((int?)10, TestConvert<float, int?>(10.0f));
-            Assert.Equal((int?)10, TestConvert<double, int?>(10.0));
-            Assert.Equal((int?)10, TestConvert<decimal, int?>(10m));
+            Assert.Equal((int?)10, TestConvert<byte, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<sbyte, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<short, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<ushort, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<int, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<uint, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<long, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<ulong, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<float, int?>(10.0f, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<double, int?>(10.0, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<decimal, int?>(10m, useInterpreter));
 
-            Assert.Equal((long?)10, TestConvert<byte, long?>(10));
-            Assert.Equal((long?)10, TestConvert<sbyte, long?>(10));
-            Assert.Equal((long?)10, TestConvert<short, long?>(10));
-            Assert.Equal((long?)10, TestConvert<ushort, long?>(10));
-            Assert.Equal((long?)10, TestConvert<int, long?>(10));
-            Assert.Equal((long?)10, TestConvert<uint, long?>(10));
-            Assert.Equal((long?)10, TestConvert<long, long?>(10));
-            Assert.Equal((long?)10, TestConvert<ulong, long?>(10));
-            Assert.Equal((long?)10, TestConvert<float, long?>(10.0f));
-            Assert.Equal((long?)10, TestConvert<double, long?>(10.0));
-            Assert.Equal((long?)10, TestConvert<decimal, long?>(10m));
+            Assert.Equal((long?)10, TestConvert<byte, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<sbyte, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<short, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<ushort, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<int, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<uint, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<long, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<ulong, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<float, long?>(10.0f, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<double, long?>(10.0, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<decimal, long?>(10m, useInterpreter));
 
-            Assert.Equal((double?)10, TestConvert<byte, double?>(10));
-            Assert.Equal((double?)10, TestConvert<sbyte, double?>(10));
-            Assert.Equal((double?)10, TestConvert<short, double?>(10));
-            Assert.Equal((double?)10, TestConvert<ushort, double?>(10));
-            Assert.Equal((double?)10, TestConvert<int, double?>(10));
-            Assert.Equal((double?)10, TestConvert<uint, double?>(10));
-            Assert.Equal((double?)10, TestConvert<long, double?>(10));
-            Assert.Equal((double?)10, TestConvert<ulong, double?>(10));
-            Assert.Equal((double?)10, TestConvert<float, double?>(10.0f));
-            Assert.Equal((double?)10, TestConvert<double, double?>(10.0));
-            Assert.Equal((double?)10, TestConvert<decimal, double?>(10m));
+            Assert.Equal((double?)10, TestConvert<byte, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<sbyte, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<short, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<ushort, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<int, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<uint, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<long, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<ulong, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<float, double?>(10.0f, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<double, double?>(10.0, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<decimal, double?>(10m, useInterpreter));
 
-            Assert.Equal((decimal?)10, TestConvert<byte, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<sbyte, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<short, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<ushort, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<int, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<uint, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<long, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<ulong, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<float, decimal?>(10.0f));
-            Assert.Equal((decimal?)10, TestConvert<double, decimal?>(10.0));
-            Assert.Equal((decimal?)10, TestConvert<decimal, decimal?>(10m));
+            Assert.Equal((decimal?)10, TestConvert<byte, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<sbyte, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<short, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<ushort, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<int, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<uint, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<long, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<ulong, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<float, decimal?>(10.0f, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<double, decimal?>(10.0, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<decimal, decimal?>(10m, useInterpreter));
 
             // nullable to nullable
-            Assert.Equal((byte?)10, TestConvert<byte?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<sbyte?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<short?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<ushort?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<int?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<uint?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<long?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<ulong?, byte?>(10));
-            Assert.Equal((byte?)10, TestConvert<float?, byte?>(10.0f));
-            Assert.Equal((byte?)10, TestConvert<float?, byte?>(10.0f));
-            Assert.Equal((byte?)10, TestConvert<double?, byte?>(10.0));
-            Assert.Equal((byte?)10, TestConvert<double?, byte?>(10.0));
-            Assert.Equal((byte?)10, TestConvert<decimal?, byte?>(10m));
-            Assert.Equal((byte?)10, TestConvert<decimal?, byte?>(10m));
+            Assert.Equal((byte?)10, TestConvert<byte?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<sbyte?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<short?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<ushort?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<int?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<uint?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<long?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<ulong?, byte?>(10, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<float?, byte?>(10.0f, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<float?, byte?>(10.0f, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<double?, byte?>(10.0, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<double?, byte?>(10.0, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<decimal?, byte?>(10m, useInterpreter));
+            Assert.Equal((byte?)10, TestConvert<decimal?, byte?>(10m, useInterpreter));
 
-            Assert.Equal((short?)10, TestConvert<byte?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<sbyte?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<short?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<ushort?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<int?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<uint?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<long?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<ulong?, short?>(10));
-            Assert.Equal((short?)10, TestConvert<float?, short?>(10.0f));
-            Assert.Equal((short?)10, TestConvert<double?, short?>(10.0));
-            Assert.Equal((short?)10, TestConvert<decimal?, short?>(10m));
+            Assert.Equal((short?)10, TestConvert<byte?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<sbyte?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<short?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<ushort?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<int?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<uint?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<long?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<ulong?, short?>(10, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<float?, short?>(10.0f, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<double?, short?>(10.0, useInterpreter));
+            Assert.Equal((short?)10, TestConvert<decimal?, short?>(10m, useInterpreter));
 
-            Assert.Equal((int?)10, TestConvert<byte?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<sbyte?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<short?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<ushort?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<int?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<uint?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<long?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<ulong?, int?>(10));
-            Assert.Equal((int?)10, TestConvert<float?, int?>(10.0f));
-            Assert.Equal((int?)10, TestConvert<double?, int?>(10.0));
-            Assert.Equal((int?)10, TestConvert<decimal?, int?>(10m));
+            Assert.Equal((int?)10, TestConvert<byte?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<sbyte?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<short?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<ushort?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<int?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<uint?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<long?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<ulong?, int?>(10, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<float?, int?>(10.0f, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<double?, int?>(10.0, useInterpreter));
+            Assert.Equal((int?)10, TestConvert<decimal?, int?>(10m, useInterpreter));
 
-            Assert.Equal((long?)10, TestConvert<byte?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<sbyte?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<short?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<ushort?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<int?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<uint?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<long?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<ulong?, long?>(10));
-            Assert.Equal((long?)10, TestConvert<float?, long?>(10.0f));
-            Assert.Equal((long?)10, TestConvert<double?, long?>(10.0));
-            Assert.Equal((long?)10, TestConvert<decimal?, long?>(10m));
+            Assert.Equal((long?)10, TestConvert<byte?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<sbyte?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<short?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<ushort?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<int?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<uint?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<long?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<ulong?, long?>(10, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<float?, long?>(10.0f, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<double?, long?>(10.0, useInterpreter));
+            Assert.Equal((long?)10, TestConvert<decimal?, long?>(10m, useInterpreter));
 
-            Assert.Equal((double?)10, TestConvert<byte?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<sbyte?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<short?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<ushort?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<int?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<uint?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<long?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<ulong?, double?>(10));
-            Assert.Equal((double?)10, TestConvert<float?, double?>(10.0f));
-            Assert.Equal((double?)10, TestConvert<double?, double?>(10.0));
-            Assert.Equal((double?)10, TestConvert<decimal?, double?>(10m));
+            Assert.Equal((double?)10, TestConvert<byte?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<sbyte?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<short?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<ushort?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<int?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<uint?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<long?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<ulong?, double?>(10, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<float?, double?>(10.0f, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<double?, double?>(10.0, useInterpreter));
+            Assert.Equal((double?)10, TestConvert<decimal?, double?>(10m, useInterpreter));
 
-            Assert.Equal((decimal?)10, TestConvert<byte?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<sbyte?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<short?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<ushort?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<int?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<uint?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<long?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<ulong?, decimal?>(10));
-            Assert.Equal((decimal?)10, TestConvert<float?, decimal?>(10.0f));
-            Assert.Equal((decimal?)10, TestConvert<double?, decimal?>(10.0));
-            Assert.Equal((decimal?)10, TestConvert<decimal?, decimal?>(10m));
+            Assert.Equal((decimal?)10, TestConvert<byte?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<sbyte?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<short?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<ushort?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<int?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<uint?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<long?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<ulong?, decimal?>(10, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<float?, decimal?>(10.0f, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<double?, decimal?>(10.0, useInterpreter));
+            Assert.Equal((decimal?)10, TestConvert<decimal?, decimal?>(10m, useInterpreter));
         }
 
-        [Fact]
-        public static void ConvertMinMax()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertMinMax(bool useInterpreter)
         {
             unchecked
             {
-                Assert.Equal((float)uint.MaxValue, TestConvert<uint, float>(uint.MaxValue));
-                Assert.Equal((double)uint.MaxValue, TestConvert<uint, double>(uint.MaxValue));
-                Assert.Equal((float?)uint.MaxValue, TestConvert<uint, float?>(uint.MaxValue));
-                Assert.Equal((double?)uint.MaxValue, TestConvert<uint, double?>(uint.MaxValue));
+                Assert.Equal((float)uint.MaxValue, TestConvert<uint, float>(uint.MaxValue, useInterpreter));
+                Assert.Equal((double)uint.MaxValue, TestConvert<uint, double>(uint.MaxValue, useInterpreter));
+                Assert.Equal((float?)uint.MaxValue, TestConvert<uint, float?>(uint.MaxValue, useInterpreter));
+                Assert.Equal((double?)uint.MaxValue, TestConvert<uint, double?>(uint.MaxValue, useInterpreter));
 
-                Assert.Equal((float)ulong.MaxValue, TestConvert<ulong, float>(ulong.MaxValue));
-                Assert.Equal((double)ulong.MaxValue, TestConvert<ulong, double>(ulong.MaxValue));
-                Assert.Equal((float?)ulong.MaxValue, TestConvert<ulong, float?>(ulong.MaxValue));
-                Assert.Equal((double?)ulong.MaxValue, TestConvert<ulong, double?>(ulong.MaxValue));
+                Assert.Equal((float)ulong.MaxValue, TestConvert<ulong, float>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((double)ulong.MaxValue, TestConvert<ulong, double>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((float?)ulong.MaxValue, TestConvert<ulong, float?>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((double?)ulong.MaxValue, TestConvert<ulong, double?>(ulong.MaxValue, useInterpreter));
 
                 /*
                  * needs more thought about what should happen.. these have undefined runtime behavior.
@@ -2628,64 +2643,65 @@ namespace System.Linq.Expressions.Tests
                 double dmin = double.MinValue;
                 double dmax = double.MaxValue;
 
-                Assert.AreEqual((uint)fmin, TestConvert<float, uint>(fmin));
-                Assert.AreEqual((ulong)fmax, TestConvert<float, ulong>(fmax));
-                Assert.AreEqual((uint?)fmin, TestConvert<float, uint?>(fmin));
-                Assert.AreEqual((ulong?)fmax, TestConvert<float, ulong?>(fmax));
+                Assert.AreEqual((uint)fmin, TestConvert<float, uint>(fmin, useInterpreter));
+                Assert.AreEqual((ulong)fmax, TestConvert<float, ulong>(fmax, useInterpreter));
+                Assert.AreEqual((uint?)fmin, TestConvert<float, uint?>(fmin, useInterpreter));
+                Assert.AreEqual((ulong?)fmax, TestConvert<float, ulong?>(fmax, useInterpreter));
 
-                Assert.AreEqual((uint)dmin, TestConvert<double, uint>(dmin));
-                Assert.AreEqual((ulong)dmax, TestConvert<double, ulong>(dmax));
-                Assert.AreEqual((uint?)dmin, TestConvert<double, uint?>(dmin));
-                Assert.AreEqual((ulong?)dmax, TestConvert<double, ulong?>(dmax));
+                Assert.AreEqual((uint)dmin, TestConvert<double, uint>(dmin, useInterpreter));
+                Assert.AreEqual((ulong)dmax, TestConvert<double, ulong>(dmax, useInterpreter));
+                Assert.AreEqual((uint?)dmin, TestConvert<double, uint?>(dmin, useInterpreter));
+                Assert.AreEqual((ulong?)dmax, TestConvert<double, ulong?>(dmax, useInterpreter));
                  */
 
-                Assert.Equal((float)(uint?)uint.MaxValue, TestConvert<uint?, float>(uint.MaxValue));
-                Assert.Equal((double)(uint?)uint.MaxValue, TestConvert<uint?, double>(uint.MaxValue));
-                Assert.Equal((float?)(uint?)uint.MaxValue, TestConvert<uint?, float?>(uint.MaxValue));
-                Assert.Equal((double?)(uint?)uint.MaxValue, TestConvert<uint?, double?>(uint.MaxValue));
+                Assert.Equal((float)(uint?)uint.MaxValue, TestConvert<uint?, float>(uint.MaxValue, useInterpreter));
+                Assert.Equal((double)(uint?)uint.MaxValue, TestConvert<uint?, double>(uint.MaxValue, useInterpreter));
+                Assert.Equal((float?)(uint?)uint.MaxValue, TestConvert<uint?, float?>(uint.MaxValue, useInterpreter));
+                Assert.Equal((double?)(uint?)uint.MaxValue, TestConvert<uint?, double?>(uint.MaxValue, useInterpreter));
 
-                Assert.Equal((float)(ulong?)ulong.MaxValue, TestConvert<ulong?, float>(ulong.MaxValue));
-                Assert.Equal((double)(ulong?)ulong.MaxValue, TestConvert<ulong?, double>(ulong.MaxValue));
-                Assert.Equal((float?)(ulong?)ulong.MaxValue, TestConvert<ulong?, float?>(ulong.MaxValue));
-                Assert.Equal((double?)(ulong?)ulong.MaxValue, TestConvert<ulong?, double?>(ulong.MaxValue));
+                Assert.Equal((float)(ulong?)ulong.MaxValue, TestConvert<ulong?, float>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((double)(ulong?)ulong.MaxValue, TestConvert<ulong?, double>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((float?)(ulong?)ulong.MaxValue, TestConvert<ulong?, float?>(ulong.MaxValue, useInterpreter));
+                Assert.Equal((double?)(ulong?)ulong.MaxValue, TestConvert<ulong?, double?>(ulong.MaxValue, useInterpreter));
             }
         }
 
-        private static S TestConvert<T, S>(T value)
+        private static S TestConvert<T, S>(T value, bool useInterpreter)
         {
-            Func<S> d = Expression.Lambda<Func<S>>(Expression.Convert(Expression.Constant(value, typeof(T)), typeof(S))).Compile();
+            Func<S> d = Expression.Lambda<Func<S>>(Expression.Convert(Expression.Constant(value, typeof(T)), typeof(S))).Compile(useInterpreter);
             return d();
         }
 
-        private static S TestConvertChecked<T, S>(T value)
+        private static S TestConvertChecked<T, S>(T value, bool useInterpreter)
         {
-            Func<S> d = Expression.Lambda<Func<S>>(Expression.ConvertChecked(Expression.Constant(value, typeof(T)), typeof(S))).Compile();
+            Func<S> d = Expression.Lambda<Func<S>>(Expression.ConvertChecked(Expression.Constant(value, typeof(T)), typeof(S))).Compile(useInterpreter);
             return d();
         }
 
-
-
-        [Fact]
-        public static void ConvertNullToInt()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertNullToInt(bool useInterpreter)
         {
             Assert.Throws<NullReferenceException>(() =>
             {
                 Expression<Func<ValueType, int>> e = v => (int)v;
-                Func<ValueType, int> f = e.Compile();
+                Func<ValueType, int> f = e.Compile(useInterpreter);
                 f(null);
             });
         }
 
-        [Fact]
-        public static void ShiftWithMismatchedNulls()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ShiftWithMismatchedNulls(bool useInterpreter)
         {
             Expression<Func<byte?, int, int?>> e = (byte? b, int i) => (byte?)(b << i);
-            var f = e.Compile();
+            var f = e.Compile(useInterpreter);
             Assert.Equal(20, f(5, 2));
         }
 
-        [Fact]
-        public static void CoalesceChars()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CoalesceChars(bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(typeof(char?), "x");
             ParameterExpression y = Expression.Parameter(typeof(char?), "y");
@@ -2693,43 +2709,48 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<char?, char?, char?>>(
                     Expression.Coalesce(x, y),
                     new ParameterExpression[] { x, y });
-            Func<char?, char?, char?> f = e.Compile();
+            Func<char?, char?, char?> f = e.Compile(useInterpreter);
         }
-        [Fact]
-        public static void ConvertToChar()
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertToChar(bool useInterpreter)
         {
-            Func<char> f = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant((byte)65), typeof(char))).Compile();
+            Func<char> f = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant((byte)65), typeof(char))).Compile(useInterpreter);
             Assert.Equal('A', f());
 
-            Func<char> f2 = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant(65), typeof(char))).Compile();
+            Func<char> f2 = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant(65), typeof(char))).Compile(useInterpreter);
             Assert.Equal('A', f2());
 
-            Func<char> f3 = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant(-1), typeof(char))).Compile();
+            Func<char> f3 = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant(-1), typeof(char))).Compile(useInterpreter);
             char c3 = f3();
-            Func<int> f4 = Expression.Lambda<Func<int>>(Expression.Convert(Expression.Constant(c3), typeof(int))).Compile();
+            Func<int> f4 = Expression.Lambda<Func<int>>(Expression.Convert(Expression.Constant(c3), typeof(int))).Compile(useInterpreter);
             Assert.Equal(UInt16.MaxValue, f4());
         }
 
-        [Fact]
-        public static void MixedTypeNullableOps()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MixedTypeNullableOps(bool useInterpreter)
         {
             Expression<Func<decimal, int?, decimal?>> e = (d, i) => d + i;
-            var f = e.Compile();
+            var f = e.Compile(useInterpreter);
             var result = f(1.0m, 4);
             Debug.WriteLine(result);
         }
 
-        [Fact]
-        public static void NullGuidConstant()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullGuidConstant(bool useInterpreter)
         {
             Expression<Func<Guid?, bool>> f2 = g2 => g2 != null;
-            var d2 = f2.Compile();
+            var d2 = f2.Compile(useInterpreter);
             Assert.True(d2(Guid.NewGuid()));
             Assert.False(d2(null));
         }
 
-        [Fact]
-        public static void AddNullConstants()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void AddNullConstants(bool useInterpreter)
         {
             Expression<Func<int?>> f = Expression.Lambda<Func<int?>>(
                 Expression.Add(
@@ -2737,15 +2758,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant(1, typeof(int?))
                     ));
 
-            var result = f.Compile()();
-            Debug.WriteLine(result);
+            var result = f.Compile(useInterpreter)();
+            Assert.False(result.HasValue);
         }
 
-        [Fact]
-        public static void CallWithRefParam()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallWithRefParam(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + MethodWithRefParam(ref x) + x;
-            Func<int, int> d = f.Compile();
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(113, d(10));
         }
 
@@ -2755,11 +2777,12 @@ namespace System.Linq.Expressions.Tests
             return 100;
         }
 
-        [Fact]
-        public static void CallWithOutParam()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallWithOutParam(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + MethodWithOutParam(out x) + x;
-            Func<int, int> d = f.Compile();
+            Func<int, int> d = f.Compile(useInterpreter);
             Assert.Equal(113, d(10));
         }
 
@@ -2769,22 +2792,24 @@ namespace System.Linq.Expressions.Tests
             return 100;
         }
 
-        [Fact]
-        public static void NewArrayInvoke()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewArrayInvoke(bool useInterpreter)
         {
             Expression<Func<int, string[]>> linq1 = (a => new string[a]);
             InvocationExpression linq1a = Expression.Invoke(linq1, new Expression[] { Expression.Constant(3) });
             Expression<Func<string[]>> linq1b = Expression.Lambda<Func<string[]>>(linq1a, new ParameterExpression[] { });
-            Func<string[]> f = linq1b.Compile();
+            Func<string[]> f = linq1b.Compile(useInterpreter);
         }
 
-        [Fact]
-        public static void LiftedAddDateTimeTimeSpan()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedAddDateTimeTimeSpan(bool useInterpreter)
         {
             Expression<Func<DateTime?, TimeSpan, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, TimeSpan, DateTime?> d = f.Compile();
+            Func<DateTime?, TimeSpan, DateTime?> d = f.Compile(useInterpreter);
             DateTime? dt = DateTime.Now;
             TimeSpan ts = new TimeSpan(3, 2, 1);
             DateTime? dt2 = dt + ts;
@@ -2792,13 +2817,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(d(null, ts));
         }
 
-        [Fact]
-        public static void LiftedAddDateTimeTimeSpan2()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedAddDateTimeTimeSpan2(bool useInterpreter)
         {
             Expression<Func<DateTime?, TimeSpan?, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, TimeSpan?, DateTime?> d = f.Compile();
+            Func<DateTime?, TimeSpan?, DateTime?> d = f.Compile(useInterpreter);
             DateTime? dt = DateTime.Now;
             TimeSpan? ts = new TimeSpan(3, 2, 1);
             DateTime? dt2 = dt + ts;
@@ -2808,13 +2834,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(d(null, null));
         }
 
-        [Fact]
-        public static void LiftedSubDateTime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedSubDateTime(bool useInterpreter)
         {
             Expression<Func<DateTime?, DateTime?, TimeSpan?>> f = (x, y) => x - y;
             Assert.Equal(ExpressionType.Subtract, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, DateTime?, TimeSpan?> d = f.Compile();
+            Func<DateTime?, DateTime?, TimeSpan?> d = f.Compile(useInterpreter);
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
             TimeSpan? ts = dt1 - dt2;
@@ -2824,13 +2851,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Null(d(null, null));
         }
 
-        [Fact]
-        public static void LiftedEqualDateTime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedEqualDateTime(bool useInterpreter)
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x == y;
             Assert.Equal(ExpressionType.Equal, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, DateTime?, bool> d = f.Compile();
+            Func<DateTime?, DateTime?, bool> d = f.Compile(useInterpreter);
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
             Assert.True(d(dt1, dt1));
@@ -2840,13 +2868,14 @@ namespace System.Linq.Expressions.Tests
             Assert.True(d(null, null));
         }
 
-        [Fact]
-        public static void LiftedNotEqualDateTime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedNotEqualDateTime(bool useInterpreter)
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x != y;
             Assert.Equal(ExpressionType.NotEqual, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, DateTime?, bool> d = f.Compile();
+            Func<DateTime?, DateTime?, bool> d = f.Compile(useInterpreter);
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
             Assert.False(d(dt1, dt1));
@@ -2856,13 +2885,14 @@ namespace System.Linq.Expressions.Tests
             Assert.False(d(null, null));
         }
 
-        [Fact]
-        public static void LiftedLessThanDateTime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LiftedLessThanDateTime(bool useInterpreter)
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime?, DateTime?, bool> d = f.Compile();
+            Func<DateTime?, DateTime?, bool> d = f.Compile(useInterpreter);
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
             Assert.False(d(dt1, dt1));
@@ -2872,61 +2902,67 @@ namespace System.Linq.Expressions.Tests
             Assert.False(d(null, null));
         }
 
-        [Fact]
-        public static void LessThanDateTime()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void LessThanDateTime(bool useInterpreter)
         {
             Expression<Func<DateTime, DateTime, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
             Debug.WriteLine(f);
-            Func<DateTime, DateTime, bool> d = f.Compile();
+            Func<DateTime, DateTime, bool> d = f.Compile(useInterpreter);
             DateTime dt1 = DateTime.Now;
             DateTime dt2 = new DateTime(2006, 5, 1);
             Assert.False(d(dt1, dt1));
             Assert.True(d(dt2, dt1));
         }
 
-        [Fact]
-        public static void InvokeLambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void InvokeLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + 1;
             InvocationExpression ie = Expression.Invoke(f, Expression.Constant(5));
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(ie);
-            Func<int> d = lambda.Compile();
+            Func<int> d = lambda.Compile(useInterpreter);
             Assert.Equal(6, d());
         }
 
-        [Fact]
-        public static void CallCompiledLambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallCompiledLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + 1;
-            var compiled = f.Compile();
+            var compiled = f.Compile(useInterpreter);
             Expression<Func<int>> lambda = () => compiled(5);
-            Func<int> d = lambda.Compile();
+            Func<int> d = lambda.Compile(useInterpreter);
             Assert.Equal(6, d());
         }
 
-        [Fact]
-        public static void CallCompiledLambdaWithTypeMissing()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallCompiledLambdaWithTypeMissing(bool useInterpreter)
         {
             Expression<Func<object, bool>> f = x => x == Type.Missing;
-            var compiled = f.Compile();
+            var compiled = f.Compile(useInterpreter);
             Expression<Func<object, bool>> lambda = x => compiled(x);
-            Func<object, bool> d = lambda.Compile();
+            Func<object, bool> d = lambda.Compile(useInterpreter);
             Assert.Equal(true, d(Type.Missing));
         }
 
-        [Fact]
-        public static void InvokeQuotedLambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void InvokeQuotedLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = x => x + 1;
             InvocationExpression ie = Expression.Invoke(Expression.Quote(f), Expression.Constant(5));
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(ie);
-            Func<int> d = lambda.Compile();
+            Func<int> d = lambda.Compile(useInterpreter);
             Assert.Equal(6, d());
         }
 
-        [Fact(Skip = "870811")]
-        public static void InvokeComputedLambda()
+        [Theory(Skip = "870811")]
+        [ClassData(typeof(CompilationTypes))]
+        public static void InvokeComputedLambda(bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
             ParameterExpression y = Expression.Parameter(typeof(int), "y");
@@ -2934,7 +2970,7 @@ namespace System.Linq.Expressions.Tests
             InvocationExpression ie = Expression.Invoke(call, x);
             Expression<Func<int, int, int>> lambda = Expression.Lambda<Func<int, int, int>>(ie, x, y);
 
-            Func<int, int, int> d = lambda.Compile();
+            Func<int, int, int> d = lambda.Compile(useInterpreter);
             Assert.Equal(14, d(5, 9));
             Assert.Equal(40, d(5, 8));
         }
@@ -2947,9 +2983,9 @@ namespace System.Linq.Expressions.Tests
                 return x => x * y;
         }
 
-
-        [Fact]
-        public static void InvokeComputedDelegate()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void InvokeComputedDelegate(bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
             ParameterExpression y = Expression.Parameter(typeof(int), "y");
@@ -2957,7 +2993,7 @@ namespace System.Linq.Expressions.Tests
             InvocationExpression ie = Expression.Invoke(call, x);
             Expression<Func<int, int, int>> lambda = Expression.Lambda<Func<int, int, int>>(ie, x, y);
 
-            Func<int, int, int> d = lambda.Compile();
+            Func<int, int, int> d = lambda.Compile(useInterpreter);
             Assert.Equal(14, d(5, 9));
             Assert.Equal(40, d(5, 8));
         }
@@ -2994,109 +3030,120 @@ namespace System.Linq.Expressions.Tests
             return null;
         }
 
-        [Fact]
-        public static void NestedQuotedLambdas()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NestedQuotedLambdas(bool useInterpreter)
         {
             Expression<Func<int, Expression<Func<int, int>>>> f = a => b => a + b;
-            Func<int, Expression<Func<int, int>>> d = f.Compile();
+            Func<int, Expression<Func<int, int>>> d = f.Compile(useInterpreter);
             Expression<Func<int, int>> f2 = d(3);
-            Func<int, int> d2 = f2.Compile();
+            Func<int, int> d2 = f2.Compile(useInterpreter);
             int v = d2(4);
             Assert.Equal(7, v);
         }
 
-        [Fact]
-        public static void StaticMethodCall()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void StaticMethodCall(bool useInterpreter)
         {
             Expression<Func<int, int, int>> f = (a, b) => Math.Max(a, b);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(4, d(3, 4));
         }
 
-        [Fact(Skip = "870811")]
-        public static void CallOnCapturedInstance()
+        [Theory(Skip = "870811")]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CallOnCapturedInstance(bool useInterpreter)
         {
             Foo foo = new Foo();
             Expression<Func<int, int>> f = (a) => foo.Zip(a);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(225, d(15));
         }
 
-        [Fact]
-        public static void VirtualCall()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void VirtualCall(bool useInterpreter)
         {
             Foo bar = new Bar();
             Expression<Func<Foo, string>> f = foo => foo.Virt();
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal("Bar", d(bar));
         }
 
-
-        [Fact]
-        public static void NestedLambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NestedLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M1(a, (b) => b * b);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(100, d(10));
         }
 
-        [Fact]
-        public static void NestedLambdaWithOuterArg()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NestedLambdaWithOuterArg(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M1(a + a, (b) => b * a);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(200, d(10));
         }
 
-        [Fact]
-        public static void NestedExpressionLambda()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NestedExpressionLambda(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M2(a, (b) => b * b);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(10, d(10));
         }
 
-        [Fact]
-        public static void NestedExpressionLambdaWithOuterArg()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NestedExpressionLambdaWithOuterArg(bool useInterpreter)
         {
             Expression<Func<int, int>> f = (a) => M2(a, (b) => b * a);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(99, d(99));
         }
 
-        [Fact]
-        public static void ArrayInitializedWithLiterals()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayInitializedWithLiterals(bool useInterpreter)
         {
             Expression<Func<int[]>> f = () => new int[] { 1, 2, 3, 4, 5 };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             int[] v = d();
             Assert.Equal(5, v.Length);
         }
 
-        [Fact(Skip = "870811")]
-        public static void ArrayInitializedWithCapturedInstance()
+        [Theory(Skip = "870811")]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayInitializedWithCapturedInstance(bool useInterpreter)
         {
             Foo foo = new Foo();
             Expression<Func<Foo[]>> f = () => new Foo[] { foo };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Foo[] v = d();
             Assert.Equal(1, v.Length);
             Assert.Equal(foo, v[0]);
         }
 
-        [Fact]
-        public static void NullableAddition()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullableAddition(bool useInterpreter)
         {
             Expression<Func<double?, double?>> f = (v) => v + v;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(20.0, d(10.0));
         }
 
-        [Fact]
-        public static void NullableComparedToLiteral()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullableComparedToLiteral(bool useInterpreter)
         {
             Expression<Func<int?, bool>> f = (v) => v > 10;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.True(d(12));
             Assert.False(d(5));
             Assert.True(d(int.MaxValue));
@@ -3104,161 +3151,175 @@ namespace System.Linq.Expressions.Tests
             Assert.False(d(null));
         }
 
-        [Fact]
-        public static void NullableModuloLiteral()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullableModuloLiteral(bool useInterpreter)
         {
             Expression<Func<double?, double?>> f = (v) => v % 10;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5.0, d(15.0));
         }
 
-        [Fact]
-        public static void ArrayIndexer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ArrayIndexer(bool useInterpreter)
         {
             Expression<Func<int[], int, int>> f = (v, i) => v[i];
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             int[] ints = new[] { 1, 2, 3 };
             Assert.Equal(3, d(ints, 2));
         }
 
-        [Fact]
-        public static void ConvertToNullableDouble()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertToNullableDouble(bool useInterpreter)
         {
             Expression<Func<int?, double?>> f = (v) => (double?)v;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(10.0, d(10));
         }
 
-        [Fact]
-        public static void UnboxToInt()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void UnboxToInt(bool useInterpreter)
         {
             Expression<Func<object, int>> f = (a) => (int)a;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5));
         }
 
-        [Fact]
-        public static void TypeIs()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TypeIs(bool useInterpreter)
         {
             Expression<Func<Foo, bool>> f = x => x is Foo;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.True(d(new Foo()));
         }
 
-        [Fact]
-        public static void TypeAs()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TypeAs(bool useInterpreter)
         {
             Expression<Func<Foo, Bar>> f = x => x as Bar;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Null(d(new Foo()));
             Assert.NotNull(d(new Bar()));
         }
 
-        [Fact]
-        public static void Coalesce()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Coalesce(bool useInterpreter)
         {
             Expression<Func<int?, int>> f = x => x ?? 5;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(null));
             Assert.Equal(2, d(2));
         }
 
-        [Fact]
-        public static void CoalesceRefTypes()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void CoalesceRefTypes(bool useInterpreter)
         {
             Expression<Func<string, string>> f = x => x ?? "nil";
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal("nil", d(null));
             Assert.Equal("Not Nil", d("Not Nil"));
         }
 
-        [Fact]
-        public static void Conditional()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void Conditional(bool useInterpreter)
         {
             Expression<Func<int, int, int>> f = (x, y) => x > 5 ? x : y;
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(7, d(7, 4));
             Assert.Equal(6, d(3, 6));
         }
 
-
-        [Fact]
-        public static void MultiDimensionalArrayAccess()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MultiDimensionalArrayAccess(bool useInterpreter)
         {
             Expression<Func<int, int, int[,], int>> f = (x, y, a) => a[x, y];
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             int[,] array = new int[2, 2] { { 0, 1 }, { 2, 3 } };
             Assert.Equal(3, d(1, 1, array));
         }
 
-
-        [Fact]
-        public static void NewClassWithMemberIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewClassWithMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
-
-        [Fact]
-        public static void NewStructWithArgs()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewStructWithArgs(bool useInterpreter)
         {
             Expression<Func<int, StructZ>> f = v => new StructZ(v);
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
-        [Fact]
-        public static void NewStructWithArgsAndMemberInitializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewStructWithArgsAndMemberInitializer(bool useInterpreter)
         {
             Expression<Func<int, StructZ>> f = v => new StructZ(v) { A = v + 1 };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(6, d(5).A);
         }
 
-
-        [Fact]
-        public static void NewClassWithMemberIntializers()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewClassWithMemberIntializers(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = v => new ClassX { A = v, B = v };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
             Assert.Equal(7, d(7).B);
         }
 
-        [Fact]
-        public static void NewStructWithMemberIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewStructWithMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
         }
 
-        [Fact]
-        public static void NewStructWithMemberIntializers()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewStructWithMemberIntializers(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = v => new StructX { A = v, B = v };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             Assert.Equal(5, d(5).A);
             Assert.Equal(7, d(7).B);
         }
 
-        [Fact]
-        public static void ListInitializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ListInitializer(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(1, list.Count);
             Assert.Equal(5, list[0].B);
         }
 
-        [Fact]
-        public static void ListInitializerLong()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ListInitializerLong(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x }, new ClassY { B = x + 1 }, new ClassY { B = x + 2 } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(3, list.Count);
             Assert.Equal(5, list[0].B);
@@ -3266,11 +3327,12 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(7, list[2].B);
         }
 
-        [Fact]
-        public static void ListInitializerInferred()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ListInitializerInferred(bool useInterpreter)
         {
             Expression<Func<int, List<ClassY>>> f = x => new List<ClassY> { new ClassY { B = x }, new ClassY { B = x + 1 }, new ClassY { B = x + 2 } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             List<ClassY> list = d(5);
             Assert.Equal(3, list.Count);
             Assert.Equal(5, list[0].B);
@@ -3278,13 +3340,13 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(7, list[2].B);
         }
 
-
-        [Fact]
-        public void NewClassWithMemberListIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void NewClassWithMemberListIntializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -3292,12 +3354,13 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(7, x.Ys[0].B);
         }
 
-        [Fact]
-        public void NewClassWithMemberListOfStructIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void NewClassWithMemberListOfStructIntializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, SYs = { new StructY { B = v + 2 } } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -3305,25 +3368,26 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(7, x.SYs[0].B);
         }
 
-        [Fact]
-        public static void NewClassWithMemberMemberIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NewClassWithMemberMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f =
                 v => new ClassX { A = v, B = v + 1, Y = { B = v + 2 } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             ClassX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
             Assert.Equal(7, x.Y.B);
         }
 
-
-        [Fact]
-        public void NewStructWithMemberListIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void NewStructWithMemberListIntializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, Ys = { new ClassY { B = v + 2 } } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             StructX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
@@ -3331,32 +3395,34 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(7, x.Ys[0].B);
         }
 
-        [Fact]
-        public void NewStructWithStructMemberMemberIntializer()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public void NewStructWithStructMemberMemberIntializer(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f =
                 v => new StructX { A = v, B = v + 1, SY = new StructY { B = v + 2 } };
-            var d = f.Compile();
+            var d = f.Compile(useInterpreter);
             StructX x = d(5);
             Assert.Equal(5, x.A);
             Assert.Equal(6, x.B);
             Assert.Equal(7, x.SY.B);
         }
 
-        [Fact]
-        public static void StructStructMemberInitializationThroughPropertyThrowsException()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void StructStructMemberInitializationThroughPropertyThrowsException(bool useInterpreter)
         {
             Expression<Func<int, StructX>> f = GetExpressionTreeForMemberInitializationThroughProperty<StructX>();
-            Assert.Throws<InvalidOperationException>(() => f.Compile());
+            Assert.Throws<InvalidOperationException>(() => f.Compile(useInterpreter));
         }
 
-        [Fact]
-        public static void ClassStructMemberInitializationThroughPropertyThrowsException()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ClassStructMemberInitializationThroughPropertyThrowsException(bool useInterpreter)
         {
             Expression<Func<int, ClassX>> f = GetExpressionTreeForMemberInitializationThroughProperty<ClassX>();
-            Assert.Throws<InvalidOperationException>(() => f.Compile());
+            Assert.Throws<InvalidOperationException>(() => f.Compile(useInterpreter));
         }
-
 
         private static Expression<Func<int, T>> GetExpressionTreeForMemberInitializationThroughProperty<T>()
         {
@@ -3426,51 +3492,53 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(values.Length, list.Count);
         }
 
-        [Fact]
-        public static void UnaryOperators()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void UnaryOperators(bool useInterpreter)
         {
             // Not
-            Assert.False(TestUnary<bool, bool>(ExpressionType.Not, true));
-            Assert.True(TestUnary<bool, bool>(ExpressionType.Not, false));
-            Assert.False((bool)TestUnary<bool?, bool?>(ExpressionType.Not, true));
-            Assert.True((bool)TestUnary<bool?, bool?>(ExpressionType.Not, false));
-            Assert.Null(TestUnary<bool?, bool?>(ExpressionType.Not, null));
-            Assert.Equal(~1, TestUnary<int, int>(ExpressionType.Not, 1));
-            Assert.Equal(~1, TestUnary<int?, int?>(ExpressionType.Not, 1));
-            Assert.Null(TestUnary<int?, int?>(ExpressionType.Not, null));
+            Assert.False(TestUnary<bool, bool>(ExpressionType.Not, true, useInterpreter));
+            Assert.True(TestUnary<bool, bool>(ExpressionType.Not, false, useInterpreter));
+            Assert.False((bool)TestUnary<bool?, bool?>(ExpressionType.Not, true, useInterpreter));
+            Assert.True((bool)TestUnary<bool?, bool?>(ExpressionType.Not, false, useInterpreter));
+            Assert.Null(TestUnary<bool?, bool?>(ExpressionType.Not, null, useInterpreter));
+            Assert.Equal(~1, TestUnary<int, int>(ExpressionType.Not, 1, useInterpreter));
+            Assert.Equal(~1, TestUnary<int?, int?>(ExpressionType.Not, 1, useInterpreter));
+            Assert.Null(TestUnary<int?, int?>(ExpressionType.Not, null, useInterpreter));
 
             // Negate
-            Assert.Equal(-1, TestUnary<int, int>(ExpressionType.Negate, 1));
-            Assert.Equal(-1, TestUnary<int?, int?>(ExpressionType.Negate, 1));
-            Assert.Null(TestUnary<int?, int?>(ExpressionType.Negate, null));
-            Assert.Equal(-1, TestUnary<int, int>(ExpressionType.NegateChecked, 1));
-            Assert.Equal(-1, TestUnary<int?, int?>(ExpressionType.NegateChecked, 1));
-            Assert.Null(TestUnary<int?, int?>(ExpressionType.NegateChecked, null));
+            Assert.Equal(-1, TestUnary<int, int>(ExpressionType.Negate, 1, useInterpreter));
+            Assert.Equal(-1, TestUnary<int?, int?>(ExpressionType.Negate, 1, useInterpreter));
+            Assert.Null(TestUnary<int?, int?>(ExpressionType.Negate, null, useInterpreter));
+            Assert.Equal(-1, TestUnary<int, int>(ExpressionType.NegateChecked, 1, useInterpreter));
+            Assert.Equal(-1, TestUnary<int?, int?>(ExpressionType.NegateChecked, 1, useInterpreter));
+            Assert.Null(TestUnary<int?, int?>(ExpressionType.NegateChecked, null, useInterpreter));
 
-            Assert.Equal(-1, TestUnary<decimal, decimal>(ExpressionType.Negate, 1));
-            Assert.Equal(-1, TestUnary<decimal?, decimal?>(ExpressionType.Negate, 1));
-            Assert.Null(TestUnary<decimal?, decimal?>(ExpressionType.Negate, null));
-            Assert.Equal(-1, TestUnary<decimal, decimal>(ExpressionType.NegateChecked, 1));
-            Assert.Equal(-1, TestUnary<decimal?, decimal?>(ExpressionType.NegateChecked, 1));
-            Assert.Null(TestUnary<decimal?, decimal?>(ExpressionType.NegateChecked, null));
+            Assert.Equal(-1, TestUnary<decimal, decimal>(ExpressionType.Negate, 1, useInterpreter));
+            Assert.Equal(-1, TestUnary<decimal?, decimal?>(ExpressionType.Negate, 1, useInterpreter));
+            Assert.Null(TestUnary<decimal?, decimal?>(ExpressionType.Negate, null, useInterpreter));
+            Assert.Equal(-1, TestUnary<decimal, decimal>(ExpressionType.NegateChecked, 1, useInterpreter));
+            Assert.Equal(-1, TestUnary<decimal?, decimal?>(ExpressionType.NegateChecked, 1, useInterpreter));
+            Assert.Null(TestUnary<decimal?, decimal?>(ExpressionType.NegateChecked, null, useInterpreter));
         }
 
-        private static R TestUnary<T, R>(Expression<Func<T, R>> f, T v)
+        private static R TestUnary<T, R>(Expression<Func<T, R>> f, T v, bool useInterpreter)
         {
-            Func<T, R> d = f.Compile();
+            Func<T, R> d = f.Compile(useInterpreter);
             R rv = d(v);
             return rv;
         }
 
-        private static R TestUnary<T, R>(ExpressionType op, T v)
+        private static R TestUnary<T, R>(ExpressionType op, T v, bool useInterpreter)
         {
             ParameterExpression p = Expression.Parameter(typeof(T), "v");
             Expression<Func<T, R>> f = Expression.Lambda<Func<T, R>>(Expression.MakeUnary(op, p, null), p);
-            return TestUnary(f, v);
+            return TestUnary(f, v, useInterpreter);
         }
 
-        [Fact]
-        public static void ShiftULong()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ShiftULong(bool useInterpreter)
         {
             Assert.Throws<InvalidOperationException>(() =>
             {
@@ -3480,13 +3548,14 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant((ulong)5, typeof(ulong)),
                         Expression.Constant((ulong)1, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-                Func<ulong> f = e.Compile();
+                Func<ulong> f = e.Compile(useInterpreter);
                 f();
             });
         }
 
-        [Fact]
-        public static void MultiplyMinInt()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MultiplyMinInt(bool useInterpreter)
         {
             Assert.Throws<OverflowException>(() =>
             {
@@ -3495,13 +3564,14 @@ namespace System.Linq.Expressions.Tests
                     Expression.Constant((long)-1, typeof(long)),
                     Expression.Constant(long.MinValue, typeof(long))),
                     Enumerable.Empty<ParameterExpression>()
-                    ).Compile();
+                    ).Compile(useInterpreter);
                 f();
             });
         }
 
-        [Fact]
-        public static void MultiplyMinInt2()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void MultiplyMinInt2(bool useInterpreter)
         {
             Assert.Throws<OverflowException>(() =>
             {
@@ -3509,41 +3579,46 @@ namespace System.Linq.Expressions.Tests
                   Expression.MultiplyChecked(
                     Expression.Constant(long.MinValue, typeof(long)),
                     Expression.Constant((long)-1, typeof(long))),
-                  Enumerable.Empty<ParameterExpression>()).Compile();
+                  Enumerable.Empty<ParameterExpression>()).Compile(useInterpreter);
                 f();
             });
         }
 
-        [Fact]
-        public static void ConvertSignedToUnsigned()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertSignedToUnsigned(bool useInterpreter)
         {
-            Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.Convert(Expression.Constant((sbyte)-1), typeof(ulong))).Compile();
+            Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.Convert(Expression.Constant((sbyte)-1), typeof(ulong))).Compile(useInterpreter);
             Assert.Equal(UInt64.MaxValue, f());
         }
 
-        [Fact]
-        public static void ConvertUnsignedToSigned()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertUnsignedToSigned(bool useInterpreter)
         {
-            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.Convert(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
+            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.Convert(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile(useInterpreter);
             Assert.Equal((sbyte)-1, f());
         }
 
-        [Fact]
-        public static void ConvertCheckedSignedToUnsigned()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertCheckedSignedToUnsigned(bool useInterpreter)
         {
-            Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.ConvertChecked(Expression.Constant((sbyte)-1), typeof(ulong))).Compile();
+            Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.ConvertChecked(Expression.Constant((sbyte)-1), typeof(ulong))).Compile(useInterpreter);
             Assert.Throws<OverflowException>(() => f());
         }
 
-        [Fact]
-        public static void ConvertCheckedUnsignedToSigned()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ConvertCheckedUnsignedToSigned(bool useInterpreter)
         {
-            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.ConvertChecked(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile();
+            Func<sbyte> f = Expression.Lambda<Func<sbyte>>(Expression.ConvertChecked(Expression.Constant(UInt64.MaxValue), typeof(sbyte))).Compile(useInterpreter);
             Assert.Throws<OverflowException>(() => f());
         }
 
-        [Fact]
-        public static void IntSwitch1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void IntSwitch1(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int));
             var p1 = Expression.Parameter(typeof(string));
@@ -3555,15 +3630,16 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<int, string> f = Expression.Lambda<Func<int, string>>(block, p).Compile();
+            Func<int, string> f = Expression.Lambda<Func<int, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f(1));
             Assert.Equal("two", f(2));
             Assert.Equal("default", f(3));
         }
 
-        [Fact]
-        public static void NullableIntSwitch1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullableIntSwitch1(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int?));
             var p1 = Expression.Parameter(typeof(string));
@@ -3575,7 +3651,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile();
+            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f(1));
             Assert.Equal("two", f(2));
@@ -3583,8 +3659,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(3));
         }
 
-        [Fact]
-        public static void NullableIntSwitch2()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NullableIntSwitch2(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int?));
             var p1 = Expression.Parameter(typeof(string));
@@ -3597,7 +3674,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile();
+            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f(1));
             Assert.Equal("two", f(2));
@@ -3605,8 +3682,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(3));
         }
 
-        [Fact]
-        public static void IntSwitch2()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void IntSwitch2(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(byte));
             var p1 = Expression.Parameter(typeof(string));
@@ -3618,15 +3696,16 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<byte, string> f = Expression.Lambda<Func<byte, string>>(block, p).Compile();
+            Func<byte, string> f = Expression.Lambda<Func<byte, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f(1));
             Assert.Equal("two", f(2));
             Assert.Equal("default", f(3));
         }
 
-        [Fact]
-        public static void IntSwitch3()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void IntSwitch3(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(uint));
             var p1 = Expression.Parameter(typeof(string));
@@ -3639,7 +3718,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<uint, string> f = Expression.Lambda<Func<uint, string>>(block, p).Compile();
+            Func<uint, string> f = Expression.Lambda<Func<uint, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f(1));
             Assert.Equal("wow", f(uint.MaxValue));
@@ -3647,8 +3726,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(3));
         }
 
-        [Fact]
-        public static void StringSwitch()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void StringSwitch(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(string));
             var s = Expression.Switch(p,
@@ -3656,7 +3736,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Constant("hello"), Expression.Constant("hi")),
                 Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
 
-            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile();
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f("hi"));
             Assert.Equal("lala", f("bye"));
@@ -3664,8 +3744,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(null));
         }
 
-        [Fact]
-        public static void StringSwitch1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void StringSwitch1(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(string));
             var p1 = Expression.Parameter(typeof(string));
@@ -3677,7 +3758,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile();
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f("hi"));
             Assert.Equal("lala", f("bye"));
@@ -3685,8 +3766,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("null", f(null));
         }
 
-        [Fact]
-        public static void StringSwitchNotConstant()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void StringSwitchNotConstant(bool useInterpreter)
         {
             Expression<Func<string>> expr1 = () => new string('a', 5);
             Expression<Func<string>> expr2 = () => new string('q', 5);
@@ -3697,7 +3779,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.SwitchCase(Expression.Invoke(expr1), Expression.Invoke(expr2)),
                 Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
 
-            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile();
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("aaaaa", f("qqqqq"));
             Assert.Equal("lala", f("bye"));
@@ -3705,8 +3787,9 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(null));
         }
 
-        [Fact]
-        public static void ObjectSwitch1()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void ObjectSwitch1(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(object));
             var p1 = Expression.Parameter(typeof(string));
@@ -3719,7 +3802,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<object, string> f = Expression.Lambda<Func<object, string>>(block, p).Compile();
+            Func<object, string> f = Expression.Lambda<Func<object, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f("hi"));
             Assert.Equal("lala", f("bye"));
@@ -3728,13 +3811,14 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("null", f(null));
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DefaultOnlySwitch(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int));
             var s = Expression.Switch(p, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(false);
+            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(useInterpreter);
 
             Assert.Equal(42, fInt32Int32(0));
             Assert.Equal(42, fInt32Int32(1));
@@ -3742,7 +3826,7 @@ namespace System.Linq.Expressions.Tests
 
             s = Expression.Switch(typeof(object), p, Expression.Constant("A test string"), null);
 
-            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(false);
+            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("A test string", fInt32Object(0));
             Assert.Equal("A test string", fInt32Object(1));
@@ -3751,63 +3835,21 @@ namespace System.Linq.Expressions.Tests
             p = Expression.Parameter(typeof(string));
             s = Expression.Switch(p, Expression.Constant("foo"));
 
-            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(false);
+            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(useInterpreter);
 
             Assert.Equal("foo", fStringString("bar"));
             Assert.Equal("foo", fStringString(null));
             Assert.Equal("foo", fStringString("foo"));
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchInterpreted()
-        {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p, Expression.Constant(42));
-
-            var fInt32Int32 = Expression.Lambda<Func<int, int>>(s, p).Compile(true);
-
-            Assert.Equal(42, fInt32Int32(0));
-            Assert.Equal(42, fInt32Int32(1));
-            Assert.Equal(42, fInt32Int32(-1));
-
-            s = Expression.Switch(typeof(object), p, Expression.Constant("A test string"), null);
-
-            var fInt32Object = Expression.Lambda<Func<int, object>>(s, p).Compile(true);
-
-            Assert.Equal("A test string", fInt32Object(0));
-            Assert.Equal("A test string", fInt32Object(1));
-            Assert.Equal("A test string", fInt32Object(-1));
-
-            p = Expression.Parameter(typeof(string));
-            s = Expression.Switch(p, Expression.Constant("foo"));
-
-            var fStringString = Expression.Lambda<Func<string, string>>(s, p).Compile(true);
-
-            Assert.Equal("foo", fStringString("bar"));
-            Assert.Equal("foo", fStringString(null));
-            Assert.Equal("foo", fStringString("foo"));
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NoDefaultOrCasesSwitch(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(int));
             var s = Expression.Switch(p, (Expression)null);
 
-            var f = Expression.Lambda<Action<int>>(s, p).Compile(false);
-
-            f(0);
-
-            Assert.Equal(s.Type, typeof(void));
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchInterpreted()
-        {
-            var p = Expression.Parameter(typeof(int));
-            var s = Expression.Switch(p, (Expression)null);
-
-            var f = Expression.Lambda<Action<int>>(s, p).Compile(true);
+            var f = Expression.Lambda<Action<int>>(s, p).Compile(useInterpreter);
 
             f(0);
 
@@ -3832,15 +3874,16 @@ namespace System.Linq.Expressions.Tests
             return 42;
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchWithSideEffectCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DefaultOnlySwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
             var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
             var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
             var s = Expression.Switch(switchValue, Expression.Constant(42));
 
-            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(false);
+            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             Assert.Equal(42, fInt32Int32(ref changed));
@@ -3850,48 +3893,16 @@ namespace System.Linq.Expressions.Tests
             Assert.True(changed);
         }
 
-        [Fact]
-        public static void DefaultOnlySwitchWithSideEffectInterpreted()
-        {
-            bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
-            var s = Expression.Switch(switchValue, Expression.Constant(42));
-
-            var fInt32Int32 = Expression.Lambda<RefSettingDelegate>(s, pOut).Compile(true);
-
-            Assert.False(changed);
-            Assert.Equal(42, fInt32Int32(ref changed));
-            Assert.True(changed);
-            changed = false;
-            Assert.Equal(42, fInt32Int32(ref changed));
-            Assert.True(changed);
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchWithSideEffectCompiled()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NoDefaultOrCasesSwitchWithSideEffect(bool useInterpreter)
         {
             bool changed = false;
             var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
             var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
             var s = Expression.Switch(switchValue, (Expression)null);
 
-            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(false);
-
-            Assert.False(changed);
-            f(ref changed);
-            Assert.True(changed);
-        }
-
-        [Fact]
-        public static void NoDefaultOrCasesSwitchWithSideEffectInterpreted()
-        {
-            bool changed = false;
-            var pOut = Expression.Parameter(typeof(bool).MakeByRefType(), "changed");
-            var switchValue = Expression.Call(typeof(Compiler_Tests).GetMethod("QuestionMeaning"), pOut);
-            var s = Expression.Switch(switchValue, (Expression)null);
-
-            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(true);
+            var f = Expression.Lambda<JustRefSettingDelegate>(s, pOut).Compile(useInterpreter);
 
             Assert.False(changed);
             f(ref changed);
@@ -3927,8 +3938,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void SwitchWithComparison()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void SwitchWithComparison(bool useInterpreter)
         {
             var p = Expression.Parameter(typeof(string));
             var p1 = Expression.Parameter(typeof(string));
@@ -3942,7 +3954,7 @@ namespace System.Linq.Expressions.Tests
 
             var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
 
-            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile();
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile(useInterpreter);
 
             Assert.Equal("hello", f("hi"));
             Assert.Equal("lala", f("bYe"));
@@ -3969,8 +3981,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void UninitializedEnumOut()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void UninitializedEnumOut(bool useInterpreter)
         {
             var x = Expression.Variable(typeof(MyEnum), "x");
 
@@ -3979,11 +3992,12 @@ namespace System.Linq.Expressions.Tests
                             new[] { x },
                             Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("Bar"), x)));
 
-            expression.Compile()();
+            expression.Compile(useInterpreter)();
         }
 
-        [Fact]
-        public static void DefaultEnumRef()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void DefaultEnumRef(bool useInterpreter)
         {
             var x = Expression.Variable(typeof(MyEnum), "x");
 
@@ -3993,373 +4007,376 @@ namespace System.Linq.Expressions.Tests
                             Expression.Assign(x, Expression.Default(typeof(MyEnum))),
                             Expression.Call(null, typeof(EnumOutLambdaClass).GetMethod("BarRef"), x)));
 
-            expression.Compile()();
+            expression.Compile(useInterpreter)();
         }
 
-        [Fact]
-        public static void BinaryOperators()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void BinaryOperators(bool useInterpreter)
         {
             // AndAlso
-            Assert.True(TestBinary<bool, bool>(ExpressionType.AndAlso, true, true));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, false, true));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, true, false));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, false));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, null));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, null));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.AndAlso, true, true, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, false, true, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, true, false, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.AndAlso, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, false, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, true, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, false, null, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.AndAlso, null, null, useInterpreter));
 
             // OrElse
-            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, true, true));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, false, true));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, true, false));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.OrElse, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, true));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, false, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, null));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, null, true));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, false, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, null, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, null, null));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, true, true, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, false, true, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.OrElse, true, false, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.OrElse, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, true, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, false, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, true, null, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.OrElse, null, true, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, false, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, null, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.OrElse, null, null, useInterpreter));
 
             // And
-            Assert.True(TestBinary<bool, bool>(ExpressionType.And, true, true));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.And, false, true));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.And, true, false));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.And, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.And, true, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, true, false));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, true, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, null, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, null));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, null, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, null, null));
-            Assert.Equal(2, TestBinary<int, int>(ExpressionType.And, 2, 3));
-            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.And, 2, 3));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, null, 3));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, null, null));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.And, true, true, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.And, false, true, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.And, true, false, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.And, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.And, true, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, true, false, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, true, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, null, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, false, null, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.And, null, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.And, null, null, useInterpreter));
+            Assert.Equal(2, TestBinary<int, int>(ExpressionType.And, 2, 3, useInterpreter));
+            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.And, 2, 3, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, null, 3, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.And, null, null, useInterpreter));
 
             // Or
-            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, true, true));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, false, true));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, true, false));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.Or, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, true));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, false, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.Or, false, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, null));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, null, true));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, false, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, null, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, null, null));
-            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Or, 2, 1));
-            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Or, 2, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, null, 1));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, true, true, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, false, true, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.Or, true, false, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.Or, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, true, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, false, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.Or, false, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, true, null, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.Or, null, true, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, false, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, null, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.Or, null, null, useInterpreter));
+            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Or, 2, 1, useInterpreter));
+            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Or, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Or, null, 1, useInterpreter));
 
             // ExclusiveOr
-            Assert.False(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, true, true));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, true, false));
-            Assert.True(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, false, true));
-            Assert.False(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, false, false));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, true));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, false));
-            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, true));
-            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, true));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, null));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, false));
-            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, null));
-            Assert.Equal(4, TestBinary<int, int>(ExpressionType.ExclusiveOr, 5, 1));
-            Assert.Equal(4, TestBinary<int?, int?>(ExpressionType.ExclusiveOr, 5, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, 5, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, null, null));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, true, true, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, true, false, useInterpreter));
+            Assert.True(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, false, true, useInterpreter));
+            Assert.False(TestBinary<bool, bool>(ExpressionType.ExclusiveOr, false, false, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, true, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, false, useInterpreter));
+            Assert.True((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, true, useInterpreter));
+            Assert.False((bool)TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, true, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, true, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, false, null, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, false, useInterpreter));
+            Assert.Null(TestBinary<bool?, bool?>(ExpressionType.ExclusiveOr, null, null, useInterpreter));
+            Assert.Equal(4, TestBinary<int, int>(ExpressionType.ExclusiveOr, 5, 1, useInterpreter));
+            Assert.Equal(4, TestBinary<int?, int?>(ExpressionType.ExclusiveOr, 5, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, 5, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.ExclusiveOr, null, null, useInterpreter));
 
             // Equal
-            Assert.False(TestBinary<int, bool>(ExpressionType.Equal, 1, 2));
-            Assert.True(TestBinary<int, bool>(ExpressionType.Equal, 1, 1));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, 1, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.Equal, 1, 1));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, null, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, 1, null));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.Equal, null, null));
+            Assert.False(TestBinary<int, bool>(ExpressionType.Equal, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int, bool>(ExpressionType.Equal, 1, 1, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.Equal, 1, 1, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, null, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.Equal, 1, null, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.Equal, null, null, useInterpreter));
 
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.Equal, 1, 2));
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.Equal, 1, 1));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, 1));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, null, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, null));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.Equal, null, null));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.Equal, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.Equal, 1, 1, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, 1, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, null, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.Equal, 1, null, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.Equal, null, null, useInterpreter));
 
             // NotEqual
-            Assert.True(TestBinary<int, bool>(ExpressionType.NotEqual, 1, 2));
-            Assert.False(TestBinary<int, bool>(ExpressionType.NotEqual, 1, 1));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, 1));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, null, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, null));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.NotEqual, null, null));
+            Assert.True(TestBinary<int, bool>(ExpressionType.NotEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int, bool>(ExpressionType.NotEqual, 1, 1, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, 1, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, null, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.NotEqual, 1, null, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.NotEqual, null, null, useInterpreter));
 
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.NotEqual, 1, 2));
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.NotEqual, 1, 1));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, 1));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, null, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, null));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.NotEqual, null, null));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.NotEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.NotEqual, 1, 1, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, 1, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, null, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.NotEqual, 1, null, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.NotEqual, null, null, useInterpreter));
 
             // LessThan
-            Assert.True(TestBinary<int, bool>(ExpressionType.LessThan, 1, 2));
-            Assert.False(TestBinary<int, bool>(ExpressionType.LessThan, 2, 1));
-            Assert.False(TestBinary<int, bool>(ExpressionType.LessThan, 2, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThan, 1, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, 1));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, null, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, null));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, null, null));
+            Assert.True(TestBinary<int, bool>(ExpressionType.LessThan, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int, bool>(ExpressionType.LessThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<int, bool>(ExpressionType.LessThan, 2, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThan, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, null, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, 2, null, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThan, null, null, useInterpreter));
 
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThan, 1, 2));
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThan, 2, 1));
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThan, 2, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThan, 1, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, 1));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, null, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, null));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, null, null));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThan, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThan, 2, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThan, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, null, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, 2, null, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThan, null, null, useInterpreter));
 
             // LessThanOrEqual
-            Assert.True(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 1, 2));
-            Assert.False(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 2, 1));
-            Assert.True(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 2, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 1, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, 1));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, null, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, null));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, null, null));
+            Assert.True(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<int, bool>(ExpressionType.LessThanOrEqual, 2, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, null, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, 2, null, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.LessThanOrEqual, null, null, useInterpreter));
 
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 1, 2));
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 2, 1));
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 2, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 1, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, 1));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, null, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, null));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, null, null));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.LessThanOrEqual, 2, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 1, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, null, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, 2, null, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.LessThanOrEqual, null, null, useInterpreter));
 
             // GreaterThan
-            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThan, 1, 2));
-            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThan, 2, 1));
-            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThan, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 1, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, 1));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, null, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, null));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, null, null));
+            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThan, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, null, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, 2, null, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThan, null, null, useInterpreter));
 
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 1, 2));
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 2, 1));
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 1, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, 1));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, null, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, null));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, null, null));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, 1, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, null, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, 2, null, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThan, null, null, useInterpreter));
 
             // GreaterThanOrEqual
-            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 1, 2));
-            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 2, 1));
-            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 1, 2));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, 1));
-            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, null, 2));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, null));
-            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, null, null));
+            Assert.False(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<int, bool>(ExpressionType.GreaterThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 1, 2, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, null, 2, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, 2, null, useInterpreter));
+            Assert.False(TestBinary<int?, bool>(ExpressionType.GreaterThanOrEqual, null, null, useInterpreter));
 
-            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 1, 2));
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 2, 1));
-            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 1, 2));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, 1));
-            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, null, 2));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, null));
-            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, null, null));
+            Assert.False(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<decimal, bool>(ExpressionType.GreaterThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 1, 2, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, 1, useInterpreter));
+            Assert.True(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, null, 2, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, 2, null, useInterpreter));
+            Assert.False(TestBinary<decimal?, bool>(ExpressionType.GreaterThanOrEqual, null, null, useInterpreter));
 
             // Add
-            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Add, 1, 2));
-            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Add, 1, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, null, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, 1, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, null, null));
+            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Add, 1, 2, useInterpreter));
+            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Add, 1, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, null, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, 1, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Add, null, null, useInterpreter));
 
-            Assert.Equal(3, TestBinary<decimal, decimal>(ExpressionType.Add, 1, 2));
-            Assert.Equal(3, TestBinary<decimal?, decimal?>(ExpressionType.Add, 1, 2));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, null, 2));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, 1, null));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, null, null));
+            Assert.Equal(3, TestBinary<decimal, decimal>(ExpressionType.Add, 1, 2, useInterpreter));
+            Assert.Equal(3, TestBinary<decimal?, decimal?>(ExpressionType.Add, 1, 2, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, null, 2, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, 1, null, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Add, null, null, useInterpreter));
 
             // AddChecked
-            Assert.Equal(3, TestBinary<int, int>(ExpressionType.AddChecked, 1, 2));
-            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.AddChecked, 1, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, null, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, 1, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, null, null));
+            Assert.Equal(3, TestBinary<int, int>(ExpressionType.AddChecked, 1, 2, useInterpreter));
+            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.AddChecked, 1, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, null, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, 1, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.AddChecked, null, null, useInterpreter));
 
             // Subtract
-            Assert.Equal(1, TestBinary<int, int>(ExpressionType.Subtract, 2, 1));
-            Assert.Equal(1, TestBinary<int?, int?>(ExpressionType.Subtract, 2, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, null, null));
+            Assert.Equal(1, TestBinary<int, int>(ExpressionType.Subtract, 2, 1, useInterpreter));
+            Assert.Equal(1, TestBinary<int?, int?>(ExpressionType.Subtract, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Subtract, null, null, useInterpreter));
 
-            Assert.Equal(1, TestBinary<decimal, decimal>(ExpressionType.Subtract, 2, 1));
-            Assert.Equal(1, TestBinary<decimal?, decimal?>(ExpressionType.Subtract, 2, 1));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, null, 1));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, 2, null));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, null, null));
+            Assert.Equal(1, TestBinary<decimal, decimal>(ExpressionType.Subtract, 2, 1, useInterpreter));
+            Assert.Equal(1, TestBinary<decimal?, decimal?>(ExpressionType.Subtract, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, null, 1, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, 2, null, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Subtract, null, null, useInterpreter));
 
             // SubtractChecked
-            Assert.Equal(1, TestBinary<int, int>(ExpressionType.SubtractChecked, 2, 1));
-            Assert.Equal(1, TestBinary<int?, int?>(ExpressionType.SubtractChecked, 2, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, null, null));
+            Assert.Equal(1, TestBinary<int, int>(ExpressionType.SubtractChecked, 2, 1, useInterpreter));
+            Assert.Equal(1, TestBinary<int?, int?>(ExpressionType.SubtractChecked, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.SubtractChecked, null, null, useInterpreter));
 
             // Multiply
-            Assert.Equal(2, TestBinary<int, int>(ExpressionType.Multiply, 2, 1));
-            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.Multiply, 2, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, null, null));
+            Assert.Equal(2, TestBinary<int, int>(ExpressionType.Multiply, 2, 1, useInterpreter));
+            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.Multiply, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Multiply, null, null, useInterpreter));
 
-            Assert.Equal(2, TestBinary<decimal, decimal>(ExpressionType.Multiply, 2, 1));
-            Assert.Equal(2, TestBinary<decimal?, decimal?>(ExpressionType.Multiply, 2, 1));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, null, 1));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, 2, null));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, null, null));
+            Assert.Equal(2, TestBinary<decimal, decimal>(ExpressionType.Multiply, 2, 1, useInterpreter));
+            Assert.Equal(2, TestBinary<decimal?, decimal?>(ExpressionType.Multiply, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, null, 1, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, 2, null, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Multiply, null, null, useInterpreter));
 
             // MultiplyChecked
-            Assert.Equal(2, TestBinary<int, int>(ExpressionType.MultiplyChecked, 2, 1));
-            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.MultiplyChecked, 2, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, 2, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, null, null));
+            Assert.Equal(2, TestBinary<int, int>(ExpressionType.MultiplyChecked, 2, 1, useInterpreter));
+            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.MultiplyChecked, 2, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, 2, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.MultiplyChecked, null, null, useInterpreter));
 
             // Divide
-            Assert.Equal(2, TestBinary<int, int>(ExpressionType.Divide, 5, 2));
-            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.Divide, 5, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, null, 2));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, 5, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, null, null));
+            Assert.Equal(2, TestBinary<int, int>(ExpressionType.Divide, 5, 2, useInterpreter));
+            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.Divide, 5, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, null, 2, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, 5, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Divide, null, null, useInterpreter));
 
-            Assert.Equal(2.5m, TestBinary<decimal, decimal>(ExpressionType.Divide, 5, 2));
-            Assert.Equal(2.5m, TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, 2));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, 2));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, null));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, null));
+            Assert.Equal(2.5m, TestBinary<decimal, decimal>(ExpressionType.Divide, 5, 2, useInterpreter));
+            Assert.Equal(2.5m, TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, 2, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, 2, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, 5, null, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Divide, null, null, useInterpreter));
 
             // Modulo 
-            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Modulo, 7, 4));
-            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Modulo, 7, 4));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, 4));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, 7, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, null));
+            Assert.Equal(3, TestBinary<int, int>(ExpressionType.Modulo, 7, 4, useInterpreter));
+            Assert.Equal(3, TestBinary<int?, int?>(ExpressionType.Modulo, 7, 4, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, 4, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, 7, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.Modulo, null, null, useInterpreter));
 
-            Assert.Equal(3, TestBinary<decimal, decimal>(ExpressionType.Modulo, 7, 4));
-            Assert.Equal(3, TestBinary<decimal?, decimal?>(ExpressionType.Modulo, 7, 4));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, null, 4));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, 7, null));
-            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, null, null));
+            Assert.Equal(3, TestBinary<decimal, decimal>(ExpressionType.Modulo, 7, 4, useInterpreter));
+            Assert.Equal(3, TestBinary<decimal?, decimal?>(ExpressionType.Modulo, 7, 4, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, null, 4, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, 7, null, useInterpreter));
+            Assert.Null(TestBinary<decimal?, decimal?>(ExpressionType.Modulo, null, null, useInterpreter));
 
             // Power
-            Assert.Equal(16, TestBinary<double, double>(ExpressionType.Power, 2, 4));
-            Assert.Equal(16, TestBinary<double?, double?>(ExpressionType.Power, 2, 4));
-            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, null, 4));
-            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, 2, null));
-            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, null, null));
+            Assert.Equal(16, TestBinary<double, double>(ExpressionType.Power, 2, 4, useInterpreter));
+            Assert.Equal(16, TestBinary<double?, double?>(ExpressionType.Power, 2, 4, useInterpreter));
+            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, null, 4, useInterpreter));
+            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, 2, null, useInterpreter));
+            Assert.Null(TestBinary<double?, double?>(ExpressionType.Power, null, null, useInterpreter));
 
             // LeftShift
-            Assert.Equal(10, TestBinary<int, int>(ExpressionType.LeftShift, 5, 1));
-            Assert.Equal(10, TestBinary<int?, int?>(ExpressionType.LeftShift, 5, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, 5, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, null, null));
+            Assert.Equal(10, TestBinary<int, int>(ExpressionType.LeftShift, 5, 1, useInterpreter));
+            Assert.Equal(10, TestBinary<int?, int?>(ExpressionType.LeftShift, 5, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, 5, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.LeftShift, null, null, useInterpreter));
 
             // RightShift
-            Assert.Equal(2, TestBinary<int, int>(ExpressionType.RightShift, 4, 1));
-            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.RightShift, 4, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, null, 1));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, 4, null));
-            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, null, null));
+            Assert.Equal(2, TestBinary<int, int>(ExpressionType.RightShift, 4, 1, useInterpreter));
+            Assert.Equal(2, TestBinary<int?, int?>(ExpressionType.RightShift, 4, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, null, 1, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, 4, null, useInterpreter));
+            Assert.Null(TestBinary<int?, int?>(ExpressionType.RightShift, null, null, useInterpreter));
         }
 
-        private static R TestBinary<T, R>(Expression<Func<T, T, R>> f, T v1, T v2)
+        private static R TestBinary<T, R>(Expression<Func<T, T, R>> f, T v1, T v2, bool useInterpreter)
         {
-            Func<T, T, R> d = f.Compile();
+            Func<T, T, R> d = f.Compile(useInterpreter);
             R rv = d(v1, v2);
             return rv;
         }
 
-        private static R TestBinary<T, R>(ExpressionType op, T v1, T v2)
+        private static R TestBinary<T, R>(ExpressionType op, T v1, T v2, bool useInterpreter)
         {
             ParameterExpression p1 = Expression.Parameter(typeof(T), "v1");
             ParameterExpression p2 = Expression.Parameter(typeof(T), "v2");
             Expression<Func<T, T, R>> f = Expression.Lambda<Func<T, T, R>>(Expression.MakeBinary(op, p1, p2), p1, p2);
-            return TestBinary(f, v1, v2);
+            return TestBinary(f, v1, v2, useInterpreter);
         }
 
-        [Fact]
-        public static void TestConvertToNullable()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TestConvertToNullable(bool useInterpreter)
         {
             Expression<Func<int, int?>> f = x => (int?)x;
             Assert.Equal(f.Body.NodeType, ExpressionType.Convert);
-            Func<int, int?> d = f.Compile();
+            Func<int, int?> d = f.Compile(useInterpreter);
             Assert.Equal(2, d(2));
         }
 
-        [Fact]
-        public static void TestNullableMethods()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void TestNullableMethods(bool useInterpreter)
         {
-            TestNullableCall(new ArraySegment<int>(), (v) => v.HasValue, (v) => v.HasValue);
-            TestNullableCall(5.1, (v) => v.GetHashCode(), (v) => v.GetHashCode());
-            TestNullableCall(5L, (v) => v.ToString(), (v) => v.ToString());
-            TestNullableCall(5, (v) => v.GetValueOrDefault(7), (v) => v.GetValueOrDefault(7));
-            TestNullableCall(42, (v) => v.Equals(42), (v) => v.Equals(42));
-            TestNullableCall(42, (v) => v.Equals(0), (v) => v.Equals(0));
-            TestNullableCall(5, (v) => v.GetValueOrDefault(), (v) => v.GetValueOrDefault());
+            TestNullableCall(new ArraySegment<int>(), (v) => v.HasValue, (v) => v.HasValue, useInterpreter);
+            TestNullableCall(5.1, (v) => v.GetHashCode(), (v) => v.GetHashCode(), useInterpreter);
+            TestNullableCall(5L, (v) => v.ToString(), (v) => v.ToString(), useInterpreter);
+            TestNullableCall(5, (v) => v.GetValueOrDefault(7), (v) => v.GetValueOrDefault(7), useInterpreter);
+            TestNullableCall(42, (v) => v.Equals(42), (v) => v.Equals(42), useInterpreter);
+            TestNullableCall(42, (v) => v.Equals(0), (v) => v.Equals(0), useInterpreter);
+            TestNullableCall(5, (v) => v.GetValueOrDefault(), (v) => v.GetValueOrDefault(), useInterpreter);
 
             Expression<Func<int?, int>> f = x => x.Value;
-            Func<int?, int> d = f.Compile();
+            Func<int?, int> d = f.Compile(useInterpreter);
             Assert.Equal(2, d(2));
             Assert.Throws<InvalidOperationException>(() => d(null));
         }
 
-        private static void TestNullableCall<T, U>(T arg, Func<T?, U> f, Expression<Func<T?, U>> e)
+        private static void TestNullableCall<T, U>(T arg, Func<T?, U> f, Expression<Func<T?, U>> e, bool useInterpreter)
             where T : struct
         {
-            Func<T?, U> d = e.Compile();
+            Func<T?, U> d = e.Compile(useInterpreter);
             Assert.Equal(f(arg), d(arg));
             Assert.Equal(f(null), d(null));
         }
@@ -4471,18 +4488,19 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        public static void PropertyAccess()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void PropertyAccess(bool useInterpreter)
         {
             NWindProxy.Customer cust = new NWindProxy.Customer { CustomerID = "BUBBA", ContactName = "Bubba Gump" };
             ParameterExpression c = Expression.Parameter(typeof(NWindProxy.Customer), "c");
             ParameterExpression c2 = Expression.Parameter(typeof(NWindProxy.Customer), "c2");
 
-            Assert.Equal(cust, Expression.Lambda(c, c).Compile().DynamicInvoke(cust));
-            Assert.Equal(cust.ContactName, Expression.Lambda(Expression.PropertyOrField(c, "ContactName"), c).Compile().DynamicInvoke(cust));
-            Assert.Equal(cust.Orders, Expression.Lambda(Expression.PropertyOrField(c, "Orders"), c).Compile().DynamicInvoke(cust));
-            Assert.Equal(cust.CustomerID, Expression.Lambda(Expression.PropertyOrField(c, "CustomerId"), c).Compile().DynamicInvoke(cust));
-            Assert.True((bool)Expression.Lambda(Expression.Equal(Expression.PropertyOrField(c, "CustomerId"), Expression.PropertyOrField(c, "CUSTOMERID")), c).Compile().DynamicInvoke(cust));
+            Assert.Equal(cust, Expression.Lambda(c, c).Compile(useInterpreter).DynamicInvoke(cust));
+            Assert.Equal(cust.ContactName, Expression.Lambda(Expression.PropertyOrField(c, "ContactName"), c).Compile(useInterpreter).DynamicInvoke(cust));
+            Assert.Equal(cust.Orders, Expression.Lambda(Expression.PropertyOrField(c, "Orders"), c).Compile(useInterpreter).DynamicInvoke(cust));
+            Assert.Equal(cust.CustomerID, Expression.Lambda(Expression.PropertyOrField(c, "CustomerId"), c).Compile(useInterpreter).DynamicInvoke(cust));
+            Assert.True((bool)Expression.Lambda(Expression.Equal(Expression.PropertyOrField(c, "CustomerId"), Expression.PropertyOrField(c, "CUSTOMERID")), c).Compile(useInterpreter).DynamicInvoke(cust));
             Assert.True((bool)
                 Expression.Lambda(
                     Expression.And(
@@ -4490,126 +4508,128 @@ namespace System.Linq.Expressions.Tests
                         Expression.Equal(Expression.PropertyOrField(c, "ContactName"), Expression.PropertyOrField(c2, "ContactName"))
                         ),
                     c, c2)
-                .Compile().DynamicInvoke(cust, cust));
+                .Compile(useInterpreter).DynamicInvoke(cust, cust));
         }
 
-        private static void ArimeticOperatorTests(Type type, object value, bool testUnSigned)
+        private static void ArimeticOperatorTests(Type type, object value, bool testUnSigned, bool useInterpreter)
         {
             ParameterExpression p = Expression.Parameter(type, "x");
             if (testUnSigned)
-                Expression.Lambda(Expression.Negate(p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Add(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Subtract(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Multiply(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Divide(p, p), p).Compile().DynamicInvoke(new object[] { value });
+                Expression.Lambda(Expression.Negate(p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Add(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Subtract(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Multiply(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Divide(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
         }
 
-        private static void RelationalOperatorTests(Type type, object value, bool testModulo)
+        private static void RelationalOperatorTests(Type type, object value, bool testModulo, bool useInterpreter)
         {
             ParameterExpression p = Expression.Parameter(type, "x");
             if (testModulo)
-                Expression.Lambda(Expression.Modulo(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Equal(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.NotEqual(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.LessThan(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.LessThanOrEqual(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.GreaterThan(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.GreaterThanOrEqual(p, p), p).Compile().DynamicInvoke(new object[] { value });
+                Expression.Lambda(Expression.Modulo(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Equal(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.NotEqual(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.LessThan(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.LessThanOrEqual(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.GreaterThan(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.GreaterThanOrEqual(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
         }
 
-        private static void NumericOperatorTests(Type type, object value, bool testModulo, bool testUnSigned)
+        private static void NumericOperatorTests(Type type, object value, bool testModulo, bool testUnSigned, bool useInterpreter)
         {
-            ArimeticOperatorTests(type, value, testUnSigned);
-            RelationalOperatorTests(type, value, testModulo);
+            ArimeticOperatorTests(type, value, testUnSigned, useInterpreter);
+            RelationalOperatorTests(type, value, testModulo, useInterpreter);
         }
 
-        private static void NumericOperatorTests(Type type, object value)
+        private static void NumericOperatorTests(Type type, object value, bool useInterpreter)
         {
-            NumericOperatorTests(type, value, true, true);
+            NumericOperatorTests(type, value, true, true, useInterpreter);
         }
 
-        private static void IntegerOperatorTests(Type type, object value, bool testModulo, bool testUnsigned)
+        private static void IntegerOperatorTests(Type type, object value, bool testModulo, bool testUnsigned, bool useInterpreter)
         {
-            NumericOperatorTests(type, value, testModulo, testUnsigned);
-            LogicalOperatorTests(type, value);
+            NumericOperatorTests(type, value, testModulo, testUnsigned, useInterpreter);
+            LogicalOperatorTests(type, value, useInterpreter);
         }
 
-        private static void LogicalOperatorTests(Type type, object value)
+        private static void LogicalOperatorTests(Type type, object value, bool useInterpreter)
         {
             ParameterExpression p = Expression.Parameter(type, "x");
-            Expression.Lambda(Expression.Not(p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.Or(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.And(p, p), p).Compile().DynamicInvoke(new object[] { value });
-            Expression.Lambda(Expression.ExclusiveOr(p, p), p).Compile().DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Not(p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.Or(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.And(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
+            Expression.Lambda(Expression.ExclusiveOr(p, p), p).Compile(useInterpreter).DynamicInvoke(new object[] { value });
         }
 
-        private static void IntegerOperatorTests(Type type, object value)
+        private static void IntegerOperatorTests(Type type, object value, bool useInterpreter)
         {
-            IntegerOperatorTests(type, value, true, true);
+            IntegerOperatorTests(type, value, true, true, useInterpreter);
         }
 
-        [Fact]
-        public static void NumericOperators()
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void NumericOperators(bool useInterpreter)
         {
-            RelationalOperatorTests(typeof(sbyte), (sbyte)1, false);
-            LogicalOperatorTests(typeof(sbyte), (sbyte)1);
-            RelationalOperatorTests(typeof(short), (short)1, false);
-            LogicalOperatorTests(typeof(sbyte), (sbyte)1);
-            IntegerOperatorTests(typeof(int), 1);
-            IntegerOperatorTests(typeof(long), (long)1);
-            RelationalOperatorTests(typeof(byte), (byte)1, false);
-            LogicalOperatorTests(typeof(byte), (byte)1);
-            RelationalOperatorTests(typeof(ushort), (ushort)1, false);
-            LogicalOperatorTests(typeof(ushort), (ushort)1);
-            IntegerOperatorTests(typeof(uint), (uint)1, true, false);
-            IntegerOperatorTests(typeof(ulong), (ulong)1, true, false);
-            NumericOperatorTests(typeof(float), (float)1);
-            NumericOperatorTests(typeof(double), (double)1);
-            NumericOperatorTests(typeof(decimal), (decimal)1);
+            RelationalOperatorTests(typeof(sbyte), (sbyte)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(sbyte), (sbyte)1, useInterpreter);
+            RelationalOperatorTests(typeof(short), (short)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(sbyte), (sbyte)1, useInterpreter);
+            IntegerOperatorTests(typeof(int), 1, useInterpreter);
+            IntegerOperatorTests(typeof(long), (long)1, useInterpreter);
+            RelationalOperatorTests(typeof(byte), (byte)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(byte), (byte)1, useInterpreter);
+            RelationalOperatorTests(typeof(ushort), (ushort)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(ushort), (ushort)1, useInterpreter);
+            IntegerOperatorTests(typeof(uint), (uint)1, true, false, useInterpreter);
+            IntegerOperatorTests(typeof(ulong), (ulong)1, true, false, useInterpreter);
+            NumericOperatorTests(typeof(float), (float)1, useInterpreter);
+            NumericOperatorTests(typeof(double), (double)1, useInterpreter);
+            NumericOperatorTests(typeof(decimal), (decimal)1, useInterpreter);
 
-            RelationalOperatorTests(typeof(sbyte?), (sbyte?)1, false);
-            LogicalOperatorTests(typeof(sbyte?), (sbyte?)1);
-            RelationalOperatorTests(typeof(short?), (short?)1, false);
-            LogicalOperatorTests(typeof(short?), (short?)1);
-            IntegerOperatorTests(typeof(int?), (int?)1);
-            IntegerOperatorTests(typeof(long?), (long?)1);
-            RelationalOperatorTests(typeof(byte?), (byte?)1, false);
-            LogicalOperatorTests(typeof(byte?), (byte?)1);
-            RelationalOperatorTests(typeof(ushort?), (ushort?)1, false);
-            LogicalOperatorTests(typeof(ushort?), (ushort?)1);
-            IntegerOperatorTests(typeof(uint?), (uint?)1, true, false);
-            IntegerOperatorTests(typeof(ulong?), (ulong?)1, true, false);
+            RelationalOperatorTests(typeof(sbyte?), (sbyte?)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(sbyte?), (sbyte?)1, useInterpreter);
+            RelationalOperatorTests(typeof(short?), (short?)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(short?), (short?)1, useInterpreter);
+            IntegerOperatorTests(typeof(int?), (int?)1, useInterpreter);
+            IntegerOperatorTests(typeof(long?), (long?)1, useInterpreter);
+            RelationalOperatorTests(typeof(byte?), (byte?)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(byte?), (byte?)1, useInterpreter);
+            RelationalOperatorTests(typeof(ushort?), (ushort?)1, false, useInterpreter);
+            LogicalOperatorTests(typeof(ushort?), (ushort?)1, useInterpreter);
+            IntegerOperatorTests(typeof(uint?), (uint?)1, true, false, useInterpreter);
+            IntegerOperatorTests(typeof(ulong?), (ulong?)1, true, false, useInterpreter);
 
-            NumericOperatorTests(typeof(float?), (float?)1);
-            NumericOperatorTests(typeof(double?), (double?)1);
-            NumericOperatorTests(typeof(decimal?), (decimal?)1);
+            NumericOperatorTests(typeof(float?), (float?)1, useInterpreter);
+            NumericOperatorTests(typeof(double?), (double?)1, useInterpreter);
+            NumericOperatorTests(typeof(decimal?), (decimal?)1, useInterpreter);
         }
 
-        private static void TrueBooleanOperatorTests(Type type, object arg1, object arg2)
-        {
-            ParameterExpression x = Expression.Parameter(type, "x");
-            ParameterExpression y = Expression.Parameter(type, "y");
-            Expression.Lambda(Expression.AndAlso(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
-            Expression.Lambda(Expression.OrElse(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
-            GeneralBooleanOperatorTests(type, arg1, arg2);
-        }
-
-        private static void GeneralBooleanOperatorTests(Type type, object arg1, object arg2)
+        private static void TrueBooleanOperatorTests(Type type, object arg1, object arg2, bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(type, "x");
             ParameterExpression y = Expression.Parameter(type, "y");
-            Expression.Lambda(Expression.And(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
-            Expression.Lambda(Expression.Or(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
-            Expression.Lambda(Expression.Not(x), x).Compile().DynamicInvoke(new object[] { arg1 });
-            Expression.Lambda(Expression.Equal(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
-            Expression.Lambda(Expression.NotEqual(x, y), x, y).Compile().DynamicInvoke(new object[] { arg1, arg2 });
+            Expression.Lambda(Expression.AndAlso(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+            Expression.Lambda(Expression.OrElse(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+            GeneralBooleanOperatorTests(type, arg1, arg2, useInterpreter);
         }
 
-        [Fact]
-        public static void BooleanOperators()
+        private static void GeneralBooleanOperatorTests(Type type, object arg1, object arg2, bool useInterpreter)
         {
-            TrueBooleanOperatorTests(typeof(bool), true, false);
-            TrueBooleanOperatorTests(typeof(bool?), true, false);
+            ParameterExpression x = Expression.Parameter(type, "x");
+            ParameterExpression y = Expression.Parameter(type, "y");
+            Expression.Lambda(Expression.And(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+            Expression.Lambda(Expression.Or(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+            Expression.Lambda(Expression.Not(x), x).Compile(useInterpreter).DynamicInvoke(new object[] { arg1 });
+            Expression.Lambda(Expression.Equal(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+            Expression.Lambda(Expression.NotEqual(x, y), x, y).Compile(useInterpreter).DynamicInvoke(new object[] { arg1, arg2 });
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        public static void BooleanOperators(bool useInterpreter)
+        {
+            TrueBooleanOperatorTests(typeof(bool), true, false, useInterpreter);
+            TrueBooleanOperatorTests(typeof(bool?), true, false, useInterpreter);
         }
     }
 
