@@ -25,14 +25,16 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Read(
 @"{
-    ""runtimeTarget"": "".NETStandardApp,Version=v1.5/osx.10.10-x64"",
+    ""runtimeTarget"": {
+        ""name"":"".NETStandardApp,Version=v1.5/osx.10.10-x64""
+    },
     ""targets"": {
         "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {},
     }
 }");
-            context.IsPortable.Should().BeFalse();
-            context.TargetFramework.Should().Be(".NETStandardApp,Version=v1.5");
-            context.Runtime.Should().Be("osx.10.10-x64");
+            context.Target.IsPortable.Should().BeFalse();
+            context.Target.Framework.Should().Be(".NETStandardApp,Version=v1.5");
+            context.Target.Runtime.Should().Be("osx.10.10-x64");
         }
 
         [Fact]
@@ -44,7 +46,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         "".NETStandardApp,Version=v1.5"": {}
     }
 }");
-            context.IsPortable.Should().BeTrue();
+            context.Target.IsPortable.Should().BeTrue();
         }
 
         [Fact]
@@ -52,12 +54,14 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Read(
 @"{
-   ""runtimeTarget"": "".NETStandardApp,Version=v1.5/osx.10.10-x64"",
+    ""runtimeTarget"": {
+        ""name"": "".NETStandardApp,Version=v1.5/osx.10.10-x64""
+    },
     ""targets"": {
         "".NETStandardApp,Version=v1.5/osx.10.10-x64"": {}
     }
 }");
-            context.IsPortable.Should().BeFalse();
+            context.Target.IsPortable.Should().BeFalse();
         }
 
         [Fact]
@@ -69,7 +73,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         "".NETStandardApp,Version=v1.5"": {}
     }
 }");
-            context.TargetFramework.Should().Be(".NETStandardApp,Version=v1.5");
+            context.Target.Framework.Should().Be(".NETStandardApp,Version=v1.5");
         }
 
         [Fact]
@@ -152,7 +156,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Read(
 @"{
-    ""runtimeTarget"": "".NETStandardApp,Version=v1.5"",
+    ""runtimeTarget"": {
+        ""name"": "".NETStandardApp,Version=v1.5""
+    },
     ""targets"": {
         "".NETStandardApp,Version=v1.5"": {
             ""MyApp/1.0.1"": {
