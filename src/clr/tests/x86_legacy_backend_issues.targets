@@ -495,5 +495,8 @@
    <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPTSTR\LPTSTRTest\LPTSTRTest.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
+    <ExcludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\FunctionPointer\FunctionPtrTest\FunctionPtrTest.cmd">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
     </ItemGroup>
 </Project>
