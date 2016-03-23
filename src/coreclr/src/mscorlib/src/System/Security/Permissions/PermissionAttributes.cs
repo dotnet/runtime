@@ -12,7 +12,6 @@ namespace System.Security.Permissions
     using System.Security.AccessControl;
 #endif
     using System.Text;
-    using System.Runtime.Serialization.Formatters;
     using System.Threading;
     using System.Runtime.InteropServices;
     using System.Runtime.Remoting;
