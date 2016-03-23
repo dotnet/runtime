@@ -123,6 +123,26 @@ namespace System.Net.Http.Tests
             }
         }
 
+        [Fact]
+        public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
+        {
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(HttpTestServers.RevokedCertRemoteServer))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
+        {
+            var handler = new HttpClientHandler() { CheckCertificateRevocationList = true };
+            using (var client = new HttpClient(handler))
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(HttpTestServers.RevokedCertRemoteServer));
+            }
+        }
+
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(HttpTestServers.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
         [InlineData(HttpTestServers.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
@@ -153,9 +173,49 @@ namespace System.Net.Http.Tests
             }
         }
 
+        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        public async Task SSLBackendNotSupported_Callback_ThrowsPlatformNotSupportedException()
+        {
+            using (var client = new HttpClient(new HttpClientHandler() { ServerCertificateValidationCallback = delegate { return true; } }))
+            {
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+            }
+        }
+
+        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        public async Task SSLBackendNotSupported_Revocation_ThrowsPlatformNotSupportedException()
+        {
+            using (var client = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true }))
+            {
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+            }
+        }
+
+        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        public async Task SSLBackendNotSupported_AutomaticClientCerts_ThrowsPlatformNotSupportedException()
+        {
+            using (var client = new HttpClient(new HttpClientHandler() { ClientCertificateOptions = ClientCertificateOption.Automatic }))
+            {
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+            }
+        }
+
+        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        public async Task SSLBackendNotSupported_ManualClientCerts_ThrowsPlatformNotSupportedException()
+        {
+            var handler = new HttpClientHandler();
+            handler.ClientCertificates.Add(new X509Certificate2());
+            using (var client = new HttpClient(handler))
+            {
+                await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+            }
+        }
+
         private static bool BackendSupportsCustomCertificateHandling =>
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
             (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+
+        private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
 
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();

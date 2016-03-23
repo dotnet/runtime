@@ -18,6 +18,7 @@ namespace System.Net.Test.Common
         public const string ExpiredCertRemoteServer = "https://expired.badssl.com/";
         public const string WrongHostNameCertRemoteServer = "https://wrong.host.badssl.com/";
         public const string SelfSignedCertRemoteServer = "https://self-signed.badssl.com/";
+        public const string RevokedCertRemoteServer = "https://revoked.grc.com/";
 
         private const string HttpScheme = "http";
         private const string HttpsScheme = "https";

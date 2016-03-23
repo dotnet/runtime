@@ -298,7 +298,7 @@
     <value>CookieContainer property must not be null.</value>
   </data>
   <data name="net_http_unix_invalid_certcallback_option" xml:space="preserve">
-    <value>The libcurl library in use ({0}) and its SSL backend ("{1}") do not support custom client certificates nor custom server certificate validation. A libcurl built with OpenSSL is required.</value>
+    <value>The libcurl library in use ({0}) and its SSL backend ("{1}") do not support custom handling of certificates. A libcurl built with OpenSSL is required.</value>
   </data>
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
     <value>The libcurl library in use ({0}) does not support different credentials for different authentication schemes.</value>
