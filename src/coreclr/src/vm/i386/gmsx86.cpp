@@ -114,6 +114,11 @@ static bool shouldEnterCall(PTR_BYTE ip) {
     // just work.
     for (int i = 0; i < 48; i++) {
         switch(*ip) {
+            case 0xF2:              // repne
+            case 0xF3:              // repe
+                ip++;
+                break;
+
             case 0x68:              // push 0xXXXXXXXX
                 ip += 5;
 
