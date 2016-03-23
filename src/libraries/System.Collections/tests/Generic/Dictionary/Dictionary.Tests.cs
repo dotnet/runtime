@@ -226,6 +226,13 @@ namespace System.Collections.Tests
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
         }
 
+        [Fact]
+        public void CantAcceptDuplicateKeysFromSourceDictionary()
+        {
+            Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };
+            Assert.Throws<ArgumentException>(null, () => new Dictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
+        }
+
         public static IEnumerable<object[]> CopyConstructorStringComparerData
         {
             get
