@@ -63,6 +63,32 @@ namespace System
                 return s_useLatestBehaviorWhenTFMNotSpecified;
             }
         }
+#else //FEATURE_CORECLR
+
+        public static bool IsAppEarlierThanSilverlight4
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public static bool IsAppEarlierThanWindowsPhone8
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public static bool IsAppEarlierThanWindowsPhoneMango
+        {
+            get
+            {
+                return false;
+            }
+        }
+
 #endif //FEATURE_CORECLR
 
         public static bool IsNetFx40TimeSpanLegacyFormatMode
