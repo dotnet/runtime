@@ -78,7 +78,8 @@ namespace System.Net.Http
                             easy._handler.ServerCertificateValidationCallback != null ||
                             easy._handler.CheckCertificateRevocationList)
                         {
-                            throw new PlatformNotSupportedException(SR.net_http_unix_invalid_certcallback_option);
+                            throw new PlatformNotSupportedException(
+                                SR.Format(SR.net_http_unix_invalid_certcallback_option, CurlVersionDescription, CurlSslVersionDescription));
                         }
                         break;
 

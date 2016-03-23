@@ -5,10 +5,10 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Tests
 {
@@ -33,7 +33,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             var handler = new HttpClientHandler();
@@ -60,7 +60,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Uri url, bool checkRevocation)
         {
@@ -88,7 +88,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
             var handler = new HttpClientHandler();
@@ -99,7 +99,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagates()
         {
             var handler = new HttpClientHandler();
@@ -123,7 +123,7 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [InlineData(HttpTestServers.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
         [InlineData(HttpTestServers.SelfSignedCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors)]
         [InlineData(HttpTestServers.WrongHostNameCertRemoteServer, SslPolicyErrors.RemoteCertificateNameMismatch)]
@@ -152,5 +152,12 @@ namespace System.Net.Http.Tests
                 Assert.True(callbackCalled);
             }
         }
+
+        private static bool BackendSupportsCustomCertificateHandling =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+
+        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
+        private static extern string CurlSslVersionDescription();
     }
 }

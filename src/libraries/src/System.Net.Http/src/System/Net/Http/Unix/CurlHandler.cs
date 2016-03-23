@@ -62,6 +62,8 @@ namespace System.Net.Http
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
         private readonly static bool s_supportsHttp2Multiplexing;
+        private static string s_curlVersionDescription;
+        private static string s_curlSslVersionDescription;
 
         private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
@@ -92,24 +94,21 @@ namespace System.Net.Http
         {
             // curl_global_init call handled by Interop.LibCurl's cctor
 
-            int age;
-            if (!Interop.Http.GetCurlVersionInfo(
-                out age, 
-                out s_supportsSSL, 
-                out s_supportsAutomaticDecompression, 
-                out s_supportsHttp2Multiplexing))
-            {
-                throw new InvalidOperationException(SR.net_http_unix_https_libcurl_no_versioninfo);  
-            }
+            Interop.Http.CurlFeatures features = Interop.Http.GetSupportedFeatures();
+            s_supportsSSL = (features & Interop.Http.CurlFeatures.CURL_VERSION_SSL) != 0;
+            s_supportsAutomaticDecompression = (features & Interop.Http.CurlFeatures.CURL_VERSION_LIBZ) != 0;
+            s_supportsHttp2Multiplexing = (features & Interop.Http.CurlFeatures.CURL_VERSION_HTTP2) != 0 && Interop.Http.GetSupportsHttp2Multiplexing();
 
-            // Verify the version of curl we're using is new enough
-            if (age < MinCurlAge)
+            if (HttpEventSource.Log.IsEnabled())
             {
-                throw new InvalidOperationException(SR.net_http_unix_https_libcurl_too_old);
+                EventSourceTrace($"libcurl: {CurlVersionDescription} {CurlSslVersionDescription} {features}");
             }
         }
 
         #region Properties
+
+        private static string CurlVersionDescription => s_curlVersionDescription ?? (s_curlVersionDescription = Interop.Http.GetVersionDescription() ?? string.Empty);
+        private static string CurlSslVersionDescription => s_curlSslVersionDescription ?? (s_curlSslVersionDescription = Interop.Http.GetSslVersionDescription() ?? string.Empty);
 
         internal bool AutomaticRedirection
         {
@@ -344,7 +343,7 @@ nameof(value),
             {
                 if (!s_supportsSSL)
                 {
-                    throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_unix_https_support_unavailable_libcurl, CurlVersionDescription));
                 }
             }
             else
@@ -533,7 +532,7 @@ nameof(value),
                         }
                         else if(!AreEqualNetworkCredentials(nc, networkCredential))
                         {
-                            throw new PlatformNotSupportedException(SR.net_http_unix_invalid_credential);
+                            throw new PlatformNotSupportedException(SR.Format(SR.net_http_unix_invalid_credential, CurlVersionDescription));
                         }
                     }
                 }
