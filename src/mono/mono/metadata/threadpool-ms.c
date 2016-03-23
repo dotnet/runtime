@@ -1583,7 +1583,9 @@ void
 ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
 {
 	// TODO
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	MonoError error;
+	mono_error_set_not_implemented (&error, "");
+	mono_error_set_pending_exception (&error);
 }
 
 MonoBoolean
@@ -1596,7 +1598,9 @@ MonoBoolean G_GNUC_UNUSED
 ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
 {
 	/* This copy the behavior of the current Mono implementation */
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
+	MonoError error;
+	mono_error_set_not_implemented (&error, "");
+	mono_error_set_pending_exception (&error);
 	return FALSE;
 }
 
