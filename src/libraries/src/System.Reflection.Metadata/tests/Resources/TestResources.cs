@@ -6,6 +6,9 @@ using System.IO;
 
 namespace System.Reflection.Metadata.Tests
 {
+    // NOTE: We cannot currently use periods in embedded resource file names due to an issue with x-plat MSBuild.
+    // See https://github.com/Microsoft/msbuild/issues/541 for more information.
+
     internal static class Interop
     {
         public static readonly byte[] IndexerWithByRefParam = ResourceHelper.GetResource("Interop.IndexerWithByRefParam.dll");
