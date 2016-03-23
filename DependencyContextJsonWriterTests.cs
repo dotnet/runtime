@@ -37,12 +37,14 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             CompilationOptions compilationOptions = null,
             CompilationLibrary[] compileLibraries = null,
             RuntimeLibrary[] runtimeLibraries = null,
-            IReadOnlyList<RuntimeFallbacks> runtimeGraph = null)
+            IReadOnlyList<RuntimeFallbacks> runtimeGraph = null,
+            string runtimeSignature = null)
         {
-            return new DependencyContext(
+            return new DependencyContext(new TargetInfo(
                             target ?? "DefaultTarget",
                             runtime ?? string.Empty,
-                            isPortable ?? false,
+                            runtimeSignature ?? string.Empty,
+                            isPortable ?? false),
                             compilationOptions ?? CompilationOptions.Default,
                             compileLibraries ?? new CompilationLibrary[0],
                             runtimeLibraries ?? new RuntimeLibrary[0],
@@ -80,10 +82,13 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var result = Save(Create(
                             "Target",
                             "runtime",
-                            false)
+                            false,
+                            runtimeSignature: "runtimeSignature")
                             );
-
-            result.Should().HavePropertyValue("runtimeTarget", "Target/runtime");
+            result.Should().HavePropertyAsObject("runtimeTarget")
+                .Which.Should().HavePropertyValue("name", "Target/runtime");
+            result.Should().HavePropertyAsObject("runtimeTarget")
+                .Which.Should().HavePropertyValue("signature", "runtimeSignature");
         }
 
         [Fact]
@@ -92,9 +97,13 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var result = Save(Create(
                             "Target",
                             "runtime",
-                            true)
+                            true,
+                            runtimeSignature: "runtimeSignature")
                             );
-            result.Should().HavePropertyValue("runtimeTarget", "Target");
+            result.Should().HavePropertyAsObject("runtimeTarget")
+                .Which.Should().HavePropertyValue("name", "Target");
+            result.Should().HavePropertyAsObject("runtimeTarget")
+                .Which.Should().HavePropertyValue("signature", "runtimeSignature");
         }
 
         [Fact]

@@ -16,10 +16,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [InlineData("FlibbidyFlob", "FlibbidyFlob")]
         public void GetRuntimeAssemblyNamesExtractsCorrectAssemblyName(string path, string expected)
         {
-            var context = new DependencyContext(
-                ".NETStandard,Version=v1.3",
-                string.Empty,
-                isPortable: true,
+            var context = new DependencyContext(new TargetInfo(".NETStandard,Version=v1.3", string.Empty, string.Empty, true),
                 compilationOptions: CompilationOptions.Default,
                 compileLibraries: new CompilationLibrary[] { },
                 runtimeLibraries: new[] {
@@ -94,10 +91,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
         private DependencyContext BuildTestContext()
         {
-            return new DependencyContext(
-                ".NETStandard,Version=v1.3",
-                string.Empty,
-                isPortable: true,
+            return new DependencyContext(new TargetInfo(".NETStandard,Version=v1.3", string.Empty, string.Empty, true),
                 compilationOptions: CompilationOptions.Default,
                 compileLibraries: new[]
                 {
