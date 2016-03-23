@@ -245,17 +245,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             case 'pri1':
                 // Pri one gets a push trigger, and only for release
                 if (architecture == 'x64') {
-                    if (configuration == 'Release' && os != 'CentOS7.1') {
-                        // We expect release jobs to be Windows, Ubuntu, or OSX
+                    if (configuration == 'Release') {
+                        // We expect release jobs to be Windows, Ubuntu, CentOS or OSX
                         assert (os == 'Windows_NT') || (os in Constants.crossList)
                         if (isFlowJob || os == 'Windows_NT') {
                             Utilities.addGithubPushTrigger(job)
-                        }
-                    } else if (configuration == 'Checked' && os == 'CentOS7.1') {
-                        // We expect checked jobs to be CentOS flow jobs
-                        assert (os in Constants.crossList)
-                        if (isFlowJob) {
-                            Utilities.addGithubPushTrigger(job)  
                         }
                     }
                 }
@@ -283,7 +277,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 break
             case 'ilrt':
                 // ILASM/ILDASM roundtrip one gets a daily build, and only for release
-                if (architecture == 'x64' && configuration == 'Release' && os != 'CentOS7.1') {
+                if (architecture == 'x64' && configuration == 'Release') {
                     // We don't expect to see a job generated except in these scenarios
                     assert (os == 'Windows_NT') || (os in Constants.crossList)
                     if (isFlowJob || os == 'Windows_NT') {
@@ -509,7 +503,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'CentOS7.1':
                     switch (scenario) {
                         case 'pri1':
-                            if (configuration == 'Checked') {
+                            if (configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Priority 1 Build and Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                             }
                             break
@@ -1100,7 +1094,7 @@ combinedScenarios.each { scenario ->
     } // isPR
 } // scenario
 
-// Create the Linux/OSX coreclr test leg for debug and release and each scenario
+// Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 combinedScenarios.each { scenario ->
     [true, false].each { isPR ->
         // Architectures.  x64 only at this point
@@ -1117,12 +1111,12 @@ combinedScenarios.each { scenario ->
                             return
                         }
                     }
-                    // For CentOS, we only want Checked pri1 builds.
+                    // For CentOS, we only want Checked/Release pri1 builds.
                     else if (os == 'CentOS7.1') {
                         if (scenario != 'pri1' && scenario != 'r2r' && scenario != 'pri1r2r') {
                             return
                         }
-                        if (configuration != 'Checked') {
+                        if (configuration != 'Checked' && configuration != 'Release') {
                             return
                         }
                     }
