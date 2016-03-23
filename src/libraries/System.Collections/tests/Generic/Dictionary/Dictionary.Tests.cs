@@ -167,7 +167,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorInt32Data")]
+        [MemberData(nameof(CopyConstructorInt32Data))]
         public void CopyConstructorInt32(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector);
@@ -179,7 +179,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorStringData")]
+        [MemberData(nameof(CopyConstructorStringData))]
         public void CopyConstructorString(int size, Func<int, string> keyValueSelector, Func<IDictionary<string, string>, IDictionary<string, string>> dictionarySelector)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector);
@@ -199,7 +199,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorInt32ComparerData")]
+        [MemberData(nameof(CopyConstructorInt32ComparerData))]
         public void CopyConstructorInt32Comparer(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector, IEqualityComparer<int> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
@@ -220,7 +220,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData("CopyConstructorStringComparerData")]
+        [MemberData(nameof(CopyConstructorStringComparerData))]
         public void CopyConstructorStringComparer(int size, Func<int, string> keyValueSelector, Func<IDictionary<string, string>, IDictionary<string, string>> dictionarySelector, IEqualityComparer<string> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
