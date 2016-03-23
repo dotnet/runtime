@@ -16,13 +16,20 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 
+#define set_error_messagev() do { \
+	if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
+			error->flags |= MONO_ERROR_INCOMPLETE; \
+} while (0)
+
 #define set_error_message() do { \
 	va_list args; \
 	va_start (args, msg_format); \
-	if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
-			error->flags |= MONO_ERROR_INCOMPLETE; \
+	set_error_messagev();	     \
 	va_end (args); \
 } while (0)
+
+static void
+mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args);
 
 static gboolean
 is_managed_exception (MonoErrorInternal *error)
@@ -332,14 +339,65 @@ mono_error_set_bad_image (MonoError *oerror, MonoImage *image, const char *msg_f
 }
 
 void
-mono_error_set_generic_error (MonoError *oerror, const char * name_space, const char *name, const char *msg_format, ...)
+mono_error_set_generic_errorv (MonoError *oerror, const char *name_space, const char *name, const char *msg_format, va_list args)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
 	error->error_code = MONO_ERROR_GENERIC;
 	mono_error_set_corlib_exception (oerror, name_space, name);
-	set_error_message ();
+	set_error_messagev ();
+}
+
+void
+mono_error_set_generic_error (MonoError *oerror, const char * name_space, const char *name, const char *msg_format, ...)
+{
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_set_generic_errorv (oerror, name_space, name, msg_format, args);
+	va_end (args);
+}
+
+/**
+ * mono_error_set_not_implemented:
+ *
+ * System.NotImplementedException
+ */
+void
+mono_error_set_not_implemented (MonoError *oerror, const char *msg_format, ...)
+{
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_set_generic_errorv (oerror, "System", "NotImplementedException", msg_format, args);
+	va_end (args);
+}
+
+/**
+ * mono_error_set_execution_engine:
+ *
+ * System.ExecutionEngineException
+ */
+void
+mono_error_set_execution_engine (MonoError *oerror, const char *msg_format, ...)
+{
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_set_generic_errorv (oerror, "System", "ExecutionEngineException", msg_format, args);
+	va_end (args);
+}
+
+/**
+ * mono_error_set_execution_engine:
+ *
+ * System.NotSupportedException
+ */
+void
+mono_error_set_not_supported (MonoError *oerror, const char *msg_format, ...)
+{
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_set_generic_errorv (oerror, "System", "NotSupportedException", msg_format, args);
+	va_end (args);
 }
 
 void
