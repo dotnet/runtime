@@ -15,7 +15,7 @@ void
 mono_threadpool_ms_cleanup (void);
 
 MonoAsyncResult *
-mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params);
+mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params, MonoError *error);
 MonoObject *
 mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc);
 

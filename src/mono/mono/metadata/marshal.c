@@ -2205,7 +2205,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 		method = mono_get_delegate_invoke (klass);
 	g_assert (method);
 
-	return mono_threadpool_ms_begin_invoke (mono_domain_get (), (MonoObject*) delegate, method, params);
+	MonoAsyncResult *result = mono_threadpool_ms_begin_invoke (mono_domain_get (), (MonoObject*) delegate, method, params, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
 }
 
 #ifndef DISABLE_JIT
