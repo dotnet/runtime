@@ -256,14 +256,16 @@ endlocal & set __IsGCTest=%__Result%
 if "%__IsGCTest%"=="true" (
     call tests\setup-runtime-dependencies.cmd /outputdir %CORE_ROOT%
 )
-call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GeneraRuntimeLayout=true 
-echo %__MsgPrefix% Created the runtime layout with all dependencies in:%CORE_ROOT%
-exit /b 0
-
+set __BuildLogRootName=Tests_GenerateRuntimeLayout
+call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
-    echo Test Depenedevy Resolution Failed
+    echo Test Dependency Resolution Failed
     exit /b 1
 )
+echo %__MsgPrefix% Created the runtime layout with all dependencies in %CORE_ROOT%
+exit /b 0
+
+
 
 :Usage
 echo.
