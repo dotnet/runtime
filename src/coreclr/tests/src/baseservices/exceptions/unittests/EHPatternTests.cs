@@ -27,7 +27,7 @@ public class Trace
   public void WriteLine(string str)
   {
     _actual += str;
-    _actual += "\r\n";
+    _actual += Environment.NewLine;
 
     // Console.WriteLine(str);
   }
