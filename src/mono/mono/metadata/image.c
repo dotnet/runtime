@@ -1080,13 +1080,13 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 	}
 
-	if (image->loader == &pe_loader && !mono_verifier_verify_cli_data (image, &errors))
+	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_cli_data (image, &errors))
 		goto invalid_image;
 
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (image->loader == &pe_loader && !mono_verifier_verify_table_data (image, &errors))
+	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, &errors))
 		goto invalid_image;
 
 	mono_image_load_names (image);
