@@ -1817,7 +1817,7 @@ TypeName::GetTypeHaveAssemblyHelper(
                 // defines the type. This should cause typeName.m_pBucket to be set to the bucket
                 // which corresponds to the type in the defining module, instead of potentially in the manifest module.
                 i = -1;
-                typeName.SetBucket(NULL);
+                typeName.SetBucket(HashedTypeEntry());
             }
         }
 
