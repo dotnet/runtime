@@ -45,7 +45,7 @@
     <Compile Include="System\ComponentModel\EventDescriptor.cs" />
     <Compile Include="System\ComponentModel\EventDescriptorCollection.cs" />
     <!--<Compile Include="System\ComponentModel\EventHandlerList.cs" />-->
-    <!--<Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\ExtendedPropertyDescriptor.cs" />
     <!--<Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />-->
     <Compile Include="System\ComponentModel\ExtenderProvidedPropertyAttribute.cs" />
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
@@ -59,7 +59,6 @@
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <!--<Compile Include="System\ComponentModel\IListSource.cs" />-->
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
-    <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
     <!--<Compile Include="System\ComponentModel\ITypedList.cs" />-->
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
@@ -68,10 +67,11 @@
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
-    <!--<Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />-->
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\RefreshEventArgs.cs" />
     <Compile Include="System\ComponentModel\RefreshEventHandler.cs" />
+    <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.ReflectedTypeData.cs" />
+    <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\SByteConverter.cs" />
     <Compile Include="System\ComponentModel\SingleConverter.cs" />
     <Compile Include="System\ComponentModel\StringConverter.cs" />
@@ -86,6 +86,9 @@
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <Compile Include="System\ComponentModel\WeakHashtable.cs" />
+    <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
+    <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
+    <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">
@@ -104,3 +107,4 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
+
