@@ -89,6 +89,7 @@ mono_domain_set            (MonoDomain *domain, mono_bool force);
 MONO_API void
 mono_domain_set_internal   (MonoDomain *domain);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_domain_unload (MonoDomain *domain);
 
