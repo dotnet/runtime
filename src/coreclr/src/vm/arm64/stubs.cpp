@@ -1033,60 +1033,6 @@ void ExceptionHijackEnd(void)
 {
     _ASSERTE(!"ARM64:NYI");
 }
-
-void RedirectedHandledJITCaseForGCThreadControl_Stub(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-void RedirectedHandledJITCaseForDbgThreadControl_Stub(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-void RedirectedHandledJITCaseForUserSuspend_Stub(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-void RedirectedHandledJITCaseForYieldTask_Stub(void)
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-void RedirectedHandledJITCaseForGCThreadControl_StubEnd()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-void RedirectedHandledJITCaseForDbgThreadControl_StubEnd()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-void RedirectedHandledJITCaseForUserSuspend_StubEnd()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-void RedirectedHandledJITCaseForYieldTask_StubEnd()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-
-VOID OnHijackObjectTripThread()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-VOID OnHijackScalarTripThread()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
-VOID OnHijackInteriorPointerTripThread()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
 };
 
 #ifdef FEATURE_COMINTEROP
