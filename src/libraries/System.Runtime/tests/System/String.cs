@@ -9,24 +9,28 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public static unsafe class StringTests
+public static class StringTests
 {
     private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     private const string c_SoftHyphen = "\u00AD";
 
     [Theory]
     [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' }, "abcdefgh")]
-    [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, "abcdefgh")]
     [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0', 'i', 'j' }, "abcdefgh")]
+    [InlineData(new char[] { 'a', '\0' }, "a")]
     [InlineData(new char[] { '\0' }, "")]
-    [InlineData(new char[0], "")]
-    [InlineData(null, "")]
     public static unsafe void TestCtor_CharPtr(char[] valueArray, string expected)
     {
         fixed (char* value = valueArray)
         {
             Assert.Equal(expected, new string(value));
         }
+    }
+
+    [Fact]
+    public static unsafe void TestCtor_CharPtr_Empty()
+    {
+        Assert.Same(string.Empty, new string((char*)null));
     }
 
     [Theory]
@@ -37,20 +41,24 @@ public static unsafe class StringTests
     [InlineData(new char[] { '\0' }, 0, 1, "\0")]
     [InlineData(new char[] { 'a', 'b', 'c' }, 0, 0, "")]
     [InlineData(new char[] { 'a', 'b', 'c' }, 1, 0, "")]
-    [InlineData(new char[0], 0, 0, "")]
     public static unsafe void TestCtor_CharPtr_Int_Int(char[] valueArray, int startIndex, int length, string expected)
     {
         fixed (char* value = valueArray)
         {
-            Assert.Equal(expected, new string(valueArray, startIndex, length));
+            Assert.Equal(expected, new string(value, startIndex, length));
         }
+    }
+
+    [Fact]
+    public static unsafe void TestCtor_CharPtr_Int_Int_Empty()
+    {
+        Assert.Same(string.Empty, new string((char*)null, 0, 0));
     }
 
     [Fact]
     public static unsafe void TestCtor_CharPtr_Int_Int_Invalid()
     {
         var valueArray = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' };
-        var valueArray2 = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
 
         Assert.Throws<ArgumentOutOfRangeException>("startIndex", () =>
         {
@@ -62,7 +70,7 @@ public static unsafe class StringTests
             fixed (char* value = valueArray) { new string(value, 0, -1); } // Length < 0
         });
 
-        Assert.Throws<ArgumentOutOfRangeException>("ptr", () => new string((char*)null, 0, 1)); // Length > value.Length
+        Assert.Throws<ArgumentOutOfRangeException>("ptr", () => new string((char*)null, 0, 1)); // null ptr with non-zero length
     }
 
     [Theory]
