@@ -6057,7 +6057,7 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
  * @obj: an object
  * @klass: a pointer to a class 
  *
- * Returns: @obj if @obj is derived from @klass, throws an exception otherwise
+ * Returns: @obj if @obj is derived from @klass, returns NULL otherwise.
  */
 MonoObject *
 mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
@@ -6067,9 +6067,6 @@ mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
 	if (!obj) return NULL;
 	if (mono_object_isinst_mbyref (obj, klass)) return obj;
 		
-	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
-							"System",
-							"InvalidCastException"));
 	return NULL;
 }
 
