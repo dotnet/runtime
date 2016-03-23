@@ -135,8 +135,23 @@
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
+  <data name="ErrorInvalidPropertyType" xml:space="preserve">
+    <value>Invalid type for the {0} property</value>
+  </data>
+  <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
+    <value>Accessor methods for the {0} property are missing.</value>
+  </data>
+  <data name="ErrorPropertyAccessorException" xml:space="preserve">
+    <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
+  </data>
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
+  </data>
+  <data name="InvalidNullArgument" xml:space="preserve">
+   <value>Null is not a valid value for {0}.</value> 
+  </data>
+  <data name="MetaExtenderName" xml:space="preserve">
+   <value>{0} on {1}</value> 
   </data>
   <data name="none" xml:space="preserve">
     <value>(none)</value>
@@ -155,6 +170,12 @@
   </data>
   <data name="TypeDescriptorArgsCountMismatch" xml:space="preserve">
     <value>The number of elements in the Type and Object arrays must match.</value>
+  </data>
+  <data name="TypeDescriptorProviderError" xml:space="preserve">
+    <value>The type description provider {0} has returned null from {1} which is illegal.</value>
+  </data>
+  <data name="TypeDescriptorUnsupportedRemoteObject" xml:space="preserve">
+    <value>The object {0} is being remoted by a proxy that does not support interface discovery.  This type of remoted object is not supported.</value>
   </data>
   <data name="TypeDescriptorExpectedElementType" xml:space="preserve">
     <value>Expected types in the collection to be of type {0}.</value>
