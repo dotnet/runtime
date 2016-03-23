@@ -57,6 +57,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         internal const string RuntimeTargetNamePropertyName = "name";
 
+        internal const string RuntimeTargetSignaturePropertyName = "signature";
+
         internal const string RuntimesPropertyName = "runtimes";
 
         internal const string RuntimeTargetsPropertyName = "runtimeTargets";

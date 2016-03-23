@@ -48,11 +48,18 @@ namespace Microsoft.Extensions.DependencyModel
             return contextObject;
         }
 
-        private string WriteRuntimeTargetInfo(DependencyContext context)
+        private JObject WriteRuntimeTargetInfo(DependencyContext context)
         {
-            return context.IsPortable ?
-                context.TargetFramework :
-                context.TargetFramework + DependencyContextStrings.VersionSeperator + context.Runtime;
+            return new JObject(
+                new JProperty(DependencyContextStrings.RuntimeTargetNamePropertyName,
+                    context.Target.IsPortable ?
+                    context.Target.Framework :
+                    context.Target.Framework + DependencyContextStrings.VersionSeperator + context.Target.Runtime
+                ),
+                new JProperty(DependencyContextStrings.RuntimeTargetSignaturePropertyName,
+                    context.Target.RuntimeSignature
+                )
+            );
         }
 
         private JObject WriteRuntimeGraph(DependencyContext context)
@@ -93,16 +100,16 @@ namespace Microsoft.Extensions.DependencyModel
 
         private JObject WriteTargets(DependencyContext context)
         {
-            if (context.IsPortable)
+            if (context.Target.IsPortable)
             {
                 return new JObject(
-                    new JProperty(context.TargetFramework, WritePortableTarget(context.RuntimeLibraries, context.CompileLibraries))
+                    new JProperty(context.Target.Framework, WritePortableTarget(context.RuntimeLibraries, context.CompileLibraries))
                     );
             }
 
             return new JObject(
-                new JProperty(context.TargetFramework, WriteTarget(context.CompileLibraries)),
-                new JProperty(context.TargetFramework + DependencyContextStrings.VersionSeperator + context.Runtime,
+                new JProperty(context.Target.Framework, WriteTarget(context.CompileLibraries)),
+                new JProperty(context.Target.Framework + DependencyContextStrings.VersionSeperator + context.Target.Runtime,
                     WriteTarget(context.RuntimeLibraries))
                 );
         }
