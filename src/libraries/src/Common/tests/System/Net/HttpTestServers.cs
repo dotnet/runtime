@@ -15,6 +15,10 @@ namespace System.Net.Test.Common
         public const string TLSv11RemoteServer = "https://www.ssllabs.com:10302/";
         public const string TLSv12RemoteServer = "https://www.ssllabs.com:10303/";
 
+        public const string ExpiredCertRemoteServer = "https://expired.badssl.com/";
+        public const string WrongHostNameCertRemoteServer = "https://wrong.host.badssl.com/";
+        public const string SelfSignedCertRemoteServer = "https://self-signed.badssl.com/";
+
         private const string HttpScheme = "http";
         private const string HttpsScheme = "https";
 
