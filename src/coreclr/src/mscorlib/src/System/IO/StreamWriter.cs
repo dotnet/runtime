@@ -276,7 +276,7 @@ namespace System.IO
                 __Error.WriterClosed();
 
             // Perf boost for Flush on non-dirty writers.
-            if (charPos==0 && ((!flushStream && !flushEncoder) || CompatibilitySwitches.IsAppEarlierThanWindowsPhone8))
+            if (charPos==0 && (!flushStream && !flushEncoder))
                 return;
 
             if (!haveWrittenPreamble) {

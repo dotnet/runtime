@@ -19,7 +19,6 @@ namespace System.Globalization
     using System.Runtime.Versioning;
     using System.Diagnostics.Contracts;
     using System.Security;
-    using System.Security.Principal;
 
     //
     // List of culture data
@@ -512,23 +511,6 @@ namespace System.Globalization
             if (String.IsNullOrEmpty(cultureName))
             {
                 return CultureData.Invariant;
-            }
-
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                // WinCE named some locales differently than Windows.
-                if (cultureName.Equals("iw", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "he";
-                } 
-                else if (cultureName.Equals("tl", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "fil";
-                }
-                else if (cultureName.Equals("english", StringComparison.OrdinalIgnoreCase))
-                {
-                    cultureName = "en";
-                }
             }
 
             // Try the hash table first
@@ -1195,14 +1177,6 @@ namespace System.Globalization
                         {
                             this.sLocalizedDisplayName = this.SLOCALIZEDLANGUAGE;
                         }
-#if FEATURE_LEGACYNETCF
-                        // NetCF renders Invariant DisplayName differently from Windows
-                        // Quirk it for NetCF apps
-                        else if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && object.ReferenceEquals(this, s_Invariant))
-                        {
-                            this.sLocalizedDisplayName = this.SLOCALIZEDLANGUAGE;
-                        }
-#endif
                         else
                         {
                             // We have to make the neutral distinction in case the OS returns a specific name

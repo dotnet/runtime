@@ -28,6 +28,9 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
+  <PropertyGroup>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributeConflict.il" />
   </ItemGroup>

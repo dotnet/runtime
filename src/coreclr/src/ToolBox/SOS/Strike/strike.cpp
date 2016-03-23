@@ -6319,11 +6319,6 @@ public:
 #ifdef FEATURE_PAL
         if (m_breakpoints == NULL)
         {
-            ULONG32 flags = 0;
-            g_clrData->GetOtherNotificationFlags(&flags);
-            flags &= ~(CLRDATA_NOTIFY_ON_MODULE_LOAD | CLRDATA_NOTIFY_ON_MODULE_UNLOAD);
-            g_clrData->SetOtherNotificationFlags(flags);
-
             g_ExtServices->ClearExceptionCallback();
         }
 #endif
@@ -6652,6 +6647,7 @@ private:
 
         ToRelease<IXCLRDataMethodDefinition> pMeth = NULL;
         mod->GetMethodDefinitionByToken(pCur->methodToken, &pMeth);
+
         // We may not need the code notification. Maybe it was ngen'd and we
         // already have the method?
         // We can delete the current entry if ResolveMethodInstances() set all BPs
@@ -6865,8 +6861,12 @@ public:
             if(method->GetRepresentativeEntryAddress(&startAddr) == S_OK)
             {
                 CHAR buffer[100];
+#ifndef FEATURE_PAL
                 sprintf_s(buffer, _countof(buffer), "bp /1 %p", (void*) (size_t) (startAddr+catcherNativeOffset));
-                g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+#else
+                sprintf_s(buffer, _countof(buffer), "breakpoint set --one-shot --address 0x%p", (void*) (size_t) (startAddr+catcherNativeOffset));
+#endif
+                g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
             }
             g_stopOnNextCatch = FALSE;
         }
@@ -7020,7 +7020,7 @@ HRESULT HandleExceptionNotification(ILLDBServices *client)
 
 DECLARE_API(bpmd)
 {
-    INIT_API();    
+    INIT_API_NOEE();    
     MINIDUMP_NOT_SUPPORTED();    
     int i;
     char buffer[1024];    
@@ -7169,9 +7169,6 @@ DECLARE_API(bpmd)
     LPWSTR Filename = (LPWSTR)alloca(MAX_LONGPATH * sizeof(WCHAR));
 
     BOOL bNeedNotificationExceptions = FALSE;
-#ifdef FEATURE_PAL
-    BOOL bNeedModuleNotificationExceptions = FALSE;
-#endif
 
     if (pMD == NULL)
     {
@@ -7190,7 +7187,7 @@ DECLARE_API(bpmd)
             MultiByteToWideChar(CP_ACP, 0, DllName.data, -1, Filename, MAX_LONGPATH);
         }
 
-        // get modules that may need a breakpoint bound
+        // Get modules that may need a breakpoint bound
         if ((Status = CheckEEDll()) == S_OK)
         {
             if ((Status = LoadClrDebugDll()) != S_OK)
@@ -7199,23 +7196,25 @@ DECLARE_API(bpmd)
                 DACMessage(Status);
                 return Status;
             }
-            else
-            {
-                // get the module list
-                moduleList = ModuleFromName(fIsFilename ? NULL : DllName.data, &numModule);
+            g_bDacBroken = FALSE;                                       \
 
-                // Its OK if moduleList is NULL
-                // There is a very normal case when checking for modules after clr is loaded
-                // but before any AppDomains or assemblies are created
-                // for example:
-                // >sxe ld:clr
-                // >g
-                // ...
-                // ModLoad: clr.dll
-                // >!bpmd Foo.dll Foo.Bar
-            }
+            // Get the module list
+            moduleList = ModuleFromName(fIsFilename ? NULL : DllName.data, &numModule);
+
+            // Its OK if moduleList is NULL
+            // There is a very normal case when checking for modules after clr is loaded
+            // but before any AppDomains or assemblies are created
+            // for example:
+            // >sxe ld:clr
+            // >g
+            // ...
+            // ModLoad: clr.dll
+            // >!bpmd Foo.dll Foo.Bar
         }
-
+        // If LoadClrDebugDll() succeeded make sure we release g_clrData
+        ToRelease<IXCLRDataProcess> spIDP(g_clrData);
+        ToRelease<ISOSDacInterface> spISD(g_sos);
+        ResetGlobals();
         
         // we can get here with EE not loaded => 0 modules
         //                      EE is loaded => 0 or more modules
@@ -7308,24 +7307,13 @@ DECLARE_API(bpmd)
                 g_bpoints.Add(Filename, lineNumber, NULL);
             }
             bNeedNotificationExceptions = TRUE;
-#ifdef FEATURE_PAL
-            bNeedModuleNotificationExceptions = TRUE;
-#endif
         }
     }
     else /* We were given a MethodDesc already */
     {
         // if we've got an explicit MD, then we better have CLR and mscordacwks loaded
-        if ((Status = CheckEEDll()) != S_OK)
-        {
-            EENotLoadedMessage(Status);
-            return Status;
-        }
-        if ((Status = LoadClrDebugDll()) != S_OK)
-        {
-            DACMessage(Status);
-            return Status;
-        } 
+        INIT_API_EE()
+        INIT_API_DAC();
 
         DacpMethodDescData MethodDescData;
         ExtOut("MethodDesc = %p\n", (ULONG64) pMD);
@@ -7371,7 +7359,6 @@ DECLARE_API(bpmd)
         else
         {
             // Must issue a pending breakpoint.
-
             if (g_sos->GetMethodDescName(pMD, mdNameLen, FunctionName, NULL) != S_OK)
             {
                 ExtOut("Unable to get method name for MethodDesc %p\n", (ULONG64)pMD);
@@ -7394,13 +7381,6 @@ DECLARE_API(bpmd)
         sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
         Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
 #else
-        if (bNeedModuleNotificationExceptions)
-        {
-            ULONG32 flags = 0;
-            g_clrData->GetOtherNotificationFlags(&flags);
-            flags |= (CLRDATA_NOTIFY_ON_MODULE_LOAD | CLRDATA_NOTIFY_ON_MODULE_UNLOAD);
-            g_clrData->SetOtherNotificationFlags(flags);
-        }
         Status = g_ExtServices->SetExceptionCallback(HandleExceptionNotification);
 #endif // FEATURE_PAL
     }
@@ -14099,9 +14079,7 @@ HRESULT SetNGENCompilerFlags(DWORD flags)
 }
 
 
-
 // This is an internal-only Apollo extension to save breakpoint/watch state
-#ifndef FEATURE_PAL
 DECLARE_API(SaveState)
 {
     INIT_API_NOEE();    
@@ -14138,16 +14116,14 @@ DECLARE_API(SaveState)
     ExtOut("Session breakpoints and watch expressions saved to %s\n", filePath.data);
     return S_OK;
 }
-#endif
 
+#endif // FEATURE_PAL
 
 DECLARE_API(StopOnCatch)
 {
     INIT_API();    
     MINIDUMP_NOT_SUPPORTED();    
 
-    CHAR buffer[100];
-    sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
     g_stopOnNextCatch = TRUE;
     ULONG32 flags = 0;
     g_clrData->GetOtherNotificationFlags(&flags);
@@ -14157,7 +14133,6 @@ DECLARE_API(StopOnCatch)
     return S_OK;
 }
 
-
 // This is an undocumented SOS extension command intended to help test SOS
 // It causes the Dml output to be printed to the console uninterpretted so
 // that a test script can read the commands which are hidden in the markup
@@ -14166,8 +14141,6 @@ DECLARE_API(ExposeDML)
     Output::SetDMLExposed(true);
     return S_OK;
 }
-
-#endif // FEATURE_PAL
 
 // According to kksharma the Windows debuggers always sign-extend
 // arguments when calling externally, therefore StackObjAddr 

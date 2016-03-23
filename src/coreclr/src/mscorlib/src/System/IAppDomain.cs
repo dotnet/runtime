@@ -19,7 +19,9 @@ namespace System {
     using SecurityManager = System.Security.SecurityManager;
     using System.Security.Permissions;
     using IEvidenceFactory = System.Security.IEvidenceFactory;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Security.Policy;
     using System.Security;
     using System.Security.Util;

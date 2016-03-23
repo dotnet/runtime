@@ -56,11 +56,7 @@ namespace System.Reflection.Emit {
         
         // Use this function if client decides to form the custom attribute blob themselves
 
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCF
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]
-#endif
         [System.Runtime.InteropServices.ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

@@ -20,7 +20,7 @@ namespace System {
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Diagnostics.Contracts;
-#if FEATURE_CAS_POLICY || FEATURE_LEGACYNETCFCRYPTO
+#if FEATURE_CAS_POLICY
     using StringMaker = System.Security.Util.Tokenizer.StringMaker;
 #endif // FEATURE_CAS_POLICY
 
@@ -67,7 +67,7 @@ namespace System {
             } 
         }
 
-#if FEATURE_CAS_POLICY || FEATURE_LEGACYNETCFCRYPTO
+#if FEATURE_CAS_POLICY
         private StringMaker _maker;
         [System.Security.SecuritySafeCritical]  // auto-generated
         static public StringMaker GetSharedStringMaker()

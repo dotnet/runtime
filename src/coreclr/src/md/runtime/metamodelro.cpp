@@ -389,10 +389,6 @@ CMiniMd::vSearchTableNotGreater(
     return S_OK;
 } // CMiniMd::vSearchTableNotGreater
 
-#if defined(FEATURE_LEGACYNETCF) && defined(FEATURE_METADATA_IN_VM)
-extern BOOL RuntimeIsLegacyNetCF(DWORD adid);
-#endif
-
 //*****************************************************************************
 // return just the blob value of the first found CA matching the query.
 // returns S_FALSE if there is no match
@@ -444,11 +440,5 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
     }
     
 ErrExit:
-#if defined(FEATURE_LEGACYNETCF) && defined(FEATURE_METADATA_IN_VM)
-    // NetCF ignore malformed custom attribute tables
-    if (FAILED(hr) && RuntimeIsLegacyNetCF(0))
-        hr = S_FALSE;
-#endif
-
     return hr;
 } // CMiniMd::CommonGetCustomAttributeByName

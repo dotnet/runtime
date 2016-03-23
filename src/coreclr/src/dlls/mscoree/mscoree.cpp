@@ -941,13 +941,13 @@ STDAPI GetCORSystemDirectoryInternaL(SString& pBuffer)
     return hr;
 
 #else // FEATURE_CORECLR || CROSSGEN_COMPILE
-    DWORD cchBuffer;
+    DWORD cchBuffer = MAX_PATH - 1;
     // Simply forward the call to the ICLRRuntimeInfo implementation.
     STATIC_CONTRACT_WRAPPER;
     HRESULT hr = S_OK;
     if (g_pCLRRuntime)
     {
-        WCHAR* temp = pBuffer.OpenUnicodeBuffer(MAX_PATH - 1);
+        WCHAR* temp = pBuffer.OpenUnicodeBuffer(cchBuffer);
         hr = g_pCLRRuntime->GetRuntimeDirectory(temp, &cchBuffer);
         pBuffer.CloseBuffer(cchBuffer - 1);
     }

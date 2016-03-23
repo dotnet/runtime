@@ -708,7 +708,7 @@ void BaseStackGuard::HandleOverwrittenThisStackGuard(__in_z char *stackID)
               "STACK GUARD VIOLATION\n"
               "The%s stack guard installed in %s at \"%s\" @ %d requested %d pages of stack.\n"
               "\nIf this is easily reproduced, please rerun the test under the debugger with the\n"
-              "DWORD environment variable COMPLUS_SOEnableStackProtectionInDebugger\n"
+              "DWORD environment variable COMPlus_SOEnableStackProtectionInDebugger\n"
               "set to 1.  This will cause an AV at the point of overrun.\n"
               "Attach the stack trace at that point to the bug in addition to this assert."
               MORE_INFO_STRING, stackID ? stackID : "",

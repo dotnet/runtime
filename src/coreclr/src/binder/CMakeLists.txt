@@ -18,7 +18,6 @@ set(BINDER_COMMON_SOURCES
     debuglog.cpp
     bindinglog.cpp
     cdebuglog.cpp
-    compatibility.cpp
     textualidentityparser.cpp
     assemblyidentitycache.cpp
     coreclrbindercommon.cpp

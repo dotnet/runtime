@@ -5,8 +5,6 @@
 #ifndef __STACKSTRING_H_
 #define __STACKSTRING_H_
 
-#include "pal/malloc.hpp"
-
 template <SIZE_T STACKCOUNT, class T>
 class StackString
 {

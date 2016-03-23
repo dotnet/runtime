@@ -60,7 +60,7 @@
 //   JITting happened. But if we fail to acquire (ngen'ed method) or enter (unloaded domain) the original domain,
 //   we then try to JIT it under the thread's app domain in which the method was last seen to be executing.
 //
-// o The JIT to use is configurable with COMPLUS_AltJitName when COMPLUS_StackSampling is enabled.
+// o The JIT to use is configurable with COMPlus_AltJitName when COMPlus_StackSampling is enabled.
 //
 // o One use case is to collect traces as an .mc file from SuperPMI Shim JIT.
 //

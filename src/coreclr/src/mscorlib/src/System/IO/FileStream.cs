@@ -377,14 +377,6 @@ namespace System.IO {
     {
         internal const int DefaultBufferSize = 4096;
 
-
-#if FEATURE_LEGACYNETCF
-        // Mango didn't do support Async IO.
-        private static readonly bool _canUseAsync = !CompatibilitySwitches.IsAppEarlierThanWindowsPhone8;
-#else
-        private const bool _canUseAsync = true;
-#endif //FEATURE_LEGACYNETCF
-
         private byte[] _buffer;   // Shared read/write buffer.  Alloc on first use.
         private String _fileName; // Fully qualified file name.
         private bool _isAsync;    // Whether we opened the handle for overlapped IO
@@ -414,58 +406,16 @@ namespace System.IO {
         [System.Security.SecuritySafeCritical]
         public FileStream(String path, FileMode mode) 
             : this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.Read, DefaultBufferSize, FileOptions.None, Path.GetFileName(path), false, false, true) {
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly) {
-                    string caller = new System.Diagnostics.StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
         }
     
         [System.Security.SecuritySafeCritical]
         public FileStream(String path, FileMode mode, FileAccess access) 
             : this(path, mode, access, FileShare.Read, DefaultBufferSize, FileOptions.None, Path.GetFileName(path), false, false, true) {
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly) {
-                    string caller = new System.Diagnostics.StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
         }
 
         [System.Security.SecuritySafeCritical]
         public FileStream(String path, FileMode mode, FileAccess access, FileShare share) 
             : this(path, mode, access, share, DefaultBufferSize, FileOptions.None, Path.GetFileName(path), false, false, true) {
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly) {
-                    string caller = new System.Diagnostics.StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
         }
 
         [System.Security.SecuritySafeCritical]
@@ -765,7 +715,7 @@ namespace System.IO {
             // WRT async IO, do the right thing for whatever platform we're on.
             // This way, someone can easily write code that opens a file 
             // asynchronously no matter what their platform is.  
-            if (_canUseAsync && (options & FileOptions.Asynchronous) != 0)
+            if ((options & FileOptions.Asynchronous) != 0)
                 _isAsync = true;
             else
                 options &= ~FileOptions.Asynchronous;
@@ -953,7 +903,7 @@ namespace System.IO {
 
             int handleType = Win32Native.GetFileType(_handle);
             Contract.Assert(handleType == Win32Native.FILE_TYPE_DISK || handleType == Win32Native.FILE_TYPE_PIPE || handleType == Win32Native.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
-            _isAsync = isAsync && _canUseAsync;
+            _isAsync = isAsync;
             _canRead = 0 != (access & FileAccess.Read);
             _canWrite = 0 != (access & FileAccess.Write);
             _canSeek = handleType == Win32Native.FILE_TYPE_DISK;

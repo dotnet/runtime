@@ -952,23 +952,9 @@ MethodTableBuilder::MethodSignature::SignaturesEquivalent(
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_LEGACYNETCF
-    BaseDomain::AppDomainCompatMode compatMode1 = sig1.GetModule()->GetDomain()->GetAppDomainCompatMode();
-    BaseDomain::AppDomainCompatMode compatMode2 = sig2.GetModule()->GetDomain()->GetAppDomainCompatMode();
-
-    if ((compatMode1 == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8) || (compatMode2 == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8))
-    {
-        return S_OK == MetaSig::CompareMethodSigsNT(
-            sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
-            sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution());
-    }
-    else
-#endif
-    {
-        return !!MetaSig::CompareMethodSigs(
-            sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
-            sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution());
-    }
+    return !!MetaSig::CompareMethodSigs(
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution());
 }
 
 //*******************************************************************************
@@ -979,27 +965,11 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_LEGACYNETCF
-    BaseDomain::AppDomainCompatMode compatMode1 = sig1.GetModule()->GetDomain()->GetAppDomainCompatMode();
-    BaseDomain::AppDomainCompatMode compatMode2 = sig2.GetModule()->GetDomain()->GetAppDomainCompatMode();
-
-    if ((compatMode1 == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8) || (compatMode2 == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8))
-    {
-        TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
-        return S_OK == MetaSig::CompareMethodSigsNT(
-            sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
-            sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
-            &newVisited);
-    }
-    else
-#endif
-    {
-        TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
-        return !!MetaSig::CompareMethodSigs(
-            sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
-            sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
-            &newVisited);
-    }
+    TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
+    return !!MetaSig::CompareMethodSigs(
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(), 
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        &newVisited);
 }
 
 //*******************************************************************************
@@ -2943,16 +2913,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                 }
 
-#if defined(MDIL)
-                // Interfaces with sparse vtables are not currently supported in the triton toolchain.
-                if (GetAppDomain()->IsMDILCompilationDomain())
-                {
-                    GetSvcLogger()->Log(W("Warning: Sparse v-table detected.\n"));
-                    BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT,
-                                                    IDS_CLASSLOAD_BADSPECIALMETHOD,
-                                                    tok);
-                }
-#endif // defined(MDIL)
 #ifdef FEATURE_COMINTEROP 
                 // Record vtable gap in mapping list. The map is an optional field, so ensure we've allocated
                 // these fields first.
@@ -3906,13 +3866,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
 #endif
 
-#ifdef FEATURE_LEGACYNETCF
-    BOOL fNetCFCompat = GetModule()->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8;
-    DWORD dwStaticsSizeOnNetCF = 0;
-#else
-    const BOOL fNetCFCompat = FALSE;
-#endif
-
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
         PCCOR_SIGNATURE pMemberSignature;
@@ -4410,8 +4363,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                   );
 
         // Check if the ValueType field containing non-publics is overlapped
-        if (!fNetCFCompat
-            && HasExplicitFieldOffsetLayout()
+        if (HasExplicitFieldOffsetLayout()
             && pLayoutFieldInfo != NULL
             && pLayoutFieldInfo->m_fIsOverlapped
             && pByValueClass != NULL
@@ -8220,8 +8172,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     if (bmtFP->NumInstanceFieldsOfSize[j] != 0)
                         break;
                     // TODO: since we will refuse to place GC references we should filter them out here.
-                    // otherwise the "back-filling" process stops completely. If you change it here,
-                    // please change it in the corresponding place in src\tools\mdilbind\compactLayoutReader.cpp
+                    // otherwise the "back-filling" process stops completely.
                     // (PlaceInstanceFields)
                     // the following code would fix the issue (a replacement for the code above this comment):
                     // if (bmtFP->NumInstanceFieldsOfSize[j] != 0 &&
@@ -11508,11 +11459,6 @@ void MethodTableBuilder::VerifyVirtualMethodsImplemented(MethodTable::MethodData
     if (bmtProp->fIsComObjectType)
         return;
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_LEGACYNETCF
-    if (GetModule()->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        return;
-#endif
 
     // Since interfaces aren't laid out in the vtable for stub dispatch, what we need to do
     // is try to find an implementation for every interface contract by iterating through

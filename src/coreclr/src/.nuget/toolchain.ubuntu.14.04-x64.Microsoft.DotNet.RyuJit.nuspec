@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit</id>
-    <version>1.0.6-prerelease-00001</version>
+    <version>1.0.6-prerelease</version>
     <title>Microsoft DotNet Standalone Managed to Native Code-Generator</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>

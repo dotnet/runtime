@@ -339,7 +339,7 @@ function create_core_overlay {
     fi
     mkdir "$coreOverlayDir"
 
-    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*RemoteExecutorConsoleApp*' -exec cp -f '{}' "$coreOverlayDir/" \;)
+    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*netstandard13aot*' \! -iwholename '*netstandard15aot*' \! -iwholename '*netcore50aot*' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' \! -iwholename '*RemoteExecutorConsoleApp*' -exec cp -f '{}' "$coreOverlayDir/" \;)
     cp -f "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
     cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
@@ -758,7 +758,7 @@ load_failing_tests
 
 if [ -n "$COMPlus_GCStress" ]; then
     scriptPath=$(dirname $0)
-    ${scriptPath}/setup-gcstress.sh --outputDir=$coreOverlayDir
+    ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
     if [ $? -ne 0 ] 
     then
         echo 'Failed to download coredistools library'
