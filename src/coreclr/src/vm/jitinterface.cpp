@@ -7671,15 +7671,6 @@ CorInfoInstantiationVerification
         goto exit;
     }
 
-#ifdef FEATURE_CORECLR
-    //Skip verification of all methods in profile assemblies.  We will ensure that they are all verifiable.
-    if (pMethod->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
-    {
-        result = INSTVER_GENERIC_PASSED_VERIFICATION;
-        goto exit;
-    }
-#endif
-
     result = pMethod->IsVerifiable() ? INSTVER_GENERIC_PASSED_VERIFICATION
                                      : INSTVER_GENERIC_FAILED_VERIFICATION;
 

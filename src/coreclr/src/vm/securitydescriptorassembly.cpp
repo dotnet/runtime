@@ -486,90 +486,7 @@ void AssemblySecurityDescriptor::ResolveWorker()
     } CONTRACTL_END;
 
 #ifdef FEATURE_CORECLR
-
-    if (NingenEnabled())
-    {
-        int dwSpecialFlags;
-        BOOL platformAssembly = FALSE;
-
-        if (IsSystem())
-        {
-            dwSpecialFlags = 0xFFFFFFFF;
-            platformAssembly = TRUE;
-        }
-        else
-        {
-            // Decide if this is a platform assembly
-            if (m_pAssem->GetFile()->IsProfileAssembly())
-                platformAssembly = TRUE;
-
-            // Decide trust level
-            if (platformAssembly)
-            {
-                dwSpecialFlags = 0xFFFFFFFF;
-            }
-            else
-            {
-                dwSpecialFlags = m_pAppDomain->GetSecurityDescriptor()->GetSpecialFlags();
-            }
-        }
-
-        SetGrantedPermissionSet(NULL, NULL, dwSpecialFlags);
-        if (platformAssembly)
-            SetMicrosoftPlatform();
-
-        return;
-    }
-
-#ifndef CROSSGEN_COMPILE
-    int dwSpecialFlags;
-    BOOL platformAssembly = FALSE;
-    BOOL trustedAssembly = FALSE;
-    
-    struct _gc {
-        OBJECTREF granted;          // Policy based Granted Permission
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
-    if (IsSystem())
-    {
-        // mscorlib is always FT, but we can't create permissionsets yet. So grantset for mscorlib will be NULL: we should never look at it though.
-        dwSpecialFlags = 0xFFFFFFFF;
-        platformAssembly = TRUE;
-    }
-    else
-    {
-        // Decide if this is a platform assembly
-        if (m_pAssem->GetFile()->IsProfileAssembly())
-            platformAssembly = TRUE;
-
-        // Decide trust level
-        if (platformAssembly || trustedAssembly)
-        {
-            Security::GetPermissionInstance(&gc.granted, SECURITY_FULL_TRUST);
-            dwSpecialFlags = 0xFFFFFFFF;
-        }
-        else
-        {
-            // get grant from AppDomain grant set.
-            gc.granted = m_pAppDomain->GetSecurityDescriptor()->GetGrantedPermissionSet(NULL);
-            dwSpecialFlags = m_pAppDomain->GetSecurityDescriptor()->GetSpecialFlags();
-        }
-        
-    }
-    SetGrantedPermissionSet(gc.granted, NULL, dwSpecialFlags);
-    if (platformAssembly)
-        SetMicrosoftPlatform();
-    
-    // Only fully trusted assemblies are allowed to be loaded when 
-    // the AppDomain is in the initialization phase.
-    if (m_pAppDomain->GetSecurityDescriptor()->IsInitializationInProgress() && !IsFullyTrusted())
-        COMPlusThrow(kApplicationException, W("Policy_CannotLoadSemiTrustAssembliesDuringInit"));
-
-    GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
-
+    SetGrantedPermissionSet(NULL, NULL, 0xFFFFFFFF);
 #else
     if (CanSkipPolicyResolution() || NingenEnabled()) {
         SetGrantedPermissionSet(NULL, NULL, 0xFFFFFFFF);
@@ -1017,9 +934,6 @@ void SharedSecurityDescriptor::Resolve(IAssemblySecurityDescriptor *pSecDesc)
         m_fFullyTrusted = pSecDesc->IsFullyTrusted();
         m_fCanCallUnmanagedCode = pSecDesc->CanCallUnmanagedCode();
         m_fCanAssert = pSecDesc->CanAssert();
-#ifdef FEATURE_CORECLR
-        m_fMicrosoftPlatform = static_cast<AssemblySecurityDescriptor*>(pSecDesc)->IsMicrosoftPlatform();
-#endif // FEATURE_CORECLR
 
         m_fResolved = TRUE;
     }

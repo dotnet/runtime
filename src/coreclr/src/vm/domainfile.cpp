@@ -3519,6 +3519,10 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_CORECLR
+    return TRUE;
+#else
+
     //
     // System libraries are a special case, the security info's always OK.
     //
@@ -3536,21 +3540,6 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
         return TRUE;
 #endif
 
-#if defined(FEATURE_CORECLR)
-    // Lets first check whether the assembly is going to receive full trust
-    BOOL fAssemblyIsFullyTrusted = this->GetAppDomain()->IsImageFullyTrusted(pNativeImage);
-
-    // Check if the assembly was ngen as platform
-    Module *  pNativeModule = pNativeImage->GetLoadedLayout()->GetPersistedModuleImage();
-    BOOL fImageAndDependenciesAreFullTrust = pNativeModule->m_pModuleSecurityDescriptor->IsMicrosoftPlatform();
-
-    // return true only if image was ngen at the same trust level as the current trust level. 
-    // images ngen'd as fulltrust can only be loaded in fulltrust and 
-    // non-trusted transparent assembly ngen image can only be loaded in partial trust 
-    // ( only tranparent assemblies can be ngen'd as partial trust.....if it has critical code ngen will error out)
-    return (fAssemblyIsFullyTrusted == fImageAndDependenciesAreFullTrust);
-
-#else // FEATURE_CORECLR
     ETWOnStartup (SecurityCatchCall_V1, SecurityCatchCallEnd_V1);
 
 #ifdef CROSSGEN_COMPILE
