@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = WideCharToMultiByte
+Name = Test #5 for WideCharToMultiByte
+TYPE = DEFAULT
+EXE1 = test5
+Description
+=Tests WideCharToMultiByte conversion to UTF-8
+=containing various corner cases

@@ -3056,7 +3056,7 @@ emitter::instrDesc  * emitter::emitNewInstrCallInd(int                          
         id->idAddr()->iiaAddrMode.amDisp  = disp;
         assert(id->idAddr()->iiaAddrMode.amDisp == disp);
 
-        /* Save the the live GC registers in the unused 'idReg/idRg2' fields */
+        /* Save the the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return  id;
@@ -3128,7 +3128,7 @@ emitter::instrDesc *emitter::emitNewInstrCallDir(int                            
         /* Make sure we didn't waste space unexpectedly */
         assert(!id->idIsLargeCns());
 
-        /* Save the the live GC registers in the unused 'idReg/idRg2' fields */
+        /* Save the the live GC registers in the unused register fields */
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return  id;

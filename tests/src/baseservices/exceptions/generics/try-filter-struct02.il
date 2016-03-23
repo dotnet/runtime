@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.2211.0
 //  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
@@ -5,12 +8,11 @@
 
 
 // Metadata version: v1.1.2211
-.assembly extern mscorlib
+.assembly extern legacy library mscorlib {}
+.assembly extern System.Console
 {
-  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
-  .hash = (32 83 18 13 53 59 D7 A6 73 07 31 5C FB 07 BE AC   // 2...SY..s.1\....
-           80 11 4E 4D )                                     // ..NM
-  .ver 1:2:3300:0
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 4:0:0:0
 }
 .assembly 'try-catch01'
 {
@@ -329,7 +331,7 @@
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
-    IL_0029:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_0029:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002e:  ret
   } // end of method Test::Eval
 
@@ -742,12 +744,12 @@
   IL_03e2:  ldsfld     bool Test::result
   IL_03e7:  brfalse.s  IL_03f8
   IL_03e9:  ldstr      "Test Passed"
-  IL_03ee:  call       void [mscorlib]System.Console::WriteLine(string)
+  IL_03ee:  call       void [System.Console]System.Console::WriteLine(string)
   IL_03f3:  ldc.i4.s   100
   IL_03f5:  stloc.0
   IL_03f6:  br.s       IL_0406
   IL_03f8:  ldstr      "Test Failed"
-  IL_03fd:  call       void [mscorlib]System.Console::WriteLine(string)
+  IL_03fd:  call       void [System.Console]System.Console::WriteLine(string)
   IL_0402:  ldc.i4.1
   IL_0403:  stloc.0
   IL_0404:  br.s       IL_0406

@@ -6,7 +6,7 @@ This glossary defines terms, both common and more niche, that are important to u
 As much as possible, we should link to the most authoritative and recent source of information for a term. That approach should be the most helpful for people who want to learn more about a topic.
 
 * CLR: Common Language Runtime
-* COMPLUS: An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx).
+* COMPlus: An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/en-us/library/windows/desktop/ms685978.aspx).
 * COR: [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET.
 * DAC: Data Access Component. An abstraction layer over the internal structures in the runtime.
 * EE: Execution Engine.

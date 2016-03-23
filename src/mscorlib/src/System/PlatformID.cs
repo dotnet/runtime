@@ -22,11 +22,7 @@ namespace System {
         WinCE         = 3,      
         Unix          = 4,
         Xbox          = 5,
-#if !FEATURE_LEGACYNETCF
         MacOSX        = 6
-#else // FEATURE_LEGACYNETCF
-        NokiaS60      = 6
-#endif // FEATURE_LEGACYNETCF
     }
 
 }

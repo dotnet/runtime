@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if !defined(_BINDERMODULE_H_) && !defined(CLR_STANDALONE_BINDER)
+#ifndef _BINDERMODULE_H_
 #define _BINDERMODULE_H_
 
 class DataImage;

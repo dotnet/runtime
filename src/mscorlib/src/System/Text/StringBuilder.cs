@@ -581,28 +581,14 @@ namespace System.Text {
         // Appends an array of characters at the end of this string builder. The capacity is adjusted as needed. 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(char[] value, int startIndex, int charCount) {
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            // we need to check this twice, as this is a contract area and we can't return from here
-#if FEATURE_LEGACYNETCF
-            if (startIndex < 0 && !(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (charCount == 0))) {
-#else
             if (startIndex < 0) {
-#endif //FEATURE_LEGACYNETCF
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
             if (charCount<0) {
                 throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
-#if !FEATURE_LEGACYNETCF  // Avoid contract problems with compat switch above.
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
             Contract.EndContractBlock();
-#endif
-
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (charCount == 0))
-            {
-                return this;
-            }
 
             if (value == null) {
                 if (startIndex == 0 && charCount == 0) {
@@ -685,29 +671,15 @@ namespace System.Text {
         // count at the end of this string builder.
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StringBuilder Append(String value, int startIndex, int count) {
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            // we need to check this twice, as this is a contract area and we can't return from here
-#if FEATURE_LEGACYNETCF
-            if (startIndex < 0 && !(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (count == 0))) {
-#else
             if (startIndex < 0) {
-#endif //FEATURE_LEGACYNETCF
                 throw new ArgumentOutOfRangeException("startIndex", Environment.GetResourceString("ArgumentOutOfRange_Index"));
             }
 
             if (count < 0) {
                 throw new ArgumentOutOfRangeException("count", Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
             }
-#if !FEATURE_LEGACYNETCF  // The use of CompatibilitySwitches above prevents us from marking this as a precondition.
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-#endif
 
-            // in NetCF arguments pretty much don't matter as long as count is 0
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && (count == 0)){
-                return this;
-            }
-
-        
             //If the value being added is null, eat the null
             //and return.
             if (value == null) {
@@ -1435,14 +1407,6 @@ namespace System.Text {
                 if (s == null) {
                     IFormattable formattableArg = arg as IFormattable;
 
-#if FEATURE_LEGACYNETCF
-                    if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                        // TimeSpan does not implement IFormattable in Mango
-                        if(arg is TimeSpan) {
-                            formattableArg = null;
-                        }
-                    }
-#endif
                     if (formattableArg != null) {
                         if (sFmt == null && fmt != null) {
                             sFmt = fmt.ToString();

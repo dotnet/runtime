@@ -10,11 +10,6 @@
 //=============================================================================================
 
 #include "common.h" // precompiled header
-#ifdef CLR_STANDALONE_BINDER
-#include "utilcode.h"
-#include "sstring.h"
-#include "stringarraylist.h"
-#endif 
 
 #ifndef FEATURE_CORECLR
 #include "assemblyusagelogmanager.h"
@@ -52,10 +47,6 @@
 #include "../binder/inc/fusionassemblyname.hpp"
 #endif
 
-#ifdef CLR_STANDALONE_BINDER
-#include "fakepeimage.h"
-#include "coreclr/corebindresult.inl"
-#endif
 
 using namespace CLRPrivBinderUtil;
 
@@ -159,7 +150,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
     PRECONDITION(CheckPointer(pWinRtTypeCache));
     
 #ifndef CROSSGEN_COMPILE
-#ifndef CLR_STANDALONE_BINDER
     //  - To prevent deadlock with GC thread, we cannot trigger GC while holding the lock
     //  - To prevent deadlock with profiler thread, we cannot allow thread suspension
     m_MapsLock.Init(
@@ -169,7 +159,6 @@ CLRPrivBinderWinRT::CLRPrivBinderWinRT(
                     | CRST_DEBUGGER_THREAD 
                     INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
     m_MapsAddLock.Init(CrstCLRPrivBinderMapsAdd);
-#endif // CLR_STANDALONE_BINDER
 
 #ifdef FEATURE_COMINTEROP_WINRT_DESKTOP_HOST
     m_localWinMDPathLock.Init(CrstCrstCLRPrivBinderLocalWinMDPath);
@@ -830,15 +819,11 @@ CLRPrivBinderWinRT::FindAssemblyByFileName(
 {
     LIMITED_METHOD_CONTRACT;
     STATIC_CONTRACT_CAN_TAKE_LOCK;
-    
-#ifndef CLR_STANDALONE_BINDER
+
     ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
     {
-#ifndef CLR_STANDALONE_BINDER
         CrstHolder lock(&m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
-        
+
         const FileNameToAssemblyWinRTMapEntry * pEntry = m_FileNameToAssemblyMap.LookupPtr(wszFileName);
         return (pEntry == nullptr) ? nullptr : clr::SafeAddRef(pEntry->m_pAssembly);
     }
@@ -856,10 +841,8 @@ CLRPrivBinderWinRT::AddFileNameToAssemblyMapping(
     
     _ASSERTE(pAssembly != nullptr);
     
-#ifndef CLR_STANDALONE_BINDER
     // We have to serialize all Add operations
     CrstHolder lock(&m_MapsAddLock);
-#endif // !CLR_STANDALONE_BINDER
     
     // Wrapper for m_FileNameToAssemblyMap.Add that avoids call out into host
     FileNameToAssemblyWinRTMap::AddPhases addCall;
@@ -869,14 +852,10 @@ CLRPrivBinderWinRT::AddFileNameToAssemblyMapping(
     {
         // 2. Take the reader lock which can be taken during stack walking
         // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-#ifndef CLR_STANDALONE_BINDER
         ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
         {
-#ifndef CLR_STANDALONE_BINDER
             CrstHolder lock(&m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
-            
+
             const FileNameToAssemblyWinRTMapEntry * pEntry = m_FileNameToAssemblyMap.LookupPtr(wszFileName);
             CLRPrivAssemblyWinRT * pResultAssembly = nullptr;
             if (pEntry != nullptr)
@@ -910,15 +889,11 @@ CLRPrivBinderWinRT::RemoveFileNameToAssemblyMapping(
 {
     LIMITED_METHOD_CONTRACT;
     STATIC_CONTRACT_CAN_TAKE_LOCK;
-    
-#ifndef CLR_STANDALONE_BINDER
+
     ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
     {
-#ifndef CLR_STANDALONE_BINDER
         CrstHolder lock(&m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
-        
+
         m_FileNameToAssemblyMap.Remove(wszFileName);
     }
 }
@@ -938,14 +913,10 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
     
     CLRPrivBinderUtil::WStringList * pFileNameList = nullptr;
     {
-#ifndef CLR_STANDALONE_BINDER
         ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
         {
-#ifndef CLR_STANDALONE_BINDER
             CrstHolder lock(&m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
-            
+
             const NamespaceToFileNameListMapEntry * pEntry = m_NamespaceToFileNameListMap.LookupPtr(wszNamespace);
             if (pEntry != nullptr)
             {
@@ -1118,7 +1089,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
         }
         else
         {
-#if !defined(CLR_STANDALONE_BINDER)
             // This code is desktop specific. 
             _ASSERTE(m_fNamespaceResolutionKind == NamespaceResolutionKind_DesignerResolveEvent);
             
@@ -1137,7 +1107,6 @@ CLRPrivBinderWinRT::GetFileNameListForNamespace(
                 EX_RETHROW;
             }
             EX_END_CATCH_UNREACHABLE
-#endif // !defined(CLR_STANDALONE_BINDER)
         }
         
 #else //CROSSGEN_COMPILE
@@ -1191,11 +1160,9 @@ CLRPrivBinderWinRT::AddFileNameListForNamespace(
     entry.m_wszNamespace = wszEntryNamespace.GetValue();
     entry.m_pFileNameList = pFileNameList;
     
-#ifndef CLR_STANDALONE_BINDER
     // We have to serialize all Add operations
     CrstHolder lock(&m_MapsAddLock);
-#endif // !CLR_STANDALONE_BINDER
-    
+
     // Wrapper for m_NamespaceToFileNameListMap.Add that avoids call out into host
     NamespaceToFileNameListMap::AddPhases addCall;
     
@@ -1207,14 +1174,10 @@ CLRPrivBinderWinRT::AddFileNameListForNamespace(
     {
         // 2. Take the reader lock which can be taken during stack walking
         // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-#ifndef CLR_STANDALONE_BINDER
         ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
         {
-#ifndef CLR_STANDALONE_BINDER
             CrstHolder lock(&m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
-            
+
             const NamespaceToFileNameListMapEntry * pEntry = m_NamespaceToFileNameListMap.LookupPtr(wszNamespace);
             if (pEntry == nullptr)
             {
@@ -1247,7 +1210,6 @@ CLRPrivBinderWinRT::AddFileNameListForNamespace(
 //=====================================================================================================================
 // Finds assembly with WinRT type if it is already loaded.
 // 
-#ifndef CLR_STANDALONE_BINDER
 PTR_Assembly 
 CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded(
     PTR_AppDomain pAppDomain, 
@@ -1277,7 +1239,7 @@ CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded(
         ForbidSuspendThreadHolder suspend;
         {
             CrstHolder lock(&m_MapsLock);
-            
+
             pNamespaceEntry = m_NamespaceToFileNameListMap.LookupPtr(wszNamespace);
             if ((pNamespaceEntry == nullptr) || (pNamespaceEntry->m_pFileNameList == nullptr))
             {
@@ -1341,7 +1303,6 @@ CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded(
     
     return NULL;
 } // CLRPrivBinderWinRT::FindAssemblyForTypeIfLoaded
-#endif // !CLR_STANDALONE_BINDER
 
 #ifndef DACCESS_COMPILE
 
@@ -1446,13 +1407,9 @@ ULONG CLRPrivAssemblyWinRT::Release()
         // when the ref count is 0 (to prevent another thread to AddRef and Release it back to 0 in parallel).
         // All uses of the map are guarded by the map lock, so we have to decrease the ref count under that 
         // lock (to avoid the chance that 2 threads are running Release to ref count 0 at once).
-#ifndef CLR_STANDALONE_BINDER
         ForbidSuspendThreadHolder suspend;
-#endif // !CLR_STANDALONE_BINDER
         {
-#ifndef CLR_STANDALONE_BINDER
             CrstHolder lock(&m_pBinder->m_MapsLock);
-#endif // !CLR_STANDALONE_BINDER
             cRef = InterlockedDecrement(&m_cRef);
             if (cRef == 0)
             {

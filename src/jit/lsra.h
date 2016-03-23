@@ -427,7 +427,7 @@ public:
 private:
     //------------------------------------------------------------------------
     // Should we stress lsra?
-    // This uses the same COMPLUS variable as rsStressRegs (COMPLUS_JitStressRegs)
+    // This uses the same COMPLUS variable as rsStressRegs (COMPlus_JitStressRegs)
     // However, the possible values and their interpretation are entirely different.
     //
     // The mask bits are currently divided into fields in which each non-zero value
@@ -981,9 +981,10 @@ private:
     // included in the blockSeuqence above, during setBlockSequence().
     bool                        verifiedAllBBs;
     void                        setBlockSequence();
+    int                         compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights);
     BasicBlockList*             blockSequenceWorkList;
     bool                        blockSequencingDone;
-    void                        addToBlockSequenceWorkList(BasicBlock* block);
+    void                        addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block);
     void                        removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
     BasicBlock*                 getNextCandidateFromWorkList();
 

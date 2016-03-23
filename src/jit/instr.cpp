@@ -3907,7 +3907,7 @@ void                CodeGen::instGen_Return(unsigned stkArgSize)
  *  Emit a MemoryBarrier instruction
  *
  *     Note: all MemoryBarriers instructions can be removed by
- *           SET COMPLUS_JitNoMemoryBarriers=1
+ *           SET COMPlus_JitNoMemoryBarriers=1
  */
 void                CodeGen::instGen_MemoryBarrier()
 {

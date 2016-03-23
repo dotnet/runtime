@@ -13,7 +13,6 @@
 
 #include "object.h"
 
-#if !defined(BINDER)
 inline PTR_VOID Object::UnBox()       // if it is a value class, get the pointer to the first field
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -174,7 +173,6 @@ inline DWORD ArrayBase::GetNumComponents() const
     SUPPORTS_DAC;
     return m_NumComponents; 
 }
-#endif //!BINDER
 
 inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
 {
@@ -208,7 +206,6 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
         dac_cast<PTR_ArrayClass>(pMT->GetClass())->GetRank() *
         sizeof(INT32);
 }
-#ifndef BINDER
 
 // Get the element type for the array, this works whether the the element
 // type is stored in the array or not
@@ -300,7 +297,5 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
     else 
         return TypeHandle(pMT);
 }
-
-#endif //!BINDER
 
 #endif  // _OBJECT_INL_

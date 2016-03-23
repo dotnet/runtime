@@ -604,12 +604,12 @@ public:
 
 // GC specific statistics, tracking counts and timings for GCs occuring in the system.
 // This writes the statistics to a file every 60 seconds, if a file is specified in
-// COMPLUS_GcMixLog
+// COMPlus_GcMixLog
 
 struct GCStatistics
     : public StatisticsBase
 {
-    // initialized to the contents of COMPLUS_GcMixLog, or NULL, if not present
+    // initialized to the contents of COMPlus_GcMixLog, or NULL, if not present
     static TCHAR* logFileName;
     static FILE*  logFile;
 

@@ -12,6 +12,7 @@
   
   <PropertyGroup>
     <TraversalBuildDependsOn>
+      ValidateAllProjectDependencies;
       BatchRestorePackages;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
@@ -22,11 +23,36 @@
     
     <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems -->
     <Exec Command="$(DnuRestoreCommand) $(DnuRestoreDirs)"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="^Unable to locate .*"
-          ContinueOnError="WarnAndContinue" />
+          StandardOutputImportance="Low" />
           
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
+  </Target>
+
+  <!-- Task from buildtools that validates dependencies contained in project.json files. -->
+  <UsingTask TaskName="ValidateProjectDependencyVersions" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="ValidateAllProjectDependencies"
+          Condition="'$(ValidatePackageVersions)'=='true' and '@(ProjectJsonFiles)'!=''">
+    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
+                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
+                                       ValidationPatterns="@(ValidationPattern)" />
+  </Target>
+
+  <Target Name="UpdateInvalidPackageVersions">
+    <ValidateProjectDependencyVersions ProjectJsons="@(ProjectJsonFiles)"
+                                       ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
+                                       ValidationPatterns="@(ValidationPattern)"
+                                       UpdateInvalidDependencies="true" />
+  </Target>
+
+  <!-- Tasks from buildtools for easy project.json dependency updates -->
+  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="UpdatePackageDependencyVersion">
+    <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
+                                    PackageId="$(PackageId)"
+                                    OldVersion="$(OldVersion)"
+                                    NewVersion="$(NewVersion)" />
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->

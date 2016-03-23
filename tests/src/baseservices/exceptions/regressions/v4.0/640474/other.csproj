@@ -30,7 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="other2.cs" />
+    <Compile Include="other1.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

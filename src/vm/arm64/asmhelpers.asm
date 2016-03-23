@@ -30,6 +30,9 @@
     IMPORT GetCurrentSavedRedirectContext
     IMPORT LinkFrameAndThrow
     IMPORT FixContextHandler
+    IMPORT OnHijackObjectWorker
+    IMPORT OnHijackInteriorPointerWorker
+    IMPORT OnHijackScalarWorker
 
     IMPORT  g_ephemeral_low
     IMPORT  g_ephemeral_high
@@ -848,17 +851,98 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
     
     NESTED_END
 
+#ifdef FEATURE_HIJACK
+; ------------------------------------------------------------------
+; Hijack function for functions which return a reference type
+    NESTED_ENTRY OnHijackObjectTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-112!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
 
+    str x0, [sp, #96]
+    mov x0, sp
+    bl OnHijackObjectWorker
+    ldr x0, [sp, #96]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #112!
+    EPILOG_RETURN
+    NESTED_END
+
+; ------------------------------------------------------------------
+; Hijack function for functions which return an interior pointer within an object allocated in managed heap
+    NESTED_ENTRY OnHijackInteriorPointerTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-112!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+    str x0, [sp, #96]
+    mov x0, sp
+    bl OnHijackInteriorPointerWorker
+    ldr x0, [sp, #96]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #112!
+    EPILOG_RETURN
+    NESTED_END
+
+; ------------------------------------------------------------------
+; Hijack function for functions which return a scalar type or a struct (value type)
+    NESTED_ENTRY OnHijackScalarTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-144!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+    str x0, [sp, #96]
+    ; HFA return value can be in d0-d3
+    stp d0, d1, [sp, #112]
+    stp d2, d3, [sp, #128]
+    mov x0, sp
+    bl OnHijackScalarWorker
+    ldr x0, [sp, #96]
+    ldp d0, d1, [sp, #112]
+    ldp d2, d3, [sp, #128]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #144!
+    EPILOG_RETURN
+    NESTED_END
+
+#endif ; FEATURE_HIJACK
 
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method
-;        GenerateRedirectedHandledJITCaseStub GCThreadControl
+        GenerateRedirectedHandledJITCaseStub GCThreadControl
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub DbgThreadControl
+        GenerateRedirectedHandledJITCaseStub DbgThreadControl
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub UserSuspend
+        GenerateRedirectedHandledJITCaseStub UserSuspend
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub YieldTask
+        GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 ; ------------------------------------------------------------------

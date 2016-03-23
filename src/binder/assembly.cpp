@@ -16,10 +16,6 @@
 #include "assembly.hpp"
 #include "utils.hpp"
 
-#ifdef FEATURE_LEGACYNETCF
-extern BOOL RuntimeIsLegacyNetCF(DWORD adid);
-#endif
-
 namespace BINDER_SPACE
 {
     namespace
@@ -285,11 +281,6 @@ Exit:
     {
         if (!IsPlatformArchicture(kArchitecture))
             return TRUE;
-
-#ifdef FEATURE_LEGACYNETCF
-        if (kArchitecture == peI386 && RuntimeIsLegacyNetCF(0))
-            return TRUE;
-#endif
 
         return (kArchitecture == GetSystemArchitecture());
     }
