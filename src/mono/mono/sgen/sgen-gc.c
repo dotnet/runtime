@@ -708,6 +708,8 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 			definitely_pinned [count] = obj_to_pin;
 			count++;
 		}
+		if (concurrent_collection_in_progress)
+			sgen_pinning_register_pinned_in_nursery (obj_to_pin);
 
 	next_pin_queue_entry:
 		last = addr;
@@ -1419,6 +1421,8 @@ job_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 
 	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
 	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
+
+	sgen_scan_pin_queue_objects (ctx);
 }
 
 static void
@@ -3016,6 +3020,7 @@ sgen_gc_init (void)
 
 	alloc_nursery ();
 
+	sgen_pinning_init ();
 	sgen_cement_init (cement_enabled);
 
 	if ((env = g_getenv (MONO_GC_DEBUG_NAME))) {
