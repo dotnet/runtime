@@ -66,7 +66,7 @@ class Constants {
                'gcstress0xc_minopts_heapverify1' : ['COMPlus_GCStress'  : '0xC', 'COMPlus_JITMinOpts'  : '1', 'COMPlus_HeapVerify'  : '1']
                ]
     // This is the basic set of scenarios
-    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r']
+    def static basicScenarios = ['default', 'pri1', 'ilrt', 'r2r', 'pri1r2r', 'gcstress15_pri1r2r']
     // This is the set of configurations
     def static configurationList = ['Debug', 'Checked', 'Release']
     // This is the set of architectures
@@ -275,6 +275,24 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                 }
                 break
+            case 'gcstress15_pri1r2r':
+                //GC Stress 15 pri1 r2r gets a push trigger for checked/release
+                if (configuration == 'Checked' || configuration == 'Release') {
+                    assert (os == 'Windows_NT') || (os in Constants.crossList)
+                    if (architecture == 'x64') {
+                        //Flow jobs should be Windows, Ubuntu, OSX, or CentOS
+                        if (isFlowJob || os == 'Windows_NT') {
+                            Utilities.addGithubPushTrigger(job)
+                        }
+                    }
+                    // For x86, only add per-commit jobs for Windows
+                    else if (architecture == 'x86') {
+                        if (os == 'Windows_NT') {
+                            Utilities.addGithubPushTrigger(job)
+                        }
+                    }
+                }
+                break
             case 'ilrt':
                 // ILASM/ILDASM roundtrip one gets a daily build, and only for release
                 if (architecture == 'x64' && configuration == 'Release') {
@@ -401,7 +419,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             if (configuration == 'Release' || configuration == 'Checked') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")  
                             }
-                            break 
+                            break
+                        case 'gcstress15_pri1r2r':
+                            if (configuration == 'Release' || configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")  
+                            }
+                            break
                         case 'minopts':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - MinOpts)",
@@ -517,6 +540,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
                             }
                             break
+                        case 'gcstress15_pri1r2r':
+                            if (configuration == 'Release' || configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")  
+                            }
+                            break
                         default:
                             break
                     }   
@@ -552,6 +580,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'pri1r2r':
                             if (configuration == 'Checked' || configuration == 'Release') {
                                 Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                            }
+                            break
+                        case 'gcstress15_pri1r2r':
+                            if (configuration == 'Release' || configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${configuration}\\W+${scenario}.*")  
                             }
                             break
                         case 'minopts':
@@ -680,7 +713,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         case 'x86':
-            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r')
+            assert (scenario == 'default' || scenario == 'r2r' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r')
             // For windows, x86 runs by default
             if (scenario == 'default') {
                 if (os == 'Windows_NT') {
@@ -695,15 +728,22 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             else if (scenario == 'r2r') {
                 if (os == 'Windows_NT') {
-                    if (configuration != 'Checked') {
+                    if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri0 Legacy Backend Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     }
                 }
             }
             else if (scenario == 'pri1r2r') {
                 if (os == 'Windows_NT') {
-                    if (configuration != 'Checked') {
+                    if (configuration == 'Release') {
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} R2R pri1 Legacy Backend Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
+                    }
+                }
+            }
+            else if (scenario == 'gcstress15_pri1r2r'){
+                if (os == 'Windows_NT'){
+                    if (configuration == 'Release'){
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} GCStress 15 R2R pri1 Build & Test", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")  
                     }
                 }
             }
@@ -824,6 +864,16 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'gcstress15_pri1r2r':
+                                // The GC stress r2r build isn't necessary except for os's in the cross list or Windows_NT (native OS runs)
+                                if (os != 'Windows_NT' && !(os in Constants.crossList)) {
+                                    return
+                                }
+                                // only x64 or x86 for now
+                                if (architecture != 'x64' && architecture != 'x86') {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -883,6 +933,11 @@ combinedScenarios.each { scenario ->
                                     else if (scenario == 'pri1r2r') {
                                         buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
                                         buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1"
+                                    }
+                                    else if (scenario == 'gcstress15_pri1r2r') {
+                                        //Build pri1 R2R tests with GC stress level 15
+                                        buildCommands += "build.cmd ${lowerConfiguration} ${architecture} docrossgen skiptests"
+                                        buildCommands += "set __TestIntermediateDir=int&&tests\\buildtest.cmd ${lowerConfiguration} ${architecture} crossgen Priority 1 gcstresslevel 15"
                                     }
                                     else {
                                         println("Unknown scenario: ${scenario}")
@@ -1113,7 +1168,7 @@ combinedScenarios.each { scenario ->
                     }
                     // For CentOS, we only want Checked/Release pri1 builds.
                     else if (os == 'CentOS7.1') {
-                        if (scenario != 'pri1' && scenario != 'r2r' && scenario != 'pri1r2r') {
+                        if (scenario != 'pri1' && scenario != 'r2r' && scenario != 'pri1r2r' && scenario != 'gcstress15_pri1r2r') {
                             return
                         }
                         if (configuration != 'Checked' && configuration != 'Release') {
@@ -1135,6 +1190,12 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'pri1r2r':
+                                //Skip configs that aren't Checked or Release (so just Debug, for now)
+                                if (configuration != 'Checked' && configuration != 'Release') {
+                                    return
+                                }
+                                break
+                            case 'gcstress15_pri1r2r':
                                 //Skip configs that aren't Checked or Release (so just Debug, for now)
                                 if (configuration != 'Checked' && configuration != 'Release') {
                                     return
