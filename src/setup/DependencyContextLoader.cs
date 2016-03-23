@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
                 context = LoadAssemblyContext(assembly);
             }
 
-            if (context?.IsPortable == true)
+            if (context?.Target.IsPortable == true)
             {
                 var runtimeContext = LoadRuntimeContext();
                 if (runtimeContext != null)

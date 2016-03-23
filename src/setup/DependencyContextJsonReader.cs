@@ -35,8 +35,22 @@ namespace Microsoft.Extensions.DependencyModel
             var runtime = string.Empty;
             var target = string.Empty;
             var isPortable = true;
+            string runtimeTargetName = null;
+            string runtimeSignature = null;
 
-            var runtimeTargetName = root[DependencyContextStrings.RuntimeTargetPropertyName]?.Value<string>();
+            var runtimeTargetInfo = root[DependencyContextStrings.RuntimeTargetPropertyName];
+
+            // This fallback is temporary
+            if (runtimeTargetInfo is JValue)
+            {
+                runtimeTargetName = runtimeTargetInfo.Value<string>();
+            }
+            else
+            {
+                var runtimeTargetObject = (JObject) runtimeTargetInfo;
+                runtimeTargetName = runtimeTargetObject?[DependencyContextStrings.RuntimeTargetNamePropertyName]?.Value<string>();
+                runtimeSignature = runtimeTargetObject?[DependencyContextStrings.RuntimeTargetSignaturePropertyName]?.Value<string>();
+            }
 
             var libraryStubs = ReadLibraryStubs((JObject)root[DependencyContextStrings.LibrariesPropertyName]);
             var targetsObject = (JObject)root[DependencyContextStrings.TargetsPropertyName];
@@ -98,9 +112,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new DependencyContext(
-                target,
-                runtime,
-                isPortable,
+                new TargetInfo(target, runtime, runtimeSignature, isPortable),
                 ReadCompilationOptions((JObject)root[DependencyContextStrings.CompilationOptionsPropertName]),
                 ReadLibraries(compileTarget, false, libraryStubs).Cast<CompilationLibrary>().ToArray(),
                 ReadLibraries(runtimeTarget, true, libraryStubs).Cast<RuntimeLibrary>().ToArray(),
