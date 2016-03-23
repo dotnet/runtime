@@ -39,18 +39,14 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             };
 
             var context = new DependencyContext(
-                "Framework",
-                "runtime",
-                true,
+                CreateTargetInfo(),
                 CompilationOptions.Default,
                 compilationLibraries,
                 runtimeLibraries,
                 new RuntimeFallbacks[] { });
 
             var contextRedist = new DependencyContext(
-                "Framework",
-                "runtime",
-                true,
+                CreateTargetInfo(),
                 CompilationOptions.Default,
                 compilationLibrariesRedist,
                 runtimeLibrariesRedist,
@@ -76,9 +72,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void MergeMergesRuntimeGraph()
         {
             var context = new DependencyContext(
-                "Framework",
-                "runtime",
-                true,
+                CreateTargetInfo(),
                 CompilationOptions.Default,
                 Enumerable.Empty<CompilationLibrary>(),
                 Enumerable.Empty<RuntimeLibrary>(),
@@ -88,9 +82,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 });
 
             var contextRedist = new DependencyContext(
-                "Framework",
-                "runtime",
-                true,
+                CreateTargetInfo(),
                 CompilationOptions.Default,
                 Enumerable.Empty<CompilationLibrary>(),
                 Enumerable.Empty<RuntimeLibrary>(),
@@ -104,6 +96,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Subject.Fallbacks.Should().BeEquivalentTo("win8");
             result.RuntimeGraph.Should().Contain(g => g.Runtime == "win8").
                 Subject.Fallbacks.Should().BeEquivalentTo("win7-x64", "win7-x86");
+        }
+
+        private TargetInfo CreateTargetInfo()
+        {
+            return new TargetInfo(
+                "Framework",
+                "runtime",
+                "runtimeSignature",
+                true);
         }
 
         private CompilationLibrary CreateCompilation(string name)

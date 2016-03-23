@@ -84,15 +84,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         {
             var context = Build(portable: true);
 
-            context.IsPortable.Should().BeTrue();
+            context.Target.IsPortable.Should().BeTrue();
         }
 
         [Fact]
         public void FillsRuntimeAndTarget()
         {
             var context = Build(target: new NuGetFramework("SomeFramework",new Version(1,2)), runtime: "win8-x86");
-            context.Runtime.Should().Be("win8-x86");
-            context.TargetFramework.Should().Be("SomeFramework,Version=v1.2");
+            context.Target.Runtime.Should().Be("win8-x86");
+            context.Target.Framework.Should().Be("SomeFramework,Version=v1.2");
         }
 
         [Fact]
@@ -290,6 +290,19 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var lib = context.CompileLibraries.Should().Contain(l => l.Name == "Pack.Age").Subject;
             lib.Dependencies.Should().BeEmpty();
         }
+
+        [Fact]
+        public void GeneratesRuntimeSignatureOutOfPackageNamesAndVersions()
+        {
+            var context = Build(runtimeExports: new[]
+            {
+                Export(PackageDescription("Pack.Age", new NuGetVersion(1, 2, 3))),
+                Export(PackageDescription("Pack.Age", new NuGetVersion(1, 2, 3))),
+            });
+
+            context.Target.RuntimeSignature.Should().Be("d0fc00006ed69e4aae80383dda08599a6892fd31");
+        }
+
 
         private LibraryExport Export(
             LibraryDescription description,
