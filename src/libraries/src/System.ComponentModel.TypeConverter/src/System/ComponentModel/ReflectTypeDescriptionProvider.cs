@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -48,6 +49,8 @@ namespace System.ComponentModel
         {
             get
             {
+                Debug.Assert(Monitor.IsEntered(s_syncObject));
+
                 // It is not worth taking a lock for this -- worst case of a collision
                 // would build two tables, one that garbage collects very quickly.
                 //
@@ -215,7 +218,12 @@ namespace System.ComponentModel
                     bool noTypeConstructor = true;
                     object instance = (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, type, ref noTypeConstructor);
                     if (noTypeConstructor)
-                        ReflectTypeDescriptionProvider.IntrinsicTypeConverters[type] = instance;
+                    {
+                        lock (s_syncObject)
+                        {
+                            ReflectTypeDescriptionProvider.IntrinsicTypeConverters[type] = instance;
+                        }
+                    }
                     return (TypeConverter)instance;
                 }
             }
