@@ -685,17 +685,6 @@ mono_domain_get_tls_offset (void);
 
 #define IS_MONOTYPE(obj) (!(obj) || (((MonoObject*)(obj))->vtable->klass->image == mono_defaults.corlib && ((MonoReflectionType*)(obj))->type != NULL))
 
-/* 
- * Make sure the argument, which should be a System.Type is a System.MonoType object 
- * or equivalent, and not an instance of 
- * a user defined subclass of System.Type. This should be used in places were throwing
- * an exception is safe.
- */
-#define CHECK_MONOTYPE(obj) do { \
-	if (!IS_MONOTYPE (obj)) \
-		mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported")); \
-	} while (0)
-
 /* This should be used for accessing members of Type[] arrays */
 #define mono_type_array_get(arr,index) monotype_cast (mono_array_get ((arr), gpointer, (index)))
 
