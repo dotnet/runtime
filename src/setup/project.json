@@ -17,7 +17,7 @@
     "netstandard1.3": {
       "imports": "dnxcore50",
       "dependencies": {
-        "NETStandard.Library": "1.5.0-rc2-23922"
+        "NETStandard.Library": "1.5.0-rc2-23923"
       }
     }
   },
