@@ -8923,8 +8923,8 @@ mono_reflection_get_token_checked (MonoObject *obj, MonoError *error)
 	} else if (strcmp (klass->name, "Assembly") == 0 || strcmp (klass->name, "MonoAssembly") == 0) {
 		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	} else {
-		mono_error_set_generic_error (error, "System", "NotImplementedException",
-					      "MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
+		mono_error_set_not_implemented (error, "MetadataToken is not supported for type '%s.%s'",
+						klass->name_space, klass->name);
 		return 0;
 	}
 
