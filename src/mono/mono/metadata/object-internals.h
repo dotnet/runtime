@@ -16,55 +16,6 @@
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-coop-mutex.h"
 
-#if 1
-#ifdef __GNUC__
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d (%s): "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		__PRETTY_FUNCTION__, #expr);				  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d (%s): "		  \
-     "should not be reached", __FILE__, __LINE__, __PRETTY_FUNCTION__);	  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#else /* not GNUC */
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d: "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		#expr);							  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d): "			  \
-     "should not be reached", __FILE__, __LINE__);			  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#endif
-#else
-#define mono_assert(expr) g_assert(expr)
-#define mono_assert_not_reached() g_assert_not_reached() 
-#endif
-
 /* Use this as MONO_CHECK_ARG_NULL (arg,expr,) in functions returning void */
 #define MONO_CHECK_ARG(arg, expr, retval)		G_STMT_START{		  \
 		if (G_UNLIKELY (!(expr)))							  \

@@ -2475,26 +2475,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	return code;
 }
 
-#define REAL_PRINT_REG(text,reg) \
-mono_assert (reg >= 0); \
-x86_push_reg (code, X86_EAX); \
-x86_push_reg (code, X86_EDX); \
-x86_push_reg (code, X86_ECX); \
-x86_push_reg (code, reg); \
-x86_push_imm (code, reg); \
-x86_push_imm (code, text " %d %p\n"); \
-x86_mov_reg_imm (code, X86_EAX, printf); \
-x86_call_reg (code, X86_EAX); \
-x86_alu_reg_imm (code, X86_ADD, X86_ESP, 3*4); \
-x86_pop_reg (code, X86_ECX); \
-x86_pop_reg (code, X86_EDX); \
-x86_pop_reg (code, X86_EAX);
-
-/* REAL_PRINT_REG does not appear to be used, and was not adapted to work with Native Client. */
-#ifdef __native__client_codegen__
-#define REAL_PRINT_REG(text, reg) g_assert_not_reached()
-#endif
-
 /* benchmark and set based on cpu */
 #define LOOP_ALIGNMENT 8
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
