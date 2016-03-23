@@ -289,9 +289,23 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                       sErrorText = "Unable to read error file: " + errorFile%3B
                     }
 
+                    string outputText = null%3B
+                    try
+                    {
+                        System.IO.StreamReader outputReader = new System.IO.StreamReader(outputFile)%3B
+                        outputText = outputReader.ReadToEnd()%3B
+                        outputReader.Close()%3B
+                    }
+                    catch(Exception ex)
+                    {
+                        outputText = "Unable to read output file: " + outputFile%3B
+                    }
+
                     string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.Message
                                                  : sErrorText + "\n\n" +
-                                                   "Raw output:      " + outputFile + "\n" +
+                                                   "Return code:      " + ret + "\n" +
+                                                   "Raw output file:      " + outputFile + "\n" +
+                                                   "Raw output:\n" + outputText + "\n" +
                                                    "To run the test:\n" +
                                                    "> set CORE_ROOT=" + _Global.coreRoot + "\n" +
                                                    "> " + testExecutable + "\n"%3B
