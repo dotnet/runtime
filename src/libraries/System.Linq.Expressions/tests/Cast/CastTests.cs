@@ -263,7 +263,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckEnumTypeCastEnumTest(bool useInterpreter)
         {
             Enum[] array = new Enum[] { null, (E)0, E.A, E.B, (E)int.MaxValue, (E)int.MinValue, (El)0, El.A, El.B, (El)long.MaxValue, (El)long.MinValue };
@@ -273,25 +273,11 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void CheckEnumTypeCastEnumTestInterpreted()
-        {
-            CheckEnumTypeCastEnumTest(true);
-        }
-
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckUnsignedEnumInObjectCastEnum(bool useInterpreter)
         {
             foreach (Eu value in new[] { Eu.Bagahi, Eu.Laca, Eu.Bachahé, (Eu)uint.MaxValue })
                 VerifyUnsignedEnumInObjectCastEnum(value, useInterpreter);
-        }
-
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void CheckUnsignedEnumInObjectCastEnumInterpreted()
-        {
-            CheckUnsignedEnumInObjectCastEnum(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -645,7 +631,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckObjectCastEnumTest(bool useInterpreter)
         {
             object[] array = new object[] { null, new object(), new C(), new D(3) };
@@ -653,13 +639,6 @@ namespace System.Linq.Expressions.Tests
             {
                 VerifyObjectCastEnum(array[i], useInterpreter);
             }
-        }
-
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void CheckObjectCastEnumTestInterpreted()
-        {
-            CheckObjectCastEnumTest(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -888,17 +867,10 @@ namespace System.Linq.Expressions.Tests
             CheckObjectCastGenericHelper<C>(useInterpreter);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void ConvertObjectCastGenericAsEnum(bool useInterpreter)
         {
             CheckObjectCastGenericHelper<E>(useInterpreter);
-        }
-
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void ConvertObjectCastGenericAsEnumInterpreted()
-        {
-            ConvertObjectCastGenericAsEnum(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -931,17 +903,10 @@ namespace System.Linq.Expressions.Tests
             CheckObjectCastGenericWithClassRestrictionHelper<object>(useInterpreter);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void ConvertObjectCastGenericWithStructRestrictionAsEnum(bool useInterpreter)
         {
             CheckObjectCastGenericWithStructRestrictionHelper<E>(useInterpreter);
-        }
-
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void ConvertObjectCastGenericWithStructRestrictionAsEnumInterpreted()
-        {
-            ConvertObjectCastGenericWithStructRestrictionAsEnum(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -1034,17 +999,10 @@ namespace System.Linq.Expressions.Tests
             CheckGenericWithStructRestrictionCastValueTypeHelper<Scs>(useInterpreter);
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public static void ConvertValueTypeCastGenericWithStructRestrictionAsEnum(bool useInterpreter)
         {
             CheckValueTypeCastGenericWithStructRestrictionHelper<E>(useInterpreter);
-        }
-
-        [Fact]
-        [ActiveIssue(7169)]
-        public static void ConvertValueTypeCastGenericWithStructRestrictionAsEnumInterpreted()
-        {
-            ConvertValueTypeCastGenericWithStructRestrictionAsEnum(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
