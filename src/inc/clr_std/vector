@@ -87,7 +87,7 @@ namespace std
                     return myiter.m_ptr - right.m_ptr;
                 }
 
-                _MyIter operator+ (int n)
+                _MyIter operator+ (ptrdiff_t n)
                 {
                     _MyIter myiter(m_ptr);
                     myiter.m_ptr += n;

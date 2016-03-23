@@ -565,6 +565,13 @@ void ZapImage::AllocateVirtualSections()
 #endif
         m_pCodeMethodDescsSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | CodeHeaderSection,sizeof(DWORD));
 
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (IsReadyToRunCompilation())
+        {
+            m_pAvailableTypesSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ReadonlySection);
+        }
+#endif    
+
 #if defined(WIN64EXCEPTIONS)
         m_pUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | UnwindDataSection, sizeof(DWORD));
 #endif // defined(WIN64EXCEPTIONS)
@@ -1896,6 +1903,7 @@ void ZapImage::Compile()
     {
         OutputEntrypointsTableForReadyToRun();
         OutputDebugInfoForReadyToRun();
+        OutputTypesTableForReadyToRun(m_pMDImport);
     }
     else
 #endif

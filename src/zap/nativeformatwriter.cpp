@@ -12,6 +12,8 @@
 
 #include "nativeformatwriter.h"
 
+#include <clr_std/algorithm>
+
 namespace NativeFormat
 {
     //
@@ -429,5 +431,146 @@ namespace NativeFormat
                 m_entryIndexSize = newEntryIndexSize;
             }
         }
+    }
+
+    //
+    // VertexHashtable
+    //
+
+    // Returns 1 + log2(x) rounded up, 0 iff x == 0
+    static unsigned HighestBit(unsigned x)
+    {
+        unsigned ret = 0;
+        while (x != 0)
+        {
+            x >>= 1;
+            ret++;
+        }
+        return ret;
+    }
+
+    // Helper method to back patch entry index in the bucket table
+    static void PatchEntryIndex(NativeWriter * pWriter, int patchOffset, int entryIndexSize, int entryIndex)
+    {
+        if (entryIndexSize == 0)
+        {
+            pWriter->PatchByteAt(patchOffset, (byte)entryIndex);
+        }
+        else
+            if (entryIndexSize == 1)
+            {
+                pWriter->PatchByteAt(patchOffset, (byte)entryIndex);
+                pWriter->PatchByteAt(patchOffset + 1, (byte)(entryIndex >> 8));
+            }
+            else
+            {
+                pWriter->PatchByteAt(patchOffset, (byte)entryIndex);
+                pWriter->PatchByteAt(patchOffset + 1, (byte)(entryIndex >> 8));
+                pWriter->PatchByteAt(patchOffset + 2, (byte)(entryIndex >> 16));
+                pWriter->PatchByteAt(patchOffset + 3, (byte)(entryIndex >> 24));
+            }
+    }
+
+    void VertexHashtable::Save(NativeWriter * pWriter)
+    {
+        // Compute the layout of the table if we have not done it yet
+        if (m_nBuckets == 0)
+            ComputeLayout();
+
+        int nEntries = (int)m_Entries.size();
+        int startOffset = pWriter->GetCurrentOffset();
+        int bucketMask = (m_nBuckets - 1);
+
+        // Lowest two bits are entry index size, the rest is log2 number of buckets 
+        int numberOfBucketsShift = HighestBit(m_nBuckets) - 1;
+        pWriter->WriteByte(static_cast<uint8_t>((numberOfBucketsShift << 2) | m_entryIndexSize));
+
+        int bucketsOffset = pWriter->GetCurrentOffset();
+
+        pWriter->WritePad((m_nBuckets + 1) << m_entryIndexSize);
+
+        // For faster lookup at runtime, we store the first entry index even though it is redundant (the value can be 
+        // inferred from number of buckets)
+        PatchEntryIndex(pWriter, bucketsOffset, m_entryIndexSize, pWriter->GetCurrentOffset() - bucketsOffset);
+
+        int iEntry = 0;
+
+        for (int iBucket = 0; iBucket < m_nBuckets; iBucket++)
+        {
+            while (iEntry < nEntries)
+            {
+                Entry &e = m_Entries[iEntry];
+
+                if (((e.hashcode >> 8) & bucketMask) != (unsigned)iBucket)
+                    break;
+
+                int currentOffset = pWriter->GetCurrentOffset();
+                pWriter->UpdateOffsetAdjustment(currentOffset - e.offset);
+                e.offset = currentOffset;
+
+                pWriter->WriteByte((byte)e.hashcode);
+                pWriter->WriteRelativeOffset(e.pVertex);
+
+                iEntry++;
+            }
+
+            int patchOffset = bucketsOffset + ((iBucket + 1) << m_entryIndexSize);
+
+            PatchEntryIndex(pWriter, patchOffset, m_entryIndexSize, pWriter->GetCurrentOffset() - bucketsOffset);
+        }
+        assert(iEntry == nEntries);
+
+        int maxIndexEntry = (pWriter->GetCurrentOffset() - bucketsOffset);
+        int newEntryIndexSize = 0;
+        if (maxIndexEntry > 0xFF)
+        {
+            newEntryIndexSize++;
+            if (maxIndexEntry > 0xFFFF)
+                newEntryIndexSize++;
+        }
+
+        if (pWriter->IsGrowing())
+        {
+            if (newEntryIndexSize > m_entryIndexSize)
+            {
+                // Ensure that the table will be redone with new entry index size
+                pWriter->UpdateOffsetAdjustment(1);
+
+                m_entryIndexSize = newEntryIndexSize;
+            }
+        }
+        else
+        {
+            if (newEntryIndexSize < m_entryIndexSize)
+            {
+                // Ensure that the table will be redone with new entry index size
+                pWriter->UpdateOffsetAdjustment(-1);
+
+                m_entryIndexSize = newEntryIndexSize;
+            }
+        }
+    }
+
+    void VertexHashtable::ComputeLayout()
+    {
+        unsigned bucketsEstimate = (unsigned)(m_Entries.size() / m_nFillFactor);
+
+        // Round number of buckets up to the power of two
+        m_nBuckets = 1 << HighestBit(bucketsEstimate);
+
+        // Lowest byte of the hashcode is used for lookup within the bucket. Keep it sorted too so that
+        // we can use the ordering to terminate the lookup prematurely.
+        unsigned mask = ((m_nBuckets - 1) << 8) | 0xFF;
+
+        // sort it by hashcode
+        std::sort(m_Entries.begin(), m_Entries.end(),
+            [=](Entry const& a, Entry const& b)
+            {
+                return (a.hashcode & mask) < (b.hashcode & mask);
+            }
+        );
+
+        // Start with maximum size entries
+        m_entryIndexSize = 2;
     }
 }
