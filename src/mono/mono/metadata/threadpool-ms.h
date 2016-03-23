@@ -59,7 +59,7 @@ ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (void);
 
 /* Internals */
 
-void
-mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item);
+gboolean
+mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, MonoError *error);
 
 #endif // _MONO_THREADPOOL_MICROSOFT_H_
