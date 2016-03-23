@@ -56,24 +56,27 @@ namespace System.Net.Http
                 {
                     case CURLcode.CURLE_OK:
                         // We successfully registered.  If we'll be invoking a user-provided callback to verify the server
-                        // certificate as part of that, disable libcurl's verification of the same.  The user's callback
+                        // certificate as part of that, disable libcurl's verification of the host name.  The user's callback
                         // needs to be given the opportunity to examine the cert, and our logic will determine whether
                         // the host name matches and will inform the callback of that.
                         if (easy._handler.ServerCertificateValidationCallback != null)
                         {
-                            easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYPEER, 0); // don't verify the peer cert
                             easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYHOST, 0); // don't verify the peer cert's hostname
+                            // We don't change the SSL_VERIFYPEER setting, as setting it to 0 will cause
+                            // SSL and libcurl to ignore the result of the server callback.
                         }
                         break;
 
                     case CURLcode.CURLE_UNKNOWN_OPTION: // Curl 7.38 and prior
                     case CURLcode.CURLE_NOT_BUILT_IN:   // Curl 7.39 and later
-                        // It's ok if we failed to register the callback if we're not trying to supply client
-                        // certificates and if there's no server callback function.  But if there are either,
-                        // failing to register the callback will result in those not being used, which is
+                        // It's ok if we failed to register the callback if all of the defaults are in play
+                        // with relation to handling of certificates.  But if that's not the case, failing to 
+                        // register the callback will result in those options not being factored in, which is
                         // a significant enough error that we need to fail.
-                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported.");
-                        if (certProvider != null || easy._handler.ServerCertificateValidationCallback != null)
+                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer);
+                        if (certProvider != null ||
+                            easy._handler.ServerCertificateValidationCallback != null ||
+                            easy._handler.CheckCertificateRevocationList)
                         {
                             throw new PlatformNotSupportedException(SR.net_http_unix_invalid_certcallback_option);
                         }
