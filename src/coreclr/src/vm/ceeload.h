@@ -86,6 +86,14 @@ class ReJitManager;
 class TrackingMap;
 class PersistentInlineTrackingMap;
 
+// Hash table parameter of available classes (name -> module/class) hash
+#define AVAILABLE_CLASSES_HASH_BUCKETS 1024
+#define AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE 128
+#define PARAMTYPES_HASH_BUCKETS 23
+#define PARAMMETHODS_HASH_BUCKETS 11
+#define METHOD_STUBS_HASH_BUCKETS 11
+#define GUID_TO_TYPE_HASH_BUCKETS 16
+
 
 typedef DPTR(PersistentInlineTrackingMap) PTR_PersistentInlineTrackingMap;
 
