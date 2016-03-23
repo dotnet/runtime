@@ -227,6 +227,7 @@ namespace System.Reflection
         internal MemberInfo() { }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { return default(System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData>); } }
         public abstract System.Type DeclaringType { get; }
+        public virtual int MetadataToken { get { return default(int); } }
         public virtual System.Reflection.Module Module { get { return default(System.Reflection.Module); } }
         public abstract string Name { get; }
         public override bool Equals(object obj) { return default(bool); }

@@ -53,6 +53,7 @@
     <Compile Include="FieldInfo\FieldInfo_RTGenericTests.cs" />
     <Compile Include="GetType\GetTypeTests.cs" />
     <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_GetBaseDefinition.cs" />
     <Compile Include="MethodInfo\MethodInfo_CreateDelegateTests.cs" />
     <Compile Include="MethodInfo\MethodInfo_CustomAttributeTests.cs" />
