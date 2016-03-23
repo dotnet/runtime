@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jittelemetry.h"
 
 #if defined(DEBUG)
-// Column settings for COMPLUS_JitDumpIR.  We could(should) make these programmable.
+// Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE   30 
 #define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
 #define COLUMN_KINDS    110
@@ -642,6 +642,7 @@ unsigned            Compiler::s_compMethodsCount = 0; // to produce unique label
 
 /* static */
 bool                Compiler::s_dspMemStats = false;
+bool                Compiler::s_inlDumpDataHeader = false;
 #endif
 
 #ifndef DEBUGGING_SUPPORT
@@ -993,8 +994,8 @@ void                Compiler::compShutdown()
 #if MEASURE_MEM_ALLOC
 
 #ifdef DEBUG
-    // Under debug, we only dump memory stats when the COMPLUS_* variable is defined.
-    // Under non-debug, we don't have the COMPLUS_* variable, and we always dump it.
+    // Under debug, we only dump memory stats when the COMPlus_* variable is defined.
+    // Under non-debug, we don't have the COMPlus_* variable, and we always dump it.
     if (s_dspMemStats)
 #endif
     {
@@ -1261,8 +1262,12 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
-    // Set the inline info and the inline result.
+    // Set the inline info.
     impInlineInfo    = inlineInfo;
+
+#ifdef DEBUG
+    inlLastSuccessfulPolicy = nullptr;
+#endif
 
     eeInfoInitialized = false;
 
@@ -1407,8 +1412,6 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
 
     compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
 
-    compNativeSizeEstimate = NATIVE_SIZE_INVALID;
-
     for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
     {
         AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
@@ -1463,6 +1466,10 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     SIMDVector3Handle   = nullptr;
     SIMDVector4Handle   = nullptr;
     SIMDVectorHandle     = nullptr;
+#endif
+
+#ifdef DEBUG
+    inlRNG = nullptr;
 #endif
 }
 
@@ -1830,7 +1837,7 @@ void Compiler::compSetProcessor()
     opts.compCanUseSSE2 = true;
 
 #ifdef FEATURE_AVX_SUPPORT
-    // COMPLUS_EnableAVX can be used to disable using AVX if available on a target machine.
+    // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
     // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
     opts.compCanUseAVX = false;
     if (((compileFlags & CORJIT_FLG_PREJIT) == 0) &&
@@ -2087,7 +2094,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 #endif // !DEBUG
 
 #ifdef ALT_JIT
-    // Take care of COMPLUS_AltJitExcludeAssemblies.
+    // Take care of COMPlus_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
         // First, initialize the AltJitExcludeAssemblies list, but only do it once.
@@ -2122,9 +2129,9 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
     bool altJitConfig   = !pfAltJit->isEmpty();
 
     //  If we have a non-empty AltJit config then we change all of these other 
-    //  config values to refer only to the AltJit. Otherwise, a lot of COMPLUS_* variables
+    //  config values to refer only to the AltJit. Otherwise, a lot of COMPlus_* variables
     //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the COMPLUS_AltJit configuration is set.
+    //  debugging the altjit if the COMPlus_AltJit configuration is set.
     //  
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
@@ -2237,7 +2244,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
                     printf("\n");
                     printf("Available specifiers (comma separated):\n");
                     printf("\n");
-                    printf("?          dump out value of COMPLUS_JitDumpIRFormat and this list of values\n");
+                    printf("?          dump out value of COMPlus_JitDumpIRFormat and this list of values\n");
                     printf("\n");
                     printf("linear     linear IR dump (default)\n");
                     printf("tree       tree IR dump (traditional)\n");
@@ -2596,7 +2603,7 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: COMPLUS_JitDiffableDasm=1
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDiffableDasm=1
         if (JitConfig.DiffableDasm() != 0)
         {
             opts.disDiffable = true;
@@ -2973,15 +2980,28 @@ bool            Compiler::compStressCompile(compStressArea  stressArea,
 
     // Does user explicitly set this STRESS_MODE through the command line?
     strStressModeNames = JitConfig.JitStressModeNames();
-    if ((strStressModeNames != NULL) &&
-        (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != NULL))
+    if (strStressModeNames != NULL)
     {
-        if (verbose)
+        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != NULL)
         {
-            printf("JitStressModeNames contains %ws\n", s_compStressModeNames[stressArea]);  
+            if (verbose)
+            {
+                printf("JitStressModeNames contains %ws\n", s_compStressModeNames[stressArea]);
+            }
+            doStress = true;
+            goto _done;
         }
-        doStress = true;
-        goto _done;
+
+        // This stress mode name did not match anything in the stress
+        // mode whitelist. If user has requested only enable mode,
+        // don't allow this stress mode to turn on.
+        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
+
+        if (onlyEnableMode)
+        {
+            doStress = false;
+            goto _done;
+        }
     }
 
     // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
@@ -3340,7 +3360,7 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 
 #if !defined(_TARGET_AMD64_)
-        // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPLUS_JitFramed variable is set, or
+        // The VM sets CORJIT_FLG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
@@ -4233,7 +4253,7 @@ int           Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     {
         if (compIsForInlining())
         {
-            compInlineResult->noteFatal(InlineObservation::CALLEE_MARKED_AS_SKIPPED);
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_MARKED_AS_SKIPPED);
         }
         return CORJIT_SKIPPED;
     }
@@ -4555,6 +4575,61 @@ void Compiler::compCompileFinish()
         printf("****** DONE compiling %s\n", info.compFullName);
         printf("");         // in our logic this causes a flush
     }
+
+    // Inliner data display
+    if (JitConfig.JitInlineDumpData() != 0)
+    {
+        // Don't dump anything if limiting is on and we didn't reach
+        // the limit while inlining.
+        //
+        // This serves to filter out duplicate data.
+        const int limit = JitConfig.JitInlineLimit();
+
+        if ((limit < 0) || (fgInlinedCount == static_cast<unsigned>(limit)))
+        {
+            // If there weren't any successful inlines (no limit, or
+            // limit=0 case), we won't have a successful policy, so
+            // fake one up.
+            if (inlLastSuccessfulPolicy == nullptr)
+            {
+                assert(limit <= 0);
+                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+                inlLastSuccessfulPolicy = InlinePolicy::GetPolicy(this, isPrejitRoot);
+            }
+            
+            if (!s_inlDumpDataHeader)
+            {
+                if (limit == 0)
+                {
+                    printf("*** Inline Data: Policy=%s JitInlineLimit=%d ***\n", 
+                           inlLastSuccessfulPolicy->GetName(),
+                           limit);
+                    printf("Method,Version,HotSize,ColdSize,JitTime");
+                    inlLastSuccessfulPolicy->DumpSchema();
+                    printf("\n");
+                }
+                
+                s_inlDumpDataHeader = true;
+            }
+
+            // We'd really like the method identifier to be unique and
+            // durable across crossgen invocations. Not clear how to
+            // accomplish this, so we'll use the token for now.
+            //
+            // Post processing will have to filter out all data from
+            // methods where the root entry appears multiple times.
+            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+            printf("%08X,%u,%u,%u,%u",
+                   currentMethodToken,
+                   fgInlinedCount,
+                   info.compTotalHotCodeSize,
+                   info.compTotalColdCodeSize,
+                   0);
+            inlLastSuccessfulPolicy->DumpData();
+            printf("\n");
+        }
+    }
     
     // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
     // For ngen the int3 or breakpoint instruction will be right at the 
@@ -4670,7 +4745,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 #ifdef ALT_JIT
         if (!compIsForInlining() && !opts.altJit)
         {
-            // We're an altjit, but the COMPLUS_AltJit configuration did not say to compile this method,
+            // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
             // so skip it.
             return CORJIT_SKIPPED;  
         }
@@ -4700,7 +4775,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 
 #endif
 
-        // Check for COMPLUS_AgressiveInlining
+        // Check for COMPlus_AgressiveInlining
         if (JitConfig.JitAggressiveInlining())
         {
             compDoAggressiveInlining = true;
@@ -4770,6 +4845,9 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
 #ifdef  DEBUG
         compCurBB               = 0;
         lvaTable                = 0;
+
+        // Reset node ID counter
+        compGenTreeID           = 0;
 #endif
 
         /* Initialize emitter */
@@ -4843,49 +4921,29 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
             // the code in fgFindJumpTargets references that data
             // member extensively.
             assert(compInlineResult == nullptr);
+            assert(impInlineInfo == nullptr);
             compInlineResult = &prejitResult;
 
             // Find the basic blocks. We must do this regardless of
             // inlineability, since we are prejitting this method.
             //
-            // Among other things, this will set compNativeSizeEstimate
-            // for the subset of methods we check below.
+            // This will also update the status of this method as
+            // an inline candidate.
             fgFindBasicBlocks();
 
             // Undo the temporary setup.
             assert(compInlineResult == &prejitResult);
             compInlineResult = nullptr;
 
-            // If this method is still a viable inline candidate,
-            // do the profitability screening.
-            if (prejitResult.isCandidate())
+            // If still a viable, discretionary inline, assess
+            // profitability.
+            if (prejitResult.IsDiscretionaryCandidate())
             {
-                // Only needed if the inline is discretionary.
-                InlineObservation obs = prejitResult.getObservation();
-                if (obs == InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE)
-                {
-                    // We should have run the CodeSeq state machine
-                    // and got the native size estimate.
-                    assert(compNativeSizeEstimate != NATIVE_SIZE_INVALID);
-
-                    // Estimate the call site impact
-                    int callsiteNativeSizeEstimate = impEstimateCallsiteNativeSize(methodInfo);
-
-                    // See if we're willing to pay for inlining this method
-                    impCanInlineNative(callsiteNativeSizeEstimate,
-                                       compNativeSizeEstimate,
-                                       nullptr, // Calculate static inlining hint.
-                                       &prejitResult);
-                }
-            }
-            else
-            {
-                // If it's not a candidate, it should be a failure.
-                assert(prejitResult.isFailure());
+                prejitResult.DetermineProfitability(methodInfo);
             }
 
             // Handle the results of the inline analysis.
-            if (prejitResult.isFailure())
+            if (prejitResult.IsFailure())
             {
                 // This method is a bad inlinee according to our
                 // analysis.  We will let the InlineResult destructor
@@ -4893,13 +4951,13 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                 // jit some work.
                 //
                 // This decision better not be context-dependent.
-                assert(prejitResult.isNever());
+                assert(prejitResult.IsNever());
             }
             else
             {
                 // This looks like a viable inline candidate.  Since
                 // we're not actually inlining, don't report anything.
-                prejitResult.setReported();
+                prejitResult.SetReported();
             }
         }
         else
@@ -4944,16 +5002,13 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         {
             s_compMethodsCount++;
         }
-
-        // Reset node ID counter
-        compGenTreeID = 0;
 #endif
 
         if (compIsForInlining())
         {
-            compInlineResult->noteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS, fgBBcount);
+            compInlineResult->NoteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS, fgBBcount);
 
-            if (compInlineResult->isFailure())
+            if (compInlineResult->IsFailure())
             {
                 goto _Next;
             }
@@ -5623,7 +5678,7 @@ START:
         {
             // Note that we failed to compile the inlinee, and that
             // there's no point trying to inline it again anywhere else.
-            inlineInfo->inlineResult->noteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
+            inlineInfo->inlineResult->NoteFatal(InlineObservation::CALLEE_COMPILATION_ERROR);
         }
         param.result = __errc;       
     }
@@ -7263,7 +7318,7 @@ BasicBlock*    dFindBlock(unsigned bbNum)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out function in linear IR form
+ *  COMPlus_JitDumpIR support - dump out function in linear IR form
  */
 
 void        cFuncIR(Compiler* comp)
@@ -7283,7 +7338,7 @@ void        cFuncIR(Compiler* comp)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out the format specifiers from COMPLUS_JitDumpIRFormat
+ *  COMPlus_JitDumpIR support - dump out the format specifiers from COMPlus_JitDumpIRFormat
  */
 
 void        dFormatIR()
@@ -7292,13 +7347,13 @@ void        dFormatIR()
 
     if (comp->dumpIRFormat != NULL)
     {
-       printf("COMPLUS_JitDumpIRFormat=%ls", comp->dumpIRFormat);
+       printf("COMPlus_JitDumpIRFormat=%ls", comp->dumpIRFormat);
     }
 }
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out function in linear IR form
+ *  COMPlus_JitDumpIR support - dump out function in linear IR form
  */
 
 void        dFuncIR()
@@ -7308,7 +7363,7 @@ void        dFuncIR()
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop in linear IR form
  */
 
 void        cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
@@ -7348,7 +7403,7 @@ void        cLoopIR(Compiler* comp, Compiler::LoopDsc* loop)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop in linear IR form
  */
 
 void        dLoopIR(Compiler::LoopDsc* loop)
@@ -7358,7 +7413,7 @@ void        dLoopIR(Compiler::LoopDsc* loop)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out loop (given loop number) in linear IR form
+ *  COMPlus_JitDumpIR support - dump out loop (given loop number) in linear IR form
  */
 
 void        dLoopNumIR(unsigned loopNum)
@@ -7377,7 +7432,7 @@ void        dLoopNumIR(unsigned loopNum)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump spaces to specified tab stop
+ *  COMPlus_JitDumpIR support - dump spaces to specified tab stop
  */
 
 int        dTabStopIR(int curr, int tabstop)
@@ -7397,7 +7452,7 @@ void        cNodeIR(Compiler* comp, GenTree* tree);
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out block in linear IR form
+ *  COMPlus_JitDumpIR support - dump out block in linear IR form
  */
 
 void        cBlockIR(Compiler* comp, BasicBlock* block)
@@ -7550,7 +7605,7 @@ void        cBlockIR(Compiler* comp, BasicBlock* block)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out block in linear IR form
+ *  COMPlus_JitDumpIR support - dump out block in linear IR form
  */
 
 void        dBlockIR(BasicBlock* block)
@@ -7560,7 +7615,7 @@ void        dBlockIR(BasicBlock* block)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node type for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node type for linear IR form
  */
 
 int cTreeTypeIR(Compiler *comp, GenTree *tree)
@@ -7577,7 +7632,7 @@ int cTreeTypeIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node type for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node type for linear IR form
  */
 
 int dTreeTypeIR(GenTree *tree)
@@ -7589,7 +7644,7 @@ int dTreeTypeIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node kind for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node kind for linear IR form
  */
 
 int cTreeKindsIR(Compiler *comp, GenTree *tree)
@@ -7627,7 +7682,7 @@ int cTreeKindsIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node kind for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node kind for linear IR form
  */
 
 int dTreeKindsIR(GenTree *tree)
@@ -7639,7 +7694,7 @@ int dTreeKindsIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node flags for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node flags for linear IR form
  */
 
 int cTreeFlagsIR(Compiler *comp, GenTree *tree)
@@ -8312,7 +8367,7 @@ int cTreeFlagsIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node flags for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node flags for linear IR form
  */
 
 int dTreeFlagsIR(GenTree *tree)
@@ -8324,7 +8379,7 @@ int dTreeFlagsIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out SSA number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out SSA number on tree node for linear IR form
  */
 
 int         cSsaNumIR(Compiler *comp, GenTree *tree)
@@ -8351,7 +8406,7 @@ int         cSsaNumIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out SSA number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out SSA number on tree node for linear IR form
  */
 
 int         dSsaNumIR(GenTree *tree)
@@ -8363,7 +8418,7 @@ int         dSsaNumIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out Value Number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out Value Number on tree node for linear IR form
  */
 
 int         cValNumIR(Compiler *comp, GenTree *tree)
@@ -8411,7 +8466,7 @@ int         cValNumIR(Compiler *comp, GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out Value Number on tree node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out Value Number on tree node for linear IR form
  */
 
 int         dValNumIR(GenTree *tree)
@@ -8423,7 +8478,7 @@ int         dValNumIR(GenTree *tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree leaf node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree leaf node for linear IR form
  */
 
 int         cLeafIR(Compiler *comp, GenTree* tree)
@@ -8871,7 +8926,7 @@ int         cLeafIR(Compiler *comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree leaf node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree leaf node for linear IR form
  */
 
 int         dLeafIR(GenTree* tree)
@@ -8883,7 +8938,7 @@ int         dLeafIR(GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree indir node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree indir node for linear IR form
  */
 
 int         cIndirIR(Compiler *comp, GenTree* tree)
@@ -8903,7 +8958,7 @@ int         cIndirIR(Compiler *comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree indir node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree indir node for linear IR form
  */
 
 int         dIndirIR(GenTree* tree)
@@ -8915,7 +8970,7 @@ int         dIndirIR(GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree operand node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree operand node for linear IR form
  */
 
 int         cOperandIR(Compiler* comp, GenTree* operand)
@@ -9031,7 +9086,7 @@ int         cOperandIR(Compiler* comp, GenTree* operand)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree operand node for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree operand node for linear IR form
  */
 
 int         dOperandIR(GenTree* operand)
@@ -9043,7 +9098,7 @@ int         dOperandIR(GenTree* operand)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree list of nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree list of nodes for linear IR form
  */
 
 int         cListIR(Compiler* comp, GenTree* list)
@@ -9075,7 +9130,7 @@ int         cListIR(Compiler* comp, GenTree* list)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree list of nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree list of nodes for linear IR form
  */
 
 int         dListIR(GenTree* list)
@@ -9087,7 +9142,7 @@ int         dListIR(GenTree* list)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
  */
 
 int         cDependsIR(Compiler* comp, GenTree* comma, bool *first)
@@ -9122,7 +9177,7 @@ int         cDependsIR(Compiler* comp, GenTree* comma, bool *first)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree dependencies based on comma nodes for linear IR form
  */
 
 int         dDependsIR(GenTree* comma)
@@ -9137,7 +9192,7 @@ int         dDependsIR(GenTree* comma)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree node in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree node in linear IR form
  */
 
 void        cNodeIR(Compiler* comp, GenTree* tree)
@@ -9615,7 +9670,7 @@ void        cNodeIR(Compiler* comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree in linear IR form
  */
 
 void        cTreeIR(Compiler* comp, GenTree* tree)
@@ -9665,7 +9720,7 @@ void        cTreeIR(Compiler* comp, GenTree* tree)
 
 /*****************************************************************************
  *
- *  COMPLUS_JitDumpIR support - dump out tree in linear IR form
+ *  COMPlus_JitDumpIR support - dump out tree in linear IR form
  */
 
 void        dTreeIR(GenTree* tree)

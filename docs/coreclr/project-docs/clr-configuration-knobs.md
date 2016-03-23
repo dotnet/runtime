@@ -1,9 +1,9 @@
 
 #CLR Configuration Knobs
 
-This Document is machine-generated from commit 65f7881 on 08/15/15. It might be out of date.
+This Document is machine-generated from commit 26efa5f on 03/17/16. It might be out of date.
 
-When using these configurations from environment variables, the variable need to have `ComPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `ComPlus_DumpJittedMethods=1` to envvars.
+When using these configurations from environment variables, the variable need to have `COMPlus_` prefix in its name. e.g. To set DumpJittedMethods to 1, add `COMPlus_DumpJittedMethods=1` to envvars.
 
 See also [Dumps and Other Tools](../botr/ryujit-overview.md#dumps-and-other-tools) for more information.
 
@@ -21,14 +21,15 @@ Name | Description | Type | Class | Default Value | Flags
 `MsiPeekForbid` | Assert on MSI calls | DWORD | INTERNAL | 0 | 
 `ADULazyMemoryRelease` | On by default. Turned off in cases when people try to catch memory leaks, in which case AD unload should be immediately followed by GC) | DWORD | EXTERNAL | 1 | 
 `ADURetryCount` | Controls timeout of AD unload. Used for workarounds when machine is too slow, there are network issues etc. | DWORD | EXTERNAL | | 
-`APPDOMAIN_MANAGER_ASM` | Legacy method to specify the assembly containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPLUS_ / IgnoreHKLM / IgnoreHKCU
-`APPDOMAIN_MANAGER_TYPE` | LegacyMethod to specify the type containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPLUS_  / IgnoreHKLM / IgnoreHKCU
+`APPDOMAIN_MANAGER_ASM` | Legacy method to specify the assembly containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPlus_ / IgnoreHKLM / IgnoreHKCU
+`APPDOMAIN_MANAGER_TYPE` | LegacyMethod to specify the type containing the AppDomainManager to use for the default domain | STRING | EXTERNAL | | DontPrependCOMPlus_  / IgnoreHKLM / IgnoreHKCU
 `appDomainManagerAssembly` | Config file switch to specify the assembly for the default AppDomainManager. | STRING | EXTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU
 `appDomainManagerType` | Config file switch to specify the type for the default AppDomainManager. | STRING | EXTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU
 `AppDomainAgilityChecked` | Used to detect AD boundary violations (AD leaks) | DWORD | INTERNAL | | 
 `AppDomainNoUnload` | Not used | DWORD | INTERNAL | 0 | 
 `TargetFrameworkMoniker` | Allows the test team to specify what TargetFrameworkMoniker to use. | STRING | INTERNAL | | IgnoreHKLM / IgnoreHKCU / IgnoreConfigFiles / IgnoreWindowsQuirkDB
 `AppContextSwitchOverrides` | Allows default switch values defined in AppContext to be overwritten by values in the Config | STRING | INTERNAL | | IgnoreEnv / IgnoreHKLM / IgnoreHKCU / IgnoreWindowsQuirkDB / ConfigFile_ApplicationFirst
+`FinalizeOnShutdown` | When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects | DWORD | EXTERNAL | DEFAULT_FinalizeOnShutdown | 
 `ARMEnabled` | Set it to 1 to enable ARM | DWORD | UNSUPPORTED | (DWORD)0 | 
 `designerNamespaceResolution` | Set it to 1 to enable DesignerNamespaceResolve event for WinRT types | DWORD | EXTERNAL | FALSE | IgnoreEnv / IgnoreHKLM / IgnoreHKCU / FavorConfigFile
 `GetAssemblyIfLoadedIgnoreRidMap` | Used to force loader to ignore assemblies cached in the rid-map | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -154,6 +155,7 @@ Name | Description | Type | Class | Default Value | Flags
 `AssertOnFailFast` |  | DWORD | INTERNAL | | 
 `legacyCorruptedStateExceptionsPolicy` | Enabled Pre-V4 CSE behaviour | DWORD | UNSUPPORTED | 0 | FavorConfigFile
 `SuppressLostExceptionTypeAssert` |  | DWORD | INTERNAL | 0 | REGUTIL_default
+`FailFastOnCorruptedStateException` | Failfast if a CSE is encountered | DWORD | UNSUPPORTED | 0 | FavorConfigFile
 `FastGCCheckStack` |  | DWORD | INTERNAL | 0 | 
 `FastGCStress` | reduce the number of GCs done by enabling GCStress | DWORD | INTERNAL | | 
 `GCBreakOnOOM` | Does a DebugBreak at the soonest time we detect an OOM | DWORD | UNSUPPORTED | | 
@@ -171,9 +173,12 @@ Name | Description | Type | Class | Default Value | Flags
 `SuspendTimeLog` | Specifies the name of the log file for suspension statistics | STRING | UNSUPPORTED | | 
 `GCMixLog` | Specifies the name of the log file for GC mix statistics | STRING | UNSUPPORTED | | 
 `GCLatencyMode` | Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way) | DWORD | INTERNAL | | 
+`GCConfigLogEnabled` | Specifies if you want to turn on config logging in GC | DWORD | UNSUPPORTED | 0 | 
 `GCLogEnabled` | Specifies if you want to turn on logging in GC | DWORD | UNSUPPORTED | 0 | 
 `GCLogFile` | Specifies the name of the GC log file | STRING | UNSUPPORTED | | 
-`GCLogFileSize` | Specifies the maximum GC log file size | DWORD | UNSUPPORTED | 0 | 
+`GCConfigLogFile` | Specifies the name of the GC config log file | STRING | UNSUPPORTED | | 
+`GCLogFileSize` | Specifies the GC log file size | DWORD | UNSUPPORTED | 0 | 
+`GCCompactRatio` | Specifies the ratio compacting GCs vs sweeping  | DWORD | UNSUPPORTED | 0 | 
 `GCPollType` |  | DWORD | EXTERNAL | | 
 `NewGCCalc` |  | STRING | EXTERNAL | | REGUTIL_default
 `GCprnLvl` | Specifies the maximum level of GC logging | DWORD | UNSUPPORTED | | 
@@ -221,12 +226,17 @@ Name | Description | Type | Class | Default Value | Flags
 `JitDisasm` | Dumps disassembly for specified method | STRING | INTERNAL | | REGUTIL_default
 `JitDoubleAlign` |  | DWORD | INTERNAL | | 
 `JitDump` | Dumps trees for specified method | STRING | INTERNAL | | REGUTIL_default
+`JitDumpIR` | Dumps trees (in linear IR form) for specified method | STRING | INTERNAL | | REGUTIL_default
+`JitDumpIRFormat` | Comma separated format control for JitDumpIR, values = {types | locals | ssa | valnums | kinds | flags | nodes | nolists | nostmts | noleafs | trees | dataflow} | STRING | INTERNAL | | REGUTIL_default
+`JitDumpIRPhase` | Phase control for JitDumpIR, values = {* | phasename} | STRING | INTERNAL | | REGUTIL_default
 `JitDumpVerboseTrees` | Enable more verbose tree dumps | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitDumpVerboseSsa` | Produce especially verbose dump output for SSA | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitDumpBeforeAfterMorph` | If 1, display each tree before/after morphing | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitDumpFg` | Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
-`JitDumpFgDir` | Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
-`JitDumpFgFile` | Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
+`JitDumpFg` | Dumps Xml/Dot Flowgraph for specified method | STRING | INTERNAL | | REGUTIL_default
+`JitDumpFgDir` | Directory for Xml/Dot flowgraph dump(s) | STRING | INTERNAL | | REGUTIL_default
+`JitDumpFgFile` | Filename for Xml/Dot flowgraph dump(s) | STRING | INTERNAL | | REGUTIL_default
+`JitDumpFgPhase` | Phase-based Xml/Dot flowgraph support. Set to the short name of a phase to see the flowgraph after that phase. Leave unset to dump after COLD-BLK (determine first cold block) or set to * for all phases | STRING | INTERNAL | | REGUTIL_default
+`JitDumpFgDot` | Set to non-zero to emit Dot instead of Xml Flowgraph dump | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitDumpLevel` |  | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitDumpASCII` | Uses only ASCII characters in tree dumps | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitDumpTerseLsra` | Produce terse dump output for LSRA | DWORD | INTERNAL | 1 | REGUTIL_default
@@ -234,7 +244,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitEmitPrintRefRegs` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitExclude` |  | STRING | INTERNAL | | REGUTIL_default
 `JitForceFallback` | Set to non-zero to test NOWAY assert by forcing a retry | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitNoForceFallback` | Set to non-zero to prevent NOWAY assert testing. Overrides COMPLUS_JitForceFallback and JIT stress flags. | DWORD | INTERNAL | 0 | REGUTIL_default
+`JitNoForceFallback` | Set to non-zero to prevent NOWAY assert testing. Overrides COMPlus_JitForceFallback and JIT stress flags. | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitExpensiveDebugCheckLevel` | Level indicates how much checking beyond the default to do in debug builds (currently 1-2) | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitForceProcedureSplitting` |  | STRING | INTERNAL | | REGUTIL_default
 `JitForceVer` |  | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -248,6 +258,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitHashHalt` | Same as JitHalt, but for a method hash | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
 `JitHashBreak` | Same as JitBreak, but for a method hash | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
 `JitHashDump` | Same as JitDump, but for a method hash | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
+`JitHashDumpIR` | Same as JitDumpIR, but for a method hash | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
 `JitHeartbeat` |  | DWORD | INTERNAL | 0 | 
 `JitHelperLogging` |  | DWORD | INTERNAL | 0 | 
 `JitImportBreak` |  | STRING | INTERNAL | | REGUTIL_default
@@ -258,7 +269,6 @@ Name | Description | Type | Class | Default Value | Flags
 `JITInlineSize` |  | DWORD | INTERNAL | | 
 `JitLateDisasm` |  | STRING | INTERNAL | | REGUTIL_default
 `JITLateDisasmTo` |  | STRING | INTERNAL | | REGUTIL_default
-`JitLRSampling` |  | DWORD | EXTERNAL | 0 | REGUTIL_default
 `JITMaxTempAssert` |  | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitMaxUncheckedOffset` |  | DWORD | INTERNAL | (DWORD)8 | REGUTIL_default
 `JITMinOpts` | Forces MinOpts | DWORD | UNSUPPORTED | | 
@@ -268,11 +278,13 @@ Name | Description | Type | Class | Default Value | Flags
 `JITMinOptsLvNumcount` | Internal jit control of MinOpts | DWORD | INTERNAL | | 
 `JITMinOptsLvRefcount` | Internal jit control of MinOpts | DWORD | INTERNAL | | 
 `JITBreakOnMinOpts` | Halt if jit switches to MinOpts | DWORD | INTERNAL | | 
+`JITMinOptsName` | Forces MinOpts for a named function | STRING | INTERNAL | | REGUTIL_default
 `JitName` | Primary Jit to use | STRING | EXTERNAL | | 
 `AltJitName` | Alternative Jit to use, will fall back to primary jit. | STRING | EXTERNAL | | REGUTIL_default
 `AltJit` | Enables AltJit and selectively limits it to the specified methods. | STRING | EXTERNAL | | REGUTIL_default
 `AltJitExcludeAssemblies` | Do not use AltJit on this semicolon-delimited list of assemblies. | STRING | EXTERNAL | | REGUTIL_default
 `AltJitLimit` | Max number of functions to use altjit for (decimal) | DWORD | INTERNAL | 0 | REGUTIL_default
+`RunAltJitCode` | If non-zero, and the compilation succeeds for an AltJit, then use the code. If zero, then we always throw away the generated code and fall back to the default compiler. | DWORD | INTERNAL | 1 | REGUTIL_default
 `StackSamplingEnabled` | Is stack sampling based tracking of evolving hot methods enabled. | DWORD | UNSUPPORTED | 0 | 
 `StackSamplingAfter` | When to start sampling (for some sort of app steady state), i.e., initial delay for sampling start in milliseconds. | DWORD | UNSUPPORTED | 0 | 
 `StackSamplingEvery` | How frequent should thread stacks be sampled in milliseconds. | DWORD | UNSUPPORTED | 100 | 
@@ -287,7 +299,8 @@ Name | Description | Type | Class | Default Value | Flags
 `JitNoCSE` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitNoCSE2` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitNoHoist` |  | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitNoInline` | Disables inlining | DWORD | INTERNAL | 0 | REGUTIL_default
+`JitNoInline` | Disables inlining of all methods | DWORD | INTERNAL | 0 | REGUTIL_default
+`JitAggressiveInlining` | Aggressive inlining of all methods | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitNoProcedureSplitting` | Disallow procedure splitting for specified methods | STRING | INTERNAL | | REGUTIL_default
 `JitNoProcedureSplittingEH` | Disallow procedure splitting for specified methods if they contain exception handling | STRING | INTERNAL | | REGUTIL_default
 `JitNoRegLoc` |  | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -302,6 +315,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JITPInvokeCheckEnabled` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `JITPInvokeEnabled` |  | DWORD | INTERNAL | 1 | 
 `JitPrintInlinedMethods` |  | DWORD | EXTERNAL | 0 | REGUTIL_default
+`JitTelemetry` | If non-zero, gather JIT telemetry data | DWORD | EXTERNAL | 1 | 
 `JitRange` |  | STRING | INTERNAL | | REGUTIL_default
 `JITRequired` |  | DWORD | INTERNAL | (unsigned)-1 | REGUTIL_default
 `JITRoundFloat` |  | DWORD | INTERNAL | | 
@@ -316,6 +330,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitStressOnly` | Internal Jit stress mode: stress only the specified method(s) | STRING | INTERNAL | | REGUTIL_default
 `JitStressRange` | Internal Jit stress mode | STRING | INTERNAL | | REGUTIL_default
 `JitStressRegs` |  | DWORD | INTERNAL | 0 | REGUTIL_default
+`JitStressBiasedCSE` | Internal Jit stress mode: decimal bias value between (0,100) to perform CSE on a candidate. 100% = All CSEs. 0% = 0 CSE. (> 100) means no stress. | DWORD | INTERNAL | 0x101 | REGUTIL_default
 `JitStrictCheckForNonVirtualCallToVirtualMethod` |  | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitTimeLogFile` | If set, gather JIT throughput data and write to this file. | STRING | INTERNAL | | 
 `JitTimeLogCsv` | If set, gather JIT throughput data and write to a CSV file. This mode must be used in internal retail builds. | STRING | INTERNAL | | 
@@ -327,8 +342,10 @@ Name | Description | Type | Class | Default Value | Flags
 `TailCallMax` |  | STRING | INTERNAL | | REGUTIL_default
 `TailCallOpt` |  | STRING | EXTERNAL | | REGUTIL_default
 `TailcallStress` |  | DWORD | INTERNAL | 0 | REGUTIL_default
+`TailCallLoopOpt` | Convert recursive tail calls to loops | DWORD | EXTERNAL | 1 | 
 `NetFx40_PInvokeStackResilience` | Makes P/Invoke resilient against mismatched signature and calling convention (significant perf penalty). | DWORD | EXTERNAL | (DWORD)-1 | 
 `JitDoSsa` | Perform Static Single Assignment (SSA) numbering on the variables | DWORD | INTERNAL | 1 | REGUTIL_default
+`JitDoEarlyProp` | Perform Early Value Propagataion | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitDoValueNumber` | Perform value numbering on method expressions | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitDoLoopHoisting` | Perform loop hoisting on loop invariant values | DWORD | INTERNAL | 1 | REGUTIL_default
 `JitDoCopyProp` | Perform copy propagation on variables that appear redundant | DWORD | INTERNAL | 1 | REGUTIL_default
@@ -337,7 +354,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitSsaStress` | Perturb order of processing of blocks in SSA; 0 = no stress; 1 = use method hash; * = supplied value as random hash | DWORD | INTERNAL | 0 | REGUTIL_default
 `AltJitAssertOnNYI` | Controls the AltJit behavior of NYI stuff | DWORD | INTERNAL | 0 | 
 `AltJitAssertOnNYI` | Controls the AltJit behavior of NYI stuff | DWORD | INTERNAL | 1 | 
-`AltJitSkipOnAssert` | If AltJit hits an assert, fall back to the fallback JIT. Useful in conjunction with COMPLUS_ContinueOnAssert=1 | DWORD | INTERNAL | 0 | REGUTIL_default
+`AltJitSkipOnAssert` | If AltJit hits an assert, fall back to the fallback JIT. Useful in conjunction with COMPlus_ContinueOnAssert=1 | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitLargeBranches` | Force using the largest conditional branch format | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitSplitFunctionSize` | On ARM, use this as the maximum function/funclet size for creating function fragments (and creating multiple RUNTIME_FUNCTION entries) | DWORD | INTERNAL | 0 | REGUTIL_default
 `JitRegisterFP` | Control FP enregistration | DWORD | EXTERNAL | 3 | REGUTIL_default
@@ -350,6 +367,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitVNMapSelBudget` | Max # of MapSelect's considered for a particular top-level invocation. | DWORD | patsubst(INTERNAL_JitVNMapSelBudget, _.*, ) | 100 | 
 `FeatureSIMD` | Enable SIMD support with companion SIMDVector.dll | DWORD | EXTERNAL | EXTERNAL_FeatureSIMD_Default | REGUTIL_default
 `EnableAVX` | Enable AVX instruction set for wide operations as default | DWORD | EXTERNAL | EXTERNAL_JitEnableAVX_Default | REGUTIL_default
+`JitEnablePCRelAddr` | Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible | DWORD | INTERNAL | 1 | REGUTIL_default
 `MultiCoreJitProfile` | If set, use the file to store/control multi-core JIT. | STRING | INTERNAL | | 
 `MultiCoreJitProfileWriteDelay` | Set the delay after which the multi-core JIT profile will be written to disk. | DWORD | INTERNAL | 12 | 
 `JitFunctionTrace` | If non-zero, print JIT start/end logging | DWORD | INTERNAL | 0 | 
@@ -385,6 +403,8 @@ Name | Description | Type | Class | Default Value | Flags
 `WinMDPath` | Path for Windows WinMD files | STRING | INTERNAL | | 
 `LoaderHeapCallTracing` | Loader heap troubleshooting | DWORD | INTERNAL | 0 | REGUTIL_default
 `CodeHeapReserveForJumpStubs` | Percentage of code heap to reserve for jump stubs | DWORD | INTERNAL | 2 | 
+`NGenReserveForJumpStubs` | Percentage of ngen image size to reserve for jump stubs | DWORD | INTERNAL | 0 | 
+`BreakOnOutOfMemoryWithinRange` | Break before out of memory within range exception is thrown | DWORD | INTERNAL | 0 | 
 `LogEnable` | Turns on the traditional CLR log. | DWORD | INTERNAL | | 
 `LogFacility` | Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog. | DWORD | INTERNAL | | 
 `LogFacility2` | Specifies a facility mask for CLR log. (See 'loglf.h'; VM interprets string value as hex number.) Also used by stresslog. | DWORD | INTERNAL | | 
@@ -410,7 +430,7 @@ Name | Description | Type | Class | Default Value | Flags
 `MD_RegMetaBreak` | ASSERT when creating RegMeta class | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_RegMetaDump` | ? Dump MD in 4 functions? | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_TlbImp_BreakOnErr` | ASSERT when importing TLB into MD | DWORD | INTERNAL | 0 | REGUTIL_default
-`MD_TlbImp_BreakOnTypeImport` | ASSERT when importing a type from TLB | STRING | INTERNAL | | (LookupOptions) (REGUTIL_default / DontPrependCOMPLUS_)
+`MD_TlbImp_BreakOnTypeImport` | ASSERT when importing a type from TLB | STRING | INTERNAL | | (LookupOptions) (REGUTIL_default / DontPrependCOMPlus_)
 `MD_UseMinimalDeltas` | ? Some MD modifications when applying EnC? | DWORD | INTERNAL | 1 | REGUTIL_default
 `MD_WinMD_Disable` | Never activate the WinMD import adapter | DWORD | INTERNAL | 0 | REGUTIL_default
 `MD_WinMD_AssertOnIllegalUsage` | ASSERT if a WinMD import adapter detects a tool incompatibility | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -430,21 +450,7 @@ Name | Description | Type | Class | Default Value | Flags
 `NgenBind_ZapForbidExcludeList` |  | STRING | INTERNAL | | 
 `NgenBind_ZapForbidList` |  | STRING | INTERNAL | | 
 `NgenBind_OptimizeNonGac` | Skip loading IL image outside of GAC when NI can be loaded | DWORD | EXTERNAL | 0 | 
-`JIT_MDIL_MIN_TOKEN` | TBD | DWORD | INTERNAL | 0 | REGUTIL_default
-`JIT_MDIL_MAX_TOKEN` | TBD | DWORD | INTERNAL | 0xffffffff | REGUTIL_default
-`JitDisassembleMDIL` | TBD | DWORD | INTERNAL | 0 | REGUTIL_default
-`JitListMDILtoNative` | TBD | DWORD | INTERNAL | 0 | REGUTIL_default
-`MDIL_BREAK_ON` | TBD | STRING | INTERNAL | | REGUTIL_default
 `SymDiffDump` | Used to create the map file while binding the assembly. Used by SemanticDiffer | DWORD | INTERNAL | 0 | REGUTIL_default
-`TritonStressSeed` | Seed used for random number used to drive mdil stress modes | DWORD | INTERNAL | 0 | 
-`TritonStressLogFlags` | Triton stress logging | DWORD | INTERNAL | 3 | 
-`TritonStressPartialMDIL` | This stress mode will cause some number of methods to abort MDIL compilation. This should trigger them to fall back to JIT at runtime. | DWORD | INTERNAL | 0 | 
-`TritonStressPartialCTL` | This stress mode will cause some number of types from this module to fail to generate CTL. | DWORD | INTERNAL | 0 | 
-`TritonStressTypeLoad` | Triton Stress of type loading in mdilbind, parameter is LoadStressFlag | DWORD | INTERNAL | 0 | 
-`TritonStressMethodLoad` | Triton Stress of method loading in mdilbind, parameter is LoadStressFlag | DWORD | INTERNAL | 0 | 
-`TritonStressFieldLoad` | Triton Stress of field loading in mdilbind, parameter is LoadStressFlag | DWORD | INTERNAL | 0 | 
-`TritonStressAssemblyLoad` | Triton Stress of assembly loading in mdilbind, parameter is LoadStressFlag | DWORD | INTERNAL | 0 | 
-`MdilNIGenDefaultFailureMode` | Override default failure mode of mdil ni generation | DWORD | INTERNAL | 0 | 
 `NGen_JitName` |  | STRING | EXTERNAL | | REGUTIL_default
 `NGEN_USE_PRIVATE_STORE` |  | DWORD | EXTERNAL | -1 | REGUTIL_default
 `NGENBreakOnInjectPerAssemblyFailure` |  | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -456,12 +462,16 @@ Name | Description | Type | Class | Default Value | Flags
 `NGenDependencyWorkerHang` | If set to 1, NGen dependency walk worker process hangs forever | DWORD | UNSUPPORTED | 0 | REGUTIL_default
 `NgenDisasm` | Same as JitDisasm, but for ngen | STRING | INTERNAL | | REGUTIL_default
 `NgenDump` | Same as JitDump, but for ngen | STRING | INTERNAL | | REGUTIL_default
+`NgenDumpIR` | Same as JitDumpIR, but for ngen | STRING | INTERNAL | | REGUTIL_default
+`NgenDumpIRFormat` | Same as JitDumpIRFormat, but for ngen | STRING | INTERNAL | | REGUTIL_default
+`NgenDumpIRPhase` | Same as JitDumpIRPhase, but for ngen | STRING | INTERNAL | | REGUTIL_default
 `NgenDumpFg` | Ngen Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
 `NgenDumpFgDir` | Ngen Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
 `NgenDumpFgFile` | Ngen Xml Flowgraph support | STRING | INTERNAL | | REGUTIL_default
 `NGenFramed` | same as JitFramed, but for ngen | DWORD | UNSUPPORTED | -1 | REGUTIL_default
 `NgenGCDump` |  | STRING | INTERNAL | | REGUTIL_default
 `NgenHashDump` | same as JitHashDump, but for ngen | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
+`NgenHashDumpIR` | same as JitHashDumpIR, but for ngen | DWORD | INTERNAL | (DWORD)-1 | REGUTIL_default
 `NGENInjectFailuresServiceOnly` |  | DWORD | INTERNAL | 1 | REGUTIL_default
 `NGENInjectPerAssemblyFailure` |  | DWORD | INTERNAL | 0 | REGUTIL_default
 `NGENInjectTransientFailure` |  | DWORD | INTERNAL | 0 | REGUTIL_default
@@ -534,16 +544,16 @@ Name | Description | Type | Class | Default Value | Flags
 `NGenCopyFromRepository_SetCachedSigningLevel` | Support for test tree ngen.exe flag /CopyFromRepository to also vouch for the output NIs. | DWORD | INTERNAL | 0 | IgnoreConfigFiles
 `performanceScenario` | Activates a set of workload-specific default values for performance settings | STRING | EXTERNAL | | 
 `ProcessNameFormat` | Used by corperfmonext.dll to determine whether to decorate an instance name with the corresponding PID and runtime ID | DWORD | EXTERNAL | (DWORD)-1 | IgnoreHKLM / IgnoreHKCU / IgnoreConfigFiles
-`COR_ENABLE_PROFILING` | Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPLUS_ / IgnoreConfigFiles
-`COR_PROFILER` | Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH` | Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH_32` | Specifies the path to the DLL of profiler to load into currently running 32 bits process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`COR_PROFILER_PATH_64` | Specifies the path to the DLL of profiler to load into currently running 64 bits process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_ENABLE_PROFILING` | CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPLUS_ / IgnoreConfigFiles
-`CORECLR_PROFILER` | CoreCLR only: Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH_32` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process | STRING | EXTERNAL | | DontPrependCOMPLUS_
-`CORECLR_PROFILER_PATH_64` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process | STRING | EXTERNAL | | DontPrependCOMPLUS_
+`COR_ENABLE_PROFILING` | Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPlus_ / IgnoreConfigFiles
+`COR_PROFILER` | Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH` | Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH_32` | Specifies the path to the DLL of profiler to load into currently running 32 bits process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`COR_PROFILER_PATH_64` | Specifies the path to the DLL of profiler to load into currently running 64 bits process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_ENABLE_PROFILING` | CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process. | DWORD | EXTERNAL | 0 | DontPrependCOMPlus_ / IgnoreConfigFiles
+`CORECLR_PROFILER` | CoreCLR only: Specifies GUID of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH_32` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process | STRING | EXTERNAL | | DontPrependCOMPlus_
+`CORECLR_PROFILER_PATH_64` | CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process | STRING | EXTERNAL | | DontPrependCOMPlus_
 `ProfAPI_ProfilerCompatibilitySetting` | Specifies the profiler loading policy (the default is not to load a V2 profiler in V4) | STRING | EXTERNAL | | REGUTIL_default / TrimWhiteSpaceFromStringValue
 `AttachThreadAlwaysOn` | Forces profapi attach thread to be created on startup, instead of on-demand. | DWORD | EXTERNAL | | 
 `MsBetweenAttachCheck` |  | DWORD | EXTERNAL | 500 | 
@@ -615,6 +625,10 @@ Name | Description | Type | Class | Default Value | Flags
 `StressOn` | Enables the STRESS_ASSERT macro that stops runtime quickly (to prevent the clr state from changing significantly before breaking) | DWORD | INTERNAL | | 
 `stressSynchronized` | Unknown if or where this is used; unless a test is specifically depending on this, it can be removed. | DWORD | INTERNAL | 0 | REGUTIL_default
 `StressThreadCount` |  | DWORD | EXTERNAL | | 
+`DiagnosticSuspend` |  | DWORD | INTERNAL | 0 | 
+`SuspendDeadlockTimeout` |  | DWORD | INTERNAL | 40000 | 
+`SuspendThreadDeadlockTimeoutMs` |  | DWORD | INTERNAL | 2000 | 
+`INTERNAL_ThreadSuspendInjection` | Specifies whether to inject activations for thread suspension on Unix | DWORD | INTERNAL | 1 | 
 `ThreadPool_ForceMinWorkerThreads` | Overrides the MinThreads setting for the ThreadPool worker pool | DWORD | INTERNAL | 0 | 
 `ThreadPool_ForceMaxWorkerThreads` | Overrides the MaxThreads setting for the ThreadPool worker pool | DWORD | INTERNAL | 0 | 
 `ThreadPool_DisableStarvationDetection` | Disables the ThreadPool feature that forces new threads to be added when workitems run for too long | DWORD | INTERNAL | 0 | 
@@ -659,6 +673,7 @@ Name | Description | Type | Class | Default Value | Flags
 `DebugAssertOnMissedCOWPage` |  | DWORD | INTERNAL | 1 | 
 `ReadyToRun` | Enable/disable use of ReadyToRun native code | DWORD | EXTERNAL | 1 |  // On by default for CoreCLR
 `ReadyToRun` | Enable/disable use of ReadyToRun native code | DWORD | EXTERNAL | 0 |  // Off by default for desktop
+`EnableEventLog` | Enable/disable use of EnableEventLogging mechanism  | DWORD | EXTERNAL | 0 |  // Off by default 
 `ExposeExceptionsInCOM` |  | DWORD | INTERNAL | | 
 `PreferComInsteadOfManagedRemoting` | When communicating with a cross app domain CCW, use COM instead of managed remoting. | DWORD | EXTERNAL | 0 | 
 `GenerateStubForHost` | Forces the host hook stub to be built for all unmanaged calls, even when not running hosted. | DWORD | INTERNAL | 0 | 
@@ -691,7 +706,6 @@ Name | Description | Type | Class | Default Value | Flags
 `DeadCodeMax` | Sets internal jit constants for Dead Code elmination | STRING | INTERNAL | | REGUTIL_default
 `DefaultVersion` | Version of CLR to load. | STRING | INTERNAL | | 
 `developerInstallation` | Flag to enable DEVPATH binding feature | STRING | EXTERNAL | |  // TODO: check special handling
-`DiagnosticSuspend` |  | DWORD | INTERNAL | 0 | 
 `shadowCopyVerifyByTimestamp` | Fusion flag to enable quick verification of files in the shadow copy directory by using timestamps. | DWORD | EXTERNAL | 0 | FavorConfigFile / MayHavePerformanceDefault
 `disableFusionUpdatesFromADManager` | Fusion flag to prevent changes to the AppDomainSetup object made by implementations of AppDomainManager.InitializeNewDomain from propagating to Fusion | DWORD | EXTERNAL | 0 | FavorConfigFile
 `disableCachingBindingFailures` | Fusion flag to re-enable Everett bind caching behavior (Whidbey caches failures for sharing) | DWORD | EXTERNAL | 0 | FavorConfigFile
@@ -762,8 +776,6 @@ Name | Description | Type | Class | Default Value | Flags
 `StubLinkerUnwindInfoVerificationOn` |  | DWORD | INTERNAL | | 
 `SuccessExit` |  | DWORD | UNSUPPORTED | 0 | REGUTIL_default
 `SupressAllowUntrustedCallerChecks` | Disable APTCA | DWORD | INTERNAL | 0 | 
-`SuspendDeadlockTimeout` |  | DWORD | INTERNAL | 40000 | 
-`SuspendThreadDeadlockTimeoutMs` |  | DWORD | INTERNAL | 2000 | 
 `SymbolReadingPolicy` | Specifies when PDBs may be read | DWORD | EXTERNAL | | 
 `TestDataConsistency` | allows ensuring the left side is not holding locks (and may thus be in an inconsistent state) when inspection occurs | DWORD | UNSUPPORTED | FALSE | 
 `ThreadGuardPages` |  | DWORD | EXTERNAL | 0 | REGUTIL_default

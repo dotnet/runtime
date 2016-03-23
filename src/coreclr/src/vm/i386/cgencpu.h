@@ -294,8 +294,6 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
     return (INT32)(target - baseAddr);
 }
 
-#ifndef CLR_STANDALONE_BINDER
-
 #ifdef FEATURE_COMINTEROP
 inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
 {
@@ -524,8 +522,6 @@ struct HijackArgs
         size_t ReturnAddress;
     };
 };
-
-#endif //!CLR_STANDALONE_BINDER
 
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.

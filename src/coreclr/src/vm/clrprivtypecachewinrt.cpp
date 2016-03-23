@@ -100,7 +100,7 @@ CLRPrivTypeCacheWinRT::ContainsTypeHelper(
             &tkType, 
             &pTypeModule, 
             &tkExportedType, 
-            nullptr,    // ppClassHashEntry
+            nullptr,    // pFoundEntry
             nullptr,    // pLookInThisModuleOnly
             Loader::DontLoad))
     {

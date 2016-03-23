@@ -1830,12 +1830,6 @@ namespace System.Threading
         [CLSCompliant(false)]
         unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
         {
-#if FEATURE_CORECLR && !FEATURE_LEGACYNETCF
-            if(Environment.OSVersion.Platform == PlatformID.MacOSX)
-                throw new NotSupportedException(Environment.GetResourceString("Arg_NotSupportedException"));
-            Contract.EndContractBlock();
-#endif
-
             return PostQueuedCompletionStatus(overlapped);
         }
 
@@ -1934,12 +1928,6 @@ namespace System.Threading
 #pragma warning restore 618
         public static bool BindHandle(SafeHandle osHandle)
         {
-            #if FEATURE_CORECLR && !FEATURE_LEGACYNETCF
-            if(Environment.OSVersion.Platform == PlatformID.MacOSX)
-                throw new NotSupportedException(Environment.GetResourceString("Arg_NotSupportedException"));
-            Contract.EndContractBlock();
-            #endif
-
             if (osHandle == null)
                 throw new ArgumentNullException("osHandle");
             

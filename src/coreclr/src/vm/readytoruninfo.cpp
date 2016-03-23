@@ -64,6 +64,266 @@ MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
     return dac_cast<PTR_MethodDesc>(val);
 }
 
+BOOL ReadyToRunInfo::HasHashtableOfTypes()
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    return !m_availableTypesHashtable.IsNull();
+}
+
+BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFoundTypeToken)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+        PRECONDITION(!m_availableTypesHashtable.IsNull());
+    }
+    CONTRACTL_END;
+
+    if (m_availableTypesHashtable.IsNull())
+        return FALSE;
+
+    LPCUTF8 pszName;
+    LPCUTF8 pszNameSpace;
+
+    //
+    // Compute the hashcode of the type (hashcode based on type name and namespace name)
+    //
+    DWORD dwHashCode = 0;
+    {
+        if (pName->GetTypeToken() == mdtBaseType)
+        {
+            // Name-based lookups (ex: Type.GetType()). 
+
+            pszName = pName->GetName();
+            pszNameSpace = "";
+
+            if (pName->GetNameSpace() != NULL)
+            {
+                pszNameSpace = pName->GetNameSpace();
+            }
+            else
+            {
+                LPCUTF8 p;
+                CQuickBytes szNamespace;
+
+                if ((p = ns::FindSep(pszName)) != NULL)
+                {
+                    SIZE_T d = p - pszName;
+
+                    FAULT_NOT_FATAL();
+                    pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+
+                    if (pszNameSpace == NULL)
+                        return FALSE;
+
+                    pszName = (p + 1);
+                }
+            }
+
+            _ASSERT(pszNameSpace != NULL);
+            dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszName);
+            dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpace);
+
+            // Bucket is not 'null' for a nested type, and it will have information about the nested type's encloser
+            if (!pName->GetBucket().IsNull())
+            {
+                // Must be a token based bucket that we found earlier in the R2R types hashtable
+                _ASSERT(pName->GetBucket().GetEntryType() == HashedTypeEntry::IsHashedTokenEntry);
+
+                const HashedTypeEntry::TokenTypeEntry& tokenBasedEncloser = pName->GetBucket().GetTokenBasedEntryValue();
+
+                // Token must be a typedef token that we previously resolved (we shouldn't get here with an exported type token)
+                _ASSERT(TypeFromToken(tokenBasedEncloser.m_TypeToken) == mdtTypeDef);
+
+                mdToken mdCurrentTypeToken = tokenBasedEncloser.m_TypeToken;
+                do
+                {
+                    LPCUTF8 pszNameTemp;
+                    LPCUTF8 pszNameSpaceTemp;
+                    if (!GetTypeNameFromToken(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken, &pszNameTemp, &pszNameSpaceTemp))
+                        return FALSE;
+
+                    dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameTemp);
+                    dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpaceTemp == NULL ? "" : pszNameSpaceTemp);
+
+                } while (GetEnclosingToken(tokenBasedEncloser.m_pModule->GetMDImport(), mdCurrentTypeToken, &mdCurrentTypeToken));
+
+            }
+        }
+        else
+        {
+            // Token based lookups (ex: tokens from IL code)
+
+            mdToken mdCurrentTypeToken = pName->GetTypeToken();
+            do
+            {
+                if (!GetTypeNameFromToken(pName->GetTypeModule()->GetMDImport(), mdCurrentTypeToken, &pszName, &pszNameSpace))
+                    return FALSE;
+
+                dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszName);
+                dwHashCode = ((dwHashCode << 5) + dwHashCode) ^ HashStringA(pszNameSpace == NULL ? "" : pszNameSpace);
+
+            } while (GetEnclosingToken(pName->GetTypeModule()->GetMDImport(), mdCurrentTypeToken, &mdCurrentTypeToken));
+        }
+    }
+
+
+    //
+    // Lookup the type in the native hashtable using the computed token
+    //
+    {
+        NativeHashtable::Enumerator lookup = m_availableTypesHashtable.Lookup((int)dwHashCode);
+        NativeParser entryParser;
+        while (lookup.GetNext(entryParser))
+        {
+            DWORD ridAndFlag = entryParser.GetUnsigned();
+            mdToken cl = ((ridAndFlag & 1) ? ((ridAndFlag >> 1) | mdtExportedType) : ((ridAndFlag >> 1) | mdtTypeDef));
+            _ASSERT(RidFromToken(cl) != 0);
+
+            if (pName->GetTypeToken() == mdtBaseType)
+            {
+                // Compare type name and namespace name
+                LPCUTF8 pszFoundName;
+                LPCUTF8 pszFoundNameSpace;
+                if (!GetTypeNameFromToken(m_pModule->GetMDImport(), cl, &pszFoundName, &pszFoundNameSpace))
+                    continue;
+                if (strcmp(pszName, pszFoundName) != 0 || strcmp(pszNameSpace, pszFoundNameSpace) != 0)
+                    continue;
+
+                mdToken mdFoundTypeEncloser;
+                BOOL inputTypeHasEncloser = !pName->GetBucket().IsNull();
+                BOOL foundTypeHasEncloser = GetEnclosingToken(m_pModule->GetMDImport(), cl, &mdFoundTypeEncloser);
+                if (inputTypeHasEncloser != foundTypeHasEncloser)
+                    continue;
+
+                // Compare the enclosing types chain for a match
+                if (inputTypeHasEncloser)
+                {
+                    const HashedTypeEntry::TokenTypeEntry& tokenBasedEncloser = pName->GetBucket().GetTokenBasedEntryValue();
+
+                    if (!CompareTypeNameOfTokens(tokenBasedEncloser.m_TypeToken, tokenBasedEncloser.m_pModule->GetMDImport(), mdFoundTypeEncloser, m_pModule->GetMDImport()))
+                        continue;
+                }
+            }
+            else
+            {
+                // Compare type name, namespace name, and enclosing types chain for a match
+                if (!CompareTypeNameOfTokens(pName->GetTypeToken(), pName->GetTypeModule()->GetMDImport(), cl, m_pModule->GetMDImport()))
+                    continue;
+            }
+
+            // Found a match!
+            *pFoundTypeToken = cl;
+            return TRUE;
+        }
+    }
+
+    return FALSE;   // No matching type found
+}
+
+BOOL ReadyToRunInfo::GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+        PRECONDITION(TypeFromToken(mdType) == mdtTypeDef || TypeFromToken(mdType) == mdtTypeRef || TypeFromToken(mdType) == mdtExportedType);
+    }
+    CONTRACTL_END;
+
+    switch (TypeFromToken(mdType))
+    {
+    case mdtTypeDef: 
+        return SUCCEEDED(pImport->GetNameOfTypeDef(mdType, ppszName, ppszNameSpace));
+    case mdtTypeRef: 
+        return SUCCEEDED(pImport->GetNameOfTypeRef(mdType, ppszNameSpace, ppszName));
+    case mdtExportedType:
+        return SUCCEEDED(pImport->GetExportedTypeProps(mdType, ppszNameSpace, ppszName, NULL, NULL, NULL));
+    }
+
+    return FALSE;
+}
+
+BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+        PRECONDITION(TypeFromToken(mdType) == mdtTypeDef || TypeFromToken(mdType) == mdtTypeRef || TypeFromToken(mdType) == mdtExportedType);
+    }
+    CONTRACTL_END;
+
+    mdToken mdEncloser;
+    switch (TypeFromToken(mdType))
+    {
+    case mdtTypeDef:
+        return SUCCEEDED(pImport->GetNestedClassProps(mdType, pEnclosingToken));
+
+    case mdtTypeRef:
+        if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
+            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+
+    case mdtExportedType:
+        if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
+            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+    }
+
+    return FALSE;
+}
+
+BOOL ReadyToRunInfo::CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SO_TOLERANT;
+        SUPPORTS_DAC;
+        PRECONDITION(TypeFromToken(mdToken1) == mdtTypeDef || TypeFromToken(mdToken1) == mdtTypeRef || TypeFromToken(mdToken1) == mdtExportedType);
+        PRECONDITION(TypeFromToken(mdToken2) == mdtTypeDef || TypeFromToken(mdToken2) == mdtExportedType);
+    }
+    CONTRACTL_END;
+
+    BOOL hasEncloser;
+    do
+    {
+        LPCUTF8 pszName1;
+        LPCUTF8 pszNameSpace1;
+        if (!GetTypeNameFromToken(pImport1, mdToken1, &pszName1, &pszNameSpace1))
+            return FALSE;
+
+        LPCUTF8 pszName2;
+        LPCUTF8 pszNameSpace2;
+        if (!GetTypeNameFromToken(pImport2, mdToken2, &pszName2, &pszNameSpace2))
+            return FALSE;
+
+        if (strcmp(pszName1, pszName2) != 0 || strcmp(pszNameSpace1, pszNameSpace2) != 0)
+            return FALSE;
+
+        if ((hasEncloser = GetEnclosingToken(pImport1, mdToken1, &mdToken1)) != GetEnclosingToken(pImport2, mdToken2, &mdToken2))
+            return FALSE;
+
+    } while (hasEncloser);
+
+    return TRUE;
+}
+
 PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
 {
     CONTRACTL
@@ -194,6 +454,13 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     if (pEntryPointsDir != NULL)
     {
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
+    }
+
+    IMAGE_DATA_DIRECTORY * pAvailableTypesDir = FindSection(READYTORUN_SECTION_AVAILABLE_TYPES);
+    if (pAvailableTypesDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pAvailableTypesDir->VirtualAddress);
+        m_availableTypesHashtable = NativeHashtable(parser);
     }
 
     {

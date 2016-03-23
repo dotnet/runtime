@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="src\dir.props" />
-  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(NoBuild)' != 'true'" /> 
+  <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets') AND '$(BuildWrappers)' == 'true'" /> 
 
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
@@ -128,7 +128,6 @@ $(_XunitEpilog)
     "xunit" : "2.1.0",
     "xunit.assert" : "2.1.0",
     "xunit.core" : "2.1.0",
-    "xunit.runner.msbuild": "2.1.0"
   },
   "frameworks": {
     "net45": {
@@ -280,9 +279,33 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                 if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                 {
+                    string sErrorText = null%3B
+                    try
+                    {
+                        sErrorText = System.IO.File.ReadAllText(errorFile)%3B
+                    }
+                    catch(Exception ex)
+                    {
+                      sErrorText = "Unable to read error file: " + errorFile%3B
+                    }
+
+                    string outputText = null%3B
+                    try
+                    {
+                        System.IO.StreamReader outputReader = new System.IO.StreamReader(outputFile)%3B
+                        outputText = outputReader.ReadToEnd()%3B
+                        outputReader.Close()%3B
+                    }
+                    catch(Exception ex)
+                    {
+                        outputText = "Unable to read output file: " + outputFile%3B
+                    }
+
                     string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.Message
-                                                 : System.IO.File.ReadAllText(errorFile) + "\n\n" +
-                                                   "Raw output:      " + outputFile + "\n" +
+                                                 : sErrorText + "\n\n" +
+                                                   "Return code:      " + ret + "\n" +
+                                                   "Raw output file:      " + outputFile + "\n" +
+                                                   "Raw output:\n" + outputText + "\n" +
                                                    "To run the test:\n" +
                                                    "> set CORE_ROOT=" + _Global.coreRoot + "\n" +
                                                    "> " + testExecutable + "\n"%3B
@@ -304,11 +327,33 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
+
+    <!--
+      Contents of a project.json that will be restored once with errors turned off. This works
+      around the package being incompatible with dotnet restore. Only the package contents are
+      required so the compatibility errors can be ignored.
+    -->
+    <PropertyGroup>
+      <XunitRunnerRestoreGenConfig>{ "dependencies": { "xunit.runner.msbuild": "2.1.0" }, "frameworks": { "net45": {} } }</XunitRunnerRestoreGenConfig>
+      <XunitRunnerRestoreProjectDir>$(BaseOutputPath)\tempRestoreProject</XunitRunnerRestoreProjectDir>
+      <XunitRunnerRestoreProjectJsonPath>$(XunitRunnerRestoreProjectDir)\project.json</XunitRunnerRestoreProjectJsonPath>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(XunitRunnerRestoreProjectDir)" />
+    <WriteLinesToFile File="$(XunitRunnerRestoreProjectJsonPath)"
+                      Lines="$(XunitRunnerRestoreGenConfig)"
+                      Overwrite="true" />
+    
+    <Exec Command="$(DnuRestoreCommand) &quot;$(XunitRunnerRestoreProjectJsonPath)&quot;"
+          StandardOutputImportance="Low"
+          CustomErrorRegularExpression="^Unable to resolve .*"
+          IgnoreExitCode="true" 
+          IgnoreStandardErrorWarningFormat="true" />
+    
     <!-- Restore all wrapper projects' project.jsons in one pass for perf & to avoid concurrency problems -->
     <Exec Command="$(DnuRestoreCommand) &quot;$(XunitWrapperGeneratedCSDirBase.TrimEnd('\\'))&quot;"
-          StandardOutputImportance="Low"
-          CustomErrorRegularExpression="^Unable to locate .*"
-          ContinueOnError="WarnAndContinue" />
+          StandardOutputImportance="Low" />
+    
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
@@ -372,29 +417,29 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.json for runtime dependency -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestRuntimeJsonFile"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="src\Common\test_runtime\test_runtime.csproj"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateAllWrappers"
              Properties="_CMDDIR=%(TestDirectories.Identity)"
-             Condition=" '$(NoBuild)'!='true' " />
+             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Execution -->
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
-             Condition=" '$(NoRun)'!='true' "/>
+             Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
-             Condition=" '$(NoRun)'!='true' "/>
+             Condition=" '$(RunTests)'=='true' "/>
   </Target>
 
   <Target Name="Clean">
-    <RemoveDir Condition=" '$(NoBuild)'!='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
+    <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
   </Target>
 </Project>

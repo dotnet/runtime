@@ -29,11 +29,6 @@ int __cdecl main(int argc, char *argv[])
     /* These codepages are currently supported by the PAL */
     int codePages[] ={
         CP_ACP,
-//        932,
-        949,
-        950,
-        1252,
-        1258,
         CP_UTF8
     };
 

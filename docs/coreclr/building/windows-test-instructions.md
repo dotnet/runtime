@@ -13,17 +13,23 @@ To build the tests simply navigate to the tests directory above the repo and run
 
     C:\git\coreclr>tests\buildtest.cmd clean
 
-*Building tests that will CrossGen*
+*Building tests that will be precompiled*
 
     C:\git\coreclr>tests\buildtest.cmd crossgen
 
-This will enable crossgen.exe to be run against test executables before they are executed.
+This will use crossgen.exe to precompile the test executables before they are executed.
 
 *Building Other Priority Tests*
 
     C:\git\coreclr>tests\buildtest.cmd priority 2
 
 The number '2' is just an example. The default value (if no priority is specified) is 0. To clarify, if '2' is specified, all tests with CLRTestPriorty 0, 1 AND 2 will be built and consequently run.
+
+*Specify GCStress Level*
+
+    C:\git\coreclr>tests\buildtest.cmd gcstresslevel 2
+
+GCStress is used to help with identifying GC holes in the implementation of the managed runtime or GC life-time reporting done by the JIT. Valid values are the values supported by GCStressFlags enum in src/vm/eeconfig.h.
 
 **Example**
 
@@ -34,6 +40,14 @@ To run a clean, priority 1, crossgen test pass:
 **buildtest /?** will list additional supported parameters.
 
 Additionally, there is a Visual Studio solution, `<repo_root>\tests\src\AllTestProjects.sln`, where users can build a particular testcase, or all priority 0 testcases that are within it.
+
+**Building Individual Tests**
+
+Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast once
+
+* Native Test: Build the generated Visual Studio solution or make file corresponding to Test cmake file.
+  
+* Managed Test: You can invoke msbuild on the project directly from Visual Studio Command Prompt.
 
 **Running Tests**
 
@@ -83,3 +97,13 @@ If test changes are needed, make the change and build the test project. This wil
 8. Add any other projects as a dependency, if needed.
 9. Build the test.
 10. Follow the steps to re-run a failed test to validate the new test.
+
+Note:
+
+1. You can disable building of a test per architecture or configuration by using DisableProjectBuild tag in the project. for example:
+
+  ``<PropertyGroup>``
+
+     ``<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>``
+
+  ``</PropertyGroup>``

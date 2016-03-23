@@ -14,13 +14,9 @@ Module Name:
 #ifndef __GC_H
 #define __GC_H
 
-#ifndef BINDER
-
 #ifdef PROFILING_SUPPORTED
 #define GC_PROFILING       //Turn on profiling
 #endif // PROFILING_SUPPORTED
-
-#endif
 
 /*
  * Promotion Function Prototypes
@@ -380,17 +376,11 @@ public:
 
     static GCHeap *GetGCHeap()
     {
-#ifdef CLR_STANDALONE_BINDER
-        return NULL;
-#else
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(g_pGCHeap != NULL);
         return g_pGCHeap;
-#endif
     }
-    
-#ifndef CLR_STANDALONE_BINDER
 
 #ifndef DACCESS_COMPILE
     static BOOL IsGCInProgress(BOOL bConsiderGCStart = FALSE)
@@ -504,8 +494,6 @@ public:
         return pGCHeap;
     }
 #endif // DACCESS_COMPILE
-
-#endif // !CLR_STANDALONE_BINDER
 
 private:
     typedef enum

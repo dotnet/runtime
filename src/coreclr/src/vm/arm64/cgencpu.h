@@ -446,7 +446,18 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
-    // ARM64:NYI
+    DWORD64 X29; // frame pointer
+    union
+    {
+        DWORD64 Lr;
+        size_t ReturnAddress;
+    };
+    DWORD64 X19, X20, X21, X22, X23, X24, X25, X26, X27, X28;
+    union
+    {
+        DWORD64 X0;
+        size_t ReturnValue;
+    };
 };
 
 EXTERN_C VOID STDCALL PrecodeFixupThunk();

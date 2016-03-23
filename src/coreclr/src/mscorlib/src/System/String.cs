@@ -2736,22 +2736,6 @@ namespace System {
             Contract.EndContractBlock();
             return this;
         }
-    
-        private static bool IsBOMWhitespace(char c)
-        {
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && c == '\xFEFF')
-            {
-                // Dev11 450846 quirk:
-                // NetCF treats the BOM as a whitespace character when performing trim operations.
-                return true;
-            }
-            else
-#endif
-            {
-                return false;
-            }
-        }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by
         // Char.IsWhiteSpace.
@@ -2775,13 +2759,13 @@ namespace System {
             //Trim specified characters.
             if (trimType !=TrimTail)  {
                 for (start=0; start < this.Length; start++) {
-                    if (!Char.IsWhiteSpace(this[start]) && !IsBOMWhitespace(this[start])) break;
+                    if (!Char.IsWhiteSpace(this[start])) break;
                 }
             }
             
             if (trimType !=TrimHead) {
                 for (end= Length -1; end >= start;  end--) {
-                    if (!Char.IsWhiteSpace(this[end])  && !IsBOMWhitespace(this[start])) break;
+                    if (!Char.IsWhiteSpace(this[end])) break;
                 }
             }
 
@@ -2966,21 +2950,7 @@ namespace System {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
-            string s = ReplaceInternal(oldValue, newValue);
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhoneMango)
-            {
-                int i = s.IndexOf('\0');
-                if (i > 0)
-                    return s.Substring(0, i);
-                else
-                    return s;
-            }
-            else
-#endif
-            {
-                return s;
-            }
+            return ReplaceInternal(oldValue, newValue);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated

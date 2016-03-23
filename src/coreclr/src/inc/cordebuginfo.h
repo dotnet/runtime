@@ -189,10 +189,6 @@ public:
 
         VLT_COUNT,
         VLT_INVALID,
-#ifdef MDIL
-        VLT_MDIL_SYMBOLIC = 0x20
-#endif
-
     };
 
     struct VarLoc

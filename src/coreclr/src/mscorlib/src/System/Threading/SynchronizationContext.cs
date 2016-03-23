@@ -171,10 +171,6 @@ namespace System.Threading
 
         [ThreadStatic]
         private static SynchronizationContext s_threadStaticContext;
-        //
-        // Maintain legacy NetCF Behavior where setting the value for one thread impacts all threads.
-        //
-        private static SynchronizationContext s_appDomainStaticContext;
 
         [System.Security.SecurityCritical]
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
@@ -185,25 +181,14 @@ namespace System.Threading
         [System.Security.SecurityCritical]
         public static void SetThreadStaticContext(SynchronizationContext syncContext)
         {
-			//
-			// If this is a pre-Mango Windows Phone app, we need to set the SC for *all* threads to match the old NetCF behavior.
-			//
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhoneMango)
-                s_appDomainStaticContext = syncContext;
-            else
-                s_threadStaticContext = syncContext;
+            s_threadStaticContext = syncContext;
         }
 
         public static SynchronizationContext Current 
         {
             get      
             {
-                SynchronizationContext context = null;
-            
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhoneMango)
-                    context = s_appDomainStaticContext;
-                else
-                    context = s_threadStaticContext;
+                SynchronizationContext context = s_threadStaticContext;
 
 #if FEATURE_APPX
                 if (context == null && Environment.IsWinRTSupported)

@@ -154,6 +154,27 @@ else()
     if (AWK STREQUAL "AWK-NOTFOUND")
         message(FATAL_ERROR "AWK not found")
     endif()
+ 
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      # Ensure that dsymutil and strip is present
+      find_program(DSYMUTIL dsymutil)
+      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
+          message(FATAL_ERROR "dsymutil not found")
+      endif()
+      find_program(STRIP strip)
+      if (STRIP STREQUAL "STRIP-NOTFOUND")
+          message(FATAL_ERROR "strip not found")
+      endif()
+
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      # Ensure that objcopy is present
+      find_program(OBJCOPY objcopy)
+      if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
+          message(FATAL_ERROR "objcopy not found")
+      endif()
+    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(WIN32)
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -240,6 +261,69 @@ function(add_precompiled_header header cppFile targetSources)
     # Add cppFile to SourcesVar
     set(${targetSources} ${${targetSources}} ${cppFile} PARENT_SCOPE)
   endif(MSVC)
+endfunction()
+
+function(strip_symbols targetName outputFilename)
+  if(CLR_CMAKE_PLATFORM_UNIX)
+    if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+
+      # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
+      # generator expression doesn't work correctly returning the wrong path and on
+      # the newer cmake versions the LOCATION property isn't supported anymore.
+      if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
+          set(strip_source_file $<TARGET_FILE:${targetName}>)
+      else()
+          get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
+      endif()
+
+      if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        set(strip_destination_file ${strip_source_file}.dwarf)
+
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM 
+          COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+          COMMAND ${STRIP} -u -r ${strip_source_file}
+          COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+      else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        set(strip_destination_file ${strip_source_file}.dbg)
+
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM 
+          COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
+          COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+      endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
+    endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+  endif(CLR_CMAKE_PLATFORM_UNIX)
+endfunction()
+
+function(install_clr targetName)
+  strip_symbols(${targetName} strip_destination_file)
+
+  # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
+  # generator expression doesn't work correctly returning the wrong path and on
+  # the newer cmake versions the LOCATION property isn't supported anymore.
+  if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
+      set(install_source_file $<TARGET_FILE:${targetName}>)
+  else()
+      get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
+  endif()
+
+  install(PROGRAMS ${install_source_file} DESTINATION .)
+  if(WIN32)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
+  else()
+      install(FILES ${strip_destination_file} DESTINATION .)
+  endif()
 endfunction()
 
 # Includes
@@ -692,9 +776,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DFEATURE_CORESYSTEM)
 add_definitions(-DFEATURE_CORRUPTING_EXCEPTIONS)
-if(WIN32)
-    add_definitions(-DFEATURE_CRYPTO)
-endif(WIN32)
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
     add_definitions(-DFEATURE_DBGIPC_TRANSPORT_VM)
@@ -718,20 +799,10 @@ if (CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DFEATURE_IMPLICIT_TLS)
   set(FEATURE_IMPLICIT_TLS 1)
 endif(CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
-if(WIN32)
-    add_definitions(-DFEATURE_ISOSTORE)
-    add_definitions(-DFEATURE_ISOSTORE_LIGHT)
-endif(WIN32)
 add_definitions(-DFEATURE_ISYM_READER)
 add_definitions(-DFEATURE_LEGACYNETCF)
-if(WIN32)
-    add_definitions(-DFEATURE_LEGACYNETCFCRYPTO)
-endif(WIN32)
 add_definitions(-DFEATURE_LEGACYNETCF_DBG_HOST_CONTROL)
 add_definitions(-DFEATURE_LEGACYNETCFFAS)
-if(WIN32)
-add_definitions(-DFEATURE_LEGACYSURFACE)
-endif(WIN32)
 add_definitions(-DFEATURE_LOADER_OPTIMIZATION)
 add_definitions(-DFEATURE_MANAGED_ETW)
 add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
@@ -757,6 +828,13 @@ if(NOT DEFINED CLR_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DFEATURE_READYTORUN)
   set(FEATURE_READYTORUN 1)
 endif(NOT DEFINED CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
+if (WIN32)
+  if (CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_definitions(-DFEATURE_REJIT)
+  endif(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
+endif(WIN32)
+
 add_definitions(-DFEATURE_STANDALONE_SN)
 add_definitions(-DFEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
 add_definitions(-DFEATURE_STRONGNAME_MIGRATION)
@@ -781,10 +859,6 @@ endif(WIN32)
 add_definitions(-DFEATURE_WIN32_REGISTRY)
 add_definitions(-DFEATURE_WINDOWSPHONE)
 add_definitions(-DFEATURE_WINMD_RESILIENT)
-if(WIN32)
-    add_definitions(-DFEATURE_X509)
-    add_definitions(-DFEATURE_X509_SECURESTRINGS)
-endif(WIN32)
 
 if(CLR_CMAKE_BUILD_TESTS)
   add_subdirectory(tests)

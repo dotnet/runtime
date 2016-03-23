@@ -75,7 +75,7 @@
 #endif
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_))
-// On x86/x64 Windows debug builds, respect the COMPLUS_EnforceEEThreadNotRequiredContracts
+// On x86/x64 Windows debug builds, respect the COMPlus_EnforceEEThreadNotRequiredContracts
 // runtime switch. See code:InitThreadManager and code:GetThreadGenericFullCheck
 #define ENABLE_GET_THREAD_GENERIC_FULL_CHECK
 #endif
@@ -109,8 +109,8 @@
 #define JIT_IS_ALIGNED
 #endif
 
-// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via COMPLUS_AltJit / COMPLUS_AltJitName.
-// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via COMPLUS_AltJitNgen / COMPLUS_AltJitName.
+// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via COMPlus_AltJit / COMPlus_AltJitName.
+// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via COMPlus_AltJitNgen / COMPlus_AltJitName.
 // Note that if ALLOW_SXS_JIT_NGEN is defined, then ALLOW_SXS_JIT must be defined.
 #define ALLOW_SXS_JIT
 #if defined(ALLOW_SXS_JIT)
@@ -208,7 +208,7 @@
 #define FEATURE_JIT_TIMER
 
 // This feature in RyuJIT supersedes the FEATURE_JIT_TIMER. In addition to supporting the time log file, this
-// feature also supports using COMPLUS_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
+// feature also supports using COMPlus_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
 #endif // FEATURE_CORECLR
@@ -224,7 +224,7 @@
 // are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE 
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
-#if defined(FEATURE_CORECLR) && !defined(BINDER)
+#ifdef FEATURE_CORECLR
 #define FEATURE_CONSERVATIVE_GC 1
 #endif
 
@@ -266,10 +266,6 @@
 #if defined(ALLOW_SXS_JIT) && !defined(FEATURE_PAL)
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
-
-#if defined(_TARGET_ARM64_)
-#define FEATURE_INTERPRETER
-#endif // defined(_TARGET_ARM64_)
 
 #endif // !defined(CROSSGEN_COMPILE)
 

@@ -15,8 +15,6 @@
 #ifndef _APPDOMAIN_I
 #define _APPDOMAIN_I
 
-#ifndef BINDER
-
 #ifndef DACCESS_COMPILE
 
 #include "appdomain.hpp"
@@ -325,8 +323,6 @@ inline PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
     WRAPPER_NO_CONTRACT;
     return PTR_LoaderAllocator(PTR_HOST_MEMBER_TADDR(AppDomain,this,m_LoaderAllocator));
 }
-
-#endif // !BINDER
 
 /* static */
 inline DWORD DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob() 
