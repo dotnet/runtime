@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ProjectModel
             {
                 if (export.Library.Identity.Type == LibraryType.Package)
                 {
-                    var runtimeJson =  ((PackageDescription) export.Library).Library.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
+                    var runtimeJson =  ((PackageDescription) export.Library).PackageLibrary.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
                     if (runtimeJson != null)
                     {
                         var runtimeJsonFullName = Path.Combine(export.Library.Path, runtimeJson);
