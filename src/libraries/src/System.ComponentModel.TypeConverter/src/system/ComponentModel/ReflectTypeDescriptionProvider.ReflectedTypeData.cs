@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Reflection;
 
-namespace System.ComponentModel.TypeConverter.System.ComponentModel
+namespace System.ComponentModel
 {
-    internal sealed partial class ReflectTypeDescriptionProvider
+    internal sealed partial class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         /// <devdoc>
         ///     This class contains all the reflection information for a
@@ -17,14 +17,16 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
         /// </devdoc>
         private class ReflectedTypeData
         {
-            private Type _type;
+            private readonly Type _type;
             private AttributeCollection _attributes;
             private EventDescriptorCollection _events;
             private PropertyDescriptorCollection _properties;
             private TypeConverter _converter;
+#if FEATURE_EDITOR
             private object[] _editors;
             private Type[] _editorTypes;
             private int _editorCount;
+#endif
 
             internal ReflectedTypeData(Type type)
             {
@@ -90,7 +92,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     // walk from Length - 1 to zero.
                     //
                     Attribute[] attrArray = ReflectTypeDescriptionProvider.ReflectGetAttributes(_type);
-                    Type baseType = _type.BaseType;
+                    Type baseType = _type.GetTypeInfo().BaseType;
 
                     while (baseType != null && baseType != typeof(object))
                     {
@@ -99,14 +101,14 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                         Array.Copy(attrArray, 0, temp, 0, attrArray.Length);
                         Array.Copy(baseArray, 0, temp, attrArray.Length, baseArray.Length);
                         attrArray = temp;
-                        baseType = baseType.BaseType;
+                        baseType = baseType.GetTypeInfo().BaseType;
                     }
 
                     // Next, walk the type's interfaces.  We append these to
                     // the attribute array as well.
                     //
                     int ifaceStartIdx = attrArray.Length;
-                    Type[] interfaces = _type.GetInterfaces();
+                    Type[] interfaces = _type.GetTypeInfo().GetInterfaces();
                     TypeDescriptor.Trace("Attributes : Walking {0} interfaces", interfaces.Length);
                     for (int idx = 0; idx < interfaces.Length; idx++)
                     {
@@ -114,7 +116,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
 
                         // only do this for public interfaces.
                         //
-                        if ((iface.Attributes & (TypeAttributes.Public | TypeAttributes.NestedPublic)) != 0)
+                        if ((iface.GetTypeInfo().Attributes & (TypeAttributes.Public | TypeAttributes.NestedPublic)) != 0)
                         {
                             // No need to pass an instance into GetTypeDescriptor here because, if someone provided a custom
                             // provider based on object, it already would have hit.
@@ -138,9 +140,9 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                         bool addAttr = true;
                         if (idx >= ifaceStartIdx)
                         {
-                            for (int ifaceSkipIdx = 0; ifaceSkipIdx < _skipInterfaceAttributeList.Length; ifaceSkipIdx++)
+                            for (int ifaceSkipIdx = 0; ifaceSkipIdx < s_skipInterfaceAttributeList.Length; ifaceSkipIdx++)
                             {
-                                if (_skipInterfaceAttributeList[ifaceSkipIdx].IsInstanceOfType(attrArray[idx]))
+                                if (s_skipInterfaceAttributeList[ifaceSkipIdx].GetTypeInfo().IsInstanceOfType(attrArray[idx]))
                                 {
                                     addAttr = false;
                                     break;
@@ -148,10 +150,17 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                             }
                         }
 
+#if FEATURE_ATTRIBUTE_TYPEID
                         if (addAttr && !attrDictionary.Contains(attrArray[idx].TypeId))
                         {
                             attrDictionary[attrArray[idx].TypeId] = attrArray[idx];
                         }
+#else
+                        if (addAttr && !attrDictionary.Contains(attrArray[idx].GetType()))
+                        {
+                            attrDictionary[attrArray[idx].GetType()] = attrArray[idx];
+                        }
+#endif
                     }
 
                     attrArray = new Attribute[attrDictionary.Count];
@@ -181,12 +190,14 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     ISite site = comp.Site;
                     if (site != null)
                     {
+#if FEATURE_NESTED_SITE
                         INestedSite nestedSite = site as INestedSite;
                         if (nestedSite != null)
                         {
                             return nestedSite.FullName;
                         }
                         else
+#endif
                         {
                             return site.Name;
                         }
@@ -218,17 +229,9 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     if (typeAttr != instanceAttr)
                     {
                         Type converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType))
                         {
-                            try
-                            {
-                                IntSecurity.FullReflection.Assert();
-                                return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type);
-                            }
-                            finally
-                            {
-                                CodeAccessPermission.RevertAssert();
-                            }
+                            return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type);
                         }
                     }
                 }
@@ -247,17 +250,9 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     if (typeAttr != null)
                     {
                         Type converterType = GetTypeFromName(typeAttr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType))
                         {
-                            try
-                            {
-                                IntSecurity.FullReflection.Assert();
-                                _converter = (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type);
-                            }
-                            finally
-                            {
-                                CodeAccessPermission.RevertAssert();
-                            }
+                            _converter = (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type);
                         }
                     }
 
@@ -339,6 +334,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                 return null;
             }
 
+#if FEATURE_EDITOR
             /// <devdoc>
             ///     Retrieves the editor for the given base type.
             /// </devdoc>
@@ -359,7 +355,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     if (typeAttr != instanceAttr)
                     {
                         Type editorType = GetTypeFromName(instanceAttr.EditorTypeName);
-                        if (editorType != null && editorBaseType.IsAssignableFrom(editorType))
+                        if (editorType != null && editorBaseType.GetTypeInfo().IsAssignableFrom(editorType))
                         {
                             return ReflectTypeDescriptionProvider.CreateInstance(editorType, _type);
                         }
@@ -387,7 +383,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                 if (typeAttr != null)
                 {
                     Type editorType = GetTypeFromName(typeAttr.EditorTypeName);
-                    if (editorType != null && editorBaseType.IsAssignableFrom(editorType))
+                    if (editorType != null && editorBaseType.GetTypeInfo().IsAssignableFrom(editorType))
                     {
                         editor = ReflectTypeDescriptionProvider.CreateInstance(editorType, _type);
                     }
@@ -406,7 +402,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                     // As a quick sanity check, check to see that the editor we got back is of 
                     // the correct type.
                     //
-                    if (editor != null && !editorBaseType.IsInstanceOfType(editor))
+                    if (editor != null && !editorBaseType.GetTypeInfo().IsInstanceOfType(editor))
                     {
                         Debug.Fail("Editor " + editor.GetType().FullName + " is not an instance of " + editorBaseType.FullName + " but it is in that base types table.");
                         editor = null;
@@ -463,6 +459,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
 
                 return null;
             }
+#endif
 
             /// <devdoc>
             ///     Retrieves the events for this type.
@@ -492,7 +489,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                                 eventList.Add(ed.Name, ed);
                             }
                         }
-                        baseType = baseType.BaseType;
+                        baseType = baseType.GetTypeInfo().BaseType;
                     }
                     while (baseType != null && baseType != objType);
 
@@ -532,7 +529,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                                 propertyList.Add(p.Name, p);
                             }
                         }
-                        baseType = baseType.BaseType;
+                        baseType = baseType.GetTypeInfo().BaseType;
                     }
                     while (baseType != null && baseType != objType);
 
@@ -561,7 +558,7 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
 
                 if (commaIndex == -1)
                 {
-                    t = _type.Assembly.GetType(typeName);
+                    t = _type.GetTypeInfo().Assembly.GetType(typeName);
                 }
 
                 if (t == null)
@@ -597,9 +594,12 @@ namespace System.ComponentModel.TypeConverter.System.ComponentModel
                 _events = null;
                 _properties = null;
                 _converter = null;
+#if FEATURE_EDITOR
                 _editors = null;
                 _editorTypes = null;
                 _editorCount = 0;
+#endif
+
             }
         }
     }
