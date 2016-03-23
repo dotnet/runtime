@@ -6,6 +6,7 @@
  *
  * (C) 2005 Ximian, Inc.  http://www.ximian.com
  * Copyright 2011 Xamarin Inc.  http://www.xamarin.com
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
  #include "mini.h"
 

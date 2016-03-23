@@ -6,6 +6,7 @@
  * Based on mini-arm.h:
  *
  * Copyright 2011 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_MINI_ARM64_H__

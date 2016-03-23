@@ -2,6 +2,7 @@
  * ARM CodeGen
  * XScale WirelessMMX extensions
  * Copyright 2002 Wild West Software
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __WMMX_H__

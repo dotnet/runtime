@@ -10,6 +10,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include "mini.h"

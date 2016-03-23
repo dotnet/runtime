@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 
 /*
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  * Regression tests for the mono JIT.
  *
  * Each test needs to be of the form:

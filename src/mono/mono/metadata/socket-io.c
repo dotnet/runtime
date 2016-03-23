@@ -10,6 +10,7 @@
  *
  * This file has been re-licensed under the MIT License:
  * http://opensource.org/licenses/MIT
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

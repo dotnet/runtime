@@ -5,6 +5,7 @@
  *   Paolo Molaro (lupus@xamarin.com)
  *
  * Copyright 2013 Xamarin Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_G_HASH_H__

@@ -8,6 +8,7 @@
  *
  * Note: this profiler is completely unsafe wrt handling managed objects,
  * don't use and don't copy code from here.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "config.h"
 

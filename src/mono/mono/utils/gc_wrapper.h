@@ -1,6 +1,7 @@
 /* 
  * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #ifndef __MONO_OS_GC_WRAPPER_H__
 #define __MONO_OS_GC_WRAPPER_H__

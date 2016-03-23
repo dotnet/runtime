@@ -12,6 +12,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "utils.h"
 #include <stdlib.h>

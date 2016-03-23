@@ -7,6 +7,7 @@
  *
  * (C) 2001 Ximian, Inc
  * (C) Copyright 2002-2006 Novell, Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef _MONO_METADATA_THREADS_TYPES_H_

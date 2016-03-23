@@ -1,5 +1,6 @@
 # Copyright 2003-2011 Novell, Inc (http://www.novell.com)
 # Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
 # arm cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
 # about the cpu instructions that may be used by the regsiter allocator, the scheduler

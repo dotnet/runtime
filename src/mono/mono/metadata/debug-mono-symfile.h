@@ -2,6 +2,7 @@
  * This header is only installed for use by the debugger:
  * the structures and the API declared here are not supported.
  * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_DEBUG_MONO_SYMFILE_H__

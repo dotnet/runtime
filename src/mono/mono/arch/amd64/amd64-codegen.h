@@ -11,6 +11,7 @@
  * 
  * Copyright (C)  2000 Intel Corporation.  All rights reserved.
  * Copyright (C)  2001, 2002 Ximian, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef AMD64_H

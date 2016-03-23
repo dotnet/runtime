@@ -6,6 +6,7 @@
  *
  * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
  * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

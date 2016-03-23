@@ -2,6 +2,7 @@
  * mono-signal-handler.h: Handle signal handler differences across platforms
  *
  * Copyright (C) 2013 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_SIGNAL_HANDLER_H__

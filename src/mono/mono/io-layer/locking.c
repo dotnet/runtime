@@ -6,6 +6,7 @@
  *
  * (C) 2002 Ximian, Inc.
  * Copyright (c) 2002-2009 Novell, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
 #include <stdio.h>

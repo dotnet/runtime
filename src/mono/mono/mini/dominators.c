@@ -7,6 +7,7 @@
  *
  * (C) 2003 Ximian, Inc.
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>

@@ -1,3 +1,4 @@
+
 /*
  * mini-runtime.c: Runtime code for the JIT
  *
@@ -8,6 +9,7 @@
  * Copyright 2002-2003 Ximian, Inc.
  * Copyright 2003-2010 Novell, Inc.
  * Copyright 2011-2015 Xamarin, Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

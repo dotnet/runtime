@@ -7,6 +7,7 @@
  *
  * (C) 2001 Ximian, Inc.
  * Copyright 2012 Xamarin Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef _MONO_METADATA_FILEIO_H_

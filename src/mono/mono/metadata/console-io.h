@@ -5,6 +5,7 @@
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef _MONO_METADATA_CONSOLEIO_H

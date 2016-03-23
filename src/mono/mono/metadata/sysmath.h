@@ -7,6 +7,7 @@
  *
  * (C) Ximian, Inc. 2002
  * Copyright 2015 Xamarin, Inc (https://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __METADATA_SYSMATH_H__

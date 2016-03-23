@@ -1,5 +1,6 @@
 /*
    Copyright (C)  2001 Radek Doulik
+   * Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 
 #ifndef S390X_H

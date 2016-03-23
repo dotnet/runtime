@@ -16,6 +16,7 @@
  * Copyright 2006 Broadcom
  * Copyright 2007-2008 Andreas Faerber
  * Copyright 2011-2013 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include "mono/utils/mono-hwcap-s390x.h"

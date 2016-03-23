@@ -10,6 +10,7 @@
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  * (C) 2003 PT Cakram Datalingga Duaribu  http://www.cdl2000.com
  * Copyright (C) 2012 Xamarin Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>
