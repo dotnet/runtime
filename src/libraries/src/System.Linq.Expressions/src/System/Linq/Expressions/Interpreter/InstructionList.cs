@@ -822,6 +822,11 @@ namespace System.Linq.Expressions.Interpreter
             Emit(new CastToEnumInstruction(toType));
         }
 
+        public void EmitCastReferenceToEnum(Type toType)
+        {
+            Emit(new CastReferenceToEnumInstruction(toType));
+        }
+
         #endregion
 
         #region Boolean Operators
