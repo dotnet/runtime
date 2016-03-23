@@ -433,7 +433,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
-             Condition=" '$(GeneraRuntimeLayout)'=='true' "/>
+             Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(RunTests)'=='true' "/>
