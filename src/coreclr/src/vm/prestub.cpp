@@ -2349,6 +2349,14 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         fReliable = true;
     case ENCODE_DELEGATE_CTOR:
         pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
+        if (pMD->RequiresInstArg())
+        {
+            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+                th.AsMethodTable(),
+                FALSE /* forceBoxedEntryPoint */,
+                pMD->GetMethodInstantiation(),
+                FALSE /* allowInstParam */);
+        }
         pMD->EnsureActive();
         break;
     default:
