@@ -9,7 +9,7 @@ namespace System.ComponentModel.Tests
 {
     public class TypeDescriptorTests
     {
-        [Fact]
+        [Fact(Skip = "Requires ReflectTypeDescriptionProvider integration")]
         public static void GetConverter()
         {
             foreach (Tuple<Type, Type> pair in s_typesWithConverters)
@@ -27,7 +27,7 @@ namespace System.ComponentModel.Tests
             Assert.Throws<ArgumentNullException>(() => TypeDescriptor.GetConverter(null));
         }
 
-        [Fact]
+        [Fact(Skip = "Requires ReflectTypeDescriptionProvider integration")]
         public static void GetConverter_NotAvailable()
         {
             Assert.Throws<MissingMethodException>(
