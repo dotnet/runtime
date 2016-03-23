@@ -13,9 +13,9 @@
         "System.Runtime.Extensions": "4.0.10.0",
         "System.Runtime.Handles": "4.0.0.0",
         "System.Runtime.InteropServices": "4.0.20.0",
-        "System.Security.AccessControl": "4.0.0-rc3-23921",
+        "System.Security.AccessControl": "4.0.0-rc3-23923",
         "System.Security.Principal": "4.0.0.0",
-        "System.Security.Principal.Windows": "4.0.0-rc3-23921"
+        "System.Security.Principal.Windows": "4.0.0-rc3-23923"
       },
       "imports": [
         "dotnet5.4"
