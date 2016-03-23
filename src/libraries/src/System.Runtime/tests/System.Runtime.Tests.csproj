@@ -97,6 +97,8 @@
     </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Boolean.cs" />
+    <Compile Include="Performance\Perf.Char.cs" />
+    <Compile Include="Performance\Perf.Double.cs" />
     <Compile Include="Performance\Perf.Enum.cs" />
     <Compile Include="Performance\Perf.Guid.cs" />
     <Compile Include="Performance\Perf.Object.cs" />
