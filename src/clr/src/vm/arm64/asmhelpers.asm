@@ -928,7 +928,7 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
     EPILOG_RESTORE_REG_PAIR   x23, x24, #48
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-    EPILOG_RESTORE_REG_PAIR   fp, lr,   #112!
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #144!
     EPILOG_RETURN
     NESTED_END
 
