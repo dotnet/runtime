@@ -52,8 +52,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             await conn.OpenAsync();
             var cmd = new SqlCommand(cmdText, conn);
 
-
-            using (SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection))
+            using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {
@@ -87,7 +86,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         {
             var cmd = new SqlCommand(cmdText, conn);
 
-            using (SqlDataReader reader = await cmd.ExecuteReaderAsync(CommandBehavior.CloseConnection))
+            using (SqlDataReader reader = await cmd.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {
