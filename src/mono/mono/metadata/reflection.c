@@ -5533,7 +5533,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	/* Check for user defined reflection objects */
 	/* TypeDelegator is the only corlib type which doesn't look like a MonoReflectionType */
 	if (klass->image != mono_defaults.corlib || (strcmp (klass->name, "TypeDelegator") == 0)) {
-		mono_error_set_generic_error (error, "System", "NotSupportedException", "User defined subclasses of System.Type are not yet supported");
+		mono_error_set_not_supported (error, "User defined subclasses of System.Type are not yet supported");
 		return 0;
 	}
 
@@ -10371,7 +10371,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 #endif
 		else {
 			char *type_name = mono_type_get_full_name (member_class);
-			mono_error_set_generic_error (error, "System", "NotSupportedException",
+			mono_error_set_not_supported (error,
 						      "Custom attributes on a ParamInfo with member %s are not supported",
 						      type_name);
 			g_free (type_name);
@@ -10944,7 +10944,7 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *er
 		type = mono_reflection_type_get_underlying_system_type (type, error);
 		return_val_if_nok (error, NULL);
 		if (is_usertype (type)) {
-			mono_error_set_generic_error (error, "System", "NotSupportedException", "User defined subclasses of System.Type are not yet supported22");
+			mono_error_set_not_supported (error, "User defined subclasses of System.Type are not yet supported22");
 			return NULL;
 		}
 	}
