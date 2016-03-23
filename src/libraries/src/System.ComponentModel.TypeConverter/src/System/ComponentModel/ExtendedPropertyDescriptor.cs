@@ -2,23 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//------------------------------------------------------------------------------
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-
-/*
- */
+using System.Collections;
+using System.Diagnostics;
 
 namespace System.ComponentModel
 {
-    using Microsoft.Win32;
-    using System;
-    using System.Collections;
-    using System.ComponentModel.Design;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     /// <internalonly/>
     /// <devdoc>
     ///    <para>
@@ -26,7 +14,6 @@ namespace System.ComponentModel
     ///       allows you to treat extended properties the same as regular properties.
     ///    </para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     internal sealed class ExtendedPropertyDescriptor : PropertyDescriptor
     {
         private readonly ReflectPropertyDescriptor _extenderInfo;       // the extender property
@@ -127,7 +114,11 @@ namespace System.ComponentModel
                 string name = base.DisplayName;
 
                 DisplayNameAttribute displayNameAttr = Attributes[typeof(DisplayNameAttribute)] as DisplayNameAttribute;
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
+#else
+                if (displayNameAttr == null)
+#endif
                 {
                     ISite site = GetSite(_provider);
                     if (site != null)
@@ -135,7 +126,7 @@ namespace System.ComponentModel
                         string providerName = site.Name;
                         if (providerName != null && providerName.Length > 0)
                         {
-                            name = SR.GetString(SR.MetaExtenderName, name, providerName);
+                            name = string.Format(SR.MetaExtenderName, name, providerName);
                         }
                     }
                 }
