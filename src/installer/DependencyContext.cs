@@ -10,21 +10,47 @@ using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.Extensions.DependencyModel
 {
+    public class TargetInfo
+    {
+        public TargetInfo(string framework,
+            string runtime,
+            string runtimeSignature,
+            bool isPortable)
+        {
+            if (string.IsNullOrEmpty(framework))
+            {
+                throw new ArgumentException(nameof(framework));
+            }
+
+            Framework = framework;
+            Runtime = runtime;
+            RuntimeSignature = runtimeSignature;
+            IsPortable = isPortable;
+        }
+
+        public string Framework { get; }
+
+        public string Runtime { get; }
+
+        public string RuntimeSignature { get; }
+
+        public bool IsPortable { get; }
+
+    }
+
     public class DependencyContext
     {
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
-        public DependencyContext(string targetFramework,
-            string runtime,
-            bool isPortable,
+        public DependencyContext(TargetInfo target,
             CompilationOptions compilationOptions,
             IEnumerable<CompilationLibrary> compileLibraries,
             IEnumerable<RuntimeLibrary> runtimeLibraries,
             IEnumerable<RuntimeFallbacks> runtimeGraph)
         {
-            if (string.IsNullOrEmpty(targetFramework))
+            if (target == null)
             {
-                throw new ArgumentException(nameof(targetFramework));
+                throw new ArgumentNullException(nameof(target));
             }
             if (compilationOptions == null)
             {
@@ -43,9 +69,7 @@ namespace Microsoft.Extensions.DependencyModel
                 throw new ArgumentNullException(nameof(runtimeGraph));
             }
 
-            TargetFramework = targetFramework;
-            Runtime = runtime;
-            IsPortable = isPortable;
+            Target = target;
             CompilationOptions = compilationOptions;
             CompileLibraries = compileLibraries.ToArray();
             RuntimeLibraries = runtimeLibraries.ToArray();
@@ -54,11 +78,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static DependencyContext Default => _defaultContext.Value;
 
-        public string TargetFramework { get; }
-
-        public string Runtime { get; }
-
-        public bool IsPortable { get; }
+        public TargetInfo Target { get; }
 
         public CompilationOptions CompilationOptions { get; }
 
@@ -76,9 +96,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new DependencyContext(
-                TargetFramework,
-                Runtime,
-                IsPortable,
+                Target,
                 CompilationOptions,
                 CompileLibraries.Union(other.CompileLibraries, new LibraryMergeEqualityComparer<CompilationLibrary>()),
                 RuntimeLibraries.Union(other.RuntimeLibraries, new LibraryMergeEqualityComparer<RuntimeLibrary>()),
