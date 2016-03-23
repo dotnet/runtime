@@ -420,13 +420,13 @@ mono_error_set_from_loader_error (MonoError *oerror)
 	mono_error_prepare (error);
 
 	if (!loader_error) {
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce a mono-error from an empty loader-error");
+		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from an empty loader-error");
 		return;
 	}
 
 	switch (loader_error->exception_type) {
 	case MONO_EXCEPTION_NONE:
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce a mono-error from a non-error loader-error");
+		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from a non-error loader-error");
 		break;
 
 	case MONO_EXCEPTION_INVALID_PROGRAM:
@@ -467,7 +467,7 @@ mono_error_set_from_loader_error (MonoError *oerror)
 
 	case MONO_EXCEPTION_OBJECT_SUPPLIED:
 	case MONO_EXCEPTION_GENERIC_SHARING_FAILED:
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce a mono-error from JIT internal error %d", loader_error->exception_type);
+		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from JIT internal error %d", loader_error->exception_type);
 		break;
 
 	case MONO_EXCEPTION_BAD_IMAGE:
@@ -479,7 +479,7 @@ mono_error_set_from_loader_error (MonoError *oerror)
 		break;
 
 	default:
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce an unknown loader-error %d", loader_error->exception_type);
+		mono_error_set_execution_engine (oerror, "Runtime tried to produce an unknown loader-error %d", loader_error->exception_type);
 		break;
 	}
 
@@ -741,7 +741,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	}
 	case MONO_ERROR_GENERIC:
 		if (!error->exception_name_space || !error->exception_name)
-			mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "MonoError with generic error but no exception name was supplied");
+			mono_error_set_execution_engine (error_out, "MonoError with generic error but no exception name was supplied");
 		else
 			exception = mono_exception_from_name_msg (mono_defaults.corlib, error->exception_name_space, error->exception_name, error->full_message);
 		break;
@@ -751,7 +751,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	default:
-		mono_error_set_generic_error (error_out, "System", "ExecutionEngineException", "Invalid error-code %d", error->error_code);
+		mono_error_set_execution_engine (error_out, "Invalid error-code %d", error->error_code);
 	}
 
 	if (!mono_error_ok (error_out))
