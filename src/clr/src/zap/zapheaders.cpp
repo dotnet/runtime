@@ -187,9 +187,7 @@ void ZapImage::SaveCodeManagerEntry()
 //
 
 // Needed for RT_VERSION.
-//#ifndef BINDER
 #define MAKEINTRESOURCE(v) MAKEINTRESOURCEW(v)
-//#endif
 
 void ZapVersionResource::Save(ZapWriter * pZapWriter)
 {

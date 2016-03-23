@@ -161,7 +161,7 @@ inline void InitializeSpinConstants()
 {
     WRAPPER_NO_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(BINDER)
+#if !defined(DACCESS_COMPILE)
     g_SpinConstants.dwInitialDuration = g_pConfig->SpinInitialDuration();
     g_SpinConstants.dwMaximumDuration = min(g_pConfig->SpinLimitProcCap(), g_SystemInfo.dwNumberOfProcessors) * g_pConfig->SpinLimitProcFactor() + g_pConfig->SpinLimitConstant();
     g_SpinConstants.dwBackoffFactor   = g_pConfig->SpinBackoffFactor();
@@ -446,7 +446,7 @@ public:
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-#if !defined(DACCESS_COMPILE) && !defined(BINDER)
+#if !defined(DACCESS_COMPILE)
     // set m_pUMEntryThunkOrInterceptStub if not already set - return true if not already set
     bool SetUMEntryThunk(void* pUMEntryThunk)
     {
@@ -1028,7 +1028,6 @@ class SyncBlockCache
         return m_bSyncBlockCleanupInProgress;
     }
 
-#if !defined(BINDER)
     // Encapsulate a CrstHolder, so that clients of our lock don't have to know
     // the details of our implementation.
     class LockHolder : public CrstHolder
@@ -1048,7 +1047,6 @@ class SyncBlockCache
         }
     };
     friend class LockHolder;
-#endif
 
 #if CHECK_APP_DOMAIN_LEAKS 
     void CheckForUnloadedInstances(ADIndex unloadingIndex);
@@ -1103,7 +1101,6 @@ class ObjHeader
     // bit field -- even in the presence of threaded access.
     // 
     // This service can only be used to transition from a 0 index to a non-0 index.
-#if !defined(BINDER)
     void SetIndex(DWORD indx)
     {
         CONTRACTL
@@ -1148,7 +1145,6 @@ class ObjHeader
             }
         }
     }
-#endif // !BINDER
 
     // Used only during shutdown
     void ResetIndex()
@@ -1253,13 +1249,8 @@ class ObjHeader
     // retrieve sync block but don't allocate
     PTR_SyncBlock PassiveGetSyncBlock()
     {
-#if !defined(BINDER)
         LIMITED_METHOD_DAC_CONTRACT;
         return g_pSyncTable [(int)GetHeaderSyncBlockIndex()].m_SyncBlock;    
-#else
-        _ASSERTE(FALSE);
-        return NULL;
-#endif // BINDER
     }
 
     DWORD GetSyncBlockIndex();

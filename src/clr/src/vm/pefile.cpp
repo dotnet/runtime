@@ -306,11 +306,6 @@ void PEFile::ValidateImagePlatformNeutrality()
         
         fMachineOk = (machine == IMAGE_FILE_MACHINE_I386);
         fPlatformFlagsOk = ((kind & (peILonly | pe32Plus | pe32BitRequired)) == peILonly);
-        
-#ifdef FEATURE_LEGACYNETCF
-        if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-            fPlatformFlagsOk = ((kind & (peILonly | pe32Plus)) == peILonly);
-#endif
 
         if (!(fMachineOk &&
               fPlatformFlagsOk))
@@ -561,14 +556,6 @@ static void ValidatePEFileMachineType(PEFile *peFile)
 
     if (actualMachineType != IMAGE_FILE_MACHINE_NATIVE)
     {
-#ifdef FEATURE_LEGACYNETCF
-        if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-            if (actualMachineType == IMAGE_FILE_MACHINE_I386 && ((peKind & peILonly)) == peILonly)
-                return;
-        }
-#endif
-
 #ifdef _TARGET_AMD64_
         // v4.0 64-bit compatibility workaround. The 64-bit v4.0 CLR's Reflection.Load(byte[]) api does not detect cpu-matches. We should consider fixing that in
         // the next SxS release. In the meantime, this bypass will retain compat for 64-bit v4.0 CLR for target platforms that existed at the time.
@@ -4344,33 +4331,11 @@ void PEAssembly::VerifyStrongName()
 #endif // !defined(FEATURE_CORECLR)    
     else
     {
-#if defined(FEATURE_CORECLR) && (!defined(CROSSGEN_COMPILE) || defined(PLATFORM_UNIX))
+#ifdef FEATURE_CORECLR
         // Runtime policy on CoreCLR is to skip verification of ALL assemblies
         m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
         m_fStrongNameVerified = TRUE;
 #else
-
-#ifdef FEATURE_CORECLR
-        BOOL skip = FALSE;
-
-        // Skip verification for assemblies from the trusted path
-        if (IsSystem() || m_bIsOnTpaList)
-            skip = TRUE;
-
-#ifdef FEATURE_LEGACYNETCF
-        // crossgen should skip verification for Mango
-        if (RuntimeIsLegacyNetCF(0))
-            skip = TRUE;
-#endif
-
-        if (skip)
-        {
-            m_flags |= PEFILE_SKIP_MODULE_HASH_CHECKS;
-            m_fStrongNameVerified = TRUE;
-            return;
-        }
-#endif // FEATURE_CORECLR
-
         DWORD verifyOutputFlags = 0;
         HRESULT hr = GetILimage()->VerifyStrongName(&verifyOutputFlags);
 
@@ -4397,7 +4362,7 @@ void PEAssembly::VerifyStrongName()
 #endif
         }
 
-#endif // FEATURE_CORECLR && (!CROSSGEN_COMPILE || PLATFORM_UNIX)
+#endif // FEATURE_CORECLR
     }
 
     m_fStrongNameVerified = TRUE;

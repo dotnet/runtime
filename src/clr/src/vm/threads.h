@@ -4099,7 +4099,7 @@ private:
 
 private:
     // Set once on initialization, single-threaded, inside friend code:InitThreadManager,
-    // based on whether the user has set COMPLUS_EnforceEEThreadNotRequiredContracts.
+    // based on whether the user has set COMPlus_EnforceEEThreadNotRequiredContracts.
     // This is then later accessed via public
     // code:Thread::ShouldEnforceEEThreadNotRequiredContracts. See
     // code:GetThreadGenericFullCheck for details.

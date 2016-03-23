@@ -91,7 +91,6 @@
 
   <!--The following projects will build during PHASE 1 of the CoreSys build-->
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(BuildProjectName)' == 'CoreSys'">
-    <ProjectFile Include="mdbg\dirs.proj" />
     <ProjectFile Include="ibcmerge\ibcmerge_msbuild.csproj" />
   </ItemGroup>
   

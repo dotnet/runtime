@@ -355,11 +355,12 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/AsmHelpers.asm
-    ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
-    ${ARCH_SOURCES_DIR}/CrtHelpers.asm
-    ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${ARCH_SOURCES_DIR}/AsmHelpers.asm
+        ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
+        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
     )
+
 endif()
 
 else(WIN32)
@@ -386,6 +387,7 @@ else(WIN32)
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/memcpy.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
+            ${ARCH_SOURCES_DIR}/pinvokestubs.S
         )
     elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM

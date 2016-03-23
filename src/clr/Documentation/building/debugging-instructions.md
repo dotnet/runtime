@@ -1,7 +1,7 @@
 Debugging CoreCLR
 =================
 
-These instructions will lead you through debugging CoreCLR on Windows. They will be expanded to support Linux and OS X when we have good instructions for that.
+These instructions will lead you through debugging CoreCLR on Windows and Linux. They will be expanded to support OS X when we have good instructions for that.
 
 Debugging CoreCLR on Windows
 ============================
@@ -41,56 +41,73 @@ You can combine steps 4-8 and pass everything on the lldb command line:
 
 `lldb-3.6 -o "plugin load libsosplugin.so" -o "process launch -s" -o "process handle -s false SIGUSR1 SIGUSR2" -o "breakpoint set -n LoadLibraryExW" corerun HelloWorld.exe linux`
 
-SOS commands supported by the lldb plugin:
+### SOS commands ###
 
-    bpmd
-    ClrStack
-    DumpStackObjects
-    DumpMD
-    DumpClass
-    DumpMT
-    DumpArray
-    DumpObj
-    DumpAssembly
-    DumpDomain
-    DumpHeap
-    DumpLog
-    DumpModule
-    DumpRuntimeTypes
-    DumpVC
-    EEHeap
-    EHInfo
-    FindAppDomain
-    GCRoot
-    GCInfo
-    Help
-    IP2MD
-    Name2EE
-    PrintException
-    ThreadState
-    Threads
-    Token2EE
-    VerifyHeap
+This is the full list of commands currently supported by SOS. LLDB is case-sensitive unlike windbg.
 
-There are some aliases for the most common commands:
+	Type "soshelp <functionname>" for detailed info on that function.
+
+	Object Inspection                  Examining code and stacks
+	-----------------------------      -----------------------------
+	DumpObj (dumpobj)                  Threads (clrthreads)
+	DumpArray                          ThreadState
+	DumpStackObjects (dso)             IP2MD (ip2md)
+	DumpHeap (dumpheap)                u (clru)
+	DumpVC                             DumpStack (dumpstack)
+	GCRoot (gcroot)                    EEStack (eestack)
+	PrintException (pe)                ClrStack (clrstack)
+	                                   GCInfo
+	                                   EHInfo
+	                                   bpmd (bpmd)
+
+	Examining CLR data structures      Diagnostic Utilities
+	-----------------------------      -----------------------------
+	DumpDomain                         VerifyHeap
+	EEHeap (eeheap)                    FindAppDomain
+	Name2EE (name2ee)                  DumpLog (dumplog)
+	DumpMT (dumpmt)
+	DumpClass (dumpclass)
+	DumpMD (dumpmd)
+	Token2EE
+	DumpModule (dumpmodule)
+	DumpAssembly
+	DumpRuntimeTypes
+	DumpIL (dumpil)
+	DumpSig
+	DumpSigElem
+
+	Other
+	-----------------------------
+	FAQ
+	Help (soshelp)
+
+###Aliases###
+By default you can reach all the SOS commands by using: _sos [command\_name]_
+However the common commands have been aliased so that you don't need the SOS prefix:
 
     bpmd            -> sos bpmd
     clrstack        -> sos ClrStack
     clrthreads      -> sos Threads
-    dumpheap        -> sos DumpHeap
+    dso             -> sos DumpStackObjects
+	dumpclass       -> sos DumpClass
+	dumpheap        -> sos DumpHeap
+    dumpil          -> sos DumpIL
     dumplog         -> sos DumpLog
     dumpmd          -> sos DumpMD
+    dumpmodule      -> sos DumpModule
     dumpmt          -> sos DumpMT
     dumpobj         -> sos DumpObj
-    dso             -> sos DumpStackObjects
+    dumpstack       -> sos DumpStack     
     eeheap          -> sos EEHeap
+    eestack         -> sos EEStack
     gcroot          -> sos GCRoot
     ip2md           -> sos IP2MD
     name2ee         -> sos Name2EE
     pe              -> sos PrintException
     soshelp         -> sos Help
 
-Problems and limitations of lldb and sos:
+
+### Problems and limitations of lldb and sos ###
 
 Many of the sos commands like clrstack or dso don't work on core dumps because lldb doesn't 
 return the actual OS thread id for a native thread. The "setsostid" command can be used to work
@@ -98,10 +115,10 @@ around this lldb bug. Use the "clrthreads" to find the os tid and the lldb comma
 to find the thread index (#1 for example) for the current thread (* in first column). The first
 setsostid argument is the os tid and the second is the thread index: "setsosid ecd5 1".
 
-The "gcroot" command either crashes lldb 3.6 or returns invalid results. Works fine with lldb 3.7.
+The "gcroot" command either crashes lldb 3.6 or returns invalid results. Works fine with lldb 3.7 and 3.8.
 
 Loading Linux core dumps with lldb 3.7 doesn't work. lldb 3.7 loads OSX and FreeBSD core dumps 
-just fine.
+just fine. lldb 3.8 loads all the platform's core dumps without problem.
 
 For more information on SOS commands see: https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx
 

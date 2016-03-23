@@ -22,13 +22,11 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
     return dac_cast<PTR_InstantiatedMethodDesc>(this);
 }
 
-#ifndef BINDER
 inline BOOL MethodDesc::IsDomainNeutral()
 {
     WRAPPER_NO_CONTRACT;
     return !IsLCGMethod() && GetDomain()->IsSharedDomain();
 }
-#endif // !BINDER
 
 inline BOOL MethodDesc::IsZapped()
 {
@@ -58,7 +56,6 @@ inline SigParser MethodDesc::GetSigParser()
     return SigParser(pSig, cSig);
 }
 
-#ifndef BINDER
 inline SigPointer MethodDesc::GetSigPointer()
 {
     WRAPPER_NO_CONTRACT;
@@ -69,7 +66,6 @@ inline SigPointer MethodDesc::GetSigPointer()
 
     return SigPointer(pSig, cSig);
 }
-#endif // !BINDER
 
 inline PTR_LCGMethodResolver DynamicMethodDesc::GetLCGMethodResolver()
 {
@@ -209,13 +205,11 @@ inline BOOL HasTypeEquivalentStructParameters()
 }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-#ifndef BINDER
 inline ReJitManager * MethodDesc::GetReJitManager()
 {
     LIMITED_METHOD_CONTRACT;
     return GetModule()->GetReJitManager();
 }
-#endif // !BINDER
 
 #endif  // _METHOD_INL_
 

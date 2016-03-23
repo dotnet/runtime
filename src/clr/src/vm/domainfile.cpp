@@ -2352,7 +2352,7 @@ void DomainAssembly::FindNativeImage()
         {
             SString sbuf;
             StackScratchBuffer scratch;
-            sbuf.Printf("COMPLUS_NgenBind_ZapForbid violation: %s.", GetSimpleName());
+            sbuf.Printf("COMPlus_NgenBind_ZapForbid violation: %s.", GetSimpleName());
             DbgAssertDialog(__FILE__, __LINE__, sbuf.GetUTF8(scratch));
         }
 #endif
@@ -3447,18 +3447,6 @@ void DomainAssembly::GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE
     PEImageLayoutHolder ilLayout(GetFile()->GetAnyILWithRef());
     pSignature->timeStamp = ilLayout->GetTimeDateStamp();
     pSignature->ilImageSize = ilLayout->GetVirtualSize();
-#ifdef MDIL    
-    if (g_fIsNGenEmbedILProcess)
-    {
-        PEImageHolder pILImage(GetFile()->GetILimage());
-        DWORD dwActualILSize; 
-        if (pILImage->GetLoadedLayout()->GetILSizeFromMDILCLRCtlData(&dwActualILSize))
-        {
-            // Use actual source IL size instead of MDIL size
-            pSignature->ilImageSize = dwActualILSize;
-        }
-    }
-#endif  // MDIL
 }
 
 BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
@@ -3816,13 +3804,6 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
     {
         dacfFlags |= DACF_USER_OVERRIDE;
     }
-#ifdef FEATURE_LEGACYNETCF
-    else
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-    {
-        // NetCF did not respect the DebuggableAttribute
-    }
-#endif
     else
     {
         IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));

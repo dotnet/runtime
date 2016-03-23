@@ -698,12 +698,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     // performance gain in some reflection emit scenarios.
     MethodTable::AllowMethodDataCaching();
 
-#ifdef FEATURE_LEGACYNETCF
-    // NetCF has done relaxed signature matching unconditionally
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        flags |= DBF_RelaxedSignature;
-#endif
-
     TypeHandle targetType((gc.target != NULL) ? gc.target->GetTrueMethodTable() : NULL);
     // get the invoke of the delegate
     MethodTable * pDelegateType = gc.refThis->GetMethodTable();

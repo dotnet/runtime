@@ -780,7 +780,7 @@ void                CodeGen::genCodeForBBlist()
         {
             // Unit testing of the AMD64 emitter: generate a bunch of instructions into the last block
             // (it's as good as any, but better than the prolog, which can only be a single instruction
-            // group) then use COMPLUS_JitLateDisasm=* to see if the late disassembler
+            // group) then use COMPlus_JitLateDisasm=* to see if the late disassembler
             // thinks the instructions are the same as we do.
             genAmd64EmitterUnitTests();
         }
@@ -7502,6 +7502,10 @@ CodeGen::genIntToFloatCast(GenTreePtr treeNode)
     // result if sign-bit of srcType is set.
     if (srcType == TYP_ULONG)
     {
+        // The instruction sequence below is less accurate than what clang
+        // and gcc generate. However, we keep the current sequence for backward compatiblity.
+        // If we change the instructions below, FloatingPointUtils::convertUInt64ToDobule
+        // should be also updated for consistent conversion result.
         assert(dstType == TYP_DOUBLE);
         assert(!op1->isContained());
 
@@ -8658,7 +8662,7 @@ void                CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
 /*****************************************************************************
 * Unit testing of the XArch emitter: generate a bunch of instructions into the prolog
-* (it's as good a place as any), then use COMPLUS_JitLateDisasm=* to see if the late
+* (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
 * disassembler thinks the instructions as the same as we do.
 */
 

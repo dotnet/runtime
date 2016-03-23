@@ -90,7 +90,6 @@ if(WIN32)
     list(APPEND CORECLR_LIBRARIES
         mdwinmd_wks
         comnls_wks
-        comcrypt_wks
         msvcrt.lib
         kernel32.lib
         advapi32.lib
@@ -101,7 +100,6 @@ if(WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        crypt32.lib
         RuntimeObject.lib
     )
 else()
@@ -142,7 +140,8 @@ if(WIN32)
         clr_unknown_arch()
     endif()
 
-    add_custom_command(TARGET coreclr
+    add_custom_command(
+        TARGET coreclr
         POST_BUILD
         COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/src/debug/daccess/daccess.cpp
         COMMAND ${BuildToolsDir}/dactablegen.exe /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
@@ -162,7 +161,4 @@ else()
 endif(WIN32)
 
 # add the install targets
-install (TARGETS coreclr DESTINATION .)
-if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb DESTINATION PDB)
-endif(WIN32)
+install_clr(coreclr)

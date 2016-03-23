@@ -1585,7 +1585,7 @@ inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
         if (pComp->lvaHaveManyLocals())
         {
             // Don't create more LclVar with inlining 
-            compInlineResult->noteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+            compInlineResult->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
@@ -4291,7 +4291,7 @@ bool                Compiler::compDonotInline()
     if (compIsForInlining())
     {
        assert(compInlineResult != nullptr);
-       return compInlineResult->isFailure();
+       return compInlineResult->IsFailure();
     }
     else
     {
@@ -4332,7 +4332,7 @@ Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (const LclVarDsc *   
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPLUS_JitNoStructPromotion=2 
+    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2 
     if (fgNoStructParamPromotion)
     {
         // The struct parameter is not enregistered

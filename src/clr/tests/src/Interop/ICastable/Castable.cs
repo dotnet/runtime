@@ -44,7 +44,7 @@ public class GenRetArgImpl<T>: IRetArg<T>
 {
     public T ReturnArg(T t)
     {
-        Console.WriteLine("Generic ReturnArg has been called. My type is {0}", GetType());
+        Console.WriteLine(String.Format("Generic ReturnArg has been called. My type is {0}", GetType()));
         return t;
     }
 }
@@ -60,7 +60,7 @@ public class RetThisImpl: IRetThis
 
     public Type GetMyType()
     {
-        Console.WriteLine("GetMyType has been called. My type is {0}", GetType());
+        Console.WriteLine(String.Format("GetMyType has been called. My type is {0}", GetType()));
         return GetType();
     }
 }
@@ -77,7 +77,7 @@ public class Castable : ICastable, IExtra
 
     public bool IsInstanceOfInterface(RuntimeTypeHandle interfaceType, out Exception castError)
     {
-        Console.WriteLine("IsInstanceOfInterface has been called for type {0}", Type.GetTypeFromHandle(interfaceType));
+        Console.WriteLine(String.Format("IsInstanceOfInterface has been called for type {0}", Type.GetTypeFromHandle(interfaceType)));
         if (_interface2impl == null)
         {
             castError = new CastableException();
@@ -89,13 +89,13 @@ public class Castable : ICastable, IExtra
 
     public RuntimeTypeHandle GetImplType(RuntimeTypeHandle interfaceType)
     {
-        Console.WriteLine("GetImplType has been called for type {0}", Type.GetTypeFromHandle(interfaceType));    
+        Console.WriteLine(String.Format("GetImplType has been called for type {0}", Type.GetTypeFromHandle(interfaceType)));
         return _interface2impl[Type.GetTypeFromHandle(interfaceType)].TypeHandle;
     }
 
     public int InnocentMethod()
     {
-        Console.WriteLine("InnocentMethod has been called. My type is {0}", GetType());
+        Console.WriteLine(String.Format("InnocentMethod has been called. My type is {0}", GetType()));
         return 3;
     }
 }

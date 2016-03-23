@@ -124,14 +124,6 @@ public:
     {
         return m_RVA != 0;
     }
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return FALSE;
-    }
-#else
-    __forceinline BOOL IsThumb2Code() { return false;}
-#endif
 };
 
 //---------------------------------------------------------------------------------------

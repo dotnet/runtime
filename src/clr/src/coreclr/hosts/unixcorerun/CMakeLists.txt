@@ -30,4 +30,4 @@ add_dependencies(corerun
     coreclr
 )
 
-install (TARGETS corerun DESTINATION .)
+install_clr(corerun)

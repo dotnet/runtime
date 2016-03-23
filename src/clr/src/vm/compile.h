@@ -194,11 +194,7 @@ class CEECompileInfo : public ICorCompileInfo
                          BOOL                     fForceDebug,
                          BOOL                     fForceProfiling,
                          BOOL                     fForceInstrument,
-                         BOOL                     fForceFulltrustDomain
-#ifdef MDIL
-                       , MDILCompilationFlags     mdilCompilationFlags
-#endif
-                       );
+                         BOOL                     fForceFulltrustDomain);
 
     HRESULT MakeCrossDomainCallback(
                                     ICorCompilationDomain*  pDomain,
@@ -251,20 +247,6 @@ class CEECompileInfo : public ICorCompileInfo
       __out_ecount_opt(*cAssemblyManifestModulePath) 
         LPWSTR                  assemblyManifestModulePath, 
         LPDWORD                 cAssemblyManifestModulePath);
-
-#ifdef MDIL
-    DWORD GetMdilModuleSecurityFlags(
-        CORINFO_ASSEMBLY_HANDLE assembly);
-
-    BOOL CompilerRelaxationNoStringInterningPermitted(
-        CORINFO_ASSEMBLY_HANDLE assembly);
-
-    BOOL RuntimeCompatibilityWrapExceptions(
-        CORINFO_ASSEMBLY_HANDLE assembly);
-
-    DWORD CERReliabilityContract(
-        CORINFO_ASSEMBLY_HANDLE assembly);
-#endif //MDIL
 
     HRESULT SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembly,
                                  CORINFO_MODULE_HANDLE       module);
@@ -359,10 +341,6 @@ class CEECompileInfo : public ICorCompileInfo
                                     ICorCompileDataStore    *pData,
                                     CorProfileData          *profileData);
 
-#if MDIL
-    HRESULT ShouldCompile(CORINFO_METHOD_HANDLE   methodHandle);
-#endif // MDIL
-
 #ifdef FEATURE_FUSION
     HRESULT GetAssemblyName(
             CORINFO_ASSEMBLY_HANDLE hAssembly,
@@ -374,9 +352,7 @@ class CEECompileInfo : public ICorCompileInfo
     HRESULT GetLoadHint(CORINFO_ASSEMBLY_HANDLE   hAssembly,
                         CORINFO_ASSEMBLY_HANDLE hAssemblyDependency,
                         LoadHintEnum           *loadHint,
-                        LoadHintEnum           *defaultLoadHint = NULL // for MDIL we want to separate the default load hint on the assembly
-                                                                       // from the load hint on the dependency
-                        );
+                        LoadHintEnum           *defaultLoadHint);
 
     HRESULT GetAssemblyVersionInfo(CORINFO_ASSEMBLY_HANDLE Handle, 
                                     CORCOMPILE_VERSION_INFO *pInfo);
@@ -603,9 +579,6 @@ class CEEPreloader : public ICorCompilePreloader
     void MethodReferencedByCompiledCode(CORINFO_METHOD_HANDLE handle);
 
     BOOL IsUncompiledMethod(CORINFO_METHOD_HANDLE handle);
-#ifdef MDIL
-    void AddMDILCodeFlavorsToUncompiledMethods(CORINFO_METHOD_HANDLE handle);
-#endif
 
 private:
     void AddToUncompiledMethods(MethodDesc *pMethod, BOOL fForStubs);
@@ -823,11 +796,7 @@ class CompilationDomain : public AppDomain,
     ~CompilationDomain();
 #endif
 
-    void Init(
-#ifdef MDIL
-              MDILCompilationFlags     mdilCompilationFlags
-#endif
-             );
+    void Init();
 
     HRESULT AddDependency(AssemblySpec *pRefSpec, PEAssembly *pFile);
 

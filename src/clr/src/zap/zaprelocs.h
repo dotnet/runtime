@@ -15,13 +15,6 @@
 
 typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
 
-#ifdef BINDER
-// Special binder specific relocation (on ARM):
-// bit0 in NativeCodeEntry in MethodDesc is used to signify "no fixup list" (not THUMB2 code)
-// otherwise should be treated exactly like IMAGE_REL_BASED_PTR
-#define IMAGE_REL_BASED_MD_METHODENTRY    0x7F
-#endif // BINDER
-
 // Special NGEN-specific relocation type for fixups (absolute RVA in the middle 30 bits)
 #define IMAGE_REL_BASED_ABSOLUTE_TAGGED   0x7E
 
@@ -131,71 +124,6 @@ public:
 
     // Create new aligned zap blob node.
     static ZapBlobWithRelocs * NewAlignedBlob(ZapWriter * pWriter, PVOID pData, SIZE_T cbSize, SIZE_T cbAlignment);
-
-#ifdef BINDER
-    // Compress a reloc blob that was pessimistically sized (removes entries with a NULL target node).
-    void SqueezeRelocs(DWORD entryCount);
-
-    // Helper to set a reloc target to a specific offset.
-    void SetPointerToOffset(size_t offset, size_t setOffs)
-    {
-        assert(offset < GetSize() && offset + sizeof(SIZE_T) <= GetSize());
-        *(SIZE_T *)(GetData() + offset) = setOffs;
-    }
-
-    // Helper to zero a reloc target.
-    void ZeroPointer(size_t offset)
-    {
-        SetPointerToOffset(offset, 0);
-    }
-
-#ifdef CLR_STANDALONE_BINDER // REDHAWK doesn't use the low-bit trick (yet?)
-    // Helper to set reloc target to 1, which indicates a double indirection in the CLR.
-    void SetPointerToIndirect(size_t offset)
-    {
-        SetPointerToOffset(offset, 1);
-    }
-#endif
-#endif
 };
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-class ZapThumb2CodeBlob : public ZapBlobWithRelocs
-{
-protected:
-    ZapThumb2CodeBlob(SIZE_T cbSize)
-        : ZapBlobWithRelocs(cbSize)
-    {
-    }
-
-public:
-    virtual UINT GetAlignment()
-    {
-        return 4;
-    }
-
-    static ZapThumb2CodeBlob * NewThumb2CodeBlob(ZapWriter * pWriter, PVOID pData, SIZE_T cbSize)
-    {
-        S_SIZE_T cbAllocSize = S_SIZE_T(sizeof(ZapThumb2CodeBlob)) + S_SIZE_T(cbSize);
-        if(cbAllocSize.IsOverflow())
-            ThrowHR(COR_E_OVERFLOW);
-        
-        void * pMemory = new (pWriter->GetHeap()) BYTE[cbAllocSize.Value()];
-
-        ZapThumb2CodeBlob * pZapBlob = new (pMemory) ZapThumb2CodeBlob(cbSize);
-
-        if (pData != NULL)
-            memcpy(pZapBlob + 1, pData, cbSize);
-
-        return pZapBlob;
-    }
-
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-};
-#endif // TARGET_THUMB2 && BINDER
-
 
 #endif // __ZAPRELOCS_H__
