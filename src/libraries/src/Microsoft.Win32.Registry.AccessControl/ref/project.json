@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Registry": "4.0.0-rc3-23921",
+    "Microsoft.Win32.Registry": "4.0.0-rc3-23923",
     "System.Runtime": "4.0.0",
-    "System.Security.AccessControl": "4.0.0-rc3-23921",
-    "System.Security.Principal.Windows": "4.0.0-rc3-23921"
+    "System.Security.AccessControl": "4.0.0-rc3-23923",
+    "System.Security.Principal.Windows": "4.0.0-rc3-23923"
   },
   "frameworks": {
     "netstandard1.3": {
