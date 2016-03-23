@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -15,8 +15,12 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(EnableManualTests)' == 'true' ">
+    <Compile Include="DiagnosticTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="ExceptionTest.cs" />
+    <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />

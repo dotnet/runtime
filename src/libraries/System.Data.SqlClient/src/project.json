@@ -1,4 +1,4 @@
-{
+﻿{
   "frameworks": {
     "netstandard1.3": {
       "imports": "dotnet5.4",
@@ -9,6 +9,7 @@
         "System.Collections.Concurrent": "4.0.0",
         "System.Data.Common": "4.0.1-rc3-24112-00",
         "System.Diagnostics.Debug": "4.0.10",
+        "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-24112-00",
         "System.Diagnostics.Tools": "4.0.0",
         "System.Globalization": "4.0.10",
         "System.IO": "4.0.10",
@@ -51,5 +52,6 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
-  }
+  },
+  "dependencies": {}
 }
