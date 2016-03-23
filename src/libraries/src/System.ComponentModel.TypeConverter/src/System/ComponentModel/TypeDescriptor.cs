@@ -24,13 +24,11 @@ namespace System.ComponentModel
         // lock on it for thread safety.  It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
-        private static WeakHashtable s_providerTable = new WeakHashtable();  // mapping of type or object hash to a provider list
-        private static Hashtable s_providerTypeTable = new Hashtable();      // A direct mapping from type to provider.
-        private static volatile Hashtable s_defaultProviders = new Hashtable();      // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
+        private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
+        private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
+        private static volatile Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
         private static volatile WeakHashtable s_associationTable;
-        private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild
-                                                                      // attributes.
-
+        private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild attributes.
 
         // This is an index that we use to create a unique name for a property in the
         // event of a name collision.  The only time we should use this is when
@@ -75,7 +73,7 @@ namespace System.ComponentModel
             Guid.NewGuid()  // events
         };
 
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         private TypeDescriptor()
         {
