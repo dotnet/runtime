@@ -1712,17 +1712,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
     }
 #endif // _DEBUG
 
-#ifdef FEATURE_CORECLR
-    if (pAssembly->IsSystem() || (pAssembly->GetManifestFile()->HasOpenedILimage() && GetAppDomain()->IsImageFullyTrusted(pAssembly->GetManifestFile()->GetOpenedILimage())))
-    {
-        // Set the flag if the assembly is microsoft platform. This gets saved in Ngen Image
-        // to determinne if the NI was genrated as full-trust. If NI is generated as full-trust
-        // the codegen is generated different as compared to non-trusted.
-        _ASSERTE(!(moduleFlags & ModuleSecurityDescriptorFlags_IsMicrosoftPlatform));
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsMicrosoftPlatform;
-    }
-#endif
-
     // Mark the module as having its security state computed
     moduleFlags |= ModuleSecurityDescriptorFlags_IsComputed;
     InterlockedCompareExchange(reinterpret_cast<LONG *>(&m_flags),
