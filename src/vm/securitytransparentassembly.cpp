@@ -528,29 +528,7 @@ CorInfoCanSkipVerificationResult SecurityTransparent::JITCanSkipVerification(Met
 
     CorInfoCanSkipVerificationResult canSkipVerif = hasSkipVerificationPermisson ? CORINFO_VERIFICATION_CAN_SKIP : CORINFO_VERIFICATION_CANNOT_SKIP;
 
-#ifdef FEATURE_CORECLR
-    //For Profile assemblies, do not verify any code.  All Transparent methods are guaranteed to be
-    //verifiable (verified by tests).  Therefore, skip all verification on platform assemblies.
-
-    //All profile assemblies have skip verification.
-    _ASSERTE(!(pDomainAssembly->GetFile()->IsProfileAssembly() && !hasSkipVerificationPermisson));
-
-#ifdef FEATURE_CORESYSTEM
-    //
-    // On Phone, at runtime, enable verification for user code that will run as transparent:
-    // - All Mango applications
-    // - Apollo applications with transparent code
-    //
-    if (hasSkipVerificationPermisson && !pDomainAssembly->GetFile()->IsProfileAssembly())
-    {
-        if (SecurityTransparent::IsMethodTransparent(pMD))
-        {
-            canSkipVerif = CORINFO_VERIFICATION_CANNOT_SKIP;
-        }
-    }
-#endif // FEATURE_CORESYSTEM
-
-#else //FEATURE_CORECLR
+#ifndef FEATURE_CORECLR
     // also check to see if the method is marked transparent
     if (hasSkipVerificationPermisson)
     { 
@@ -943,17 +921,7 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
         }
         else
         {
-#if defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-            // For code coverage builds we have an issue where the inserted types/methods are not annotated.
-            // In patricular, there may be p/invokes from transparent code. Allow that on cov builds for platform assemblies.
-            // Paranoia: allow this only on non shp builds - all builds except the SHP type will have
-            // FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED defined. So we can use that to figure out if this is a SHP build
-            // type that someone is trying to relax that constraint on and not allow that.
-            if (!pCalleeMD->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
-#endif // defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-            {
-                ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_NATIVE);
-            }
+            ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_NATIVE);
         }
     }
 

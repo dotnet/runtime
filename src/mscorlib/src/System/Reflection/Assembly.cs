@@ -855,17 +855,6 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-#if FEATURE_CORECLR
-        internal virtual bool IsProfileAssembly
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-#endif // FEATURE_CORECLR
-
         public virtual IList<CustomAttributeData> GetCustomAttributesData()
         {
             throw new NotImplementedException();
@@ -1165,11 +1154,10 @@ namespace System.Reflection
                 {
                     ASSEMBLY_FLAGS flags = ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_UNKNOWN;
 
-#if !FEATURE_CORECLR
-                    if (RuntimeAssembly.IsFrameworkAssembly(GetName()))
+#if FEATURE_CORECLR
+                    flags |= ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION;
 #else
-                    if (IsProfileAssembly)
-#endif
+                    if (RuntimeAssembly.IsFrameworkAssembly(GetName()))
                     {
                         flags |= ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION;
 
@@ -1206,6 +1194,7 @@ namespace System.Reflection
                     {
                         flags = ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION;
                     }
+#endif
 
                     m_flags = flags | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED;
                 }
@@ -1213,7 +1202,7 @@ namespace System.Reflection
                 return m_flags;
             }
         }
-#endif // FEATURE_APPX
+#endif // FEATURE_CORECLR
 
         internal object SyncRoot
         {
@@ -2531,24 +2520,6 @@ namespace System.Reflection
             GetGrantSet(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref granted), JitHelpers.GetObjectHandleOnStack(ref denied));
             newGrant = granted; newDenied = denied;
         }
-
-#if FEATURE_CORECLR
-        [System.Security.SecurityCritical]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetIsProfileAssembly(RuntimeAssembly assembly);
-
-        // True if the assembly is a trusted platform assembly
-        internal override bool IsProfileAssembly
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                return GetIsProfileAssembly(GetNativeHandle());
-            }
-        }
-#endif // FEATURE_CORECLR
 
         [System.Security.SecurityCritical]  // auto-generated
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

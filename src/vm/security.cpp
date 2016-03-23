@@ -55,9 +55,9 @@ BOOL Security::IsTransparencyEnforcementEnabled()
     LIMITED_METHOD_CONTRACT;
 
 #ifdef FEATURE_CORECLR
-    if (GetAppDomain()->IsTransparencyEnforcementDisabled())
-        return FALSE;
-#endif
+    // No transparency enforcement in .NET Core
+    return FALSE;
+#else
 
 #ifdef _DEBUG
     if (g_pConfig->DisableTransparencyEnforcement())
@@ -65,6 +65,7 @@ BOOL Security::IsTransparencyEnforcementEnabled()
 #endif
 
     return TRUE;
+#endif // FEATURE_CORECLR
 }
 
 //---------------------------------------------------------------------------------------

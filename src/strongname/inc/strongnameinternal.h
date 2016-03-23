@@ -23,11 +23,6 @@
 #define CALG_SHA_512            (ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA_512)
 #endif //ALG_SID_SHA_256
 
-#ifdef FEATURE_STRONGNAME_TESTKEY_ALLOWED
-bool StrongNameIsTestKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey);
-bool StrongNameIsTestKey(const PublicKeyBlob &keyPublicKey);
-#endif // FEATURE_STRONGNAME_TESTKEY_ALLOWED
-
 // Determine the number of bytes in a public key
 DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey);
 

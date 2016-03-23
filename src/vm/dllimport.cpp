@@ -7272,14 +7272,6 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     // On the phone, we only allow platform assemblies to define pinvokes
     // unless the host has asked us otherwise.
     //
-#ifdef FEATURE_WINDOWSPHONE
-    if (!GetAppDomain()->EnablePInvokeAndClassicComInterop())
-    {
-        if (!pMD->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_UserDllImport"));
-    }
-#endif //FEATURE_WINDOWS_PHONE
-
 
     if (pMD->IsClassConstructorTriggeredAtLinkTime())
     {
