@@ -313,12 +313,8 @@ LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 Interval *
 LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.push_back(Interval());
+    intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
     Interval *newInt = &intervals.back();
-    newInt->init();
-
-    newInt->registerType = theRegisterType;
-    newInt->registerPreferences = allRegs(theRegisterType);
 
 #ifdef DEBUG
     newInt->intervalIndex = intervalCount;
@@ -330,15 +326,13 @@ LinearScan::newInterval(RegisterType theRegisterType)
 }
 
 RefPosition *
-LinearScan::newRefPositionRaw()
+LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
-    refPositions.push_back(RefPosition());
+    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType);
     RefPosition *newRP = &refPositions.back();
-    memset(newRP, 0, sizeof(RefPosition)); // TODO-Cleanup: call a RefPosition constructor instead?
 #ifdef DEBUG
     newRP->rpNum = refPositionCount;
 #endif // DEBUG
-    newRP->bbNum = curBBNum;
     refPositionCount++;
     return newRP;
 }
@@ -647,21 +641,9 @@ LinearScan::newRefPosition(
     RefType theRefType, GenTree * theTreeNode,
     regMaskTP mask)
 {
-    RefPosition *newRP = newRefPositionRaw();
+    RefPosition *newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
 
     newRP->setReg(getRegisterRecord(reg));
-    newRP->nextRefPosition = nullptr;
-    newRP->nodeLocation = theLocation;
-    newRP->treeNode = theTreeNode;
-    newRP->refType = theRefType;
-
-    // Last Use - this may be true for multiple RefPositions in the same Interval
-    newRP->lastUse = false;
-
-    // Spill info
-    newRP->reload = false;
-    newRP->spillAfter = false;
-    newRP->isPhysRegRef = true;
 
     newRP->registerAssignment = mask;
     associateRefPosWithInterval(newRP);
@@ -709,19 +691,11 @@ LinearScan::newRefPosition(
         assert((allRegs(theInterval->registerType) & mask) != 0);
     }
 
-    RefPosition *newRP = newRefPositionRaw();
+    RefPosition *newRP = newRefPositionRaw(theLocation, theTreeNode, theRefType);
 
     newRP->setInterval(theInterval);
-    newRP->nextRefPosition = nullptr;
-    newRP->nodeLocation = theLocation;
-    newRP->treeNode = theTreeNode;
-    newRP->refType = theRefType;
-    // Last Use - this may be true for multiple RefPositions in the same Interval
-    newRP->lastUse = false;
 
     // Spill info
-    newRP->reload = false;
-    newRP->spillAfter = false;
     newRP->isFixedRegRef = isFixedRegister;
 
     // We don't need this for AMD because the PInvoke method epilog code is explicit
