@@ -125,7 +125,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTreePtr *pTree, fg
         fIsBlk = true;
         // fallthrough
     case GT_IND:
-    case GT_LDOBJ:
+    case GT_OBJ:
     case GT_ARR_ELEM:
     case GT_ARR_INDEX:
     case GT_ARR_OFFSET:

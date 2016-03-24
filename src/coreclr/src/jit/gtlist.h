@@ -73,7 +73,7 @@ GTNODE(IND              , "indir"         ,0,GTK_UNOP)          // load indirect
 GTNODE(STOREIND         , "storeIndir"    ,0,GTK_BINOP)         // store indirection
                                                                    // TODO-Cleanup: GT_ARR_BOUNDS_CHECK should be made a GTK_BINOP now that it has only two child nodes
 GTNODE(ARR_BOUNDS_CHECK , "arrBndsChk"    ,0,GTK_SPECIAL)       // array bounds check
-GTNODE(LDOBJ            , "ldobj"         ,0,GTK_UNOP|GTK_EXOP)
+GTNODE(OBJ              , "obj"           ,0,GTK_UNOP|GTK_EXOP)
 GTNODE(BOX              , "box"           ,0,GTK_UNOP|GTK_EXOP)
 
 #ifdef FEATURE_SIMD

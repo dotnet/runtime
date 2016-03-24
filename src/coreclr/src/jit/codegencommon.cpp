@@ -842,9 +842,9 @@ void Compiler::compUpdateLifeVar(GenTreePtr tree, VARSET_TP* pLastUseVars)
 #if !defined(_TARGET_AMD64_) // no addr nodes on AMD and experimenting with with encountering vars in 'random' order
     if (ForCodeGen)
     {
-        if (tree->gtOper == GT_LDOBJ)
+        if (tree->gtOper == GT_OBJ)
         {
-            // The tree must have the particular form LDOBJ(ADDR(LCL)); no need to do the check below.
+            // The tree must have the particular form OBJ(ADDR(LCL)); no need to do the check below.
             assert(indirAddrLocal != NULL);
         }
         else if (tree->OperIsIndir())
@@ -1739,9 +1739,9 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTreePtr op, unsigned *align
         op = op->gtOp.gtOp2;
     }
 
-    if (op->gtOper == GT_LDOBJ)
+    if (op->gtOper == GT_OBJ)
     {
-        CORINFO_CLASS_HANDLE clsHnd = op->gtLdObj.gtClass;
+        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->gtClass;
         opSize    = compiler->info.compCompHnd->getClassSize(clsHnd);
         alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
     }

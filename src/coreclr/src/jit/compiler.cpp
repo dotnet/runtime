@@ -444,16 +444,16 @@ void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE *gcPtrsOut)
     assert(op->TypeGet() == TYP_STRUCT);
 
 #ifdef _TARGET_ARM64_
-    if (op->OperGet() == GT_LDOBJ)
+    if (op->OperGet() == GT_OBJ)
     {
-        CORINFO_CLASS_HANDLE ldObjClass = op->gtLdObj.gtClass;
+        CORINFO_CLASS_HANDLE objClass = op->gtObj.gtClass;
 
-        int structSize = info.compCompHnd->getClassSize(ldObjClass);
+        int structSize = info.compCompHnd->getClassSize(objClass);
         assert(structSize <= 2*TARGET_POINTER_SIZE);
 
         BYTE gcPtrsTmp[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
 
-        info.compCompHnd->getClassGClayout(ldObjClass, &gcPtrsTmp[0]);
+        info.compCompHnd->getClassGClayout(objClass, &gcPtrsTmp[0]);
 
         gcPtrsOut[0] = gcPtrsTmp[0];
         gcPtrsOut[1] = gcPtrsTmp[1];
@@ -1161,7 +1161,7 @@ void                Compiler::compDisplayStaticSizes(FILE* fout)
     fprintf(fout, "Size of GenTreeStoreInd     = %3u\n", sizeof(GenTreeStoreInd));
     fprintf(fout, "Size of GenTreeRetExpr      = %3u\n", sizeof(GenTreeRetExpr));
     fprintf(fout, "Size of GenTreeStmt         = %3u\n", sizeof(GenTreeStmt));
-    fprintf(fout, "Size of GenTreeLdObj        = %3u\n", sizeof(GenTreeLdObj));
+    fprintf(fout, "Size of GenTreeObj          = %3u\n", sizeof(GenTreeObj));
     fprintf(fout, "Size of GenTreeClsVar       = %3u\n", sizeof(GenTreeClsVar));
     fprintf(fout, "Size of GenTreeArgPlace     = %3u\n", sizeof(GenTreeArgPlace));
     fprintf(fout, "Size of GenTreeLabel        = %3u\n", sizeof(GenTreeLabel));
@@ -2512,7 +2512,6 @@ void                Compiler::compInitOptions(CORJIT_FLAGS* jitFlags)
 
     if (compIsForInlining() || compIsForImportOnly())
         return;
-                   
     // The rest of the opts fields that we initialize here
     // should only be used when we generate code for the method
     // They should not be used when importing or inlining
@@ -4946,7 +4945,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                 prejitResult.SetReported();
             }
         }
-        else
+        else 
         {
             // We are jitting the root method, or inlining.
             fgFindBasicBlocks();
@@ -4956,7 +4955,7 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         if (compDonotInline())
         {
             goto _Next;
-        }          
+        }        
 
         compSetOptimizationLevel();
 
