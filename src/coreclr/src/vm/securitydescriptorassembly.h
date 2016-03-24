@@ -133,10 +133,6 @@ public:
 
     virtual void CheckAllowAssemblyLoad();
 
-#ifdef FEATURE_CORECLR
-    inline BOOL IsMicrosoftPlatform();
-#endif // FEATURE_CORECLR
-
 private:
     BOOL CanSkipPolicyResolution();
     OBJECTREF UpgradePEFileEvidenceToAssemblyEvidence(const OBJECTREF& objPEFileEvidence);
@@ -156,9 +152,6 @@ private:
     inline BOOL IsConditionalAptca();
 #endif // FEATURE_APTCA
 
-#ifdef FEATURE_CORECLR
-    inline void SetMicrosoftPlatform();
-#endif // FEAUTRE_CORECLR
 #endif // #ifndef DACCESS_COMPILE
 };
 
@@ -193,7 +186,6 @@ public:
     virtual BOOL IsSystem();    
     virtual Assembly* GetAssembly();
 
-    inline BOOL IsMicrosoftPlatform();
     BOOL IsFullyTrusted();
     BOOL CanCallUnmanagedCode() const;
     BOOL CanAssert();
