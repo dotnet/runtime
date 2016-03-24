@@ -33,11 +33,5 @@ namespace System.Text.Tests
         {
             EncodingHelpers.GetChars(new UnicodeEncoding(), bytes, byteIndex, byteCount, chars, charIndex, expected);
         }
-
-        [Fact]
-        public void GetChars_Invalid()
-        {
-            EncodingHelpers.GetChars_Invalid(new UnicodeEncoding());
-        }
     }
 }
