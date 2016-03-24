@@ -10,20 +10,6 @@
 
   <Import Project="..\dir.traversal.targets" />
 
-
-  <!-- Hook into the local publishing by providing the task that needs to run before we can do the local publishing -->
-  <Import Project="$(BuildToolsLocation)\lib\packages.targets" Condition="Exists('$(BuildToolsLocation)\lib\packages.targets')" />
-  <PropertyGroup>
-    <NugetPackageBuildTargets>BuildNuGetPackages</NugetPackageBuildTargets>
-  </PropertyGroup>
-
-  <!-- Generate RyuJIT nuget package - currently only supported for x64 -->
-  <Target Name="BuildNuGetPackages" AfterTargets="MovePDB" Condition="'$(BuildNugetPackage)' != 'false' and '$(BuildArch)' == 'x64'">
-    <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
-    <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(PackagesBinDir)" />
-    <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
-  </Target>
-
   <ItemGroup>
     <PDBSToMove Include="$(BinDir)mscorlib.pdb"/>
   </ItemGroup>
