@@ -149,6 +149,10 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method);
 static gpointer
 cominterop_get_ccw (MonoObject* object, MonoClass* itf);
 
+static gpointer
+cominterop_get_ccw_checked (MonoObject *object, MonoClass *itf, MonoError *error);
+
+
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify);
 
@@ -465,7 +469,7 @@ cominterop_com_visible (MonoClass* klass)
 
 }
 
-static void cominterop_raise_hr_exception (int hr)
+static void cominterop_set_hr_error (MonoError *oerror, int hr)
 {
 	static MonoMethod* throw_exception_for_hr = NULL;
 	MonoError error;
@@ -476,25 +480,28 @@ static void cominterop_raise_hr_exception (int hr)
 		throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
 
 	ex = (MonoException*)mono_runtime_invoke_checked (throw_exception_for_hr, NULL, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_assert_ok (&error);
 
-	mono_raise_exception (ex);
+	mono_error_set_exception_instance (oerror, ex);
 }
 
 /**
- * cominterop_get_interface:
+ * cominterop_get_interface_checked:
  * @obj: managed wrapper object containing COM object
  * @ic: interface type to retrieve for COM object
+ * @error: set on error
  *
- * Returns: the COM interface requested
+ * Returns: the COM interface requested. On failure returns NULL and sets @error
  */
 static gpointer
-cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exception)
+cominterop_get_interface_checked (MonoComObject* obj, MonoClass* ic, MonoError *error)
 {
 	gpointer itf = NULL;
 
 	g_assert (ic);
 	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+
+	mono_error_init (error);
 
 	mono_cominterop_lock ();
 	if (obj->itf_hash)
@@ -507,8 +514,8 @@ cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exce
 		int hr;
 		g_assert(found);
 		hr = ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (obj->iunknown, iid, &itf);
-		if (hr < 0 && throw_exception) {
-			cominterop_raise_hr_exception (hr);	
+		if (hr < 0) {
+			cominterop_set_hr_error (error, hr);
 		}
 
 		if (hr >= 0 && itf) {
@@ -520,6 +527,30 @@ cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exce
 		}
 
 	}
+	return itf;
+}
+
+/**
+ * cominterop_get_interface:
+ * @obj: managed wrapper object containing COM object
+ * @ic: interface type to retrieve for COM object
+ *
+ * Returns: the COM interface requested
+ */
+static gpointer
+cominterop_get_interface (MonoComObject *obj, MonoClass *ic, gboolean throw_exception)
+{
+	MonoError error;
+	gpointer itf = cominterop_get_interface_checked (obj, ic, &error);
+	if (!is_ok (&error)) {
+		if (throw_exception) {
+			mono_error_set_pending_exception (&error);
+			return NULL;
+		} else {
+			mono_error_cleanup (&error);
+		}
+	}
+
 	if (throw_exception)
 		g_assert (itf);
 
@@ -544,7 +575,7 @@ cominterop_type_from_handle (MonoType *handle)
 	mono_class_init (klass);
 
 	ret = mono_type_get_object_checked (domain, handle, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_set_pending_exception (&error);
 
 	return ret;
 }
@@ -1449,20 +1480,23 @@ static gboolean cominterop_can_support_dispatch (MonoClass* klass)
 }
 
 static void*
-cominterop_get_idispatch_for_object (MonoObject* object)
+cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 {
+	mono_error_init (error);
 	if (!object)
 		return NULL;
 
 	if (cominterop_object_is_rcw (object)) {
-		return cominterop_get_interface (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object, 
-			mono_class_get_idispatch_class (), TRUE);
+		return cominterop_get_interface_checked (((MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp)->com_object,
+							 mono_class_get_idispatch_class (), error);
 	}
 	else {
 		MonoClass* klass = mono_object_class (object);
-		if (!cominterop_can_support_dispatch (klass) )
-			cominterop_raise_hr_exception (MONO_E_NOINTERFACE);
-		return cominterop_get_ccw (object, mono_class_get_idispatch_class ());
+		if (!cominterop_can_support_dispatch (klass) ) {
+			cominterop_set_hr_error (error, MONO_E_NOINTERFACE);
+			return NULL;
+		}
+		return cominterop_get_ccw_checked (object, mono_class_get_idispatch_class (), error);
 	}
 }
 
@@ -1470,6 +1504,8 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (MonoObject* object)
 {
 #ifndef DISABLE_COM
+	MonoError error;
+
 	if (!object)
 		return NULL;
 
@@ -1504,7 +1540,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (M
 		return ((MonoComInteropProxy*)real_proxy)->com_object->iunknown;
 	}
 	else {
-		return cominterop_get_ccw (object, mono_class_get_iunknown_class ());
+		void* ccw_entry = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), &error);
+		mono_error_set_pending_exception (&error);
+		return ccw_entry;
 	}
 #else
 	g_assert_not_reached ();
@@ -1533,7 +1571,10 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObject* object)
 {
 #ifndef DISABLE_COM
-	return cominterop_get_idispatch_for_object (object);
+	MonoError error;
+	void* idisp = cominterop_get_idispatch_for_object (object, &error);
+	mono_error_set_pending_exception (&error);
+	return idisp;
 #else
 	g_assert_not_reached ();
 #endif
@@ -1543,6 +1584,7 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObject* object, MonoReflectionType* type)
 {
 #ifndef DISABLE_COM
+	MonoError error;
 	MonoClass* klass = NULL;
 	void* itf = NULL;
 	g_assert (type);
@@ -1554,8 +1596,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObject* object, Mon
 		return NULL;
 	}
 
-	itf = cominterop_get_ccw (object, klass);
-	g_assert (itf);
+	itf = cominterop_get_ccw_checked (object, klass, &error);
+	mono_error_set_pending_exception (&error);
 	return itf;
 #else
 	g_assert_not_reached ();
@@ -1712,13 +1754,19 @@ gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)
 {
 #ifndef DISABLE_COM
+	MonoError error;
 	MonoClass *klass = mono_type_get_class (type->type);
 	if (!mono_class_init (klass)) {
 		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
-	return cominterop_get_interface (obj, klass, (gboolean)throw_exception);
+	gpointer itf = cominterop_get_interface_checked (obj, klass, &error);
+	if (throw_exception)
+		mono_error_set_pending_exception (&error);
+	else
+		mono_error_cleanup (&error);
+	return itf;
 #else
 	g_assert_not_reached ();
 #endif
@@ -1826,17 +1874,18 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 }
 
 /**
- * cominterop_get_ccw:
+ * cominterop_get_ccw_checked:
  * @object: a pointer to the object
  * @itf: interface type needed
+ * @error: set on error
  *
  * Returns: a value indicating if the object is a
- * Runtime Callable Wrapper (RCW) for a COM object
+ * Runtime Callable Wrapper (RCW) for a COM object.
+ * On failure returns NULL and sets @error.
  */
 static gpointer
-cominterop_get_ccw (MonoObject* object, MonoClass* itf)
+cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error)
 {
-	MonoError error;
 	int i;
 	MonoCCW *ccw = NULL;
 	MonoCCWInterface* ccw_entry = NULL;
@@ -1851,6 +1900,8 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 	GList *ccw_list, *ccw_list_item;
 	MonoCustomAttrInfo *cinfo = NULL;
 
+	mono_error_init (error);
+	
 	if (!object)
 		return NULL;
 
@@ -1908,12 +1959,12 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 		mono_cominterop_unlock ();
 		/* register for finalization to clean up ccw */
-		mono_object_register_finalizer (object, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_object_register_finalizer (object, error);
+		return_val_if_nok (error, NULL);
 	}
 
-	cinfo = mono_custom_attrs_from_class_checked (itf, &error);
-	mono_error_assert_ok (&error);
+	cinfo = mono_custom_attrs_from_class_checked (itf, error);
+	mono_error_assert_ok (error);
 	if (cinfo) {
 		static MonoClass* coclass_attribute = NULL;
 		if (!coclass_attribute)
@@ -2053,6 +2104,23 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 		g_hash_table_insert (ccw_interface_hash, ccw_entry, ccw);
 	}
 
+	return ccw_entry;
+}
+
+/**
+ * cominterop_get_ccw:
+ * @object: a pointer to the object
+ * @itf: interface type needed
+ *
+ * Returns: a value indicating if the object is a
+ * Runtime Callable Wrapper (RCW) for a COM object
+ */
+static gpointer
+cominterop_get_ccw (MonoObject* object, MonoClass* itf)
+{
+	MonoError error;
+	gpointer ccw_entry = cominterop_get_ccw_checked (object, itf, &error);
+	mono_error_set_pending_exception (&error);
 	return ccw_entry;
 }
 
@@ -2334,10 +2402,12 @@ static int
 cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv)
 {
 #ifdef HOST_WIN32
+	MonoError error;
 	if (!ccw->free_marshaler) {
 		int ret = 0;
 		gpointer tunk;
-		tunk = cominterop_get_ccw (object, mono_class_get_iunknown_class ());
+		tunk = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
 		ret = CoCreateFreeThreadedMarshaler (tunk, (LPUNKNOWN*)&ccw->free_marshaler);
 	}
 		
@@ -2374,7 +2444,8 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 
 	/* handle IUnknown special */
 	if (cominterop_class_guid_equal (riid, mono_class_get_iunknown_class ())) {
-		*ppv = cominterop_get_ccw (object, mono_class_get_iunknown_class ());
+		*ppv = cominterop_get_ccw_checked (object, mono_class_get_iunknown_class (), &error);
+		mono_error_assert_ok (&error);
 		/* remember to addref on QI */
 		cominterop_ccw_addref ((MonoCCWInterface *)*ppv);
 		return MONO_S_OK;
@@ -2385,7 +2456,8 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 		if (!cominterop_can_support_dispatch (klass))
 			return MONO_E_NOINTERFACE;
 		
-		*ppv = cominterop_get_ccw (object, mono_class_get_idispatch_class ());
+		*ppv = cominterop_get_ccw_checked (object, mono_class_get_idispatch_class (), &error);
+		mono_error_assert_ok (&error);
 		/* remember to addref on QI */
 		cominterop_ccw_addref ((MonoCCWInterface *)*ppv);
 		return MONO_S_OK;
@@ -2419,7 +2491,11 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 		klass_iter = klass_iter->parent;
 	}
 	if (itf) {
-		*ppv = cominterop_get_ccw (object, itf);
+		*ppv = cominterop_get_ccw_checked (object, itf, &error);
+		if (!is_ok (&error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			return MONO_E_NOINTERFACE;
+		}
 		/* remember to addref on QI */
 		cominterop_ccw_addref ((MonoCCWInterface *)*ppv);
 		return MONO_S_OK;
@@ -3060,13 +3136,15 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 				hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 				if (hr < 0) {
-					cominterop_raise_hr_exception (hr);
+					cominterop_set_hr_error (&error, hr);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
 				}
 				if (lbound != 0)
 					bounded = TRUE;
 				hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 				if (hr < 0) {
-					cominterop_raise_hr_exception (hr);
+					cominterop_set_hr_error (&error, hr);
+					mono_error_raise_exception (&error); /* FIXME don't raise here */
 				}
 				cursize = ubound-lbound+1;
 				sizes [i] = cursize;
@@ -3093,17 +3171,20 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 static 
 gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 {
+	MonoError error;
 	gpointer result;
 #ifdef HOST_WIN32
 	int hr = SafeArrayPtrOfIndex (safearray, indices, &result);
 	if (hr < 0) {
-		cominterop_raise_hr_exception (hr);
+			cominterop_set_hr_error (&error, hr);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_ptr_of_index_ms (safearray, (glong *)indices, &result);
 		if (hr < 0) {
-			cominterop_raise_hr_exception (hr);
+			cominterop_set_hr_error (&error, hr);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 	} else {
 		g_assert_not_reached ();
@@ -3115,6 +3196,7 @@ gpointer mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
 static 
 gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 {
+	MonoError error;
 	int i;
 	int dim = mono_marshal_safearray_get_dim (safearray);
 	gboolean ret= TRUE;
@@ -3127,7 +3209,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 
 		hr = mono_marshal_safe_array_get_ubound (safearray, i+1, &ubound);
 		if (hr < 0) {
-			cominterop_raise_hr_exception (hr);
+			cominterop_set_hr_error (&error, hr);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 
 		if (++pIndices[i] <= ubound) {
@@ -3136,7 +3219,8 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 
 		hr = mono_marshal_safe_array_get_lbound (safearray, i+1, &lbound);
 		if (hr < 0) {
-			cominterop_raise_hr_exception (hr);
+			cominterop_set_hr_error (&error, hr);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 
 		pIndices[i] = lbound;
@@ -3211,15 +3295,19 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 static 
 void mono_marshal_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
 {
+	MonoError error;
 #ifdef HOST_WIN32
 	int hr = SafeArrayPutElement (safearray, indices, value);
-	if (hr < 0)
-		cominterop_raise_hr_exception (hr);
+	if (hr < 0) {
+		cominterop_set_hr_error (&error, hr);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+	}
 #else
 	if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		int hr = safe_array_put_element_ms (safearray, (glong *)indices, (void **)value);
 		if (hr < 0) {
-			cominterop_raise_hr_exception (hr);
+			cominterop_set_hr_error (&error, hr);
+			mono_error_raise_exception (&error); /* FIXME don't raise here */
 		}
 	} else
 		g_assert_not_reached ();
