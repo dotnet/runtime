@@ -138,7 +138,6 @@ def static getStressModeDisplayName(def scenario) {
     return displayStr
 }
 
-
 // Generates the string for creating a file that sets environment variables
 // that makes it possible to run stress modes.  Writes the script to a file called
 // SetStressModes.[sh/cmd]
@@ -157,14 +156,37 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
     else {
         // For these we don't use a script, we use directly
         stepScript += "echo Setting variables for ${stressModeName}\n"
+        stepScript += "rm -f ${stepScriptLocation}\n"
         stressModeVars.each{ k, v -> 
             // Write out what we are writing to the script file
             stepScript += "echo Setting ${k}=${v}\n"
             // Write out the set itself to the script file`
-            stepScript += "export ${k}=${v}\n"
+            stepScript += "echo export ${k}=${v} >> ${stepScriptLocation}\n"
         }
     }
     return stepScript
+}
+
+// Corefx doesn't have a support to pass stress mode environment variables. This function
+// generates commands to set or export environment variables
+def static getStressModeEnvSetCmd(def os, def stressModeName) {
+    def envVars = Constants.jitStressModeScenarios[stressModeName]
+    def setEnvVars = ''
+    if (os == 'Windows_NT') {
+        envVars.each{ VarName, Value   ->
+            if (VarName != '') {
+                setEnvVars += "set ${VarName}=${Value}\n"
+            }
+        }
+    }
+    else {
+        envVars.each{ VarName, Value   ->
+            if (VarName != '') {
+                setEnvVars += "export ${VarName}=${Value}\n"
+            }
+        }
+    }
+    return setEnvVars
 }
 
 // Calculates the name of the build job based on some typical parameters.
@@ -957,16 +979,10 @@ combinedScenarios.each { scenario ->
                                                 buildCommands += 'powershell foreach ($x in get-childitem -force) { if (\$x.name -ne \'clr\') { move-item $x clr }}'
                                                 buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                                 
-                                                def setEnvVar = ''
-                                                def envVars = Constants.jitStressModeScenarios[scenario]
-                                                envVars.each{ VarName, Value   ->
-                                                    if (VarName != '') {
-                                                        setEnvVar += "&& set ${VarName}=${Value} "
-                                                    }
-                                                }
+                                                buildCommands += getStressModeEnvSetCmd(os, scenario);
                                                 
                                                 // Run corefx build and testing
-                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 ${setEnvVar} && Build.cmd /p:ConfigurationGroup=Release  /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
+                                                buildCommands += "cd fx && call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && Build.cmd /p:ConfigurationGroup=Release  /p:BUILDTOOLS_OVERRIDE_RUNTIME=%WORKSPACE%\\clr\\bin\\Product\\Windows_NT.x64.Checked "                                                                                              
                                             }
                                             else {
                                                 def stepScriptLocation = "%WORKSPACE%\\bin\\tests\\SetStressModes.bat"
@@ -1086,11 +1102,12 @@ combinedScenarios.each { scenario ->
                                         buildCommands += "git clone https://github.com/dotnet/corefx fx"
                                         
                                         // Set environment variable
-                                        def setEnvVar = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)                                        
-                                                
+                                        def setEnvVar = getStressModeEnvSetCmd(os, scenario)                                        
+
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
-                                        buildCommands += "${setEnvVar} cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        buildCommands += setEnvVar
+                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
@@ -1266,7 +1283,7 @@ combinedScenarios.each { scenario ->
                             }
                         
                             // Corefx native component.
-							// Pull from main folder in corefx for now, once the corefx branchify PR gets merged this will chnage
+                            // Pull from main folder in corefx for now, once the corefx branchify PR gets merged this will chnage
                             def corefxFolder = Utilities.getFolderName('dotnet/corefx')
                             copyArtifacts("${corefxFolder}/nativecomp_${os.toLowerCase()}_release") {
                                 includePatterns('bin/**')
@@ -1291,24 +1308,28 @@ combinedScenarios.each { scenario ->
                         
                             // Execute the tests
                             // If we are running a stress mode, we'll set those variables first
-                            def stressModeString = ""
+                            def testEnvOpt = ""
                             if (Constants.jitStressModeScenarios.containsKey(scenario)) {
-                                stressModeString = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], null)
+                                def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
+                                def createScriptCmds = genStressModeScriptStep(os, scenario, Constants.jitStressModeScenarios[scenario], scriptFileName)
+                                if (createScriptCmds != "") {
+                                    shell("${createScriptCmds}")
+                                    testEnvOpt = "--test-env=" + scriptFileName
+                                }
                             }
                             
                             if (isGCStressRelatedTesting(scenario)) {
                                 shell('./init-tools.sh')
                             }
                             
-                            shell("""${stressModeString}
-        ./tests/runtest.sh \\
+                            shell("""./tests/runtest.sh \\
             --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
             --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
             --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
             --mscorlibDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
             --coreFxBinDir=\"\${WORKSPACE}/bin/${osGroup}.AnyCPU.Release\" \\
             --coreFxNativeBinDir=\"\${WORKSPACE}/bin/${osGroup}.${architecture}.Release\" \\
-            ${serverGCString}""")
+            ${testEnvOpt} ${serverGCString}""")
                         }
                     }
 
