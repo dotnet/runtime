@@ -1042,15 +1042,30 @@ gboolean nursery_canaries_enabled (void);
 #define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
 
 #define CHECK_CANARY_FOR_OBJECT(addr,fail) if (nursery_canaries_enabled ()) {	\
-				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((GCObject *) (addr));	\
+				guint size = sgen_safe_object_get_size_unaligned ((GCObject *) (addr)); \
+				char* canary_ptr = (char*) (addr) + size;	\
 				if (!CANARY_VALID(canary_ptr)) {	\
-					char canary_copy[CANARY_SIZE +1];	\
-					strncpy (canary_copy, canary_ptr, CANARY_SIZE);	\
-					canary_copy[CANARY_SIZE] = 0;	\
-					if ((fail))			\
-						g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
-					else				\
-						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
+					char *window_start, *window_end; \
+					window_start = (char*)(addr) - 128; \
+					if (!sgen_ptr_in_nursery (window_start)) \
+						window_start = sgen_get_nursery_start (); \
+					window_end = (char*)(addr) + 128; \
+					if (!sgen_ptr_in_nursery (window_end)) \
+						window_end = sgen_get_nursery_end (); \
+					fprintf (stderr, "\nCANARY ERROR - Type:%s Size:%d Address:%p Data:\n", sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), size,  (char*) addr); \
+					fwrite (addr, sizeof (char), size, stderr); \
+					fprintf (stderr, "\nCanary zone (next 12 chars):\n"); \
+					fwrite (canary_ptr, sizeof (char), 12, stderr); \
+					fprintf (stderr, "\nOriginal canary string:\n"); \
+					fwrite (CANARY_STRING, sizeof (char), 8, stderr); \
+					for (int x = -8; x <= 8; x++) { \
+						if (canary_ptr + x < (char*) addr); \
+							continue; \
+						if (CANARY_VALID(canary_ptr +x)) \
+							fprintf (stderr, "\nCANARY ERROR - canary found at offset %d\n", x); \
+					} \
+					fprintf (stderr, "\nSurrounding nursery (%p - %p):\n", window_start, window_end); \
+					fwrite (window_start, sizeof (char), window_end - window_start, stderr); \
 				} }
 
 /*
