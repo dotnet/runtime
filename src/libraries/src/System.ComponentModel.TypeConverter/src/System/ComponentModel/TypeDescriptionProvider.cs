@@ -14,7 +14,7 @@ namespace System.ComponentModel
     /// </devdoc>
     public abstract class TypeDescriptionProvider
     {
-        private TypeDescriptionProvider _parent;
+        private readonly TypeDescriptionProvider _parent;
         private EmptyCustomTypeDescriptor _emptyDescriptor;
 
         /// <devdoc>
@@ -127,6 +127,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(instance));
             }
+
             return new IExtenderProvider[0];
         }
 
