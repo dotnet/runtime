@@ -173,6 +173,8 @@ JIT/Regression/Dev11/External/dev11_145295/CSharpPart/CSharpPart.sh
 Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/MarshalArrayByValTest.sh
 Interop/StringMarshalling/LPSTR/LPSTRTest/LPSTRTest.sh
 Interop/StringMarshalling/LPTSTR/LPTSTRTest/LPTSTRTest.sh
+Interop/MarshalAPI/OffsetOf/OffsetOf/OffsetOf.sh
+Interop/MarshalAPI/Miscellaneous/MarshalClassTests/MarshalClassTests.sh
 GC/API/WeakReference/Finalize2/Finalize2.sh
 GC/API/WeakReference/NullHandle/NullHandle.sh
 GC/API/WeakReference/Target/Target.sh
