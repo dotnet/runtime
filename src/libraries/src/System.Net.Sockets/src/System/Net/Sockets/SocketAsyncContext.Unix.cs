@@ -449,7 +449,14 @@ namespace System.Net.Sockets
         private bool _nonBlockingSet;
         private bool _connectFailed;
 
-        private object _queueLock = new object();
+        //
+        // We have separate locks for send and receive queues, so they can proceed concurrently.  Accept and connect
+        // use the same lock as send, since they can't happen concurrently anyway.  
+        //
+        private readonly object _sendAcceptConnectLock = new object();
+        private readonly object _receiveLock = new object();
+
+        private readonly object _registerLock = new object();
 
         public SocketAsyncContext(SafeCloseSocket socket)
         {
@@ -458,36 +465,43 @@ namespace System.Net.Sockets
 
         private void Register(Interop.Sys.SocketEvents events)
         {
-            Debug.Assert(Monitor.IsEntered(_queueLock), "Expected _queueLock to be held");
-            Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None, $"Unexpected values: _registeredEvents={_registeredEvents}, events={events}");
-
-            if (!_asyncEngineToken.WasAllocated)
+            lock (_registerLock)
             {
-                _asyncEngineToken = new SocketAsyncEngine.Token(this);
+                Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None, $"Unexpected values: _registeredEvents={_registeredEvents}, events={events}");
+
+                if (!_asyncEngineToken.WasAllocated)
+                {
+                    _asyncEngineToken = new SocketAsyncEngine.Token(this);
+                }
+
+                events |= _registeredEvents;
+
+                Interop.Error errorCode;
+                if (!_asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode))
+                {
+                    // TODO: throw an appropriate exception
+                    throw new Exception(string.Format("SocketAsyncContext.Register: {0}", errorCode));
+                }
+
+                _registeredEvents = events;
             }
-
-            events |= _registeredEvents;
-
-            Interop.Error errorCode;
-            if (!_asyncEngineToken.TryRegister(_socket, _registeredEvents, events, out errorCode))
-            {
-                // TODO: throw an appropriate exception
-                throw new Exception(string.Format("SocketAsyncContext.Register: {0}", errorCode));
-            }
-
-            _registeredEvents = events;
         }
 
         public void Close()
         {
-            lock (_queueLock)
+            // Drain queues
+            lock (_sendAcceptConnectLock)
             {
-                // Drain queues
-
                 _acceptOrConnectQueue.StopAndAbort();
                 _sendQueue.StopAndAbort();
+            }
+            lock (_receiveLock)
+            {
                 _receiveQueue.StopAndAbort();
+            }
 
+            lock (_registerLock)
+            { 
                 // Freeing the token will prevent any future event delivery.  This socket will be unregistered
                 // from the event port automatically by the OS when it's closed.
                 _asyncEngineToken.Free();
@@ -535,36 +549,36 @@ namespace System.Net.Sockets
         private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, bool maintainOrder, out bool isStopped)
             where TOperation : AsyncOperation
         {
-            lock (_queueLock)
+            // Exactly one of the two queue locks must be held by the caller
+            Debug.Assert(Monitor.IsEntered(_sendAcceptConnectLock) ^ Monitor.IsEntered(_receiveLock));
+
+            switch (queue.State)
             {
-                switch (queue.State)
-                {
-                    case QueueState.Stopped:
-                        isStopped = true;
+                case QueueState.Stopped:
+                    isStopped = true;
+                    return false;
+
+                case QueueState.Clear:
+                    break;
+
+                case QueueState.Set:
+                    if (queue.IsEmpty || !maintainOrder)
+                    {
+                        isStopped = false;
+                        queue.State = QueueState.Clear;
                         return false;
-
-                    case QueueState.Clear:
-                        break;
-
-                    case QueueState.Set:
-                        if (queue.IsEmpty || !maintainOrder)
-                        {
-                            isStopped = false;
-                            queue.State = QueueState.Clear;
-                            return false;
-                        }
-                        break;
-                }
-
-                if ((_registeredEvents & events) == Interop.Sys.SocketEvents.None)
-                {
-                    Register(events);
-                }
-
-                queue.Enqueue(operation);
-                isStopped = false;
-                return true;
+                    }
+                    break;
             }
+
+            if ((_registeredEvents & events) == Interop.Sys.SocketEvents.None)
+            {
+                Register(events);
+            }
+
+            queue.Enqueue(operation);
+            isStopped = false;
+            return true;
         }
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, int timeout, out int acceptedFd)
@@ -589,8 +603,16 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                while (true)
                 {
+                    lock (_sendAcceptConnectLock)
+                    {
+                        if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                        {
+                            break;
+                        }
+                    }
+
                     if (isStopped)
                     {
                         acceptedFd = -1;
@@ -649,8 +671,16 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+            while (true)
             {
+                lock (_sendAcceptConnectLock)
+                {
+                    if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                    {
+                        break;
+                    }
+                }
+
                 if (isStopped)
                 {
                     return SocketError.OperationAborted;
@@ -689,8 +719,16 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                while (true)
                 {
+                    lock (_sendAcceptConnectLock)
+                    {
+                        if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                        {
+                            break;
+                        }
+                    }
+
                     if (isStopped)
                     {
                         return SocketError.Interrupted;
@@ -736,8 +774,16 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+            while (true)
             {
+                lock (_sendAcceptConnectLock)
+                {
+                    if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                    {
+                        break;
+                    }
+                }
+
                 if (isStopped)
                 {
                     return SocketError.OperationAborted;
@@ -771,7 +817,7 @@ namespace System.Net.Sockets
             try
             {
                 ReceiveOperation operation;
-                lock (_queueLock)
+                lock (_receiveLock)
                 {
                     SocketFlags receivedFlags;
                     SocketError errorCode;
@@ -832,7 +878,7 @@ namespace System.Net.Sockets
         {
             SetNonBlocking();
 
-            lock (_queueLock)
+            lock (_receiveLock)
             {
                 int bytesReceived;
                 SocketFlags receivedFlags;
@@ -900,7 +946,7 @@ namespace System.Net.Sockets
             {
                 ReceiveOperation operation;
 
-                lock (_queueLock)
+                lock (_receiveLock)
                 {
                     SocketFlags receivedFlags;
                     SocketError errorCode;
@@ -961,7 +1007,7 @@ namespace System.Net.Sockets
 
             ReceiveOperation operation;
 
-            lock (_queueLock)
+            lock (_receiveLock)
             {
                 int bytesReceived;
                 SocketFlags receivedFlags;
@@ -1016,7 +1062,7 @@ namespace System.Net.Sockets
             {
                 ReceiveMessageFromOperation operation;
 
-                lock (_queueLock)
+                lock (_receiveLock)
                 {
                     SocketFlags receivedFlags;
                     SocketError errorCode;
@@ -1082,7 +1128,7 @@ namespace System.Net.Sockets
         {
             SetNonBlocking();
 
-            lock (_queueLock)
+            lock (_receiveLock)
             {
                 int bytesReceived;
                 SocketFlags receivedFlags;
@@ -1153,7 +1199,7 @@ namespace System.Net.Sockets
             {
                 SendOperation operation;
 
-                lock (_queueLock)
+                lock (_sendAcceptConnectLock)
                 {
                     bytesSent = 0;
                     SocketError errorCode;
@@ -1209,7 +1255,7 @@ namespace System.Net.Sockets
         {
             SetNonBlocking();
 
-            lock (_queueLock)
+            lock (_sendAcceptConnectLock)
             {
                 int bytesSent = 0;
                 SocketError errorCode;
@@ -1277,7 +1323,7 @@ namespace System.Net.Sockets
             {
                 SendOperation operation;
 
-                lock (_queueLock)
+                lock (_sendAcceptConnectLock)
                 {
                     bytesSent = 0;
                     int bufferIndex = 0;
@@ -1335,7 +1381,7 @@ namespace System.Net.Sockets
         {
             SetNonBlocking();
 
-            lock (_queueLock)
+            lock (_sendAcceptConnectLock)
             {
                 int bufferIndex = 0;
                 int offset = 0;
@@ -1387,26 +1433,32 @@ namespace System.Net.Sockets
 
         public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
-            lock (_queueLock)
+            if ((events & Interop.Sys.SocketEvents.Error) != 0)
             {
-                if ((events & Interop.Sys.SocketEvents.Error) != 0)
-                {
-                    // Set the Read and Write flags as well; the processing for these events
-                    // will pick up the error.
-                    events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
-                }
+                // Set the Read and Write flags as well; the processing for these events
+                // will pick up the error.
+                events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
+            }
 
-                if ((events & Interop.Sys.SocketEvents.Read) != 0)
+            if ((events & Interop.Sys.SocketEvents.Read) != 0)
+            {
+                lock (_sendAcceptConnectLock)
                 {
                     if (_acceptOrConnectQueue.AllOfType<AcceptOperation>())
                     {
                         _acceptOrConnectQueue.Complete(this);
                     }
-
-                    _receiveQueue.Complete(this);
                 }
 
-                if ((events & Interop.Sys.SocketEvents.Write) != 0)
+                lock (_receiveLock)
+                {
+                    _receiveQueue.Complete(this);
+                }
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Write) != 0)
+            {
+                lock (_sendAcceptConnectLock)
                 {
                     if (_acceptOrConnectQueue.AllOfType<ConnectOperation>())
                     {
