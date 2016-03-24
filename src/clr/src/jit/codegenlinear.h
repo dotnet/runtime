@@ -54,7 +54,7 @@
 #endif
 
 #ifdef _TARGET_ARM64_
-    void                genCodeForLdObj(GenTreeOp* treeNode);
+    void                genCodeForObj(GenTreeObj* treeNode);
 #endif
 
 #ifdef FEATURE_SIMD
@@ -67,6 +67,7 @@
 
     instruction         getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned *ival = nullptr);
     void                genSIMDScalarMove(var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
+    void                genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
     void                genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitArray(GenTreeSIMD* simdNode);

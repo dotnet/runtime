@@ -6586,7 +6586,7 @@ bool                Compiler::fgIsCommaThrow(GenTreePtr tree,
 GenTreePtr          Compiler::fgIsIndirOfAddrOfLocal(GenTreePtr tree)
 {
     GenTreePtr res = nullptr;
-    if (tree->OperGet() == GT_LDOBJ || tree->OperIsIndir())
+    if (tree->OperGet() == GT_OBJ || tree->OperIsIndir())
     {
         GenTreePtr addr = tree->gtOp.gtOp1;
 
@@ -17707,25 +17707,6 @@ void                Compiler::fgSetTreeSeqHelper(GenTreePtr tree)
             return;
         }
 
-        /* Handle the case of an LDOBJ with a field list */
-
-        GenTreePtr lclVarTree;
-        if ((oper == GT_LDOBJ) &&
-            tree->gtLdObj.gtFldTreeList != NULL &&
-            impIsAddressInLocal(tree->gtOp.gtOp1, &lclVarTree))
-        {
-            GenTreePtr* fldTreeList = tree->gtLdObj.gtFldTreeList;
-            unsigned fieldCount = lvaTable[lclVarTree->gtLclVarCommon.gtLclNum].lvFieldCnt;
-
-            for (unsigned i = 0; i < fieldCount; i++)
-            {
-                if (fldTreeList[i] != NULL)
-                {
-                    fgSetTreeSeqHelper(fldTreeList[i]);
-                }
-            }
-        }
-
         /* Check for a nilary operator */
 
         if (op1 == NULL)
@@ -20749,27 +20730,6 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, GenTree* node)
         {
             GenTreePtr lclVarTree;
             expectedPrevTree = tree->gtOp.gtOp1;
-            if ((tree->gtOper == GT_LDOBJ) &&
-                (tree->gtLdObj.gtFldTreeList != NULL) &&
-                impIsAddressInLocal(tree->gtOp.gtOp1, &lclVarTree))
-            {
-                GenTreePtr* fldTreeList = tree->gtLdObj.gtFldTreeList;
-                GenTreePtr prev = NULL;
-                unsigned fieldCount = lvaTable[lclVarTree->gtLclVarCommon.gtLclNum].lvFieldCnt;
-
-                for (unsigned i = 0; i < fieldCount; i++)
-                {
-                    if (fldTreeList[i] != NULL)
-                    {
-                        if (prev != NULL)
-                        {
-                            noway_assert(fldTreeList[i]->gtPrev == prev);
-                        }
-                        prev = fldTreeList[i];
-                    }
-                }
-                noway_assert(lclVarTree->gtPrev == prev);
-            }
         }
         else if (tree->OperIsBinary() && tree->gtOp.gtOp1)
         {
@@ -21525,7 +21485,7 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
     noway_assert((tree->gtOper == GT_LCL_VAR) ||
                  (tree->gtOper == GT_FIELD)   ||
                  (tree->gtOper == GT_IND)     ||
-                 (tree->gtOper == GT_LDOBJ)   ||
+                 (tree->gtOper == GT_OBJ)     ||
                  tree->OperIsSIMD()           ||
                  // tree->gtOper == GT_CALL     || cannot get address of call.
                  // tree->gtOper == GT_MKREFANY || inlining should've been aborted due to mkrefany opcode.
@@ -21534,7 +21494,7 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
 
     switch (tree->OperGet())
     {
-    case GT_LDOBJ:
+    case GT_OBJ:
     case GT_IND:
         return tree->gtOp.gtOp1;
 
@@ -22431,29 +22391,19 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     /* Create the temp assignment for this argument */
 
-                    CORINFO_CLASS_HANDLE structType = DUMMY_INIT(0);
+                    CORINFO_CLASS_HANDLE structHnd = DUMMY_INIT(0);
 
                     if (varTypeIsStruct(lclVarInfo[argNum].lclTypeInfo))
                     {
-                        if (inlArgInfo[argNum].argNode->gtOper == GT_LDOBJ)
-                        {
-                            structType = inlArgInfo[argNum].argNode->gtLdObj.gtClass;
-                        }
-                        else if (inlArgInfo[argNum].argNode->gtOper == GT_MKREFANY)
-                        {
-                            structType = lclVarInfo[argNum].lclVerTypeInfo.GetClassHandle();
-                        }
-                        else
-                        {
-                            noway_assert(!"Unknown struct type");
-                        }
+                        structHnd = gtGetStructHandleIfPresent(inlArgInfo[argNum].argNode);
+                        noway_assert(structHnd != NO_CLASS_HANDLE);
                     }
 
                     // Unsafe value cls check is not needed for argTmpNum here since in-linee compiler instance would have
                     // iterated over these and marked them accordingly.
                     impAssignTempGen(inlArgInfo[argNum].argTmpNum,
                                      inlArgInfo[argNum].argNode,
-                                     structType,
+                                     structHnd,
                                      (unsigned)CHECK_SPILL_NONE,
                                      & afterStmt,
                                      callILOffset,
@@ -22496,10 +22446,10 @@ GenTreePtr      Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     noway_assert(inlArgInfo[argNum].argIsUsed == false);
 
-                    if (inlArgInfo[argNum].argNode->gtOper == GT_LDOBJ ||
+                    if (inlArgInfo[argNum].argNode->gtOper == GT_OBJ ||
                         inlArgInfo[argNum].argNode->gtOper == GT_MKREFANY)
                     {
-                        // Don't put GT_LDOBJ node under a GT_COMMA.
+                        // Don't put GT_OBJ node under a GT_COMMA.
                         // Codegen can't deal with it.
                         // Just hang the address here in case there are side-effect.
                         newStmt = gtNewStmt(gtUnusedValNode(inlArgInfo[argNum].argNode->gtOp.gtOp1), callILOffset);

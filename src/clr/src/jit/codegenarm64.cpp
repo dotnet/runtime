@@ -2512,7 +2512,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                         // this will set both the Z and V flags only when dividendReg is MinInt
                         //
                         emit->emitIns_R_R_R(INS_adds, size, REG_ZR, dividendReg, dividendReg);
-                        
                         inst_JMP(jmpNotEqual, sdivLabel);                  // goto sdiv if the Z flag is clear
                         genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN);      // if the V flags is set throw ArithmeticException
 
@@ -2850,8 +2849,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         genProduceReg(treeNode);
         break;
 
-    case GT_LDOBJ:
-        genCodeForLdObj(treeNode->AsOp());
+    case GT_OBJ:
+        genCodeForObj(treeNode->AsObj());
         break;
 
     case GT_MULHI:
@@ -6537,36 +6536,36 @@ CodeGen::genIntrinsic(GenTreePtr treeNode)
 }
 
 //---------------------------------------------------------------------
-// genCodeForLdObj - generate code for a GT_LDOBJ node
+// genCodeForObj - generate code for a GT_OBJ node
 //
 // Arguments
-//    treeNode - the GT_LDOBJ node
+//    treeNode - the GT_OBJ node
 //
 // Return value:
 //    None
 //
 
-void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
+void CodeGen::genCodeForObj(GenTreeObj* objNode)
 {
-    assert(treeNode->OperGet() == GT_LDOBJ);
+    assert(objNode->OperGet() == GT_OBJ);
 
-    GenTree* addr = treeNode->gtOp.gtOp1;
+    GenTree* addr = objNode->gtOp.gtOp1;
     genConsumeAddress(addr);
      
     regNumber addrReg    = addr->gtRegNum;
-    regNumber targetReg  = treeNode->gtRegNum;
-    var_types targetType = treeNode->TypeGet();
+    regNumber targetReg  = objNode->gtRegNum;
+    var_types targetType = objNode->TypeGet();
     emitter * emit       = getEmitter();
 
-    noway_assert(targetType == TYP_STRUCT); 
+    noway_assert(varTypeIsStruct(targetType)); 
     noway_assert(targetReg != REG_NA);
 
-    CORINFO_CLASS_HANDLE ldObjClass = treeNode->gtLdObj.gtClass;
-    int structSize = compiler->info.compCompHnd->getClassSize(ldObjClass);
+    CORINFO_CLASS_HANDLE objClass = objNode->gtObj.gtClass;
+    int structSize = compiler->info.compCompHnd->getClassSize(objClass);
 
     assert(structSize <= 2*TARGET_POINTER_SIZE);
     BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-    compiler->info.compCompHnd->getClassGClayout(ldObjClass, &gcPtrs[0]);
+    compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
 
     var_types type0 = compiler->getJitGCType(gcPtrs[0]);
     var_types type1 = compiler->getJitGCType(gcPtrs[1]);
@@ -6603,7 +6602,7 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
     //             ldp     x2, x3, [x0]
     //
     if (remainingSize == 2*TARGET_POINTER_SIZE)
-    { 
+    {
         if (hasGCpointers)
         {
             // We have GC pointers use two ldr instructions
@@ -6691,7 +6690,7 @@ void CodeGen::genCodeForLdObj(GenTreeOp* treeNode)
         noway_assert(targetReg != addrReg);
         getEmitter()->emitIns_R_R_I(INS_ldr, deferAttr, targetReg, addrReg, deferOffset);
     }
-    genProduceReg(treeNode);
+    genProduceReg(objNode);
 }
 
 
