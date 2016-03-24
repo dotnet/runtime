@@ -4704,22 +4704,8 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-
-// static
-const LPCSTR FriendAssemblyDescriptor::AllInternalsVisibleProperty = "AllInternalsVisible";
-
-#endif // FEATURE_FRAMEWORK_INTERNAL
-
 FriendAssemblyDescriptor::FriendAssemblyDescriptor()
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    : m_crstFriendMembersCache(CrstFriendAccessCache)  
-#endif // FEATURE_FRAMEWORK_INTERNAL
 {
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    LockOwner lockOwner  = { &m_crstFriendMembersCache, IsOwnerOfCrst };
-    m_htFriendMembers.Init(FriendMemberHashSize, &lockOwner);
-#endif // FEATURE_FRAMEWORK_INTERNAL
 }
 
 FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
@@ -4740,19 +4726,6 @@ FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
         delete pFriendAssemblyName;
 #endif // FEATURE_FUSION
     }
-
-#if FEATURE_FRAMEWORK_INTERNAL
-    ArrayList::Iterator itPartialAccessAssemblies = m_alPartialAccessFriendAssemblies.Iterate();
-    while (itPartialAccessAssemblies.Next())
-    {
-        FriendAssemblyName_t *pFriendAssemblyName = static_cast<FriendAssemblyName_t *>(itPartialAccessAssemblies.GetElement());
-#ifdef FEATURE_FUSION
-        pFriendAssemblyName->Release();
-#else // FEATURE_FUSION
-        delete pFriendAssemblyName;
-#endif // FEATURE_FUSION
-    }
-#endif // FEATURE_FRAMEWORK_INTERNAL
 }
 
 
@@ -4890,33 +4863,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
             }
 #endif // !defined(FEATURE_CORECLR)
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-            bool fAllInternalsVisible = true;
-
-            // Framework internal is only available for framework assemblies
-            if (pAssembly->IsProfileAssembly())
-            {
-                //
-                // Find out if the friend assembly is allowed access to all internals, or only selected internals.
-                // We default to true for compatibility with behavior of previous runtimes.
-                //
-
-                CaNamedArg allInternalsArg;
-                allInternalsArg.InitBoolField(const_cast<LPCSTR>(AllInternalsVisibleProperty), true);
-                hr = ParseKnownCaNamedArgs(cap, &allInternalsArg, 1);
-                if (FAILED(hr) && hr != META_E_CA_UNKNOWN_ARGUMENT)
-                {
-                    IfFailThrow(hr);
-                }
-
-                fAllInternalsVisible = !!allInternalsArg.val.u1;
-            }
-
-            pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName, fAllInternalsVisible);
-
-#else // FEATURE_FRAMEWORK_INTERNAL
             pFriendAssemblies->AddFriendAssembly(pFriendAssemblyName);
-#endif // FEATURE_FRAMEWORK_INTERNAL
 
             pFriendAssemblyName.SuppressRelease();
         }
@@ -4940,11 +4887,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
 //    see if an assembly has already been added to the friend assembly list.
 //
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-void FriendAssemblyDescriptor::AddFriendAssembly(FriendAssemblyName_t *pFriendAssembly, bool fAllInternalsVisible)
-#else // FEATURE_FRAMEWORK_INTERNAL
 void FriendAssemblyDescriptor::AddFriendAssembly(FriendAssemblyName_t *pFriendAssembly)
-#endif // FEATURE_FRAMEWORK_INTERNAL
 {
     CONTRACTL
     {
@@ -4954,18 +4897,7 @@ void FriendAssemblyDescriptor::AddFriendAssembly(FriendAssemblyName_t *pFriendAs
     }
     CONTRACTL_END
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    if (fAllInternalsVisible)
-#endif // FEATURE_FRAMEWORK_INTERNAL
-    {
-        m_alFullAccessFriendAssemblies.Append(pFriendAssembly);
-    }
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    else
-    {
-        m_alPartialAccessFriendAssemblies.Append(pFriendAssembly);
-    }
-#endif // FEATURE_FRAMEWORK_INTERNAL
+    m_alFullAccessFriendAssemblies.Append(pFriendAssembly);
 }
 
 void FriendAssemblyDescriptor::AddSubjectAssembly(FriendAssemblyName_t *pFriendAssembly)
@@ -4980,95 +4912,6 @@ void FriendAssemblyDescriptor::AddSubjectAssembly(FriendAssemblyName_t *pFriendA
 
     m_subjectAssemblies.Append(pFriendAssembly);
 }
-
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-
-//
-// Helpers to see if a member is internal, and therefore could be considered for friend access.
-//
-
-// static
-bool FriendAssemblyDescriptor::FriendAccessAppliesTo(FieldDesc *pFD)
-{
-    LIMITED_METHOD_CONTRACT;
-        
-    DWORD dwFieldProtection = pFD->GetFieldProtection();
-    return IsFdAssembly(dwFieldProtection) ||
-           IsFdFamANDAssem(dwFieldProtection) ||
-           IsFdFamORAssem(dwFieldProtection);
-}
-
-// static
-bool FriendAssemblyDescriptor::FriendAccessAppliesTo(MethodDesc *pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-        
-    DWORD dwMethodProtection = pMD->GetAttrs();
-    return IsMdAssem(dwMethodProtection) ||
-           IsMdFamANDAssem(dwMethodProtection) ||
-           IsMdFamORAssem(dwMethodProtection);
-}
-
-// static
-bool FriendAssemblyDescriptor::FriendAccessAppliesTo(MethodTable *pMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD dwTypeProtection = pMT->GetClass()->GetProtection();
-    return IsTdNotPublic(dwTypeProtection) ||
-           IsTdNestedAssembly(dwTypeProtection) ||
-           IsTdNestedFamANDAssem(dwTypeProtection) ||
-           IsTdNestedFamORAssem(dwTypeProtection);
-}
-
-//
-// Helper methods to get the metadata token for items that may have the FriendAccessAllowed attribute.
-//
-
-// static
-mdToken FriendAssemblyDescriptor::GetMetadataToken(FieldDesc *pFD)
-{
-    WRAPPER_NO_CONTRACT;
-    return pFD->GetMemberDef();
-}
-
-// static
-mdToken FriendAssemblyDescriptor::GetMetadataToken(MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-    return pMD->GetMemberDef();
-}
-
-// static
-mdToken FriendAssemblyDescriptor::GetMetadataToken(MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-    return pMT->GetCl();
-}
-
-// static
-bool FriendAssemblyDescriptor::HasFriendAccessAttribute(IMDInternalImport *pMDImport, mdToken tkMember)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pMDImport));
-    }
-    CONTRACTL_END;
-
-    const BYTE *pbAttribute = NULL;
-    ULONG cbAttribute = 0;
-    HRESULT hr = pMDImport->GetCustomAttributeByName(tkMember,
-                                                     FRIEND_ACCESS_ALLOWED_ATTRIBUTE_TYPE,
-                                                     reinterpret_cast<const void **>(&pbAttribute),
-                                                     &cbAttribute);
-    IfFailThrow(hr);
-
-    return hr == S_OK;
-}
-
-#endif // FEATURE_FRAMEWORK_INTERNAL
 
 // static
 bool FriendAssemblyDescriptor::IsAssemblyOnList(PEAssembly *pAssembly, const ArrayList &alAssemblyNames)

@@ -5015,8 +5015,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         if (visibilityCheck && Security::IsTransparencyEnforcementEnabled())
         {
             // In CoreCLR RMA means visibility checks always succeed if the target is user code.
-            if ((m_accessCheckType == kRestrictedMemberAccess || m_accessCheckType == kRestrictedMemberAccessNoTransparency) &&
-                !Security::IsMicrosoftPlatform(pTargetMT->GetAssembly()->GetSecurityDescriptor()))
+            if (m_accessCheckType == kRestrictedMemberAccess || m_accessCheckType == kRestrictedMemberAccessNoTransparency)
                 return TRUE;
 
             // Accessing private types/members in platform code.
@@ -5036,10 +5035,9 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     MethodDesc* pCallerMD = pContext->GetCallerMethod();
 
-    // Platform critical code is exempted from all accessibility rules, regardless of the AccessCheckType.
+    // critical code is exempted from all accessibility rules, regardless of the AccessCheckType.
     if (pCallerMD != NULL && 
-        !Security::IsMethodTransparent(pCallerMD)
-        && Security::IsMicrosoftPlatform(pCallerMD->GetAssembly()->GetSecurityDescriptor()))
+        !Security::IsMethodTransparent(pCallerMD))
     {
         return TRUE;
     }
@@ -5237,15 +5235,6 @@ BOOL AccessCheckOptions::DemandMemberAccessOrFail(AccessCheckContext *pContext, 
         {
             return TRUE;
         }
-
-#if defined(FEATURE_CORECLR) && defined(CROSSGEN_COMPILE)
-        CONSISTENCY_CHECK_MSGF(!pContext->GetCallerAssembly()->GetManifestFile()->IsProfileAssembly(), 
-            ("Accessibility check failed while compiling platform assembly. Are you missing FriendAccessAllowed attribute? Caller: %s %s %s Target: %s", 
-                pContext->GetCallerAssembly() ? pContext->GetCallerAssembly()->GetSimpleName() : "",
-                pContext->GetCallerMT() ? pContext->GetCallerMT()->GetDebugClassName() : "",
-                pContext->GetCallerMethod() ? pContext->GetCallerMethod()->GetName() : "",
-                pTargetMT ? pTargetMT->GetDebugClassName() : ""));
-#endif
 
         if (m_fThrowIfTargetIsInaccessible)
         {

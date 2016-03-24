@@ -55,10 +55,6 @@
 #include "clrprivtypecachewinrt.h"
 #endif
 
-#ifdef FEATURE_WINDOWSPHONE
-#include "thetestkey.h"
-#endif
-
 GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
 
 #ifdef FEATURE_IMPLICIT_TLS
@@ -1588,15 +1584,6 @@ HRESULT CorHost2::_CreateAppDomain(
 #ifdef FEATURE_CORECLR
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
-
-#if defined(FEATURE_WINDOWSPHONE) && defined(FEATURE_STRONGNAME_TESTKEY_ALLOWED)
-    if((APPDOMAIN_SET_TEST_KEY & dwFlags) && (m_dwStartupFlags & STARTUP_SINGLE_APPDOMAIN))
-    {
-        const BYTE testKey[] = { TEST_KEY_VALUE };
-        memcpy_s(g_rbTestKeyBuffer + sizeof(GUID)*2, sizeof(testKey), testKey, sizeof(testKey));
-    }
-#endif // defined(FEATURE_WINDOWSPHONE) && defined(FEATURE_STRONGNAME_TESTKEY_ALLOWED)
-
 #endif // FEATURE_CORECLR
 
     if(wszFriendlyName == NULL)
@@ -1631,30 +1618,9 @@ HRESULT CorHost2::_CreateAppDomain(
     {
         pDomain->SetIgnoreUnhandledExceptions();
     }
-
-    // Enable interop for all assemblies if the host has asked us to.
-    if (dwFlags & APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP)
-    {
-        pDomain->SetEnablePInvokeAndClassicComInterop();
-    }
-    
-    if (dwFlags & APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS)
-    {
-        pDomain->SetAllowPlatformSpecificAppAssemblies();
-    }
-
-    if (dwFlags & APPDOMAIN_ENABLE_ASSEMBLY_LOADFILE)
-    {
-        pDomain->SetAllowLoadFile();
-    }
-
-    if (dwFlags & APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT)
-    {
-        pDomain->DisableTransparencyEnforcement();
-    }
 #endif // FEATURE_CORECLR
 
-    if (dwFlags & APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE)    
+    if (dwFlags & APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE)
         pDomain->SetReversePInvokeCannotEnter();
 
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)

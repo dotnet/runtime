@@ -527,9 +527,6 @@ FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
     FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
     FCFuncElement("CompareSig", SignatureNative::CompareSig)
-#if FEATURE_LEGACYNETCF
-    FCFuncElement("CompareSigForAppCompat", SignatureNative::CompareSigForAppCompat)
-#endif
 FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)
@@ -569,10 +566,10 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("IsConstructor", RuntimeMethodHandle::IsConstructor)    
     QCFuncElement("Destroy", RuntimeMethodHandle::Destroy)
     FCFuncElement("GetResolver", RuntimeMethodHandle::GetResolver)
-    QCFuncElement("GetCallerType", RuntimeMethodHandle::GetCallerType)
     FCFuncElement("GetLoaderAllocator", RuntimeMethodHandle::GetLoaderAllocator)
     FCFuncElement("GetSpecialSecurityFlags", ReflectionInvocation::GetSpecialSecurityFlags)
 #ifndef FEATURE_CORECLR
+    QCFuncElement("GetCallerType", RuntimeMethodHandle::GetCallerType)
     FCFuncElement("PerformSecurityCheck", ReflectionInvocation::PerformSecurityCheck)
 #endif // FEATURE_CORECLR
 FCFuncEnd()
@@ -687,7 +684,6 @@ FCFuncStart(gCOMClassWriter)
     QCFuncElement("SetMethodIL", COMDynamicWrite::SetMethodIL)
     QCFuncElement("TermCreateClass", COMDynamicWrite::TermCreateClass)
     QCFuncElement("DefineField", COMDynamicWrite::DefineField)
-    QCFuncElement("SetPInvokeData", COMDynamicWrite::SetPInvokeData)
     QCFuncElement("DefineProperty", COMDynamicWrite::DefineProperty)
     QCFuncElement("DefineEvent", COMDynamicWrite::DefineEvent)
     QCFuncElement("DefineMethodSemantics", COMDynamicWrite::DefineMethodSemantics)
@@ -698,6 +694,7 @@ FCFuncStart(gCOMClassWriter)
     QCFuncElement("SetClassLayout", COMDynamicWrite::SetClassLayout)
     QCFuncElement("SetParamInfo", COMDynamicWrite::SetParamInfo)
 #ifndef FEATURE_CORECLR
+    QCFuncElement("SetPInvokeData", COMDynamicWrite::SetPInvokeData)
     QCFuncElement("SetFieldMarshal", COMDynamicWrite::SetFieldMarshal)
 #endif // FEATURE_CORECLR
     QCFuncElement("SetConstantValue", COMDynamicWrite::SetConstantValue)
@@ -736,9 +733,9 @@ FCFuncEnd()
 #endif // FEATURE_CAS_POLICY
 
 FCFuncStart(gCompatibilitySwitchFuncs)
-    FCFuncElement("IsEnabledInternalCall", CompatibilitySwitch::IsEnabled)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
 #ifndef FEATURE_CORECLR
+    FCFuncElement("IsEnabledInternalCall", CompatibilitySwitch::IsEnabled)
     FCFuncElement("GetAppContextOverridesInternalCall", CompatibilitySwitch::GetAppContextOverrides)
 #endif
 FCFuncEnd()
@@ -970,8 +967,6 @@ FCFuncStart(gAppDomainFuncs)
 #ifndef FEATURE_CORECLR
     FCFuncElement("GetSecurityDescriptor", AppDomainNative::GetSecurityDescriptor)
     FCFuncElement("nIsDefaultAppDomainForEvidence", AppDomainNative::IsDefaultAppDomainForEvidence)
-#endif
-#if defined(FEATURE_CORESYSTEM) || !defined(FEATURE_CORECLR)
     FCFuncElement("nGetAssemblies", AppDomainNative::GetAssemblies)
 #endif
 #ifdef FEATURE_CAS_POLICY
@@ -987,7 +982,9 @@ FCFuncStart(gAppDomainFuncs)
 #if FEATURE_COMINTEROP
     FCFuncElement("nSetDisableInterfaceCache", AppDomainNative::SetDisableInterfaceCache)
 #endif // FEATURE_COMINTEROP
+#ifndef FEATURE_CORECLR
     FCFuncElement("_nExecuteAssembly", AppDomainNative::ExecuteAssembly)
+#endif
 #ifdef FEATURE_VERSIONING
     FCFuncElement("nCreateContext", AppDomainNative::CreateContext)
 #endif // FEATURE_VERSIONING
@@ -1099,11 +1096,8 @@ FCFuncStart(gAssemblyFuncs)
     FCFuncElement("IsNewPortableAssembly", AssemblyNative::IsNewPortableAssembly)
 #endif
     FCFuncElement("nLoadImage", AssemblyNative::LoadImage)
-#ifdef FEATURE_CORECLR    
-    QCFuncElement("nLoadFromUnmanagedArray", AssemblyNative::LoadFromUnmanagedArray)    
-#endif    
-    FCFuncElement("nLoadFile", AssemblyNative::LoadFile)
 #ifndef FEATURE_CORECLR
+    FCFuncElement("nLoadFile", AssemblyNative::LoadFile)
     QCFuncElement("LoadModule", AssemblyNative::LoadModule)
 #endif  // FEATURE_CORECLR
     QCFuncElement("GetType", AssemblyNative::GetType)
@@ -1120,9 +1114,6 @@ FCFuncStart(gAssemblyFuncs)
     QCFuncElement("GetExportedTypes", AssemblyNative::GetExportedTypes)
     FCFuncElement("GetManifestResourceNames", AssemblyNative::GetManifestResourceNames)
     QCFuncElement("GetEntryPoint", AssemblyNative::GetEntryPoint)
-#ifdef FEATURE_LEGACYNETCF
-    QCFuncElement("GetIsProfileAssembly", AssemblyNative::GetIsProfileAssembly)
-#endif // FEATURE_LEGACYNETCF
     QCFuncElement("IsAllSecurityTransparent", AssemblyNative::IsAllSecurityTransparent)
     QCFuncElement("IsAllSecurityCritical", AssemblyNative::IsAllSecurityCritical)
 #ifndef FEATURE_CORECLR
@@ -1178,16 +1169,14 @@ FCFuncEnd()
 #endif // defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 FCFuncStart(gAssemblyNameFuncs)
-#ifndef FEATURE_CORECLR
-    FCFuncElement("nGetFileInformation", AssemblyNameNative::GetFileInformation)
-#endif // FEATURE_CORECLR
+    FCFuncElement("nInit", AssemblyNameNative::Init)
     FCFuncElement("nToString", AssemblyNameNative::ToString)
     FCFuncElement("nGetPublicKeyToken", AssemblyNameNative::GetPublicKeyToken)
 #ifndef FEATURE_CORECLR
     FCFuncElement("EscapeCodeBase", AssemblyNameNative::EscapeCodeBase)
-#endif // !FEATURE_CORECLR 
-    FCFuncElement("nInit", AssemblyNameNative::Init)
     FCFuncElement("ReferenceMatchesDefinitionInternal", AssemblyNameNative::ReferenceMatchesDefinition)
+    FCFuncElement("nGetFileInformation", AssemblyNameNative::GetFileInformation)
+#endif // !FEATURE_CORECLR 
 FCFuncEnd()
 
 FCFuncStart(gLoaderAllocatorFuncs)
@@ -1355,9 +1344,9 @@ FCFuncStart(gThreadFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
-    FCFuncElement("PostQueuedCompletionStatus", ThreadPoolNative::CorPostQueuedCompletionStatus)
 #ifndef FEATURE_CORECLR
-    FCFuncElement("GetAvailableThreadsNative", ThreadPoolNative::CorGetAvailableThreads)    
+    FCFuncElement("PostQueuedCompletionStatus", ThreadPoolNative::CorPostQueuedCompletionStatus)
+    FCFuncElement("GetAvailableThreadsNative", ThreadPoolNative::CorGetAvailableThreads)
 #endif // FEATURE_CORECLR
     FCFuncElement("SetMinThreadsNative", ThreadPoolNative::CorSetMinThreads)
     FCFuncElement("GetMinThreadsNative", ThreadPoolNative::CorGetMinThreads)
