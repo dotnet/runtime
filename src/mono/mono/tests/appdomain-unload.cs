@@ -98,7 +98,10 @@ class CrossDomainTester : MarshalByRefObject
 public class Tests
 {
 	public static int Main(string[] args) {
-		return TestDriver.RunTests (typeof (Tests), args);
+		if (args.Length == 0)
+			return TestDriver.RunTests (typeof (Tests), new String[] { "-v" });
+		else
+			return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	public static int test_0_unload () {
