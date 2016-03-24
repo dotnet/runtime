@@ -18,10 +18,6 @@ remove_definitions(
     -DFEATURE_VERSIONING_LOG
 )
 
-if(WIN32)
-    add_definitions(-MT)
-endif(WIN32)
-
 if(FEATURE_READYTORUN)
     add_definitions(-DFEATURE_READYTORUN_COMPILER)
 endif(FEATURE_READYTORUN)
