@@ -134,7 +134,7 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWST
 // ProfilingAPIUtility::ShouldInjectProfAPIFault
 //
 // Description: 
-//    Determines whether COMPLUS_ProfAPIFault is set to a bitmask value
+//    Determines whether COMPlus_ProfAPIFault is set to a bitmask value
 //    with the specified flag set
 //
 // Return Value:

@@ -40,7 +40,6 @@
     <CppCompile Include="..\DebugLog.cpp" />
     <CppCompile Include="..\BindingLog.cpp" />
     <CppCompile Include="..\CDebugLog.cpp" />
-    <CppCompile Include="..\Compatibility.cpp" />
     <CppCompile Include="..\TextualIdentityParser.cpp" />
     <CppCompile Include="..\AssemblyIdentityCache.cpp" />
     <CppCompile Include="..\CLRPrivBinderAssemblyLoadContext.cpp" Condition="'$(FeatureHostAssemblyResolver)' == 'true'"/>

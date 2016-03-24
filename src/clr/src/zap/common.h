@@ -29,6 +29,7 @@
 
 #include "utilcode.h"
 #include "corjit.h"
+#include "jithost.h"
 #include "corcompile.h"
 #include "iceefilegen.h"
 #ifdef FEATURE_FUSION

@@ -2736,22 +2736,6 @@ namespace System {
             Contract.EndContractBlock();
             return this;
         }
-    
-        private static bool IsBOMWhitespace(char c)
-        {
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && c == '\xFEFF')
-            {
-                // Dev11 450846 quirk:
-                // NetCF treats the BOM as a whitespace character when performing trim operations.
-                return true;
-            }
-            else
-#endif
-            {
-                return false;
-            }
-        }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by
         // Char.IsWhiteSpace.
@@ -2775,13 +2759,13 @@ namespace System {
             //Trim specified characters.
             if (trimType !=TrimTail)  {
                 for (start=0; start < this.Length; start++) {
-                    if (!Char.IsWhiteSpace(this[start]) && !IsBOMWhitespace(this[start])) break;
+                    if (!Char.IsWhiteSpace(this[start])) break;
                 }
             }
             
             if (trimType !=TrimHead) {
                 for (end= Length -1; end >= start;  end--) {
-                    if (!Char.IsWhiteSpace(this[end])  && !IsBOMWhitespace(this[start])) break;
+                    if (!Char.IsWhiteSpace(this[end])) break;
                 }
             }
 
@@ -2884,16 +2868,72 @@ namespace System {
         // Replaces all instances of oldChar with newChar.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern String ReplaceInternal(char oldChar, char newChar);
-
         public String Replace(char oldChar, char newChar)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == this.Length);
             Contract.EndContractBlock();
 
-            return ReplaceInternal(oldChar, newChar);
+            if (oldChar == newChar)
+                return this;
+
+            unsafe
+            {
+                int remainingLength = Length;
+
+                fixed (char* pChars = &m_firstChar)
+                {
+                    char* pSrc = pChars;
+
+                    while (remainingLength > 0)
+                    {
+                        if (*pSrc == oldChar)
+                        {
+                            break;
+                        }
+
+                        remainingLength--;
+                        pSrc++;
+                    }
+                }
+
+                if (remainingLength == 0)
+                    return this;
+
+                String result = FastAllocateString(Length);
+
+                fixed (char* pChars = &m_firstChar)
+                {
+                    fixed (char* pResult = &result.m_firstChar)
+                    {
+                        int copyLength = Length - remainingLength;
+
+                        //Copy the characters already proven not to match.
+                        if (copyLength > 0)
+                        {
+                            wstrcpy(pResult, pChars, copyLength);
+                        }
+
+                        //Copy the remaining characters, doing the replacement as we go.
+                        char* pSrc = pChars + copyLength;
+                        char* pDst = pResult + copyLength;
+
+                        do
+                        {
+                            char currentChar = *pSrc;
+                            if (currentChar == oldChar)
+                                currentChar = newChar;
+                            *pDst = currentChar;
+
+                            remainingLength--;
+                            pSrc++;
+                            pDst++;
+                        } while (remainingLength > 0);
+                    }
+                }
+
+                return result;
+            }
         }
 
         // This method contains the same functionality as StringBuilder Replace. The only difference is that
@@ -2910,21 +2950,7 @@ namespace System {
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.EndContractBlock();
 
-            string s = ReplaceInternal(oldValue, newValue);
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhoneMango)
-            {
-                int i = s.IndexOf('\0');
-                if (i > 0)
-                    return s.Substring(0, i);
-                else
-                    return s;
-            }
-            else
-#endif
-            {
-                return s;
-            }
+            return ReplaceInternal(oldValue, newValue);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated

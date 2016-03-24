@@ -24,6 +24,7 @@ Abstract:
 #include "pal/init.h"
 #include "pal/critsect.h"
 #include "pal/virtual.h"
+#include "pal/environ.h"
 #include "common.h"
 #include "pal/map.hpp"
 #include "pal/thread.hpp"
@@ -2288,6 +2289,7 @@ void * MAPMapPEFile(HANDLE hFile)
     void * retval;
 #if _DEBUG
     bool forceRelocs = false;
+    char* envVar;
 #endif
 
     ENTRY("MAPMapPEFile (hFile=%p)\n", hFile);
@@ -2393,13 +2395,18 @@ void * MAPMapPEFile(HANDLE hFile)
     }
 
 #if _DEBUG
-    char * envVar;
-    envVar = getenv("PAL_ForceRelocs");
-    if (envVar && strlen(envVar) > 0)
+    envVar = EnvironGetenv("PAL_ForceRelocs");
+    if (envVar)
     {
-        forceRelocs = true;
-        TRACE_(LOADER)("Forcing rebase of image\n");
+        if (strlen(envVar) > 0)
+        {
+            forceRelocs = true;
+            TRACE_(LOADER)("Forcing rebase of image\n");
+        }
+
+        InternalFree(envVar);
     }
+
     void * pForceRelocBase;
     pForceRelocBase = NULL;
     if (forceRelocs)

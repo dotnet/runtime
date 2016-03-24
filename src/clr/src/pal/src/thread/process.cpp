@@ -30,7 +30,7 @@ Abstract:
 #include "pal/critsect.h"
 #include "pal/dbgmsg.h"
 #include "pal/utils.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 
@@ -49,6 +49,10 @@ Abstract:
 #include <sys/resource.h>
 #include <debugmacrosext.h>
 #include <semaphore.h>
+
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 
 using namespace CorUnix;
 
@@ -150,11 +154,11 @@ PROCGetProcessStatus(
     );
 
 static BOOL getFileName(LPCWSTR lpApplicationName, LPWSTR lpCommandLine,
-                        char *lpFileName);
-static char ** buildArgv(LPCWSTR lpCommandLine, LPSTR lpAppPath,
+                        PathCharString& lpFileName);
+static char ** buildArgv(LPCWSTR lpCommandLine, PathCharString& lpAppPath,
                          UINT *pnArg, BOOL prependLoader);
-static BOOL getPath(LPCSTR lpFileName, UINT iLen, LPSTR  lpPathFileName);
-static int checkFileType(char *lpFileName);
+static BOOL getPath(PathCharString& lpFileName, PathCharString& lpPathFileName);
+static int checkFileType(LPCSTR lpFileName);
 static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode,
                            BOOL bTerminateUnconditionally);
 
@@ -545,7 +549,6 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char * lpFileName;
     PathCharString lpFileNamePS;
     char **lppArgv = NULL;
     UINT nArg;
@@ -660,41 +663,31 @@ CorUnix::InternalCreateProcess(
         }
     }
 
-    lpFileName = lpFileNamePS.OpenStringBuffer(MAX_LONGPATH-1);
-    if (NULL == lpFileName)
-    {
-        palError = ERROR_NOT_ENOUGH_MEMORY;
-        goto InternalCreateProcessExit;
-    }
-    if (!getFileName(lpApplicationName, lpCommandLine, lpFileName))
+    if (!getFileName(lpApplicationName, lpCommandLine, lpFileNamePS))
     {
         ERROR("Can't find executable!\n");
         palError = ERROR_FILE_NOT_FOUND;
         goto InternalCreateProcessExit;
     }
     
-    lpFileNamePS.CloseBuffer(MAX_LONGPATH-1);
     /* check type of file */
-    iRet = checkFileType(lpFileName);
+    iRet = checkFileType(lpFileNamePS);
 
     switch (iRet)
     {
         case FILE_ERROR: /* file not found, or not an executable */
-            WARN ("File is not valid (%s)", lpFileName);
+            WARN ("File is not valid (%s)", lpFileNamePS.GetString());
             palError = ERROR_FILE_NOT_FOUND;
             goto InternalCreateProcessExit;
 
         case FILE_PE: /* PE/COFF file */
-            /*Get the path name where the PAL DLL was loaded from
-             * I am using MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1)
-             * as the length as I have to append the file name at the end */
-            if ( PAL_GetPALDirectoryA( lpFileName,
-                                      (MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
+            //Get the path name where the PAL DLL was loaded from
+            if ( PAL_GetPALDirectoryA( lpFileNamePS ))
             {
-                if ((strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), "/") != SAFECRT_SUCCESS) ||
-                    (strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
+                if (lpFileNamePS.Append("/", 1) == FALSE  ||
+                    lpFileNamePS.Append( PROCESS_PELOADER_FILENAME, strlen(PROCESS_PELOADER_FILENAME)) == FALSE)
                 {
-                    ERROR("strcpy_s/strcat_s failed!\n");
+                    ERROR("Append failed!\n");
                     palError = ERROR_INTERNAL_ERROR;
                     goto InternalCreateProcessExit;
                 }
@@ -713,7 +706,7 @@ CorUnix::InternalCreateProcess(
             break;  /* nothing to do */
 
         case FILE_DIR:/*Directory*/
-            WARN ("File is a Directory (%s)", lpFileName);
+            WARN ("File is a Directory (%s)", lpFileNamePS.GetString());
             palError = ERROR_ACCESS_DENIED;
             goto InternalCreateProcessExit;
             break;
@@ -726,7 +719,7 @@ CorUnix::InternalCreateProcess(
 
     /* build Argument list, lppArgv is allocated in buildArgv function and
        requires to be freed */
-    lppArgv = buildArgv(lpCommandLine, lpFileName, &nArg, iRet==1);
+    lppArgv = buildArgv(lpCommandLine, lpFileNamePS, &nArg, iRet==1);
 
     /* set the Environment variable */
     if (lpEnvironment != NULL)
@@ -968,11 +961,11 @@ CorUnix::InternalCreateProcess(
 
         if (EnvironmentArray)
         {
-            execve(lpFileName, lppArgv, EnvironmentArray);
+            execve(lpFileNamePS, lppArgv, EnvironmentArray);
         }
         else
         {
-            execve(lpFileName, lppArgv, palEnvironment);
+            execve(lpFileNamePS, lppArgv, palEnvironment);
         }
 
         /* if we get here, it means the execve function call failed so just exit */
@@ -1375,9 +1368,6 @@ PAL_SetShutdownCallback(
     g_shutdownCallback = callback;
 }
 
-#define RuntimeStartupSemaphoreName "/RuntimeStartupEvent%08x"
-#define RuntimeContinueSemaphoreName "/RuntimeContinueEvent%08x"
-
 static bool IsCoreClrModule(const char* pModulePath)
 {
     // Strip off everything up to and including the last slash in the path to get name
@@ -1391,15 +1381,29 @@ static bool IsCoreClrModule(const char* pModulePath)
     return _stricmp(pModuleName, MAKEDLLNAME_A("coreclr")) == 0;
 }
 
+// Build the semaphore names using the PID and a value that can be used for distinguishing
+// between processes with the same PID (which ran at different times). This is to avoid
+// cases where a prior process with the same PID exited abnormally without having a chance
+// to clean up its semaphore. 
+// Note to anyone modifying these names in the future: Semaphore names on OS X are limited
+// to SEM_NAME_LEN characters, including null. SEM_NAME_LEN is 31 (at least on OS X 10.11).
+static const char* RuntimeStartupSemaphoreName = "/clrst%08x%016llx";
+static const char* RuntimeContinueSemaphoreName = "/clrco%08x%016llx";
+
 class PAL_RuntimeStartupHelper
 {
     LONG m_ref;
     bool m_canceled;
-    DWORD m_processId;
     PPAL_STARTUP_CALLBACK m_callback;
     PVOID m_parameter;
     DWORD m_threadId;
     HANDLE m_threadHandle;
+
+    DWORD m_processId;
+
+    // A value that, used in conjunction with the process ID, uniquely identifies a process.
+    // See the format we use for debugger semaphore names for why this is necessary.
+    UINT64 m_processIdDisambiguationKey;
 
     // Debugger waits on this semaphore and the runtime signals it on startup.
     sem_t *m_startupSem;
@@ -1411,11 +1415,11 @@ public:
     PAL_RuntimeStartupHelper(DWORD dwProcessId, PPAL_STARTUP_CALLBACK pfnCallback, PVOID parameter) :
         m_ref(1),
         m_canceled(false),
-        m_processId(dwProcessId),
         m_callback(pfnCallback),
         m_parameter(parameter),
         m_threadId(0),
         m_threadHandle(NULL),
+        m_processId(dwProcessId),
         m_startupSem(SEM_FAILED),
         m_continueSem(SEM_FAILED)
     {
@@ -1426,19 +1430,29 @@ public:
         if (m_startupSem != SEM_FAILED)
         {
             char startupSemName[NAME_MAX - 4];
-            sprintf_s(startupSemName, sizeof(startupSemName), RuntimeStartupSemaphoreName, m_processId);
+            sprintf_s(startupSemName,
+                      sizeof(startupSemName),
+                      RuntimeStartupSemaphoreName,
+                      m_processId,
+                      m_processIdDisambiguationKey);
 
             sem_close(m_startupSem);
             sem_unlink(startupSemName);
         }
+
         if (m_continueSem != SEM_FAILED)
         {
             char continueSemName[NAME_MAX - 4];
-            sprintf_s(continueSemName, sizeof(continueSemName), RuntimeContinueSemaphoreName, m_processId);
+            sprintf_s(continueSemName,
+                      sizeof(continueSemName),
+                      RuntimeContinueSemaphoreName,
+                      m_processId,
+                      m_processIdDisambiguationKey);
 
             sem_close(m_continueSem);
             sem_unlink(continueSemName);
         }
+
         if (m_threadHandle != NULL)
         {
             CloseHandle(m_threadHandle);
@@ -1447,7 +1461,7 @@ public:
 
     LONG AddRef()
     {
-        LONG ref = InterlockedIncrement(&m_ref);    
+        LONG ref = InterlockedIncrement(&m_ref);
         return ref;
     }
 
@@ -1468,8 +1482,23 @@ public:
         char continueSemName[NAME_MAX - 4];
         PAL_ERROR pe = NO_ERROR;
 
-        sprintf_s(startupSemName, sizeof(startupSemName), RuntimeStartupSemaphoreName, m_processId);
-        sprintf_s(continueSemName, sizeof(continueSemName), RuntimeContinueSemaphoreName, m_processId);
+        // See semaphore name format for details about this value. We store it so that
+        // it can be used by the cleanup code that removes the semaphore with sem_unlink.
+        INDEBUG(BOOL disambiguationKeyRet = )
+        GetProcessIdDisambiguationKey(m_processId, &m_processIdDisambiguationKey);
+        _ASSERTE(disambiguationKeyRet == TRUE || m_processIdDisambiguationKey == 0);
+
+        sprintf_s(startupSemName,
+                  sizeof(startupSemName),
+                  RuntimeStartupSemaphoreName,
+                  m_processId,
+                  m_processIdDisambiguationKey);
+
+        sprintf_s(continueSemName,
+                  sizeof(continueSemName),
+                  RuntimeContinueSemaphoreName,
+                  m_processId,
+                  m_processIdDisambiguationKey);
 
         TRACE("PAL_RuntimeStartupHelper.Register startup '%s' continue '%s'\n", startupSemName, continueSemName);
 
@@ -1630,7 +1659,7 @@ public:
             }
         }
 
-        if (pe != NO_ERROR)
+        if (pe != NO_ERROR && !m_canceled)
         {
             SetLastError(pe);
             m_callback(NULL, NULL, m_parameter);
@@ -1747,8 +1776,11 @@ PAL_NotifyRuntimeStarted()
     sem_t *continueSem = SEM_FAILED;
     BOOL result = TRUE;
 
-    sprintf_s(szStartupSemName, sizeof(szStartupSemName), RuntimeStartupSemaphoreName, gPID);
-    sprintf_s(szContinueSemName, sizeof(szContinueSemName), RuntimeContinueSemaphoreName, gPID);
+    UINT64 processIdDisambiguationKey = 0;
+    GetProcessIdDisambiguationKey(gPID, &processIdDisambiguationKey);
+
+    sprintf_s(szStartupSemName, sizeof(szStartupSemName), RuntimeStartupSemaphoreName, gPID, processIdDisambiguationKey);
+    sprintf_s(szContinueSemName, sizeof(szContinueSemName), RuntimeContinueSemaphoreName, gPID, processIdDisambiguationKey);
 
     TRACE("PAL_NotifyRuntimeStarted opening startup '%s' continue '%s'\n", szStartupSemName, szContinueSemName);
 
@@ -1797,6 +1829,102 @@ exit:
         sem_close(continueSem);
     }
     return result;
+}
+
+/*++
+ Function:
+  GetProcessIdDisambiguationKey
+
+  Get a numeric value that can be used to disambiguate between processes with the same PID,
+  provided that one of them is still running. The numeric value can mean different things
+  on different platforms, so it should not be used for any other purpose. Under the hood,
+  it is implemented based on the creation time of the process.
+--*/
+BOOL
+GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
+{
+    if (disambiguationKey == nullptr)
+    {
+        _ASSERTE(!"disambiguationKey argument cannot be null!");
+        return FALSE;
+    }
+
+    *disambiguationKey = 0;
+
+#if defined(__APPLE__)
+
+    // On OS X, we return the process start time expressed in Unix time (the number of seconds
+    // since the start of the Unix epoch).
+    struct kinfo_proc info = {};
+    size_t size = sizeof(info);
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
+
+    if (ret == 0)
+    {
+        timeval procStartTime = info.kp_proc.p_starttime;
+        long secondsSinceEpoch = procStartTime.tv_sec;
+
+        *disambiguationKey = secondsSinceEpoch;
+        return TRUE;
+    }
+    else
+    {
+        _ASSERTE(!"Failed to get start time of a process.");
+        return FALSE;
+    }
+
+#elif defined(HAVE_PROCFS_CTL)
+
+    // Here we read /proc/<pid>/stat file to get the start time for the process.
+    // We return this value (which is expressed in jiffies since boot time).
+
+    // Making something like: /proc/123/stat
+    char statFileName[64];
+
+    INDEBUG(int chars = )
+    snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
+    _ASSERTE(chars > 0 && chars <= sizeof(statFileName));
+
+    FILE *statFile = fopen(statFileName, "r");
+    if (statFile == nullptr) 
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return FALSE;
+    }
+
+    char *line = nullptr;
+    size_t lineLen = 0;
+    if (getline(&line, &lineLen, statFile) == -1)
+    {
+        _ASSERTE(!"Failed to getline from the stat file for a process.");
+        return FALSE;
+    }
+
+    unsigned long long starttime;
+
+    // scanf format specifiers for the fields in the stat file are provided by 'man proc'.
+    int sscanfRet = sscanf(line, 
+        "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+         &starttime);
+
+    if (sscanfRet != 1)
+    {
+        _ASSERTE(!"Failed to parse stat file contents with sscanf.");
+        return FALSE;
+    }
+
+    free(line);
+    fclose(statFile);
+
+    *disambiguationKey = starttime;
+    return TRUE;
+
+#else
+    // If this is not OS X and we don't have /proc, we just return FALSE.
+    WARN(!"GetProcessIdDisambiguationKey was called but is not implemented on this platform!");
+    return FALSE;
+#endif
 }
 
 /*++
@@ -2344,7 +2472,7 @@ CreateProcessModules(
 
 #if defined(__APPLE__)
 
-    // For OSx, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
+    // For OS X, the "vmmap" command outputs something similar to the /proc/*/maps file so popen the
     // command and read the relevant lines:
     //
     // ...
@@ -3454,7 +3582,7 @@ BOOL
 getFileName(
        LPCWSTR lpApplicationName,
        LPWSTR lpCommandLine,
-       char *lpPathFileName)
+       PathCharString& lpPathFileName)
 {
     LPWSTR lpEnd;
     WCHAR wcEnd;
@@ -3464,32 +3592,43 @@ getFileName(
 
     if (lpApplicationName)
     {
-        int path_size = MAX_LONGPATH;
-        lpTemp = lpPathFileName;
+        int length = WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
+                                            NULL, 0, NULL, NULL);
+
         /* if only a file name is specified, prefix it with "./" */
         if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
             (*lpApplicationName != '\\'))
         {
-            if (strcpy_s(lpPathFileName, MAX_LONGPATH, "./") != SAFECRT_SUCCESS)
+            length += 2;
+            lpTemp = lpPathFileName.OpenStringBuffer(length);
+
+            if (strcpy_s(lpTemp, length, "./") != SAFECRT_SUCCESS)
             {
                 ERROR("strcpy_s failed!\n");
                 return FALSE;
             }
-
             lpTemp+=2;
-            path_size -= 2;
+
+       }
+       else
+       {
+            lpTemp = lpPathFileName.OpenStringBuffer(length);
        }
 
         /* Convert to ASCII */
-        if (!WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
-                                 lpTemp, path_size, NULL, NULL))
+        length = WideCharToMultiByte(CP_ACP, 0, lpApplicationName, -1,
+                                     lpTemp, length, NULL, NULL);
+        if (length == 0)
         {
+            lpPathFileName.CloseBuffer(0);
             ASSERT("WideCharToMultiByte failure\n");
             return FALSE;
         }
+        
+        lpPathFileName.CloseBuffer(length -1);
 
         /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpPathFileName);
+        FILEDosToUnixPathA(lpTemp);
 
         return TRUE;
     }
@@ -3557,14 +3696,14 @@ getFileName(
             return FALSE;
         }
 
-        lpFileNamePS.CloseBuffer(size);
+        lpFileNamePS.CloseBuffer(size - 1);
         /* restore last character */
         *lpEnd = wcEnd;
 
         /* Replace '\' by '/' */
         FILEDosToUnixPathA(lpFileName);
 
-        if (!getPath(lpFileName, MAX_LONGPATH, lpPathFileName))
+        if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
             return FALSE;
@@ -3698,7 +3837,7 @@ Determines if the passed in file is a managed executable
 --*/
 static
 int
-isManagedExecutable(LPSTR lpFileName)
+isManagedExecutable(LPCSTR lpFileName)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     DWORD cbRead;
@@ -3768,7 +3907,7 @@ Return:
 --*/
 static
 int
-checkFileType( char *lpFileName)
+checkFileType( LPCSTR lpFileName)
 { 
     struct stat stat_data;
 
@@ -3842,7 +3981,7 @@ static
 char **
 buildArgv(
       LPCWSTR lpCommandLine,
-      LPSTR lpAppPath,
+      PathCharString& lpAppPath,
       UINT *pnArg,
       BOOL prependLoader)
 {
@@ -3866,7 +4005,7 @@ buildArgv(
 
     pThread = InternalGetCurrentThread();
     /* make sure to allocate enough space, up for the worst case scenario */
-    int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + strlen(lpAppPath) + 2);
+    int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + lpAppPath.GetCount() + 2);
     lpAsciiCmdLine = (char *) InternalMalloc(iLength);
 
     if (lpAsciiCmdLine == NULL)
@@ -4124,7 +4263,6 @@ Abstract:
 
 Parameters:
     IN  lpFileName: file name to search in the path
-    IN  iLen: length of lpPathFileName buffer
     OUT lpPathFileName: returned string containing the path and the filename
 
 Return:
@@ -4134,9 +4272,8 @@ Return:
 static
 BOOL
 getPath(
-      LPCSTR lpFileName,
-      UINT iLen,
-      LPSTR  lpPathFileName)
+      PathCharString& lpFileNameString,
+      PathCharString& lpPathFileName)
 {
     LPSTR lpPath;
     LPSTR lpNext;
@@ -4146,15 +4283,16 @@ getPath(
     INT nextLen;
     INT slashLen;
     CPalThread *pThread = NULL;
+    LPCSTR lpFileName = lpFileNameString.GetString();
 
     /* if a path is specified, only look there */
     if(strchr(lpFileName, '/'))
     {
         if (access (lpFileName, F_OK) == 0)
         {
-            if (strcpy_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS)
+            if (lpPathFileName.Set(lpFileNameString))
             {
-                TRACE("strcpy_s failed!\n");
+                TRACE("Set of StackString failed!\n");
                 return FALSE;
             }
 
@@ -4174,42 +4312,48 @@ getPath(
     if (lpwstr)
     {
         /* convert path to multibyte, check buffer size */
-        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPathFileName, iLen,
+        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, NULL, 0,
             NULL, NULL);
+        
+        if (!lpPathFileName.Reserve(n + lpFileNameString.GetCount() + 1 ))
+        {
+            ERROR("StackString Reserve failed!\n");
+            return FALSE;
+        }
+
+        lpPath = lpPathFileName.OpenStringBuffer(n);
+
+        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPath, n,
+            NULL, NULL);
+
         if (n == 0)
         {
+            lpPathFileName.CloseBuffer(0);
             ASSERT("WideCharToMultiByte failure!\n");
             return FALSE;
         }
+        
+        lpPathFileName.CloseBuffer(n - 1);
 
-        n += strlen(lpFileName) + 2;
-        if (n > (INT)iLen)
-        {
-            ERROR("Buffer too small for full path!\n");
-            return FALSE;
-        }
-
-        if ((strcat_s(lpPathFileName, iLen, "/") != SAFECRT_SUCCESS) ||
-            (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
-        {
-            ERROR("strcat_s failed!\n");
-            return FALSE;
-        }
+        lpPathFileName.Append("/", 1);
+        lpPathFileName.Append(lpFileNameString);
 
         if (access(lpPathFileName, F_OK) == 0)
         {
-            TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName);
+            TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName.GetString());
             return TRUE;
         }
     }
 
     /* then try the current directory */
-    if ((strcpy_s(lpPathFileName, iLen, "./") != SAFECRT_SUCCESS) ||
-        (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
+    if (!lpPathFileName.Reserve(lpFileNameString.GetCount()  + 2))
     {
-        ERROR("strcpy_s/strcat_s failed!\n");
+        ERROR("StackString Reserve failed!\n");
         return FALSE;
     }
+
+    lpPathFileName.Set("./", 2);
+    lpPathFileName.Append(lpFileNameString);
 
     if (access (lpPathFileName, R_OK) == 0)
     {
@@ -4218,19 +4362,13 @@ getPath(
     }
 
     pThread = InternalGetCurrentThread();
+
     /* Then try to look in the path */
-    int iLen2 = strlen(MiscGetenv("PATH"))+1;
-    lpPath = (LPSTR) InternalMalloc(iLen2);
+    lpPath = EnvironGetenv("PATH");
 
     if (!lpPath)
     {
-        ERROR("couldn't allocate memory for $PATH\n");
-        return FALSE;
-    }
-
-    if (strcpy_s(lpPath, iLen2, MiscGetenv("PATH")) != SAFECRT_SUCCESS)
-    {
-        ERROR("strcpy_s failed!");
+        ERROR("EnvironGetenv returned NULL for $PATH\n");
         return FALSE;
     }
 
@@ -4256,25 +4394,24 @@ getPath(
         nextLen = strlen(lpNext);
         slashLen = (lpNext[nextLen-1] == '/') ? 0:1;
 
-        /* verify if the path fit in the OUT parameter */
-        if (slashLen + nextLen + strlen (lpFileName) >= iLen)
+        if (!lpPathFileName.Reserve(nextLen + lpFileNameString.GetCount() + 1))
         {
             InternalFree(lpPath);
-            ERROR("buffer too small for full path\n");
+            ERROR("StackString ran out of memory for full path\n");
             return FALSE;
         }
-
-        strcpy_s (lpPathFileName, iLen, lpNext);
-
-        /* append a '/' if there's no '/' at the end of the path */
-        if ( slashLen == 1 )
-        {
-            strcat_s (lpPathFileName, iLen, "/");
-        }
         
-        strcat_s (lpPathFileName, iLen, lpFileName);
+        lpPathFileName.Set(lpNext, nextLen);
+            
+        if( slashLen == 1)
+        {
+            /* append a '/' if there's no '/' at the end of the path */
+            lpPathFileName.Append("/", 1);
+        }
 
-        if (access (lpPathFileName, F_OK) == 0)
+        lpPathFileName.Append(lpFileNameString);
+
+        if ( access (lpPathFileName, F_OK) == 0)
         {
             TRACE("Found %s in $PATH element %s\n", lpFileName, lpNext);
             InternalFree(lpPath);

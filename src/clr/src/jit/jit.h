@@ -199,6 +199,18 @@
 #define __PLACEMENT_NEW_INLINE     // don't bring in the global placement new, it is easy to make a mistake
                                    // with our new(compiler*) pattern.
 
+#if COR_JIT_EE_VER > 460
+#define NO_CLRCONFIG    // Don't bring in the usual CLRConfig infrastructure, since the JIT uses the JIT/EE
+                        // interface to retrieve config values.
+
+// This is needed for contract.inl when FEATURE_STACK_PROBE is enabled.
+struct CLRConfig
+{
+    static struct ConfigKey { } EXTERNAL_NO_SO_NOT_MAINLINE;
+    static DWORD GetConfigValue(const ConfigKey& key) { return 0; }
+};
+#endif
+
 #include "utilcode.h"   // this defines assert as _ASSERTE
 #include "host.h"       // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
@@ -520,8 +532,7 @@ extern      JitOptions jitOpts;
 template<typename T>
 inline T UninitializedWord()
 {
-    static ConfigDWORD fDefaultFill;
-    __int64 word = 0x0101010101010101LL * (fDefaultFill.val(CLRConfig::INTERNAL_JitDefaultFill) & 0xFF);
+    __int64 word = 0x0101010101010101LL * (JitConfig.JitDefaultFill() & 0xFF);
     return (T)word;
 }
 
@@ -634,25 +645,22 @@ size_t              unsigned_abs(ssize_t x)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
 
-class histo
+class Histogram
 {
 public:
-                    histo(IAllocator* alloc, unsigned* sizeTab, unsigned sizeCnt = 0);
-                   ~histo();
+    Histogram(IAllocator* allocator, const unsigned* const sizeTable);
+    ~Histogram();
 
-    void            histoClr();
-    void            histoDsp(FILE* fout);
-    void            histoRec(unsigned __int64 siz, unsigned cnt);
-    void            histoRec(unsigned siz, unsigned cnt);
+    void dump(FILE* output);
+    void record(unsigned size);
 
 private:
+    void ensureAllocated();
 
-    void            histoEnsureAllocated();
-
-    IAllocator*     histoAlloc;
-    unsigned        histoSizCnt;
-    unsigned*       histoSizTab;
-    unsigned*       histoCounts;
+    IAllocator* m_allocator;
+    unsigned m_sizeCount;
+    const unsigned* const m_sizeTable;
+    unsigned* m_counts;
 };
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE

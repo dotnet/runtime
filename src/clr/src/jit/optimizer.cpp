@@ -17,8 +17,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning ( disable : 4701 )
 #endif
 
-static ConfigDWORD fCloneLoops;
-
 /*****************************************************************************/
 
 #if COUNT_RANGECHECKS
@@ -1855,7 +1853,7 @@ void                Compiler::optFindNaturalLoops()
                 loopsThisMethod++;
 
                 /* keep track of the number of exits */
-                loopExitCountTable.histoRec((unsigned)exitCount, 1);
+                loopExitCountTable.record(static_cast<unsigned>(exitCount));
 #endif // COUNT_LOOPS
             }
 
@@ -1865,7 +1863,7 @@ NO_LOOP: ;
     }
 
 #if COUNT_LOOPS
-    loopCountTable.histoRec(loopsThisMethod, 1);
+    loopCountTable.record(loopsThisMethod);
     if (maxLoopsPerMethod < loopsThisMethod)
     {
         maxLoopsPerMethod = loopsThisMethod;
@@ -2697,8 +2695,7 @@ void                Compiler::optUnrollLoops()
         return;
 
 #ifdef DEBUG
-    static ConfigDWORD fJitNoUnroll;
-    if (fJitNoUnroll.val(CLRConfig::INTERNAL_JitNoUnroll))
+    if (JitConfig.JitNoUnroll())
     {
         return;
     }
@@ -4089,8 +4086,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 //
 void                Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore)
 {
-    static ConfigDWORD fDebugLogLoopCloning;
-    if (fDebugLogLoopCloning.val(CLRConfig::INTERNAL_JitDebugLogLoopCloning) == 0)
+    if (JitConfig.JitDebugLogLoopCloning() == 0)
     {
         return;
     }
@@ -4157,7 +4153,7 @@ void                Compiler::optPerformStaticOptimizations(unsigned loopNum, Lo
 //      cloning is allowed to be performed.
 //
 //  Return Value:
-//      Returns true in debug builds if COMPLUS_JitCloneLoops flag is set.
+//      Returns true in debug builds if COMPlus_JitCloneLoops flag is set.
 //      Disabled for retail for now.
 //
 bool                Compiler::optCanCloneLoops()
@@ -4165,7 +4161,7 @@ bool                Compiler::optCanCloneLoops()
     // Enabled for retail builds now.
     unsigned cloneLoopsFlag = 1;
 #ifdef DEBUG
-    cloneLoopsFlag = fCloneLoops.val(CLRConfig::INTERNAL_JitCloneLoops);
+    cloneLoopsFlag = JitConfig.JitCloneLoops();
 #endif
     return (cloneLoopsFlag != 0);
 }
@@ -5438,8 +5434,7 @@ void                    Compiler::optHoistLoopCode()
         return;
 
 #ifdef DEBUG
-    static ConfigDWORD fJitNoHoist;
-    unsigned jitNoHoist = fJitNoHoist.val(CLRConfig::INTERNAL_JitNoHoist);
+    unsigned jitNoHoist = JitConfig.JitNoHoist();
     if (jitNoHoist > 0)
     {
         return;
@@ -7837,7 +7832,9 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
     if  (opr2->gtOper != GT_CNS_INT)
         return  NULL;
 
-    if  (((unsigned) opr2->gtIntCon.gtIconVal) > 1)
+    ssize_t ival2 = opr2->gtIntCon.gtIconVal;
+
+    if (ival2 != 0 && ival2 != 1)
         return NULL;
 
     /* Is the value a boolean?
@@ -7850,7 +7847,9 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
     }
     else if (opr1->gtOper == GT_CNS_INT)
     {
-        if (((unsigned) opr1->gtIntCon.gtIconVal) <= 1)
+        ssize_t ival1 = opr1->gtIntCon.gtIconVal;
+
+        if (ival1 == 0 || ival1 == 1)
             isBool = true;
     }
     else if (opr1->gtOper == GT_LCL_VAR)
@@ -7865,7 +7864,7 @@ GenTree *           Compiler::optIsBoolCond(GenTree *   condBranch,
     }
 
     /* Was our comparison against the constant 1 (i.e. true) */
-    if  (opr2->gtIntCon.gtIconVal == 1)
+    if  (ival2 == 1)
     {
         // If this is a boolean expression tree we can reverse the relop 
         // and change the true to false.

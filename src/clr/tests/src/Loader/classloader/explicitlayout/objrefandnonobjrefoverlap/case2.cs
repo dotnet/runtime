@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // Same as case1, but exercises a different error path by going ahead and trying to use
 // the invalid type.  That code path should never be reached, however, because the bug fix
 // is "fail-fast".

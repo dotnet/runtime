@@ -41,6 +41,14 @@ namespace System
             }
         }
 
+#if FEATURE_CORECLR
+        [System.Security.SecuritySafeCritical]
+#endif
+        public static object GetData(string name)
+        {
+            return AppDomain.CurrentDomain.GetData(name);
+        }
+
         #region Switch APIs
         static AppContext()
         {

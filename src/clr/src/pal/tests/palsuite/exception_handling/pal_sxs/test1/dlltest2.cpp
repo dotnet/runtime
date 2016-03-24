@@ -30,10 +30,10 @@ int DllTest2()
 
     PAL_TRY(VOID*, unused, NULL)
     {
-        volatile int* p = (volatile int *)0x22; /* invalid pointer */
+        volatile int* p = (volatile int *)0x22; // Invalid pointer
 
-        bTry = TRUE;    /* indicate we hit the PAL_TRY block */
-        *p = 13;        /* causes an access violation exception */
+        bTry = TRUE;                            // Indicate we hit the PAL_TRY block
+        *p = 2;                                 // Causes an access violation exception
 
         Fail("ERROR: code was executed after the access violation.\n");
     }
@@ -44,7 +44,13 @@ int DllTest2()
             Fail("ERROR: PAL_EXCEPT was hit without PAL_TRY being hit.\n");
         }
 
-        bExcept = TRUE; /* indicate we hit the PAL_EXCEPT block */
+        // Validate that the faulting address is correct; the contents of "p" (0x22).
+        if (ex.ExceptionRecord.ExceptionInformation[1] != 0x22)
+        {
+            Fail("ERROR: PAL_EXCEPT ExceptionInformation[1] != 0x22\n");
+        }
+
+        bExcept = TRUE;                         // Indicate we hit the PAL_EXCEPT block
     }
     PAL_ENDTRY;
 
@@ -58,13 +64,12 @@ int DllTest2()
         Trace("ERROR: the code in the PAL_EXCEPT block was not executed.\n");
     }
 
-    /* did we hit all the code blocks? */
+    // Did we hit all the code blocks?
     if(!bTry || !bExcept)
     {
         Fail("DllTest2 FAILED\n");
     }
 
     Trace("DLLTest2 PASSED\n");
-
     return PASS;
 }

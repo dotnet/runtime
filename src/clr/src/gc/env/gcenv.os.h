@@ -224,6 +224,24 @@ public:
     static bool GetCurrentProcessAffinityMask(uintptr_t *processMask, uintptr_t *systemMask);
 
     //
+    // Support for acting on memory limit imposed on this process, eg, running in a job object on Windows.
+    //
+    
+    // If the process's memory is restricted (ie, beyond what's available on the machine), return that limit.
+    // Return:
+    //  non zero if it has succeeded, 0 if it has failed
+    // Remarks:
+    //  If a process runs with a restricted memory limit, and we are successful at getting 
+    //  that limit, it returns the limit. If there's no limit specified, or there's an error 
+    //  at getting that limit, it returns 0.
+    static uint64_t GetRestrictedPhysicalMemoryLimit();
+
+    // Get the current physical memory this process is using.
+    // Return:
+    //  non zero if it has succeeded, 0 if it has failed
+    static size_t GetCurrentPhysicalMemory();
+    
+    //
     // Misc
     //
 

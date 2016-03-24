@@ -3325,13 +3325,12 @@ class GcInfoEncoderWithLogging
 {
     GcInfoEncoder* m_gcInfoEncoder;
     bool m_doLogging;
-    static ConfigDWORD s_fJitGCInfoLogging;
     
 public:
 
     GcInfoEncoderWithLogging(GcInfoEncoder* gcInfoEncoder, bool verbose) : 
       m_gcInfoEncoder(gcInfoEncoder), 
-      m_doLogging(verbose || s_fJitGCInfoLogging.val(CLRConfig::INTERNAL_JitGCInfoLogging) != 0) 
+      m_doLogging(verbose || JitConfig.JitGCInfoLogging() != 0) 
     {}
 
     GcSlotId GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase = GC_CALLER_SP_REL )
@@ -3483,8 +3482,6 @@ public:
     }
 
 };
-
-ConfigDWORD GcInfoEncoderWithLogging::s_fJitGCInfoLogging;
 
 #define GCENCODER_WITH_LOGGING(withLog, realEncoder) \
     GcInfoEncoderWithLogging withLog ## Var(realEncoder, compiler->verbose || compiler->opts.dspGCtbls); \

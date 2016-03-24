@@ -149,7 +149,8 @@ template <typename Value, typename Hash, typename Pred, typename Alloc>
 unordered_set<Value, Hash, Pred, Alloc>&
     unordered_set<Value, Hash, Pred, Alloc>::operator=(unordered_set const& other)
 {
-    return base_type::operator=(other);
+    base_type::operator=(other);
+    return *this;
 }
 
 } // end of namespace jitstd.

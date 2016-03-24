@@ -826,7 +826,7 @@ BOOL ClassLoader::IsNested(NameHandle* pName, mdToken *mdEncloser)
     if (pName->GetTypeModule()) {
         if (TypeFromToken(pName->GetTypeToken()) == mdtBaseType)
         {
-            if (pName->GetBucket())
+            if (!pName->GetBucket().IsNull())
                 return TRUE;
             return FALSE;
         }
@@ -837,11 +837,14 @@ BOOL ClassLoader::IsNested(NameHandle* pName, mdToken *mdEncloser)
         return FALSE;
 }
 
-EEClassHashEntry_t *ClassLoader::GetClassValue(NameHandleTable nhTable,
-                                               NameHandle *pName,
-                                               HashDatum *pData,
-                                               EEClassHashTable **ppTable,
-                                               Module* pLookInThisModuleOnly)
+void ClassLoader::GetClassValue(NameHandleTable nhTable,
+                                    NameHandle *pName,
+                                    HashDatum *pData,
+                                    EEClassHashTable **ppTable,
+                                    Module* pLookInThisModuleOnly,
+                                    HashedTypeEntry* pFoundEntry,
+                                    Loader::LoadFlag loadFlag,
+                                    BOOL& needsToBuildHashtable)
 {
     CONTRACTL
     {
@@ -859,6 +862,8 @@ EEClassHashEntry_t *ClassLoader::GetClassValue(NameHandleTable nhTable,
     mdToken             mdEncloser;
     EEClassHashEntry_t  *pBucket = NULL;
 
+    needsToBuildHashtable = FALSE;
+
 #if _DEBUG
     if (pName->GetName()) {
         if (pName->GetNameSpace() == NULL)
@@ -870,110 +875,135 @@ EEClassHashEntry_t *ClassLoader::GetClassValue(NameHandleTable nhTable,
     }
 #endif
 
-    if (IsNested(pName, &mdEncloser)) 
+    BOOL isNested = IsNested(pName, &mdEncloser);
+
+    PTR_Assembly assembly = GetAssembly();
+    PREFIX_ASSUME(assembly != NULL);
+    ModuleIterator i = assembly->IterateModules();
+
+    while (i.Next()) 
     {
-        Module *pModule = pName->GetTypeModule();
-        PREFIX_ASSUME(pModule != NULL);
-        PTR_Assembly assembly=GetAssembly();
-        PREFIX_ASSUME(assembly!=NULL);
-        ModuleIterator i = assembly->IterateModules();
-        Module *pClsModule = NULL;
+        Module * pCurrentClsModule = i.GetModule();
+        PREFIX_ASSUME(pCurrentClsModule != NULL);
 
-        while (i.Next()) {
-            pClsModule = i.GetModule();
-            if (pClsModule->IsResource())
-                continue;
-            if (pLookInThisModuleOnly && (pClsModule != pLookInThisModuleOnly))
-                continue;
+        if (pCurrentClsModule->IsResource())
+            continue;
+        if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
+            continue;
 
+#ifdef FEATURE_READYTORUN
+        if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
+        {
+            // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
+            // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
+            // Also note that type lookups in R2R modules only support case sensitive lookups.
+
+            mdToken mdFoundTypeToken;
+            if (pCurrentClsModule->GetReadyToRunInfo()->TryLookupTypeTokenFromName(pName, &mdFoundTypeToken))
+            {
+                if (TypeFromToken(mdFoundTypeToken) == mdtExportedType)
+                {
+                    mdToken mdUnused;
+                    Module * pTargetModule = GetAssembly()->FindModuleByExportedType(mdFoundTypeToken, loadFlag, mdTypeDefNil, &mdUnused);
+
+                    pFoundEntry->SetTokenBasedEntryValue(mdFoundTypeToken, pTargetModule);
+                }
+                else
+                {
+                    pFoundEntry->SetTokenBasedEntryValue(mdFoundTypeToken, pCurrentClsModule);
+                }
+
+                return; // Return on the first success
+            }
+        }
+        else
+#endif
+        {
             EEClassHashTable* pTable = NULL;
             if (nhTable == nhCaseSensitive)
             {
-                *ppTable = pTable = pClsModule->GetAvailableClassHash();
-                
+                *ppTable = pTable = pCurrentClsModule->GetAvailableClassHash();
+
+#ifdef FEATURE_READYTORUN
+                if (pTable == NULL && pCurrentClsModule->IsReadyToRun() && !pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
+                {
+                    // Old R2R image generated without the hashtable of types.
+                    // We fallback to the slow path of creating the hashtable dynamically 
+                    // at execution time in that scenario. The caller will handle
+                    pFoundEntry->SetClassHashBasedEntryValue(NULL);
+                    needsToBuildHashtable = TRUE;
+                    return;
+                }
+#endif
             }
-            else {
+            else
+            {
                 // currently we expect only these two kinds--for DAC builds, nhTable will be nhCaseSensitive
                 _ASSERTE(nhTable == nhCaseInsensitive);
-                *ppTable = pTable = pClsModule->GetAvailableClassCaseInsHash();
+                *ppTable = pTable = pCurrentClsModule->GetAvailableClassCaseInsHash();
 
-                if (pTable == NULL) {
-                    // We have not built the table yet - the caller will handle
-                    return NULL;
-                }
-            }
-
-            _ASSERTE(pTable);
-
-            EEClassHashTable::LookupContext sContext;
-            if ((pBucket = pTable->GetValue(pName, pData, TRUE, &sContext)) != NULL) {
-                switch (TypeFromToken(pName->GetTypeToken())) {
-                case mdtTypeDef:
-                    while ((!CompareNestedEntryWithTypeDef(pModule->GetMDImport(),
-                                                           mdEncloser,
-                                                           pClsModule->GetAvailableClassHash(),
-                                                           pBucket->GetEncloser())) &&
-                           (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                    break;
-                case mdtTypeRef:
-                    while ((!CompareNestedEntryWithTypeRef(pModule->GetMDImport(),
-                                                           mdEncloser,
-                                                           pClsModule->GetAvailableClassHash(),
-                                                           pBucket->GetEncloser())) &&
-                           (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                    break;
-                case mdtExportedType:
-                    while ((!CompareNestedEntryWithExportedType(pModule->GetAssembly()->GetManifestImport(),
-                                                                mdEncloser,
-                                                                pClsModule->GetAvailableClassHash(),
-                                                                pBucket->GetEncloser())) &&
-                           (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                    break;
-                default:
-                    while ((pBucket->GetEncloser() != pName->GetBucket())  &&
-                           (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                }
-            }
-            if (pBucket) // break on the first success
-                break;
-        }
-    }
-    else {
-        // Check if this non-nested class is in the table of available classes.
-        ModuleIterator i = GetAssembly()->IterateModules();
-        Module *pModule = NULL;
-
-        while (i.Next()) {
-            pModule = i.GetModule();
-            // i.Next will not return TRUE unless i.GetModule will return non-NULL.
-            PREFIX_ASSUME(pModule != NULL);
-            if (pModule->IsResource())
-                continue;
-            if (pLookInThisModuleOnly && (pModule != pLookInThisModuleOnly))
-                continue;
-            
-            PREFIX_ASSUME(pModule!=NULL);
-            EEClassHashTable* pTable = NULL;
-            if (nhTable == nhCaseSensitive)
-                *ppTable = pTable = pModule->GetAvailableClassHash();
-            else {
-                // currently we support only these two types
-                _ASSERTE(nhTable == nhCaseInsensitive);
-                *ppTable = pTable = pModule->GetAvailableClassCaseInsHash();
-
-                // We have not built the table yet - the caller will handle
                 if (pTable == NULL)
-                    return NULL;
+                {
+                    // We have not built the table yet - the caller will handle
+                    pFoundEntry->SetClassHashBasedEntryValue(NULL);
+                    needsToBuildHashtable = TRUE;
+                    return;
+                }
+            }
+            _ASSERTE(pTable);
+
+            if (isNested)
+            {
+                Module *pNameModule = pName->GetTypeModule();
+                PREFIX_ASSUME(pNameModule != NULL);
+
+                EEClassHashTable::LookupContext sContext;
+                if ((pBucket = pTable->GetValue(pName, pData, TRUE, &sContext)) != NULL)
+                {
+                    switch (TypeFromToken(pName->GetTypeToken()))
+                    {
+                    case mdtTypeDef:
+                        while ((!CompareNestedEntryWithTypeDef(pNameModule->GetMDImport(),
+                                                               mdEncloser,
+                                                               pCurrentClsModule->GetAvailableClassHash(),
+                                                               pBucket->GetEncloser())) &&
+                                                               (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
+                        break;
+                    case mdtTypeRef:
+                        while ((!CompareNestedEntryWithTypeRef(pNameModule->GetMDImport(),
+                                                               mdEncloser,
+                                                               pCurrentClsModule->GetAvailableClassHash(),
+                                                               pBucket->GetEncloser())) &&
+                                                               (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
+                        break;
+                    case mdtExportedType:
+                        while ((!CompareNestedEntryWithExportedType(pNameModule->GetAssembly()->GetManifestImport(),
+                                                                    mdEncloser,
+                                                                    pCurrentClsModule->GetAvailableClassHash(),
+                                                                    pBucket->GetEncloser())) &&
+                                                                    (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
+                        break;
+                    default:
+                        while ((pBucket->GetEncloser() != pName->GetBucket().GetClassHashBasedEntryValue()) &&
+                            (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
+                    }
+                }
+            }
+            else
+            {
+                pBucket = pTable->GetValue(pName, pData, FALSE, NULL);
             }
 
-            _ASSERTE(pTable);
-            pBucket = pTable->GetValue(pName, pData, FALSE, NULL);
-            if (pBucket) // break on the first success
-                break;
+            if (pBucket) // Return on the first success
+            {
+                pFoundEntry->SetClassHashBasedEntryValue(pBucket);
+                return;
+            }
         }
     }
 
-    return pBucket;
+    // No results found: default to a NULL EEClassHashEntry_t result
+    pFoundEntry->SetClassHashBasedEntryValue(NULL);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1039,6 +1069,54 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
 }
 
 
+void ClassLoader::LazyPopulateCaseSensitiveHashTables()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    AllocMemTracker amTracker;
+    ModuleIterator i = GetAssembly()->IterateModules();
+
+    // Create a case-sensitive hashtable for each module, and fill it with the module's typedef entries
+    while (i.Next())
+    {
+        Module *pModule = i.GetModule();
+        PREFIX_ASSUME(pModule != NULL);
+        if (pModule->IsResource())
+            continue;
+
+        // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
+        // (either images compiled with an old version of crossgen, or for case-insensitive type lookups in R2R modules)
+        _ASSERT(pModule->IsReadyToRun());
+
+        EEClassHashTable * pNewClassHash = EEClassHashTable::Create(pModule, AVAILABLE_CLASSES_HASH_BUCKETS, FALSE /* bCaseInsensitive */, &amTracker);
+        pModule->SetAvailableClassHash(pNewClassHash);
+
+        PopulateAvailableClassHashTable(pModule, &amTracker);
+    }
+
+    // Add exported types of the manifest module to the hashtable
+    if (!GetAssembly()->GetManifestModule()->IsResource())
+    {
+        IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
+        HENUMInternalHolder phEnum(pManifestImport);
+        phEnum.EnumInit(mdtExportedType, mdTokenNil);
+
+        mdToken mdExportedType;
+        while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
+            AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
+    }
+
+    amTracker.SuppressRelease();
+}
+
 void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 {
     CONTRACTL
@@ -1051,19 +1129,27 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     }
     CONTRACTL_END;
 
+    if (!GetAssembly()->GetManifestModule()->IsResource() && GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
+    {
+        // This is a R2R assembly, and a case insensitive type lookup was triggered. 
+        // Construct the case-sensitive table first, since the case-insensitive table 
+        // create piggy-backs on the first.
+        LazyPopulateCaseSensitiveHashTables();
+    }
 
     // Add any unhashed modules into our hash tables, and try again.
-
+    
+    AllocMemTracker amTracker;
     ModuleIterator i = GetAssembly()->IterateModules();
 
-    while (i.Next()) {
+    while (i.Next()) 
+    {
         Module *pModule = i.GetModule();
-        PREFIX_ASSUME(pModule!=NULL);
         if (pModule->IsResource())
             continue;
 
-        if (pModule->GetAvailableClassCaseInsHash() == NULL) {
-            AllocMemTracker amTracker;
+        if (pModule->GetAvailableClassCaseInsHash() == NULL) 
+        {
             EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
 
             LOG((LF_CLASSLOADER, LL_INFO10, "%s's classes being added to case insensitive hash table\n",
@@ -1629,14 +1715,13 @@ TypeHandle ClassLoader::TryFindDynLinkZapType(TypeKey *pKey)
 //        Module/typedef stuff and give you the actual TypeHandle.
 //
 //
-BOOL 
-ClassLoader::FindClassModuleThrowing(
+BOOL ClassLoader::FindClassModuleThrowing(
     const NameHandle *    pOriginalName, 
     TypeHandle *          pType, 
     mdToken *             pmdClassToken, 
     Module **             ppModule, 
     mdToken *             pmdFoundExportedType, 
-    EEClassHashEntry_t ** ppEntry, 
+    HashedTypeEntry *     pFoundEntry,
     Module *              pLookInThisModuleOnly, 
     Loader::LoadFlag      loadFlag)
 {
@@ -1740,43 +1825,70 @@ ClassLoader::FindClassModuleThrowing(
 
     HashDatum Data;
     EEClassHashTable * pTable = NULL;
-    EEClassHashEntry_t * pBucket = GetClassValue(
-        nhTable, 
-        pName, 
-        &Data, 
-        &pTable, 
-        pLookInThisModuleOnly);
+    HashedTypeEntry foundEntry;
+    BOOL needsToBuildHashtable;
+    GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
 
-    if (pBucket == NULL)
+    // In the case of R2R modules, the search is only performed in the hashtable saved in the 
+    // R2R image, and this is why we return (whether we found a valid typedef token or not).
+    // Note: case insensitive searches are not used/supported in R2R images.
+    if (foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedTokenEntry)
     {
-        if (nhTable == nhCaseInsensitive)
+        *pType = TypeHandle();
+        HashedTypeEntry::TokenTypeEntry tokenAndModulePair = foundEntry.GetTokenBasedEntryValue();
+        switch (TypeFromToken(tokenAndModulePair.m_TypeToken))
         {
-            AvailableClasses_LockHolder lh(this);
+        case mdtTypeDef:
+            *pmdClassToken = tokenAndModulePair.m_TypeToken;
+            *pmdFoundExportedType = mdTokenNil;
+            break;
+        case mdtExportedType:
+            *pmdClassToken = mdTokenNil;
+            *pmdFoundExportedType = tokenAndModulePair.m_TypeToken;
+            break;
+        default:
+            _ASSERT(false);
+            return FALSE;
+        }
+        *ppModule = tokenAndModulePair.m_pModule;
+        if (pFoundEntry != NULL)
+            *pFoundEntry = foundEntry;
 
-            // Try again with the lock.  This will protect against another thread reallocating
-            // the hash table underneath us
-            pBucket = GetClassValue(
-                nhTable, 
-                pName, 
-                &Data, 
-                &pTable, 
-                pLookInThisModuleOnly);
+        return TRUE;
+    }
+
+    EEClassHashEntry_t * pBucket = foundEntry.GetClassHashBasedEntryValue();
+
+    if (pBucket == NULL && needsToBuildHashtable)
+    {
+        AvailableClasses_LockHolder lh(this);
+
+        // Try again with the lock.  This will protect against another thread reallocating
+        // the hash table underneath us
+        GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
+        pBucket = foundEntry.GetClassHashBasedEntryValue();
 
 #ifndef DACCESS_COMPILE
-            if ((pBucket == NULL) && (m_cUnhashedModules > 0))
+        if ((pBucket == NULL) && (m_cUnhashedModules > 0))
+        {
+            _ASSERT(needsToBuildHashtable);
+
+            if (nhTable == nhCaseInsensitive)
             {
                 LazyPopulateCaseInsensitiveHashTables();
-
-                // Try yet again with the new classes added
-                pBucket = GetClassValue(
-                    nhTable, 
-                    pName, 
-                    &Data, 
-                    &pTable, 
-                    pLookInThisModuleOnly);
             }
-#endif
+            else
+            {
+                // Note: This codepath is only valid for R2R scenarios
+                LazyPopulateCaseSensitiveHashTables();
+            }
+
+            // Try yet again with the new classes added
+            GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
+            pBucket = foundEntry.GetClassHashBasedEntryValue();
+            _ASSERT(!needsToBuildHashtable);
         }
+#endif
     }
 
     if (pBucket == NULL)
@@ -1806,9 +1918,9 @@ ClassLoader::FindClassModuleThrowing(
         _ASSERTE(!t.IsNull());
 
         *pType = t;
-        if (ppEntry != NULL)
+        if (pFoundEntry != NULL)
         {
-            *ppEntry = pBucket;
+            pFoundEntry->SetClassHashBasedEntryValue(pBucket);
         }
         return TRUE;
     }
@@ -1825,9 +1937,9 @@ ClassLoader::FindClassModuleThrowing(
     }
 
     *pType = TypeHandle();
-    if (ppEntry != NULL)
+    if (pFoundEntry != NULL)
     {
-        *ppEntry = pBucket;
+        pFoundEntry->SetClassHashBasedEntryValue(pBucket);
     }
     return TRUE;
 } // ClassLoader::FindClassModuleThrowing
@@ -1902,7 +2014,7 @@ ClassLoader::LoadTypeHandleThrowing(
 
     Module * pFoundModule = NULL;
     mdToken FoundCl;
-    EEClassHashEntry_t * pEntry = NULL;
+    HashedTypeEntry foundEntry;
     mdExportedType FoundExportedType = mdTokenNil;
 
     UINT32 cLoopIterations = 0;
@@ -1930,18 +2042,18 @@ ClassLoader::LoadTypeHandleThrowing(
                 &FoundCl, 
                 &pFoundModule, 
                 &FoundExportedType, 
-                &pEntry, 
+                &foundEntry,
                 pLookInThisModuleOnly, 
                 pName->OKToLoad() ? Loader::Load 
                                   : Loader::DontLoad))
         {   // Didn't find anything, no point looping indefinitely
             break;
         }
-        _ASSERTE(pEntry != NULL);
+        _ASSERTE(!foundEntry.IsNull());
 
         if (pName->GetTypeToken() == mdtBaseType)
         {   // We should return the found bucket in the pName
-            pName->SetBucket(pEntry);
+            pName->SetBucket(foundEntry);
         }
 
         if (!typeHnd.IsNull())
@@ -2031,14 +2143,18 @@ ClassLoader::LoadTypeHandleThrowing(
         else
         {   //#LoadTypeHandle_TypeForwarded
             // pName is a host instance so it's okay to set fields in it in a DAC build
-            EEClassHashEntry_t * pBucket = pName->GetBucket();
+            HashedTypeEntry& bucket = pName->GetBucket();
 
-            if (pBucket != NULL)
-            {   // Reset pName's bucket entry
-                
+            // Reset pName's bucket entry
+            if (bucket.GetEntryType() == HashedTypeEntry::IsHashedClassEntry && bucket.GetClassHashBasedEntryValue()->GetEncloser())
+            {
                 // We will be searching for the type name again, so set the nesting/context type to the 
                 // encloser of just found type
-                pName->SetBucket(pBucket->GetEncloser());
+                pName->SetBucket(HashedTypeEntry().SetClassHashBasedEntryValue(bucket.GetClassHashBasedEntryValue()->GetEncloser()));
+            }
+            else
+            {
+                pName->SetBucket(HashedTypeEntry());
             }
 
             // Update the class loader for the new module/token pair.
@@ -2050,10 +2166,11 @@ ClassLoader::LoadTypeHandleThrowing(
         // Replace AvailableClasses Module entry with found TypeHandle
         if (!typeHnd.IsNull() && 
             typeHnd.IsRestored() && 
-            (pEntry != NULL) && 
-            (pEntry->GetData() != typeHnd.AsPtr()))
+            foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
+            (foundEntry.GetClassHashBasedEntryValue() != NULL) && 
+            (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
         {
-            pEntry->SetData(typeHnd.AsPtr());
+            foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
         }
 #endif // !DACCESS_COMPILE
     }
@@ -4473,12 +4590,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
                 // been obfuscated so that they have duplicate private typedefs.
                 // We must allow this for old assemblies for app compat reasons
 #ifdef FEATURE_CORECLR
-#ifdef FEATURE_LEGACYNETCF
-                if (!RuntimeIsLegacyNetCF(0))
-#endif
-                {
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-                }
+                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
 #else
                 LPCSTR pszVersion = NULL;
                 if (FAILED(pModule->GetMDImport()->GetVersionString(&pszVersion)))
@@ -4903,8 +5015,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         if (visibilityCheck && Security::IsTransparencyEnforcementEnabled())
         {
             // In CoreCLR RMA means visibility checks always succeed if the target is user code.
-            if ((m_accessCheckType == kRestrictedMemberAccess || m_accessCheckType == kRestrictedMemberAccessNoTransparency) &&
-                !Security::IsMicrosoftPlatform(pTargetMT->GetAssembly()->GetSecurityDescriptor()))
+            if (m_accessCheckType == kRestrictedMemberAccess || m_accessCheckType == kRestrictedMemberAccessNoTransparency)
                 return TRUE;
 
             // Accessing private types/members in platform code.
@@ -4924,10 +5035,9 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
 
     MethodDesc* pCallerMD = pContext->GetCallerMethod();
 
-    // Platform critical code is exempted from all accessibility rules, regardless of the AccessCheckType.
+    // critical code is exempted from all accessibility rules, regardless of the AccessCheckType.
     if (pCallerMD != NULL && 
-        !Security::IsMethodTransparent(pCallerMD)
-        && Security::IsMicrosoftPlatform(pCallerMD->GetAssembly()->GetSecurityDescriptor()))
+        !Security::IsMethodTransparent(pCallerMD))
     {
         return TRUE;
     }
@@ -5125,15 +5235,6 @@ BOOL AccessCheckOptions::DemandMemberAccessOrFail(AccessCheckContext *pContext, 
         {
             return TRUE;
         }
-
-#if defined(FEATURE_CORECLR) && defined(CROSSGEN_COMPILE)
-        CONSISTENCY_CHECK_MSGF(!pContext->GetCallerAssembly()->GetManifestFile()->IsProfileAssembly(), 
-            ("Accessibility check failed while compiling platform assembly. Are you missing FriendAccessAllowed attribute? Caller: %s %s %s Target: %s", 
-                pContext->GetCallerAssembly() ? pContext->GetCallerAssembly()->GetSimpleName() : "",
-                pContext->GetCallerMT() ? pContext->GetCallerMT()->GetDebugClassName() : "",
-                pContext->GetCallerMethod() ? pContext->GetCallerMethod()->GetName() : "",
-                pTargetMT ? pTargetMT->GetDebugClassName() : ""));
-#endif
 
         if (m_fThrowIfTargetIsInaccessible)
         {

@@ -2,5 +2,6 @@
   "dependencies": {
   },
   "frameworks": {
+    "dnxcore50": {}
   }
 }

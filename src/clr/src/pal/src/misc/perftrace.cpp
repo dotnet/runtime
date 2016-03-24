@@ -659,26 +659,30 @@ PERFlushAllLogs( )
 
 static
 void
-PERFLogFileName(PathCharString * destFileString, const char *fileName, const char *suffix, int max_length)
+PERFLogFileName(PathCharString& destFileString, const char *fileName, const char *suffix)
 {
     const char *dir_path;
     CPalThread* pThread = InternalGetCurrentThread();
-    char * destFileName = (char*)InternalMalloc(pThread, max_length);
     dir_path = (profile_log_path == NULL) ? "." : profile_log_path;
-
+        
+    destFileString.Append(dir_path, strlen(dir_path));
+    destFileString.Append(PATH_SEPARATOR, strlen(PATH_SEPARATOR));
     if (fileName != NULL)
     {
-        snprintf(destFileName, max_length, "%s%s%s", dir_path, PATH_SEPARATOR, fileName);
+        destFileString.Append(fileName, strlen(fileName));
     }
     else
     {
-        snprintf(destFileName, max_length, "%s%s%d_%d%s", dir_path, PATH_SEPARATOR,
-            program_info.process_id, THREADSilentGetCurrentThreadId(), suffix);
+        char buffer[33];
+        char* process_id     = itoa(program_info.process_id, buffer, 10);
+        destFileString.Append(process_id, strlen(process_id));
+        destFileString.Append("_", 1);
+        
+        char* current_thread = itoa(THREADSilentGetCurrentThreadId(),buffer, 10);
+        destFileString.Append(current_thread, strlen( current_thread));
+        destFileString.Append(suffix, strlen(suffix));
     }
     
-    destFileString.Set(destFileName);
-    InternalFree(pThread, destFileName);
-    destFileName = NULL;
 }
 
 static
@@ -692,7 +696,7 @@ PERFWriteCounters( pal_perf_api_info * table )
 
     off = table;
     
-    PERFLogFileName(&fileName, profile_summary_log_name, "_perf_summary.log", MAX_LONGPATH);
+    PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.log");
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
     if(hFile != NULL)
     {   
@@ -732,7 +736,7 @@ PERFWriteCounters( pal_perf_api_info * table )
     if (pal_perf_histogram_size > 0)
     {
         off = table;
-        PERFLogFileName(&fileName, profile_summary_log_name, "_perf_summary.hist", MAX_LONGPATH);
+        PERFLogFileName(fileName, profile_summary_log_name, "_perf_summary.hist");
         hFile = PERF_FILEFN(fopen)(fileName, "a+");
 
         if (hFile != NULL)
@@ -1085,7 +1089,7 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
     if (summary_only)
         return TRUE;
 
-    PERFLogFileName(&fileName, profile_time_log_name, "_perf_time.log", MAX_LONGPATH);
+    PERFLogFileName(fileName, profile_time_log_name, "_perf_time.log");
 
     hFile = PERF_FILEFN(fopen)(fileName, "a+");
 

@@ -4,7 +4,7 @@
 //
 
 /*
-set COMPLUS_JITStress=1
+set COMPlus_JITStress=1
 */
 namespace Test
 {

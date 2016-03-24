@@ -1453,43 +1453,6 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
     return (CorInfoHelpFunc)helper;
 }
 
-#ifdef FEATURE_LEGACYNETCF
-void CheckValidTypeOnNetCF(MethodTable * pMT)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Do this quirk for application assemblies only
-    if (pMT->GetAssembly()->GetManifestFile()->IsProfileAssembly())
-        return;
-
-    if (pMT->GetClass()->IsTypeValidOnNetCF())
-        return;
-
-    DWORD dwStaticsSizeOnNetCF = 0;
-
-    //
-    // NetCF had 64k limit on total size of statics per class. This limit
-    // is easy to reach by initialized data in C#. Apps took dependency
-    // on type load exceptions being thrown in this case.
-    //
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::STATIC_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        DWORD fldSize = pFD->LoadSize();
-
-        // Simulate NetCF behaviour that caused size to wrap around
-        dwStaticsSizeOnNetCF += (UINT16)fldSize;
-
-        if (dwStaticsSizeOnNetCF > 0xFFFF)
-            COMPlusThrow(kTypeLoadException);
-    }
-
-    // Cache the result of the check
-    pMT->GetClass()->SetTypeValidOnNetCF();
-}
-#endif // FEATURE_LEGACYNETCF
-
-
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1520,11 +1483,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     pResult->offset = pField->GetOffset();
     if (pField->IsStatic())
     {
-#ifdef FEATURE_LEGACYNETCF
-        if (pFieldMT->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-            CheckValidTypeOnNetCF(pFieldMT);
-#endif
-
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
 
         if (pField->IsRVA())
@@ -3943,18 +3901,6 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     if (pFD == NULL)
     {
-#ifdef FEATURE_LEGACYNETCF
-        // For methods, NetCF always triggers static constructor as side-effect of JITing, essentially ignoring before field init.
-        if (pTypeToInitMT->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-            // This quirk assumes that RunCCTorAsIfNGenImageExists() is TRUE. It would need to be replicated in more places 
-            // if it was not the case.
-            _ASSERTE(pTypeToInitMT->RunCCTorAsIfNGenImageExists());
-
-            fIgnoreBeforeFieldInit = true;
-        }
-#endif
-
         if (!fIgnoreBeforeFieldInit && pTypeToInitMT->GetClass()->IsBeforeFieldInit())
         {
             // We can wait for field accesses to run .cctor
@@ -7304,20 +7250,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     {
         Module *    pCalleeModule   = pCallee->GetModule();
 
-#ifdef FEATURE_LEGACYNETCF
-        if (m_pMethodBeingCompiled->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        {
-            // NetCF did not allow cross-assembly inlining (except for mscorlib)
-            // and leaf methods
-            Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
-            Assembly *  pOrigCallerAssembly = pOrigCallerModule->GetAssembly();
-            if ((pCalleeAssembly != pOrigCallerAssembly) && !pCalleeAssembly->IsSystem())
-            {
-                dwRestrictions |= INLINE_RESPECT_BOUNDARY;
-            }
-        }
-#endif // FEATURE_LEGACYNETCF
-
 #ifdef FEATURE_PREJIT
         Assembly *  pCalleeAssembly = pCalleeModule->GetAssembly();
 
@@ -7739,15 +7671,6 @@ CorInfoInstantiationVerification
         goto exit;
     }
 
-#ifdef FEATURE_CORECLR
-    //Skip verification of all methods in profile assemblies.  We will ensure that they are all verifiable.
-    if (pMethod->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
-    {
-        result = INSTVER_GENERIC_PASSED_VERIFICATION;
-        goto exit;
-    }
-#endif
-
     result = pMethod->IsVerifiable() ? INSTVER_GENERIC_PASSED_VERIFICATION
                                      : INSTVER_GENERIC_FAILED_VERIFICATION;
 
@@ -7945,17 +7868,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule());
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule()->GetClassLoader());
-
-#ifdef FEATURE_LEGACYNETCF
-    // NetCF did not implement tail calls
-    if (m_pMethodBeingCompiled->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-    {
-
-        result = false;
-        szFailReason = "Windows Phone OS 7 compatibility";
-        goto exit;
-    }
-#endif // FEATURE_LEGACYNETCF
 
     // If the caller is the static constructor (.cctor) of a class which has a ComImport base class
     // somewhere up the class hierarchy, then we cannot make the call into a tailcall.  See
@@ -10455,7 +10367,7 @@ void CEEJitInfo::reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwind
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
-        "Set COMPLUS_JitBreakOnBadCode=1 and rerun to get the real error.");
+        "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
 
     ULONG currentSize  = unwindSize;
 
@@ -11735,14 +11647,6 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
              flags |= CORJIT_FLG_FRAMED;
          }
     }
-
-#ifdef FEATURE_LEGACYNETCF
-    // for "AppDomainCompatSwitch" == "WindowsPhone_3.7.0.0" or "AppDomainCompatSwitch" == "WindowsPhone_3.8.0.0"
-    // This is when we need to generate code that more closely resembles
-    // what the WinPhone 7.0/7.1/7.5 NetCF JIT used to generate.
-    if (ftn->GetDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-        flags |= CORJIT_FLG_NETCF_QUIRKS;
-#endif // FEATURE_LEGACYNETCF
 
     return flags;
 }
@@ -13434,100 +13338,6 @@ void CEEInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
-}
-
-// Allow access to CLRConfig environment variables from the JIT with
-// out exposing CLR internals. 
-// 
-// Args:
-//     name         - String name being queried for.
-//     defaultValue - Default integer value to return if no value is found.
-//
-// Returns:
-//     Raw string from environment variable.  Caller owns the string.
-//
-int CEEInfo::getIntConfigValue(
-    const wchar_t *name,  int defaultValue
-    )
-{
-    CONTRACTL{
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    DWORD ret = defaultValue;
-
-    JIT_TO_EE_TRANSITION();
-
-    // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigDWORDInfo info{ name, defaultValue, CLRConfig::REGUTIL_default };
-
-    // Perform a CLRConfig look up on behalf of the JIT.
-    ret = CLRConfig::GetConfigValue(info);
-
-    EE_TO_JIT_TRANSITION();
-
-    return ret;
-}
-
-// Allow access to CLRConfig environment variables from the JIT with
-// out exposing CLR internals. 
-// 
-// Args:
-//     name - String name being queried for.
-//
-// Returns:
-//     Raw string from environment variable.  Caller owns the string.
-//
-wchar_t *CEEInfo::getStringConfigValue(
-    const wchar_t *name
-    )
-{
-    CONTRACTL{
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    wchar_t * returnStr = nullptr;
-
-    JIT_TO_EE_TRANSITION();
-
-    // Translate JIT call into runtime configuration query
-    CLRConfig::ConfigStringInfo info{ name, CLRConfig::REGUTIL_default };
-
-    // Perform a CLRConfig look up on behalf of the JIT.
-    returnStr = CLRConfig::GetConfigValue(info);
-
-    EE_TO_JIT_TRANSITION();
-
-    return returnStr;
-}
-
-// Free runtime allocated CLRConfig strings requrested by the JIT.
-//
-// Args:
-//    value - String to be freed.
-//
-void CEEInfo::freeStringConfigValue(
-    wchar_t *value
-    )
-{
-    CONTRACTL{
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    CLRConfig::FreeConfigString(value);
-
-    EE_TO_JIT_TRANSITION();
 }
 
 #endif // !DACCESS_COMPILE

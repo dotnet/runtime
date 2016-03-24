@@ -58,9 +58,7 @@
 #ifndef _VOLATILE_H_
 #define _VOLATILE_H_
 
-#ifndef CLR_STANDALONE_BINDER
 #include "staticcontract.h"
-#endif
 
 //
 // This code is extremely compiler- and CPU-specific, and will need to be altered to 

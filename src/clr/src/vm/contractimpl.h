@@ -473,7 +473,6 @@ protected:
     BOOL                m_fUseFatIdsForUniqueness;
     UINT32              m_entryCount;
 
-#ifndef BINDER
     //------------------------------------------------------------------------
     // Returns the next available ID
     inline UINT32 GetNextID()
@@ -495,7 +494,6 @@ protected:
         CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
         return id;
     }
-#endif
 
 public:
     // Starting values for shared and unshared domains
@@ -510,14 +508,12 @@ public:
 
     //------------------------------------------------------------------------
     // Ctor
-#ifndef BINDER
     TypeIDMap()
         : m_lock(CrstTypeIDMap, CrstFlags(CRST_REENTRANCY))
     {
         WRAPPER_NO_CONTRACT;
         static_assert_no_msg(TypeIDProvider::INVALID_TYPE_ID == static_cast<UINT32>(INVALIDENTRY));
     }
-#endif
 
     //------------------------------------------------------------------------
     // Dtor
@@ -875,7 +871,6 @@ protected:
 
 typedef DPTR(class DispatchMap) PTR_DispatchMap;
 // ===========================================================================
-#ifndef BINDER
 class DispatchMap
 {
 protected:
@@ -998,8 +993,6 @@ public:
         DispatchMapEntry *Entry();
     };  // class Iterator
 };  // class DispatchMap
-
-#endif // BINDER
 
 #ifdef LOGGING 
 struct StubDispatchStats

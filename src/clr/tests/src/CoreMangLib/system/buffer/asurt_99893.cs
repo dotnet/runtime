@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 // ASURT 99893 - These Buffer members were correctly checking that the array was a
 // primitive type, but the check for primitive type did not include the assembly,
 // and thus one could define a new System.Int32 (as below) and use that instead.

@@ -62,6 +62,104 @@ Notes:
     } \
     CONTRACTL_END; \
 
+
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// CreateProcessForLaunch - a stripped down version of the Windows CreateProcess
+// that can be supported cross-platform.
+//
+//-----------------------------------------------------------------------------
+HRESULT
+CreateProcessForLaunch(
+    __in LPWSTR lpCommandLine,
+    __in BOOL bSuspendProcess,
+    __in LPVOID lpEnvironment,
+    __in LPCWSTR lpCurrentDirectory,
+    __out PDWORD pProcessId,
+    __out HANDLE *pResumeHandle)
+{
+    PUBLIC_CONTRACT;
+
+    PROCESS_INFORMATION processInfo;
+    STARTUPINFOW startupInfo;
+    DWORD dwCreationFlags = 0;
+
+    ZeroMemory(&processInfo, sizeof(processInfo));
+    ZeroMemory(&startupInfo, sizeof(startupInfo));
+
+    startupInfo.cb = sizeof(startupInfo);
+
+    if (bSuspendProcess)
+    {
+        dwCreationFlags = CREATE_SUSPENDED;
+    }
+
+    BOOL result = CreateProcessW(
+        NULL,
+        lpCommandLine,
+        NULL,
+        NULL,
+        FALSE,
+        dwCreationFlags,
+        lpEnvironment,
+        lpCurrentDirectory,
+        &startupInfo,
+        &processInfo);
+
+    if (!result) {
+        *pProcessId = 0;
+        *pResumeHandle = NULL;
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    if (processInfo.hProcess != NULL)
+    {
+        CloseHandle(processInfo.hProcess);
+    }
+
+    *pProcessId = processInfo.dwProcessId;
+    *pResumeHandle = processInfo.hThread;
+
+    return S_OK;
+}
+
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// ResumeProcess - to be used with the CreateProcessForLaunch resume handle
+//
+//-----------------------------------------------------------------------------
+HRESULT
+ResumeProcess(
+    __in HANDLE hResumeHandle)
+{
+    PUBLIC_CONTRACT;
+    if (ResumeThread(hResumeHandle) == (DWORD)-1)
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+    return S_OK;
+}
+
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// CloseResumeHandle - to be used with the CreateProcessForLaunch resume handle
+//
+//-----------------------------------------------------------------------------
+HRESULT
+CloseResumeHandle(
+    __in HANDLE hResumeHandle)
+{
+    PUBLIC_CONTRACT;
+    if (!CloseHandle(hResumeHandle))
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+    return S_OK;
+}
+
 #ifdef FEATURE_PAL
 
 static
@@ -436,7 +534,7 @@ public:
             }
         }
 
-        if (FAILED(hr))
+        if (FAILED(hr) && !m_canceled)
         {
             m_callback(NULL, m_parameter, hr);
         }

@@ -159,20 +159,13 @@ namespace System {
 
         // Returns the generation that obj is currently in.
         //
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecurityCritical]
-#else
         [System.Security.SecuritySafeCritical]  // auto-generated
-#endif
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int GetGeneration(Object obj);
 
     
         // Forces a collection of all generations from 0 through Generation.
         //
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecurityCritical]  // auto-generated
-#endif
         public static void Collect(int generation) {
             Collect(generation, GCCollectionMode.Default);
         }
@@ -207,7 +200,7 @@ namespace System {
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException("mode", Environment.GetResourceString("ArgumentOutOfRange_Enum"));
             }
 
             Contract.EndContractBlock();

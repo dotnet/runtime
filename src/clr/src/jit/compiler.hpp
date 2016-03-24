@@ -38,10 +38,7 @@ inline
 bool                 getInlinePInvokeEnabled()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITPInvokeEnabled;
-    static ConfigDWORD fStressCOMCall;
-
-    return fJITPInvokeEnabled.val(CLRConfig::INTERNAL_JITPInvokeEnabled) && !fStressCOMCall.val(CLRConfig::INTERNAL_StressCOMCall);
+    return JitConfig.JitPInvokeEnabled() && !JitConfig.StressCOMCall();
 #else
     return true;
 #endif
@@ -51,8 +48,7 @@ inline
 bool                 getInlinePInvokeCheckEnabled()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITPInvokeCheckEnabled;
-    return fJITPInvokeCheckEnabled.val(CLRConfig::INTERNAL_JITPInvokeCheckEnabled) != 0;
+    return JitConfig.JitPInvokeCheckEnabled() != 0;
 #else
     return false;
 #endif
@@ -89,8 +85,7 @@ inline
 RoundLevel          getRoundFloatLevel()
 {
 #ifdef DEBUG
-    static ConfigDWORD fJITRoundFloat;
-    return (RoundLevel) fJITRoundFloat.val_DontUse_(CLRConfig::INTERNAL_JITRoundFloat, DEFAULT_ROUND_LEVEL);
+    return (RoundLevel) JitConfig.JitRoundFloat();
 #else
     return DEFAULT_ROUND_LEVEL;
 #endif
@@ -1104,6 +1099,13 @@ GenTreeCall*        Compiler::gtNewHelperCallNode(unsigned        helper,
                                         type,
                                         args);
     result->gtFlags |= flags;
+
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
     return result;
 }
 
@@ -1583,7 +1585,7 @@ inline unsigned     Compiler::lvaGrabTemp(bool shortLifetime
         if (pComp->lvaHaveManyLocals())
         {
             // Don't create more LclVar with inlining 
-            compInlineResult->noteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+            compInlineResult->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
         }
 
         unsigned tmpNum = pComp->lvaGrabTemp(shortLifetime DEBUGARG(reason));
@@ -3085,15 +3087,13 @@ void                Compiler::tmpDone()
 inline
 bool                Compiler::shouldUseVerboseTrees()
 {
-    static ConfigDWORD fVerboseTrees;
-    return (fVerboseTrees.val(CLRConfig::INTERNAL_JitDumpVerboseTrees) == 1);
+    return (JitConfig.JitDumpVerboseTrees() == 1);
 }
 
 inline
 bool                Compiler::shouldUseVerboseSsa()
 {
-    static ConfigDWORD fVerboseSsa;
-    return (fVerboseSsa.val(CLRConfig::INTERNAL_JitDumpVerboseSsa) == 1);
+    return (JitConfig.JitDumpVerboseSsa() == 1);
 }
 
 //------------------------------------------------------------------------
@@ -3105,8 +3105,7 @@ bool                Compiler::shouldUseVerboseSsa()
 inline
 bool                Compiler::shouldDumpASCIITrees()
 {
-    static ConfigDWORD fASCIITrees;
-    return (fASCIITrees.val(CLRConfig::INTERNAL_JitDumpASCII) == 1);
+    return (JitConfig.JitDumpASCII() == 1);
 }
 
 /*****************************************************************************
@@ -3119,8 +3118,7 @@ bool                Compiler::shouldDumpASCIITrees()
 inline
 DWORD               getJitStressLevel()
 {
-    static ConfigDWORD fJitStress;
-    return fJitStress.val(CLRConfig::INTERNAL_JitStress);
+    return JitConfig.JitStress();
 }
 
 /*****************************************************************************
@@ -3130,9 +3128,7 @@ DWORD               getJitStressLevel()
 inline
 DWORD               StrictCheckForNonVirtualCallToVirtualMethod()
 {
-    static ConfigDWORD fJitStrictCheckForNonVirtualCallToVirtualMethod;
-    return fJitStrictCheckForNonVirtualCallToVirtualMethod.val(
-           CLRConfig::INTERNAL_JitStrictCheckForNonVirtualCallToVirtualMethod) == 1;
+    return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
 }
 
 #endif // DEBUG
@@ -4058,7 +4054,7 @@ bool            Compiler::compStressCompile(compStressArea    stressArea,
 
 
 inline
-norls_allocator * Compiler::compGetAllocator()
+ArenaAllocator * Compiler::compGetAllocator()
 {
     return compAllocator;
 }
@@ -4080,7 +4076,7 @@ void  *                 Compiler::compGetMem(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(sz, cmk);
 #endif
 
-    return  compAllocator->nraAlloc(sz);
+    return  compAllocator->allocateMemory(sz);
 }
 
 #endif
@@ -4142,7 +4138,7 @@ void  *                 Compiler::compGetMemA(size_t sz, CompMemKind cmk)
     genMemStats.AddAlloc(allocSz, cmk);
 #endif
 
-    void * ptr = compAllocator->nraAlloc(allocSz);
+    void * ptr = compAllocator->allocateMemory(allocSz);
 
     // Verify that the current block is aligned. Only then will the next
     // block allocated be on an aligned boundary.
@@ -4295,7 +4291,7 @@ bool                Compiler::compDonotInline()
     if (compIsForInlining())
     {
        assert(compInlineResult != nullptr);
-       return compInlineResult->isFailure();
+       return compInlineResult->IsFailure();
     }
     else
     {
@@ -4336,7 +4332,7 @@ Compiler::lvaPromotionType   Compiler::lvaGetPromotionType (const LclVarDsc *   
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPLUS_JitNoStructPromotion=2 
+    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2 
     if (fgNoStructParamPromotion)
     {
         // The struct parameter is not enregistered

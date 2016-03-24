@@ -231,16 +231,15 @@ void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned 
 {
     CONTRACTL{
         PRECONDITION(pFile != NULL);
-        PRECONDITION(pFile->HasNativeImage());
         PRECONDITION(pwszSig != NULL);
         PRECONDITION(nSigSize >= 39);
     } CONTRACTL_END;
 
-    PEImageHolder pNativeImage(pFile->GetNativeImageWithRef());
-    CORCOMPILE_VERSION_INFO * pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
-    _ASSERTE(pVersionInfo);
-    CORCOMPILE_NGEN_SIGNATURE * pSignature = &pVersionInfo->signature;
-    if(!StringFromGUID2(*pSignature, pwszSig, nSigSize))
+    // We use the MVID as the signature, since ready to run images
+    // don't have a native image signature.
+    GUID mvid;
+    pFile->GetMVID(&mvid);
+    if(!StringFromGUID2(mvid, pwszSig, nSigSize))
     {
         pwszSig[0] = '\0';
     }

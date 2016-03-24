@@ -3,6 +3,7 @@
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
   <!--Leaf project Properties-->
   <PropertyGroup>
+    <IsDesktopTool>true</IsDesktopTool>
     <OutputName>ildasmrc</OutputName>
     <TargetType>DYNLINK</TargetType>
     <LinkSubsystem>windows</LinkSubsystem>

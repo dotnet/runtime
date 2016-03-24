@@ -26,6 +26,7 @@ Revision History:
 #include "pal/process.h"
 #include "pal/module.h"
 #include "pal/malloc.hpp"
+#include "pal/stackstring.hpp"
 
 #include <errno.h>
 #include <unistd.h> 
@@ -61,20 +62,16 @@ Function :
     
     On failure it returns FALSE and sets the 
     proper LastError code.
-    
-See rotor_pal.doc for more details.
 
 --*/
 BOOL 
-PALAPI
-PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN UINT cchDirectoryName ) 
+PAL_GetPALDirectoryW(PathWCharString& lpDirectoryName) 
 {
-    LPWSTR lpFullPathAndName = NULL;
-    LPWSTR lpEndPoint = NULL;
+    LPCWSTR lpFullPathAndName = NULL;
+    LPCWSTR lpEndPoint = NULL;
     BOOL bRet = FALSE;
 
     PERF_ENTRY(PAL_GetPALDirectoryW);
-    ENTRY( "PAL_GetPALDirectoryW( %p, %d )\n", lpDirectoryName, cchDirectoryName );
 
     MODSTRUCT *module = LOADGetPalLibrary();
     if (!module)
@@ -94,41 +91,111 @@ PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN UINT cchDirectoryName )
         /* The path that we return is required to have
            the trailing slash on the end.*/
         lpEndPoint++;
-    }
-    if ( lpFullPathAndName && lpEndPoint && *lpEndPoint != '\0' )
-    {
-        while ( cchDirectoryName - 1 && lpFullPathAndName != lpEndPoint )
-        {
-            *lpDirectoryName = *lpFullPathAndName;
-            lpFullPathAndName++;
-            lpDirectoryName++;
-            cchDirectoryName--;
-        }
-            
-        if ( lpFullPathAndName == lpEndPoint )
-        {
-            *lpDirectoryName = '\0';
-            bRet = TRUE;
-            goto EXIT;
-        }
-        else
+    
+        
+        if(!lpDirectoryName.Set(lpFullPathAndName,lpEndPoint - lpFullPathAndName))
         {
             ASSERT( "The buffer was not large enough.\n" );
             SetLastError( ERROR_INSUFFICIENT_BUFFER );
             goto EXIT;
         }
+
+        bRet = TRUE;
     }
     else
     {
         ASSERT( "Unable to determine the path.\n" );
+        /* Error path, should not be executed. */
+        SetLastError( ERROR_INTERNAL_ERROR );
     }
     
-    /* Error path, should not be executed. */
-    SetLastError( ERROR_INTERNAL_ERROR );
 EXIT:    
+    PERF_EXIT(PAL_GetPALDirectoryW);
+    return bRet;
+}
+
+BOOL
+PAL_GetPALDirectoryA(PathCharString& lpDirectoryName)
+{
+    BOOL bRet;
+    PathWCharString directory;
+
+    PERF_ENTRY(PAL_GetPALDirectoryA);
+
+    bRet = PAL_GetPALDirectoryW(directory);
+
+    if (bRet) 
+    {
+        
+        int length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, NULL, 0, NULL, 0);
+        LPSTR DirectoryName = lpDirectoryName.OpenStringBuffer(length);
+        if (NULL == DirectoryName)
+        {
+            SetLastError( ERROR_INSUFFICIENT_BUFFER );
+            bRet = FALSE;
+        }
+        
+        length = WideCharToMultiByte(CP_ACP, 0, directory.GetString(), -1, DirectoryName, length, NULL, 0);
+
+        if (0 == length)
+        {
+            bRet = FALSE;
+            length++;
+        }
+    
+        lpDirectoryName.CloseBuffer(length - 1);
+    }
+
+    PERF_EXIT(PAL_GetPALDirectoryA);
+    return bRet;
+}
+
+/*++
+
+Function :
+
+    PAL_GetPALDirectoryW
+    
+    Returns the fully qualified path name
+    where the PALL DLL was loaded from.
+    
+    On failure it returns FALSE and sets the 
+    proper LastError code.
+    
+See rotor_pal.doc for more details.
+
+--*/
+PALIMPORT
+BOOL 
+PALAPI
+PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN OUT UINT* cchDirectoryName ) 
+{
+    PathWCharString directory;
+    BOOL bRet;
+    PERF_ENTRY(PAL_GetPALDirectoryW);
+    ENTRY( "PAL_GetPALDirectoryW( %p, %d )\n", lpDirectoryName, *cchDirectoryName );
+
+    bRet = PAL_GetPALDirectoryW(directory);
+
+    if (bRet) {
+        
+        if (directory.GetCount() > *cchDirectoryName)
+        {
+            SetLastError( ERROR_INSUFFICIENT_BUFFER );
+            bRet = FALSE;
+        }
+        else
+        { 
+            PAL_wcscpy(lpDirectoryName, directory.GetString());
+        }
+
+        *cchDirectoryName = directory.GetCount();
+    }
+
     LOGEXIT( "PAL_GetPALDirectoryW returns BOOL %d.\n", bRet);
     PERF_EXIT(PAL_GetPALDirectoryW);
     return bRet;
+
 }
 
 PALIMPORT
@@ -136,25 +203,34 @@ BOOL
 PALAPI
 PAL_GetPALDirectoryA(
              OUT LPSTR lpDirectoryName,
-             IN UINT cchDirectoryName)
+             IN UINT*  cchDirectoryName)
 {
     BOOL bRet;
-    WCHAR PALDirW[_MAX_PATH];
+    PathCharString directory;
 
     PERF_ENTRY(PAL_GetPALDirectoryA);
-    ENTRY( "PAL_GetPALDirectoryA( %p, %d )\n", lpDirectoryName, cchDirectoryName );
+    ENTRY( "PAL_GetPALDirectoryA( %p, %d )\n", lpDirectoryName, *cchDirectoryName );
 
-    bRet = PAL_GetPALDirectoryW(PALDirW, _MAX_PATH);
-    if (bRet) {
-        if (WideCharToMultiByte(CP_ACP, 0, 
-            PALDirW, -1, lpDirectoryName, cchDirectoryName, NULL, 0)) {
-            bRet = TRUE;
-        } else {
+    bRet = PAL_GetPALDirectoryA(directory);
+
+    if (bRet) 
+    {
+        if (directory.GetCount() > *cchDirectoryName)
+        {
+            SetLastError( ERROR_INSUFFICIENT_BUFFER );
+            bRet = FALSE;
+            *cchDirectoryName = directory.GetCount();
+        }
+        else if (strcpy_s(lpDirectoryName, directory.GetCount(), directory.GetString()) == SAFECRT_SUCCESS) 
+        {
+        }
+        else 
+        {
             bRet = FALSE;
         }
     }
 
-    LOGEXIT( "PAL_GetPALDirectoryW returns BOOL %d.\n", bRet);
+    LOGEXIT( "PAL_GetPALDirectoryA returns BOOL %d.\n", bRet);
     PERF_EXIT(PAL_GetPALDirectoryA);
     return bRet;
 }

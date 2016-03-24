@@ -928,6 +928,10 @@ ReleaseString:
     {
         CFRelease(cfString);
     }
+#else /*HAVE_COREFOUNDATION */
+    ERROR( "This code page is not in the system.\n" );
+    SetLastError( ERROR_INVALID_PARAMETER );
+    goto EXIT;
 #endif /* HAVE_COREFOUNDATION */
 
 EXIT:
@@ -978,7 +982,6 @@ PAL_BindResources(IN LPCSTR lpDomain)
     }
     DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, len, coreCLRDirectoryPath);
     coreCLRDirectoryPathPS.CloseBuffer(size);
-    _ASSERTE(size <= MAX_LONGPATH);
 
     LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
 

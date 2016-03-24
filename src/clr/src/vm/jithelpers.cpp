@@ -6039,24 +6039,7 @@ NOINLINE HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HAN
 #ifdef FEATURE_CORECLR
         // Transparent methods that contains unverifiable code is not allowed.
         MethodDesc *pMethod = GetMethod(methHnd_);
-
-#if defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-        // For code coverage builds we have an issue where the inserted IL is not verifiable.
-        // This means that transparent methods in platform assemblies will throw verification exceptions.
-        // Temporary fix is to allow transparent methods in platform assemblies to be unverifiable only on coverage builds.
-        // Paranoia: allow this only on non ret builds - all builds except the RET type will have
-        // FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED defined. So we can use that to figure out if this is a RET build
-        // type that someone is trying to relax that constraint on and not allow that.
-        if (!pMethod->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
-        {
-            // Only throw if pMethod is not in any platform assembly.
-            SecurityTransparent::ThrowMethodAccessException(pMethod);
-        }
-#else // defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-
         SecurityTransparent::ThrowMethodAccessException(pMethod);
-#endif // defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-
 #else // FEATURE_CORECLR        
     //
     // inject a full-demand for unmanaged code permission at runtime
@@ -6892,17 +6875,17 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
 // *****************************************************************************
 //  JitHelperLogging usage:
 //      1) Ngen using:
-//              COMPLUS_HardPrejitEnabled=0 
+//              COMPlus_HardPrejitEnabled=0 
 //
 //         This allows us to instrument even ngen'd image calls to JIT helpers. 
 //         Remember to clear the key after ngen-ing and before actually running 
 //         the app you want to log.
 //
 //      2) Then set:
-//              COMPLUS_JitHelperLogging=1
-//              COMPLUS_LogEnable=1
-//              COMPLUS_LogLevel=1
-//              COMPLUS_LogToFile=1
+//              COMPlus_JitHelperLogging=1
+//              COMPlus_LogEnable=1
+//              COMPlus_LogLevel=1
+//              COMPlus_LogToFile=1
 //
 //      3) Run the app that you want to log; Results will be in COMPLUS.LOG(.X)
 //

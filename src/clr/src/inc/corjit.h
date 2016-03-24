@@ -30,6 +30,8 @@
 
 #include <corinfo.h>
 
+#include <stdarg.h>
+
 #define CORINFO_STACKPROBE_DEPTH        256*sizeof(UINT_PTR)          // Guaranteed stack until an fcall/unmanaged
                                                     // code can set up a frame. Please make sure
                                                     // this is less than a page. This is due to
@@ -318,9 +320,16 @@ enum CheckedWriteBarrierKinds {
 };
 #endif
 
+#if COR_JIT_EE_VERSION > 460
+
+#include "corjithost.h"
+
+extern "C" void __stdcall jitStartup(ICorJitHost* host);
+
+#endif
+
 class ICorJitCompiler;
 class ICorJitInfo;
-
 struct IEEMemoryManager;
 
 extern "C" ICorJitCompiler* __stdcall getJit();

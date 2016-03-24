@@ -11,15 +11,6 @@
 #ifndef _common_h_ 
 #define _common_h_
 
-#ifdef CLR_STANDALONE_BINDER
-
-#ifndef CLR_PRIV_BINDER_FOR_MDILBIND
-#include "..\tools\mdilbind\common.h"
-#endif //!CLR_PRIV_BINDER_FOR_MDILBIND
-
-#else //CLR_STANDALONE_BINDER
-
-
 #if defined(_MSC_VER) && defined(_X86_) && !defined(FPO_ON)
 #pragma optimize("y", on)       // Small critical routines, don't put in EBP frame 
 #define FPO_ON 1
@@ -540,8 +531,6 @@ extern INT64 g_PauseTime;          // Total duration of all pauses in the runtim
 extern Volatile<BOOL> g_IsPaused;   // True if the runtime is Paused for FAS
 extern CLREventStatic g_ClrResumeEvent;  // Event fired when the runtime is resumed after a Pause for FAS
 INT64 AdditionalWait(INT64 sPauseTime, INT64 sTime, INT64 expDuration);
-
-#endif // CLR_STANDALONE_BINDER
 
 #endif // !_common_h_
 

@@ -78,21 +78,6 @@ namespace System.IO {
             get { return _fileName; }
         }
 
-#if FEATURE_LEGACYNETCF
-        // override Data property to populate FileLoadException with Hresult
-        public override System.Collections.IDictionary Data { 
-            [System.Security.SecuritySafeCritical]
-            get {
-                var _data = base.Data;
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8 && !_data.Contains("HResult"))
-                {
-                    _data.Add("HResult", HResult);
-                }
-                return _data;
-           }
-        }
-#endif //FEATURE_LEGACYNETCF
-
         public override String ToString()
         {
             String s = GetType().FullName + ": " + Message;

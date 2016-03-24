@@ -53,19 +53,14 @@ extern "C" HRESULT STDMETHODCALLTYPE InitializeFusion();
 #include "shlwapi.h"
 #pragma warning(pop)
 
-#ifndef CLR_STANDALONE_BINDER
 extern const WCHAR g_pwBaseLibrary[];
 extern bool g_fAllowNativeImages;
-#ifdef  MDIL
-bool g_fIsNGenEmbedILProcess;
-#endif
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 bool g_fNGenMissingDependenciesOk;
 #endif
 bool g_fNGenWinMDResilient;
 #if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
 extern int g_ningenState;
-#endif
 #endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -88,7 +83,6 @@ void Zapper::ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...)
     SString message;
     message.Printf(W(".NET Runtime Optimization Service (%s) - %s"), VER_FILEVERSION_STR_L, s.GetUnicode());
 
-#ifndef BINDER
     // Note: We are using the same event log source as the ngen service. This may become problem 
     // if we ever want to split the ngen service from the rest of the .NET Framework.
     ClrReportEvent(W(".NET Runtime Optimization Service"),
@@ -97,8 +91,7 @@ void Zapper::ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...)
         dwEventID,              // event identifier
         NULL,                   // no user security identifier
         message.GetUnicode());
-#endif
-    
+
     // Output the message to the logger as well.
     if (wType == EVENTLOG_WARNING_TYPE)
         Warning(W("%s\n"), s.GetUnicode());
@@ -147,7 +140,6 @@ static HRESULT GetAssemblyName(
 // For side by side issues, it's best to use the exported API calls to generate a
 // Zapper Object instead of creating one on your own.
 
-#ifndef CLR_STANDALONE_BINDER
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL)
@@ -216,20 +208,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         if (pwzPlatformWinmdPaths != nullptr)
             zap->SetPlatformWinmdPaths(pwzPlatformWinmdPaths);
-
-#ifdef  MDIL
-        if (dwFlags & NGENWORKER_FLAGS_CREATEMDIL)
-            zap->SetCompilerFlag(CORJIT_FLG_MDIL);
-
-        if (dwFlags & NGENWORKER_FLAGS_MINIMAL_MDIL)
-            zap->SetCompilerFlag(CORJIT_FLG_MINIMAL_MDIL);
-
-        if (dwFlags & NGENWORKER_FLAGS_NOMDIL)
-            zap->SetCompilerFlag(CORJIT_FLG_NO_MDIL);
-
-        g_fIsNGenEmbedILProcess = !!(dwFlags & NGENWORKER_FLAGS_EMBEDMDIL);
-        zap->SetEmbedMDIL(!!(dwFlags & NGENWORKER_FLAGS_EMBEDMDIL));
-#endif
 
         zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
 
@@ -416,7 +394,6 @@ STDAPI_(BOOL) LegacyNGenCompile(HANDLE hZapper, LPCWSTR path)
 }// NGenCompile
 
 #endif // FEATURE_CORECLR || CROSSGEN_COMPILE
-#endif // CLR_STANDALONE_BINDER
 
 /* --------------------------------------------------------------------------- *
  * Options class
@@ -546,6 +523,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         zo->m_compilerFlags |= CORJIT_FLG_PROF_ENTERLEAVE;
     }
 
+#ifdef FEATURE_FUSION
     if (pOptions->lpszRepositoryDir != NULL && pOptions->lpszRepositoryDir[0] != '\0')
     {
         size_t buflen = wcslen(pOptions->lpszRepositoryDir) + 1;
@@ -564,11 +542,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
     }
     else
     {
-#ifdef CLR_STANDALONE_BINDER
-        zo->m_repositoryFlags = RepositoryDefault;
-#else
         zo->m_repositoryFlags = (RepositoryFlags)REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_RepositoryFlags, RepositoryDefault);
-#endif // CLR_STANDALONE_BINDER
     }
 
     // The default location of the repository is "repository" folder under framework version directory
@@ -589,6 +563,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         if (zo->m_repositoryFlags == RepositoryDefault)
             zo->m_repositoryFlags = MoveFromRepository;
     }
+#endif //FEATURE_FUSION
 
     if (pOptions->fInstrument)
         zo->m_compilerFlags |= CORJIT_FLG_BBINSTR;
@@ -701,10 +676,6 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 #endif
 
     m_fForceFullTrust = false;
-
-#ifdef MDIL
-    m_fEmbedMDIL = false;
-#endif
 }
 
 // LoadAndInitializeJITForNgen: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
@@ -718,7 +689,6 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 //                     It is NULL if the JIT returns a NULL interface pointer, or if the JIT-EE interface GUID is mismatched.
 //
 // Note that both *phJit and *ppICorJitCompiler will be non-NULL on success. On failure, an exception is thrown.
-#ifndef BINDER
 void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler)
 {
     _ASSERTE(phJit != NULL);
@@ -772,6 +742,13 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     (*sxsJitStartupFn) (cccallbacks);
 #endif
 
+    typedef void (__stdcall* pJitStartup)(ICorJitHost* host);
+    pJitStartup jitStartupFn = (pJitStartup)GetProcAddress(*phJit, "jitStartup");
+    if (jitStartupFn != nullptr)
+    {
+        jitStartupFn(JitHost::getJitHost());
+    }
+
     //get the appropriate compiler interface
     typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
     pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
@@ -804,18 +781,13 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
     // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
     *ppICorJitCompiler = pICorJitCompiler;
 }
-#endif // !BINDER
 
-#ifdef BINDER
-void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument, ICorCompileInfo *compileInfo, ICorDynamicInfo *dynamicInfo)
-#else
 void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
-#endif
 {
     if (m_pEECompileInfo != NULL)
         return;
 
-#if defined(FEATURE_COMINTEROP) && !defined(BINDER)
+#if defined(FEATURE_COMINTEROP)
     //
     // Initialize COM
     //
@@ -831,12 +803,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     // Get EE compiler interface and initialize the EE
     //
 
-#ifdef BINDER
-    _ASSERTE(dynamicInfo != NULL && compileInfo != NULL);
-    m_pEECompileInfo = compileInfo;
-#else
     m_pEECompileInfo = GetCompileInfo();
-#endif
 
     if (m_pOpt->m_statOptions)
         IfFailThrow(m_pEECompileInfo->SetVerboseLevel (CORCOMPILE_STATS));
@@ -870,18 +837,14 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     }
 #endif // ALLOW_LOCAL_WORKER
 
-#ifdef BINDER
-    m_pEEJitInfo = dynamicInfo;
-#else
     m_pEEJitInfo = GetZapJitInfo();
-#endif
 
-#ifndef BINDER
     //
     // Get JIT interface
     //
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
+    jitStartup(JitHost::getJitHost());
     m_pJitCompiler = getJit();
 
     if (m_pJitCompiler == NULL)
@@ -921,7 +884,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
 
 #ifdef ALLOW_SXS_JIT_NGEN
 
-    // Do not load altjit unless COMPLUS_AltJitNgen is set.
+    // Do not load altjit unless COMPlus_AltJitNgen is set.
     LPWSTR altJit;
     HRESULT hr = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AltJitNgen, &altJit);
     if (FAILED(hr))
@@ -953,7 +916,6 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
         LoadAndInitializeJITForNgen(altName, &m_hAltJITCompiler, &m_alternateJit);
     }
 #endif // ALLOW_SXS_JIT_NGEN
-#endif // BINDER
 }
 
 Zapper::~Zapper()
@@ -2021,10 +1983,6 @@ void ZapperSetAppCompatWP8(ICorCompilationDomain *pDomain);
 
 void Zapper::CreateCompilationDomain()
 {
-#ifdef BINDER
-    _ASSERTE(!"not reachable");
-#else
-
 #if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
     // Platform assemblies paths have to be set before appdomain is setup so that
     // mscorlib.dll can be loaded from them.
@@ -2044,32 +2002,12 @@ void Zapper::CreateCompilationDomain()
     // collect the assembly dependencies for use in the version info, as
     // well as isolating the compilation code.
 
-#ifdef MDIL
-    MDILCompilationFlags mdilFlags = MDILCompilationFlags_None;
-    if (m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-        mdilFlags = (MDILCompilationFlags)(mdilFlags | MDILCompilationFlags_CreateMDIL);
-
-    if (m_pOpt->m_compilerFlags & CORJIT_FLG_MINIMAL_MDIL)
-        mdilFlags = (MDILCompilationFlags)(mdilFlags | MDILCompilationFlags_MinimalMDIL);
-
-    if (m_pOpt->m_compilerFlags & CORJIT_FLG_NO_MDIL)
-        mdilFlags = (MDILCompilationFlags)(mdilFlags | MDILCompilationFlags_NoMDIL);
-
-    IfFailThrow(m_pEECompileInfo->CreateDomain(&m_pDomain,
-                                               CreateAssemblyEmitter(),
-                                               fForceDebug,
-                                               fForceProfile,
-                                               fForceInstrument,
-                                               m_fForceFullTrust,
-                                               mdilFlags));
-#else
     IfFailThrow(m_pEECompileInfo->CreateDomain(&m_pDomain,
                                                CreateAssemblyEmitter(),
                                                fForceDebug,
                                                fForceProfile,
                                                fForceInstrument,
                                                m_fForceFullTrust));
-#endif
 
 #ifdef CROSSGEN_COMPILE
     IfFailThrow(m_pDomain->SetPlatformWinmdPaths(m_platformWinmdPaths));
@@ -2092,8 +2030,6 @@ void Zapper::CreateCompilationDomain()
         ZapperSetAppCompatWP8(m_pDomain);
     }
 #endif
-
-#endif // BINDER
 }
 
 void Zapper::CreateDependenciesLookupDomain()
@@ -2328,7 +2264,7 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
     }
     else
     {
-#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX) && !defined(CLR_STANDALONE_BINDER) && !defined(FEATURE_CORECLR)
+#if defined(FEATURE_HOSTED_BINDER) && defined(FEATURE_APPX) && !defined(FEATURE_CORECLR)
         if (m_pOpt->m_fAutoNGen)
         {
             // Make sure we're not been spoofed into loading an assembly that might be unsafe to load.
@@ -2370,7 +2306,6 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
         IfFailThrow(hr);
     }
 
-#ifndef BINDER
 #ifndef FEATURE_CORECLR
     if (m_pOpt->m_fAutoNGen && !m_pEECompileInfo->SupportsAutoNGen(hAssembly))
     {
@@ -2378,7 +2313,6 @@ void Zapper::ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyString, CORCOMP
         ThrowHR(E_FAIL);
     }
 #endif // FEATURE_CORECLR
-#endif // BINDER
 
     //
     // Check if we have a native image already, and if so get its GUID
@@ -2606,9 +2540,6 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
 
     HRESULT hr = S_OK;
 
-
-#if !defined(CLR_STANDALONE_BINDER)
-
     bool fMscorlib = false;
     LPCWSTR fileName = PathFindFileName(string);
     if (fileName != NULL && SString::_wcsicmp(fileName, g_pwBaseLibrary) == 0)
@@ -2642,22 +2573,6 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
         g_fAllowNativeImages = false;
     }
 #endif
-
-#if defined (MDIL)
-    if (fMscorlib)
-    {
-        if ((m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL) != 0) // we are generating MDIL
-        {
-            //
-            // Disallow use of native images to force MDIL generation for mscorlib
-            //
-            g_fAllowNativeImages = false;
-        }
-    }
-#endif
-
-#endif // !CLR_STANDALONE_BINDER
-
 
     // the errors in CreateCompilationDomain are fatal - propogate them up
     CreateCompilationDomain();
@@ -2799,14 +2714,6 @@ void Zapper::CompileInCurrentDomain(__in LPCWSTR string, CORCOMPILE_NGEN_SIGNATU
     // Compile the assembly
     //
     CompileAssembly(pNativeImageSig);
-
-#ifdef MDIL
-    if (!m_pOpt->m_silent && (m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL))
-    {
-        GetSvcLogger()->Printf(W("MDIL image %s generated successfully.\n"), GetOutputFileName().GetUnicode());
-        goto Exit;
-    }
-#endif
 
     goto Exit; // Avoid warning about unreferenced label
 
@@ -3230,7 +3137,7 @@ void Zapper::GetOutputFolder()
     // active use because process ID is unique), increment N, and try again.  Give up if N gets too large.
     for (DWORD n = 0; ; n++)
     {
-        swprintf_s(m_outputPath, W("%s\\%x-%x"), (LPCWSTR)tempPath, GetCurrentProcessId(), n);
+        m_outputPath.Printf(W("%s\\%x-%x"), (LPCWSTR)tempPath, GetCurrentProcessId(), n);
         if (WszCreateDirectory(m_outputPath, NULL))
             break;
 
@@ -3568,11 +3475,11 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
         const WCHAR * pathend = wcsrchr( assemblyPath, DIRECTORY_SEPARATOR_CHAR_W );
         if( pathend )
         {
-            wcsncpy_s(m_outputPath, _countof(m_outputPath), assemblyPath, pathend - assemblyPath);
+            m_outputPath.Set(assemblyPath, COUNT_T(pathend - assemblyPath));
         }
         else
         {
-            wcscpy_s(m_outputPath, _countof(m_outputPath), W(".") DIRECTORY_SEPARATOR_STR_W);
+            m_outputPath.Set(W(".") DIRECTORY_SEPARATOR_STR_W);
         }
     }
 #endif // FEATURE_FUSION
@@ -3612,11 +3519,6 @@ void Zapper::CompileAssembly(CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig)
 #ifdef FEATURE_MULTIMODULE_ASSEMBLIES 
         CompileNonManifestModules(hashAlgId, hFiles);
 #endif // FEATURE_MULTIMODULE_ASSEMBLIES 
-
-#ifdef  MDIL
-        if (m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-            return;
-#endif
 
         //
         // Record the version info
@@ -3801,9 +3703,6 @@ void Zapper::CompileNonManifestModules(ULONG hashAlgId, SArray<HANDLE> &hFiles)
             NewHolder<ZapImage> pModule;
             pModule = CompileModule(hModule, NULL);
 
-#ifdef MDIL
-            if (!(m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL))
-#endif
             {
                 SString strFileNameWithoutExt(strFileName);
                 SString::CIterator fileNameIterator = strFileNameWithoutExt.End();
@@ -3820,9 +3719,6 @@ void Zapper::CompileNonManifestModules(ULONG hashAlgId, SArray<HANDLE> &hFiles)
             }
         }
 
-#ifdef MDIL
-        if (!(m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL))
-#endif
         {
             NewArrayHolder<BYTE> pbHashValue;
             DWORD cbHashValue;
@@ -3889,13 +3785,6 @@ ZapImage * Zapper::CompileModule(CORINFO_MODULE_HANDLE hModule,
     Info(W("Compiling input file %s\n"), module->m_pModuleFileName);
 
     module->Compile();
-
-#ifdef MDIL
-    if (m_pOpt->m_compilerFlags & CORJIT_FLG_MDIL)
-    {
-        return  NULL;
-    }
-#endif
 
     if (IsReadyToRunCompilation())
     {
@@ -4173,18 +4062,6 @@ void Zapper::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
 void Zapper::SetAppCompatWP8(bool val)
 {
     m_appCompatWP8 = val;
-}
-#endif
-
-#ifdef MDIL
-void Zapper::SetEmbedMDIL(bool val)
-{
-    m_fEmbedMDIL = val;
-}
-
-void Zapper::SetCompilerFlag(DWORD val)
-{
-    m_pOpt->m_compilerFlags |= val;
 }
 #endif
 
