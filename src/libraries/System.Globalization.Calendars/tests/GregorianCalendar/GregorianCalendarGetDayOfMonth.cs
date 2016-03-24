@@ -11,16 +11,16 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetDayOfMonth_TestData()
         {
-            yield return new object[] { new GregorianCalendar().ToDateTime(2006, 1, 1, 0, 0, 0, 0), 1 };
-            yield return new object[] { new GregorianCalendar().ToDateTime(2006, 1, 17, 0, 0, 0, 0), 17 };
-            yield return new object[] { new GregorianCalendar().ToDateTime(2006, 1, 31, 0, 0, 0, 0), 31 };
+            yield return new object[] { new DateTime(2006, 1, 1) };
+            yield return new object[] { new DateTime(2006, 1, 17) };
+            yield return new object[] { new DateTime(2006, 1, 31) };
         }
 
         [Theory]
         [MemberData(nameof(GetDayOfMonth_TestData))]
-        public void GetDayOfMonth(DateTime time, int expected)
+        public void GetDayOfMonth(DateTime time)
         {
-            Assert.Equal(expected, new GregorianCalendar().GetDayOfMonth(time));
+            Assert.Equal(time.Day, new GregorianCalendar().GetDayOfMonth(time));
         }
     }
 }

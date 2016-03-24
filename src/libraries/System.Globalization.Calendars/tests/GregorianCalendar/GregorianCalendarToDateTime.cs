@@ -12,8 +12,6 @@ namespace System.Globalization.Tests
     public class GregorianCalendarToDateTime
     {
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-
         private static int RandomEra() => s_randomDataGenerator.GetInt32(-55) & 1;
 
         public static IEnumerable<object[]> ToDateTime_Valid_TestData()
@@ -40,8 +38,8 @@ namespace System.Globalization.Tests
         public void ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
             DateTime expected = new DateTime(year, month, day, hour, minute, second, millisecond);
-            DateTime result = s_calendar.ToDateTime(year, month, day, hour, minute, second, millisecond, era);
-            Assert.Equal(expected, result);
+            DateTime actual = new GregorianCalendar().ToDateTime(year, month, day, hour, minute, second, millisecond, era);
+            Assert.Equal(expected, actual);
         }
     }
 }
