@@ -19,19 +19,5 @@ namespace System.Text.Tests
             int maxByteCount = utf8.GetMaxByteCount(charCount);
         }
         #endregion
-
-        #region Negative Test Cases
-        // NegTest1: ArgumentOutOfRangeException is not thrown when charCount is less than zero
-        [Fact]
-        public void NegTest1()
-        {
-            UTF8Encoding utf8 = new UTF8Encoding();
-            int charCount = -1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                int maxByteCount = utf8.GetMaxByteCount(charCount);
-            });
-        }
-        #endregion
     }
 }
