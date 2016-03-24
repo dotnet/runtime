@@ -115,12 +115,17 @@ public class WindowAndCursorProps
 
             Assert.Equal(newTitle, Console.Title);
 
-            //// Try setting a Title greater than 256 chars.
+            // Try setting a Title equal to 256 chars.
+            newTitle = new string('a', 256);
+            Console.Title = newTitle;
+            Assert.Equal(newTitle, Console.Title);
+
+            // Try setting a Title greater than 256 chars.
             newTitle = new string('a', 1024);
             Console.Title = newTitle;
             Assert.Equal(newTitle, Console.Title);
 
-            //// Try setting a title greater than 24500 chars and check that it fails.
+            // Try setting a title greater than 24500 chars and check that it fails.
             newTitle = new string('a', 24501);
             Assert.Throws<ArgumentOutOfRangeException>(() => { Console.Title = newTitle; });
         }
