@@ -3707,10 +3707,16 @@ void                emitter::emitIns_R_R   (instruction ins,
                                             regNumber   reg1,
                                             regNumber   reg2)
 {
-    /* We don't want to generate any useless mov instructions! */
-    assert(ins != INS_mov || reg1 != reg2);
-
     emitAttr   size = EA_SIZE(attr);
+
+    /* We don't want to generate any useless mov instructions! */
+#ifdef _TARGET_AMD64_
+    // Same-reg 4-byte mov can be useful because it performs a
+    // zero-extension to 8 bytes.
+    assert(ins != INS_mov || reg1 != reg2 || size == EA_4BYTE);
+#else
+    assert(ins != INS_mov || reg1 != reg2);
+#endif // _TARGET_AMD64_
 
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
