@@ -13,6 +13,7 @@ namespace System.Text.Tests
         {
             yield return new object[] { new UnicodeEncoding() };
             yield return new object[] { new UTF7Encoding() };
+            yield return new object[] { new UTF8Encoding() };
         }
         
         [Theory]
