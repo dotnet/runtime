@@ -292,6 +292,21 @@ bool deps_json_t::load_standalone(const json_value& json, const pal::string_t& t
             }
         }
     }
+
+    if (trace::is_enabled())
+    {
+        trace::verbose(_X("The rid fallback graph is: {"));
+        for (const auto& rid : m_rid_fallback_graph)
+        {
+            trace::verbose(_X("%s => ["), rid.first.c_str());
+            for (const auto& fallback : rid.second)
+            {
+                trace::verbose(_X("%s, "), fallback.c_str());
+            }
+            trace::verbose(_X("]"));
+        }
+        trace::verbose(_X("}"));
+    }
     return true;
 }
 
@@ -304,6 +319,7 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
     // If file doesn't exist, then assume parsed.
     if (!pal::file_exists(deps_path))
     {
+        trace::verbose(_X("Deps file does not exist [%s]"), deps_path.c_str());
         return true;
     }
 
@@ -311,6 +327,7 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
     pal::ifstream_t file(deps_path);
     if (!file.good())
     {
+        trace::error(_X("Could not open file stream on deps file [%s]"), deps_path.c_str());
         return false;
     }
 
@@ -320,6 +337,8 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
 
         const auto& runtime_target = json.at(_X("runtimeTarget"));
         const pal::string_t& name = runtime_target.as_string();
+
+        trace::verbose(_X("Loading deps file... %s as portable=[%d]"), deps_path.c_str(), portable);
 
         return (portable) ? load_portable(json, name, rid_fallback_graph) : load_standalone(json, name);
     }

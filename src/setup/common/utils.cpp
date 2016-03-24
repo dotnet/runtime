@@ -77,7 +77,13 @@ pal::string_t strip_file_ext(const pal::string_t& path)
     {
         return path;
     }
-    return path.substr(0, path.rfind(_X('.')));
+    size_t sep_pos = path.rfind(_X("/\\"));
+    size_t dot_pos = path.rfind(_X('.'));
+    if (sep_pos != pal::string_t::npos && sep_pos > dot_pos)
+    {
+	    return path;
+    }
+    return path.substr(0, dot_pos);
 }
 
 pal::string_t get_filename_without_ext(const pal::string_t& path)
@@ -167,6 +173,7 @@ bool parse_known_args(
             return false;
         }
 
+        trace::verbose(_X("Parsed known arg %s = %s"), arg.c_str(), argv[arg_i + 1]);
         (*opts)[arg] = argv[arg_i + 1];
 
         // Increment for both the option and its value.
