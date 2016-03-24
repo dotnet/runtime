@@ -67,7 +67,7 @@ namespace System.Globalization
 
             if (name.Length == 0) //The InvariantCulture has no matching region
             {
-                throw new ArgumentException(SR.Argument_NoRegionInvariantCulture);
+                throw new ArgumentException(SR.Argument_NoRegionInvariantCulture, "name");
             }
 
             Contract.EndContractBlock();
