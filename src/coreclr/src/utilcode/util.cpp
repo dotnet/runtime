@@ -2892,7 +2892,7 @@ void SOTolerantViolation(const char *szFunction, const char *szFile, int lineNum
 
 //
 // SONotMainlineViolation is used to report any code with SO_NOT_MAINLINE being run in a test environment
-// with COMPLUS_NO_SO_NOT_MAINLINE enabled
+// with COMPlus_NO_SO_NOT_MAINLINE enabled
 //
 void SONotMainlineViolation(const char *szFunction, const char *szFile, int lineNum) 
 {
@@ -2901,7 +2901,7 @@ void SONotMainlineViolation(const char *szFunction, const char *szFile, int line
 
 //
 // SONotMainlineViolation is used to report any code with SO_NOT_MAINLINE being run in a test environment
-// with COMPLUS_NO_SO_NOT_MAINLINE enabled
+// with COMPlus_NO_SO_NOT_MAINLINE enabled
 //
 void SOBackoutViolation(const char *szFunction, const char *szFile, int lineNum) 
 {
@@ -2968,8 +2968,8 @@ void SOViolation(const char *szFunction, const char *szFile, int lineNum, SOViol
                         "CONTRACT VIOLATION by %s at \"%s\" @ %d\n\n" 
                         "SO-not-mainline function being called with not-mainline checking enabled.\n"
                         "\nPlease open a bug against the feature owner.\n"
-                        "\nNOTE: You can disable this ASSERT by setting COMPLUS_SOEnableDefaultRWValidation=0.\n"
-                        "      or by turning of not-mainline checking by by setting COMPLUS_NO_SO_NOT_MAINLINE=0.\n"
+                        "\nNOTE: You can disable this ASSERT by setting COMPlus_SOEnableDefaultRWValidation=0.\n"
+                        "      or by turning of not-mainline checking by by setting COMPlus_NO_SO_NOT_MAINLINE=0.\n"
                         "\nFor details about this feature, see, in a CLR enlistment,\n"
                         "src\\ndp\\clr\\doc\\OtherDevDocs\\untriaged\\clrdev_web\\SO Guide for CLR Developers.doc\n",
                             szFunction, szFile, lineNum);
@@ -2981,7 +2981,7 @@ void SOViolation(const char *szFunction, const char *szFile, int lineNum, SOViol
                         "SO Backout Marker overrun.\n\n" 
                         "A dtor or handler path exceeded the backout code stack consumption limit.\n"
                         "\nPlease open a bug against the feature owner.\n"
-                        "\nNOTE: You can disable this ASSERT by setting COMPLUS_SOEnableBackoutStackValidation=0.\n"
+                        "\nNOTE: You can disable this ASSERT by setting COMPlus_SOEnableBackoutStackValidation=0.\n"
                         "\nFor details about this feature, see, in a CLR enlistment,\n"
                         "src\\ndp\\clr\\doc\\OtherDevDocs\\untriaged\\clrdev_web\\SO Guide for CLR Developers.doc\n");
     }
@@ -2992,7 +2992,7 @@ void SOViolation(const char *szFunction, const char *szFile, int lineNum, SOViol
                         "CONTRACT VIOLATION by %s at \"%s\" @ %d\n\n" 
                         "SO-intolerant function called outside an SO probe.\n"
                         "\nPlease open a bug against the feature owner.\n"
-                        "\nNOTE: You can disable this ASSERT by setting COMPLUS_SOEnableDefaultRWValidation=0.\n"
+                        "\nNOTE: You can disable this ASSERT by setting COMPlus_SOEnableDefaultRWValidation=0.\n"
                         "\nFor details about this feature, see, in a CLR enlistment,\n"
                         "src\\ndp\\clr\\doc\\OtherDevDocs\\untriaged\\clrdev_web\\SO Guide for CLR Developers.doc\n",
                             szFunction, szFile, lineNum);

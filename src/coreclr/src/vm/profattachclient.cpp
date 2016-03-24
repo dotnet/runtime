@@ -226,7 +226,7 @@ HRESULT ProfilingAPIAttachClient::AttachProfiler(
         return CORPROF_E_PROFILEE_PROCESS_NOT_FOUND;
     }
 
-    // Adjust time out value according to env var COMPLUS_ProfAPI_AttachProfilerTimeoutInMs
+    // Adjust time out value according to env var COMPlus_ProfAPI_AttachProfilerTimeoutInMs
     // The default is 10 seconds as we want to avoid client (trigger process) time out too early 
     // due to wait operation for concurrent GC in the server (profilee side)
     DWORD dwMillisecondsMinFromEnv = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProfAPI_AttachProfilerMinTimeoutInMs);

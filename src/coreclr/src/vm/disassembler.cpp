@@ -70,7 +70,6 @@ bool Disassembler::IsAvailable()
 #endif // USE_COREDISTOOLS_DISASSEMBLER
 }
 
-// static
 void Disassembler::StaticInitialize()
 {
     LIMITED_METHOD_CONTRACT;
@@ -78,10 +77,35 @@ void Disassembler::StaticInitialize()
 #if USE_COREDISTOOLS_DISASSEMBLER
     _ASSERTE(!IsAvailable());
 
-    // TODO: The 'coredistools' library will eventually be part of a NuGet package, need to be able to load
-    // that using appropriate search paths
-    LPCWSTR libraryName = MAKEDLLNAME(W("coredistools"));
-    HMODULE libraryHandle = CLRLoadLibrary(libraryName);
+    HMODULE libraryHandle = nullptr;
+    PathString libPath;
+    DWORD result = WszGetModuleFileName(nullptr, libPath);
+    if (result == 0) {
+#ifdef _DEBUG
+        wprintf(
+            W("GetModuleFileName failed, function 'DisasmInstruction': error %u\n"),
+            GetLastError());
+#endif // _DEBUG
+        return;
+    }
+
+#if defined(FEATURE_PAL)
+    WCHAR delim = W('/');
+#else
+    WCHAR delim = W('\\');
+#endif
+    LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
+    PathString::Iterator iter = libPath.End();
+    if (libPath.FindBack(iter, delim)) {
+        libPath.Truncate(++iter);
+        libPath.Append(libFileName);
+    }
+    else {
+        _ASSERTE(!"unreachable");
+    }
+
+    LPCWSTR libraryName = libPath.GetUnicode();
+    libraryHandle = CLRLoadLibrary(libraryName);
     do
     {
         if (libraryHandle == nullptr)
@@ -137,8 +161,8 @@ void Disassembler::StaticInitialize()
         return;
     } while (false);
 
-    CLRFreeLibrary(libraryHandle);
     _ASSERTE(!IsAvailable());
+    
 #endif // USE_COREDISTOOLS_DISASSEMBLER
 }
 

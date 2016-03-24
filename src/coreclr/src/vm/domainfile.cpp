@@ -943,6 +943,11 @@ void DomainFile::CheckZapRequired()
     if (m_pFile->HasNativeImage() || !IsZapRequired())
         return;
 
+#ifdef FEATURE_READYTORUN
+    if(m_pFile->GetLoaded()->HasReadyToRunHeader())
+        return;
+#endif
+
     // Flush any log messages
     GetFile()->FlushExternalLog();
 
@@ -2347,7 +2352,7 @@ void DomainAssembly::FindNativeImage()
         {
             SString sbuf;
             StackScratchBuffer scratch;
-            sbuf.Printf("COMPLUS_NgenBind_ZapForbid violation: %s.", GetSimpleName());
+            sbuf.Printf("COMPlus_NgenBind_ZapForbid violation: %s.", GetSimpleName());
             DbgAssertDialog(__FILE__, __LINE__, sbuf.GetUTF8(scratch));
         }
 #endif
@@ -3442,18 +3447,6 @@ void DomainAssembly::GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE
     PEImageLayoutHolder ilLayout(GetFile()->GetAnyILWithRef());
     pSignature->timeStamp = ilLayout->GetTimeDateStamp();
     pSignature->ilImageSize = ilLayout->GetVirtualSize();
-#ifdef MDIL    
-    if (g_fIsNGenEmbedILProcess)
-    {
-        PEImageHolder pILImage(GetFile()->GetILimage());
-        DWORD dwActualILSize; 
-        if (pILImage->GetLoadedLayout()->GetILSizeFromMDILCLRCtlData(&dwActualILSize))
-        {
-            // Use actual source IL size instead of MDIL size
-            pSignature->ilImageSize = dwActualILSize;
-        }
-    }
-#endif  // MDIL
 }
 
 BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
@@ -3526,6 +3519,10 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_CORECLR
+    return TRUE;
+#else
+
     //
     // System libraries are a special case, the security info's always OK.
     //
@@ -3543,21 +3540,6 @@ BOOL DomainAssembly::CheckZapSecurity(PEImage *pNativeImage)
         return TRUE;
 #endif
 
-#if defined(FEATURE_CORECLR)
-    // Lets first check whether the assembly is going to receive full trust
-    BOOL fAssemblyIsFullyTrusted = this->GetAppDomain()->IsImageFullyTrusted(pNativeImage);
-
-    // Check if the assembly was ngen as platform
-    Module *  pNativeModule = pNativeImage->GetLoadedLayout()->GetPersistedModuleImage();
-    BOOL fImageAndDependenciesAreFullTrust = pNativeModule->m_pModuleSecurityDescriptor->IsMicrosoftPlatform();
-
-    // return true only if image was ngen at the same trust level as the current trust level. 
-    // images ngen'd as fulltrust can only be loaded in fulltrust and 
-    // non-trusted transparent assembly ngen image can only be loaded in partial trust 
-    // ( only tranparent assemblies can be ngen'd as partial trust.....if it has critical code ngen will error out)
-    return (fAssemblyIsFullyTrusted == fImageAndDependenciesAreFullTrust);
-
-#else // FEATURE_CORECLR
     ETWOnStartup (SecurityCatchCall_V1, SecurityCatchCallEnd_V1);
 
 #ifdef CROSSGEN_COMPILE
@@ -3811,13 +3793,6 @@ DWORD DomainAssembly::ComputeDebuggingConfig()
     {
         dacfFlags |= DACF_USER_OVERRIDE;
     }
-#ifdef FEATURE_LEGACYNETCF
-    else
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8)
-    {
-        // NetCF did not respect the DebuggableAttribute
-    }
-#endif
     else
     {
         IfFailThrow(GetDebuggingCustomAttributes(&dacfFlags));

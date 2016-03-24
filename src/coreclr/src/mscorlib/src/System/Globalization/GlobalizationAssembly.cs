@@ -10,7 +10,6 @@ namespace System.Globalization {
     using System.Collections.Generic;
     using System.Threading;
     using System.Security;
-    using System.Security.Principal;
     using System.Security.Permissions;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;

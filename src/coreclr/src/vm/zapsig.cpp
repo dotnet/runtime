@@ -14,11 +14,7 @@
 #ifdef FEATURE_PREJIT
 #include "zapsig.h"
 #include "typedesc.h"
-#ifndef BINDER
 #include "compile.h"
-#else
-#include "mdilmodule.h"
-#endif
 #include "sigbuilder.h"
 
 #ifndef DACCESS_COMPILE
@@ -102,11 +98,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
         case ELEMENT_TYPE_VAR_ZAPSIG:
             {
                 TypeVarTypeDesc * pTypeVarDesc = dac_cast<PTR_TypeVarTypeDesc>(desc);
-#ifdef BINDER
-                MdilModule * pVarTypeModule = pTypeVarDesc->GetModule();
-#else
                 Module * pVarTypeModule = pTypeVarDesc->GetModule();
-#endif
                 if (pVarTypeModule != this->context.pInfoModule)
                 {
                     DWORD index = (*this->pfnEncodeModule)(this->context.pModuleContext, pVarTypeModule);
@@ -203,25 +195,19 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     // We may need to emit an out-of-module escape sequence
     // 
-#ifdef BINDER
-    MdilModule *pTypeHandleModule = pMT->GetModule();
-#else
     Module *pTypeHandleModule = pMT->GetModule_NoLogging();
-#endif
 
     // If the type handle's module is different that the this->pInfoModule 
     // we will need to add an out-of-module escape for the type
     //
     DWORD index = 0;
     mdToken token = pMT->GetCl_NoLogging();
-#ifndef BINDER
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     if (pTypeHandleModule != this->context.pInfoModule && !pTypeHandleModule->IsInCurrentVersionBubble())
     {
         pTypeHandleModule = GetAppDomain()->ToCompilationDomain()->GetTargetModule();
         token = pTypeHandleModule->LookupTypeRefByMethodTable(pMT);
     }
-#endif
 #endif
     if (pTypeHandleModule != this->context.pInfoModule) 
     {
@@ -318,7 +304,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     return elemType;
 }
-#ifndef BINDER
+
 //
 // Compare a metadata signature element with a type handle
 // The type handle must have a fully restored type key, which in turn means that modules for all of its
@@ -327,11 +313,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 // Hence we can do the signature comparison without incurring any loads or restores.
 //
 /*static*/ BOOL ZapSig::CompareSignatureToTypeHandle(PCCOR_SIGNATURE          pSig,   
-#ifdef BINDER
-                                                     MdilModule*              pModule, 
-#else
                                                      Module*                  pModule, 
-#endif
                                                      TypeHandle               handle,
                                                      const ZapSig::Context *  pZapSigContext)
 {
@@ -356,11 +338,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     //
     // pOrigModule is the original module that contained this ZapSig
     // 
-#ifdef BINDER
-    MdilModule *   pOrigModule = pZapSigContext->pInfoModule;
-#else
     Module *       pOrigModule = pZapSigContext->pInfoModule;
-#endif
     CorElementType sigType     = CorSigUncompressElementType(pSig);
     CorElementType handleType  = handle.GetSignatureCorElementType();
 
@@ -1432,7 +1410,5 @@ void ZapSig::EncodeField(
 }
 
 #endif // DACCESS_COMPILE
-
-#endif // !BINDER
 
 #endif // FEATURE_PREJIT

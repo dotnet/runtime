@@ -32,7 +32,7 @@
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
-                                         RuntimeIdentifier="dotnet"
+                                         RuntimeIdentifier="$(TestNugetRuntimeId)"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="%(ProjectLockJsonFiles.Identity)"
                                          TargetMonikers="@(TestTargetFramework)">

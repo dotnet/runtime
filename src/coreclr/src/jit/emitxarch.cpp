@@ -2569,9 +2569,9 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
         {
             GenTreeIndir* mem = node->AsIndir();
             
-            if (mem->HasBase() && mem->Base()->OperGet() == GT_CLS_VAR_ADDR)
+            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
             {
-                emitIns_R_C(ins, attr, node->gtRegNum, mem->Base()->gtClsVar.gtClsVarHnd, 0);
+                emitIns_R_C(ins, attr, node->gtRegNum, mem->Addr()->gtClsVar.gtClsVarHnd, 0);
                 return;
             }
             else if (mem->Addr()->OperGet() == GT_LCL_VAR_ADDR)
@@ -2586,7 +2586,6 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
                 GenTreePtr addr = mem->Addr();
 
                 assert (addr->OperIsAddrMode() ||
-                        addr->gtOper == GT_CLS_VAR_ADDR ||
                         (addr->IsCnsIntOrI() && addr->isContained()) ||
                         !addr->isContained());
                 size_t offset = mem->Offset();
@@ -2618,15 +2617,15 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
             size_t offset = mem->Offset();
             GenTree* data = node->gtOp.gtOp2;
 
-            if ((memBase != nullptr) && (memBase->OperGet() == GT_CLS_VAR_ADDR))
+            if (mem->Addr()->OperGet() == GT_CLS_VAR_ADDR)
             {
                 if (data->isContained())
                 {
-                    emitIns_C_I(ins, attr, memBase->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
+                    emitIns_C_I(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, 0, (int) data->AsIntConCommon()->IconValue());
                 }
                 else
                 {
-                    emitIns_C_R(ins, attr, memBase->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
+                    emitIns_C_R(ins, attr, mem->Addr()->gtClsVar.gtClsVarHnd, data->gtRegNum, 0);
                 }
                 return;
             }
@@ -5316,20 +5315,21 @@ void                emitter::emitIns_J(instruction   ins,
 
 void                emitter::emitIns_Call(EmitCallType  callType,
                                           CORINFO_METHOD_HANDLE methHnd,
-                                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)     // used to report call sites to the EE
-                                          void*         addr,
-                                          ssize_t       argSize,
-                                          emitAttr      retSize,
-                                          VARSET_VALARG_TP ptrVars,
-                                          regMaskTP     gcrefRegs,
-                                          regMaskTP     byrefRegs,
-                                          IL_OFFSETX    ilOffset /* = BAD_IL_OFFSET */,
-                                          regNumber     ireg    /* = REG_NA */,
-                                          regNumber     xreg    /* = REG_NA */,
-                                          unsigned      xmul    /* = 0     */,
-                                          ssize_t       disp    /* = 0     */,
-                                          bool          isJump  /* = false */,
-                                          bool          isNoGC  /* = false */)
+                                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO*   sigInfo)  // used to report call sites to the EE
+                                          void*                                     addr,
+                                          ssize_t                                   argSize,
+                                          emitAttr                                  retSize
+                                          FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(emitAttr    secondRetSize),
+                                          VARSET_VALARG_TP                          ptrVars,
+                                          regMaskTP                                 gcrefRegs,
+                                          regMaskTP                                 byrefRegs,
+                                          IL_OFFSETX                                ilOffset, // = BAD_IL_OFFSET
+                                          regNumber                                 ireg,     // = REG_NA
+                                          regNumber                                 xreg,     // = REG_NA
+                                          unsigned                                  xmul,     // = 0
+                                          ssize_t                                   disp,     // = 0
+                                          bool                                      isJump,   // = false
+                                          bool                                      isNoGC)   // = false
 {
     /* Sanity check the arguments depending on callType */
 
@@ -5513,17 +5513,29 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                callType == EC_INDIR_SR     || callType == EC_INDIR_C ||
                callType == EC_INDIR_ARD);
 
-        id  = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize);
+        id  = emitNewInstrCallInd(argCnt,
+                                  disp,
+                                  ptrVars,
+                                  gcrefRegs,
+                                  byrefRegs,
+                                  retSize
+                                  FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize));
     }
     else
     {
-        /* Helper/static/nonvirtual/function calls (direct or through handle),
-           and calls to an absolute addr. */
+        // Helper/static/nonvirtual/function calls (direct or through handle),
+        // and calls to an absolute addr.
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR ||
+        assert(callType == EC_FUNC_TOKEN ||
+               callType == EC_FUNC_TOKEN_INDIR ||
                callType == EC_FUNC_ADDR);
 
-        id  = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize);
+        id  = emitNewInstrCallDir(argCnt,
+                                  ptrVars,
+                                  gcrefRegs,
+                                  byrefRegs,
+                                  retSize
+                                  FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(secondRetSize));
     }
 
     /* Update the emitter's live GC ref sets */
@@ -5609,7 +5621,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
                     // An absolute indir address that doesn't need reloc should fit within 32-bits
                     // to be encoded as offset relative to zero.  This addr mode requires an extra
                     // SIB byte
-                    noway_assert((int)addr == (size_t)addr);
+                    noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                     sz++;
                 }
 #endif //_TARGET_AMD64_
@@ -5647,7 +5659,7 @@ void                emitter::emitIns_Call(EmitCallType  callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert((int)addr == (size_t)addr);
+            noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
 #endif //_TARGET_AMD64_
@@ -6921,11 +6933,11 @@ PRINT_CONSTANT:
 
         if (IsAVXInstruction(ins))
         {
-            printf("%s, %s", emitYMMregName((unsigned)id->idReg1()), sstr);
+            printf(", %s", emitYMMregName((unsigned)id->idReg1()));
         }
         else if (IsSSE2Instruction(ins))
         {
-            printf(", %s", emitXMMregName((unsigned)id->idReg1()), sstr);
+            printf(", %s", emitXMMregName((unsigned)id->idReg1()));
         }
         else
         {
@@ -7014,7 +7026,17 @@ PRINT_CONSTANT:
         {
             printf("%s, %s", emitRegName(id->idReg2(), attr), emitXMMregName((unsigned)id->idReg1()));
         }
-        else if  (ins == INS_cvttsd2si)
+#ifndef LEGACY_BACKEND
+        else if  ((ins == INS_cvtsi2ss) || (ins == INS_cvtsi2sd))
+        {
+            printf(" %s, %s",  emitXMMregName((unsigned)id->idReg1()), emitRegName(id->idReg2(), attr));
+        }
+#endif
+        else if  ((ins == INS_cvttsd2si) 
+#ifndef LEGACY_BACKEND
+                  || (ins == INS_cvtss2si) || (ins == INS_cvtsd2si) || (ins == INS_cvttss2si)
+#endif
+                 )
         {
             printf(" %s, %s",  emitRegName(id->idReg1(), attr), emitXMMregName((unsigned)id->idReg2()));
         }
@@ -10478,13 +10500,13 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
                 // the addr can be encoded as pc-relative address.
                 noway_assert(!emitComp->opts.compReloc);
                 noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
-                noway_assert((int)addr == (ssize_t)addr);
+                noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
 
                 // This requires, specifying a SIB byte after ModRM byte.
                 dst += emitOutputWord(dst, code | 0x0400);
                 dst += emitOutputByte(dst, 0x25);
 #endif //_TARGET_AMD64_
-                dst += emitOutputLong(dst, (int)addr);
+                dst += emitOutputLong(dst, static_cast<int>(reinterpret_cast<intptr_t>(addr)));
             }
             goto DONE_CALL;
         }
@@ -10532,9 +10554,29 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
 
         // If the method returns a GC ref, mark EAX appropriately
         if (id->idGCref() == GCT_GCREF)
+        {
             gcrefRegs |= RBM_EAX;
-        else if  (id->idGCref() == GCT_BYREF)
+        }
+        else if (id->idGCref() == GCT_BYREF)
+        {
             byrefRegs |= RBM_EAX;
+        }
+        
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).  
+        if (id->idIsLargeCall())
+        {
+            instrDescCGCA* idCall = (instrDescCGCA*)id;
+            if (idCall->idSecondGCref() == GCT_GCREF)
+            {
+                gcrefRegs |= RBM_RDX;
+            }
+            else if (idCall->idSecondGCref() == GCT_BYREF)
+            {
+                byrefRegs |= RBM_RDX;
+            }
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING  
 
         // If the GC register set has changed, report the new set
         if (gcrefRegs != emitThisGCrefRegs)
@@ -11159,8 +11201,7 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
     {
         // set JitEmitPrintRefRegs=1 will print out emitThisGCrefRegs and emitThisByrefRegs
         // at the beginning of this method.
-        static ConfigDWORD fJitEmitPrintRefRegs;
-        if (fJitEmitPrintRefRegs.val(CLRConfig::INTERNAL_JitEmitPrintRefRegs) != 0)
+        if (JitConfig.JitEmitPrintRefRegs() != 0)
         {
             printf("Before emitOutputInstr for id->idDebugOnlyInfo()->idNum=0x%02x\n", id->idDebugOnlyInfo()->idNum);
             printf("  emitThisGCrefRegs(0x%p)=", emitComp->dspPtr(&emitThisGCrefRegs));
@@ -11175,8 +11216,7 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
 
         // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
         // emitting instruction a6, (i.e. IN00a6 in jitdump).
-        static ConfigDWORD fJitBreakEmitOutputInstr;
-        if ((unsigned)fJitBreakEmitOutputInstr.val(CLRConfig::INTERNAL_JitBreakEmitOutputInstr) == id->idDebugOnlyInfo()->idNum)
+        if ((unsigned)JitConfig.JitBreakEmitOutputInstr() == id->idDebugOnlyInfo()->idNum)
         {
             assert(!"JitBreakEmitOutputInstr reached");
         }

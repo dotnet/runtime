@@ -8,7 +8,9 @@
 
 ; For resource info, see the ResourceManager documentation and the ResGen tool,
 ; which is a managed app using ResourceWriter.
-; ResGen now supports C++ & C# style #ifdef's, like #ifndef FOO and #if BAR
+; ResGen now supports limited preprocessing of txt files, you can use
+; #if SYMBOL and #if !SYMBOL to control what sets of resources are included in
+; the resulting resources.
 
 ; The naming scheme is: [Namespace.] ExceptionName _ Reason
 ; We'll suppress "System." where possible.

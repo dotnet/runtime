@@ -11,12 +11,6 @@
   </PropertyGroup>
   
   <ItemGroup>
-
-    <!-- Windows nuget package will depend upon the APISet package -->
-    <Dependency Include="Microsoft.NETCore.Windows.ApiSets">
-      <Version>1.0.1-rc3-23803</Version>
-    </Dependency>
-
     <ArchitectureSpecificNativeFile Include="$(BinDir)clretwrc.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)coreclr.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)dbgshim.dll"/>
@@ -35,9 +29,9 @@
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
 
-    <!-- Using lib/dotnet here.  There is no TFM for this since it is a runtime itself. -->
+    <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
     <File Include="@(ArchitectureSpecificLibFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/dotnet</TargetPath>
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
     </File>
     
     <File Include="@(ArchitectureSpecificToolFile)">
@@ -46,7 +40,7 @@
 
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/dotnet</TargetPath>
+      <TargetPath>ref/netstandard1.0</TargetPath>
     </File>
   </ItemGroup>
 

@@ -968,7 +968,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
 
         if (profilerCompatibilityFlag == kPreventLoad)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPLUS_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
                  "Profiler will not be loaded.\n"));
 
             LogProfInfo(IDS_PROF_PROFILER_DISABLED, 
@@ -1083,7 +1083,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
     {
         if (profilerCompatibilityFlag == kDisableV2Profiler)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPLUS_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
                  "V2 profilers are not allowed, so that the configured V2 profiler is going to be unloaded.\n"));
 
             LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, wszClsid);
@@ -1100,7 +1100,7 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
             return S_OK;
         }
 
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPLUS_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
         LogProfInfo(IDS_PROF_V2PROFILER_ENABLED,

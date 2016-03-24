@@ -19,8 +19,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 #include "emit.h"
 
+
 /*****************************************************************************/
 
+ICorJitHost* g_jitHost = nullptr;
 static CILJit* ILJitter = 0;        // The one and only JITTER I return
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 HINSTANCE g_hInst = NULL;
@@ -45,8 +47,19 @@ JitOptions jitOpts =
 
 /*****************************************************************************/
 
-void jitStartup()
+extern "C"
+void __stdcall jitStartup(ICorJitHost* jitHost)
 {
+    g_jitHost = jitHost;
+
+    // `jitStartup` may be called multiple times
+    // when pre-jitting. We should not reinitialize
+    // config values each time.
+    if (!JitConfig.isInitialized())
+    {
+        JitConfig.initialize(jitHost);
+    }
+
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();
 #endif
@@ -61,13 +74,16 @@ void jitShutdown()
 #endif
 }
 
+
 /*****************************************************************************
  *  jitOnDllProcessAttach() called by DllMain() when jit.dll is loaded
  */
 
 void jitOnDllProcessAttach()
 {
-    jitStartup();
+#if COR_JIT_EE_VERSION <= 460
+    jitStartup(JitHost::getJitHost());
+#endif
 }
 
 /*****************************************************************************
@@ -78,7 +94,6 @@ void jitOnDllProcessDetach()
 {
     jitShutdown();
 }
-
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -139,9 +154,6 @@ ICorJitCompiler* __stdcall getJit()
     if (ILJitter == 0)
     {
         ILJitter = new (CILJitSingleton) CILJit();
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-        jitStartup();
-#endif
     }
     return(ILJitter);
 }
@@ -281,8 +293,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags)
         ((cpuCompileFlags & CORJIT_FLG_FEATURE_SIMD) != 0) &&
         ((cpuCompileFlags & CORJIT_FLG_USE_AVX2) != 0))
     {
-        static ConfigDWORD fEnableAVX;
-        if (fEnableAVX.val(CLRConfig::EXTERNAL_EnableAVX) != 0)
+        if (JitConfig.EnableAVX() != 0)
         {
             return 32;
         }
@@ -954,11 +965,12 @@ CORINFO_FIELD_HANDLE Compiler::eeFindJitDataOffs(unsigned dataOffs)
 bool Compiler::eeIsJitDataOffs(CORINFO_FIELD_HANDLE field)
 {
     // if 'field' is a jit data offset it has to fit into a 32-bit unsigned int
-    unsigned value = (unsigned) field;
+    unsigned value = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
     if (((CORINFO_FIELD_HANDLE)(size_t)value) != field)
     {
         return false;   // upper bits were set, not a jit data offset
     }
+
     // Data offsets are marked by the fact that the low two bits are 0b01 0x1
     return (value & iaut_MASK) == iaut_DATA_OFFSET;
 }
@@ -968,10 +980,10 @@ int Compiler::eeGetJitDataOffs(CORINFO_FIELD_HANDLE  field)
     // Data offsets are marked by the fact that the low two bits are 0b01 0x1
     if (eeIsJitDataOffs(field))
     {
-        unsigned dataOffs = (unsigned) field;
+        unsigned dataOffs = static_cast<unsigned>(reinterpret_cast<uintptr_t>(field));
         assert(((CORINFO_FIELD_HANDLE)(size_t)dataOffs) == field);
         assert(dataOffs < 0x40000000);
-        return ((int) field) >> iaut_SHIFT;
+        return (static_cast<int>(reinterpret_cast<intptr_t>(field))) >> iaut_SHIFT;
     }
     else
     {

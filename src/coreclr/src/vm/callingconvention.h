@@ -1492,11 +1492,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
                 _ASSERTE(!FORBIDGC_LOADER_USE_ENABLED());
                 CONTRACT_VIOLATION(ThrowsViolation);
 #endif
-#ifdef BINDER
-                IfFailThrow(COR_E_NOTSUPPORTED);
-#else
                 COMPlusThrow(kNotSupportedException);
-#endif
             }
 #endif
         }
@@ -1553,7 +1549,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         int endOfs = ofs + stackElemSize;
         if (endOfs > maxOffset)
         {
-#if !defined(DACCESS_COMPILE) && !defined(BINDER)
+#if !defined(DACCESS_COMPILE)
             if (endOfs > MAX_ARG_SIZE)
             {
 #ifdef _DEBUG

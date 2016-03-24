@@ -57,22 +57,6 @@ inline void AssemblySecurityDescriptor::SetSignatureLoaded()
 
 #endif // FEATURE_CAS_POLICY
 
-#ifdef FEATURE_CORECLR
-
-inline BOOL AssemblySecurityDescriptor::IsMicrosoftPlatform() 
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fMicrosoftPlatform;
-}
-
-inline void AssemblySecurityDescriptor::SetMicrosoftPlatform()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_fMicrosoftPlatform = TRUE;
-}
-
-#endif // FEATURE_CORECLR
-
 #ifdef FEATURE_APTCA
 
 inline BOOL AssemblySecurityDescriptor::IsConditionalAptca()
@@ -85,12 +69,6 @@ inline BOOL AssemblySecurityDescriptor::IsConditionalAptca()
 #endif // FEATURE_APTCA
 
 #endif // !DACCESS_COMPILE
-
-inline BOOL SharedSecurityDescriptor::IsMicrosoftPlatform() 
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fMicrosoftPlatform;
-}
 
 inline AssemblyLoadSecurity::AssemblyLoadSecurity() :
     m_pEvidence(NULL),

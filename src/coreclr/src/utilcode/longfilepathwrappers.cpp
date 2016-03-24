@@ -382,56 +382,6 @@ CopyFileWrapper(
     return ret;
 }
 
-
-BOOL
-MoveFileWrapper(
-        _In_ LPCWSTR lpExistingFileName,
-        _In_ LPCWSTR lpNewFileName
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr  = S_OK;
-    BOOL    ret = FALSE;
-    DWORD lastError;
-
-    BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(SetLastError(COR_E_STACKOVERFLOW); return FALSE;)
-
-    EX_TRY
-    {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
-        {
-            ret = MoveFileW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode()
-                    );
-        }
-            
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-    END_SO_INTOLERANT_CODE
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 BOOL
 MoveFileExWrapper(
         _In_     LPCWSTR lpExistingFileName,
@@ -1280,12 +1230,15 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 
 BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
 {
-    BOOL retval;
-    COUNT_T size  = MAX_LONGPATH;     //Retry once the PAL Api is fixed to return the correct size 
-    WCHAR* buffer = pbuffer.OpenUnicodeBuffer(size - 1);
+    BOOL retval = FALSE;
+    COUNT_T size  = MAX_LONGPATH;
 
-    retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), size);
-    size   = (COUNT_T)wcslen(buffer);
+    if(!(retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size)))
+    {
+        pbuffer.CloseBuffer(0);
+        retval = PAL_GetPALDirectoryW(pbuffer.OpenUnicodeBuffer(size - 1), &size);
+    }
+
     pbuffer.CloseBuffer(size);
 
     return retval;

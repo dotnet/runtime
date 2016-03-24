@@ -29,15 +29,15 @@ Abstract:
 #include <exception>
     
 #if HAVE_LIBUNWIND_H
-#ifndef __LINUX__
+#ifndef __linux__
 #define UNW_LOCAL_ONLY
-#endif // !__LINUX__       
+#endif // !__linux__       
 #include <libunwind.h>
-#ifdef __LINUX__
+#ifdef __linux__
 #ifdef HAVE_LIBUNWIND_PTRACE
 #include <libunwind-ptrace.h>
 #endif // HAVE_LIBUNWIND_PTRACE
-#endif // __LINUX__    
+#endif // __linux__    
 #endif // HAVE_LIBUNWIND_H
 
 
@@ -97,17 +97,29 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
 #elif defined(_ARM_)
-    unw_set_reg(cursor, UNW_ARM_R13, winContext->Sp);
-    unw_set_reg(cursor, UNW_ARM_R14, winContext->Lr);
-    unw_set_reg(cursor, UNW_ARM_R15, winContext->Pc);
-    unw_set_reg(cursor, UNW_ARM_R4, winContext->R4);
-    unw_set_reg(cursor, UNW_ARM_R5, winContext->R5);
-    unw_set_reg(cursor, UNW_ARM_R6, winContext->R6);
-    unw_set_reg(cursor, UNW_ARM_R7, winContext->R7);
-    unw_set_reg(cursor, UNW_ARM_R8, winContext->R8);
-    unw_set_reg(cursor, UNW_ARM_R9, winContext->R9);
-    unw_set_reg(cursor, UNW_ARM_R10, winContext->R10);
-    unw_set_reg(cursor, UNW_ARM_R11, winContext->R11);
+    // Assuming that unw_set_reg() on cursor will point the cursor to the
+    // supposed stack frame is dangerous for libunwind-arm in Linux.
+    // It is because libunwind's unw_cursor_t has other data structure
+    // initialized by unw_init_local(), which are not updated by
+    // unw_set_reg().
+    unw_context_t context;
+    context.regs[0] = 0;
+    context.regs[1] = 0;
+    context.regs[2] = 0;
+    context.regs[3] = 0;
+    context.regs[4] = winContext->R4;
+    context.regs[5] = winContext->R5;
+    context.regs[6] = winContext->R6;
+    context.regs[7] = winContext->R7;
+    context.regs[8] = winContext->R8;
+    context.regs[9] = winContext->R9;
+    context.regs[10] = winContext->R10;
+    context.regs[11] = winContext->R11;
+    context.regs[12] = 0;
+    context.regs[13] = winContext->Sp;
+    context.regs[14] = winContext->Lr;
+    context.regs[15] = winContext->Pc;
+    unw_init_local(cursor, &context);
 #endif
 }
 #endif
@@ -124,9 +136,10 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
 #elif defined(_ARM_)
-    unw_get_reg(cursor, UNW_ARM_R13, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    winContext->Pc &= ~0x1;
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
-    unw_get_reg(cursor, UNW_ARM_R15, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_ARM_R4, (unw_word_t *) &winContext->R4);
     unw_get_reg(cursor, UNW_ARM_R5, (unw_word_t *) &winContext->R5);
     unw_get_reg(cursor, UNW_ARM_R6, (unw_word_t *) &winContext->R6);

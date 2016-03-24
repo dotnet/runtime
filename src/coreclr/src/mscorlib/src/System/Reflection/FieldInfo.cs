@@ -314,10 +314,7 @@ namespace System.Reflection
         #region Object Overrides
         public unsafe override String ToString() 
         {
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                return FieldType.ToString() + " " + Name;
-            else
-                return FieldType.FormatTypeName() + " " + Name;
+            return FieldType.FormatTypeName() + " " + Name;
         }
         #endregion
 
@@ -517,11 +514,6 @@ namespace System.Reflection
                 {
                     if (target == null)
                     {
-#if FEATURE_LEGACYNETCF
-                        if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                            throw new ArgumentNullException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
-                        else
-#endif
                         throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
                     }
                     else

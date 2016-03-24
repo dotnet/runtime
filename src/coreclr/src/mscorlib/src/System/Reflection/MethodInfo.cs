@@ -721,16 +721,16 @@ namespace System.Reflection
             }
 #endif
 
+#if !FEATURE_CORECLR
             if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)) != 0)
             {
-#if !FEATURE_CORECLR
                 if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RISKY_METHOD) != 0)
                     CodeAccessPermission.Demand(PermissionType.ReflectionMemberAccess);
 
                 if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) != 0)
-#endif // !FEATURE_CORECLR
                     RuntimeMethodHandle.PerformSecurityCheck(obj, this, m_declaringType, (uint)m_invocationFlags);
             }
+#endif // !FEATURE_CORECLR
             #endregion
 
             return UnsafeInvokeInternal(obj, parameters, arguments);

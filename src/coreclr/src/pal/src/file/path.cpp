@@ -56,7 +56,8 @@ GetFullPathNameA(
      OUT LPSTR *lpFilePart)
 {
     DWORD  nReqPathLen, nRet = 0;
-    LPSTR lpUnixPath = NULL;
+    PathCharString unixPath;
+    LPSTR unixPathBuf;
     BOOL fullPath = FALSE;
 
     PERF_ENTRY(GetFullPathNameA);
@@ -80,33 +81,18 @@ GetFullPathNameA(
 
     if(fullPath)
     {
-        lpUnixPath = PAL__strdup( lpFileName );
-        if(NULL == lpUnixPath)
+        if( !unixPath.Set(lpFileName, strlen(lpFileName)))
         {
-            ERROR("strdup() failed; error is %d (%s)\n",
-                  errno, strerror(errno));
+            ERROR("Set() failed;\n");
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
     }   
     else
     {
-        size_t max_len;
-
-        /* allocate memory for full non-canonical path */
-        max_len = strlen(lpFileName)+1; /* 1 for the slash to append */
-        max_len += MAX_LONGPATH + 1; 
-        lpUnixPath = (LPSTR)PAL_malloc(max_len);
-        if(NULL == lpUnixPath)
-        {
-            ERROR("PAL_malloc() failed; error is %d (%s)\n",
-                  errno, strerror(errno));
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto done;
-        }
         
         /* build full path */
-        if(!GetCurrentDirectoryA(MAX_LONGPATH + 1, lpUnixPath))
+        if(!GetCurrentDirectoryA(unixPath))
         {
             /* no reason for this to fail now... */
             ASSERT("GetCurrentDirectoryA() failed! lasterror is %#xd\n",
@@ -115,30 +101,29 @@ GetFullPathNameA(
             goto done;
         }
         
-        if (strcat_s(lpUnixPath, max_len, "/") != SAFECRT_SUCCESS)
+        if (!unixPath.Append("/", 1) ||
+            !unixPath.Append(lpFileName,strlen(lpFileName))
+           )
         {
-            ERROR("strcat_s failed!\n");
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
+            ERROR("Append failed!\n");
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
             goto done;
         }
 
-        if (strcat_s(lpUnixPath, max_len, lpFileName) != SAFECRT_SUCCESS)
-        {
-            ERROR("strcat_s failed!\n");
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
-            goto done;
-        }
     }
 
+    unixPathBuf = unixPath.OpenStringBuffer(unixPath.GetCount());
     /* do conversion to Unix path */
-    FILEDosToUnixPathA( lpUnixPath );
+    FILEDosToUnixPathA( unixPathBuf );
  
     /* now we can canonicalize this */
-    FILECanonicalizePath(lpUnixPath);
+    FILECanonicalizePath(unixPathBuf);
 
     /* at last, we can figure out how long this path is */
-    nReqPathLen = strlen(lpUnixPath)+1;
+    nReqPathLen = strlen(unixPathBuf);
 
+    unixPath.CloseBuffer(nReqPathLen);
+    nReqPathLen++;
     if(nBufferLength < nReqPathLen)
     {
         TRACE("reporting insufficient buffer : minimum is %d, caller "
@@ -148,7 +133,7 @@ GetFullPathNameA(
     }
 
     nRet = nReqPathLen-1;
-    strcpy_s(lpBuffer, nBufferLength, lpUnixPath);
+    strcpy_s(lpBuffer, nBufferLength, unixPath);
 
     /* locate the filename component if caller cares */
     if(lpFilePart)
@@ -169,7 +154,6 @@ GetFullPathNameA(
     }
 
 done:
-    PAL_free (lpUnixPath);
     LOGEXIT("GetFullPathNameA returns DWORD %u\n", nRet);
     PERF_EXIT(GetFullPathNameA);
     return nRet;
@@ -191,8 +175,6 @@ GetFullPathNameW(
      OUT LPWSTR *lpFilePart)
 {
     LPSTR fileNameA;
-    /* bufferA needs to be able to hold a path that's potentially as
-       large as MAX_LONGPATH WCHARs. */
     CHAR * bufferA;
     size_t bufferASize = 0;
     PathCharString bufferAPS;
@@ -209,10 +191,6 @@ GetFullPathNameW(
           lpFileName?lpFileName:W16_NULLSTRING, nBufferLength, 
           lpBuffer, lpFilePart);
 
-    /* Find the number of bytes required to convert lpFileName
-       to ANSI. This may be more than MAX_LONGPATH. We try to
-       handle that case, since it may be less than MAX_LONGPATH
-       WCHARs. */
     
     fileNameLength = WideCharToMultiByte(CP_ACP, 0, lpFileName,
                                          -1, NULL, 0, NULL, NULL);
@@ -234,19 +212,12 @@ GetFullPathNameW(
     if( srcSize == 0 )
     {
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
-        {
-            ERROR("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        }
-        else
-        {
-            ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
-        }
+        ASSERT("WideCharToMultiByte failure! error is %d\n", dwLastError);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
     
-    bufferASize = MAX_LONGPATH * MaxWCharToAcpLengthRatio;
+    bufferASize = nBufferLength * MaxWCharToAcpLengthRatio;
     bufferA = bufferAPS.OpenStringBuffer(bufferASize);
     if (NULL == bufferA)
     {
@@ -724,6 +695,17 @@ FILEDosToUnixPathA(
     TRACE("Resulting Unix path = [%s]\n", lpPath);
 }
 
+void
+FILEDosToUnixPathA(
+       PathCharString&  lpPath)
+{
+
+    SIZE_T len = lpPath.GetCount();
+    LPSTR lpPathBuf = lpPath.OpenStringBuffer(len);
+    FILEDosToUnixPathA(lpPathBuf);
+    lpPath.CloseBuffer(len);
+
+}
 
 /*++
 Function:
@@ -1143,14 +1125,8 @@ SearchPathA(
        provided path */
     if('\\' == lpFileName[0] || '/' == lpFileName[0])
     {
-        if(FileNameLength >= MAX_LONGPATH)
-        {
-            WARN("absolute file name <%s> is too long\n", lpFileName);
-            SetLastError(ERROR_INVALID_PARAMETER);
-            goto done;
-        }
         /* Canonicalize the path to deal with back-to-back '/', etc. */
-        length = MAX_LONGPATH;
+        length = FileNameLength;
         CanonicalFullPath = CanonicalFullPathPS.OpenStringBuffer(length);
         if (NULL == CanonicalFullPath)
         {
@@ -1215,14 +1191,7 @@ SearchPathA(
     
             PathLength = pPathEnd-pPathStart;
     
-            if (PathLength+FileNameLength+1 >= MAX_LONGPATH) 
-            {
-                /* The path+'/'+file length is too long.  Skip it. */
-                WARN("path component %.*s is too long, skipping it\n", 
-                     (int)PathLength, pPathStart);
-                continue;
-            }
-            else if(0 == PathLength)
+            if(0 == PathLength)
             {
                 /* empty component : there were 2 consecutive ':' */
                 continue;
@@ -1249,7 +1218,7 @@ SearchPathA(
 
             FullPathPS.CloseBuffer(FullPathLength+1);            
             /* Canonicalize the path to deal with back-to-back '/', etc. */
-            length = MAX_LONGPATH;
+            length = MAX_LONGPATH; //Use it for first try
             CanonicalFullPath = CanonicalFullPathPS.OpenStringBuffer(length);
             if (NULL == CanonicalFullPath)
             {
@@ -1415,7 +1384,7 @@ SearchPathW(
     if('\\' == lpFileName[0] || '/' == lpFileName[0])
     {
         /* Canonicalize the path to deal with back-to-back '/', etc. */
-        length = MAX_LONGPATH;
+        length = MAX_LONGPATH; //Use it for first try
         CanonicalPath = CanonicalPathPS.OpenStringBuffer(length);
         if (NULL == CanonicalPath)
         {
@@ -1491,14 +1460,7 @@ SearchPathW(
     
             PathLength = pPathEnd-pPathStart;
     
-            if (PathLength+FileNameLength+1 >= MAX_LONGPATH) 
-            {
-                /* The path+'/'+file length is too long.  Skip it. */
-                WARN("path component %.*S is too long, skipping it\n", 
-                     (int)PathLength, pPathStart);
-                continue;
-            }
-            else if(0 == PathLength)
+            if(0 == PathLength)
             {
                 /* empty component : there were 2 consecutive ':' */
                 continue;
@@ -1520,7 +1482,7 @@ SearchPathW(
             FullPathPS.CloseBuffer(FullPathLength+1);
     
             /* Canonicalize the path to deal with back-to-back '/', etc. */
-            length = MAX_LONGPATH;
+            length = MAX_LONGPATH; //Use it for first try
             CanonicalPath = CanonicalPathPS.OpenStringBuffer(length);
             if (NULL == CanonicalPath)
             {

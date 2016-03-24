@@ -397,9 +397,8 @@ void log_va_msg(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, "[%5d]", GCToOSInterface::GetCurrentThreadIdForLogging());
     buffer_start += pid_len;
     memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
@@ -416,9 +415,8 @@ void log_va_msg(const char *fmt, va_list args)
         char index_str[8];
         memset (index_str, '-', 8);
         sprintf_s (index_str, _countof(index_str), "%d", (int)gc_buffer_index);
-        gc_log_buffer[gc_log_buffer_offset] = '\r';
-        gc_log_buffer[gc_log_buffer_offset + 1] = '\n';
-        memcpy (gc_log_buffer + (gc_log_buffer_offset + 2), index_str, 8);
+        gc_log_buffer[gc_log_buffer_offset] = '\n';
+        memcpy (gc_log_buffer + (gc_log_buffer_offset + 1), index_str, 8);
 
         gc_buffer_index++;
         if (gc_buffer_index > max_gc_buffers)
@@ -468,9 +466,8 @@ void log_va_msg_config(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int msg_len = _vsnprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, _TRUNCATE, fmt, args );
     assert (msg_len != -1);
     msg_len += buffer_start;
@@ -1509,6 +1506,18 @@ void WaitLongerNoInstru (int i)
     {
         if (bToggleGC || g_TrapReturningThreads)
         {
+#ifdef _DEBUG
+            // In debug builds, all enter_spin_lock operations go through this code.  If a GC has
+            // started, it is important to block until the GC thread calls set_gc_done (since it is
+            // guaranteed to have cleared g_TrapReturningThreads by this point).  This avoids livelock
+            // conditions which can otherwise occur if threads are allowed to spin in this function
+            // (and therefore starve the GC thread) between the point when the GC thread sets the
+            // WaitForGC event and the point when the GC thread clears g_TrapReturningThreads.
+            if (gc_heap::gc_started)
+            {
+                gc_heap::wait_for_gc_done();
+            }
+#endif // _DEBUG
             GCToEEInterface::DisablePreemptiveGC(pCurThread);
             if (!bToggleGC)
             {
@@ -2298,7 +2307,9 @@ uint32_t    gc_heap::high_memory_load_th;
 
 uint64_t    gc_heap::total_physical_mem;
 
-uint64_t    gc_heap::available_physical_mem;
+uint64_t    gc_heap::entry_available_physical_mem;
+
+bool        gc_heap::restricted_physical_memory_p = false;
 
 #ifdef BACKGROUND_GC
 CLREvent    gc_heap::bgc_start_event;
@@ -5672,7 +5683,7 @@ void gc_heap::fix_large_allocation_area (BOOL for_gc_p)
 
 #ifdef _DEBUG
     alloc_context* acontext = 
-#endif // DEBUG    
+#endif // _DEBUG
         generation_alloc_context (large_object_generation);
     assert (acontext->alloc_ptr == 0);
     assert (acontext->alloc_limit == 0); 
@@ -6566,11 +6577,11 @@ uint32_t*& card_table_mark_array (uint32_t* c_table)
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->mark_array;
 }
 
-#if defined (_TARGET_AMD64_)
+#ifdef BIT64
 #define mark_bit_pitch ((size_t)16)
 #else
 #define mark_bit_pitch ((size_t)8)
-#endif //AMD64
+#endif // BIT64
 #define mark_word_width ((size_t)32)
 #define mark_word_size (mark_word_width * mark_bit_pitch)
 
@@ -8184,7 +8195,7 @@ int index_of_set_bit (size_t power2)
     while (low <= high)
     {
         mid = ((low + high)/2);
-        size_t temp = 1 << mid;
+        size_t temp = (size_t)1 << mid;
         if (power2 & temp)
         {
             return mid;
@@ -11205,6 +11216,8 @@ size_t gc_heap::limit_from_size (size_t size, size_t room, int gen_number,
 void gc_heap::handle_oom (int heap_num, oom_reason reason, size_t alloc_size, 
                           uint8_t* allocated, uint8_t* reserved)
 {
+    dprintf (1, ("total committed on the heap is %Id", get_total_committed_size()));
+
     UNREFERENCED_PARAMETER(heap_num);
 
     if (reason == oom_budget)
@@ -11915,10 +11928,9 @@ void gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr)
 {
     if (recursive_gc_sync::background_running_p())
     {
-        GCMemoryStatus ms;
-        memset (&ms, 0, sizeof(ms));
-        GCToOSInterface::GetMemoryStatus(&ms);
-        if (ms.dwMemoryLoad >= 95)
+        uint32_t memory_load;
+        get_memory_info (&memory_load);
+        if (memory_load >= 95)
         {
             dprintf (GTC_LOG, ("high mem - wait for BGC to finish, wait reason: %d", awr));
             wait_for_background (awr);
@@ -14339,9 +14351,10 @@ int gc_heap::generation_to_condemn (int n_initial,
     }
     int i = 0;
     int temp_gen = 0;
-    GCMemoryStatus ms;
-    memset (&ms, 0, sizeof(ms));
     BOOL low_memory_detected = g_low_memory_status;
+    uint32_t memory_load = 0;
+    uint64_t available_physical = 0;
+    uint64_t available_page_file = 0;
     BOOL check_memory = FALSE;
     BOOL high_fragmentation  = FALSE;
     BOOL v_high_memory_load  = FALSE;
@@ -14558,31 +14571,30 @@ int gc_heap::generation_to_condemn (int n_initial,
     if (check_memory)
     {
         //find out if we are short on memory
-        GCToOSInterface::GetMemoryStatus(&ms);
+        get_memory_info (&memory_load, &available_physical, &available_page_file);
         if (heap_number == 0)
         {
-            dprintf (GTC_LOG, ("ml: %d", ms.dwMemoryLoad));
+            dprintf (GTC_LOG, ("ml: %d", memory_load));
         }
-
+        
         // Need to get it early enough for all heaps to use.
-        available_physical_mem = ms.ullAvailPhys;
-        local_settings->entry_memory_load = ms.dwMemoryLoad;
+        entry_available_physical_mem = available_physical;
+        local_settings->entry_memory_load = memory_load;
 
         // @TODO: Force compaction more often under GCSTRESS
-        if (ms.dwMemoryLoad >= high_memory_load_th || low_memory_detected)
+        if (memory_load >= high_memory_load_th || low_memory_detected)
         {
 #ifdef SIMPLE_DPRINTF
             // stress log can't handle any parameter that's bigger than a void*.
             if (heap_number == 0)
             {
-                dprintf (GTC_LOG, ("tp: %I64d, ap: %I64d, tp: %I64d, ap: %I64d", 
-                    ms.ullTotalPhys, ms.ullAvailPhys, ms.ullTotalPageFile, ms.ullAvailPageFile));
+                dprintf (GTC_LOG, ("tp: %I64d, ap: %I64d", total_physical_mem, available_physical));
             }
 #endif //SIMPLE_DPRINTF
 
             high_memory_load = TRUE;
 
-            if (ms.dwMemoryLoad >= v_high_memory_load_th || low_memory_detected)
+            if (memory_load >= v_high_memory_load_th || low_memory_detected)
             {
                 // TODO: Perhaps in 64-bit we should be estimating gen1's fragmentation as well since
                 // gen1/gen0 may take a lot more memory than gen2.
@@ -14596,7 +14608,7 @@ int gc_heap::generation_to_condemn (int n_initial,
             {
                 if (!high_fragmentation)
                 {
-                    high_fragmentation = dt_estimate_high_frag_p (tuning_deciding_condemned_gen, max_generation, ms.ullAvailPhys);
+                    high_fragmentation = dt_estimate_high_frag_p (tuning_deciding_condemned_gen, max_generation, available_physical);
                 }
             }
 
@@ -14806,7 +14818,7 @@ exit:
 
         if (check_memory)
         {
-            fgm_result.available_pagefile_mb = (size_t)(ms.ullAvailPageFile / (1024 * 1024));
+            fgm_result.available_pagefile_mb = (size_t)(available_page_file / (1024 * 1024));
         }
 
         local_condemn_reasons->set_gen (gen_final_per_heap, n);
@@ -17870,9 +17882,9 @@ gc_heap::ha_mark_object_simple (uint8_t** po THREAD_NUMBER_DCL)
     {
         size_t new_size = 2*internal_root_array_length;
 
-        GCMemoryStatus statex;
-        GCToOSInterface::GetMemoryStatus(&statex);
-        if (new_size > (size_t)(statex.ullAvailPhys / 10))
+        uint64_t available_physical = 0;
+        get_memory_info (NULL, &available_physical);
+        if (new_size > (size_t)(available_physical / 10))
         {
             heap_analyze_success = FALSE;
         }
@@ -18846,6 +18858,84 @@ size_t gc_heap::get_total_heap_size()
 #endif //MULTIPLE_HEAPS
 
     return total_heap_size;
+}
+
+size_t gc_heap::committed_size()
+{
+    generation* gen = generation_of (max_generation);
+    heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
+    size_t total_committed = 0;
+
+    while (1)
+    {
+        total_committed += heap_segment_committed (seg) - (uint8_t*)seg;
+
+        seg = heap_segment_next (seg);
+        if (!seg)
+        {
+            if (gen != large_object_generation)
+            {
+                gen = generation_of (max_generation + 1);
+                seg = generation_start_segment (gen);
+            }
+            else
+                break;
+        }
+    }
+
+    return total_committed;
+}
+
+size_t gc_heap::get_total_committed_size()
+{
+    size_t total_committed = 0;
+
+#ifdef MULTIPLE_HEAPS
+    int hn = 0;
+
+    for (hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+        total_committed += hp->committed_size();
+    }
+#else
+    total_committed = committed_size();
+#endif //MULTIPLE_HEAPS
+
+    return total_committed;
+}
+
+void gc_heap::get_memory_info (uint32_t* memory_load, 
+                               uint64_t* available_physical,
+                               uint64_t* available_page_file)
+{
+    if (restricted_physical_memory_p)
+    {
+        size_t working_set_size = GCToOSInterface::GetCurrentPhysicalMemory();
+        if (working_set_size)
+        {
+            if (memory_load)
+                *memory_load = (uint32_t)((float)working_set_size * 100.0 / (float)total_physical_mem);
+            if (available_physical)
+                *available_physical = total_physical_mem - working_set_size;
+            // Available page file doesn't mean much when physical memory is restricted since
+            // we don't know how much of it is available to this process so we are not going to 
+            // bother to make another OS call for it.
+            if (available_page_file)
+                *available_page_file = 0;
+
+            return;
+        }
+    }
+    
+    GCMemoryStatus ms;
+    GCToOSInterface::GetMemoryStatus(&ms);
+    if (memory_load)
+        *memory_load = ms.dwMemoryLoad;
+    if (available_physical)
+        *available_physical = ms.ullAvailPhys;
+    if (available_page_file)
+        *available_page_file = ms.ullAvailPageFile;
 }
 
 void fire_mark_event (int heap_num, int root_type, size_t bytes_marked)
@@ -29510,14 +29600,12 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             }
             else //large object heap
             {
-                GCMemoryStatus ms;
-                GCToOSInterface::GetMemoryStatus (&ms);
-                uint64_t available_ram = ms.ullAvailPhys;
+                uint64_t available_physical = 0;
+                get_memory_info (NULL, &available_physical);
+                if (available_physical > 1024*1024)
+                    available_physical -= 1024*1024;
 
-                if (ms.ullAvailPhys > 1024*1024)
-                    available_ram -= 1024*1024;
-
-                uint64_t available_free = available_ram + (uint64_t)generation_free_list_space (generation_of (gen_number));
+                uint64_t available_free = available_physical + (uint64_t)generation_free_list_space (generation_of (gen_number));
                 if (available_free > (uint64_t)MAX_PTR)
                 {
                     available_free = (uint64_t)MAX_PTR;
@@ -29745,14 +29833,12 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
         if ((settings.entry_memory_load >= MAX_ALLOWED_MEM_LOAD) ||
             (total_new_allocation > max (youngest_gen_desired_th, total_min_allocation)))
         {
-            uint32_t dwMemoryLoad = 0;
-            GCMemoryStatus ms;
-            GCToOSInterface::GetMemoryStatus(&ms);
-            dprintf (2, ("Current memory load: %d", ms.dwMemoryLoad));
-            dwMemoryLoad = ms.dwMemoryLoad;
+            uint32_t memory_load = 0;
+            get_memory_info (&memory_load);
+            dprintf (2, ("Current emory load: %d", memory_load));
 
             size_t final_total = 
-                trim_youngest_desired (dwMemoryLoad, total_new_allocation, total_min_allocation);
+                trim_youngest_desired (memory_load, total_new_allocation, total_min_allocation);
             size_t max_new_allocation = 
 #ifdef MULTIPLE_HEAPS
                                          dd_max_size (g_heaps[0]->dynamic_data_of (0));
@@ -30181,7 +30267,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             ptrdiff_t reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
             if((settings.entry_memory_load >= high_memory_load_th) && (settings.entry_memory_load < v_high_memory_load_th))
             {
-                if(reclaim_space > (int64_t)(min_high_fragmentation_threshold (available_physical_mem, num_heaps)))
+                if(reclaim_space > (int64_t)(min_high_fragmentation_threshold (entry_available_physical_mem, num_heaps)))
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in high memory"));
                     should_compact = TRUE;
@@ -32061,7 +32147,7 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
 
     if (heap_number == 0)
     {
-        dprintf (1, ("soh size: %Id", get_total_heap_size()));
+        dprintf (1, ("total heap size: %Id, commit size: %Id", get_total_heap_size(), get_total_committed_size()));
     }
 
     int curr_gen_number = max_generation+1;
@@ -33342,35 +33428,6 @@ HRESULT GCHeap::Shutdown ()
     return S_OK;
 }
 
-//used by static variable implementation
-void CGCDescGcScan(LPVOID pvCGCDesc, promote_func* fn, ScanContext* sc)
-{
-    CGCDesc* map = (CGCDesc*)pvCGCDesc;
-
-    CGCDescSeries *last = map->GetLowestSeries();
-    CGCDescSeries *cur = map->GetHighestSeries();
-
-    assert (cur >= last);
-    do
-    {
-        uint8_t** ppslot = (uint8_t**)((uint8_t*)pvCGCDesc + cur->GetSeriesOffset());
-        uint8_t**ppstop = (uint8_t**)((uint8_t*)ppslot + cur->GetSeriesSize());
-
-        while (ppslot < ppstop)
-        {
-            if (*ppslot)
-            {
-                (fn) ((Object**)ppslot, sc, 0);
-            }
-
-            ppslot++;
-        }
-
-        cur--;
-    }
-    while (cur >= last);
-}
-
 // Wait until a garbage collection is complete
 // returns NOERROR if wait was OK, other error code if failure.
 // WARNING: This will not undo the must complete state. If you are
@@ -33448,9 +33505,23 @@ HRESULT GCHeap::Initialize ()
     if (hr != S_OK)
         return hr;
 
+    // If there's a physical memory limit set on this process, it needs to be checked very early on, 
+    // before we set various memory info.
+    uint64_t physical_memory_limit = GCToOSInterface::GetRestrictedPhysicalMemoryLimit();
+
+    if (physical_memory_limit)
+        gc_heap::restricted_physical_memory_p = true;
+
     GCMemoryStatus ms;
     GCToOSInterface::GetMemoryStatus (&ms);
     gc_heap::total_physical_mem = ms.ullTotalPhys;
+
+    if (gc_heap::restricted_physical_memory_p)
+    {
+        // A sanity check in case someone set a larger limit than there is actual physical memory.
+        gc_heap::total_physical_mem = min (gc_heap::total_physical_mem, physical_memory_limit);
+    }
+
     gc_heap::mem_one_percent = gc_heap::total_physical_mem / 100;
 #ifndef MULTIPLE_HEAPS
     gc_heap::mem_one_percent /= g_SystemInfo.dwNumberOfProcessors;
@@ -36629,7 +36700,7 @@ void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
 #endif //defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 // Go through and touch (read) each page straddled by a memory block.
-void TouchPages(LPVOID pStart, uint32_t cb)
+void TouchPages(void * pStart, size_t cb)
 {
     const uint32_t pagesize = OS_PAGE_SIZE;
     _ASSERTE(0 == (pagesize & (pagesize-1))); // Must be a power of 2.
@@ -36728,7 +36799,7 @@ void initGCShadow()
     }
 }
 
-#define INVALIDGCVALUE (LPVOID)((size_t)0xcccccccd)
+#define INVALIDGCVALUE (void*)((size_t)0xcccccccd)
 
     // test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)

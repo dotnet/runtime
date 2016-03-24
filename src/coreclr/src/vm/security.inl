@@ -550,6 +550,11 @@ inline BOOL Security::CanSkipVerification(MethodDesc * pMD)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_CORECLR
+    // Always skip verification on CoreCLR
+    return TRUE;
+#else
+
     // Special case the System.Object..ctor:
     // System.Object..ctor is not verifiable according to current verifier rules (that require to call the base 
     // class ctor). But since we want System.Object..ctor() to be marked transparent, it cannot be unverifiable
@@ -570,32 +575,18 @@ inline BOOL Security::CanSkipVerification(MethodDesc * pMD)
     BOOL fCanSkipVerification = Security::CanSkipVerification(pMD->GetAssembly()->GetDomainAssembly()); 
     if (fCanSkipVerification)
     {
-#ifdef FEATURE_CORECLR
-        //For Profile assemblies, do not verify any code.  All Transparent methods are guaranteed to be
-        //verifiable (verified by tests).  Therefore, skip all verification on platform assemblies.
-        if(pMD->GetAssembly()->GetDomainAssembly()->GetFile()->IsProfileAssembly())
-            return TRUE;
-#endif
         // check for transparency
         if (SecurityTransparent::IsMethodTransparent(pMD))
         {
-#ifndef FEATURE_CORECLR
             ModuleSecurityDescriptor *pModuleSecDesc = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(pMD->GetAssembly());
             if (!pModuleSecDesc->CanTransparentCodeSkipVerification())
-#endif // !FEATURE_CORECLR
             {
                 return FALSE;
             }
         }
     }
-#if defined(_DEBUG) && defined(FEATURE_CORECLR)
-    else
-    {
-        //Profile assemblies must have skip verification.
-        _ASSERTE(!pMD->GetAssembly()->GetDomainAssembly()->GetFile()->IsProfileAssembly());
-    }
-#endif //_DEBUG && FEATURE_CORECLR
    return fCanSkipVerification;
+#endif // !FEATURE_CORECLR
 }
 #endif //!DACCESS_COMPILE
 
@@ -656,18 +647,6 @@ inline SString Security::GetConditionalAptcaAccessExceptionContext(Assembly *pTa
 }
 
 #endif // FEATURE_APTCA
-
-#ifdef FEATURE_CORECLR
-#ifndef DACCESS_COMPILE
-
-inline BOOL Security::IsMicrosoftPlatform(IAssemblySecurityDescriptor *pSecDesc)
-{
-    WRAPPER_NO_CONTRACT;
-    return static_cast<AssemblySecurityDescriptor*>(pSecDesc)->IsMicrosoftPlatform();
-}
-#endif // DACCESS_COMPILE
-#endif // FEATURE_CORECLR
-
 
 inline bool Security::SecurityCalloutQuickCheck(MethodDesc *pCallerMD)
 {

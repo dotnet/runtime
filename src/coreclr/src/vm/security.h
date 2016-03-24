@@ -236,10 +236,6 @@ namespace Security
     inline SString GetConditionalAptcaAccessExceptionContext(Assembly *pTargetAssembly);
 #endif // FEATURE_APTCA
 
-#ifdef FEATURE_CORECLR
-	inline BOOL IsMicrosoftPlatform(IAssemblySecurityDescriptor *pSecDesc);
-#endif // FEATURE_CORECLR
-
     inline bool SecurityCalloutQuickCheck(MethodDesc *pCallerMD);
 
     inline bool CanShareAssembly(DomainAssembly *pAssembly);

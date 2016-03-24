@@ -49,16 +49,6 @@ public:
     static FCDECL2(Object*,         LoadFile,                   StringObject* pathUNSAFE,
                                                                 Object* securityUNSAFE);
     static FCDECL6(Object*,         LoadImage,                  U1Array* PEByteArrayUNSAFE, U1Array* SymByteArrayUNSAFE, Object* securityUNSAFE, StackCrawlMark* stackMark, CLR_BOOL fForIntrospection, SecurityContextSource securityContextSource);
-#ifdef FEATURE_CORECLR    
-    static 
-    void QCALLTYPE LoadFromUnmanagedArray(CLR_BOOL fForIntrospection,   
-                                             BYTE* pAssembly,  
-                                             UINT64 uAssemblyLength, 
-                                             BYTE* pPDB,  
-                                             UINT64 uPDBLength, 
-                                             QCall::StackCrawlMarkHandle stackMark,
-                                             QCall::ObjectHandleOnStack retAssembly);
-#endif
 
 #ifdef FEATURE_HOSTED_BINDER
     static FCDECL9(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
@@ -193,11 +183,6 @@ public:
     static 
     void QCALLTYPE GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
     
-#ifdef FEATURE_LEGACYNETCF
-    static
-    BOOL QCALLTYPE GetIsProfileAssembly(QCall::AssemblyHandle pAssembly);
-#endif // FEATURE_LEGACYNETCF
-
     static
     INT64 QCALLTYPE GetHostContext(QCall::AssemblyHandle pAssembly);
 

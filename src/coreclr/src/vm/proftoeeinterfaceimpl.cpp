@@ -79,22 +79,22 @@
 //  The above restrictions are lifted for certain tests that run with these environment
 //  variables set. (These are only available on DEBUG builds--including chk--not retail
 //  builds.)
-//    * COMPLUS_TestOnlyEnableSlowELTHooks:
+//    * COMPlus_TestOnlyEnableSlowELTHooks:
 //         * If nonzero, then on startup the runtime will act as if a profiler was loaded
 //             on startup and requested ELT slow-path (even if no profiler is loaded on
 //             startup). This will also allow the SetEnterLeaveFunctionHooks(2) info
 //             functions to be called outside of Initialize(). If a profiler later
 //             attaches and calls these functions, then the slow-path wrapper will call
 //             into the profiler's ELT hooks.
-//    * COMPLUS_TestOnlyEnableObjectAllocatedHook:
+//    * COMPlus_TestOnlyEnableObjectAllocatedHook:
 //         * If nonzero, then on startup the runtime will act as if a profiler was loaded
 //             on startup and requested ObjectAllocated callback (even if no profiler is loaded
 //             on startup). If a profiler later attaches and calls these functions, then the 
 //             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
-//    * COMPLUS_TestOnlyEnableICorProfilerInfo:
+//    * COMPlus_TestOnlyEnableICorProfilerInfo:
 //         * If nonzero, then attaching profilers allows to call ICorProfilerInfo inteface, 
 //             which would otherwise be disallowed for attaching profilers
-//    * COMPLUS_TestOnlyAllowedEventMask
+//    * COMPlus_TestOnlyAllowedEventMask
 //         * If a profiler needs to work around the restrictions of either
 //             COR_PRF_ALLOWABLE_AFTER_ATTACH or COR_PRF_MONITOR_IMMUTABLE it may set
 //             this environment variable. Its value should be a bitmask containing all
@@ -1251,14 +1251,15 @@ BOOL AllocByClassHelper(Object * pBO, void * pv)
 // which does the real work.
 //
 // Arguments:
-//      o - Object reference encountered
+//      pObj - Object reference encountered
+///     ppRoot - Address that references ppObject (can be interior pointer)
 //      pSC - ProfilingScanContext * containing the root kind and GCReferencesData used
 //            by RootReference2 
 //      dwFlags - Properties of the root as GC_CALL* constants (this function converts
 //                to COR_PRF_GC_ROOT_FLAGS.
 //
 
-void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
+void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t dwFlags)
 {
     CONTRACTL
     {
@@ -1305,7 +1306,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     {
         // Let the profiling code know about this root reference
         g_profControlBlock.pProfInterface->
-            RootReference2((BYTE *)*ppObject, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
+            RootReference2((BYTE *)pObj, pPSC->dwEtwRootKind, (EtwGCRootFlags)dwEtwRootFlags, (BYTE *)rootID, &((pPSC)->pHeapId));
     }
 #endif
 
@@ -1318,7 +1319,7 @@ void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     {
         ETW::GCLog::RootReference(
             NULL,           // handle is NULL, cuz this is a non-HANDLE root
-            *ppObject,      // object being rooted
+            pObj,           // object being rooted
             NULL,           // pSecondaryNodeForDependentHandle is NULL, cuz this isn't a dependent handle
             FALSE,          // is dependent handle
             pPSC,

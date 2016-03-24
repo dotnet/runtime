@@ -17,8 +17,9 @@ usage()
     echo "configureonly - do not perform any builds; just configure the build."
     echo "skipconfigure - skip build configuration."
     echo "skipnative - do not build native components."
-    echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
+    echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
+    echo "disableoss - Disable Open Source Signing for mscorlib."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
 
     exit 1
@@ -199,7 +200,10 @@ isMSBuildOnNETCoreSupported()
     if [ "$__BuildArch" == "x64" ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             if [ "$__DistroName" == "ubuntu" ]; then
-                __isMSBuildOnNETCoreSupported=1
+                __OSVersion=$(lsb_release -rs)
+                if [ "$__OSVersion" == "14.04" ]; then
+                    __isMSBuildOnNETCoreSupported=1
+                fi
             elif [ "$__DistroName" == "rhel" ]; then
                 __isMSBuildOnNETCoreSupported=1
             elif [ "$__DistroName" == "debian" ]; then
@@ -207,6 +211,25 @@ isMSBuildOnNETCoreSupported()
             fi
         elif [ "$__BuildOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
+        fi
+    elif [ "$__BuildArch" == "arm" ] || [ "$__BuildArch" == "arm64" ] ; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            if [ "$__DistroName" == "ubuntu" ]; then
+                __isMSBuildOnNETCoreSupported=1
+            fi
+        fi
+
+    fi
+}
+
+build_mscorlib_ni()
+{
+    if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
+        echo "Generating native image for mscorlib."
+        $__BinDir/crossgen $__BinDir/mscorlib.dll
+        if [ $? -ne 0 ]; then
+            echo "Failed to generate native image for mscorlib."
+            exit 1
         fi
     fi
 }
@@ -224,8 +247,6 @@ build_mscorlib()
        return
     fi
 
-    hash mono 2> /dev/null || { echo >&2 "Skipping mscorlib.dll build since Mono is not installed."; __SkipMSCorLib=1; return; }
-
     # Restore buildTools
 
     restoreBuildTools
@@ -233,22 +254,29 @@ build_mscorlib()
     echo "Commencing build of mscorlib components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Invoke MSBuild
-    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false
+    $__ProjectRoot/Tools/corerun "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:UseSharedCompilation=false ${__SignTypeReal}
 
     if [ $? -ne 0 ]; then
         echo "Failed to build mscorlib."
         exit 1
     fi
 
-    if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
-        echo "Generating native image for mscorlib."
-        $__BinDir/crossgen $__BinDir/mscorlib.dll
-        if [ $? -ne 0 ]; then
-            echo "Failed to generate native image for mscorlib."
-            exit 1
-        fi
-    fi
+    # The cross build generates a crossgen with the target architecture.
+    if [ $__CrossBuild != 1 ]; then
+       # The architecture of host pc must be same architecture with target.
+       if [[ ( "$__HostArch" == "$__BuildArch" ) ]]; then
+           build_mscorlib_ni
+       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
+           build_mscorlib_ni
+       elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+           build_mscorlib_ni
+       else 
+	   exit 1
+       fi
+    fi 
 }
+
+
 
 generate_NugetPackages()
 {
@@ -303,25 +331,30 @@ case $CPUName in
     i686)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=x86
+        __HostArch=x86
         ;;
 
     x86_64)
         __BuildArch=x64
+        __HostArch=x64
         ;;
 
     armv7l)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm
+        __HostArch=arm
         ;;
 
     aarch64)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         __BuildArch=arm64
+        __HostArch=arm64
         ;;
 
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __BuildArch=x64
+        __HostArch=x64
         ;;
 esac
 
@@ -377,6 +410,7 @@ __SkipCoreCLR=0
 __SkipMSCorLib=0
 __CleanBuild=0
 __VerboseBuild=0
+__SignTypeReal=""
 __CrossBuild=0
 __ClangMajorVersion=3
 __ClangMinorVersion=5
@@ -490,6 +524,10 @@ while :; do
 
         skiptests)
             __IncludeTests=
+            ;;
+
+        disableoss)
+            __SignTypeReal="/p:SignType=real"
             ;;
 
         cmakeargs)

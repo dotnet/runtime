@@ -295,52 +295,10 @@ namespace System.Reflection
             Contract.Requires(this != target);
             Contract.Requires(this.ReflectedType == target.ReflectedType);
 
-
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                return Signature.CompareSigForAppCompat(this.Signature, this.m_declaringType,
-                                                        target.Signature, target.m_declaringType);
-#endif
             return Signature.CompareSig(this.Signature, target.Signature);
         }
         internal BindingFlags BindingFlags { get { return m_bindingFlags; } }
         #endregion
-
-#if FEATURE_LEGACYNETCF
-        // BEGIN helper methods for Dev11 466969 quirk
-        internal bool HasMatchingAccessibility(RuntimePropertyInfo target)
-        {
-            Contract.Assert(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8);
-            bool match = true;
-            
-            if (!IsMatchingAccessibility(this.GetGetMethod(true), target.GetGetMethod(true)))
-            {
-                match = false;
-            }
-            else if (!IsMatchingAccessibility(this.GetSetMethod(true), target.GetSetMethod(true)))
-            {
-                match = false;
-            }
-
-            return match;
-        }
-
-        private bool IsMatchingAccessibility(MethodInfo lhsInfo, MethodInfo rhsInfo)
-        {
-            if (lhsInfo != null && rhsInfo != null)
-            {
-                return lhsInfo.IsPublic == rhsInfo.IsPublic;
-            }
-            else
-            {
-                // don't be tempted to return false here!  we only want to introduce
-                // the quirk behavior when we know that the accessibility is different.
-                // in all other cases return true so the code works as before.
-                return true;
-            }
-        }
-        // END helper methods for Dev11 466969 quirk
-#endif
 
         #region Object Overrides
         public override String ToString()

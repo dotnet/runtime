@@ -69,16 +69,18 @@ Alternative Implementations
 
 Virtual methods and inheritance would be the natural way to implement various kinds of MethodDesc in C++. The virtual methods would add vtable pointer to each MethodDesc, wasting a lot of precious space. The vtable pointer occupies 4 bytes on x86. Instead, the virtualization is implemented by switching based on the MethodDesc kind, which fits into 3 bits. For example:
 
-	DWORD MethodDesc::GetAttrs()
-	{
-	    if (IsArray())
-	        return ((ArrayMethodDesc\*)this)->GetAttrs();
+```c++
+DWORD MethodDesc::GetAttrs()
+{
+    if (IsArray())
+        return ((ArrayMethodDesc*)this)->GetAttrs();
 
-	    if (IsDynamic())
-	        return ((DynamicMethodDesc\*)this)->GetAttrs();
+    if (IsDynamic())
+        return ((DynamicMethodDesc*)this)->GetAttrs();
 
-	    return GetMDImport()->GetMethodDefProps(GetMemberDef());
-	}
+    return GetMDImport()->GetMethodDefProps(GetMemberDef());
+}
+```
 
 Method Slots
 ------------

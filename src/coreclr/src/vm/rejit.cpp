@@ -3082,7 +3082,7 @@ void ReJitManager::AssertRestOfEntriesAreReverted(
 //---------------------------------------------------------------------------------------
 //
 // Debug-only helper to dump ReJitManager contents to stdout. Only used if
-// COMPLUS_ProfAPI_EnableRejitDiagnostics is set.
+// COMPlus_ProfAPI_EnableRejitDiagnostics is set.
 //
 // Arguments:
 //      * szIntroText - Intro text passed by caller to be output before this ReJitManager

@@ -2674,15 +2674,22 @@ void            CodeGen::genJumpToThrowHlpBlk(emitJumpKind          jumpKind,
         /* The code to throw the exception will be generated inline, and
            we will jump around it in the normal non-exception case */
 
-        BasicBlock * tgtBlk = genCreateTempLabel();
-        jumpKind = emitter::emitReverseJumpKind(jumpKind);
-        inst_JMP(jumpKind, tgtBlk);
+        BasicBlock * tgtBlk = nullptr;
+        emitJumpKind reverseJumpKind = emitter::emitReverseJumpKind(jumpKind);
+        if (reverseJumpKind != jumpKind)
+        {
+            tgtBlk = genCreateTempLabel();
+            inst_JMP(reverseJumpKind, tgtBlk);
+        }
 
         genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
 
         /* Define the spot for the normal non-exception case to jump to */
-
-        genDefineTempLabel(tgtBlk);
+        if (tgtBlk != nullptr)
+        {
+            assert(reverseJumpKind != jumpKind);
+            genDefineTempLabel(tgtBlk);
+        }
     }
 }
 
@@ -3033,13 +3040,11 @@ void                CodeGen::genGenerateCode(void * * codePtr,
     // ugliness of having the failure here.
     if (!compiler->jitFallbackCompile)
     {
-        // Use COMPLUS_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
+        // Use COMPlus_JitNoForceFallback=1 to prevent NOWAY assert testing from happening,
         // especially that caused by enabling JIT stress.
-        static ConfigDWORD fJitNoForceFallback;
-        if (!fJitNoForceFallback.val(CLRConfig::INTERNAL_JitNoForceFallback))
+        if (!JitConfig.JitNoForceFallback())
         {
-            static ConfigDWORD fJitForceFallback;
-            if (fJitForceFallback.val(CLRConfig::INTERNAL_JitForceFallback) ||
+            if (JitConfig.JitForceFallback() ||
                 compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5) )
             {
                 NO_WAY_NOASSERT("Stress failure");
@@ -3252,23 +3257,6 @@ void                CodeGen::genGenerateCode(void * * codePtr,
     grossNCsize += codeSize + dataSize;
 
 #endif // DISPLAY_SIZES
-
-    
-#ifdef DEBUG 
-    if (compiler->compIsMethodForLRSampling)
-    {
-        // Print this sample.
-        compiler->fgCodeSeqSm.codeSize    = codeSize;
-        compiler->fgCodeSeqSm.prologSize  = prologSize;    
-        compiler->fgCodeSeqSm.epilogSize  = epilogSize;   
-        compiler->fgCodeSeqSm.epilogCount = getEmitter()->emitGetEpilogCnt();
-
-        noway_assert(codeSize >= prologSize + epilogSize * compiler->fgCodeSeqSm.epilogCount);         
-        compiler->fgCodeSeqSm.BBCodeSize = codeSize - prologSize - epilogSize * compiler->fgCodeSeqSm.epilogCount;
-
-        compiler->fgCodeSeqSm.PrintSampleResult();          
-    }
-#endif // DEBUG
 
     compiler->EndPhase(PHASE_EMIT_GCEH);
 }
@@ -3915,9 +3903,15 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         {
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             return type;
-#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#elif defined(_TARGET_ARM_)
+            LclVarDsc varDsc = compiler->lvaTable[varNum];
+            return varDsc.lvIsHfaRegArg ? varDsc.GetHfaType() : varDsc.lvType;
+
+    // TODO-ARM64: Do we need the above to handle HFA structs on ARM64?
+
+#else // !_TARGET_ARM_
             return compiler->lvaTable[varNum].lvType;
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)            
+#endif // !_TARGET_ARM_
         }
     } regArgTab [max(MAX_REG_ARG,MAX_FLOAT_REG_ARG)] = { };
 
@@ -4012,8 +4006,31 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             for (unsigned slotCounter = 0; slotCounter < structDesc.eightByteCount; slotCounter++)
             {
                 regNumber regNum = varDsc->lvRegNumForSlot(slotCounter);
+                var_types regType;
 
-                var_types regType = compiler->getEightByteType(structDesc, slotCounter);
+#ifdef FEATURE_SIMD
+                // Assumption 1:
+                // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
+                // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
+                // reading and writing purposes.  Hence while homing a Vector3 type arg on stack we should
+                // home entire 16-bytes so that the upper-most 4-bytes will be zeroed when written to stack.
+                //
+                // Assumption 2:
+                // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
+                // registers or on stack, the upper most 4-bytes will be zero.  
+                //
+                // TODO-64bit: assumptions 1 and 2 hold within RyuJIT generated code. It is not clear whether
+                // these assumptions hold when a Vector3 type arg is passed by native code. Example: PInvoke
+                // returning Vector3 type value or RPInvoke passing Vector3 type args.
+                if (varDsc->lvType == TYP_SIMD12)
+                {
+                    regType = TYP_DOUBLE;
+                }
+                else
+#endif
+                {
+                    regType = compiler->getEightByteType(structDesc, slotCounter);
+                }
                 
                 regArgNum = genMapRegNumToRegArgNum(regNum, regType);
                 
@@ -4063,28 +4080,21 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             slots = 1;
 
 #if FEATURE_MULTIREG_ARGS
-#ifdef _TARGET_ARM64_
-            if (varDsc->TypeGet() == TYP_STRUCT)
+            if (varDsc->lvIsMultiregStruct())
             {
-                if (varDsc->lvExactSize > REGSIZE_BYTES)
-                {
-                    assert(varDsc->lvExactSize <= 2*REGSIZE_BYTES);
+                // Note that regArgNum+1 represents an argument index not an actual argument register.  
+                // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
 
-                    // Note that regArgNum+1 represents an argument index not an actual argument register.  
-                    // see genMapRegArgNumToRegNum(unsigned argNum, var_types type)
-
-                    // This is the setup for the second half of a MULTIREG struct arg
-                    noway_assert(regArgNum+1 < regState->rsCalleeRegArgNum);
-                    // we better not have added it already (there better not be multiple vars representing this argument register)
-                    noway_assert(regArgTab[regArgNum+1].slot == 0);
+                // This is the setup for the second half of a MULTIREG struct arg
+                noway_assert(regArgNum+1 < regState->rsCalleeRegArgNum);
+                // we better not have added it already (there better not be multiple vars representing this argument register)
+                noway_assert(regArgTab[regArgNum+1].slot == 0);
                     
-                    regArgTab[regArgNum+1].varNum = varNum;
-                    regArgTab[regArgNum+1].slot = 2;
+                regArgTab[regArgNum+1].varNum = varNum;
+                regArgTab[regArgNum+1].slot = 2;
 
-                    slots++;
-                }
+                slots = 2;
             }
-#endif // _TARGET_ARM64_
 #endif // FEATURE_MULTIREG_ARGS
         }
 
@@ -4758,7 +4768,6 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
     }
 
     /* Finally take care of the remaining arguments that must be enregistered */
-
     while (regArgMaskLive)
     {
         regMaskTP regArgMaskLiveSave = regArgMaskLive;
@@ -6730,7 +6739,14 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
 #ifdef _TARGET_ARM_
             getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0);
 #else // _TARGET_ARM_
-            getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, (uCntBytes - REGSIZE_BYTES) == 0 ? 0 : INS_OPTS_POST_INDEX);
+            if ((uCntBytes - REGSIZE_BYTES) == 0)
+            {
+                getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, 0);
+            }
+            else
+            {
+                getEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_ZR, rAddr, REGSIZE_BYTES, INS_OPTS_POST_INDEX);
+            }
 #endif // !_TARGET_ARM_
             uCntBytes -= REGSIZE_BYTES;
         }
@@ -9316,15 +9332,17 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
                                  methHnd,
                                  INDEBUG_LDISASM_COMMA(nullptr)
                                  addr,
-                                 0,                     /* argSize */
-                                 EA_UNKNOWN,            /* retSize */
+                                 0,                     // argSize
+                                 EA_UNKNOWN,            // retSize
                                  gcInfo.gcVarPtrSetCur,
                                  gcInfo.gcRegGCrefSetCur,
                                  gcInfo.gcRegByrefSetCur,
-                                 BAD_IL_OFFSET,         /* IL offset*/
-                                 indCallReg,            /* ireg */
-                                 REG_NA, 0, 0,          /* xreg, xmul, disp */
-                                 true);                 /* isJump */
+                                 BAD_IL_OFFSET,         // IL offset
+                                 indCallReg,            // ireg
+                                 REG_NA,                // xreg
+                                 0,                     // xmul
+                                 0,                     // disp
+                                 true);                 // isJump
     }
     else
     {
@@ -9667,8 +9685,9 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
                                        methHnd,
                                        INDEBUG_LDISASM_COMMA(nullptr)
                                        addrInfo.addr,
-                                       0,                         /* argSize */
-                                       EA_UNKNOWN,                /* retSize */
+                                       0,                                                      // argSize
+                                       EA_UNKNOWN                                              // retSize
+                                       FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(EA_UNKNOWN), // secondRetSize
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,

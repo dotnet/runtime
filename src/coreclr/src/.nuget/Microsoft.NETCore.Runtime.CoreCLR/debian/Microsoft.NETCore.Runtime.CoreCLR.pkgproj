@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Version>1.0.2</Version>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <PackageTargetRuntime>debian.8.2-$(PackagePlatform)</PackageTargetRuntime>
+    <PackageTargetRuntime>debian.8-$(PackagePlatform)</PackageTargetRuntime>
     <!-- only build for x64 -->
     <PackagePlatforms>x64;</PackagePlatforms>
   </PropertyGroup>
@@ -20,6 +20,7 @@
     <ArchitectureSpecificNativeFile Include="$(BinDir)mscorlib.ni.dll"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)libsos.so"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)libsosplugin.so"/>
+    <ArchitectureSpecificNativeFile Include="$(BinDir)sosdocsunix.txt"/>
     <ArchitectureSpecificNativeFile Include="$(BinDir)System.Globalization.Native.so" />
 
     <ArchitectureSpecificLibFile Include="$(BinDir)mscorlib.dll"/>
@@ -30,14 +31,14 @@
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
 
-    <!-- Using lib/dotnet here.  There is no TFM for this since it is a runtime itself. -->
+    <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
     <File Include="@(ArchitectureSpecificLibFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/dotnet</TargetPath>
+      <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
     </File>
 
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
-      <TargetPath>ref/dotnet</TargetPath>
+      <TargetPath>ref/netstandard1.0</TargetPath>
     </File>
 
     <File Include="@(ArchitectureSpecificToolFile)">

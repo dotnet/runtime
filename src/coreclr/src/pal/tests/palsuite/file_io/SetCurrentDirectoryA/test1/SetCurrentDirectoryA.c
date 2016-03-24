@@ -205,27 +205,7 @@ int __cdecl main(int argc, char *argv[])
         Fail("SetCurrentDirectoryA: ERROR -> RemoveDirectoryW failed "
             "with error code: %ld.\n", GetLastError());
     }
-
-    /* Test that SetCurrentDirectoryA fails with paths longer than
-       MAX_PATH characters. Note that we cannot actually create this
-       directory and try to SetCurrentDirectory into it. */
-    if (SetCurrentDirectoryA(szLongDirName) != TRUE)
-    {
-        /* Failure is expected because the directory doesn't exist and
-           it is longer than MAX_PATH characters. Check that the failure 
-           is actually because of invalid argument. */
-        if (GetLastError() != ERROR_FILENAME_EXCED_RANGE)
-        {
-           Fail("SetCurrentDirectoryA with a long path failed with some "
-                "other error: %d\n", GetLastError());
-        }
-    }
-    else
-    {
-        Fail("SetCurrentDirectoryA succeeded with a path longer than "
-             "MAX_PATH characters\n");
-    }
-
+    
     free(szwPtr);
     PAL_Terminate();
 

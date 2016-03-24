@@ -1612,15 +1612,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
 
     AssemblySecurityDescriptor *pAssemSecDesc = static_cast<AssemblySecurityDescriptor*>(pAssembly->GetSecurityDescriptor());
 
-#ifdef FEATURE_LEGACYNETCF
-    // Legacy Mango apps have incorrect transparency attributes, so quirk to ignore them and force
-    // opportunistic criticality
-    if (GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8 && !pAssemSecDesc->IsMicrosoftPlatform())
-    {
-        moduleFlags = ModuleSecurityDescriptorFlags_IsOpportunisticallyCritical | ModuleSecurityDescriptorFlags_IsAPTCA;
-    }
-#endif // FEATURE_LEGACYNETCF
-
     // We shouldn't be both all transparent and all critical
     const ModuleSecurityDescriptorFlags invalidMask = ModuleSecurityDescriptorFlags_IsAllCritical |
                                                       ModuleSecurityDescriptorFlags_IsAllTransparent;
@@ -1720,17 +1711,6 @@ void ModuleSecurityDescriptor::VerifyDataComputed()
         moduleFlags |= ModuleSecurityDescriptorFlags_IsAllTransparent;
     }
 #endif // _DEBUG
-
-#ifdef FEATURE_CORECLR
-    if (pAssembly->IsSystem() || (pAssembly->GetManifestFile()->HasOpenedILimage() && GetAppDomain()->IsImageFullyTrusted(pAssembly->GetManifestFile()->GetOpenedILimage())))
-    {
-        // Set the flag if the assembly is microsoft platform. This gets saved in Ngen Image
-        // to determinne if the NI was genrated as full-trust. If NI is generated as full-trust
-        // the codegen is generated different as compared to non-trusted.
-        _ASSERTE(!(moduleFlags & ModuleSecurityDescriptorFlags_IsMicrosoftPlatform));
-            moduleFlags |= ModuleSecurityDescriptorFlags_IsMicrosoftPlatform;
-    }
-#endif
 
     // Mark the module as having its security state computed
     moduleFlags |= ModuleSecurityDescriptorFlags_IsComputed;

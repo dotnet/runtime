@@ -23,14 +23,15 @@ else()
     )
 
     target_link_libraries(CoreRun
+        utilcodestaticnohost
+        advapi32.lib
+        oleaut32.lib
+        uuid.lib
+        user32.lib
         msvcrt.lib
     )
 
     # Can't compile on linux yet so only add for windows
-    # add the install targets
-    install (TARGETS CoreRun DESTINATION .)
+    install_clr(CoreRun)
     
-    # We will generate PDB only for the debug configuration
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/CoreRun.pdb DESTINATION PDB)
-
 endif(CLR_CMAKE_PLATFORM_UNIX)

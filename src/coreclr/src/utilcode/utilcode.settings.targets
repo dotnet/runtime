@@ -125,5 +125,7 @@
         <CppCompile Include="$(UtilCodeSrcDir)\SecurityUtil.cpp" />
 
         <CppCompile Include="$(UtilCodeSrcDir)\AppXUtil.cpp" Condition="'$(FeatureAppX)' == 'true'"/>
+
+        <CppCompile Include="$(UtilCodeSrcDir)\jithost.cpp" />
     </ItemGroup>   
 </Project>

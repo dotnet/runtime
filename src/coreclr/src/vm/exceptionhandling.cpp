@@ -4661,7 +4661,14 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
             CONTEXT frameContext;
             RtlCaptureContext(&frameContext);
             UINT_PTR currentSP = GetSP(&frameContext);
-            Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
+
+            if (Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext) == 0)
+            {
+                // There are no managed frames on the stack, so we need to continue unwinding using C++ exception
+                // handling
+                break;
+            }
+
             UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
 
             // Check if there is any exception holder in the skipped frames. If there is one, we need to unwind them

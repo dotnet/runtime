@@ -558,14 +558,21 @@ public:
         return m_sfCallerOfActualHandlerFrame;
     }
 
-    StackFrame GetCallerOfCollapsedActualHandlingFrame()
+    StackFrame GetCallerOfEnclosingClause()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_EnclosingClauseInfoForGCReporting.GetEnclosingClauseCallerSP();
+    }
+
+    StackFrame GetCallerOfCollapsedEnclosingClause()
     {
         LIMITED_METHOD_CONTRACT;
 
         return m_EnclosingClauseInfoOfCollapsedTracker.GetEnclosingClauseCallerSP();
     }
 
-#ifndef FEATURE_PAL          
+#ifndef FEATURE_PAL
 private:
     EHWatsonBucketTracker m_WatsonBucketTracker;
 public:

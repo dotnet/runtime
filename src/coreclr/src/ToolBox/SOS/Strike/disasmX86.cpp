@@ -167,8 +167,6 @@ inline RegIndex FindReg (___in __in_z char *ptr, __out_opt int *plen = NULL, __o
     return NONE;
 }
 
-#ifndef FEATURE_PAL
-
 // Find the value of an expression.
 inline BOOL FindSrc (__in_z char *ptr, ___in Register *reg, INT_PTR &value, BOOL &bDigit)
 {
@@ -202,7 +200,6 @@ inline BOOL FindSrc (__in_z char *ptr, ___in Register *reg, INT_PTR &value, BOOL
     }
     return bValid;
 }
-
 
 enum ADDRESSMODE {REG, DATA, INDIRECT, NODATA, BAD};
 
@@ -754,9 +751,6 @@ void
     }
 }
 
-#endif // FEATURE_PAL
-
-
 // Find the real callee site.  Handle JMP instruction.
 // Return TRUE if we get the address, FALSE if not.
 BOOL GetCalleeSite (TADDR IP, TADDR &IPCallee)
@@ -808,8 +802,6 @@ BOOL GetCalleeSite (TADDR IP, TADDR &IPCallee)
         }
     }
 }
-
-#ifndef FEATURE_PAL
 
 // GetFinalTarget is based on HandleCall, but avoids printing anything to the output.
 // This is currently only called on x64
@@ -866,6 +858,7 @@ eTargetType GetFinalTarget(TADDR callee, TADDR* finalMDorIP)
     return ettNative;
 }
 
+#ifndef FEATURE_PAL
 
 void ExpFuncStateInit (TADDR *IPRetAddr)
 {
@@ -909,10 +902,11 @@ void ExpFuncStateInit (TADDR *IPRetAddr)
 
 #endif // FEATURE_PAL
 
+
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
-*    This function is called to fill in a crsoo platform context       *
+*    This function is called to fill in a cross platform context       *
 *    struct by looking on the stack for return addresses into          *
 *    KiUserExceptionDispatcher                                         *
 *                                                                      *
@@ -1014,7 +1008,6 @@ BOOL
 #endif
     return TRUE;
 #else
-    ExtErr("AMD64Machine::GetExceptionContext not implemented\n");
     return FALSE;
 #endif // FEATURE_PAL
 }

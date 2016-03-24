@@ -29,7 +29,7 @@ Abstract:
 #include "pal/cruntime.h"
 #include "pal/critsect.h"
 #include "pal/file.h"
-#include "pal/misc.h"
+#include "pal/environ.h"
 
 /* standard headers */
 
@@ -150,7 +150,7 @@ Function :
 BOOL DBG_init_channels(void)
 {
     INT i;
-    LPCSTR env_string;
+    LPSTR env_string;
     LPSTR env_workstring;
     LPSTR env_pcache;
     LPSTR entry_ptr;
@@ -168,21 +168,9 @@ BOOL DBG_init_channels(void)
 
     /* parse PAL_DBG_CHANNELS environment variable */
 
-    if (!(env_string = MiscGetenv(ENV_CHANNELS))) 
-    {
-        env_pcache = env_workstring = NULL;
-    }
-    else
-    {
-        env_pcache = env_workstring = PAL__strdup(env_string);
+    env_string = EnvironGetenv(ENV_CHANNELS);
+    env_pcache = env_workstring = env_string;
 
-        if (env_workstring == NULL)
-        {
-            /* Not enough memory */
-            DeleteCriticalSection(&fprintf_crit_section);
-            return FALSE;
-        }
-    }
     while(env_workstring)
     {
         entry_ptr=env_workstring;
@@ -316,7 +304,7 @@ BOOL DBG_init_channels(void)
     PAL_free(env_pcache);
 
     /* select output file */
-    env_string=MiscGetenv(ENV_FILE);
+    env_string = EnvironGetenv(ENV_FILE);
     if(env_string && *env_string!='\0')
     {
         if(!strcmp(env_string, "stderr"))
@@ -346,8 +334,13 @@ BOOL DBG_init_channels(void)
         output_file = stderr; /* output to stderr by default */
     }
 
+    if(env_string)
+    {
+        PAL_free(env_string);
+    }
+
     /* see if we need to disable assertions */
-    env_string = MiscGetenv(ENV_ASSERTS);
+    env_string = EnvironGetenv(ENV_ASSERTS);
     if(env_string && 0 == strcmp(env_string,"1"))
     {
         g_Dbg_asserts_enabled = FALSE;
@@ -357,11 +350,17 @@ BOOL DBG_init_channels(void)
         g_Dbg_asserts_enabled = TRUE;
     }
 
+    if(env_string)
+    {
+        PAL_free(env_string);
+    }
+
     /* select ENTRY level limitation */
-    env_string = MiscGetenv(ENV_ENTRY_LEVELS);    
+    env_string = EnvironGetenv(ENV_ENTRY_LEVELS);
     if(env_string)
     {
         max_entry_level = atoi(env_string);
+        PAL_free(env_string);
     }
     else
     {
@@ -819,15 +818,32 @@ bool DBG_ShouldCheckStackAlignment()
     
     if (caMode == CheckAlignment_Uninitialized)
     {
-        const char * checkAlignmentSettings = getenv(PAL_CHECK_ALIGNMENT_MODE);
+        char* checkAlignmentSettings;
+        bool shouldFreeCheckAlignmentSettings = false;
+        if (palEnvironment == nullptr)
+        {
+            // This function might be called before the PAL environment is initialized.
+            // In this case, use the system getenv instead.
+            checkAlignmentSettings = ::getenv(PAL_CHECK_ALIGNMENT_MODE);
+        }
+        else
+        {
+            checkAlignmentSettings = EnvironGetenv(PAL_CHECK_ALIGNMENT_MODE);
+            shouldFreeCheckAlignmentSettings = true;
+        }
+
         caMode = checkAlignmentSettings ?
             (CheckAlignmentMode)atoi(checkAlignmentSettings) : CheckAlignment_Default;
+
+        if (checkAlignmentSettings && shouldFreeCheckAlignmentSettings)
+        {
+            InternalFree(checkAlignmentSettings);
+        }
     }
     
     return caMode == CheckAlignment_On;
 }
 #endif // _DEBUG && __APPLE__
-    
 
 #ifdef __APPLE__
 #include "CoreFoundation/CFUserNotification.h"
@@ -860,10 +876,12 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
     
     if (dispDialog == DisplayDialog_Uninitialized)
     {
-        const char * displayDialog = getenv(PAL_DISPLAY_DIALOG);
+        char* displayDialog = EnvironGetenv(PAL_DISPLAY_DIALOG);
         if (displayDialog)
         {
             int i = atoi(displayDialog);
+            InternalFree(displayDialog);
+
             switch (i)
             {
             case 0:

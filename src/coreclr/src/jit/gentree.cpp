@@ -1760,7 +1760,7 @@ AGAIN:
                 hash ^= tree->gtCast.gtCastType;
                 break;
             case GT_LDOBJ:
-                hash ^= reinterpret_cast<unsigned>(tree->gtLdObj.gtClass);
+                hash ^= static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtLdObj.gtClass));
                 break;
             case GT_INDEX:
                 hash += tree->gtIndex.gtIndElemSize;
@@ -4544,7 +4544,7 @@ GenTreePtr*         GenTree::gtGetChildPointer(GenTreePtr parent)
         break;
 
 #if !FEATURE_MULTIREG_ARGS
-        // Note that when FEATURE_MULTIREG__ARGS==1 
+        // Note that when FEATURE_MULTIREG_ARGS==1 
         //  a GT_LDOBJ node is handled above by the default case
     case GT_LDOBJ:
         // Any GT_LDOBJ with a field must be lowered before this point.
@@ -9954,7 +9954,7 @@ CHK_OVF:
                 case TYP_DOUBLE:
                     if ((tree->gtFlags & GTF_UNSIGNED) && lval1 < 0)
                     {
-                        d1 = (double) (unsigned __int64) lval1;
+                        d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
                     }
                     else
                     {
@@ -10074,29 +10074,8 @@ CHK_OVF:
                     lval1 = INT64(d1);      goto CNS_LONG;
 
                 case TYP_ULONG:
-                    if (d1 >= 0.0)
-                    {
-                        // Work around a C++ issue where it doesn't properly convert large positive doubles
-                        const double two63  = 2147483648.0 * 4294967296.0;
-                        if (d1 < two63) {
-                            lval1 = UINT64(d1);
-                        }
-                        else {        
-                            // subtract 0x8000000000000000, do the convert then add it back again
-                            lval1 = INT64(d1 - two63) + I64(0x8000000000000000);
-                        }
-                        goto CNS_LONG;
-                    }
-                    
-                    // This double cast to account for an ECMA spec hole.
-                    // When converting from a double to an unsigned the ECMA
-                    // spec states that a conforming implementation should 
-                    // "truncate to zero." However that doesn't make much sense
-                    // when the double in question is negative and the target
-                    // is unsigned. gcc converts a negative double to zero when
-                    // cast to an unsigned. To make gcc conform to MSVC behavior
-                    // this cast is necessary.
-                    lval1 = UINT64(INT64(d1));     goto CNS_LONG;
+                    lval1 = FloatingPointUtils::convertDoubleToUInt64(d1);
+                    goto CNS_LONG;
 
                 case TYP_FLOAT:
                     d1 = forceCastToFloat(d1);  

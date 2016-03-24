@@ -171,7 +171,7 @@ GetSystemInfo(
 
 #ifdef VM_MAXUSER_ADDRESS
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAXUSER_ADDRESS;
-#elif defined(__sun__) || defined(_AIX) || defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) ) || defined(__LINUX__)
+#elif defined(__sun__) || defined(_AIX) || defined(__hppa__) || ( defined (_IA64_) && defined (_HPUX_) ) || defined(__linux__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) -1;
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
@@ -346,7 +346,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheSize = 0;
 
-#if HAVE_SYSCONF && defined(__LINUX__)
+#if HAVE_SYSCONF && defined(__linux__)
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_ICACHE_SIZE));
     cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));

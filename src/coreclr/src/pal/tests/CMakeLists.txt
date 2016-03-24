@@ -10,7 +10,6 @@ endif()
 
 # Compile options
 add_definitions(-DPLATFORM_UNIX=1)
-add_definitions(-D__LINUX__=1)
 add_definitions(-DLP64COMPATIBLE=1)
 add_definitions(-DFEATURE_PAL=1)
 add_definitions(-DCORECLR=1)

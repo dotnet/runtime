@@ -200,9 +200,9 @@ DataTarget::VirtualUnwind(
     /* [in] */ ULONG32 contextSize,
     /* [in, out, size_is(contextSize)] */ PBYTE context)
 {
-    if (g_ExtClient == NULL)
+    if (g_ExtServices == NULL)
     {
         return E_UNEXPECTED;
     }
-    return g_ExtClient->VirtualUnwind(threadId, contextSize, context);
+    return g_ExtServices->VirtualUnwind(threadId, contextSize, context);
 }

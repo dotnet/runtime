@@ -834,9 +834,6 @@ class PEAssembly : public PEFile
     BOOL IsSourceGAC();
 #ifdef FEATURE_CORECLR
     BOOL IsProfileAssembly();
-    BOOL IsSilverlightPlatformStrongNameSignature();
-    BOOL IsProfileTestAssembly();
-    BOOL IsTestKeySignature();
 #endif // FEATURE_CORECLR
 
     ULONG HashIdentity();
