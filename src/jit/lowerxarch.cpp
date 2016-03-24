@@ -948,12 +948,12 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
                     // If the node is TYP_STRUCT and it is put on stack with
                     // putarg_stk operation, we consume and produce no registers.
-                    // In this case the embedded LdObj node should not produce 
+                    // In this case the embedded Obj node should not produce 
                     // registers too since it is contained.
                     // Note that if it is a SIMD type the argument will be in a register.
                     if (argNode->TypeGet() == TYP_STRUCT)
                     {
-                        assert(argNode->gtOp.gtOp1 != nullptr && argNode->gtOp.gtOp1->OperGet() == GT_LDOBJ);
+                        assert(argNode->gtOp.gtOp1 != nullptr && argNode->gtOp.gtOp1->OperGet() == GT_OBJ);
                         argNode->gtOp.gtOp1->gtLsraInfo.dstCount = 0;
                         argNode->gtLsraInfo.srcCount = 0;
                     }
@@ -1001,9 +1001,9 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     {
                         originalSize = 2 * TARGET_POINTER_SIZE;
                     }
-                    else if (argNode->gtOper == GT_LDOBJ)
+                    else if (argNode->gtOper == GT_OBJ)
                     {
-                        noway_assert(!"GT_LDOBJ not supported for amd64");
+                        noway_assert(!"GT_OBJ not supported for amd64");
                     }
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
                     else if (argNode->gtOper == GT_PUTARG_REG)
@@ -1200,8 +1200,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         }
         break;
 #ifdef _TARGET_X86_
-        case GT_LDOBJ:
-            NYI_X86("GT_LDOBJ");
+        case GT_OBJ:
+            NYI_X86("GT_OBJ");
 #endif //_TARGET_X86_
 
         case GT_INITBLK:
@@ -1226,7 +1226,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             GenTreePtr   src = tree->gtOp.gtOp1;
             GenTreePtr   srcAddr = nullptr;
 
-            if ((src->OperGet() == GT_LDOBJ) || (src->OperGet() == GT_IND))
+            if ((src->OperGet() == GT_OBJ) || (src->OperGet() == GT_IND))
             {
                 srcAddr = src->gtOp.gtOp1;
             }
@@ -1317,7 +1317,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                 putArgStkTree->gtPutArgStkKind = GenTreePutArgStk::PutArgStkKindRepInstr;
             }
             
-            // Always mark the LDOBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
+            // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
             MakeSrcContained(putArgStkTree, src);
             
             // Balance up the inc above.

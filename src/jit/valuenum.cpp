@@ -3567,7 +3567,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {
     GT_COPYOBJ,  // A kind of assignment.
     GT_ADDR,
     GT_ARR_BOUNDS_CHECK,
-    GT_LDOBJ,    // Heap memory.
+    GT_OBJ,      // May reference heap memory.
 
     // These control-flow operations need no values.
     GT_JTRUE,

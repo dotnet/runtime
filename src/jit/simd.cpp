@@ -656,7 +656,7 @@ GenTreePtr Compiler::impSIMDPopStack(var_types type, bool expectAddr)
     bool isParam = false;
 
     // If we have a ldobj of a SIMD local we need to transform it.
-    if (tree->OperGet() == GT_LDOBJ)
+    if (tree->OperGet() == GT_OBJ)
     {
         GenTree* addr = tree->gtOp.gtOp1;
         if ((addr->OperGet() == GT_ADDR) && isSIMDTypeLocal(addr->gtOp.gtOp1))
@@ -2240,10 +2240,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
             // op2 is the second operand
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
-
-            assert(op1->TypeGet() == simdType);
-            assert(op2->TypeGet() == simdType);
-
             simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, SIMDIntrinsicOpInEquality, baseType, size);
             retVal = simdTree;
         }
@@ -2257,9 +2253,6 @@ GenTreePtr Compiler::impSIMDIntrinsic(OPCODE                   opcode,
         {          
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
-
-            assert(op1->TypeGet() == simdType);
-            assert(op2->TypeGet() == simdType);
 
             SIMDIntrinsicID intrinsicID = impSIMDRelOp(simdIntrinsicID, clsHnd, size, &baseType, &op1, &op2);
             simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, intrinsicID, baseType, size);

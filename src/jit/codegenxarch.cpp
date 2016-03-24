@@ -3608,7 +3608,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
 
     assert(src->isContained());
 
-    assert(src->gtOper == GT_LDOBJ);
+    assert(src->gtOper == GT_OBJ);
 
     if (!src->gtOp.gtOp1->isContained())
     {
@@ -3628,7 +3628,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         size_t slots = size / XMM_REGSIZE_BYTES;
 
         assert(putArgNode->gtGetOp1()->isContained());
-        assert(putArgNode->gtGetOp1()->gtOp.gtOper == GT_LDOBJ);
+        assert(putArgNode->gtGetOp1()->gtOp.gtOper == GT_OBJ);
 
         // TODO: In the below code the load and store instructions are for 16 bytes, but the 
         //          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
@@ -3636,7 +3636,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseV
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, src->gtGetOp1(), offset); // Load the address of the child of the LdObj node.
+            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, src->gtGetOp1(), offset); // Load the address of the child of the Obj node.
 
             // Store
             emit->emitIns_S_R(INS_movdqu,
@@ -5012,7 +5012,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber 
 
     // Get the GT_ADDR node, which is GT_LCL_VAR_ADDR (asserted below.)
     GenTree* src = putArgNode->gtGetOp1();
-    assert((src->gtOper == GT_LDOBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
+    assert((src->gtOper == GT_OBJ) || ((src->gtOper == GT_IND && varTypeIsSIMD(src))));
     src = src->gtGetOp1();
     
     size_t size = putArgNode->getArgSize();
@@ -5650,8 +5650,8 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             {
                 assert(arg->OperGet() == GT_PUTARG_STK);
 
-                GenTreeLdObj* ldObj = arg->gtGetOp1()->AsLdObj();
-                stackArgBytes = compiler->info.compCompHnd->getClassSize(ldObj->gtClass);
+                GenTreeObj* obj = arg->gtGetOp1()->AsObj();
+                stackArgBytes = compiler->info.compCompHnd->getClassSize(obj->gtClass);
             }
             else
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -8203,7 +8203,7 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode, unsigned baseVarNum)
         genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA, baseVarNum);
         GenTreePtr   dstAddr = putArgStk;
         GenTreePtr   src = putArgStk->gtOp.gtOp1;
-        assert(src->OperGet() == GT_LDOBJ);
+        assert(src->OperGet() == GT_OBJ);
         GenTreePtr   srcAddr = src->gtGetOp1();
 
         unsigned slots = putArgStk->gtNumSlots;

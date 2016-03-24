@@ -259,7 +259,7 @@ void                GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_ARR_INDEX       ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ARR_OFFSET      ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RET_EXPR        ] = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_LDOBJ           ] = TREE_NODE_SZ_LARGE;
+    GenTree::s_gtNodeSizes[GT_OBJ             ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD           ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_STMT            ] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CMPXCHG         ] = TREE_NODE_SZ_LARGE;
@@ -331,7 +331,7 @@ void                GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeCpObj)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeRetExpr)       <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeStmt)          <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeLdObj)         <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeObj)           <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeClsVar)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArgPlace)      <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLabel)         <= TREE_NODE_SZ_SMALL);
@@ -1252,8 +1252,8 @@ AGAIN:
             case GT_CAST:
                 if (op1->gtCast.gtCastType != op2->gtCast.gtCastType) return false;
                 break;
-            case GT_LDOBJ:
-                if (op1->gtLdObj.gtClass != op2->gtLdObj.gtClass) return false;
+            case GT_OBJ:
+                if (op1->AsObj()->gtClass != op2->AsObj()->gtClass) return false;
                 break;
 
                 // For the ones below no extra argument matters for comparison.
@@ -1759,8 +1759,8 @@ AGAIN:
             case GT_CAST:
                 hash ^= tree->gtCast.gtCastType;
                 break;
-            case GT_LDOBJ:
-                hash ^= static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtLdObj.gtClass));
+            case GT_OBJ:
+                hash ^= static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->gtObj.gtClass));
                 break;
             case GT_INDEX:
                 hash += tree->gtIndex.gtIndElemSize;
@@ -3113,7 +3113,7 @@ COMMON_CNS:
                 break;
 
             case GT_MKREFANY:
-            case GT_LDOBJ:
+            case GT_OBJ:
                 level  = gtSetEvalOrder(tree->gtOp.gtOp1);
                 ftreg |= tree->gtOp.gtOp1->gtRsvdRegs;
                 costEx = tree->gtOp.gtOp1->gtCostEx + 1;
@@ -4545,10 +4545,10 @@ GenTreePtr*         GenTree::gtGetChildPointer(GenTreePtr parent)
 
 #if !FEATURE_MULTIREG_ARGS
         // Note that when FEATURE_MULTIREG_ARGS==1 
-        //  a GT_LDOBJ node is handled above by the default case
-    case GT_LDOBJ:
-        // Any GT_LDOBJ with a field must be lowered before this point.
-        noway_assert(!"GT_LDOBJ encountered in GenTree::gtGetChildPointer");
+        //  a GT_OBJ node is handled above by the default case
+    case GT_OBJ:
+        // Any GT_OBJ with a field must be lowered before this point.
+        noway_assert(!"GT_OBJ encountered in GenTree::gtGetChildPointer");
         break;
 #endif // !FEATURE_MULTIREG_ARGS
 
@@ -4717,10 +4717,7 @@ bool                GenTree::OperMayThrow()
     case GT_ARR_INDEX:
     case GT_CATCH_ARG:
     case GT_ARR_LENGTH:
-    case GT_LDOBJ:
-    case GT_INITBLK:
-    case GT_COPYBLK:
-    case GT_COPYOBJ:
+    case GT_OBJ:
     case GT_LCLHEAP:
     case GT_CKFINITE:
     case GT_NULLCHECK:
@@ -5450,12 +5447,12 @@ GenTreePtr          Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src DEB
     return asg;
 }
 
-// Creates a new LdObj node.
-GenTreeLdObj* Compiler::gtNewLdObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+// Creates a new Obj node.
+GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 {
     var_types nodeType   = impNormStructType(structHnd);
     assert(varTypeIsStruct(nodeType));
-    return new (this, GT_LDOBJ) GenTreeLdObj(nodeType, addr, structHnd);
+    return new (this, GT_OBJ) GenTreeObj(nodeType, addr, structHnd);
 }
 
 // Creates a new CpObj node.
@@ -6072,9 +6069,8 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
             VarSetOps::AssignAllowUninitRhs(this, copy->gtQmark.gtElseLiveSet, tree->gtQmark.gtElseLiveSet);
             break;
 
-        case GT_LDOBJ:
-            copy = new (this, GT_LDOBJ) GenTreeLdObj(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtLdObj.gtClass);
-            // Apparently, it's OK not to copy the field list when cloning.  Or at least no tests fail when we don't.
+        case GT_OBJ:
+            copy = new (this, GT_OBJ) GenTreeObj(tree->TypeGet(), tree->gtOp.gtOp1, tree->AsObj()->gtClass);
             break;
 
         case GT_BOX:
@@ -8480,7 +8476,7 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
             printf(" %s <- %s", varTypeName(toType), varTypeName(fromType));
         }
 
-        if (tree->gtOper == GT_LDOBJ && (tree->gtFlags & GTF_VAR_DEATH))
+        if (tree->gtOper == GT_OBJ && (tree->gtFlags & GTF_VAR_DEATH))
         {
             printf(" (last use)");
         }
@@ -10988,19 +10984,22 @@ GenTreePtr          Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     
     // With first-class structs, we should be propagating the class handle on all non-primitive
     // struct types. But we don't have a convenient way to do that for all SIMD temps.
-    if (varTypeIsStruct(valTyp) && (gtGetStructHandleIfPresent(val) != NO_CLASS_HANDLE))
+
+    CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
+    if (varTypeIsStruct(valTyp) && (structHnd != NO_CLASS_HANDLE))
     {
-        /* The GT_LDOBJ may be be a child of a GT_COMMA */
+        // The GT_OBJ may be be a child of a GT_COMMA.
         GenTreePtr valx = val->gtEffectiveVal(/*commaOnly*/true);
 
-        if (valx->gtOper == GT_LDOBJ)
+        if (valx->gtOper == GT_OBJ)
         {
-            lvaSetStruct(tmp, valx->gtLdObj.gtClass, false);
+            lvaSetStruct(tmp, structHnd, false);
         }
         dest->gtFlags |= GTF_DONT_CSE;
         valx->gtFlags |= GTF_DONT_CSE;
-        asg = impAssignStruct(dest, val, 
-                              lvaGetStruct(tmp), 
+        asg = impAssignStruct(dest,
+                              val, 
+                              structHnd, 
                               (unsigned)CHECK_SPILL_NONE);
     }
     else
@@ -11125,8 +11124,7 @@ GenTreePtr          Compiler::gtNewRefCOMfield(GenTreePtr   objPtr,
         {
             if (varTypeIsStruct(lclTyp))
             {
-                tree = new (this, GT_LDOBJ) GenTreeLdObj(lclTyp, tree, structType);
-                tree->gtLdObj.gtFldTreeList = NULL;
+                tree = gtNewObjNode(structType, tree);
             }
             else
             {
@@ -12880,7 +12878,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
         {
         default:
             break;
-        case GT_LDOBJ:      structHnd = tree->gtLdObj.gtClass;                                   break;
+        case GT_MKREFANY:   structHnd = impGetRefAnyClass();                                     break;
+        case GT_OBJ:        structHnd = tree->gtObj.gtClass;                                     break;
         case GT_CALL:       structHnd = tree->gtCall.gtRetClsHnd;                                break;
         case GT_RET_EXPR:   structHnd = tree->gtRetExpr.gtRetClsHnd;                             break;
         case GT_ARGPLACE:   structHnd = tree->gtArgPlace.gtArgPlaceClsHnd;                       break;
@@ -12892,7 +12891,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
         case GT_LCL_VAR:
         case GT_LCL_FLD:
             structHnd = lvaTable[tree->AsLclVarCommon()->gtLclNum].lvVerTypeInfo.GetClassHandle();
-            assert(structHnd != NO_CLASS_HANDLE);
+            break;
+        case GT_RETURN:
+            structHnd = gtGetStructHandleIfPresent(tree->gtOp.gtOp1);
             break;
         case GT_IND:
             if (tree->gtFlags & GTF_IND_ARR_INDEX)
@@ -12905,11 +12906,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 #ifdef FEATURE_SIMD
             else if (varTypeIsSIMD(tree))
             {
-                structHnd = getStructHandleForSIMDType(tree->gtType);
+                structHnd = gtGetStructHandleForSIMD(tree->gtType, TYP_FLOAT);
             }
             break;
         case GT_SIMD:
-            structHnd = getStructHandleForSIMDType(tree->gtType);
+            structHnd = gtGetStructHandleForSIMD(tree->gtType, tree->AsSIMD()->gtSIMDBaseType);
 #endif // FEATURE_SIMD
             break;
         }
