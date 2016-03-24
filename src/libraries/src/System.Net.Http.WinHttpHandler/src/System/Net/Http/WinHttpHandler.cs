@@ -654,6 +654,7 @@ nameof(value),
                 {
                     if (_sessionHandle == null)
                     {
+                        SafeWinHttpHandle sessionHandle;
                         uint accessType;
 
                         // If a custom proxy is specified and it is really the system web proxy
@@ -693,39 +694,41 @@ nameof(value),
                             // Use WinInet per-user proxy settings.
                             accessType = Interop.WinHttp.WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY;
                         }
+                        WinHttpTraceHelper.Trace("WinHttpHandler.EnsureSessionHandleExists: proxy accessType={0}", accessType);
 
-                        _sessionHandle = Interop.WinHttp.WinHttpOpen(
+                        sessionHandle = Interop.WinHttp.WinHttpOpen(
                             IntPtr.Zero,
                             accessType,
                             Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
                             Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
                             (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
                             
-                        if (_sessionHandle.IsInvalid)
+                        if (sessionHandle.IsInvalid)
                         {
                             int lastError = Marshal.GetLastWin32Error();
+                            WinHttpTraceHelper.Trace("WinHttpHandler.EnsureSessionHandleExists: error={0}", lastError);
                             if (lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER)
                             {
-                                ThrowOnInvalidHandle(_sessionHandle);
+                                ThrowOnInvalidHandle(sessionHandle);
                             }
 
                             // We must be running on a platform earlier than Win8.1/Win2K12R2 which doesn't support
                             // WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY.  So, we'll need to read the Wininet style proxy
                             // settings ourself using our WinInetProxyHelper object.
                             _proxyHelper = new WinInetProxyHelper();
-                            _sessionHandle = Interop.WinHttp.WinHttpOpen(
+                            sessionHandle = Interop.WinHttp.WinHttpOpen(
                                 IntPtr.Zero,
                                 _proxyHelper.ManualSettingsOnly ? Interop.WinHttp.WINHTTP_ACCESS_TYPE_NAMED_PROXY : Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
                                 _proxyHelper.ManualSettingsOnly ? _proxyHelper.Proxy : Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
                                 _proxyHelper.ManualSettingsOnly ? _proxyHelper.ProxyBypass : Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
                                 (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-                            ThrowOnInvalidHandle(_sessionHandle);
+                            ThrowOnInvalidHandle(sessionHandle);
                         }
 
                         uint optionAssuredNonBlockingTrue = 1; // TRUE
 
                         if (!Interop.WinHttp.WinHttpSetOption(
-                            _sessionHandle,
+                            sessionHandle,
                             Interop.WinHttp.WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS,
                             ref optionAssuredNonBlockingTrue,
                             (uint)Marshal.SizeOf<uint>()))
@@ -738,6 +741,9 @@ nameof(value),
                                 throw WinHttpException.CreateExceptionUsingError(lastError);
                             }
                         }
+
+                        SetSessionHandleOptions(sessionHandle);
+                        _sessionHandle = sessionHandle;
                     }
                 }
             }
@@ -761,8 +767,6 @@ nameof(value),
             try
             {
                 EnsureSessionHandleExists(state);
-
-                SetSessionHandleOptions();
 
                 // Specify an HTTP server.
                 connectHandle = Interop.WinHttp.WinHttpConnect(
@@ -899,21 +903,21 @@ nameof(value),
             state.ClearSendRequestState();
         }
 
-        private void SetSessionHandleOptions()
+        private void SetSessionHandleOptions(SafeWinHttpHandle sessionHandle)
         {
-            SetSessionHandleConnectionOptions();
-            SetSessionHandleTlsOptions();
-            SetSessionHandleTimeoutOptions();
+            SetSessionHandleConnectionOptions(sessionHandle);
+            SetSessionHandleTlsOptions(sessionHandle);
+            SetSessionHandleTimeoutOptions(sessionHandle);
         }
 
-        private void SetSessionHandleConnectionOptions()
+        private void SetSessionHandleConnectionOptions(SafeWinHttpHandle sessionHandle)
         {
             uint optionData = (uint)_maxConnectionsPerServer;
-            SetWinHttpOption(_sessionHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_CONNS_PER_SERVER, ref optionData);
-            SetWinHttpOption(_sessionHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_CONNS_PER_1_0_SERVER, ref optionData);
+            SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_CONNS_PER_SERVER, ref optionData);
+            SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_CONNS_PER_1_0_SERVER, ref optionData);
         }
 
-        private void SetSessionHandleTlsOptions()
+        private void SetSessionHandleTlsOptions(SafeWinHttpHandle sessionHandle)
         {
             uint optionData = 0;
             if ((_sslProtocols & SslProtocols.Tls) != 0)
@@ -931,13 +935,13 @@ nameof(value),
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             }
 
-            SetWinHttpOption(_sessionHandle, Interop.WinHttp.WINHTTP_OPTION_SECURE_PROTOCOLS, ref optionData);
+            SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_SECURE_PROTOCOLS, ref optionData);
         }
 
-        private void SetSessionHandleTimeoutOptions()
+        private void SetSessionHandleTimeoutOptions(SafeWinHttpHandle sessionHandle)
         {
             if (!Interop.WinHttp.WinHttpSetTimeouts(
-                _sessionHandle,
+                sessionHandle,
                 0,
                 (int)_connectTimeout.TotalMilliseconds,
                 (int)_sendTimeout.TotalMilliseconds,
@@ -1302,7 +1306,9 @@ nameof(value),
         {
             if (handle.IsInvalid)
             {
-                WinHttpException.ThrowExceptionUsingLastError();
+                int lastError = Marshal.GetLastWin32Error();
+                WinHttpTraceHelper.Trace("WinHttpHandler.ThrowOnInvalidHandle: error={0}", lastError);
+                throw WinHttpException.CreateExceptionUsingError(lastError);
             }
         }
         
