@@ -4311,7 +4311,7 @@ HANDLE_SHIFT_COUNT:
             goto RETURN_CHECK;
         }
 
-        case GT_LDOBJ:
+        case GT_OBJ:
             {
 #ifdef _TARGET_ARM_
                 if (predictReg <= PREDICT_REG)
@@ -4328,16 +4328,16 @@ HANDLE_SHIFT_COUNT:
                 }
 
 #ifdef _TARGET_ARM_
-                unsigned objSize = info.compCompHnd->getClassSize(tree->gtLdObj.gtClass);
+                unsigned objSize = info.compCompHnd->getClassSize(tree->gtObj.gtClass);
                 regMaskTP preferReg = rpPredictRegMask(predictReg, TYP_I_IMPL);
                 // If it has one bit set, and that's an arg reg...
                 if (preferReg != RBM_NONE && genMaxOneBit(preferReg) && ((preferReg & RBM_ARG_REGS) != 0))
                 {
-                    // We are passing the ldObj in the argument registers
+                    // We are passing the 'obj' in the argument registers
                     //
                     regNumber rn = genRegNumFromMask(preferReg);
 
-                    //  Add the registers used to pass the ldObj to regMask.
+                    //  Add the registers used to pass the 'obj' to regMask.
                     for (unsigned i = 0; i < objSize/4; i++)
                     {
                         if (rn == MAX_REG_ARG)
@@ -4349,8 +4349,8 @@ HANDLE_SHIFT_COUNT:
                 }
                 else
                 {
-                    // We are passing the ldObj in the outgoing arg space
-                    // We will need one register to load into unless the ldObj size is 4 or less.
+                    // We are passing the 'obj' in the outgoing arg space
+                    // We will need one register to load into unless the 'obj' size is 4 or less.
                     //
                     if (objSize > 4)
                     {
@@ -4617,22 +4617,22 @@ HANDLE_SHIFT_COUNT:
                 GenTreePtr argx = args;
                 GenTreePtr lclVarTree = NULL;
 
-                /* The GT_LDOBJ may be be a child of a GT_COMMA */
+                /* The GT_OBJ may be be a child of a GT_COMMA */
                 while (argx->gtOper == GT_COMMA)
                 {
                     argx = argx->gtOp.gtOp2;
                 }
                 unsigned originalSize = 0;
 
-                if (argx->gtOper == GT_LDOBJ)
+                if (argx->gtOper == GT_OBJ)
                 {    
-                    originalSize = info.compCompHnd->getClassSize(argx->gtLdObj.gtClass);
+                    originalSize = info.compCompHnd->getClassSize(argx->gtObj.gtClass);
 
                     // Is it the address of a promoted struct local?
-                    if (argx->gtLdObj.gtOp1->gtOper == GT_ADDR &&
-                        argx->gtLdObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+                    if (argx->gtObj.gtOp1->gtOper == GT_ADDR &&
+                        argx->gtObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
                     {
-                        lclVarTree = argx->gtLdObj.gtOp1->gtOp.gtOp1;
+                        lclVarTree = argx->gtObj.gtOp1->gtOp.gtOp1;
                         LclVarDsc* varDsc = &lvaTable[lclVarTree->gtLclVarCommon.gtLclNum];
                         if (varDsc->lvPromoted)
                             promotedStructLocal = varDsc;
@@ -4768,9 +4768,9 @@ HANDLE_SHIFT_COUNT:
                 tmpMask |= rpPredictTreeRegUse(args, argPredictReg, lockedRegs | regArgMask, RBM_LASTUSE);
             }
 
-            // We mark LDOBJ(ADDR(LOCAL)) with GTF_VAR_DEATH since the local is required to live
-            // for the duration of the LDOBJ.
-            if (args->OperGet() == GT_LDOBJ && (args->gtFlags & GTF_VAR_DEATH))
+            // We mark OBJ(ADDR(LOCAL)) with GTF_VAR_DEATH since the local is required to live
+            // for the duration of the OBJ.
+            if (args->OperGet() == GT_OBJ && (args->gtFlags & GTF_VAR_DEATH))
             {
                 GenTreePtr lclVarTree = fgIsIndirOfAddrOfLocal(args);
                 assert(lclVarTree != NULL); // Or else would not be marked with GTF_VAR_DEATH.
