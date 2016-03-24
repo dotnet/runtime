@@ -36,17 +36,5 @@ namespace System.Text.Tests
             UTF7Encoding utf7 = new UTF7Encoding();
             int maxCharCount = utf7.GetMaxCharCount(byteCount);
         }
-
-        // NegTest1: ArgumentOutOfRangeException is not thrown when byteCount is less than zero.
-        [Fact]
-        public void NegTest1()
-        {
-            UTF7Encoding utf7 = new UTF7Encoding();
-            int byteCount = -1;
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                int maxCharCount = utf7.GetMaxCharCount(byteCount);
-            });
-        }
     }
 }
