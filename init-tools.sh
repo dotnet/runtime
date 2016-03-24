@@ -69,7 +69,11 @@ if [ "$__DistroName" == "centos" ]; then
     __DOTNET_PKG=dotnet-centos-x64
 fi
 
-__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
+if [ "$__DistroName" == "rhel" ]; then
+    __DOTNET_PKG=dotnet-centos-x64
+fi
+
+__CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
 echo ".NET CLI will be downloaded from $__CLIDownloadURL"
 
 if [ ! -e $__PROJECT_JSON_FILE ]; then
@@ -103,6 +107,8 @@ if [ ! -e $__PROJECT_JSON_FILE ]; then
     $__DOTNET_CMD restore "$__PROJECT_JSON_FILE" --packages $__PACKAGES_DIR --source $__BUILDTOOLS_SOURCE
  fi
 
- sh $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+ # On ubuntu 14.04, /bin/sh (symbolic link) calls /bin/dash by default.
+ $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR
+
  chmod a+x $__TOOLRUNTIME_DIR/corerun
 fi

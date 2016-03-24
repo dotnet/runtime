@@ -788,11 +788,6 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_CALLEE_TRASH_NOGC   RBM_CALLEE_TRASH
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
-#ifdef UNIX_AMD64_ABI
-  #define RBM_LOWINT              (RBM_EAX|RBM_RDI|RBM_RSI|RBM_EDX|RBM_ECX|RBM_EBX|RBM_ETW_FRAMED_EBP)
-#else // !UNIX_AMD64_ABI
-  #define RBM_LOWINT              (RBM_EAX|RBM_ECX|RBM_EBX|RBM_ETW_FRAMED_EBP|RBM_ESI|RBM_EDI)
-#endif // !UNIX_AMD64_ABI
 
 #if 0
 #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX,REG_ETW_FRAMED_EBP_LIST \

@@ -71,15 +71,6 @@ class ZapMethodHeader : public ZapNode
 
     CORINFO_METHOD_HANDLE m_handle;
     CORINFO_CLASS_HANDLE  m_classHandle;
-#ifdef MDIL
-    mdMethodDef           m_token;
-#endif
-
-#ifdef BINDER
-    ZapNode             * m_pMethodDesc;
-    ZapNode             * m_pEntryPoint; // either the ZapBlob representing the precode
-                                         // or m_pCode (if the method can be called directly)
-#endif // BINDER
 
     ZapBlobWithRelocs * m_pCode;
     ZapBlobWithRelocs * m_pColdCode;    // May be NULL
@@ -133,13 +124,6 @@ public:
         return m_methodIndex;
     }
 
-#ifdef MDIL
-    mdMethodDef GetToken()
-    {
-        return m_token;
-    }
-#endif
-
     ZapBlobWithRelocs * GetCode()
     {
         return m_pCode;
@@ -179,36 +163,6 @@ public:
         return ZapNodeType_MethodHeader;
     }
 
-#ifdef BINDER
-    void SetEntryPoint(ZapNode * pEntryPoint)
-    {
-        m_pEntryPoint = pEntryPoint;
-    }
-
-    ZapNode *GetEntryPoint()
-    {
-        return m_pEntryPoint;
-    }
-
-    bool HasMethodDesc()
-    {
-        return m_pMethodDesc != NULL;
-    }
-
-    ZapNode *GetMethodDesc()
-    {
-        _ASSERTE(m_pMethodDesc != NULL);
-        return m_pMethodDesc;
-    }
-
-    void SetMethodDesc(ZapNode *pMethodDesc)
-    {
-        _ASSERTE(m_pMethodDesc == NULL);
-        m_pMethodDesc = pMethodDesc;
-        _ASSERTE(m_pMethodDesc != NULL);
-    }
-#endif // BINDER
-
     // Iterate over as many of the methods called by this method
     // as are easy to determine.  Currently this is implemented
     // by walking the Reloc list and so is only as complete as
@@ -246,13 +200,6 @@ protected:
         : ZapBlobWithRelocs(cbSize)
     {
     }
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
 
 public:
     static ZapCodeBlob * NewAlignedBlob(ZapWriter * pWriter, PVOID pData, SIZE_T cbSize, SIZE_T cbAlignment);
@@ -305,9 +252,7 @@ class ZapMethodEntryPoint : public ZapNode
     BYTE                    m_accessFlags;  // CORINFO_ACCESS_FLAGS
     BYTE                    m_fUsed;        // Entrypoint is used - needs to be resolved
 
-#ifdef  CLR_STANDALONE_BINDER
     ZapNode                *m_pEntryPoint;  // only used for abstract methods to remember the precode
-#endif // CLR_STANDALONE_BINDER
 
 public:
     ZapMethodEntryPoint(CORINFO_METHOD_HANDLE handle, CORINFO_ACCESS_FLAGS accessFlags)
@@ -341,19 +286,6 @@ public:
     }
 
     void Resolve(ZapImage * pImage);
-#ifdef  CLR_STANDALONE_BINDER
-    void SetEntryPoint(ZapNode *entryPoint)
-    {
-        m_pEntryPoint = entryPoint;  // only used for abstract methods to remember the precode
-    }
-#endif // CLR_STANDALONE_BINDER
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
 };
 
 class ZapMethodEntryPointTable
@@ -430,35 +362,16 @@ class ZapUnwindInfo : public ZapNode
 
     ZapNode * m_pUnwindData;
 
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    DWORD m_packedUnwindData;
-#endif
-
-
     ZapUnwindInfo * m_pNextFragment;
-    
+
 public:
     ZapUnwindInfo(ZapNode * pCode, DWORD dwStartOffset, DWORD dwEndOffset, ZapNode * pUnwindData = NULL)
         : m_pCode(pCode),
         m_dwStartOffset(dwStartOffset),
         m_dwEndOffset(dwEndOffset),
-#if defined(TARGET_THUMB2) && defined(BINDER)
-        m_packedUnwindData(0),
-#endif
         m_pUnwindData(pUnwindData)
     {
     }
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    ZapUnwindInfo(ZapNode * pCode, DWORD dwStartOffset, DWORD dwEndOffset, DWORD packedUnwindData)
-        : m_pCode(pCode),
-        m_dwStartOffset(dwStartOffset),
-        m_dwEndOffset(dwEndOffset),
-        m_packedUnwindData(packedUnwindData),
-        m_pUnwindData(NULL)
-    {
-    }
-#endif // TARGET_THUMB2
 
     ZapNode * GetCode()
     {
@@ -857,69 +770,6 @@ public:
     virtual void Save(ZapWriter * pZapWriter);
 };
 
-#ifdef MDIL
-class MdilDebugInfoTable
-{
-public:
-    MdilDebugInfoTable(ZapImage *pImage) : m_pImage(pImage) { }
-
-    class DebugInfo
-    {
-        COUNT_T             m_offset;
-        COUNT_T             m_cbSize;
-        const SArray<BYTE> *m_pBuf;
-
-    public:
-        DebugInfo(COUNT_T offset, COUNT_T cbSize, const SArray<BYTE> *pBuf) : m_offset(offset), m_cbSize(cbSize), m_pBuf(pBuf) { }
-        COUNT_T GetOffset() const { return m_offset; }
-        COUNT_T GetBlobSize() const { return m_cbSize; }
-        const SArray<BYTE> *GetBuf() const { return m_pBuf; }
-        const BYTE *GetData() const { return &(*m_pBuf)[m_offset]; }
-    };
-
-    const DebugInfo *GetDebugInfo(COUNT_T offset, COUNT_T cbBlob, const SArray<BYTE> *pBuf);
-
-private:
-    class SHashTraits : public DefaultSHashTraits<DebugInfo*>
-    {
-    public:
-        typedef const element_t key_t;
-
-        static key_t GetKey(element_t e)
-        {
-            LIMITED_METHOD_CONTRACT;
-            return e;
-        }
-        static BOOL Equals(key_t k1, key_t k2)
-        { 
-            LIMITED_METHOD_CONTRACT;
-            if (k1->GetBuf() != k2->GetBuf())
-                return FALSE;
-            if (k1->GetBlobSize() != k2->GetBlobSize())
-                return FALSE;
-            return memcmp(k1->GetData(), k2->GetData(), k1->GetBlobSize()) == 0;
-        }
-        static count_t Hash(key_t k)
-        {
-            LIMITED_METHOD_CONTRACT;
-            count_t hash = 5381 + (count_t)(k->GetBlobSize() << 7);
-
-            const BYTE *pbData = k->GetData();
-            const BYTE *pbDataEnd = pbData + k->GetBlobSize();
-
-            for (/**/ ; pbData < pbDataEnd; pbData++)
-            {
-                hash = ((hash << 5) + hash) ^ *pbData;
-            }
-            return hash;
-        }
-    };
-
-    ZapImage * m_pImage;
-    SHash< NoRemoveSHashTraits < SHashTraits > > m_blobs;
-};
-#endif // MDIL
-
 //---------------------------------------------------------------------------------------
 //
 // Zapping of IBC profile data collection area
@@ -1080,14 +930,6 @@ public:
     }
 
     virtual void Save(ZapWriter * pZapWriter);
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
-
 };
 
 class ZapLazyHelperThunk : public ZapNode
@@ -1115,13 +957,6 @@ public:
     }
 
     virtual void Save(ZapWriter * pZapWriter);
-
-#if defined(TARGET_THUMB2) && defined(BINDER)
-    virtual BOOL IsThumb2Code()
-    {
-        return TRUE;
-    }
-#endif
 };
 
 #endif // __ZAPCODE_H__

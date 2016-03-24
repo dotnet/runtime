@@ -62,17 +62,23 @@
   <Target Name="CoreCompile" />
   
   <!-- If we are a run-only, that depends on another project, this is the "Build" we use. I.e. build all dependency projects, absolutely.
-  OR, in rare conditions (i.e. non-existant ones so far) a run-only script might be something we depend on, and so we may be asked to
-  build a run only for a higher priority testcase.
   -->
-  <Target Name="Build" Condition="('$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or ('$(_CLRTestInServiceOfHigherPriority)')">
-    <MSBuild Projects="@(ProjectReference)" Properties="_CLRTestInServiceOfHigherPriority=true"/>
+
+  <PropertyGroup> 
+    <BuildAllProjects Condition=" '$(BuildAllProjects)' == ''">false</BuildAllProjects>
+    <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != true">true</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' != true And '$(BuildAllProjects)' == true And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
+  </PropertyGroup>
+
+  <Target Name="Build" Condition="('$(CLRTestKind)'=='RunOnly') And '$(_WillCLRTestProjectBuild)'">
+    <MSBuild Projects="@(ProjectReference)" />
     <MakeDir Condition="'$(CLRTestKind)' == 'RunOnly'" ContinueOnError="false" Directories="$(OutputPath)" />
   </Target>
   
   <!-- We will use an imported build here in the instance that we have source that we need to build, and we are the correct priority...OR if we are being asked to build for
   a test with a higher priority. -->
-  <Import Project="$(ToolsDir)Build.Common.targets" Condition="(Exists('$(ToolsDir)Build.Common.targets') And $(_CLRTestCompilesSource) And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or ('$(_CLRTestInServiceOfHigherPriority)')" />
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="('$(CLRTestKind)'!='RunOnly') And $(_CLRTestCompilesSource) And ('$(_WillCLRTestProjectBuild)')"/>
 
 
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
@@ -90,14 +96,14 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
   </PropertyGroup>
   
-  <!-- TODO (#1122): import this from the ToolsDir once it becomes available -->
-  <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
+  <!-- TODO (#1122): import this from the ToolsDir once it becomes available --> 
+  <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'" />
 
 
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript" 
           AfterTargets="Build"
-          Condition="'$(GenerateRunScript)' != 'false' And (('$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or '$(_CLRTestInServiceOfHigherPriority)')"
+          Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
 
   <PropertyGroup>
@@ -160,4 +166,3 @@
   </Target>
 
 </Project>
-

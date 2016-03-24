@@ -39,7 +39,6 @@ LPWSTR CopyStringThrowing(
 
 namespace CLRPrivBinderUtil
 {
-#ifndef CLR_STANDALONE_BINDER
 #ifdef FEATURE_FUSION
     //-----------------------------------------------------------------------------------------------------------------
     CLRPrivAssemblyBindResultWrapper::CLRPrivAssemblyBindResultWrapper(
@@ -361,7 +360,6 @@ namespace CLRPrivBinderUtil
         return E_UNEXPECTED;
     }
 #endif //FEATURE_FUSION
-#endif //!CLR_STANDALONE_BINDER
 
     //-----------------------------------------------------------------------------------------------------------------
     HRESULT VerifyBind(
@@ -664,7 +662,6 @@ namespace CLRPrivBinderUtil
     }
 
 #ifdef FEATURE_FUSION
-#ifndef CLR_STANDALONE_BINDER
     //=====================================================================================================================
     HRESULT AssemblyIdentity::Initialize(
         AssemblySpec * pSpec)
@@ -706,7 +703,6 @@ namespace CLRPrivBinderUtil
 
         return hr;
     }
-#endif //!CLR_STANDALONE_BINDER
 #endif
 
     
@@ -735,7 +731,7 @@ namespace CLRPrivBinderUtil
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// ----------------------------- Direct calls to VM  -------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#if !defined(CLR_STANDALONE_BINDER) && defined(FEATURE_APPX_BINDER)
+#if defined(FEATURE_APPX_BINDER)
     ICLRPrivAssembly* RaiseAssemblyResolveEvent(IAssemblyName *pAssemblyName, ICLRPrivAssembly* pRequestingAssembly)
     {
         CONTRACT(ICLRPrivAssembly*)
@@ -831,5 +827,5 @@ namespace CLRPrivBinderUtil
         WRAPPER_NO_CONTRACT;
         return a1->CompareEx(a2, AssemblySpec::ASC_Default);
     }
-#endif //!CLR_STANDALONE_BINDER && FEATURE_APPX
+#endif // FEATURE_APPX
 } // namespace CLRPrivBinderUtil

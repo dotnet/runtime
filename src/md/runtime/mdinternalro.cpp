@@ -3646,23 +3646,6 @@ HRESULT MDInternalRO::GetTableInfoWithIndex(     // return size
     void **pTable,               // [OUT] pointer to table at index
     void **pTableSize)           // [OUT] size of table at index
 {
-#ifdef MDIL
-    HRESULT     hr = NOERROR;
-
-    if (!pTable || !pTableSize)
-        IfFailGo(E_INVALIDARG);
-
-    if (index == TBL_COUNT+MDPoolUSBlobs)
-    {
-        MetaData::DataBlob dataBlob;
-        m_LiteWeightStgdb.m_MiniMd.m_UserStringHeap.GetAllData(&dataBlob);
-        *pTable = dataBlob.GetDataPointer();
-        *pTableSize = (void*)(ULONG_PTR)m_LiteWeightStgdb.m_MiniMd.m_UserStringHeap.GetUnalignedSize(); 
-        return S_OK;
-
-    }
-ErrExit:
-#endif
     _ASSERTE(!"NYI");
     return E_NOTIMPL;
 } // MDInternalRO::GetTableInfoWithIndex

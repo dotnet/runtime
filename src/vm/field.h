@@ -10,12 +10,8 @@
 #ifndef _FIELD_H_
 #define _FIELD_H_
 
-#ifndef BINDER
 #include "objecthandle.h"
 #include "excep.h"
-#else // BINDER
-#include "methodtable.h"
-#endif // BINDER
 
 // Temporary values stored in FieldDesc m_dwOffset during loading
 // The high 5 bits must be zero (because in field.h we steal them for other uses), so we must choose values > 0
@@ -40,9 +36,6 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
-#ifdef BINDER
-    friend class MdilModule;
-#endif // BINDER
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
@@ -99,16 +92,6 @@ class FieldDesc
     FieldDesc() {};
 
 public:
-#ifdef BINDER
-    // We will need these to implement pseudoinstructions COPY_STRUCT,
-    // PUSH_STRUCT (versionable struct support).
-    // They are implemented via a side hash table in MdilModule
-    DWORD GetFieldValueTypeToken();
-    void SetFieldValueTypeToken(DWORD valueTypeToken);
-    MethodTable *GetFieldFullType();
-    void SetFieldFullType(MethodTable *mt);
-#endif
-
 #ifdef _DEBUG
     inline LPUTF8 GetDebugName()
     {
@@ -186,19 +169,6 @@ public:
         // code:MethodTableBuilder.InitializeFieldDescs#FieldDescTypeMorph
         return (CorElementType) m_type;
     }
-#ifdef BINDER
-    void SetFieldType(CorElementType type)
-    {
-
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        // Set in code:FieldDesc.Init which in turn is called from
-        // code:MethodTableBuilder.InitializeFieldDescs#InitCall which in turn calls
-        // code:MethodTableBuilder.InitializeFieldDescs#FieldDescTypeMorph
-        m_type = type;
-    }
-#endif
 
     DWORD GetFieldProtection()
     {
@@ -264,7 +234,6 @@ public:
 
         DWORD   rva;
 
-#ifndef BINDER
         // <NICE>I'm discarding a potential error here.  According to the code in MDInternalRO.cpp,
         // we won't get an error if we initially found the RVA.  So I'm going to just
         // assert it never happens.
@@ -273,10 +242,6 @@ public:
         HRESULT hr;
         hr = GetMDImport()->GetFieldRVA(GetMemberDef(), &rva); 
         _ASSERTE(SUCCEEDED(hr));
-#else // BINDER
-        BOOL fSucceeded = GetRVAOffsetForFieldDesc(this, &rva);
-        assert(fSucceeded);
-#endif // BINDER
         return rva;
     }
 
@@ -310,18 +275,13 @@ public:
         m_dwOffset = (dwOffset > FIELD_OFFSET_LAST_REAL_OFFSET)
                       ? FIELD_OFFSET_BIG_RVA
                       : dwOffset;
-#ifdef BINDER
-        StoreRVAOffsetForFieldDesc(this, dwOffset);
-#endif
     }
-    
-#ifndef BINDER
+
     BOOL IsILOnlyRVAField()
     {
         WRAPPER_NO_CONTRACT;
         return (IsRVA() && GetModule()->GetFile()->IsILOnly());
     }
-#endif // !BINDER
 
     DWORD   IsStatic() const
     {
@@ -483,11 +443,7 @@ public:
     BOOL IsSharedByGenericInstantiations()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifndef BINDER
         return (!IsStatic()) && GetApproxEnclosingMethodTable()->IsSharedByGenericInstantiations();
-#else // BINDER
-        return FALSE;
-#endif // BINDER
     }
 
     BOOL IsFieldOfValueType()
@@ -501,9 +457,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetApproxEnclosingMethodTable()->GetNumGenericArgs();
     }
-
-
-#ifndef BINDER
 
    PTR_BYTE GetBaseInDomainLocalModule(DomainLocalModule * pLocalModule)
     {
@@ -696,25 +649,7 @@ public:
         GetEnclosingMethodTable()->CheckRunClassInitThrowing();
     }
 #endif //DACCESS_COMPILE
-#endif // !BINDER
 
-#ifdef BINDER
-    MdilModule *GetModule()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return GetApproxEnclosingMethodTable()->GetModule();
-    }
-
-    MdilModule *GetLoaderModule()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their 
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->GetLoaderModule();
-    }
-#else //!BINDER
     Module *GetModule()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -913,7 +848,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetFieldTypeHandleThrowing(CLASS_LOAD_APPROXPARENTS, TRUE);
     }
-#endif // !BINDER
 
     // Given a type handle of an object and a method that comes from some 
     // superclass of the class of that object, find the instantiation of 
@@ -945,58 +879,6 @@ public:
     REFLECTFIELDREF GetStubFieldInfo();
 #endif
 };
-
-#ifdef BINDER
-inline VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttrs, BOOL fIsStatic, BOOL fIsRVA, BOOL fIsThreadLocal, BOOL fIsContextLocal, LPCSTR pszFieldName)
-{ 
-
-    LIMITED_METHOD_CONTRACT;
-    
-    // We allow only a subset of field types here - all objects must be set to TYPE_CLASS
-    // By-value classes are ELEMENT_TYPE_VALUETYPE
-    _ASSERTE(
-        FieldType == ELEMENT_TYPE_I1 ||
-        FieldType == ELEMENT_TYPE_BOOLEAN ||
-        FieldType == ELEMENT_TYPE_U1 ||
-        FieldType == ELEMENT_TYPE_I2 ||
-        FieldType == ELEMENT_TYPE_U2 ||
-        FieldType == ELEMENT_TYPE_CHAR ||
-        FieldType == ELEMENT_TYPE_I4 ||
-        FieldType == ELEMENT_TYPE_U4 ||
-        FieldType == ELEMENT_TYPE_I8 ||
-        FieldType == ELEMENT_TYPE_I  ||
-        FieldType == ELEMENT_TYPE_U  ||
-        FieldType == ELEMENT_TYPE_U8 ||
-        FieldType == ELEMENT_TYPE_R4 ||
-        FieldType == ELEMENT_TYPE_R8 ||
-        FieldType == ELEMENT_TYPE_CLASS ||
-        FieldType == ELEMENT_TYPE_VALUETYPE ||
-        FieldType == ELEMENT_TYPE_PTR ||
-        FieldType == ELEMENT_TYPE_FNPTR
-        );
-    _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal && !fIsContextLocal));
-    _ASSERTE(fIsRVA + fIsThreadLocal + fIsContextLocal <= 1);
-    
-    m_mb = RidFromToken(mb);
-    m_type = FieldType;
-    m_prot = fdFieldAccessMask & dwMemberAttrs;
-    m_isStatic = fIsStatic != 0;
-    m_isRVA = fIsRVA != 0;
-    m_isThreadLocal = fIsThreadLocal != 0;
-#ifdef FEATURE_REMOTING
-    m_isContextLocal = fIsContextLocal != 0;
-#endif
-
-#ifdef _DEBUG
-    m_isDangerousAppDomainAgileField = 0;
-    m_debugName = (LPUTF8)pszFieldName;
-#endif
-    _ASSERTE(GetMemberDef() == mb);                 // no truncation
-    _ASSERTE(GetFieldType() == FieldType);
-    _ASSERTE(GetFieldProtection() == (fdFieldAccessMask & dwMemberAttrs));
-    _ASSERTE((BOOL) IsStatic() == (fIsStatic != 0));
-}
-#endif // BINDER
 
 #endif // _FIELD_H_
 

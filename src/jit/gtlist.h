@@ -94,8 +94,8 @@ GTNODE(MUL        , "*"          ,1,GTK_BINOP)
 GTNODE(DIV        , "/"          ,0,GTK_BINOP)
 GTNODE(MOD        , "%"          ,0,GTK_BINOP)
 
-GTNODE(UDIV       , "/"          ,0,GTK_BINOP)
-GTNODE(UMOD       , "%"          ,0,GTK_BINOP)
+GTNODE(UDIV       , "un-/"       ,0,GTK_BINOP)
+GTNODE(UMOD       , "un-%"       ,0,GTK_BINOP)
 
 GTNODE(OR         , "|"          ,1,GTK_BINOP|GTK_LOGOP)
 GTNODE(XOR        , "^"          ,1,GTK_BINOP|GTK_LOGOP)

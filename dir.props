@@ -69,8 +69,19 @@
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
 
+    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
+    <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
+    
   </PropertyGroup>
 
+  <!-- Output paths -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\$(BuildOS).$(BuildArch).$(BuildType)</OutputPath>
+    <FinalOutputPath Condition="'$(FinalOutputPath)' == ''">$(BinDir)</FinalOutputPath>
+  </PropertyGroup>
+  
   <!-- Import Build tools common props file where repo-independent properties are found -->  
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />  
 
@@ -95,21 +106,14 @@
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>  
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>  
 
-    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand> 
+    <!-- If CORE_ROOT is set on Windows, the dotnet CLI tool tries to use it. This results in DLL resolution errors. Unset CORE_ROOT during restore. -->
+    <DnuRestoreCommand Condition="'$(OsEnvironment)'!='Unix'">(set CORE_ROOT=) &amp;</DnuRestoreCommand>
+    
+    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand> 
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
   
-  <!-- Setup Nuget properties -->
-  <ItemGroup>
-    <NuSpecSrcs Include="$(SourceDir)\.nuget\toolchain.win7-x64.Microsoft.DotNet.RyuJit.nuspec" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
-    <NuSpecs Include="$(PackagesBinDir)\toolchain.win7-x64.Microsoft.DotNet.RyuJit.nuspec" />
-  </ItemGroup>
-
   <!--
     Set up Roslyn predefines
   -->
@@ -148,7 +152,7 @@
     <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net45/</PackagingTaskDir>
     <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">00001</BuildNumberMajor>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(BuildArch)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
   </PropertyGroup>

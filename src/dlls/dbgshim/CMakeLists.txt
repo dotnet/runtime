@@ -52,6 +52,14 @@ if(WIN32)
         version.lib
         psapi.lib
     )
+
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        list(APPEND DBGSHIM_LIBRARIES 
+            ${STATIC_MT_VCRT_LIB}
+        )
+    endif()
+  
 else()
     list(APPEND DBGSHIM_LIBRARIES
         coreclrpal
@@ -63,7 +71,4 @@ endif(WIN32)
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
 # add the install targets
-install (TARGETS dbgshim DESTINATION .)
-if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dbgshim.pdb DESTINATION PDB)
-endif(WIN32)
+install_clr(dbgshim)

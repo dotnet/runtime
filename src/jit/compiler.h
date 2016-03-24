@@ -598,6 +598,20 @@ public:
         return (unsigned)(roundUp(lvExactSize, sizeof(void*)));
     }
 
+    bool                lvIsMultiregStruct()
+    {
+#if FEATURE_MULTIREG_ARGS_OR_RET
+#ifdef _TARGET_ARM64_
+        if ((TypeGet() == TYP_STRUCT) &&
+            (lvSize()  == 2 * TARGET_POINTER_SIZE))
+        {
+            return true;
+        }
+#endif  // _TARGET_ARM64_
+#endif  // FEATURE_MULTIREG_ARGS_OR_RET
+        return false;
+    }
+
 #if defined(DEBUGGING_SUPPORT) || defined(DEBUG)
     unsigned            lvSlotNum;      // original slot # (if remapped)
 #endif
@@ -2507,7 +2521,15 @@ public :
     unsigned             lvaPSPSym;           // variable representing the PSPSym
 #endif
 
-    InlineInfo         * impInlineInfo;      
+    InlineInfo*          impInlineInfo;
+
+    // Get the maximum IL size allowed for an inline
+    unsigned             getImpInlineSize() const { return impInlineSize; }
+
+#ifdef DEBUG
+    unsigned             getInlinedCount() const { return fgInlinedCount; }
+    InlinePolicy*        inlLastSuccessfulPolicy;
+#endif
 
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
@@ -2583,8 +2605,10 @@ protected :
     //-------------------- Stack manipulation ---------------------------------
 
     unsigned            impStkSize;   // Size of the full stack
-    StackEntry          impSmallStack[16];  // Use this array is possible
 
+#define SMALL_STACK_SIZE 16           // number of elements in impSmallStack
+
+    StackEntry          impSmallStack[SMALL_STACK_SIZE];  // Use this array if possible
 
     struct SavedStack                   // used to save/restore stack contents.
     {
@@ -3077,10 +3101,6 @@ private:
     static unsigned jitIciStmtIsTheLastInBB;
     static unsigned jitInlineeContainsOnlyOneBB;
 
-    #define             INLINER_FAILED                  "\nINLINER FAILED: "
-    #define             INLINER_WARNING                 "\nINLINER WARNING: "
-    #define             INLINER_INFO                    "\nINLINER INFO: "
-
 #endif // defined(DEBUG) || MEASURE_INLINING
 
 #ifdef DEBUG
@@ -3093,13 +3113,8 @@ private:
 
     static BOOL         impIsAddressInLocal(GenTreePtr tree, GenTreePtr * lclVarTreeOut);
 
-    int                 impEstimateCallsiteNativeSize (CORINFO_METHOD_INFO *  methInfo);
-
-    void                impCanInlineNative(int              callsiteNativeEstimate, 
-                                           int              calleeNativeSizeEstimate,
-                                           InlineHints      inlineHints,
-                                           InlineInfo*      pInlineInfo,
-                                           InlineResult*    inlineResult);
+    void                impMakeDiscretionaryInlineObservations(InlineInfo*   pInlineInfo,
+                                                               InlineResult* inlineResult);
 
     // STATIC inlining decision based on the IL code. 
     void                impCanInlineIL(CORINFO_METHOD_HANDLE  fncHandle,
@@ -4323,8 +4338,7 @@ protected :
     unsigned            fgStressBBProf()
     {
 #ifdef DEBUG
-        static ConfigDWORD fJitStressBBProf;
-        unsigned result = fJitStressBBProf.val(CLRConfig::INTERNAL_JitStressBBProf);
+        unsigned result = JitConfig.JitStressBBProf();
         if (result == 0)
         {
             if (compStressCompile(STRESS_BB_PROFILE, 15))
@@ -4533,8 +4547,12 @@ private:
                                                               GenTreePtr tmpAssignmentInsertionPoint, GenTreePtr paramAssignmentInsertionPoint);
     static int          fgEstimateCallStackSize(GenTreeCall* call);
     GenTreePtr          fgMorphCall         (GenTreeCall*   call);
-    bool                fgMorphCallInline   (GenTreePtr     call);
+    void                fgMorphCallInline      (GenTreeCall* call, InlineResult* result);
     void                fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result);
+#if DEBUG
+    void                fgNoteNonInlineCandidate(GenTreePtr     tree, GenTreeCall* call);
+    static fgWalkPreFn  fgFindNonInlineCandidate;
+#endif
     GenTreePtr          fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_CONTEXT_HANDLE * ExactContextHnd);
     GenTreePtr          fgMorphLeaf         (GenTreePtr     tree);
     void                fgAssignSetVarDef   (GenTreePtr     tree);
@@ -7416,9 +7434,8 @@ public :
         inline bool         IsJit64Compat()
         {
 #if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
-            // JIT64 interop not required for ReadyToRun since it can simply fall-back
-            return !IsReadyToRun();
-#else // defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+            return true;
+#else
             return false;
 #endif
         }
@@ -7506,7 +7523,7 @@ public :
         bool                disAsm2;        // Display native code after it is generated using external disassembler
         bool                dspOrder;       // Display names of each of the methods that we ngen/jit
         bool                dspUnwind;      // Display the unwind info output
-        bool                dspDiffable;    // Makes the Jit Dump 'diff-able' (currently uses same COMPLUS_* flag as disDiffable)
+        bool                dspDiffable;    // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
         bool                compLargeBranches; // Force using large conditional branches
         bool                dspGCtbls;      // Display the GC tables
 #endif
@@ -7546,12 +7563,14 @@ public :
         opts;
 
 #ifdef ALT_JIT
+    static bool s_pAltJitExcludeAssembliesListInitialized;
     static AssemblyNamesList2* s_pAltJitExcludeAssembliesList;
 #endif // ALT_JIT
 
 #ifdef DEBUG
 
     static bool             s_dspMemStats;    // Display per-phase memory statistics for every function
+    static bool             s_inlDumpDataHeader;  // Print header schema for inline data
 
     template<typename T>
     T dspPtr(T p)
@@ -7594,7 +7613,7 @@ public :
         /* hide/trivialize other areas */                                                       \
                                                                                                 \
         STRESS_MODE(REGS) STRESS_MODE(DBL_ALN) STRESS_MODE(LCL_FLDS) STRESS_MODE(UNROLL_LOOPS)  \
-        STRESS_MODE(MAKE_CSE) STRESS_MODE(INLINE) STRESS_MODE(CLONE_EXPR)                       \
+        STRESS_MODE(MAKE_CSE) STRESS_MODE(LEGACY_INLINE) STRESS_MODE(CLONE_EXPR)                \
         STRESS_MODE(USE_FCOMI) STRESS_MODE(USE_CMOV) STRESS_MODE(FOLD)                          \
         STRESS_MODE(BB_PROFILE) STRESS_MODE(OPT_BOOLS_GC) STRESS_MODE(REMORPH_TREES)            \
         STRESS_MODE(64RSLT_MUL) STRESS_MODE(DO_WHILE_LOOPS) STRESS_MODE(MIN_OPTS)               \
@@ -7605,6 +7624,7 @@ public :
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(PINVOKE_RESTORE_ESP)                                                        \
+        STRESS_MODE(RANDOM_INLINE)                                                              \
                                                                                                 \
         STRESS_MODE(GENERIC_VARN) STRESS_MODE(COUNT_VARN)                                       \
                                                                                                 \
@@ -7635,11 +7655,24 @@ public :
     bool                compStressCompile(compStressArea    stressArea,
                                           unsigned          weightPercentage);
 
+#ifdef DEBUG
+
+    bool                compInlineStress()
+    {
+        return compStressCompile(STRESS_LEGACY_INLINE, 50);
+    }
+
+    bool                compRandomInlineStress()
+    {
+        return compStressCompile(STRESS_RANDOM_INLINE, 50);
+    }
+
+#endif // DEBUG
+
     bool                compTailCallStress()
     {
 #ifdef DEBUG
-        static ConfigDWORD fTailcallStress;
-        return (fTailcallStress.val(CLRConfig::INTERNAL_TailcallStress) !=0
+        return (JitConfig.TailcallStress() !=0
                || compStressCompile(STRESS_TAILCALL, 5)
                );
 #else
@@ -7662,6 +7695,10 @@ public :
         return BLENDED_CODE;
 #endif
     }
+
+#ifdef DEBUG
+    CLRRandom*      inlRNG;
+#endif
 
     //--------------------- Info about the procedure --------------------------
 
@@ -7786,17 +7823,22 @@ public :
     // Returns true if the method being compiled returns RetBuf addr as its return value
     bool                compMethodReturnsRetBufAddr() 
     {
-        // Profiler Leave calllback expects the address of retbuf as return value for 
-        // methods with hidden RetBuf argument.  impReturnInstruction() when profiler
-        // callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
-        // methods with hidden RetBufArg.
-        //
-        // TODO-AMD64-Unix - As per this ABI, addr of RetBuf needs to be returned by
-        // methods with hidden RetBufArg.  Right now we are special casing GT_RETURN
-        // of TYP_VOID in codegenxarch.cpp to generate "mov rax, addr of RetBuf".
-        // Instead we should consider explicitly materializing GT_RETURN of TYP_BYREF
-        // return addr of RetBuf in IR.
-        return compIsProfilerHookNeeded() && (info.compRetBuffArg != BAD_VAR_NUM);
+        // There are cases where implicit RetBuf argument should be explicitly returned in a register.  
+        // In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.  
+        // These cases are:  
+        // 1. Profiler Leave calllback expects the address of retbuf as return value for   
+        //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler  
+        //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for  
+        //    methods with hidden RetBufArg.  
+        //  
+        // 2. As per the System V ABI, the address of RetBuf needs to be returned by  
+        //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,  
+        //    returning the address of RetBuf.  
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        return (info.compRetBuffArg != BAD_VAR_NUM);
+#else // FEATURE_UNIX_AMD64_STRUCT_PASSING  
+        return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING  
     }
 
     // Returns true if the method returns a value in more than one return register
@@ -7902,7 +7944,7 @@ public :
     static void         compStartup     ();     // One-time initialization
     static void         compShutdown    ();     // One-time finalization
 
-    void                compInit        (norls_allocator * pAlloc, InlineInfo * inlineInfo);
+    void                compInit        (ArenaAllocator * pAlloc, InlineInfo * inlineInfo);
     void                compDone        ();
 
     static void         compDisplayStaticSizes(FILE* fout);
@@ -7920,7 +7962,7 @@ public :
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
-    // in debug.  (Perhaps should be under the control of a COMPLUS flag.)
+    // in debug.  (Perhaps should be under the control of a COMPlus_ flag.)
     // These should fail by asserting.
     void                compDoComponentUnitTestsOnce();
 #endif // DEBUG
@@ -7941,7 +7983,7 @@ public :
                                            CORJIT_FLAGS                   * compileFlags,
                                            CorInfoInstantiationVerification instVerInfo);
 
-    norls_allocator *   compGetAllocator();
+    ArenaAllocator *   compGetAllocator();
 
 #if MEASURE_MEM_ALLOC
     struct MemStats
@@ -8145,7 +8187,7 @@ protected :
     bool skipMethod();
 #endif
 
-    norls_allocator *   compAllocator;
+    ArenaAllocator *   compAllocator;
 
 public:
     // This one presents an implementation of the "IAllocator" abstract class that uses "compAllocator",
@@ -8543,16 +8585,6 @@ public:
                                                     // This can be overwritten by setting complus_JITInlineSize env variable.
 #define IMPLEMENTATION_MAX_INLINE_SIZE  _UI16_MAX   // Maximum method size supported by this implementation 
                                          
-#define NATIVE_SIZE_INVALID  (-10000)                
-
-    static bool             s_compInSamplingMode;
-    bool                    compIsMethodForLRSampling;  // Is this the method suitable as a sample for the linear regression?
-    int                     compNativeSizeEstimate;     // The estimated native size of this method.
-    InlineHints             compInlineeHints;           // Inlining hints from the inline candidate.
-
-#ifdef DEBUG   
-    CodeSeqSM               fgCodeSeqSm;                // The code sequence state machine used in the inliner.
-#endif    
 private:
 #ifdef FEATURE_JIT_METHOD_PERF
     JitTimer*                     pCompJitTimer;           // Timer data structure (by phases) for current compilation.
@@ -8846,8 +8878,8 @@ extern  size_t     gcPtrMapNSize;
  */
 
 #if COUNT_BASIC_BLOCKS
-extern  histo       bbCntTable;
-extern  histo       bbOneBBSizeTable;
+extern  Histogram   bbCntTable;
+extern  Histogram   bbOneBBSizeTable;
 #endif
 
 
@@ -8874,8 +8906,8 @@ extern unsigned    constIterLoopCount;          // counts the # of loops with a 
 extern bool        hasMethodLoops;              // flag to keep track if we already counted a method as having loops
 extern unsigned    loopsThisMethod;             // counts the number of loops in the current method
 extern bool        loopOverflowThisMethod;      // True if we exceeded the max # of loops in the method.
-extern histo       loopCountTable;              // Histogram of loop counts
-extern histo       loopExitCountTable;          // Histogram of loop exit counts
+extern Histogram   loopCountTable;              // Histogram of loop counts
+extern Histogram   loopExitCountTable;          // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
 
@@ -8913,8 +8945,8 @@ struct NodeSizeStats
 };
 extern NodeSizeStats genNodeSizeStats;          // Total node size stats
 extern NodeSizeStats genNodeSizeStatsPerFunc;   // Per-function node size stats
-extern histo genTreeNcntHist;
-extern histo genTreeNsizHist;
+extern Histogram genTreeNcntHist;
+extern Histogram genTreeNsizHist;
 #endif // MEASURE_NODE_SIZE
 
 /*****************************************************************************

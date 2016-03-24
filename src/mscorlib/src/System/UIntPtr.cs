@@ -89,7 +89,16 @@ namespace System {
     
         [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode() {
+#if FEATURE_CORECLR
+    #if WIN32
+            return unchecked((int)m_value);
+    #else
+            ulong l = (ulong)m_value;
+            return (unchecked((int)l) ^ (int)(l >> 32));
+    #endif
+#else
             return unchecked((int)((long)m_value)) & 0x7fffffff;
+#endif
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated

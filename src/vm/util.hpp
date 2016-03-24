@@ -25,7 +25,6 @@
 
                   
 // Prevent the use of UtilMessageBox and WszMessageBox from inside the EE.
-#ifndef CLR_STANDALONE_BINDER
 #undef UtilMessageBoxCatastrophic
 #undef UtilMessageBoxCatastrophicNonLocalized
 #undef UtilMessageBoxCatastrophic
@@ -44,7 +43,6 @@
 #define UtilMessageBoxVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 #define UtilMessageBoxNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 #define WszMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
-#endif
 
 //========================================================================
 // More convenient names for integer types of a guaranteed size.
@@ -1003,7 +1001,6 @@ typedef Wrapper<LPVOID, DoNothing<LPVOID>, VoidFreeWinAllocatedBlock, NULL> WinA
 
 #endif // !FEATURE_PAL
 
-#ifndef CLR_STANDALONE_BINDER
 // For debugging, we can track arbitrary Can't-Stop regions.
 // In V1.0, this was on the Thread object, but we need to track this for threads w/o a Thread object.
 FORCEINLINE void IncCantStopCount()
@@ -1033,7 +1030,6 @@ inline bool IsInCantStopRegion()
     return (GetCantStopCount() > 0);
 }
 #endif // _DEBUG
-#endif // !CLR_STANDALONE_BINDER
 
 
 // PAL does not support per-thread locales. The holder is no-op for FEATURE_PALs

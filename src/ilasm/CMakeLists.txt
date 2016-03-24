@@ -66,7 +66,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
       dl
     )
   endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
@@ -76,8 +75,6 @@ else()
     oleaut32
     shell32
   )
-
-  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/ilasm.pdb DESTINATION PDB)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-install (TARGETS ilasm DESTINATION .)
+install_clr(ilasm)

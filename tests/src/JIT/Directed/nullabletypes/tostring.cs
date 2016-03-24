@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //<Title>Nullable types lift the ToString() method from the underlying struct</Title>
 //<Description>
 //  A nullable type with a value returns the ToString() from the underlying struct

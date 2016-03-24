@@ -58,8 +58,15 @@
 #endif
 
 #ifdef FEATURE_SIMD
+    enum SIMDScalarMoveType
+    {
+        SMT_ZeroInitUpper,                  // zero initlaize target upper bits
+        SMT_ZeroInitUpper_SrcHasUpperZeros, // zero initialize target upper bits; source upper bits are known to be zero
+        SMT_PreserveUpper                   // preserve target upper bits
+    };
+
     instruction         getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned *ival = nullptr);
-    void                genSIMDScalarMove(var_types type, regNumber target, regNumber src, bool zeroInit);
+    void                genSIMDScalarMove(var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
     void                genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void                genSIMDIntrinsicInitArray(GenTreeSIMD* simdNode);

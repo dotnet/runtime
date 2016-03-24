@@ -167,6 +167,11 @@ namespace NativeFormat
             RollbackTo(offset);
         }
 
+        void PatchByteAt(int offset, byte value)
+        {
+            m_Buffer[offset] = value;
+        }
+
         //
         // Same encoding as what's used by CTL
         //
@@ -218,6 +223,26 @@ namespace NativeFormat
 
 
     //
+    // Data structure building blocks
+    //
+
+    class UnsignedConstant : public Vertex
+    {
+        unsigned m_value;
+
+    public:
+        UnsignedConstant(unsigned value)
+            : m_value(value)
+        {
+        }
+
+        virtual void Save(NativeWriter * pWriter)
+        {
+            pWriter->WriteUnsigned(m_value);
+        }
+    };
+
+    //
     // Sparse array. Good for random access based on index
     //
     class VertexArray : public Vertex
@@ -267,6 +292,63 @@ namespace NativeFormat
         }
 
         void ExpandLayout();
+
+        virtual void Save(NativeWriter * pWriter);
+    };
+
+    //
+    // Hashtable. Good for random access based on hashcode + key
+    //
+    class VertexHashtable : public Vertex
+    {
+        struct Entry
+        {
+            Entry()
+                : offset(-1), hashcode(0), pVertex(NULL)
+            {
+            }
+
+            Entry(unsigned hashcode, Vertex * pVertex)
+                : offset(0), hashcode(hashcode), pVertex(pVertex)
+            {
+            }
+
+            int offset;
+
+            unsigned hashcode;
+            Vertex * pVertex;
+        };
+
+        vector<Entry> m_Entries;
+
+        // How many entries to target per bucket. Higher fill factor means smaller size, but worse runtime perf.
+        int m_nFillFactor;
+
+        // Number of buckets choosen for the table. Must be power of two. 0 means that the table is still open for mutation.
+        int m_nBuckets;
+
+        // Current size of index entry
+        int m_entryIndexSize; // 0 - uint8, 1 - uint16, 2 - uint32
+
+        void ComputeLayout();
+
+    public:
+        static const int DefaultFillFactor = 13;
+
+        VertexHashtable(int fillFactor = DefaultFillFactor)
+        {
+            m_nBuckets = 0;
+
+            m_nFillFactor = fillFactor;
+        }
+
+        void Append(unsigned hashcode, Vertex * pElement)
+        {
+            // The table needs to be open for mutation
+            assert(m_nBuckets == 0);
+
+            m_Entries.push_back(Entry(hashcode, pElement));
+        }
 
         virtual void Save(NativeWriter * pWriter);
     };

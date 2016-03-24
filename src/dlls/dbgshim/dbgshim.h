@@ -11,6 +11,23 @@
 typedef VOID (*PSTARTUP_CALLBACK)(IUnknown *pCordb, PVOID parameter, HRESULT hr);
 
 EXTERN_C HRESULT
+CreateProcessForLaunch(
+    __in LPWSTR lpCommandLine,
+    __in BOOL bSuspendProcess,
+    __in LPVOID lpEnvironment,
+    __in LPCWSTR lpCurrentDirectory,
+    __out PDWORD pProcessId,
+    __out HANDLE *pResumeHandle);
+
+EXTERN_C HRESULT
+ResumeProcess(
+    __in HANDLE hResumeHandle);
+
+EXTERN_C HRESULT
+CloseResumeHandle(
+    __in HANDLE hResumeHandle);
+
+EXTERN_C HRESULT
 RegisterForRuntimeStartup(
     __in DWORD dwProcessId,
     __in PSTARTUP_CALLBACK pfnCallback,
@@ -56,4 +73,3 @@ EXTERN_C HRESULT
 CreateDebuggingInterfaceFromVersion(
     __in LPCWSTR szDebuggeeVersion, 
     __out IUnknown ** ppCordb);
-

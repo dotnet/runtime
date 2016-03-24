@@ -40,7 +40,6 @@
         <CDefines Condition="'$(FeatureXplatEventSource)' == 'true'">$(CDefines);FEATURE_EVENTSOURCE_XPLAT</CDefines>
         <CDefines Condition="'$(FeatureExceptionDispatchInfo)' == 'true'">$(CDefines);FEATURE_EXCEPTIONDISPATCHINFO</CDefines>
         <CDefines Condition="'$(FeatureExceptionNotifications)' == 'true'">$(CDefines);FEATURE_EXCEPTION_NOTIFICATIONS</CDefines>
-        <CDefines Condition="'$(FeatureFrameworkInternal)' == 'true'">$(CDefines);FEATURE_FRAMEWORK_INTERNAL</CDefines>
         <CDefines Condition="'$(FeatureFullNGen)' == 'true'">$(CDefines);FEATURE_FULL_NGEN</CDefines>
         <CDefines Condition="'$(FeatureFusion)' == 'true'">$(CDefines);FEATURE_FUSION</CDefines>
         <CDefines Condition="'$(FeatureHijack)' == 'true'">$(CDefines);FEATURE_HIJACK</CDefines>
@@ -101,7 +100,6 @@
         <CDefines Condition="'$(FeatureStandaloneSn)' == 'true'">$(CDefines);FEATURE_STANDALONE_SN</CDefines>
         <CDefines Condition="'$(FeatureStrongnameDelaySigningAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureStrongnameMigration)' == 'true'">$(CDefines);FEATURE_STRONGNAME_MIGRATION</CDefines>
-        <CDefines Condition="'$(FeatureStrongnameTestkeyAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_TESTKEY_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
         <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
         <CDefines Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(CDefines);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</CDefines>
@@ -163,7 +161,6 @@
         <DefineConstants Condition="'$(FeatureEncodingNls)' == 'true'">$(DefineConstants);FEATURE_ENCODINGNLS</DefineConstants>
         <DefineConstants Condition="'$(FeatureExceptionDispatchInfo)' == 'true'">$(DefineConstants);FEATURE_EXCEPTIONDISPATCHINFO</DefineConstants>
         <DefineConstants Condition="'$(FeatureExceptionNotifications)' == 'true'">$(DefineConstants);FEATURE_EXCEPTION_NOTIFICATIONS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureFrameworkInternal)' == 'true'">$(DefineConstants);FEATURE_FRAMEWORK_INTERNAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureFusion)' == 'true'">$(DefineConstants);FEATURE_FUSION</DefineConstants>
         <DefineConstants Condition="'$(FeatureHostAssemblyResolver)' == 'true'">$(DefineConstants);FEATURE_HOST_ASSEMBLY_RESOLVER</DefineConstants>
         <DefineConstants Condition="'$(FeatureHostedBinder)' == 'true'">$(DefineConstants);FEATURE_HOSTED_BINDER</DefineConstants>
@@ -215,6 +212,7 @@
         <DefineConstants Condition="'$(FeatureX509Securestrings)' == 'true'">$(DefineConstants);FEATURE_X509_SECURESTRINGS</DefineConstants>
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureMulticoreJIT)' == 'true'">$(DefineConstants);FEATURE_MULTICOREJIT</DefineConstants>
+        <DefineConstants Condition="'$(FeatureReJIT)' == 'true'">$(DefineConstants);FEATURE_REJIT</DefineConstants>
         <DefineConstants Condition="'$(FeatureUseAsmGCWriteBarriers)' == 'true'">$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
         <DefineConstants Condition="'$(BinderDebugLog)' == 'true'">$(DefineConstants);BINDER_DEBUG_LOG</DefineConstants>
         <DefineConstants Condition="'$(FeatureSymDiff)' == 'true'">$(DefineConstants);FEATURE_SYMDIFF</DefineConstants>

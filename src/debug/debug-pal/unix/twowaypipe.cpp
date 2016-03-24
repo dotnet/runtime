@@ -13,11 +13,19 @@
 
 #include "twowaypipe.h"
 
-#define PIPE_NAME_FORMAT_STR "/tmp/clr-debug-pipe-%d-%s"
+static const char* PipeNameFormat = "/tmp/clr-debug-pipe-%d-%llu-%s";
 
 static void GetPipeName(char *name, DWORD id, const char *suffix)
 {
-    int chars = _snprintf(name, PATH_MAX, PIPE_NAME_FORMAT_STR, id, suffix);
+    UINT64 disambiguationKey;
+    BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
+
+    // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
+    // to 0. We expect that anyone else making the pipe name will also fail and thus will
+    // also try to use 0 as the value.
+    _ASSERTE(ret == TRUE || disambiguationKey == 0);
+
+    int chars = _snprintf(name, PATH_MAX, PipeNameFormat, id, disambiguationKey, suffix);
     _ASSERTE(chars > 0 && chars < PATH_MAX);
 }
 

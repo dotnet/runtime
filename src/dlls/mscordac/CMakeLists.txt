@@ -87,6 +87,14 @@ if(WIN32)
         user32.lib
         ${STATIC_MT_CRT_LIB}
     )
+
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        list(APPEND COREDAC_LIBRARIES 
+          ${STATIC_MT_VCRT_LIB}
+        )
+    endif()
+
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug
@@ -98,7 +106,4 @@ endif(WIN32)
 target_link_libraries(mscordaccore ${COREDAC_LIBRARIES})
 
 # add the install targets
-install (TARGETS mscordaccore DESTINATION .)
-if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordaccore.pdb DESTINATION PDB)
-endif(WIN32)
+install_clr(mscordaccore)

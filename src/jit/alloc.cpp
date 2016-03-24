@@ -1,411 +1,591 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-/*****************************************************************************/
-
 
 #include "jitpch.h"
-#ifdef _MSC_VER
+
+#if defined(_MSC_VER)
 #pragma hdrstop
-#endif
-/*****************************************************************************/
+#endif // defined(_MSC_VER)
 
-/*****************************************************************************/
-void                allocatorCodeSizeBeg(){}
-/*****************************************************************************/
-#ifdef  DEBUG
-/*****************************************************************************/
-
-void    __cdecl     debugStop(const char *why, ...)
+//------------------------------------------------------------------------
+// PooledAllocator:
+//    This subclass of `ArenaAllocator` is a singleton that always keeps
+//    a single default-sized page allocated. We try to use the singleton
+//    allocator as often as possible (i.e. for all non-concurrent
+//    method compilations).
+class PooledAllocator : public ArenaAllocator
 {
-    va_list     args;
+private:
+    enum
+    {
+        POOLED_ALLOCATOR_NOTINITIALIZED = 0,
+        POOLED_ALLOCATOR_IN_USE = 1,
+        POOLED_ALLOCATOR_AVAILABLE = 2,
+        POOLED_ALLOCATOR_SHUTDOWN = 3,
+    };
 
-    va_start(args, why);
+    static PooledAllocator s_pooledAllocator;
+    static LONG s_pooledAllocatorState;
 
-    printf("NOTIFICATION: ");
-    if  (why)
-        vprintf(why, args);
-    else
-        printf("debugStop(0)");
+    PooledAllocator() : ArenaAllocator() {}
+    PooledAllocator(IEEMemoryManager* memoryManager);
 
-    printf("\n");
+    PooledAllocator(const PooledAllocator& other) = delete;
+    PooledAllocator& operator=(const PooledAllocator& other) = delete;
 
-    va_end(args);
+public:
+    PooledAllocator& operator=(PooledAllocator&& other);
 
-    BreakIfDebuggerPresent();
+    void destroy() override;
+
+    static void shutdown();
+
+    static ArenaAllocator* getPooledAllocator(IEEMemoryManager* memoryManager);
+};
+
+size_t ArenaAllocator::s_defaultPageSize = 0;
+
+//------------------------------------------------------------------------
+// ArenaAllocator::bypassHostAllocator:
+//    Indicates whether or not the ArenaAllocator should bypass the JIT
+//    host when allocating memory for arena pages.
+//
+// Return Value:
+//    True if the JIT should bypass the JIT host; false otherwise.
+bool ArenaAllocator::bypassHostAllocator()
+{
+#if defined(DEBUG)
+    // When JitDirectAlloc is set, all JIT allocations requests are forwarded
+    // directly to the OS. This allows taking advantage of pageheap and other gflag
+    // knobs for ensuring that we do not have buffer overruns in the JIT.
+
+    return JitConfig.JitDirectAlloc() != 0;
+#else // defined(DEBUG)
+    return false;
+#endif // !defined(DEBUG)
 }
 
-/*****************************************************************************/
-
-/* 
- * Does this constant need to be bigger?
- */
-static  size_t    blockStop    = 99999999;
-
-/*****************************************************************************/
-#endif // DEBUG
-/*****************************************************************************/
-
-size_t THE_ALLOCATOR_BASE_SIZE  = 0;
-
-bool   norls_allocator::nraInit(IEEMemoryManager* pMemoryManager, size_t pageSize, int preAlloc)
+//------------------------------------------------------------------------
+// ArenaAllocator::getDefaultPageSize:
+//    Returns the default size of an arena page.
+//
+// Return Value:
+//    The default size of an arena page.
+size_t ArenaAllocator::getDefaultPageSize()
 {
-    bool    result = false;
-
-    nraMemoryManager = pMemoryManager;
-
-    nraPageList  =
-    nraPageLast  = 0;
-
-    nraFreeNext  =
-    nraFreeLast  = 0;
-
-    assert(THE_ALLOCATOR_BASE_SIZE != 0);
-
-    nraPageSize  = pageSize ? pageSize : THE_ALLOCATOR_BASE_SIZE;
-
-#ifdef DEBUG
-    static ConfigDWORD fShouldInjectFault;
-    nraShouldInjectFault = fShouldInjectFault.val(CLRConfig::INTERNAL_InjectFault) != 0;
-#endif    
-
-    if  (preAlloc)
-    {
-        /* Grab the initial page(s) */
-
-        setErrorTrap(NULL, norls_allocator *, pThis, this)  // ERROR TRAP: Start normal block
-        {
-            pThis->nraAllocNewPage(0);
-        }
-        impJitErrorTrap()  // ERROR TRAP: The following block handles errors
-        {
-            result = true;
-        }
-        endErrorTrap()  // ERROR TRAP: End
-    }
-
-    return  result;
+    return s_defaultPageSize;
 }
 
-/*---------------------------------------------------------------------------*/
-
-void    *   norls_allocator::nraAllocNewPage(size_t sz)
+//------------------------------------------------------------------------
+// ArenaAllocator::ArenaAllocator:
+//    Default-constructs an arena allocator.
+ArenaAllocator::ArenaAllocator()
+    : m_memoryManager(nullptr)
+    , m_firstPage(nullptr)
+    , m_lastPage(nullptr)
+    , m_nextFreeByte(nullptr)
+    , m_lastFreeByte(nullptr)
 {
-    norls_pagdesc * newPage;
-    size_t          sizPage;
+}
 
-    size_t          realSize = sz + sizeof(norls_pagdesc);
-    if (realSize < sz) 
-        NOMEM();   // Integer overflow
+//------------------------------------------------------------------------
+// ArenaAllocator::ArenaAllocator:
+//    Constructs an arena allocator.
+//
+// Arguments:
+//    memoryManager - The `IEEMemoryManager` instance that will be used to
+//                    allocate memory for arena pages.
+ArenaAllocator::ArenaAllocator(IEEMemoryManager* memoryManager)
+    : m_memoryManager(memoryManager)
+    , m_firstPage(nullptr)
+    , m_lastPage(nullptr)
+    , m_nextFreeByte(nullptr)
+    , m_lastFreeByte(nullptr)
+{
+    assert(getDefaultPageSize() != 0);
+    assert(isInitialized());
+}
 
-    /* Do we have a page that's now full? */
+//------------------------------------------------------------------------
+// ArenaAllocator::operator=:
+//    Move-assigns a `ArenaAllocator`.
+ArenaAllocator& ArenaAllocator::operator=(ArenaAllocator&& other)
+{
+    assert(!isInitialized());
 
-    if  (nraPageLast)
+    m_memoryManager = other.m_memoryManager;
+    m_firstPage = other.m_firstPage;
+    m_lastPage = other.m_lastPage;
+    m_nextFreeByte = other.m_nextFreeByte;
+    m_lastFreeByte = other.m_lastFreeByte;
+
+    other.m_memoryManager = nullptr;
+    other.m_firstPage = nullptr;
+    other.m_lastPage = nullptr;
+    other.m_nextFreeByte = nullptr;
+    other.m_lastFreeByte = nullptr;
+
+    return *this;
+}
+
+bool ArenaAllocator::isInitialized()
+{
+    return m_memoryManager != nullptr;
+}
+
+//------------------------------------------------------------------------
+// ArenaAllocator::allocateNewPage:
+//    Allocates a new arena page.
+//
+// Arguments:
+//    size - The number of bytes that were requested by the allocation
+//           that triggered this request to allocate a new arena page.
+//
+// Return Value:
+//    A pointer to the first usable byte of the newly allocated page.
+void* ArenaAllocator::allocateNewPage(size_t size, bool canThrow)
+{
+    assert(isInitialized());
+
+    size_t pageSize = sizeof(PageDescriptor) + size;
+
+    // Check for integer overflow
+    if (pageSize < size)
     {
-        /* Undo the "+=" done in nraAlloc() */
+        if (canThrow)
+        {
+            NOMEM();
+        }
 
-        nraFreeNext -= sz;
-
-        /* Save the actual used size of the page */
-
-        nraPageLast->nrpUsedSize = nraFreeNext - nraPageLast->nrpContents;
+        return nullptr;
     }
 
-    /* Make sure we grab enough to satisfy the allocation request */
-
-    sizPage = nraPageSize;
-
-    if  (sizPage < realSize)
+    // If the current page is now full, update a few statistics
+    if (m_lastPage != nullptr)
     {
-        /* The allocation doesn't fit in a default-sized page */
+        // Undo the "+=" done in allocateMemory()
+        m_nextFreeByte -= size;
 
-#ifdef  DEBUG
-//      if  (nraPageLast) printf("NOTE: wasted %u bytes in last page\n", nraPageLast->nrpPageSize - nraPageLast->nrpUsedSize);
-#endif
-
-        sizPage = realSize;
+        // Save the actual used size of the page
+        m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
     }
 
-    /* Round to the nearest multiple of OS page size */
-
-    if (!nraDirectAlloc())
+    // Round up to a default-sized page if necessary
+    if (pageSize <= s_defaultPageSize)
     {
-        sizPage +=  (DEFAULT_PAGE_SIZE - 1);
-        sizPage &= ~(DEFAULT_PAGE_SIZE - 1);
+        pageSize = s_defaultPageSize;
     }
 
-    /* Allocate the new page */
+    // Round to the nearest multiple of OS page size if necessary
+    if (!bypassHostAllocator())
+    {
+        pageSize = roundUp(pageSize, DEFAULT_PAGE_SIZE);
+    }
 
-    newPage = (norls_pagdesc *)nraVirtualAlloc(0, sizPage, MEM_COMMIT, PAGE_READWRITE);
-    if  (!newPage)
-        NOMEM();
+    // Allocate the new page
+    PageDescriptor* newPage = (PageDescriptor*)allocateHostMemory(pageSize);
+    if (newPage == nullptr)
+    {
+        if (canThrow)
+        {
+            NOMEM();
+        }
 
-#ifdef DEBUG
-    newPage->nrpSelfPtr = newPage;
-#endif
+        return nullptr;
+    }
 
-    /* Append the new page to the end of the list */
-
-    newPage->nrpNextPage = 0;
-    newPage->nrpPageSize = sizPage;
-    newPage->nrpPrevPage = nraPageLast;
-    newPage->nrpUsedSize = 0;  // nrpUsedSize is meaningless until a new page is allocated.
+    // Append the new page to the end of the list
+    newPage->m_next = nullptr;
+    newPage->m_pageBytes = pageSize;
+    newPage->m_previous = m_lastPage;
+    newPage->m_usedBytes = 0;  // m_usedBytes is meaningless until a new page is allocated.
                                // Instead of letting it contain garbage (so to confuse us),
                                // set it to zero.
 
-    if  (nraPageLast)
-        nraPageLast->nrpNextPage = newPage;
+    if (m_lastPage != nullptr)
+    {
+        m_lastPage->m_next = newPage;
+    }
     else
-        nraPageList              = newPage;
-    nraPageLast = newPage;
-
-    /* Set up the 'next' and 'last' pointers */
-
-    nraFreeNext = newPage->nrpContents + sz;
-    nraFreeLast = newPage->nrpPageSize + (BYTE *)newPage;
-
-    assert(nraFreeNext <= nraFreeLast);
-
-    return  newPage->nrpContents;
-}
-
-// This method walks the nraPageList forward and release the pages.
-// Be careful no other thread is doing nraToss at the same time.
-// Otherwise, the page specified by temp could be double-freed (VSW 600919).
-
-void        norls_allocator::nraFree(void)
-{
-    /* Free all of the allocated pages */
-
-    while   (nraPageList)
     {
-        norls_pagdesc * temp;
-
-        temp = nraPageList;
-               nraPageList = temp->nrpNextPage;
-
-        nraVirtualFree(temp, 0, MEM_RELEASE);
-    }
-}
-
-// This method walks the nraPageList backward and release the pages.
-// Be careful no other thread is doing nraFree as the same time.
-// Otherwise, the page specified by temp could be double-freed (VSW 600919).
-void        norls_allocator::nraToss(nraMarkDsc &mark)
-{
-    void    *   last = mark.nmPage;
-
-    if  (!last)
-    {
-        if  (!nraPageList)
-            return;
-
-        nraFreeNext  = nraPageList->nrpContents;
-        nraFreeLast  = nraPageList->nrpPageSize + (BYTE *)nraPageList;
-
-        return;
+        m_firstPage = newPage;
     }
 
-    /* Free up all the new pages we've added at the end of the list */
+    m_lastPage = newPage;
 
-    while (nraPageLast != last)
-    {
-        norls_pagdesc * temp;
+    // Adjust the next/last free byte pointers
+    m_nextFreeByte = newPage->m_contents + size;
+    m_lastFreeByte = (BYTE*)newPage + pageSize;
+    assert((m_lastFreeByte - m_nextFreeByte) >= 0);
 
-        /* Remove the last page from the end of the list */
-
-        temp = nraPageLast;
-               nraPageLast = temp->nrpPrevPage;
-
-        /* The new last page has no 'next' page */
-
-        nraPageLast->nrpNextPage = 0;
-
-        nraVirtualFree(temp, 0, MEM_RELEASE);
-    }
-
-    nraFreeNext = mark.nmNext;
-    nraFreeLast = mark.nmLast;
+    return newPage->m_contents;
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************/
-void    *           norls_allocator::nraAlloc(size_t sz)
+//------------------------------------------------------------------------
+// ArenaAllocator::destroy:
+//    Performs any necessary teardown for an `ArenaAllocator`.
+void ArenaAllocator::destroy()
 {
-    void    *   block;
+    assert(isInitialized());
 
-    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
-#ifdef _WIN64
-    //Ensure that we always allocate in pointer sized increments.
-    /* TODO-Cleanup:
-     * This is wasteful.  We should add alignment requirements to the allocations so we don't waste space in
-     * the heap.
-     */
-    sz = (unsigned)roundUp(sz, sizeof(size_t));
+    // Free all of the allocated pages
+    for (PageDescriptor* page = m_firstPage, *next; page != nullptr; page = next)
+    {
+        next = page->m_next;
+        freeHostMemory(page);
+    }
+
+    // Clear out the allocator's fields
+    m_memoryManager = nullptr;
+    m_firstPage = nullptr;
+    m_lastPage = nullptr;
+    m_nextFreeByte = nullptr;
+    m_lastFreeByte = nullptr;
+}
+
+// The debug version of the allocator may allocate directly from the
+// OS rather than going through the hosting APIs. In order to do so,
+// it must undef the macros that are usually in place to prevent
+// accidental uses of the OS allocator.
+#if defined(DEBUG)
+#undef GetProcessHeap
+#undef HeapAlloc
+#undef HeapFree
 #endif
 
-#ifdef DEBUG
-    if (nraShouldInjectFault)
+//------------------------------------------------------------------------
+// ArenaAllocator::allocateHostMemory:
+//    Allocates memory from the host (or the OS if `bypassHostAllocator()`
+//    returns `true`).
+//
+// Arguments:
+//    size - The number of bytes to allocate.
+//
+// Return Value:
+//    A pointer to the allocated memory.
+void* ArenaAllocator::allocateHostMemory(size_t size)
+{
+    assert(isInitialized());
+
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        return ::HeapAlloc(GetProcessHeap(), 0, size);
+    }
+    else
+    {
+        return ClrAllocInProcessHeap(0, S_SIZE_T(size));
+    }
+#else // defined(DEBUG)
+    return m_memoryManager->ClrVirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
+#endif // !defined(DEBUG)
+}
+
+//------------------------------------------------------------------------
+// ArenaAllocator::freeHostMemory:
+//    Frees memory allocated by a previous call to `allocateHostMemory`.
+//
+// Arguments:
+//    block - A pointer to the memory to free.
+void ArenaAllocator::freeHostMemory(void* block)
+{
+    assert(isInitialized());
+
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        ::HeapFree(GetProcessHeap(), 0, block);
+    }
+    else
+    {
+        ClrFreeInProcessHeap(0, block);
+    }
+#else // defined(DEBUG)
+    m_memoryManager->ClrVirtualFree(block, 0, MEM_RELEASE);
+#endif // !defined(DEBUG)
+}
+
+#if defined(DEBUG)
+//------------------------------------------------------------------------
+// ArenaAllocator::alloateMemory:
+//    Allocates memory using an `ArenaAllocator`.
+//
+// Arguments:
+//    size - The number of bytes to allocate.
+//
+// Return Value:
+//    A pointer to the allocated memory.
+//
+// Note:
+//    This is the DEBUG-only version of `allocateMemory`; the release
+//    version of this method is defined in the corresponding header file.
+//    This version of the method has some abilities that the release
+//    version does not: it may inject faults into the allocator and
+//    seeds all allocations with a specified pattern to help catch
+//    use-before-init problems.
+void* ArenaAllocator::allocateMemory(size_t size)
+{
+    assert(isInitialized());
+    assert(size != 0 && (size & (sizeof(int) - 1)) == 0);
+
+    // Ensure that we always allocate in pointer sized increments.
+    size = (size_t)roundUp(size, sizeof(size_t));
+
+    if (JitConfig.ShouldInjectFault() != 0)
     {
         // Force the underlying memory allocator (either the OS or the CLR hoster) 
         // to allocate the memory. Any fault injection will kick in.
-        void * p = DbgNew(1); 
-        if (p) 
+        void* p = ClrAllocInProcessHeap(0, S_SIZE_T(1));
+        if (p != nullptr)
         {
-            DbgDelete(p);
+            ClrFreeInProcessHeap(0, p);
         }
         else 
         {
             NOMEM();  // Throw!
         }
     }
-#endif    
 
-    block = nraFreeNext;
-            nraFreeNext += sz;
+    void* block = m_nextFreeByte;
+    m_nextFreeByte += size;
 
-    if  ((size_t)block == blockStop) debugStop("Block at %08X allocated", block);
-
-    if  (nraFreeNext > nraFreeLast)
-        block = nraAllocNewPage(sz);
-
-#ifdef DEBUG
-    memset(block, UninitializedWord<char>(), sz);
-#endif
-
-    return  block;
-}
-
-/*****************************************************************************/
-#endif
-/*****************************************************************************/
-
-size_t              norls_allocator::nraTotalSizeAlloc()
-{
-    norls_pagdesc * page;
-    size_t          size = 0;
-
-    for (page = nraPageList; page; page = page->nrpNextPage)
-        size += page->nrpPageSize;
-
-    return  size;
-}
-
-size_t              norls_allocator::nraTotalSizeUsed()
-{
-    norls_pagdesc * page;
-    size_t          size = 0;
-
-    if  (nraPageLast)
-        nraPageLast->nrpUsedSize = nraFreeNext - nraPageLast->nrpContents;
-
-    for (page = nraPageList; page; page = page->nrpNextPage)
-        size += page->nrpUsedSize;
-
-    return  size;
-}
-
-/*****************************************************************************
- * We try to use this allocator instance as much as possible. It will always
- * keep a page handy so small methods won't have to call VirtualAlloc()
- * But we may not be able to use it if another thread/reentrant call
- * is already using it.
- */
-
-static norls_allocator *nraTheAllocator;
-static nraMarkDsc       nraTheAllocatorMark;
-static LONG             nraTheAllocatorIsInUse = 0;
-
-// The static instance which we try to reuse for all non-simultaneous requests
-
-static norls_allocator  theAllocator;
-
-/*****************************************************************************/
-
-void                nraInitTheAllocator()
-{
-    THE_ALLOCATOR_BASE_SIZE = norls_allocator::nraDirectAlloc() ? 
-        (size_t)norls_allocator::MIN_PAGE_SIZE : (size_t)norls_allocator::DEFAULT_PAGE_SIZE;
-}
-
-void                nraTheAllocatorDone()
-{   
-    // We chose not to call nraTheAllocator->nraFree() and let the memory leak.
-    // Below is the reason (VSW 600919).
-
-    // The following race-condition exists during ExitProcess.
-    // Thread A calls ExitProcess, which causes thread B to terminate.
-    // Thread B terminated in the middle of nraToss() 
-    // (through the call-chain of nraFreeTheAllocator()  ==> nraRlsm() ==> nraToss())
-    // And then thread A comes along to call nraTheAllocator->nraFree() which will cause the double-free 
-    // of page specified by "temp".
-
-    // These are possible fixes:
-    // 1. Thread A tries to get hold on nraTheAllocatorIsInUse lock before
-    //    calling theAllocator.nraFree(). However, this could cause the deadlock because thread B
-    //    has already gone and therefore it can't release nraTheAllocatorIsInUse.
-    // 2. Fix the logic in nraToss() and nraFree() to update nraPageList and nraPageLast in a thread safe way.
-    //    But it needs careful work to make it high performant (e.g. not holding a lock?)
-    // 3. The scenario of dynamically unloading clrjit.dll cleanly is unimportant at this time.
-    //    We will leak the memory associated with other instances of morls_allocator anyway.
-    
-    // Therefore we decided not to call the cleanup code when unloading the jit. 
-    
-}
-
-/*****************************************************************************/
-
-norls_allocator *   nraGetTheAllocator(IEEMemoryManager* pMemoryManager)
-{
-    if (InterlockedExchange(&nraTheAllocatorIsInUse, 1))
+    if (m_nextFreeByte > m_lastFreeByte)
     {
-        // Its being used by another Compiler instance
-        return NULL;
+        block = allocateNewPage(size, true);
     }
 
-    if (nraTheAllocator == NULL)
+    memset(block, UninitializedWord<char>(), size);
+    return block;
+}
+#endif // defined(DEBUG)
+
+//------------------------------------------------------------------------
+// ArenaAllocator::getTotalBytesAllocated:
+//    Gets the total number of bytes allocated for all of the arena pages
+//    for an `ArenaAllocator`.
+//
+// Return Value:
+//    See above.
+size_t ArenaAllocator::getTotalBytesAllocated()
+{
+    assert(isInitialized());
+
+    size_t bytes = 0;
+    for (PageDescriptor* page = m_firstPage; page != nullptr; page = page->m_next)
     {
-        // Not initialized yet
+        bytes += page->m_pageBytes;
+    }
 
-        bool res = theAllocator.nraInit(pMemoryManager, 0, 1);
+    return bytes;
+}
 
-        if (res)
-        {
-            // failed to initialize
-            InterlockedExchange(&nraTheAllocatorIsInUse, 0);            
-            return NULL;
-        }
+//------------------------------------------------------------------------
+// ArenaAllocator::getTotalBytesAllocated:
+//    Gets the total number of bytes used in all of the arena pages for
+//    an `ArenaAllocator`.
+//
+// Return Value:
+//    See above.
+//
+// Notes:
+//    An arena page may have unused space at the very end. This happens
+//    when an allocation request comes in (via a call to `allocateMemory`)
+//    that will not fit in the remaining bytes for the current page.
+//    Another way to understand this method is as returning the total
+//    number of bytes allocated for arena pages minus the number of bytes
+//    that are unused across all area pages.
+size_t ArenaAllocator::getTotalBytesUsed()
+{
+    assert(isInitialized());
 
-        nraTheAllocator = &theAllocator;
-        
-        assert(nraTheAllocator->nraTotalSizeAlloc() == THE_ALLOCATOR_BASE_SIZE);
-        nraTheAllocator->nraMark(nraTheAllocatorMark);    
+    if (m_lastPage != nullptr)
+    {
+        m_lastPage->m_usedBytes = m_nextFreeByte - m_lastPage->m_contents;
+    }
+
+    size_t bytes = 0;
+    for (PageDescriptor* page = m_firstPage; page != nullptr; page = page->m_next)
+    {
+        bytes += page->m_usedBytes;
+    }
+
+    return bytes;
+}
+
+//------------------------------------------------------------------------
+// ArenaAllocator::startup:
+//    Performs any necessary initialization for the arena allocator
+//    subsystem.
+void ArenaAllocator::startup()
+{
+    s_defaultPageSize = bypassHostAllocator()
+        ? (size_t)MIN_PAGE_SIZE
+        : (size_t)DEFAULT_PAGE_SIZE;
+}
+
+//------------------------------------------------------------------------
+// ArenaAllocator::shutdown:
+//    Performs any necessary teardown for the arena allocator subsystem.
+void ArenaAllocator::shutdown()
+{
+    PooledAllocator::shutdown();
+}
+
+PooledAllocator PooledAllocator::s_pooledAllocator;
+LONG PooledAllocator::s_pooledAllocatorState = POOLED_ALLOCATOR_NOTINITIALIZED;
+
+//------------------------------------------------------------------------
+// PooledAllocator::PooledAllocator:
+//    Constructs a `PooledAllocator`.
+PooledAllocator::PooledAllocator(IEEMemoryManager* memoryManager)
+    : ArenaAllocator(memoryManager)
+{
+}
+
+//------------------------------------------------------------------------
+// PooledAllocator::operator=:
+//    Move-assigns a `PooledAllocator`.
+PooledAllocator& PooledAllocator::operator=(PooledAllocator&& other)
+{
+    *((ArenaAllocator*)this) = std::move((ArenaAllocator&&)other);
+    return *this;
+}
+
+//------------------------------------------------------------------------
+// PooledAllocator::shutdown:
+//    Performs any necessary teardown for the pooled allocator.
+//
+// Notes:
+//    If the allocator has been initialized and is in use when this method is called,
+//    it is up to whatever is using the pooled allocator to call `destroy` in order
+//    to free its memory.
+void PooledAllocator::shutdown()
+{
+    LONG oldState = InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_SHUTDOWN);
+    switch (oldState)
+    {
+        case POOLED_ALLOCATOR_NOTINITIALIZED:
+        case POOLED_ALLOCATOR_SHUTDOWN:
+        case POOLED_ALLOCATOR_IN_USE:
+            return;
+
+        case POOLED_ALLOCATOR_AVAILABLE:
+            // The pooled allocator was initialized and not in use; we must destroy it.
+            s_pooledAllocator.destroy();
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
+// PooledAllocator::getPooledAllocator:
+//    Returns the pooled allocator if it is not already in use.
+//
+// Arguments:
+//    memoryManager: The `IEEMemoryManager` instance in use by the caller.
+//
+// Return Value:
+//    A pointer to the pooled allocator if it is available or `nullptr`
+//    if it is already in use.
+//
+// Notes:
+//    Calling `destroy` on the returned allocator will return it to the
+//    pool.
+ArenaAllocator* PooledAllocator::getPooledAllocator(IEEMemoryManager* memoryManager)
+{
+    LONG oldState = InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_IN_USE);
+    switch (oldState)
+    {
+        case POOLED_ALLOCATOR_IN_USE:
+        case POOLED_ALLOCATOR_SHUTDOWN:
+            // Either the allocator is in use or this call raced with a call to `shutdown`.
+            // Return `nullptr`.
+            return nullptr;
+
+        case POOLED_ALLOCATOR_AVAILABLE:
+            if (s_pooledAllocator.m_memoryManager != memoryManager)
+            {
+                // The allocator is available, but it was initialized with a different
+                // memory manager. Release it and return `nullptr`.
+                InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_AVAILABLE);
+                return nullptr;
+            }
+
+            return &s_pooledAllocator;
+
+        case POOLED_ALLOCATOR_NOTINITIALIZED:
+            {
+                PooledAllocator allocator(memoryManager);
+                if (allocator.allocateNewPage(0, false) == nullptr)
+                {
+                    // Failed to grab the initial memory page.
+                    InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_NOTINITIALIZED);
+                    return nullptr;
+                }
+
+                s_pooledAllocator = std::move(allocator);
+            }
+
+            return &s_pooledAllocator;
+
+        default:
+            assert(!"Unknown pooled allocator state");
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// PooledAllocator::destroy:
+//    Performs any necessary teardown for an `PooledAllocator` and returns the allocator
+//    to the pool.
+void PooledAllocator::destroy()
+{
+    assert(isInitialized());
+    assert(this == &s_pooledAllocator);
+    assert(s_pooledAllocatorState == POOLED_ALLOCATOR_IN_USE || s_pooledAllocatorState == POOLED_ALLOCATOR_SHUTDOWN);
+    assert(m_firstPage != nullptr);
+
+    // Free all but the first allocated page
+    for (PageDescriptor* page = m_firstPage->m_next, *next; page != nullptr; page = next)
+    {
+        next = page->m_next;
+        freeHostMemory(page);
+    }
+
+    // Reset the relevant state to point back to the first byte of the first page
+    m_firstPage->m_next = nullptr;
+    m_lastPage = m_firstPage;
+    m_nextFreeByte = m_firstPage->m_contents;
+    m_lastFreeByte = (BYTE*)m_firstPage + m_firstPage->m_pageBytes;
+
+    assert(getTotalBytesAllocated() == s_defaultPageSize);
+
+    // If we've already been shut down, free the first page. Otherwise, return the allocator to the pool.
+    if (s_pooledAllocatorState == POOLED_ALLOCATOR_SHUTDOWN)
+    {
+        ArenaAllocator::destroy();
     }
     else
     {
-        if (nraTheAllocator->nraGetMemoryManager() != pMemoryManager)
-        {
-            // already initialize with a different memory manager
-            InterlockedExchange(&nraTheAllocatorIsInUse, 0);            
-            return NULL;
-        }
+        InterlockedExchange(&s_pooledAllocatorState, POOLED_ALLOCATOR_AVAILABLE);
     }
-
-    assert(nraTheAllocator->nraTotalSizeAlloc() == THE_ALLOCATOR_BASE_SIZE);
-    return nraTheAllocator;
 }
 
-
-void                nraFreeTheAllocator()
+//------------------------------------------------------------------------
+// ArenaAllocator::getPooledAllocator:
+//    Returns the pooled allocator if it is not already in use.
+//
+// Arguments:
+//    memoryManager: The `IEEMemoryManager` instance in use by the caller.
+//
+// Return Value:
+//    A pointer to the pooled allocator if it is available or `nullptr`
+//    if it is already in use.
+//
+// Notes:
+//    Calling `destroy` on the returned allocator will return it to the
+//    pool.
+ArenaAllocator* ArenaAllocator::getPooledAllocator(IEEMemoryManager* memoryManager)
 {
-    assert (nraTheAllocator != NULL);
-    assert(nraTheAllocatorIsInUse == 1);
-
-    nraTheAllocator->nraRlsm(nraTheAllocatorMark);
-    assert(nraTheAllocator->nraTotalSizeAlloc() == THE_ALLOCATOR_BASE_SIZE);
-
-    InterlockedExchange(&nraTheAllocatorIsInUse, 0);
+    return PooledAllocator::getPooledAllocator(memoryManager);
 }
-
-/*****************************************************************************/

@@ -30,11 +30,6 @@ using namespace CorUnix;
 /* ------------------- Definitions ------------------------------*/
 SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 
-enum
-{
-    c_cchMaxMutex = MAX_LONGPATH + 1
-};
-
 CObjectType CorUnix::otMutex(
                 otiMutex,
                 NULL,   // No cleanup routine

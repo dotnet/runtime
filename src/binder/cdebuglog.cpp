@@ -58,12 +58,6 @@ namespace BINDER_SPACE
             PathString szPathString;
             DWORD   dw = 0;
 
-            // _ASSERTE (pszPath ) ;
-            if (wcslen(pszName) >= MAX_LONGPATH)
-            {
-                IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW));
-            }
-        
             size_t pszNameLen = wcslen(pszName);
             WCHAR * szPath = szPathString.OpenUnicodeBuffer(static_cast<COUNT_T>(pszNameLen));
             size_t cbSzPath = (sizeof(WCHAR)) * (pszNameLen + 1); // SString allocates extra byte for null

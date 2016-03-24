@@ -1511,12 +1511,6 @@ namespace System {
                 Array values = GetEnumRawConstantValues();
                 return (BinarySearch(values, value) >= 0);
             }
-            else if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                // if at this point the value type is not an integer type, then its type doesn't match the enum type
-                // NetCF used to throw an argument exception in this case
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumUnderlyingTypeAndObjectMustBeSameType", valueType.ToString(), GetEnumUnderlyingType()));
-            }
             else
             {
                 throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));

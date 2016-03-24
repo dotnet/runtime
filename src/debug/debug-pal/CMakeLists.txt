@@ -2,6 +2,7 @@
 include_directories(../inc)
 include_directories(../../pal/inc)
 
+add_definitions(-DPAL_STDCPP_COMPAT=1)
 
 if(WIN32)
     #use static crt

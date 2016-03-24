@@ -35,7 +35,6 @@
 
 typedef uint32_t BOOL;
 typedef uint32_t DWORD;
-typedef void* LPVOID;
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.

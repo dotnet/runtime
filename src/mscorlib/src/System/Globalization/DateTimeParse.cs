@@ -609,10 +609,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // Builds with _LOGGING defined (x86dbg, amd64chk, etc) support tracing
             // Set the following internal-only/unsupported environment variables to enable DateTime tracing to the console:
             //
-            // COMPLUS_LogEnable=1
-            // COMPLUS_LogToConsole=1
-            // COMPLUS_LogLevel=9
-            // COMPLUS_ManagedLogFacility=0x00001000
+            // COMPlus_LogEnable=1
+            // COMPlus_LogToConsole=1
+            // COMPlus_LogLevel=9
+            // COMPlus_ManagedLogFacility=0x00001000
             if (_tracingEnabled) {
                 BCLDebug.Trace("DATETIME", "[DATETIME] Lex({0})\tpos:{1}({2}), {3}, DS.{4}", Hex(str.Value),
                                str.Index, Hex(str.m_current), tokenType, dps);
@@ -4160,10 +4160,10 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // Builds with _LOGGING defined (x86dbg, amd64chk, etc) support tracing
         // Set the following internal-only/unsupported environment variables to enable DateTime tracing to the console:
         //
-        // COMPLUS_LogEnable=1
-        // COMPLUS_LogToConsole=1
-        // COMPLUS_LogLevel=9
-        // COMPLUS_ManagedLogFacility=0x00001000
+        // COMPlus_LogEnable=1
+        // COMPlus_LogToConsole=1
+        // COMPlus_LogLevel=9
+        // COMPlus_ManagedLogFacility=0x00001000
         [Pure]
         [Conditional("_LOGGING")]
         internal static void LexTraceExit(string message, DS dps) {

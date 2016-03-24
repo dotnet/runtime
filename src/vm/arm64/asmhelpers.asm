@@ -30,6 +30,9 @@
     IMPORT GetCurrentSavedRedirectContext
     IMPORT LinkFrameAndThrow
     IMPORT FixContextHandler
+    IMPORT OnHijackObjectWorker
+    IMPORT OnHijackInteriorPointerWorker
+    IMPORT OnHijackScalarWorker
 
     IMPORT  g_ephemeral_low
     IMPORT  g_ephemeral_high
@@ -64,26 +67,25 @@
 
         str     lr, [x0, #LazyMachState_captureIp]
 
-        str     fp, [x0, #LazyMachState_captureFp]
-
         ;; str instruction does not save sp register directly so move to temp register
         mov     x1, sp
         str     x1, [x0, #LazyMachState_captureSp]
 
         ;; save non-volatile registers that can contain object references
-        add     x1, x0, #LazyMachState_captureX19_X28
+        add     x1, x0, #LazyMachState_captureX19_X29
         stp     x19, x20, [x1, #(16*0)]
         stp     x21, x22, [x1, #(16*1)]
         stp     x23, x24, [x1, #(16*2)]
         stp     x25, x26, [x1, #(16*3)]
         stp     x27, x28, [x1, #(16*4)]
+        str     x29, [x1, #(16*5)]
 
         ret     lr
         LEAF_END
 
         ;
         ; If a preserved register were pushed onto the stack between
-        ; the managed caller and the H_M_F, ptrX19_X28 will point to its
+        ; the managed caller and the H_M_F, ptrX19_X29 will point to its
         ; location on the stack and it would have been updated on the
         ; stack by the GC already and it will be popped back into the
         ; appropriate register when the appropriate epilog is run.
@@ -93,7 +95,7 @@
         ; here because the GC will have updated our copies in the
         ; frame.
         ;
-        ; So, if ptrX19_X28 points into the MachState, we need to update
+        ; So, if ptrX19_X29 points into the MachState, we need to update
         ; the register here.  That's what this macro does.
         ;
 
@@ -104,16 +106,16 @@
         ;
         ; x0 = address of MachState
         ;
-        ; $regIndex: Index of the register (x19-x28). For x19, index is 19.
+        ; $regIndex: Index of the register (x19-x29). For x19, index is 19.
         ;            For x20, index is 20, and so on.
         ;
         ; $reg: Register name (e.g. x19, x20, etc)
         ;
         ; Get the address of the specified captured register from machine state
-        add     x2, x0, #(MachState__captureX19_X28 + (($regIndex-19)*8))
+        add     x2, x0, #(MachState__captureX19_X29 + (($regIndex-19)*8))
 
         ; Get the content of specified preserved register pointer from machine state
-        ldr     x3, [x0, #(MachState__ptrX19_X28 + (($regIndex-19)*8))]
+        ldr     x3, [x0, #(MachState__ptrX19_X29 + (($regIndex-19)*8))]
 
         cmp     x2, x3
         bne     %FT0
@@ -147,6 +149,7 @@
         RestoreRegMS 26, X26
         RestoreRegMS 27, X27
         RestoreRegMS 28, X28
+
 Done
         ; Its imperative that the return value of HelperMethodFrameRestoreState is zero
         ; as it is used in the state machine to loop until it becomes zero.
@@ -848,17 +851,98 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
     
     NESTED_END
 
+#ifdef FEATURE_HIJACK
+; ------------------------------------------------------------------
+; Hijack function for functions which return a reference type
+    NESTED_ENTRY OnHijackObjectTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-112!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
 
+    str x0, [sp, #96]
+    mov x0, sp
+    bl OnHijackObjectWorker
+    ldr x0, [sp, #96]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #112!
+    EPILOG_RETURN
+    NESTED_END
+
+; ------------------------------------------------------------------
+; Hijack function for functions which return an interior pointer within an object allocated in managed heap
+    NESTED_ENTRY OnHijackInteriorPointerTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-112!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+    str x0, [sp, #96]
+    mov x0, sp
+    bl OnHijackInteriorPointerWorker
+    ldr x0, [sp, #96]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #112!
+    EPILOG_RETURN
+    NESTED_END
+
+; ------------------------------------------------------------------
+; Hijack function for functions which return a scalar type or a struct (value type)
+    NESTED_ENTRY OnHijackScalarTripThread
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-144!
+    ; Spill callee saved registers 
+    PROLOG_SAVE_REG_PAIR   x19, x20, #16
+    PROLOG_SAVE_REG_PAIR   x21, x22, #32
+    PROLOG_SAVE_REG_PAIR   x23, x24, #48
+    PROLOG_SAVE_REG_PAIR   x25, x26, #64
+    PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+    str x0, [sp, #96]
+    ; HFA return value can be in d0-d3
+    stp d0, d1, [sp, #112]
+    stp d2, d3, [sp, #128]
+    mov x0, sp
+    bl OnHijackScalarWorker
+    ldr x0, [sp, #96]
+    ldp d0, d1, [sp, #112]
+    ldp d2, d3, [sp, #128]
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #144!
+    EPILOG_RETURN
+    NESTED_END
+
+#endif ; FEATURE_HIJACK
 
 ;; ------------------------------------------------------------------
 ;; Redirection Stub for GC in fully interruptible method
-;        GenerateRedirectedHandledJITCaseStub GCThreadControl
+        GenerateRedirectedHandledJITCaseStub GCThreadControl
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub DbgThreadControl
+        GenerateRedirectedHandledJITCaseStub DbgThreadControl
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub UserSuspend
+        GenerateRedirectedHandledJITCaseStub UserSuspend
 ;; ------------------------------------------------------------------
-;        GenerateRedirectedHandledJITCaseStub YieldTask
+        GenerateRedirectedHandledJITCaseStub YieldTask
 
 #ifdef _DEBUG
 ; ------------------------------------------------------------------

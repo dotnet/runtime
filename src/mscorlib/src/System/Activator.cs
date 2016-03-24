@@ -205,20 +205,6 @@ namespace System {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
             // Skip the CreateInstanceCheckThis call to avoid perf cost and to maintain compatibility with V2 (throwing the same exceptions).
-#if FEATURE_CORECLR
-            // In SL2/3 CreateInstance<T> doesn't do any security checks. This would mean that Assembly B can create instances of an internal
-            // type in Assembly A upon A's request:
-            //      TypeInAssemblyA.DoWork() { AssemblyB.Create<InternalTypeInAssemblyA>();}
-            //      TypeInAssemblyB.Create<T>() {return new T();}
-            // This violates type safety but we saw multiple user apps that have put a dependency on it. So for compatibility we allow this if
-            // the SL app was built against SL2/3.
-            // Note that in SL2/3 it is possible for app code to instantiate public transparent types with public critical default constructors.
-            // Fortunately we don't have such types in out platform assemblies.
-            if (CompatibilitySwitches.IsAppEarlierThanSilverlight4 ||
-                CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                return (T)rt.CreateInstanceSlow(true /*publicOnly*/, true /*skipCheckThis*/, false /*fillCache*/, ref stackMark);
-            else
-#endif // FEATURE_CORECLR
             return (T)rt.CreateInstanceDefaultCtor(true /*publicOnly*/, true /*skipCheckThis*/, true /*fillCache*/, ref stackMark);
         }
 

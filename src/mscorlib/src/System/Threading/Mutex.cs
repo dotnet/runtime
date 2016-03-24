@@ -23,7 +23,6 @@ namespace System.Threading
     using System.Runtime.InteropServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.Versioning;
-    using System.Security.Principal;
     using System.Security;
     using System.Diagnostics.Contracts;
     
@@ -103,29 +102,10 @@ namespace System.Threading
             CreateMutexWithGuaranteedCleanup(initiallyOwned, name, out createdNew, secAttrs);
         }
 
-#if FEATURE_LEGACYNETCF
-        static string WinCEObjectNameQuirk(string name)
-        {
-            if (name == null)
-                return null;
-
-            // WinCE allowed backslashes in kernel object names, but WinNT does not allow them.
-            // Replace all backslashes with a rare unicode character if we are in NetCF compat mode.
-            // Mutex was the only named kernel object exposed to phone apps, so we do not have
-            // to apply this quirk in other places.
-            return name.Replace('\\', '\u2044');
-        }
-#endif
-
         [System.Security.SecurityCritical]  // auto-generated_required
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         internal void CreateMutexWithGuaranteedCleanup(bool initiallyOwned, String name, out bool createdNew, Win32Native.SECURITY_ATTRIBUTES secAttrs)
         {
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                name = WinCEObjectNameQuirk(name);
-#endif
-
             RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(MutexCleanupCode);
             MutexCleanupInfo cleanupInfo = new MutexCleanupInfo(null, false);
             MutexTryCodeHelper tryCodeHelper = new MutexTryCodeHelper(initiallyOwned, cleanupInfo, name, secAttrs, this);
@@ -244,18 +224,7 @@ namespace System.Threading
             }
         }
 
-        // For the .NET Compact Framework this constructor was security safe critical.
-        // For Windows Phone version 8 (Apollo), all apps will run as fully trusted,
-        // meaning the CLR is not considered a trust boundary.  This API could be marked security critical.
-        // However for Windows Phone version 7.1 applications, they will still be run
-        // as partially trusted applications, with our security transparency model enforced.
-        // So we have this peculiar #ifdef that should be enabled only for .NET CF backwards
-        // compatibility.
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecuritySafeCritical]  // auto-generated_required
-#else
         [System.Security.SecurityCritical]  // auto-generated_required
-#endif //FEATURE_LEGACYNETCF
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         public Mutex(bool initiallyOwned, String name) : this(initiallyOwned, name, out dummyBool) {
         }
@@ -355,11 +324,6 @@ namespace System.Threading
             Contract.EndContractBlock();
 
             result = null;
-
-#if FEATURE_LEGACYNETCF
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                name = WinCEObjectNameQuirk(name);
-#endif
 
             // To allow users to view & edit the ACL's, call OpenMutex
             // with parameters to allow us to view & edit the ACL.  This will

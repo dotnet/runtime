@@ -21,7 +21,7 @@
 
 #ifdef LOGGING
 
-#define DEFAULT_LOGFILE_NAME    "COMPLUS.LOG"
+#define DEFAULT_LOGFILE_NAME    W("COMPLUS.LOG")
 
 #define LOG_ENABLE_FILE_LOGGING         0x0001
 #define LOG_ENABLE_FLUSH_FILE           0x0002
@@ -32,7 +32,7 @@
 
 
 static DWORD    LogFlags                    = 0;
-static char     szLogFileName[MAX_LONGPATH+1]   = DEFAULT_LOGFILE_NAME;
+static CQuickWSTR     szLogFileName;
 static HANDLE   LogFileHandle               = INVALID_HANDLE_VALUE;
 static MUTEX_COOKIE   LogFileMutex                = 0;
 static DWORD    LogFacilityMask             = LF_ALL;
@@ -59,29 +59,36 @@ VOID InitLogging()
     
     LogFacilityMask2 = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogFacility2, LogFacilityMask2) | LF_ALWAYS;
 
+    if (SUCCEEDED(szLogFileName.ReSizeNoThrow(MAX_LONGPATH)))
+    {
+        wcscpy_s(szLogFileName.Ptr(), szLogFileName.Size(), DEFAULT_LOGFILE_NAME);
+    }
+
     LPWSTR fileName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFile);
     if (fileName != 0)
     {
-        int ret;
-        ret = WszWideCharToMultiByte(CP_ACP, 0, fileName, -1, szLogFileName, sizeof(szLogFileName)-1, NULL, NULL);
-        _ASSERTE(ret != 0);
+        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(wcslen(fileName) + 32)))
+        {
+            wcscpy_s(szLogFileName.Ptr(), szLogFileName.Size(), fileName);
+        }
         delete fileName;
     }
 
     if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_LogWithPid, FALSE))
     {
-        char szPid[20];
-        sprintf_s(szPid, COUNTOF(szPid), ".%d", GetCurrentProcessId());
-        strcat_s(szLogFileName, _countof(szLogFileName), szPid);
+        WCHAR szPid[20];
+        swprintf_s(szPid, COUNTOF(szPid), W(".%d"), GetCurrentProcessId());
+        wcscat_s(szLogFileName.Ptr(), szLogFileName.Size(), szPid);
     }
 
     if ((LogFlags & LOG_ENABLE) &&
         (LogFlags & LOG_ENABLE_FILE_LOGGING) &&
+        (szLogFileName.Size() > 0) &&
         (LogFileHandle == INVALID_HANDLE_VALUE))
     {
         DWORD fdwCreate = (LogFlags & LOG_ENABLE_APPEND_FILE) ? OPEN_ALWAYS : CREATE_ALWAYS;
-        LogFileHandle = CreateFileA(
-            szLogFileName,
+        LogFileHandle = WszCreateFile(
+            szLogFileName.Ptr(),
             GENERIC_WRITE,
             FILE_SHARE_READ,
             NULL,
@@ -99,17 +106,17 @@ VOID InitLogging()
         }
 
             // Some other logging may be going on, try again with another file name
-        if (LogFileHandle == INVALID_HANDLE_VALUE)
+        if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
-            char* ptr = szLogFileName + strlen(szLogFileName) + 1;
-            ptr[-1] = '.';
-            ptr[0] = '0';
+            WCHAR* ptr = szLogFileName.Ptr() + wcslen(szLogFileName.Ptr()) + 1;
+            ptr[-1] = W('.');
+            ptr[0] = W('0');
             ptr[1] = 0;
 
             for(int i = 0; i < 10; i++)
             {
-                LogFileHandle = CreateFileA(
-                    szLogFileName,
+                LogFileHandle = WszCreateFile(
+                    szLogFileName.Ptr(),
                     GENERIC_WRITE,
                     FILE_SHARE_READ,
                     NULL,
@@ -121,13 +128,23 @@ VOID InitLogging()
                 *ptr = *ptr + 1;
             }
             if (LogFileHandle == INVALID_HANDLE_VALUE) {
-                DWORD       written;
-                char buff[MAX_LONGPATH+60];
-                strcpy(buff, "Could not open log file, logging to ");
-                strcat_s(buff, _countof(buff), szLogFileName);
-                // ARULM--Changed WriteConsoleA to WriteFile to be CE compat
-                WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), buff, (DWORD)strlen(buff), &written, 0);
+                int ret = WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
+                const char *msg = "Could not open log file, logging to ";
+                DWORD msgLen = (DWORD)strlen(msg);
+                CQuickSTR buff;
+                if (SUCCEEDED(buff.ReSizeNoThrow(ret + msgLen)))
+                {
+                    strcpy_s(buff.Ptr(), buff.Size(), msg);
+                    WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
+                    msg = buff.Ptr();
                 }
+                else
+                {
+                    msg = "Could not open log file";
+                }
+                DWORD       written;
+                WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
+            }
         }
         if (LogFileHandle == INVALID_HANDLE_VALUE)
             UtilMessageBoxNonLocalized(NULL, W("Could not open log file"), W("CLR logging"), MB_OK | MB_ICONINFORMATION, FALSE, TRUE);
