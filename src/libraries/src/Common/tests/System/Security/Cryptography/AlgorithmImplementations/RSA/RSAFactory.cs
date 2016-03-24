@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         RSA Create();
         RSA Create(int keySize);
+        bool Supports384PrivateKey { get; }
     }
 
     public static partial class RSAFactory
@@ -20,6 +21,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static RSA Create(int keySize)
         {
             return s_provider.Create(keySize);
+        }
+
+        public static bool Supports384PrivateKey
+        {
+            get { return s_provider.Supports384PrivateKey; }
         }
     }
 }
