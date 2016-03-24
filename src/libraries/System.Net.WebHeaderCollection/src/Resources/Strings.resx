@@ -123,9 +123,6 @@
   <data name="net_headers_rsp" xml:space="preserve">
     <value>This collection holds request headers and cannot contain the specified response header.</value>
   </data>
-  <data name="net_headers_toolong" xml:space="preserve">
-    <value>Header values cannot be longer than {0} characters.</value>
-  </data>
   <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
     <value>Specified value has invalid Control characters.</value>
   </data>
@@ -137,14 +134,5 @@
   </data>
   <data name="net_WebHeaderInvalidNonAsciiChars" xml:space="preserve">
     <value>Specified value has invalid non-ASCII characters.</value>
-  </data>
-  <data name="net_WebHeaderMissingColon" xml:space="preserve">
-    <value>Specified value does not have a ':' separator.</value>
-  </data>
-  <data name="net_headerrestrict" xml:space="preserve">
-    <value>The '{0}' header must be modified using the appropriate property or method.</value>
-  </data>
-  <data name="net_emptystringcall" xml:space="preserve">
-    <value>The parameter '{0}' cannot be an empty string.</value>
   </data>
 </root>
