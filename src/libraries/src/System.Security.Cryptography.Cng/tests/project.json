@@ -7,6 +7,7 @@
     "System.ObjectModel": "4.0.12-rc3-23923",
     "System.Runtime": "4.1.0-rc3-23923",
     "System.Runtime.Extensions": "4.1.0-rc3-23923",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc3-23923",
     "System.Runtime.Numerics": "4.0.1-rc3-23923",
     "System.Security.Cryptography.Algorithms": "4.1.0-rc3-23923",
     "System.Text.Encoding.Extensions": "4.0.11-rc3-23923",

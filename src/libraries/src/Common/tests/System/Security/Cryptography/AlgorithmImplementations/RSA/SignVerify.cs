@@ -37,7 +37,22 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x11, 0xE0, 0x6E, 0xD2, 0x22, 0x75, 0xE7, 0x7C,
             };
 
-            ExpectSignature(expectedSignature, TestData.HelloBytes, "SHA1", TestData.RSA384Parameters);
+            try
+            {
+                ExpectSignature(expectedSignature, TestData.HelloBytes, "SHA1", TestData.RSA384Parameters);
+
+                Assert.True(RSAFactory.Supports384PrivateKey, "RSAFactory.Supports384PrivateKey");
+            }
+            catch (CryptographicException)
+            {
+                // If the provider is not known to fail loading a 384-bit key, let the exception be the
+                // test failure. (If it is known to fail loading that key, we've now suppressed the throw,
+                // and the test will pass.)
+                if (RSAFactory.Supports384PrivateKey)
+                {
+                    throw;
+                }
+            }
         }
 
         [Fact]

@@ -90,7 +90,23 @@ namespace System.Security.Cryptography.Cng.Tests
                 "722DEFDF48144A6D88A780144FCEA66BDCDA50D6071C54E5D0DA5B").HexToByteArray();
 
             RSAParameters expected = System.Security.Cryptography.Rsa.Tests.TestData.RSA384Parameters;
-            RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
+
+            try
+            {
+                RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
+
+                Assert.True(Rsa.Tests.RSAFactory.Supports384PrivateKey, "RSAFactory.Supports384PrivateKey");
+            }
+            catch (CryptographicException)
+            {
+                // If the provider is not known to fail loading a 384-bit key, let the exception be the
+                // test failure. (If it is known to fail loading that key, we've now suppressed the throw,
+                // and the test will pass.)
+                if (Rsa.Tests.RSAFactory.Supports384PrivateKey)
+                {
+                    throw;
+                }
+            }
         }
 
         [Fact]

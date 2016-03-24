@@ -15,6 +15,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             return new RSACryptoServiceProvider(keySize);
         }
+        
+        public bool Supports384PrivateKey
+        {
+            get { return true; }
+        }
     }
 
     public partial class RSAFactory
