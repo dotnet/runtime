@@ -654,7 +654,7 @@ coverageOutputDir=
 
 # Handle arguments
 verbose=0
-doCrossGen=0
+doCrossgen=0
 
 for i in "$@"
 do
