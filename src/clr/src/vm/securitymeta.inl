@@ -1060,13 +1060,6 @@ inline ModuleSecurityDescriptorFlags ModuleSecurityDescriptor::GetRawFlags()
 }
 #endif // DACCESS_COMPILE
 
-inline BOOL ModuleSecurityDescriptor::IsMicrosoftPlatform()
-{
-    WRAPPER_NO_CONTRACT;
-    VerifyDataComputed();
-    return !!(m_flags & ModuleSecurityDescriptorFlags_IsMicrosoftPlatform);
-}
-
 inline BOOL ModuleSecurityDescriptor::IsAllTransparent()
 {
     WRAPPER_NO_CONTRACT;

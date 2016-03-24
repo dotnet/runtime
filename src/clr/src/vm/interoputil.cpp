@@ -5315,18 +5315,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         }
         else
         {
-#ifdef FEATURE_WINDOWSPHONE
-            //
-            // On the phone, anyone can activate WinRT objects, but only platform code can do legacy COM interop.  
-            // (Hosts can override this.)
-            //
-            if (!pClassMT->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly() &&
-                !GetAppDomain()->EnablePInvokeAndClassicComInterop())
-            {
-                COMPlusThrow(kNotSupportedException, W("NotSupported_UserCOM"));
-            }
-#endif //FEATURE_WINDOWSPHONE
-
             GUID guid;
             pClassMT->GetGuid(&guid, TRUE);
 
