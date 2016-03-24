@@ -14,8 +14,6 @@ namespace System.Globalization.Tests
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
 
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         public static IEnumerable<object[]> IndexOf_TestData()
         {
             // Empty string
@@ -63,30 +61,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2 };
         }
 
-        public static IEnumerable<object[]> IndexOf_Random_TestData()
-        {
-            string[] interestingStrings = new string[] { "", "a", "1", "-", "A", "!", "abc", "aBc", "a\u0400Bc", "I", "i", "\u0130", "\u0131", "A", "\uFF21", "\uFE57" };
-            foreach (string string1 in interestingStrings)
-            {
-                foreach (string string2 in interestingStrings)
-                {
-                    yield return new object[] { s_currentCompare, string1, string2, 0, string1.Length, CompareOptions.Ordinal, PredictIndexOfOrdinalResult(string1, string2) };
-                }
-            }
-
-            // Random
-            for (int i = 0; i < 1000; i++)
-            {
-                string string1 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                string string2 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                string string3 = string1 + string2;
-                yield return new object[] { s_currentCompare, string1, string1, 0, string1.Length, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string2, string2, 0, string2.Length, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string1, string2, 0, string1.Length, CompareOptions.Ordinal, PredictIndexOfOrdinalResult(string1, string2) };
-                yield return new object[] { s_currentCompare, string3, string2, 0, string3.Length, CompareOptions.Ordinal, PredictIndexOfOrdinalResult(string3, string2) };
-            }
-        }
-
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
         {
             // Searches for the ligature Æ
@@ -125,7 +99,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_TestData))]
-        [MemberData(nameof(IndexOf_Random_TestData))]
         [MemberData(nameof(IndexOf_U_WithDiaeresis_TestData))]
         public void IndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
@@ -333,38 +306,6 @@ namespace System.Globalization.Tests
                 }
             }
             return char.MinValue; // There are no unassigned unicode characters from \u0000 - \uFFFF
-        }
-
-        private static int PredictIndexOfOrdinalResult(string string1, string string2)
-        {
-            if (string1 == null)
-            {
-                if (string2 == null) return 0;
-                else return -1;
-            }
-            if (string2 == null) return -1;
-
-            if (string2.Length > string1.Length) return -1;
-
-            for (int i = 0; i <= string1.Length - string2.Length; i++)
-            {
-                bool match = true;
-                for (int j = 0; j < string2.Length; j++)
-                {
-                    if (string1[i + j] != string2[j])
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) return i;
-            }
-            return -1;
-        }
-
-        private static int NormalizeCompare(int result)
-        {
-            return Math.Sign(result);
         }
     }
 }
