@@ -162,7 +162,7 @@ mono_xdebug_init (const char *options)
 
 	mono_img_writer_emit_start (w);
 
-	xdebug_writer = mono_dwarf_writer_create (w, il_file, 0, TRUE, TRUE);
+	xdebug_writer = mono_dwarf_writer_create (w, il_file, 0, TRUE);
 
 	/* Emit something so the file has a text segment */
 	mono_img_writer_emit_section_change (w, ".text", 0);
@@ -185,7 +185,7 @@ xdebug_begin_emit (MonoImageWriter **out_w, MonoDwarfWriter **out_dw)
 	if (!il_file)
 		il_file = fopen ("xdb.il", "w");
 
-	dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, FALSE, TRUE);
+	dw = mono_dwarf_writer_create (w, il_file, il_file_line_index, TRUE);
 
 	mono_dwarf_writer_emit_base_info (dw, "JITted code", mono_unwind_get_cie_program ());
 

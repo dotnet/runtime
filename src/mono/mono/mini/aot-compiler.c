@@ -10343,7 +10343,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			aot_printerrf (acfg, "The dwarf AOT option requires the --debug option.\n");
 			return 1;
 		}
-		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE, !acfg->gas_line_numbers);
+		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, !acfg->gas_line_numbers);
 	}
 
 	if (acfg->w)
