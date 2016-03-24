@@ -547,6 +547,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(url))
             {
+                Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
                 CookieCollection cookies = handler.CookieContainer.GetCookies(new Uri(url));
 
                 Assert.Equal(3, handler.CookieContainer.Count);
