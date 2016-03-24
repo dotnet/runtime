@@ -27,7 +27,7 @@
     <Compile Include="GregorianCalendar\GregorianCalendarGetEra.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetMonth.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetMonthsInYear.cs" />
-    <Compile Include="GregorianCalendar\GregorianCalendarGetWeekOfYears.cs" />
+    <Compile Include="GregorianCalendar\GregorianCalendarGetWeekOfYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarGetYear.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarIsLeapDay.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarIsLeapMonth.cs" />

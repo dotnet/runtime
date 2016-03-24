@@ -11,52 +11,41 @@ namespace System.Globalization.Tests
 {
     public class GregorianCalendarGetYear
     {
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
-
         public static IEnumerable<object[]> GetYear_TestData()
         {
             // February in a leap year
-            int randomLeapYearFebruary = RandomLeapYear();
-            yield return new object[] { s_calendar.ToDateTime(randomLeapYearFebruary, 2, 29, 10, 30, 12, 0), randomLeapYearFebruary };
+            yield return new object[] { new DateTime(RandomLeapYear(), 2, 29, 10, 30, 12) };
 
             // Any month other than February in a leap year
-            int randomLeapYearNotFebruary = RandomLeapYear();
-            yield return new object[] { s_calendar.ToDateTime(randomLeapYearNotFebruary, RandomMonthNotFebruary(), 28, 10, 30, 12, 0), randomLeapYearNotFebruary };
+            yield return new object[] { new DateTime(RandomLeapYear(), RandomMonthNotFebruary(), 28, 10, 30, 12) };
 
             // February in a common year
-            int randomCommonYearFebruary = RandomCommonYear();
-            yield return new object[] { s_calendar.ToDateTime(randomCommonYearFebruary, 2, 28, 10, 30, 12, 0), randomCommonYearFebruary };
+            yield return new object[] { new DateTime(RandomCommonYear(), 2, 28, 10, 30, 12) };
 
             // Any month other than February in a common year
-            int randomCommonYearNotFebruary = RandomCommonYear();
-            yield return new object[] { s_calendar.ToDateTime(randomCommonYearNotFebruary, RandomMonthNotFebruary(), 28, 10, 30, 12, 0), randomCommonYearNotFebruary };
+            yield return new object[] { new DateTime(RandomCommonYear(), RandomMonthNotFebruary(), 28, 10, 30, 12) };
             
             // Any month in the minimum supported year
-            int minYear = s_calendar.MinSupportedDateTime.Year;
-            yield return new object[] { s_calendar.ToDateTime(minYear, RandomMonth(), 20, 8, 20, 30, 0), minYear };
+            yield return new object[] { new DateTime(1, RandomMonth(), 20, 8, 20, 30) };
 
             // Any month in the minimum supported year
-            int maxYear = s_calendar.MaxSupportedDateTime.Year;
-            yield return new object[] { s_calendar.ToDateTime(maxYear, RandomMonth(), 20, 8, 20, 30, 0), maxYear };
+            yield return new object[] { new DateTime(9999, RandomMonth(), 20, 8, 20, 30) };
 
             // Minimum month in any year
-            int randomMinMonthYear = RandomYear();
-            yield return new object[] { s_calendar.ToDateTime(randomMinMonthYear, 1, 20, 8, 20, 30, 0), randomMinMonthYear };
+            yield return new object[] { new DateTime(RandomYear(), 1, 20, 8, 20, 30) };
 
             // Maximum month in any year
-            int randomMaxMonthYear = RandomYear();
-            yield return new object[] { s_calendar.ToDateTime(randomMaxMonthYear, 12, 20, 8, 20, 30, 0), randomMaxMonthYear };
+            yield return new object[] { new DateTime(RandomYear(), 12, 20, 8, 20, 30) };
 
             // Any month in any year
-            int randomYear = RandomYear();
-            yield return new object[] { s_calendar.ToDateTime(randomYear, RandomMonth(), 20, 8, 20, 30, 0), randomYear };
+            yield return new object[] { new DateTime(RandomYear(), RandomMonth(), 20, 8, 20, 30) };
         }
 
         [Theory]
         [MemberData(nameof(GetYear_TestData))]
-        public void GetYear(DateTime time, int expected)
+        public void GetYear(DateTime time)
         {
-            Assert.Equal(expected, s_calendar.GetYear(time));
+            Assert.Equal(time.Year, new GregorianCalendar().GetYear(time));
         }
     }
 }

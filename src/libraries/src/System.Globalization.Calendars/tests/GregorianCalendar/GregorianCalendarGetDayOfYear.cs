@@ -11,22 +11,22 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> GetDayOfYear_TestData()
         {
-            yield return new object[] { new DateTime(2006, 11, 29), 333 };
-            yield return new object[] { new DateTime(2006, 1, 1), 1 };
-            yield return new object[] { new DateTime(2007, 12, 31), 365 };
-            yield return new object[] { new DateTime(2000, 2, 29), 60 };
-            yield return new object[] { new DateTime(2001, 2, 28), 59 };
-            yield return new object[] { new DateTime(2000, 1, 1), 1 };
-            yield return new object[] { new DateTime(2000, 12, 31), 366 };
-            yield return new object[] { DateTime.MaxValue, 365 };
-            yield return new object[] { DateTime.MinValue, 1 };
+            yield return new object[] { new DateTime(2006, 11, 29) };
+            yield return new object[] { new DateTime(2006, 1, 1) };
+            yield return new object[] { new DateTime(2007, 12, 31) };
+            yield return new object[] { new DateTime(2000, 2, 29) };
+            yield return new object[] { new DateTime(2001, 2, 28) };
+            yield return new object[] { new DateTime(2000, 1, 1) };
+            yield return new object[] { new DateTime(2000, 12, 31) };
+            yield return new object[] { DateTime.MaxValue };
+            yield return new object[] { DateTime.MinValue };
         }
 
         [Theory]
         [MemberData(nameof(GetDayOfYear_TestData))]
-        public void GetDayOfYear(DateTime time, int expected)
+        public void GetDayOfYear(DateTime time)
         {
-            Assert.Equal(expected, new GregorianCalendar().GetDayOfYear(time));
+            Assert.Equal(time.DayOfYear, new GregorianCalendar().GetDayOfYear(time));
         }
     }
 }

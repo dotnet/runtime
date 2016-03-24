@@ -12,7 +12,6 @@ namespace System.Globalization.Tests
     public class GregorianCalendarGetWeekOfYears
     {
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-        private static readonly Calendar s_calendar = new GregorianCalendar(GregorianCalendarTypes.USEnglish);
 
         private static readonly int[] s_daysInMonthInCommonYear = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
         private static readonly int[] s_daysInMonthInLeapYear = { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -28,41 +27,41 @@ namespace System.Globalization.Tests
             int randomMonthNotFebruary = RandomMonthNotFebruary();
 
             // Any day in any month other than February in a leap year
-            yield return new object[] { RandomLeapYear(), randomMonthNotFebruary, RandomLeapYearDay(randomMonthNotFebruary), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(RandomLeapYear(), randomMonthNotFebruary, RandomLeapYearDay(randomMonthNotFebruary)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in February in a leap year
-            yield return new object[] { RandomLeapYear(), 2, RandomLeapYearDay(2), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(RandomLeapYear(), 2, RandomLeapYearDay(2)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in February in a common year
-            yield return new object[] { RandomCommonYear(), 2, RandomCommonYearDay(2), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(RandomCommonYear(), 2, RandomCommonYearDay(2)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in any month other than February in a common year
-            yield return new object[] { RandomCommonYear(), randomMonthNotFebruary, RandomCommonYearDay(randomMonthNotFebruary), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(RandomCommonYear(), randomMonthNotFebruary, RandomCommonYearDay(randomMonthNotFebruary)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in any month in the maximum supported year
-            yield return new object[] { s_calendar.MaxSupportedDateTime.Year, randomMonth, RandomCommonYearDay(randomMonth), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(9999, randomMonth, RandomCommonYearDay(randomMonth)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in any month in the minimum supported year
-            yield return new object[] { s_calendar.MinSupportedDateTime.Year, randomMonth, RandomCommonYearDay(randomMonth), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(1, randomMonth, RandomCommonYearDay(randomMonth)), RandomCalendarWeekRule(), RandomDayOfWeek() };
 
             // Any day in any month in any year
             int randomYear = RandomYear();
-            yield return new object[] { RandomYear(), randomMonth, RandomDay(randomYear, randomMonth), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(RandomYear(), randomMonth, RandomDay(randomYear, randomMonth)), RandomCalendarWeekRule(), RandomDayOfWeek() };
         }
 
         [Theory]
         [MemberData(nameof(GetWeekOfYear_TestData))]
-        public void GetWeekOfYear(int year, int month, int day, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
+        public void GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
-            DateTime time = s_calendar.ToDateTime(year, month, day, 0, 0, 0, 0);
-            Assert.Equal(GetDayOfYearHelper(time, rule, firstDayOfWeek), s_calendar.GetDayOfYear(time));
+            Calendar calendar = new GregorianCalendar();
+            Assert.Equal(GetDayOfYearHelper(calendar, time, rule, firstDayOfWeek), calendar.GetDayOfYear(time));
         }
 
-        private static int GetDayOfYearHelper(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
+        private static int GetDayOfYearHelper(Calendar calendar, DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
-            int weekOfYear = s_calendar.GetWeekOfYear(time, rule, firstDayOfWeek);
-            int dayOfYear = s_calendar.GetDayOfYear(time); // 1-based
-            int dayOfWeek = (int)s_calendar.GetDayOfWeek(time) - (int)firstDayOfWeek + 1; // 1-based
+            int weekOfYear = calendar.GetWeekOfYear(time, rule, firstDayOfWeek);
+            int dayOfYear = calendar.GetDayOfYear(time); // 1-based
+            int dayOfWeek = calendar.GetDayOfWeek(time) - firstDayOfWeek + 1; // 1-based
             if (dayOfWeek <= 0)
                 dayOfWeek += DaysPerWeek; // Make it a positive value
             int dayOfWeekForJan1 = dayOfWeek - (dayOfYear - 1) % DaysPerWeek; // 1-based
