@@ -123,7 +123,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 			/* exception will be thrown in managed code */
 			CryptReleaseContext (provider, 0);
 			*handle = 0;
-			mono_error_set_generic_error (error, "System", "ExecutionEngineException", "Failed to gen random bytes (%d)", GetLastError ());
+			mono_error_set_execution_engine (error, "Failed to gen random bytes (%d)", GetLastError ());
 			return FALSE;
 		}
 	}
@@ -186,7 +186,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 		if (file >= 0)
 			close (file);
 		g_warning ("Entropy problem! Can't create or connect to egd socket %s", path);
-		mono_error_set_generic_error (error, "System", "ExecutionEngineException", "Failed to open egd socket %s: %s", path, strerror (err));
+		mono_error_set_execution_engine (error, "Failed to open egd socket %s: %s", path, strerror (err));
 		return;
 	}
 
@@ -207,7 +207,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 			} else {
 				close (file);
 				g_warning ("Send egd request failed %d", err);
-				mono_error_set_generic_error (error, "System", "ExecutionEngineException", "Failed to send request to egd socket: %s", strerror (err));
+				mono_error_set_execution_engine (error, "Failed to send request to egd socket: %s", strerror (err));
 				return;
 			}
 		}
@@ -225,7 +225,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size, MonoErr
 			} else {
 				close (file);
 				g_warning ("Receive egd request failed %d", err);
-				mono_error_set_generic_error (error, "System", "ExecutionEngineException", "Failed to get response from egd socket: %s", strerror(err));
+				mono_error_set_execution_engine (error, "Failed to get response from egd socket: %s", strerror(err));
 				return;
 			}
 		}
@@ -295,7 +295,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 					continue;
 				g_warning("Entropy error! Error in read (%s).", strerror (errno));
 				/* exception will be thrown in managed code */
-				mono_error_set_generic_error (error, "System", "ExecutionEngineException", "Entropy error! Error in read (%s).", strerror (errno));
+				mono_error_set_execution_engine (error, "Entropy error! Error in read (%s).", strerror (errno));
 				return FALSE;
 			}
 			count += err;

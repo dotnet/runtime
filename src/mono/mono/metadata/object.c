@@ -4881,7 +4881,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 
 			im = mono_class_get_method_from_name (klass, "CreateProxyForType", 1);
 			if (!im) {
-				mono_error_set_generic_error (error, "System", "NotSupportedException", "Linked away.");
+				mono_error_set_not_supported (error, "Linked away.");
 				return NULL;
 			}
 			vtable->domain->create_proxy_for_type_method = im;
@@ -6918,7 +6918,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject
 	if (!im) {
 		im = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "PrivateInvoke", 4);
 		if (!im) {
-			mono_error_set_generic_error (error, "System", "NotSupportedException", "Linked away.");
+			mono_error_set_not_supported (error, "Linked away.");
 			return NULL;
 		}
 		real_proxy->vtable->domain->private_invoke_method = im;

@@ -1766,7 +1766,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	if (!mono_error_ok (&error)) {
 		mono_error_cleanup (&error);
 		g_free (dir_name);
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy (invalid characters in shadow directory name).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in shadow directory name).");
 		return NULL;
 	}
 
@@ -1781,13 +1781,13 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	shadow = get_shadow_assembly_location (filename, &error);
 	if (!mono_error_ok (&error)) {
 		mono_error_cleanup (&error);
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy (invalid characters in file name).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (invalid characters in file name).");
 		return NULL;
 	}
 
 	if (ensure_directory_exists (shadow) == FALSE) {
 		g_free (shadow);
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy (ensure directory exists).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (ensure directory exists).");
 		return NULL;
 	}	
 
@@ -1824,7 +1824,7 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 		if (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND)
 			return NULL; /* file not found, shadow copy failed */
 
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy (CopyFile).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy (CopyFile).");
 		return NULL;
 	}
 
@@ -1843,14 +1843,14 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 	
 	if (copy_result == FALSE)  {
 		g_free (shadow);
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy of sibling data (CopyFile).");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy of sibling data (CopyFile).");
 		return NULL;
 	}
 
 	/* Create a .ini file containing the original assembly location */
 	if (!shadow_copy_create_ini (shadow, filename)) {
 		g_free (shadow);
-		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Failed to create shadow copy .ini file.");
+		mono_error_set_execution_engine (oerror, "Failed to create shadow copy .ini file.");
 		return NULL;
 	}
 
