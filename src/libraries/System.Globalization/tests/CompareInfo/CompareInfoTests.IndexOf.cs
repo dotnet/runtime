@@ -59,6 +59,46 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2 };
+
+            // Ordinal should be case-sensitive
+            yield return new object[] { s_currentCompare, "a", "a", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "a", "A", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "abc", "aBc", 0, 3, CompareOptions.Ordinal, -1 };
+
+            // Ordinal with numbers and symbols
+            yield return new object[] { s_currentCompare, "a", "1", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "1", "1", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "1", "!", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "a", "-", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "-", "-", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "-", "!", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "!", "!", 0, 1, CompareOptions.Ordinal, 0 };
+
+            // Ordinal with unicode
+            yield return new object[] { s_currentCompare, "\uFF21", "\uFE57", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\uFE57", "\uFF21", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\uFF21", "a\u0400Bc", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\uFE57", "a\u0400Bc", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "a", "a\u0400Bc", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "a\u0400Bc", "a", 0, 4, CompareOptions.Ordinal, 0 };
+
+            // Ordinal with I or i (American and Turkish)
+            yield return new object[] { s_currentCompare, "I", "i", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "I", "I", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "i", "I", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "i", "i", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "I", "\u0130", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\u0130", "I", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "i", "\u0130", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\u0130", "i", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "I", "\u0131", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\0131", "I", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "i", "\u0131", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\u0131", "i", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\u0130", "\u0130", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "\u0131", "\u0131", 0, 1, CompareOptions.Ordinal, 0 };
+            yield return new object[] { s_currentCompare, "\u0130", "\u0131", 0, 1, CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_currentCompare, "\u0131", "\u0130", 0, 1, CompareOptions.Ordinal, -1 };
         }
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()
