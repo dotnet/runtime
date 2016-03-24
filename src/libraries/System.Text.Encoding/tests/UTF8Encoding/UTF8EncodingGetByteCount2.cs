@@ -30,19 +30,5 @@ namespace System.Text.Tests
             Assert.Equal(0, byteCount);
         }
         #endregion
-
-        #region Negative Test Cases
-        // NegTest1: ArgumentNullException is not thrown when string is a null reference
-        [Fact]
-        public void NegTest1()
-        {
-            String chars = null;
-            UTF8Encoding utf8 = new UTF8Encoding();
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                int byteCount = utf8.GetByteCount(chars);
-            });
-        }
-        #endregion
     }
 }
