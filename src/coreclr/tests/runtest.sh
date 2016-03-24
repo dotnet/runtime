@@ -40,6 +40,7 @@ function print_usage {
     echo '  -v, --verbose                : Show output from each test.'
     echo '  -h|--help                    : Show usage information.'
     echo '  --useServerGC                : Enable server GC for this test run'
+    echo '  --test-en                    : Script to set environment variables for tests'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage           : Optional argument to get coreclr code coverage reports'
@@ -648,6 +649,7 @@ coreFxNativeBinDir=
 coreClrObjs=
 coreClrSrc=
 coverageOutputDir=
+testEnv=
 
 ((disableEventLogging = 0))
 ((serverGC = 0))
@@ -720,6 +722,9 @@ do
         --coverage-output-dir=*)
             coverageOutputDir=${i#*=}
             ;;
+        --test-env=*)
+            testEnv=${i#*=}
+            ;;            
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -789,8 +794,27 @@ copy_test_native_bin_to_test_root
 load_unsupported_tests
 load_failing_tests
 
-if [ -n "$COMPlus_GCStress" ]; then
-    scriptPath=$(dirname $0)
+scriptPath=$(dirname $0)
+
+# Check if environment variables are provided
+if [ ! -z "$testEnv" ]; then
+    # Check if this is GC stress testing
+    GCStressLevel=`(source $testEnv; echo $COMPlus_GCStress)`
+    # Set __TestEnv that will be executed just before running tests
+    absTestEnvPath=`readlink -f ${testEnv}`
+    export __TestEnv='source '${absTestEnvPath}
+fi
+
+# Still support setting COMPlus_GCStress before runtest.sh but recommend
+# using --test-env option. 
+if [ -z "$GCStressLevel" ]; then
+    if [ -n "$COMPlus_GCStress" ]; then
+        GCStressLevel=`echo $COMPlus_GCStress`
+    fi
+fi
+
+# Download runtime dependent libraries
+if [ ! -z "$GCStressLevel" ]; then
     ${scriptPath}/setup-runtime-dependencies.sh --outputDir=$coreOverlayDir
     if [ $? -ne 0 ] 
     then
@@ -798,7 +822,7 @@ if [ -n "$COMPlus_GCStress" ]; then
         exit $EXIT_CODE_EXCEPTION
     fi
 fi
- 
+
 cd "$testRootDir"
 if [ -z "$testDirectories" ]
 then
