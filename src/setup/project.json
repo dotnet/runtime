@@ -23,14 +23,11 @@
   },
   "frameworks": {
     "net451": {},
-    "netstandard1.5": {
+    "netstandard1.3": {
       "imports": "dnxcore50",
       "dependencies": {
-        "System.IO.FileSystem": "4.0.1-rc2-23911",
-        "System.Linq": "4.1.0-rc2-23911",
-        "System.Runtime": "4.1.0-rc2-23911",
-        "System.Reflection": "4.1.0-rc2-23911",
-        "System.Dynamic.Runtime": "4.0.11-rc2-23911"
+        "NETStandard.Library": "1.5.0-rc2-23924",
+        "System.Dynamic.Runtime": "4.0.11-rc2-23924"
       }
     }
   },
