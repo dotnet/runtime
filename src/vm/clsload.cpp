@@ -891,13 +891,13 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
         if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
             continue;
 
+#ifdef FEATURE_READYTORUN
         if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
         {
             // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
             // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
             // Also note that type lookups in R2R modules only support case sensitive lookups.
 
-#ifdef FEATURE_READYTORUN
             mdToken mdFoundTypeToken;
             if (pCurrentClsModule->GetReadyToRunInfo()->TryLookupTypeTokenFromName(pName, &mdFoundTypeToken))
             {
@@ -915,15 +915,16 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
 
                 return; // Return on the first success
             }
-#endif
         }
         else
+#endif
         {
             EEClassHashTable* pTable = NULL;
             if (nhTable == nhCaseSensitive)
             {
                 *ppTable = pTable = pCurrentClsModule->GetAvailableClassHash();
 
+#ifdef FEATURE_READYTORUN
                 if (pTable == NULL && pCurrentClsModule->IsReadyToRun() && !pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
                 {
                     // Old R2R image generated without the hashtable of types.
@@ -933,6 +934,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                     needsToBuildHashtable = TRUE;
                     return;
                 }
+#endif
             }
             else
             {
