@@ -521,17 +521,7 @@ namespace System.Data.SqlClient
 
         override public void Open()
         {
-            if (StatisticsEnabled)
-            {
-                if (null == _statistics)
-                {
-                    _statistics = new SqlStatistics();
-                }
-                else
-                {
-                    _statistics.ContinueOnNewConnection();
-                }
-            }
+            PrepareStatisticsForNewConnection();
 
             SqlStatistics statistics = null;
             try
@@ -757,17 +747,7 @@ namespace System.Data.SqlClient
 
         public override Task OpenAsync(CancellationToken cancellationToken)
         {
-            if (StatisticsEnabled)
-            {
-                if (null == _statistics)
-                {
-                    _statistics = new SqlStatistics();
-                }
-                else
-                {
-                    _statistics.ContinueOnNewConnection();
-                }
-            }
+            PrepareStatisticsForNewConnection();
 
             SqlStatistics statistics = null;
             try
@@ -890,6 +870,21 @@ namespace System.Data.SqlClient
                     _parent.CloseInnerConnection();
                     _parent._currentCompletion = null;
                     _result.SetException(e);
+                }
+            }
+        }
+
+        private void PrepareStatisticsForNewConnection()
+        {
+            if (StatisticsEnabled)
+            {
+                if (null == _statistics)
+                {
+                    _statistics = new SqlStatistics();
+                }
+                else
+                {
+                    _statistics.ContinueOnNewConnection();
                 }
             }
         }
