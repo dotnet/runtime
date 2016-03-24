@@ -54,6 +54,7 @@ if /i "%1" == "Exclude"             (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "Exclude0"            (set __Exclude0=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv"             (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
+if /i "%1" == "crossgen"            (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"  (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
@@ -158,6 +159,11 @@ if errorlevel 1 exit /b 1
 
 call :ResolveDependecies
 
+if not defined __DoCrossgen goto :SkipPrecompileFX
+call :PrecompileFX
+
+:SkipPrecompileFX
+
 if  defined __GenerateLayoutOnly (
     exit /b 1
 )
@@ -202,6 +208,32 @@ REM ===
 REM === Helper routines
 REM ===
 REM =========================================================================================
+
+REM Compile the managed assemblies in Core_ROOT before running the tests
+:PrecompileAssembly
+
+REM Skip mscorlib since it is already precompiled.
+if /I "%3" == "mscorlib.dll" exit /b 0
+if /I "%3" == "mscorlib.ni.dll" exit /b 0
+
+"%1\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+set /a __exitCode = %errorlevel%
+if "%__exitCode%" == "-2146230517" (
+    echo %2 is not a managed assembly.
+    exit /b 0
+)
+
+if %__exitCode% neq 0 (
+    echo Unable to precompile %2
+    exit /b 0
+)
+    
+echo Successfully precompiled %2
+exit /b 0
+
+:PrecompileFX
+for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %%~nF%%~xF
+exit /b 0
 
 :msbuild
 @REM Subroutine to invoke msbuild. All arguments are passed to msbuild. The first argument should be the
