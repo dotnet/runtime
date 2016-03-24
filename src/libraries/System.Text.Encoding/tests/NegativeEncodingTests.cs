@@ -31,8 +31,10 @@ namespace System.Text.Tests
 
             // Index + count > chars.Length
             Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 0, 4));
-            Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 4, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 1, 3));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 2, 2));
             Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 3, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("chars", () => encoding.GetByteCount(new char[3], 4, 0));
         }
         
         [Theory]
@@ -97,6 +99,9 @@ namespace System.Text.Tests
             // Index + count > bytes.Length
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 5, 0));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 3, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 2, 3));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 1, 4));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetCharCount(new byte[4], 0, 5));
         }
 
@@ -129,6 +134,8 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetChars(new byte[4], 5, 0, new char[1], 0));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetChars(new byte[4], 4, 1));
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetChars(new byte[4], 4, 1, new char[1], 0));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetChars(new byte[4], 3, 2));
+            Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetChars(new byte[4], 3, 2, new char[1], 0));
 
             // CharIndex < 0 or >= chars.Length
             Assert.Throws<ArgumentOutOfRangeException>("charIndex", () => encoding.GetChars(new byte[4], 0, 4, new char[1], -1));
