@@ -305,3 +305,4 @@ JIT/Regression/VS-ia64-JIT/V2.0-RTM/b286991/b286991/b286991.sh
 managed/Compilation/Compilation/Compilation.sh
 Regressions/coreclr/0584/Test584/Test584.sh
 GC/Regressions/v2.0-beta2/437657/437657/437657.sh
+Interop/MarshalAPI/IUnknown/IUnknownTest/IUnknownTest.sh
