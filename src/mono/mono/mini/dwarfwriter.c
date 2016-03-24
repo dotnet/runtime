@@ -854,6 +854,12 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	char *s, *build_info;
 	int i;
 
+	if (!w->emit_line) {
+		emit_section_change (w, ".debug_line", 0);
+		emit_label (w, ".Ldebug_line_section_start");
+		emit_label (w, ".Ldebug_line_start");
+	}
+
 	w->cie_program = base_unwind_program;
 
 	emit_section_change (w, ".debug_abbrev", 0);
@@ -916,10 +922,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	emit_pointer_value (w, 0);
 	emit_pointer_value (w, 0);
 	/* offset into .debug_line section */
-	if (w->emit_line)
-		emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
-	else
-		emit_pointer_value (w, 0);
+	emit_symbol_diff (w, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
 
 	/* Base types */
 	for (i = 0; i < G_N_ELEMENTS (basic_types); ++i) {
