@@ -69,7 +69,7 @@ namespace RuntimeGraphGenerator
                 {
                     context = new DependencyContextJsonReader().Read(depsStream);
                 }
-                var framework = NuGetFramework.Parse(context.TargetFramework);
+                var framework = NuGetFramework.Parse(context.Target.Framework);
                 var projectContext = ProjectContext.Create(projectDirectory, framework);
 
                 // Configuration is used only for P2P dependencies so were don't care
@@ -79,9 +79,7 @@ namespace RuntimeGraphGenerator
                 var expandedGraph = manager.Expand(graph, runtimes);
 
                 context = new DependencyContext(
-                    context.TargetFramework,
-                    context.Runtime,
-                    context.IsPortable,
+                    context.Target,
                     context.CompilationOptions,
                     context.CompileLibraries,
                     context.RuntimeLibraries,
