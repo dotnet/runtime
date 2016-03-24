@@ -4966,7 +4966,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoDebugSourceLocation **locs = NULL;
-	gboolean skip;
+	gboolean skip, prologue_end = FALSE;
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	gboolean direct_call, external_call;
 	guint32 got_slot;
@@ -5001,10 +5001,16 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 		if (locs && locs [i]) {
 			MonoDebugSourceLocation *loc = locs [i];
 			int findex;
+			const char *options;
 
 			findex = get_file_index (acfg, loc->source_file);
 			emit_unset_mode (acfg);
-			fprintf (acfg->fp, ".loc %d %d 0\n", findex, loc->row);
+			if (!prologue_end)
+				options = " prologue_end";
+			else
+				options = "";
+			prologue_end = TRUE;
+			fprintf (acfg->fp, ".loc %d %d 0%s\n", findex, loc->row, options);
 			mono_debug_symfile_free_location (loc);
 		}
 
@@ -10329,13 +10335,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.asm_only && acfg->aot_opts.gnu_asm) {
+	if (acfg->aot_opts.dwarf_debug && acfg->aot_opts.gnu_asm) {
 		/*
 		 * CLANG supports GAS .file/.loc directives, so emit line number information this way
-		 * FIXME: CLANG only emits line number info for .loc directives followed by assembly, not
-		 * .byte directives.
 		 */
-		//acfg->gas_line_numbers = TRUE;
+		acfg->gas_line_numbers = TRUE;
 	}
 
 	if ((!acfg->aot_opts.nodebug || acfg->aot_opts.dwarf_debug) && acfg->has_jitted_code) {
