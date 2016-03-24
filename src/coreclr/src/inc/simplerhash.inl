@@ -51,7 +51,7 @@ SimplerHashTable<Key,KeyFuncs,Value,Behavior>::SimplerHashTable(IAllocator* allo
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_alloc == NULL) m_alloc = DefaultAllocator::Singleton();
+    assert(m_alloc != nullptr);
 
 #ifndef __GNUC__ // these crash GCC
     static_assert_no_msg(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);

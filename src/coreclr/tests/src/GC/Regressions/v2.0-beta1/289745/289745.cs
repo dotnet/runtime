@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 /*
- *  SDET:           clyon
- *  BUG:            289745 (wks), 302560 (svr)
  *  DESCRIPTION:    GC clobbers read-only frozen segments
  *  NOTE:           if unable to repro, tweak the array lengths depending on the amount of physical ram in your machine
  */

@@ -154,6 +154,27 @@ else()
     if (AWK STREQUAL "AWK-NOTFOUND")
         message(FATAL_ERROR "AWK not found")
     endif()
+ 
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      # Ensure that dsymutil and strip is present
+      find_program(DSYMUTIL dsymutil)
+      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
+          message(FATAL_ERROR "dsymutil not found")
+      endif()
+      find_program(STRIP strip)
+      if (STRIP STREQUAL "STRIP-NOTFOUND")
+          message(FATAL_ERROR "strip not found")
+      endif()
+
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      # Ensure that objcopy is present
+      find_program(OBJCOPY objcopy)
+      if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
+          message(FATAL_ERROR "objcopy not found")
+      endif()
+    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(WIN32)
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -242,6 +263,69 @@ function(add_precompiled_header header cppFile targetSources)
   endif(MSVC)
 endfunction()
 
+function(strip_symbols targetName outputFilename)
+  if(CLR_CMAKE_PLATFORM_UNIX)
+    if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+
+      # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
+      # generator expression doesn't work correctly returning the wrong path and on
+      # the newer cmake versions the LOCATION property isn't supported anymore.
+      if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
+          set(strip_source_file $<TARGET_FILE:${targetName}>)
+      else()
+          get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
+      endif()
+
+      if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        set(strip_destination_file ${strip_source_file}.dwarf)
+
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM 
+          COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+          COMMAND ${STRIP} -u -r ${strip_source_file}
+          COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+      else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        set(strip_destination_file ${strip_source_file}.dbg)
+
+        add_custom_command(
+          TARGET ${targetName}
+          POST_BUILD
+          VERBATIM 
+          COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+          COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
+          COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+      endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+      set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
+    endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
+  endif(CLR_CMAKE_PLATFORM_UNIX)
+endfunction()
+
+function(install_clr targetName)
+  strip_symbols(${targetName} strip_destination_file)
+
+  # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
+  # generator expression doesn't work correctly returning the wrong path and on
+  # the newer cmake versions the LOCATION property isn't supported anymore.
+  if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
+      set(install_source_file $<TARGET_FILE:${targetName}>)
+  else()
+      get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
+  endif()
+
+  install(PROGRAMS ${install_source_file} DESTINATION .)
+  if(WIN32)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
+  else()
+      install(FILES ${strip_destination_file} DESTINATION .)
+  endif()
+endfunction()
+
 # Includes
 
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
@@ -293,7 +377,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
 
   if(CLR_CMAKE_PLATFORM_LINUX)
-    add_definitions(-D__LINUX__=1)
     if(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
       message("Detected Linux x86_64")
       add_definitions(-DLINUX64)
@@ -412,7 +495,6 @@ if (WIN32)
   add_compile_options(/Gm-) # disable minimal rebuild
   add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
-  add_compile_options(/GS) # enable security checks
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
   add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
@@ -431,7 +513,7 @@ if (WIN32)
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
   add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 
- if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   # The generator expression in the following command means that the /homeparams option is added only for debug builds
   add_compile_options($<$<CONFIG:Debug>:/homeparams>) # Force parameters passed in registers to be written to the stack
   endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
@@ -441,11 +523,11 @@ if (WIN32)
     add_compile_options(/guard:cf) 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /guard:cf")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /guard:cf")
-
-    # Incremental linking with CFG is broken until next VS release.
-    # Disable it for EXE linking (since it is disabled for DLLs already further below)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /INCREMENTAL:NO")
   endif (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
+  # Incremental linking with CFG is broken until next VS release.
+  # This needs to be appended to the last for each build type to override the default flag.
+  set(NO_INCREMENTAL_LINKER_FLAGS "/INCREMENTAL:NO")
 
   # Linker flags
   #
@@ -460,7 +542,6 @@ if (WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS") #shrink pdb size
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /INCREMENTAL:NO")
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
@@ -468,22 +549,23 @@ if (WIN32)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
   # Debug build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE")
+  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE ${NO_INCREMENTAL_LINKER_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${NO_INCREMENTAL_LINKER_FLAGS}")
 
   # Checked build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF /NOVCFEATURE")
+  set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF /NOVCFEATURE ${NO_INCREMENTAL_LINKER_FLAGS}")
   set(CMAKE_STATIC_LINKER_FLAGS_CHECKED "${CMAKE_STATIC_LINKER_FLAGS_CHECKED}")
-  set(CMAKE_EXE_LINKER_FLAGS_CHECKED "${CMAKE_EXE_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF")
+  set(CMAKE_EXE_LINKER_FLAGS_CHECKED "${CMAKE_EXE_LINKER_FLAGS_CHECKED} /OPT:REF /OPT:NOICF ${NO_INCREMENTAL_LINKER_FLAGS}")
 
   # Release build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF")
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
   set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
 
   # ReleaseWithDebugInfo build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF")
+  set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
-  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF")
+  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /OPT:REF /OPT:ICF ${NO_INCREMENTAL_LINKER_FLAGS}")
 
 # Temporary until cmake has VS generators for arm64
 if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
@@ -618,8 +700,18 @@ endif (CLR_CMAKE_PLATFORM_UNIX)
 # Libraries
 
 if (WIN32)
+
+    # Define the CRT lib references that link into Desktop imports
     set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
+    set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
     set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
+
+    # ARM64_TODO: Enable this for Windows Arm64
+    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+      # Define the uCRT lib reference
+      set(STATIC_MT_UCRT_LIB  "libucrt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
+    endif()
+
 endif(WIN32)
 
 # Definition directives
@@ -684,9 +776,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 add_definitions(-DFEATURE_CORESYSTEM)
 add_definitions(-DFEATURE_CORRUPTING_EXCEPTIONS)
-if(WIN32)
-    add_definitions(-DFEATURE_CRYPTO)
-endif(WIN32)
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
     add_definitions(-DFEATURE_DBGIPC_TRANSPORT_VM)
@@ -698,7 +787,6 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_PLATFORM_UNIX)
 endif(FEATURE_EVENT_TRACE)
 add_definitions(-DFEATURE_EXCEPTIONDISPATCHINFO)
-add_definitions(-DFEATURE_FRAMEWORK_INTERNAL)
 # NetBSD doesn't implement this feature
 if(NOT CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     add_definitions(-DFEATURE_HIJACK)
@@ -710,27 +798,17 @@ if (CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DFEATURE_IMPLICIT_TLS)
   set(FEATURE_IMPLICIT_TLS 1)
 endif(CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
-if(WIN32)
-    add_definitions(-DFEATURE_ISOSTORE)
-    add_definitions(-DFEATURE_ISOSTORE_LIGHT)
-endif(WIN32)
 add_definitions(-DFEATURE_ISYM_READER)
 add_definitions(-DFEATURE_LEGACYNETCF)
-if(WIN32)
-    add_definitions(-DFEATURE_LEGACYNETCFCRYPTO)
-endif(WIN32)
 add_definitions(-DFEATURE_LEGACYNETCF_DBG_HOST_CONTROL)
 add_definitions(-DFEATURE_LEGACYNETCFFAS)
-if(WIN32)
-add_definitions(-DFEATURE_LEGACYSURFACE)
-endif(WIN32)
 add_definitions(-DFEATURE_LOADER_OPTIMIZATION)
 add_definitions(-DFEATURE_MANAGED_ETW)
 add_definitions(-DFEATURE_MANAGED_ETW_CHANNELS)
 add_definitions(-DFEATURE_MAIN_CLR_MODULE_USES_CORE_NAME)
 add_definitions(-DFEATURE_MERGE_CULTURE_SUPPORT_AND_ENGINE)
 if(WIN32)
-# Disable the following or UNIX altjit on Windows
+# Disable the following for UNIX altjit on Windows
 add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 endif(WIN32)
 add_definitions(-DFEATURE_MULTICOREJIT)
@@ -738,6 +816,7 @@ add_definitions(-DFEATURE_NORM_IDNA_ONLY)
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DFEATURE_PAL)
   add_definitions(-DFEATURE_PAL_SXS)
+  add_definitions(-DFEATURE_PAL_ANSI)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 if(CLR_CMAKE_PLATFORM_LINUX)
     add_definitions(-DFEATURE_PERFMAP)
@@ -748,12 +827,16 @@ if(NOT DEFINED CLR_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DFEATURE_READYTORUN)
   set(FEATURE_READYTORUN 1)
 endif(NOT DEFINED CLR_CMAKE_PLATFORM_ARCH_ARM64)
+
+if (WIN32)
+  if (CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
+    add_definitions(-DFEATURE_REJIT)
+  endif(CLR_CMAKE_PLATFORM_ARCH_AMD64 OR CLR_CMAKE_PLATFORM_ARCH_I386)
+endif(WIN32)
+
 add_definitions(-DFEATURE_STANDALONE_SN)
 add_definitions(-DFEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
 add_definitions(-DFEATURE_STRONGNAME_MIGRATION)
-if(WIN32)
-    add_definitions(-DFEATURE_STRONGNAME_TESTKEY_ALLOWED)
-endif(WIN32)
 if (CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
     add_definitions(-DFEATURE_STUBS_AS_IL)
 endif(CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
@@ -772,10 +855,6 @@ endif(WIN32)
 add_definitions(-DFEATURE_WIN32_REGISTRY)
 add_definitions(-DFEATURE_WINDOWSPHONE)
 add_definitions(-DFEATURE_WINMD_RESILIENT)
-if(WIN32)
-    add_definitions(-DFEATURE_X509)
-    add_definitions(-DFEATURE_X509_SECURESTRINGS)
-endif(WIN32)
 
 if(CLR_CMAKE_BUILD_TESTS)
   add_subdirectory(tests)

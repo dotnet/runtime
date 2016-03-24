@@ -69,18 +69,16 @@ namespace X86GCDump
 #define ERANGE 34
 #endif
 
-#ifndef FEATURE_PAL
-
 PVOID
 GenOpenMapping(
     PCSTR FilePath,
     PULONG Size
     )
 {
+#ifndef FEATURE_PAL
     HANDLE hFile;
     HANDLE hMappedFile;
     PVOID MappedFile;
-
 
     hFile = CreateFileA(
                 FilePath,
@@ -132,7 +130,7 @@ GenOpenMapping(
     *Size = GetFileSize(hFile, NULL);
     if (*Size == ULONG_MAX) {
         CloseHandle( hFile );
-        return FALSE;
+        return NULL;
     }
     
     hMappedFile = CreateFileMapping (
@@ -146,7 +144,7 @@ GenOpenMapping(
 
     if ( !hMappedFile ) {
         CloseHandle ( hFile );
-        return FALSE;
+        return NULL;
     }
 
     MappedFile = MapViewOfFile (
@@ -161,6 +159,9 @@ GenOpenMapping(
     CloseHandle (hFile);
 
     return MappedFile;
+#else // FEATURE_PAL
+    return NULL;
+#endif // FEATURE_PAL
 }
 
 char* PrintOneLine (__in_z char *begin, __in_z char *limit)
@@ -208,7 +209,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
 {
     char            filename[MAX_PATH_FNAME+1];
     char            line[256];
-    int             lcount          = 10;
+    int             lcount = 10;
 
     ULONG linenum = 0;
     ULONG64 Displacement = 0;
@@ -218,18 +219,19 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
     if (!bSuppressLines)
     {
         ReloadSymbolWithLineInfo();
-        fLineAvailable = SUCCEEDED (g_ExtSymbols->GetLineByOffset (TO_CDADDR(IP), &linenum,
-                                                                    filename,
-                                                                    MAX_PATH_FNAME+1,
-                                                                    NULL,
-                                                                    &Displacement));
+        fLineAvailable = SUCCEEDED (g_ExtSymbols->GetLineByOffset(TO_CDADDR(IP), 
+                                                                  &linenum,
+                                                                  filename,
+                                                                  MAX_PATH_FNAME+1,
+                                                                  NULL,
+                                                                  &Displacement));
     }
     ULONG FileLines = 0;
     ArrayHolder<ULONG64> Buffer = NULL;
 
     if (fLineAvailable)
     {
-        g_ExtSymbols->GetSourceFileLineOffsets (filename, NULL, 0, &FileLines);
+        g_ExtSymbols->GetSourceFileLineOffsets(filename, NULL, 0, &FileLines);
         if (FileLines == 0xFFFFFFFF || FileLines == 0)
             fLineAvailable = FALSE;
     }
@@ -255,7 +257,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         return;
     }
 
-    g_ExtSymbols->GetSourceFileLineOffsets (filename, Buffer, FileLines, NULL);
+    g_ExtSymbols->GetSourceFileLineOffsets(filename, Buffer, FileLines, NULL);
     
     int beginLine = 0;
     int endLine = 0;
@@ -265,7 +267,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         if (IsInterrupt())
             return;
         if (Buffer[lastLine] != DEBUG_INVALID_OFFSET) {
-            g_ExtSymbols->GetNameByOffset(Buffer[lastLine],NULL,0,NULL,&Displacement);
+            g_ExtSymbols->GetNameByOffset(Buffer[lastLine], NULL, 0, NULL, &Displacement);
             if (Displacement == 0) {
                 beginLine = lastLine;
                 break;
@@ -299,7 +301,7 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         if (IsInterrupt())
             return;
         if (Buffer[lastLine] != DEBUG_INVALID_OFFSET) {
-            g_ExtSymbols->GetNameByOffset(Buffer[lastLine],NULL,0,NULL,&Displacement);
+            g_ExtSymbols->GetNameByOffset(Buffer[lastLine], NULL, 0, NULL, &Displacement);
             if (Displacement == 0) {
                 endLine = lastLine;
                 break;
@@ -348,16 +350,19 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
 #define MAX_SOURCE_PATH 1024
     char Found[MAX_SOURCE_PATH];
     char *pFile;
-    if (g_ExtSymbols->FindSourceFile(0, filename,
-                       DEBUG_FIND_SOURCE_BEST_MATCH |
-                       DEBUG_FIND_SOURCE_FULL_PATH,
-                       NULL, Found, sizeof(Found), NULL) != S_OK)
+    if (g_ExtSymbols->FindSourceFile(0,
+                                     filename, 
+                                     DEBUG_FIND_SOURCE_BEST_MATCH | DEBUG_FIND_SOURCE_FULL_PATH, 
+                                     NULL,
+                                     Found, 
+                                     sizeof(Found), 
+                                     NULL) != S_OK)
     {
         pFile = filename;
     }
     else
     {
-        MappedBase = GenOpenMapping ( Found, &MappedSize );
+        MappedBase = GenOpenMapping(Found, &MappedSize);
         pFile = Found;
     }
     
@@ -382,8 +387,8 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
         if (IsInterrupt())
             return;
         if (MappedBase) {
-            ExtOut ("%4d ", lastLine+1);
-            pFileCh = PrintOneLine (pFileCh, (char*)MappedBase+MappedSize);
+            ExtOut("%4d ", lastLine+1);
+            pFileCh = PrintOneLine(pFileCh, (char*)MappedBase+MappedSize);
         }
         if (Buffer[lastLine] != DEBUG_INVALID_OFFSET) {
             if (MappedBase == 0) {
@@ -404,14 +409,14 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
             while (1) {
                 if (IsInterrupt())
                     return;
-                g_ExtControl->Disassemble (vIP, 0, line, 256, NULL, &vIP);
+                g_ExtControl->Disassemble(vIP, 0, line, 256, NULL, &vIP);
                 ExtOut (line);
                 if (vIP > vNextLineIP || vNextLineIP - vIP > 40) {
-                    if (FAILED (g_ExtSymbols->GetLineByOffset (vIP, &linenum,
-                                                               filename1,
-                                                               MAX_PATH_FNAME+1,
-                                                               NULL,
-                                                               &Displacement))) {
+                    if (FAILED (g_ExtSymbols->GetLineByOffset(vIP, &linenum,
+                                                              filename1,
+                                                              MAX_PATH_FNAME+1,
+                                                              NULL,
+                                                              &Displacement))) {
                         if (lastLine != endOfFunc) {
                             break;
                         }
@@ -430,7 +435,6 @@ void UnassemblyUnmanaged(DWORD_PTR IP, BOOL bSuppressLines)
             }
         }
     }
-        
 }
 
 void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG length)
@@ -443,9 +447,6 @@ void DisasmAndClean (DWORD_PTR &IP, __out_ecount_opt(length) char *line, ULONG l
     if (ptr != NULL)
         ptr[0] = '\0';
 }
-
-#endif // FEATURE_PAL
-
 
 // If byref, move to pass the byref prefix
 BOOL IsByRef (__deref_inout_z char *& ptr)
@@ -838,12 +839,40 @@ void SOSEHInfo::FormatForDisassembly(CLRDATA_ADDRESS offSet)
 // use the IS_DBG_TARGET_XYZ macro.
 //
 
-#ifndef FEATURE_PAL
+void PrintNativeStack(DWORD_PTR ip, BOOL bSuppressLines)
+{
+    char filename[MAX_PATH_FNAME + 1];
+    char symbol[1024];
+    ULONG64 displacement;
+
+    HRESULT hr = g_ExtSymbols->GetNameByOffset(TO_CDADDR(ip), symbol, _countof(symbol), NULL, &displacement);
+    if (SUCCEEDED(hr) && symbol[0] != '\0')
+    {
+        ExtOut("%s", symbol);
+
+        if (displacement)
+        {
+            ExtOut(" + %#x", displacement);
+        }
+
+        if (!bSuppressLines)
+        {
+            ULONG line;
+            hr = g_ExtSymbols->GetLineByOffset(TO_CDADDR(ip), &line, filename, _countof(filename), NULL, NULL);
+            if (SUCCEEDED(hr))
+            {
+                ExtOut(" [%s:%d]", filename, line);
+            }
+        }
+    }
+    else
+    {
+        DMLOut(DMLIP(ip));
+    }
+}
 
 // Return TRUE if we have printed something.
-BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
-                    DumpStackFlag& DSFlag,
-                    BOOL bSymbolOnly)
+BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSymbolOnly)
 {
     char Symbol[1024];
     char filename[MAX_PATH_FNAME+1];
@@ -873,7 +902,7 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
             methodDesc = (DWORD_PTR) codeHeaderData.MethodDescPtr;
             Displacement = IP - IPBegin;        
             if (IP >= IPBegin && Displacement <= codeHeaderData.MethodSize)
-                ExtOut ("+%#x ", Displacement);    
+                ExtOut ("+ %#x ", Displacement);    
         }            
         if (NameForMD_s(methodDesc, g_mdName, mdNameLen))
         {
@@ -913,29 +942,9 @@ BOOL PrintCallInfo (DWORD_PTR vEBP, DWORD_PTR IP,
                 }
             }
 #endif // _TARGET_AMD64_
-            if (methodDesc == 0) {
-                HRESULT hr;
-                hr = g_ExtSymbols->GetNameByOffset(TO_CDADDR(IP), Symbol, 1024, NULL, &Displacement);
-                if (SUCCEEDED(hr) && Symbol[0] != '\0')
-                {
-                    ExtOut ("%s", Symbol);
-                    if (Displacement)
-                        ExtOut ("+%#x", Displacement);
-#ifndef FEATURE_PAL
-                    if (!DSFlag.fSuppressSrcInfo)
-                    {
-                        ULONG line;
-                        hr = g_ExtSymbols->GetLineByOffset (TO_CDADDR(IP), &line, filename,
-                            MAX_PATH_FNAME+1, NULL, NULL);
-                        if (SUCCEEDED (hr))
-                            ExtOut (" [%s:%d]", filename, line);
-                    }
-#endif
-                }
-                else
-                {
-                    DMLOut(DMLIP(IP));
-                }
+            if (methodDesc == 0) 
+            {
+                PrintNativeStack(IP, DSFlag.fSuppressSrcInfo);
             }
             else if (g_bDacBroken)
             {
@@ -1033,8 +1042,6 @@ void DumpStackWorker (DumpStackFlag &DSFlag)
         ptr += sizeof (DWORD_PTR);
     }
 }
-
-#endif // FEATURE_PAL
 
 #ifdef SOS_TARGET_X86
 ///

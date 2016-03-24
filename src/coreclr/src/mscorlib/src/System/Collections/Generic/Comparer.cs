@@ -51,18 +51,9 @@ namespace System.Collections.Generic
             RuntimeType t = (RuntimeType)typeof(T);
 
             // If T implements IComparable<T> return a GenericComparer<T>
-#if FEATURE_LEGACYNETCF
-            // Pre-Apollo Windows Phone call the overload that sorts the keys, not values this achieves the same result
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                if (t.ImplementInterface(typeof(IComparable<T>))) {
-                    return (Comparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
-                }
+            if (typeof(IComparable<T>).IsAssignableFrom(t)) {
+                return (Comparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
             }
-            else
-#endif
-                if (typeof(IComparable<T>).IsAssignableFrom(t)) {
-                    return (Comparer<T>)RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), t);
-                }
 
             // If T is a Nullable<U> where U implements IComparable<U> return a NullableComparer<U>
             if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {

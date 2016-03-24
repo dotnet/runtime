@@ -387,14 +387,14 @@ WINBASEAPI
 DWORD
 WINAPI
 GetCurrentThreadId(
-    VOID)
+    void)
 {
     // TODO: Implement
     return 1;
 }
 
 WINBASEAPI
-VOID
+void
 WINAPI
 YieldProcessor()
 {
@@ -410,7 +410,7 @@ DebugBreak()
 }
 
 WINBASEAPI
-VOID
+void
 WINAPI
 MemoryBarrier()
 {

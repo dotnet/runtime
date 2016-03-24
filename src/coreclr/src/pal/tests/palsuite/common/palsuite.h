@@ -19,6 +19,7 @@
 
 #include <pal_assert.h>
 #include <pal.h>
+#include <palprivate.h>
 
 enum
 {

@@ -13,7 +13,7 @@
 
 namespace AppX
 {
-#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE) && !defined(CLR_STANDALONE_BINDER)
+#if defined(FEATURE_APPX) && !defined(CROSSGEN_COMPILE)
     //-----------------------------------------------------------------------------------
     // Returns true if running in an AppX process with Designer Mode enabled.
     bool IsAppXDesignMode();

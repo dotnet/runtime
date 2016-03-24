@@ -9,6 +9,7 @@
 #include "common.h"
 #include "jitinterface.h"
 #include "corjit.h"
+#include "jithost.h"
 #include "eetwain.h"
 #include "eeconfig.h"
 #include "excep.h"
@@ -1332,6 +1333,8 @@ enum JIT_LOAD_STATUS
     JIT_LOAD_STATUS_DONE_LOAD,                         // LoadLibrary of the JIT dll succeeded.
     JIT_LOAD_STATUS_DONE_GET_SXSJITSTARTUP,            // GetProcAddress for "sxsJitStartup" succeeded.
     JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP,           // Calling sxsJitStartup() succeeded.
+    JIT_LOAD_STATUS_DONE_GET_JITSTARTUP,               // GetProcAddress for "jitStartup" succeeded.
+    JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP,              // Calling jitStartup() succeeded.
     JIT_LOAD_STATUS_DONE_GET_GETJIT,                   // GetProcAddress for "getJit" succeeded.
     JIT_LOAD_STATUS_DONE_CALL_GETJIT,                  // Calling getJit() succeeded.
     JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER,    // Calling ICorJitCompiler::getVersionIdentifier() succeeded.
@@ -1390,20 +1393,18 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     extern HINSTANCE g_hThisInst;
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolderHolder))
     {
-        DWORD len = CoreClrFolderHolder.GetCount();
-        WCHAR* CoreClrFolder = CoreClrFolderHolder.OpenUnicodeBuffer(len);
-        WCHAR *filePtr = wcsrchr(CoreClrFolder, DIRECTORY_SEPARATOR_CHAR_W);
-        if (filePtr)
+        SString::Iterator iter = CoreClrFolderHolder.End();
+        BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
+        if (findSep)
         {
-            filePtr[1] = W('\0');
-            wcscat_s(CoreClrFolder, MAX_LONGPATH, pwzJitName);
-            *phJit = CLRLoadLibrary(CoreClrFolder);
+            SString sJitName(pwzJitName);
+            CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+            *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
             if (*phJit != NULL)
             {
                 hr = S_OK;
             }
         }
-        CoreClrFolderHolder.CloseBuffer();
     }
 #else
     hr = g_pCLRRuntime->LoadLibrary(pwzJitName, phJit);
@@ -1426,6 +1427,18 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                 (*sxsJitStartupFn) (cccallbacks);
 
                 pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP;
+
+                typedef void (__stdcall* pjitStartup)(ICorJitHost*);
+                pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
+
+                if (jitStartupFn)
+                {
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_JITSTARTUP;
+
+                    (*jitStartupFn)(JitHost::getJitHost());
+
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP;
+                }
 
                 typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
                 pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
@@ -1490,6 +1503,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 }
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
+EXTERN_C void __stdcall jitStartup(ICorJitHost* host);
 EXTERN_C ICorJitCompiler* __stdcall getJit();
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
@@ -1517,11 +1531,11 @@ BOOL EEJitManager::LoadJIT()
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
 
-    typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
-    pGetJitFn getJitFn = (pGetJitFn) getJit;
     EX_TRY
     {
-        newJitCompiler = (*getJitFn)();
+        jitStartup(JitHost::getJitHost());
+
+        newJitCompiler = getJit();
 
         // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
     }
@@ -1544,7 +1558,7 @@ BOOL EEJitManager::LoadJIT()
     s_ngenCompilerDll = m_JITCompiler;
     
 #if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
-    // If COMPLUS_UseLegacyJit=1, then we fall back to compatjit.dll.
+    // If COMPlus_UseLegacyJit=1, then we fall back to compatjit.dll.
     //
     // This fallback mechanism was introduced for Visual Studio "14" Preview, when JIT64 (the legacy JIT) was replaced with
     // RyuJIT. It was desired to provide a fallback mechanism in case comptibility problems (or other bugs)
@@ -1553,7 +1567,7 @@ BOOL EEJitManager::LoadJIT()
     //
     // If this is a compilation process, then we don't allow specifying a fallback JIT. This is a case where, when NGEN'ing,
     // we sometimes need to JIT some things (such as when we are NGEN'ing mscorlib). In that case, we want to use exactly
-    // the same JIT as NGEN uses. And NGEN doesn't follow the COMPLUS_UseLegacyJit=1 switch -- it always uses clrjit.dll.
+    // the same JIT as NGEN uses. And NGEN doesn't follow the COMPlus_UseLegacyJit=1 switch -- it always uses clrjit.dll.
     //
     // Note that we always load and initialize the default JIT. This is to handle cases where obfuscators rely on
     // LoadLibrary("clrjit.dll") returning the module handle of the JIT, and then they call GetProcAddress("getJit") to get
@@ -1630,7 +1644,7 @@ BOOL EEJitManager::LoadJIT()
 
 #ifdef ALLOW_SXS_JIT
 
-    // Do not load altjit.dll unless COMPLUS_AltJit is set.
+    // Do not load altjit.dll unless COMPlus_AltJit is set.
     // Even if the main JIT fails to load, if the user asks for an altjit we try to load it.
     // This allows us to display load error messages for loading altjit.
 

@@ -77,12 +77,6 @@ CopyFileExWrapper(
 #endif //FEATURE_PAL
 
 BOOL
-MoveFileWrapper(
-    _In_ LPCWSTR lpExistingFileName,
-    _In_ LPCWSTR lpNewFileName
-    );
-
-BOOL
 MoveFileExWrapper(
     _In_     LPCWSTR lpExistingFileName,
     _In_opt_ LPCWSTR lpNewFileName,

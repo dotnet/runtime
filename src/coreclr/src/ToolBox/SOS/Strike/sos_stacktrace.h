@@ -20,7 +20,7 @@
 Notes:
 
 HRESULT CALLBACK _EFN_StackTrace(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     WCHAR wszTextOut[],
     UINT *puiTextLength,
     LPVOID pTransitionContexts,
@@ -96,7 +96,7 @@ extern "C" {
 #endif // __cplusplus
 
 HRESULT CALLBACK _EFN_StackTrace(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     __out_ecount(*puiTextLength) WCHAR wszTextOut[],
     size_t *puiTextLength,
     LPVOID pTransitionContexts,
@@ -120,7 +120,7 @@ HRESULT CALLBACK _EFN_StackTrace(
 // 
 // The output will be truncated of cbString is not long enough for the full stack trace.
 HRESULT _EFN_GetManagedExcepStack(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     ULONG64 StackObjAddr,
     __out_ecount(cbString) PSTR szStackString,
     ULONG cbString
@@ -129,7 +129,7 @@ HRESULT _EFN_GetManagedExcepStack(
 // _EFN_GetManagedExcepStackW - same as _EFN_GetManagedExcepStack, but returns 
 //                              the stack as a wide string.
 HRESULT _EFN_GetManagedExcepStackW(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     ULONG64 StackObjAddr,
     __out_ecount(cchString) PWSTR wszStackString,
     ULONG cchString
@@ -142,7 +142,7 @@ HRESULT _EFN_GetManagedExcepStackW(
 // cbName - the number of characters available in the buffer
 //
 HRESULT _EFN_GetManagedObjectName(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     ULONG64 objAddr,
     __out_ecount(cbName) PSTR szName,
     ULONG cbName
@@ -159,12 +159,13 @@ HRESULT _EFN_GetManagedObjectName(
 //
 // At least one of pValue and pOffset must be non-NULL.
 HRESULT _EFN_GetManagedObjectFieldInfo(
-    PDEBUG_CLIENT Client,
+    PDEBUG_CLIENT client,
     ULONG64 objAddr,
     __out_ecount (mdNameLen) PSTR szFieldName,
     PULONG64 pValue,
     PULONG pOffset
     );
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus : extern "C"

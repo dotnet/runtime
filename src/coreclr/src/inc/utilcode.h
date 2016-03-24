@@ -1162,10 +1162,18 @@ void    SplitPathInterior(
     __out_opt LPCWSTR *pwszFileName, __out_opt size_t *pcchFileName,
     __out_opt LPCWSTR *pwszExt,      __out_opt size_t *pcchExt);
 
+#ifndef FEATURE_CORECLR
 void    MakePath(__out_ecount (MAX_LONGPATH) register WCHAR *path, 
                  __in LPCWSTR drive, 
                  __in LPCWSTR dir, 
                  __in LPCWSTR fname, 
+                 __in LPCWSTR ext);
+#endif
+
+void    MakePath(__out CQuickWSTR &path,
+                 __in LPCWSTR drive,
+                 __in LPCWSTR dir,
+                 __in LPCWSTR fname,
                  __in LPCWSTR ext);
 
 WCHAR * FullPath(__out_ecount (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
@@ -1180,6 +1188,8 @@ void    SplitPath(__in SString const &path,
                   __inout_opt SString *dir,
                   __inout_opt SString *fname,
                   __inout_opt SString *ext);
+
+#if !defined(NO_CLRCONFIG)
 
 //*****************************************************************************
 //
@@ -1514,6 +1524,8 @@ public:
 private:
     LPWSTR m_wszString;
 };
+
+#endif // defined(NO_CLRCONFIG)
 
 #include "ostype.h"
 
@@ -4167,6 +4179,8 @@ public:
     }
 };
 
+#if !defined(NO_CLRCONFIG)
+
 /**************************************************************************/
 /* simple wrappers around the REGUTIL and MethodNameList routines that make
    the lookup lazy */
@@ -4272,6 +4286,8 @@ private:
 
     BYTE m_inited;
 };
+
+#endif // !defined(NO_CLRCONFIG)
 
 //*****************************************************************************
 // Convert a pointer to a string into a GUID.
@@ -4695,7 +4711,7 @@ public:
 #endif // !FEATURE_PAL
 };
 
-#if !defined(DACCESS_COMPILE) && !defined(CLR_STANDALONE_BINDER)
+#if !defined(DACCESS_COMPILE)
 
 // check if current thread is a GC thread (concurrent or server)
 inline BOOL IsGCSpecialThread ()
@@ -4879,7 +4895,7 @@ inline BOOL IsStackWalkerThread()
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-#if defined(DACCESS_COMPILE) || defined(CLR_STANDALONE_BINDER)
+#if defined(DACCESS_COMPILE)
     return FALSE;
 #else
     return ClrFlsGetValue (TlsIdx_StackWalkerWalkingThread) != NULL;
@@ -4894,13 +4910,13 @@ inline BOOL IsGCThread ()
     STATIC_CONTRACT_SUPPORTS_DAC;
     STATIC_CONTRACT_SO_TOLERANT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CLR_STANDALONE_BINDER)
+#if !defined(DACCESS_COMPILE)
     return IsGCSpecialThread () || IsSuspendEEThread ();
 #else
     return FALSE;
 #endif
 }
-#ifndef CLR_STANDALONE_BINDER
+
 class ClrFlsThreadTypeSwitch
 {
 public:
@@ -4991,7 +5007,6 @@ private:
     PVOID m_PreviousValue;
     PredefinedTlsSlots m_slot;
 };
-#endif // !CLR_STANDALONE_BINDER
 
 //*********************************************************************************
 

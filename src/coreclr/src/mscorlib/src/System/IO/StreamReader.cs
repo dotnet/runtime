@@ -52,13 +52,6 @@ namespace System.IO
         {
             get
             {
-#if FEATURE_LEGACYNETCF
-                // Quirk for Mango app compatibility
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    return 4096;
-                }
-#endif // FEATURE_LEGACYNETCF
                 return 1024;
             }
         }
@@ -178,26 +171,9 @@ namespace System.IO
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen);
         }
 
-#if FEATURE_LEGACYNETCF
-        [System.Security.SecuritySafeCritical]
-#endif // FEATURE_LEGACYNETCF
         public StreamReader(String path) 
             : this(path, true) {
-#if FEATURE_LEGACYNETCF
-            if(CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-                System.Reflection.Assembly callingAssembly = System.Reflection.Assembly.GetCallingAssembly();
-                if(callingAssembly != null && !callingAssembly.IsProfileAssembly) {
-                    string caller = new System.Diagnostics.StackFrame(1).GetMethod().FullName;
-                    string callee = System.Reflection.MethodBase.GetCurrentMethod().FullName;
-                    throw new MethodAccessException(String.Format(
-                        System.Globalization.CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithCaller"),
-                        caller,
-                        callee));
-                }
-            }
-#endif // FEATURE_LEGACYNETCF
-                               }
+        }
 
         public StreamReader(String path, bool detectEncodingFromByteOrderMarks) 
             : this(path, Encoding.UTF8, detectEncodingFromByteOrderMarks, DefaultBufferSize) {

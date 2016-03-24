@@ -220,17 +220,6 @@ namespace System.Resources {
         [System.Security.SecurityCritical]
         internal static CultureInfo GetNeutralResourcesLanguage(Assembly a, ref UltimateResourceFallbackLocation fallbackLocation)
         {
-
-#if FEATURE_LEGACYNETCF
-            // Windows Phone 7.0/7.1 ignore NeutralResourceLanguage attribute and 
-            // defaults fallbackLocation to MainAssembly
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-            {
-                fallbackLocation = UltimateResourceFallbackLocation.MainAssembly;
-                return CultureInfo.InvariantCulture;
-            }
-#endif
-
             Contract.Assert(a != null, "assembly != null");
             string cultureName = null;
             short fallback = 0;

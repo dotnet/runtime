@@ -3,6 +3,9 @@
 ; See the LICENSE file in the project root for more information.
 
 EXPORTS
+        CreateProcessForLaunch
+        ResumeProcess
+        CloseResumeHandle
         RegisterForRuntimeStartup
         UnregisterForRuntimeStartup
 	GetStartupNotificationEvent

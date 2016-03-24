@@ -29,7 +29,9 @@ namespace System {
 #endif    
     using System.Security;
     using System.Security.Permissions;
+#if FEATURE_IMPERSONATION
     using System.Security.Principal;
+#endif
     using System.Security.Policy;
     using System.Security.Util;
     using System.Collections;
@@ -2800,17 +2802,6 @@ namespace System {
         }
 
 #endif // FEATURE_REMOTING        
-
-#if FEATURE_LEGACYNETCFFAS
-        public static IAppDomainPauseManager PauseManager
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                return AppDomainPauseManager.Instance;
-            }
-        }
-#endif // FEATURE_LEGACYNETCFFAS
 
 #if !FEATURE_CORECLR
         //

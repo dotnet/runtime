@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 //Test is checking the ReserveSlot function
 //   If someone screws up the function we will end up
 //   setting values in the wrong slots and the totals will be wrong

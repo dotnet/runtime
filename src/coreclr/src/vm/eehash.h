@@ -561,10 +561,8 @@ public:
     }
 };
 
-#ifndef BINDER
 typedef EEHashTable<PTR_VOID, EEPtrHashTableHelper<PTR_VOID>, FALSE> EEPtrHashTable;
 typedef DPTR(EEPtrHashTable) PTR_EEPtrHashTable;
-#endif // !BINDER
 
 // Define a hash of generic instantiations (represented by a SigTypeContext).
 class EEInstantiationHashTableHelper

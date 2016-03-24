@@ -31,6 +31,7 @@ Project Docs
 - [Performance Guidelines](project-docs/performance-guidelines.md)
 - [Garbage Collector Guidelines](project-docs/garbage-collector-guidelines.md)
 - [Adding new public APIs to mscorlib](project-docs/adding_new_public_apis.md)
+- [Project NuGet Dependencies](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/project-nuget-dependencies.md)
 
 Coding Guidelines
 =================
@@ -56,6 +57,7 @@ Testing and Debugging CoreCLR
 - [Testing Changes on Linux, OS X, and FreeBSD](building/unix-test-instructions.md)
 - [Testing with CoreFX](building/testing-with-corefx.md)
 - [.NET Performance Data Collection Script](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect)
+- [Creating native images](building/crossgen.md)
 
 Book of the Runtime
 ===================

@@ -530,28 +530,6 @@ Assembly* AssemblyNative::LoadFromBuffer(BOOL fForIntrospection, const BYTE* pAs
     return pAssembly;
 }
 
-#ifdef FEATURE_CORECLR    
-// static
-void QCALLTYPE AssemblyNative::LoadFromUnmanagedArray(CLR_BOOL fForIntrospection,   BYTE* pAssemblyData,  UINT64 uAssemblyLength, BYTE* pPDBData,  UINT64 uPDBLength, QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly)
-{
-    QCALL_CONTRACT;
-    
-    DomainAssembly * pDomainAssembly = NULL;
-        
-    BEGIN_QCALL;
-    Assembly* pAssembly = NULL;
-    GCX_COOP();    
-    pAssembly=LoadFromBuffer(fForIntrospection, pAssemblyData, uAssemblyLength, pPDBData, uPDBLength, stackMark, NULL, kCurrentAppDomain); 
-    pDomainAssembly = pAssembly->GetDomainAssembly();
-    retAssembly.Set(pDomainAssembly->GetExposedAssemblyObject());
-    END_QCALL;
-}
-#endif //  FEATURE_CORECLR    
-
-
-
-
-
 FCIMPL6(Object*, AssemblyNative::LoadImage, U1Array* PEByteArrayUNSAFE,
         U1Array* SymByteArrayUNSAFE, Object* securityUNSAFE,
         StackCrawlMark* stackMark, CLR_BOOL fForIntrospection, SecurityContextSource securityContextSource)
@@ -635,11 +613,6 @@ FCIMPL2(Object*, AssemblyNative::LoadFile, StringObject* pathUNSAFE, Object* sec
     gc.strPath = ObjectToSTRINGREF(pathUNSAFE);
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-#ifdef FEATURE_CORECLR
-    if(!GetAppDomain()->IsLoadFileAllowed())
-        COMPlusThrow(kNotSupportedException);
-#endif
 
     if(CorHost2::IsLoadFromBlocked())
         COMPlusThrow(kFileLoadException, FUSION_E_LOADFROM_BLOCKED);
@@ -2220,23 +2193,6 @@ void QCALLTYPE AssemblyNative::GetGrantSet(QCall::AssemblyHandle pAssembly, QCal
 
     END_QCALL;
 }
-
-#ifdef FEATURE_LEGACYNETCF
-BOOL QCALLTYPE AssemblyNative::GetIsProfileAssembly(QCall::AssemblyHandle pAssembly)
-{
-    QCALL_CONTRACT;
-
-    BOOL fIsProfile = FALSE;
-
-    BEGIN_QCALL;
-
-    fIsProfile = pAssembly->GetFile()->IsProfileAssembly();
-
-    END_QCALL;
-
-    return fIsProfile;
-}
-#endif // FEATURE_LEGACYNETCF
 
 //
 // QCalls to determine if everything introduced by the assembly is either security critical or safe critical

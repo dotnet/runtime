@@ -37,8 +37,9 @@ int __cdecl main(int argc, char *argv[])
         Fail("\nFailed to allocate memory for storing directory name!\n");
     } 
 
+    UINT size = MAX_PATH;
     /*retrieve the machine configuration directory*/
-    bValue = PAL_GetPALDirectoryW(wpDirectoryName, MAX_PATH);
+    bValue = PAL_GetPALDirectoryW(wpDirectoryName, &size);
     if(FALSE == bValue) 
     {
         free(wpDirectoryName);

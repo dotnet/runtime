@@ -4,11 +4,7 @@
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "iallocator.h"
+#include "defaultallocator.h"
 
 // static
 DefaultAllocator DefaultAllocator::s_singleton;
-
-// static
-ProcessHeapAllocator ProcessHeapAllocator::s_singleton;
-
-int AllowZeroAllocator::s_zeroLenAllocTarg;

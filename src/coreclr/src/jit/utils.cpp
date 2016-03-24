@@ -721,24 +721,18 @@ bool ConfigMethodRange::contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
 }
 
 /**************************************************************************/
-void ConfigMethodRange::init(const CLRConfig::ConfigStringInfo & info)
+void ConfigMethodRange::initRanges(const wchar_t* rangeStr)
 {
     // make sure that the memory was zero initialized
     _ASSERTE(m_inited == 0 || m_inited == 1);
 
-    LPWSTR str = CLRConfig::GetConfigValue(info);
-    initRanges(str);
-    CLRConfig::FreeConfigString(str);
-    m_inited = true;
-}
-
-/**************************************************************************/
-void ConfigMethodRange::initRanges(__in_z LPCWSTR rangeStr)
-{
-    if (rangeStr == 0)
+    if (rangeStr == nullptr)
+    {
+        m_inited = true;
         return;
+    }
 
-    LPCWSTR p = rangeStr;
+    LPCWSTR p = const_cast<LPCWSTR>(rangeStr);
     unsigned char lastRange = 0;
     while (*p) {
         while (*p == ' ')       //skip blanks
@@ -767,6 +761,8 @@ void ConfigMethodRange::initRanges(__in_z LPCWSTR rangeStr)
         m_ranges[lastRange++] = MAX_RANGE;
     assert(lastRange < 100);
     m_lastRange = lastRange;
+
+    m_inited = true;
 }
 
 #endif // DEBUG
@@ -778,109 +774,92 @@ void ConfigMethodRange::initRanges(__in_z LPCWSTR rangeStr)
  *  Histogram class.
  */
 
-histo::histo(IAllocator* alloc, unsigned * sizeTab, unsigned sizeCnt) :
-    histoAlloc(alloc),
-    histoCounts(nullptr)
+Histogram::Histogram(IAllocator* allocator, const unsigned* const sizeTable)
+    : m_allocator(allocator)
+    , m_sizeTable(sizeTable)
+    , m_counts(nullptr)
 {
-    if (sizeCnt == 0)
+    unsigned sizeCount = 0;
+    do
     {
-        do
+        sizeCount++;
+    }
+    while ((sizeTable[sizeCount] != 0) && (sizeCount < 1000));
+
+    m_sizeCount = sizeCount;
+}
+
+Histogram::~Histogram()
+{
+    m_allocator->Free(m_counts);
+}
+
+// We need to lazy allocate the histogram data so static `Histogram` variables don't try to
+// call the host memory allocator in the loader lock, which doesn't work.
+void Histogram::ensureAllocated()
+{
+    if (m_counts == nullptr)
+    {
+        m_counts = new (m_allocator) unsigned[m_sizeCount + 1];
+        memset(m_counts, 0, (m_sizeCount + 1) * sizeof(*m_counts));
+    }
+}
+
+void Histogram::dump(FILE* output)
+{
+    ensureAllocated();
+
+    unsigned t = 0;
+    for (unsigned i = 0; i < m_sizeCount; i++)
+    {
+        t += m_counts[i];
+    }
+
+    for (unsigned c = 0, i = 0; i <= m_sizeCount; i++)
+    {
+        if (i == m_sizeCount)
         {
-            sizeCnt++;
-        }
-        while ((sizeTab[sizeCnt] != 0) && (sizeCnt < 1000));
-    }
-
-    histoSizCnt = sizeCnt;
-    histoSizTab = sizeTab;
-}
-
-histo::~histo()
-{
-    histoAlloc->Free(histoCounts);
-}
-
-// We need to lazy allocate the histogram data so static "histo" variables don't try to call the CLR memory allocator
-// in the loader lock, which doesn't work.
-void                histo::histoEnsureAllocated()
-{
-    if (histoCounts == nullptr)
-    {
-        histoCounts = new (histoAlloc) unsigned[histoSizCnt + 1];
-        histoClr();
-    }
-}
-
-void                histo::histoClr()
-{
-    histoEnsureAllocated();
-    memset(histoCounts, 0, (histoSizCnt + 1) * sizeof(*histoCounts));
-}
-
-void                histo::histoDsp(FILE* fout)
-{
-    histoEnsureAllocated();
-
-    unsigned        i;
-    unsigned        c;
-    unsigned        t;
-
-    for (i = t = 0; i <= histoSizCnt; i++)
-    {
-        t += histoCounts[i];
-    }
-
-    for (i = c = 0; i <= histoSizCnt; i++)
-    {
-        if  (i == histoSizCnt)
-        {
-            if  (!histoCounts[i])
+            if (m_counts[i] == 0)
+            {
                 break;
+            }
 
-            fprintf(fout, "      >    %7u", histoSizTab[i-1]);
+            fprintf(output, "      >    %7u", m_sizeTable[i - 1]);
         }
         else
         {
             if (i == 0)
             {
-                fprintf(fout, "     <=    ");
+                fprintf(output, "     <=    ");
             }
             else
             {
-                fprintf(fout, "%7u .. ", histoSizTab[i-1]+1);
+                fprintf(output, "%7u .. ", m_sizeTable[i - 1] + 1);
             }
 
-            fprintf(fout, "%7u", histoSizTab[i]);
+            fprintf(output, "%7u", m_sizeTable[i]);
         }
 
-        c += histoCounts[i];
+        c += m_counts[i];
 
-        fprintf(fout, " ===> %7u count (%3u%% of total)\n", histoCounts[i], (int)(100.0 * c / t));
+        fprintf(output, " ===> %7u count (%3u%% of total)\n", m_counts[i], (int)(100.0 * c / t));
     }
 }
 
-void                histo::histoRec(unsigned __int64 siz, unsigned cnt)
+void Histogram::record(unsigned size)
 {
-    assert(FitsIn<unsigned>(siz));
-    histoRec((unsigned)siz, cnt);
-}
+    ensureAllocated();
 
-void                histo::histoRec(unsigned siz, unsigned cnt)
-{
-    histoEnsureAllocated();
-
-    unsigned        i;
-    unsigned    *   t;
-
-    for (i = 0, t = histoSizTab;
-         i < histoSizCnt;
-         i++  , t++)
+    unsigned i;
+    for (i = 0; i < m_sizeCount; i++)
     {
-        if  (*t >= siz)
+        if (m_sizeTable[i] >= size)
+        {
             break;
+        }
     }
 
-    histoCounts[i] += cnt;
+    m_counts[i]++;
 }
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
@@ -1194,6 +1173,7 @@ void HelperCallProperties::init()
 
         case CORINFO_HELP_NEW_CROSSCONTEXT:
         case CORINFO_HELP_NEWFAST:
+        case CORINFO_HELP_READYTORUN_NEW:
 
             mayFinalize   = true;  // These may run a finalizer
             isAllocator   = true;
@@ -1215,7 +1195,7 @@ void HelperCallProperties::init()
         case CORINFO_HELP_NEW_MDARR:
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_OBJ:
-
+        case CORINFO_HELP_READYTORUN_NEWARR_1:
 
             mayFinalize   = true;  // These may run a finalizer
             isAllocator   = true;
@@ -1263,7 +1243,8 @@ void HelperCallProperties::init()
         case CORINFO_HELP_ISINSTANCEOFARRAY:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
-            
+        case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+
             isPure   = true;
             noThrow  = true;   // These return null for a failing cast
             break;
@@ -1274,7 +1255,8 @@ void HelperCallProperties::init()
         case CORINFO_HELP_CHKCASTCLASS:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
-            
+        case CORINFO_HELP_READYTORUN_CHKCAST:
+
             // These throw for a failing cast
             // But if given a null input arg will return null
             isPure = true;
@@ -1314,6 +1296,7 @@ void HelperCallProperties::init()
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
         case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
         case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+        case CORINFO_HELP_READYTORUN_STATIC_BASE:
 
             // These may invoke static class constructors
             // These can throw InvalidProgram exception if the class can not be constructed
@@ -1412,7 +1395,7 @@ void HelperCallProperties::init()
 // MyAssembly;mscorlib;System
 // MyAssembly;mscorlib System
 
-AssemblyNamesList2::AssemblyNamesList2(__in LPWSTR list, IAllocator* alloc)
+AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, IAllocator* alloc)
     : m_alloc(alloc)
 {
     assert(m_alloc != nullptr);
@@ -1421,7 +1404,7 @@ AssemblyNamesList2::AssemblyNamesList2(__in LPWSTR list, IAllocator* alloc)
     LPWSTR nameStart = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
     
-    for (LPWSTR listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (LPWSTR listWalk = const_cast<LPWSTR>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
         WCHAR curChar = *listWalk;
         
@@ -1561,3 +1544,66 @@ unsigned            CountDigits(unsigned num, unsigned base /* = 10 */)
 }
 
 #endif // DEBUG
+
+
+double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal) {
+    __int64 s64 = uIntVal; 
+    double d;
+    if (s64 < 0) {
+#if defined(_TARGET_XARCH_)
+        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to 
+        // double, and the clang result is more accurate. For example,
+        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
+        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
+        // If the folding optimization below is implemented by simple casting of (double)uint64_val
+        // and it is compiled by clang, casting result can be inconsistent, depending on whether
+        // the folding optimization is triggered or the codegen generates instructions for casting.                        //
+        // The current solution is to force the same math as the codegen does, so that casting
+        // result is always consistent.
+
+        // d = (double)(int64_t)uint64 + 0x1p64
+        uint64_t adjHex = 0x43F0000000000000UL;
+        d = (double)s64 + *(double*)&adjHex;
+#else
+        d = (double)uIntVal;
+#endif
+    }
+    else 
+    {
+        d = (double)uIntVal;
+    }
+    return d;
+}
+
+float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64) {
+    double d = convertUInt64ToDouble(u64);
+    return (float)d;
+}
+
+unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d) {
+    unsigned __int64 u64;
+    if (d >= 0.0)
+    {
+        // Work around a C++ issue where it doesn't properly convert large positive doubles
+        const double two63 = 2147483648.0 * 4294967296.0;
+        if (d < two63) {
+            u64 = UINT64(d);
+        }
+        else {
+            // subtract 0x8000000000000000, do the convert then add it back again
+            u64 = INT64(d - two63) + I64(0x8000000000000000);
+        }
+        return u64;
+    }
+
+    // This double cast to account for an ECMA spec hole.
+    // When converting from a double to an unsigned the ECMA
+    // spec states that a conforming implementation should 
+    // "truncate to zero." However that doesn't make much sense
+    // when the double in question is negative and the target
+    // is unsigned. gcc converts a negative double to zero when
+    // cast to an unsigned. To make gcc conform to MSVC behavior
+    // this cast is necessary.
+    u64 = UINT64(INT64(d));     
+    return u64;
+}

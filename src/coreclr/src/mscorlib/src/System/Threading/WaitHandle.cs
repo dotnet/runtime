@@ -329,13 +329,6 @@ namespace System.Threading
             waitHandles = null;
 #endif
 
-#if FEATURE_LEGACYNETCF
-            // WinCE did not support "wait all."  It turns out that this resulted in NetCF's WaitAll implementation always returning true.
-            // Unfortunately, some apps took a dependency on that, so we have to replicate the behavior here.
-            if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                return true;
-#endif
-
             int ret = WaitMultiple(internalWaitHandles, millisecondsTimeout, exitContext, true /* waitall*/ );
 
             if(AppDomainPauseManager.IsPaused)

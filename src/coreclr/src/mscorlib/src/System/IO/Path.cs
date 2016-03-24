@@ -163,10 +163,6 @@ namespace System.IO {
             if (path != null) {
                 CheckInvalidPathChars(path);
 
-#if FEATURE_LEGACYNETCF
-                if (!CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {
-#endif
-
                 string normalizedPath = NormalizePath(path, false);
 
                 // If there are no permissions for PathDiscovery to this path, we should NOT expand the short paths
@@ -207,24 +203,13 @@ namespace System.IO {
 
                 path = normalizedPath;
 
-#if FEATURE_LEGACYNETCF
-                }
-#endif
-
                 int root = GetRootLength(path);
                 int i = path.Length;
                 if (i > root) {
                     i = path.Length;
                     if (i == root) return null;
                     while (i > root && path[--i] != DirectorySeparatorChar && path[i] != AltDirectorySeparatorChar);                    
-                    String dir = path.Substring(0, i);
-#if FEATURE_LEGACYNETCF
-                    if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8) {                        
-                        if (dir.Length >= MaxPath - 1)
-                            throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
-                    }                     
-#endif
-                    return dir;
+                    return path.Substring(0, i);
                 }
             }
             return null;
@@ -920,7 +905,8 @@ namespace System.IO {
                 return true;
         
         }
-                
+
+#if !FEATURE_CORECLR
         // Returns a cryptographically strong random 8.3 string that can be 
         // used as either a folder name or a file name.
 #if FEATURE_PAL
@@ -996,7 +982,8 @@ namespace System.IO {
             if (r==0) __Error.WinIOError();
             return sb.ToString();
         }
-    
+#endif // FEATURE_CORECLR
+
         // Tests if a path includes a file extension. The result is
         // true if the characters that follow the last directory
         // separator ('\\' or '/') or volume separator (':') in the path include 

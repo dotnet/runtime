@@ -73,4 +73,5 @@ else()
     add_definitions(-DU_DISABLE_RENAMING=1)
 endif()
 
-install (TARGETS System.Globalization.Native DESTINATION .)
+# add the install targets
+install_clr(System.Globalization.Native)

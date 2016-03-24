@@ -65,10 +65,6 @@ private:
     friend class NativeImageDumper;
 #endif
 
-#ifdef BINDER
-    friend class MdilModule;
-#endif
-
     PTR_MethodDesc      data;
 } InstMethodHashEntry_t;
 

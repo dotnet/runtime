@@ -564,7 +564,12 @@ namespace System {
                 }
 
                 // Read in the number
-                uint number = (uint)Convert.ToInt32(guidString.Substring(numStart, numLen),16);
+                int signedNumber;
+                if (!StringToInt(guidString.Substring(numStart, numLen), -1, ParseNumbers.IsTight, out signedNumber, ref result)) {
+                    return false;
+                }
+                uint number = (uint)signedNumber;
+
                 // check for overflow
                 if(number > 255) {
                     result.SetFailure(ParseFailureKind.Format, "Overflow_Byte");            
