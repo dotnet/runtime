@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tests
 {
@@ -59,45 +60,57 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(5805)]
         [Fact]
-        public void TestStartTimeProperty()
+        [PlatformSpecific(PlatformID.OSX)]
+        public void TestStartTimeProperty_OSX()
         {
-            DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
-            Process p = CreateProcessLong();
-            try
+            using (Process p = Process.GetCurrentProcess())
             {
-                p.Start();
+                ProcessThreadCollection threads = p.Threads;
+                Assert.NotNull(threads);
+                Assert.NotEmpty(threads);
 
-                ProcessThreadCollection threadCollection = p.Threads;
-                Assert.True(threadCollection.Count > 0);
+                ProcessThread thread = threads[0];
+                Assert.NotNull(thread);
 
-                ProcessThread thread = threadCollection[0];
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => thread.StartTime);
-                    return;
-                }
-
-                if (ThreadState.Initialized != thread.ThreadState)
-                {
-                    // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
-                    // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
-                    // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                    // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
-                    long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
-                    long beforeTicks = timeBeforeCreatingProcess.Ticks - intervalTicks;
-                    long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
-                    Assert.InRange(thread.StartTime.ToUniversalTime().Ticks, beforeTicks, afterTicks);
-                }
+                Assert.Throws<PlatformNotSupportedException>(() => thread.StartTime);
             }
-            finally
-            {
-                if (!p.HasExited)
-                    p.Kill();
+        }
 
-                Assert.True(p.WaitForExit(WaitInMS));
+        [Fact]
+        [PlatformSpecific(~PlatformID.OSX)] // OSX throws PNSE from StartTime
+        public async Task TestStartTimeProperty()
+        {
+            TimeSpan allowedWindow = TimeSpan.FromSeconds(1);
+
+            using (Process p = Process.GetCurrentProcess())
+            {
+                // Get the process' start time
+                DateTime startTime = p.StartTime.ToUniversalTime();
+
+                // Get the process' threads
+                ProcessThreadCollection threads = p.Threads;
+                Assert.NotNull(threads);
+                Assert.NotEmpty(threads);
+
+                // Get the current time
+                DateTime curTime = DateTime.UtcNow;
+
+                // Make sure each thread's start time is at least the process'
+                // start time and not beyond the current time.
+                Assert.All(
+                    threads.Cast<ProcessThread>(),
+                    t => Assert.InRange(t.StartTime.ToUniversalTime(), startTime - allowedWindow, curTime + allowedWindow));
+
+                // Now add a thread, and from that thread, while it's still alive, verify
+                // that there's at least one thread greater than the current time we previously grabbed.
+                await Task.Factory.StartNew(() =>
+                {
+                    p.Refresh();
+                    Assert.Contains(
+                        p.Threads.Cast<ProcessThread>(), 
+                        t => t.StartTime.ToUniversalTime() >= curTime - allowedWindow);
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
 
