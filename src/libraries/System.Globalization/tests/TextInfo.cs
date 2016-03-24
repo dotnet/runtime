@@ -53,7 +53,7 @@ public class TextInfoTests
         Assert.Equal("BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY", ti.ToUpper("be careful, \uDF08\uD83C, this one is tricky"));
         Assert.Equal("BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY", ti.ToUpper("be careful, \uDF08\uDF08, this one is tricky"));
 
-        Assert.Throws<ArgumentNullException>(() => ti.ToUpper(null));
+        Assert.Throws<ArgumentNullException>("str", () => ti.ToUpper(null));
     }
 
     [Theory]
@@ -101,7 +101,7 @@ public class TextInfoTests
         Assert.Equal("be careful, \uDF08\uD83C, this one is tricky", ti.ToLower("BE CAREFUL, \uDF08\uD83C, THIS ONE IS TRICKY"));
         Assert.Equal("be careful, \uDF08\uDF08, this one is tricky", ti.ToLower("BE CAREFUL, \uDF08\uDF08, THIS ONE IS TRICKY"));
 
-        Assert.Throws<ArgumentNullException>(() => ti.ToLower(null));
+        Assert.Throws<ArgumentNullException>("str", () => ti.ToLower(null));
     }
     
     [Theory]
