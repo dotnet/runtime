@@ -614,7 +614,6 @@ namespace System.Data.SqlClient
         internal void Cancel(object caller)
         {
             Debug.Assert(!(caller is int), "Incorrectly calling this API using the caller's objectID");
-            Debug.Assert(_owner.Target == caller, "Someone other than the stateObj's owner is attempting to cancel");
             bool hasLock = false;
             try
             {
