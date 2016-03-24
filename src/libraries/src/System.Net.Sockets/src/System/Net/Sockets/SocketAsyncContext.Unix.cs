@@ -453,10 +453,10 @@ namespace System.Net.Sockets
         // We have separate locks for send and receive queues, so they can proceed concurrently.  Accept and connect
         // use the same lock as send, since they can't happen concurrently anyway.  
         //
-        private object _sendAcceptConnectLock = new object();
-        private object _receiveLock = new object();
+        private readonly object _sendAcceptConnectLock = new object();
+        private readonly object _receiveLock = new object();
 
-        private object _registerLock = new object();
+        private readonly object _registerLock = new object();
 
         public SocketAsyncContext(SafeCloseSocket socket)
         {
@@ -546,39 +546,39 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, object queueLock, TOperation operation, Interop.Sys.SocketEvents events, bool maintainOrder, out bool isStopped)
+        private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, bool maintainOrder, out bool isStopped)
             where TOperation : AsyncOperation
         {
-            lock (queueLock)
+            // Exactly one of the two queue locks must be held by the caller
+            Debug.Assert(Monitor.IsEntered(_sendAcceptConnectLock) ^ Monitor.IsEntered(_receiveLock));
+
+            switch (queue.State)
             {
-                switch (queue.State)
-                {
-                    case QueueState.Stopped:
-                        isStopped = true;
+                case QueueState.Stopped:
+                    isStopped = true;
+                    return false;
+
+                case QueueState.Clear:
+                    break;
+
+                case QueueState.Set:
+                    if (queue.IsEmpty || !maintainOrder)
+                    {
+                        isStopped = false;
+                        queue.State = QueueState.Clear;
                         return false;
-
-                    case QueueState.Clear:
-                        break;
-
-                    case QueueState.Set:
-                        if (queue.IsEmpty || !maintainOrder)
-                        {
-                            isStopped = false;
-                            queue.State = QueueState.Clear;
-                            return false;
-                        }
-                        break;
-                }
-
-                if ((_registeredEvents & events) == Interop.Sys.SocketEvents.None)
-                {
-                    Register(events);
-                }
-
-                queue.Enqueue(operation);
-                isStopped = false;
-                return true;
+                    }
+                    break;
             }
+
+            if ((_registeredEvents & events) == Interop.Sys.SocketEvents.None)
+            {
+                Register(events);
+            }
+
+            queue.Enqueue(operation);
+            isStopped = false;
+            return true;
         }
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, int timeout, out int acceptedFd)
@@ -603,8 +603,16 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                while (true)
                 {
+                    lock (_sendAcceptConnectLock)
+                    {
+                        if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                        {
+                            break;
+                        }
+                    }
+
                     if (isStopped)
                     {
                         acceptedFd = -1;
@@ -663,8 +671,16 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+            while (true)
             {
+                lock (_sendAcceptConnectLock)
+                {
+                    if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: false, isStopped: out isStopped))
+                    {
+                        break;
+                    }
+                }
+
                 if (isStopped)
                 {
                     return SocketError.OperationAborted;
@@ -703,8 +719,16 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                while (true)
                 {
+                    lock (_sendAcceptConnectLock)
+                    {
+                        if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                        {
+                            break;
+                        }
+                    }
+
                     if (isStopped)
                     {
                         return SocketError.Interrupted;
@@ -750,8 +774,16 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+            while (true)
             {
+                lock (_sendAcceptConnectLock)
+                {
+                    if (TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: false, isStopped: out isStopped))
+                    {
+                        break;
+                    }
+                }
+
                 if (isStopped)
                 {
                     return SocketError.OperationAborted;
@@ -811,7 +843,7 @@ namespace System.Net.Sockets
                     };
 
                     bool isStopped;
-                    while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                     {
                         if (isStopped)
                         {
@@ -878,7 +910,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                 {
                     if (isStopped)
                     {
@@ -937,7 +969,7 @@ namespace System.Net.Sockets
                     };
 
                     bool isStopped;
-                    while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                     {
                         if (isStopped)
                         {
@@ -1004,7 +1036,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1057,7 +1089,7 @@ namespace System.Net.Sockets
                     };
 
                     bool isStopped;
-                    while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                    while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                     {
                         if (isStopped)
                         {
@@ -1131,7 +1163,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, _receiveLock, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, maintainOrder: true, isStopped: out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1193,7 +1225,7 @@ namespace System.Net.Sockets
                     };
 
                     bool isStopped;
-                    while (!TryBeginOperation(ref _sendQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                    while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
                     {
                         if (isStopped)
                         {
@@ -1255,7 +1287,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1319,7 +1351,7 @@ namespace System.Net.Sockets
                     };
 
                     bool isStopped;
-                    while (!TryBeginOperation(ref _sendQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                    while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
                     {
                         if (isStopped)
                         {
@@ -1382,7 +1414,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, _sendAcceptConnectLock, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, maintainOrder: true, isStopped: out isStopped))
                 {
                     if (isStopped)
                     {
