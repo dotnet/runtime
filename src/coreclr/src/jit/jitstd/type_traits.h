@@ -37,6 +37,36 @@ struct remove_cv : remove_const<typename remove_volatile<T>::type>
 };
 
 template <typename T>
+struct remove_reference
+{
+    typedef T type;
+};
+
+template <typename T>
+struct remove_reference<T&>
+{
+    typedef T type;
+};
+
+template <typename T>
+struct remove_reference<T&&>
+{
+    typedef T type;
+};
+
+template <typename T>
+struct is_lvalue_reference
+{
+    enum { value = false };
+};
+
+template <typename T>
+struct is_lvalue_reference<T&>
+{
+    enum { value = true };
+};
+
+template <typename T>
 struct is_unqualified_pointer
 {
     enum { value = false };

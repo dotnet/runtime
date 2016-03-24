@@ -720,7 +720,7 @@ private:
     }
     RegRecord *     getRegisterRecord(regNumber regNum);
 
-    RefPosition *   newRefPositionRaw();
+    RefPosition *   newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
     RefPosition *   newRefPosition(Interval * theInterval, LsraLocation theLocation,
                                    RefType theRefType, GenTree * theTreeNode,
@@ -1050,11 +1050,28 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    // Initialize the interval
-    void init()
+    Interval(RegisterType registerType, regMaskTP registerPreferences)
+        : registerPreferences(registerPreferences)
+        , relatedInterval(nullptr)
+        , assignedReg(nullptr)
+        , registerType(registerType)
+        , isLocalVar(false)
+        , isSplit(false)
+        , isSpilled(false)
+        , isInternal(false)
+        , isStructField(false)
+        , isPromotedStruct(false)
+        , hasConflictingDefUse(false)
+        , hasNonCommutativeRMWDef(false)
+        , isSpecialPutArg(false)
+        , preferCalleeSave(false)
+        , isConstant(false)
+        , physReg(REG_COUNT)
+#ifdef DEBUG
+        , intervalIndex(0)
+#endif
+        , varNum(0)
     {
-        memset(this, 0, sizeof(Interval));
-        physReg = REG_COUNT;
     }
 
 #ifdef DEBUG
@@ -1248,8 +1265,30 @@ public:
 
 class RefPosition
 {
-
 public:
+    RefPosition(unsigned int bbNum, LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
+        : referent(nullptr)
+        , nextRefPosition(nullptr)
+        , treeNode(treeNode)
+        , bbNum(bbNum)
+        , nodeLocation(nodeLocation)
+        , registerAssignment(RBM_NONE)
+        , refType(refType)
+        , lastUse(false)
+        , reload(false)
+        , spillAfter(false)
+        , copyReg(false)
+        , moveReg(false)
+        , isPhysRegRef(false)
+        , isFixedRegRef(false)
+        , isLocalDefUse(false)
+        , delayRegFree(false)
+        , outOfOrder(false)
+#ifdef DEBUG
+        , rpNum(0)
+#endif
+    {
+    }
 
     // A RefPosition refers to either an Interval or a RegRecord. 'referent' points to one
     // of these types. If it refers to a RegRecord, then 'isPhysRegRef' is true. If it
