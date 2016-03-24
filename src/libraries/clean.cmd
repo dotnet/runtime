@@ -4,6 +4,8 @@ setlocal
 set cleanlog=%~dp0clean.log
 echo Running Clean.cmd %* > %cleanlog%
 
+set clean_successful=true
+
 if [%1] == [] (
   set clean_targets=Clean;
   goto Begin
@@ -14,7 +16,6 @@ set clean_src=
 set clean_tools=
 set clean_environment=
 set clean_all=
-set clean_successful=true
 
 :Loop
 if [%1] == [] goto Begin
