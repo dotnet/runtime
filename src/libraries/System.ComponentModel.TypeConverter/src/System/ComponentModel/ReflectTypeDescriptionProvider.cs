@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -17,7 +16,7 @@ namespace System.ComponentModel
     ///     this class.  There should be a single instance of this class associated
     ///     with "object", as it can provide all type information for any type.
     /// </devdoc>
-    internal sealed class ReflectTypeDescriptionProvider
+    internal sealed class ReflectTypeDescriptionProvider : TypeDescriptionProvider
     {
         // This is where we store the various converters for the intrinsic types.
         //
@@ -89,6 +88,42 @@ namespace System.ComponentModel
                 }
                 return ReflectTypeDescriptionProvider.s_intrinsicConverters;
             }
+        }
+
+        /// <devdoc>
+        ///     Adds an editor table for the given editor base type.
+        ///     ypically, editors are specified as metadata on an object. If no metadata for a
+        ///     equested editor base type can be found on an object, however, the
+        ///     ypeDescriptor will search an editor
+        ///     able for the editor type, if one can be found.
+        /// </devdoc>
+        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
+        {
+#if PLACEHOLDER
+            if (editorBaseType == null)
+            {
+                throw new ArgumentNullException(nameof(editorBaseType));
+            }
+
+            if (table == null)
+            {
+                Debug.Fail("COMPAT: Editor table should not be null");
+                // don't throw; RTM didn't so we can't do it either.
+            }
+
+            lock (_internalSyncObject)
+            {
+                if (_editorTables == null)
+                {
+                    _editorTables = new Hashtable(4);
+                }
+
+                if (!_editorTables.ContainsKey(editorBaseType))
+                {
+                    _editorTables[editorBaseType] = table;
+                }
+            }
+#endif
         }
 
         /// <devdoc> 
@@ -388,6 +423,121 @@ namespace System.ComponentModel
                 }
             }
             return hashEntry;
+        }
+
+        internal bool IsPopulated(Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal void Refresh(Type type)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Type[] GetPopulatedTypes(Module module)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal AttributeCollection GetExtendedAttributes(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal string GetExtendedClassName(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal string GetExtendedComponentName(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TypeConverter GetExtendedConverter(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EventDescriptor GetExtendedDefaultEvent(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal PropertyDescriptor GetExtendedDefaultProperty(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object GetExtendedEditor(object _instance, Type editorBaseType)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EventDescriptorCollection GetExtendedEvents(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal PropertyDescriptorCollection GetExtendedProperties(object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object GetExtendedPropertyOwner(object _instance, PropertyDescriptor pd)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal AttributeCollection GetAttributes(Type _objectType)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal string GetClassName(Type _objectType)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal string GetComponentName(Type _objectType, object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal TypeConverter GetConverter(Type _objectType, object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EventDescriptor GetDefaultEvent(Type _objectType, object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal PropertyDescriptor GetDefaultProperty(Type _objectType, object _instance)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object GetEditor(Type _objectType, object _instance, Type editorBaseType)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal PropertyDescriptorCollection GetProperties(Type _objectType)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal object GetPropertyOwner(Type _objectType, object _instance, PropertyDescriptor pd)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal EventDescriptorCollection GetEvents(Type _objectType)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -3,6 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Specialized;
+using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -12,20 +20,15 @@ namespace System.ComponentModel
     /// </devdoc>
     public sealed class TypeDescriptor
     {
-#if PLACEHOLDER
         // Note: this is initialized at class load because we 
         // lock on it for thread safety.  It is used from nearly
         // every call to this class, so it will be created soon after
         // class load anyway.
-        private static WeakHashtable s_providerTable = new WeakHashtable();  // mapping of type or object hash to a provider list
-        private static Hashtable s_providerTypeTable = new Hashtable();      // A direct mapping from type to provider.
-        private static volatile Hashtable s_defaultProviders = new Hashtable();      // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
+        private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
+        private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
+        private static volatile Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
         private static volatile WeakHashtable s_associationTable;
-#endif
-        // A version stamp for our metadata used by property descriptors to know when to rebuild attributes.
-        private static int s_metadataVersion = 0;
-#if PLACEHOLDER
-
+        private static int s_metadataVersion;                          // a version stamp for our metadata.  Used by property descriptors to know when to rebuild attributes.
 
         // This is an index that we use to create a unique name for a property in the
         // event of a name collision.  The only time we should use this is when
@@ -33,14 +36,7 @@ namespace System.ComponentModel
         // no name on its site.  Should be very rare.
         private static int s_collisionIndex;
 
-        private static BooleanSwitch s_traceDescriptor = new BooleanSwitch("TypeDescriptor", "Debug TypeDescriptor.");
-
-#if DEBUG
-        private static BooleanSwitch s_enableValidation = new BooleanSwitch("EnableValidation", "Enable type descriptor Whidbey->RTM validation");
-#endif
-
-        // For each stage of our filtering pipeline, the pipeline needs to know
-        // what it is filtering.
+        // For each stage of our filtering pipeline, the pipeline needs to know what it is filtering.
         private const int PIPELINE_ATTRIBUTES = 0x00;
         private const int PIPELINE_PROPERTIES = 0x01;
         private const int PIPELINE_EVENTS = 0x02;
@@ -77,72 +73,10 @@ namespace System.ComponentModel
             Guid.NewGuid()  // events
         };
 
-        private static object s_internalSyncObject = new object();
+        private static readonly object s_internalSyncObject = new object();
 
         private TypeDescriptor()
         {
-        }
-
-        /// <internalonly/>
-        /// <devdoc>
-        /// </devdoc>
-        [Obsolete("This property has been deprecated.  Use a type description provider to supply type information for COM types instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IComNativeDescriptorHandler ComNativeDescriptorHandler
-        {
-            [PermissionSetAttribute(SecurityAction.LinkDemand, Name = "FullTrust")]
-            get
-            {
-                TypeDescriptionNode node = NodeFor(ComObjectType);
-                ComNativeDescriptionProvider provider = null;
-
-                do
-                {
-                    provider = node.Provider as ComNativeDescriptionProvider;
-                    node = node.Next;
-                }
-                while (node != null && provider == null);
-
-                if (provider != null)
-                {
-                    return provider.Handler;
-                }
-
-                return null;
-            }
-            [PermissionSetAttribute(SecurityAction.LinkDemand, Name = "FullTrust")]
-            set
-            {
-                TypeDescriptionNode node = NodeFor(ComObjectType);
-
-                while (node != null && !(node.Provider is ComNativeDescriptionProvider))
-                {
-                    node = node.Next;
-                }
-
-                if (node == null)
-                {
-                    AddProvider(new ComNativeDescriptionProvider(value), ComObjectType);
-                }
-                else
-                {
-                    ComNativeDescriptionProvider provider = (ComNativeDescriptionProvider)node.Provider;
-                    provider.Handler = value;
-                }
-            }
-        }
-
-
-        /// <devdoc>
-        ///     This property returns a Type object that can be passed to the various 
-        ///     AddProvider methods to define a type description provider for COM types.
-        /// </devdoc>
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type ComObjectType
-        {
-            get
-            {
-                return typeof(TypeDescriptorComObject);
-            }
         }
 
         /// <devdoc>
@@ -157,7 +91,6 @@ namespace System.ComponentModel
                 return typeof(TypeDescriptorInterface);
             }
         }
-#endif
 
         /// <devdoc>
         ///     This value increments each time someone refreshes or changes metadata.
@@ -170,7 +103,6 @@ namespace System.ComponentModel
             }
         }
 
-#if PLACEHOLDER
         /// <include file='doc\TypeDescriptor.uex' path='docs/doc[@for="TypeDescriptor.Refreshed"]/*' />
         /// <devdoc>
         ///    Occurs when Refreshed is raised for a component.
@@ -187,18 +119,17 @@ namespace System.ComponentModel
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(Type type, params Attribute[] attributes)
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (attributes == null)
             {
-                throw new ArgumentNullException("attributes");
+                throw new ArgumentNullException(nameof(attributes));
             }
 
             TypeDescriptionProvider existingProvider = GetProvider(type);
@@ -217,18 +148,17 @@ namespace System.ComponentModel
         ///     that was used to add the attributes.  This provider can later be passed to 
         ///     RemoveProvider if the added attributes are no longer needed.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static TypeDescriptionProvider AddAttributes(object instance, params Attribute[] attributes)
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             if (attributes == null)
             {
-                throw new ArgumentNullException("attributes");
+                throw new ArgumentNullException(nameof(attributes));
             }
 
             TypeDescriptionProvider existingProvider = GetProvider(instance);
@@ -239,11 +169,10 @@ namespace System.ComponentModel
 
         /// <internalonly/>
         /// <devdoc>
-        ///     Adds an editor table for the given editor base type.
-        ///     ypically, editors are specified as metadata on an object. If no metadata for a
-        ///     equested editor base type can be found on an object, however, the
-        ///     ypeDescriptor will search an editor
-        ///     able for the editor type, if one can be found.
+        ///     Adds an editor table for the given editor base type. Typically, editors are
+        ///     specified as metadata on an object. If no metadata for a requested editor
+        ///     base type can be found on an object, however, the TypeDescriptor will search
+        ///     an editor table for the editor type, if one can be found.
         /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddEditorTable(Type editorBaseType, Hashtable table)
@@ -260,18 +189,17 @@ namespace System.ComponentModel
         ///     will cause the provider to be called to provide type information for 
         ///     all types.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, Type type)
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             lock (s_providerTable)
@@ -295,18 +223,17 @@ namespace System.ComponentModel
         ///     because the instance already exists.  This method does not prevent 
         ///     the object from finalizing.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void AddProvider(TypeDescriptionProvider provider, object instance)
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
             bool refreshNeeded;
 
@@ -347,21 +274,13 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
-
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
 
             AddProvider(provider, type);
         }
@@ -383,23 +302,15 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             Type type = instance.GetType();
-
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
 
             AddProvider(provider, instance);
         }
@@ -409,8 +320,6 @@ namespace System.ComponentModel
         ///     of a default type description provider attribute for the
         ///     given type.
         /// </devdoc>
-        //See security note below
-        [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private static void CheckDefaultProvider(Type type)
         {
             if (s_defaultProviders == null)
@@ -450,29 +359,15 @@ namespace System.ComponentModel
             // more than one of these, but walk anyway.  Walk in 
             // reverse order so that the most derived takes precidence.
             //
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+            object[] attrs = type.GetTypeInfo().GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false).ToArray();
             bool providerAdded = false;
             for (int idx = attrs.Length - 1; idx >= 0; idx--)
             {
                 TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
                 Type providerType = Type.GetType(pa.TypeName);
-                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                if (providerType != null && typeof(TypeDescriptionProvider).GetTypeInfo().IsAssignableFrom(providerType))
                 {
-                    TypeDescriptionProvider prov;
-
-                    // Security Note: TypeDescriptionProviders are similar to TypeConverters and UITypeEditors in the
-                    // sense that they provide a public API while not necessarily being public themselves. As such,
-                    // we need to allow instantiation of internal TypeDescriptionProviders. See the thread attached
-                    // to VSWhidbey #500522 for a more detailed discussion.
-                    IntSecurity.FullReflection.Assert();
-                    try
-                    {
-                        prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
-                    }
-                    finally
-                    {
-                        CodeAccessPermission.RevertAssert();
-                    }
+                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType);
                     Trace("Providers : Default provider found : {0}", providerType.Name);
                     AddProvider(prov, type);
                     providerAdded = true;
@@ -482,7 +377,7 @@ namespace System.ComponentModel
             // If we did not add a provider, check the base class.  
             if (!providerAdded)
             {
-                Type baseType = type.BaseType;
+                Type baseType = type.GetTypeInfo().BaseType;
                 if (baseType != null && baseType != type)
                 {
                     CheckDefaultProvider(baseType);
@@ -498,23 +393,22 @@ namespace System.ComponentModel
         ///     object, GetAssocation will be called to resolve the actual object 
         ///     instance that is related to its type parameter.  
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void CreateAssociation(object primary, object secondary)
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             if (secondary == null)
             {
-                throw new ArgumentNullException("secondary");
+                throw new ArgumentNullException(nameof(secondary));
             }
 
             if (primary == secondary)
             {
-                throw new ArgumentException(SR.GetString(SR.TypeDescriptorSameAssociation));
+                throw new ArgumentException(SR.TypeDescriptorSameAssociation);
             }
 
             if (s_associationTable == null)
@@ -549,7 +443,7 @@ namespace System.ComponentModel
                     WeakReference r = (WeakReference)associations[idx];
                     if (r.IsAlive && r.Target == secondary)
                     {
-                        throw new ArgumentException(SR.GetString(SR.TypeDescriptorAlreadyAssociated));
+                        throw new ArgumentException(SR.TypeDescriptorAlreadyAssociated);
                     }
                 }
             }
@@ -559,68 +453,10 @@ namespace System.ComponentModel
                 associations.Add(new WeakReference(secondary));
             }
         }
-
-        /// <devdoc>
-        ///     Creates an instance of the designer associated with the
-        ///     specified component.
-        /// </devdoc>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
-        public static IDesigner CreateDesigner(IComponent component, Type designerBaseType)
-        {
-            Type designerType = null;
-            IDesigner designer = null;
-
-            // Get the set of attributes for this type
-            //
-            AttributeCollection attributes = GetAttributes(component);
-
-            for (int i = 0; i < attributes.Count; i++)
-            {
-                DesignerAttribute da = attributes[i] as DesignerAttribute;
-                if (da != null)
-                {
-                    Type attributeBaseType = Type.GetType(da.DesignerBaseTypeName);
-                    if (attributeBaseType != null && attributeBaseType == designerBaseType)
-                    {
-                        ISite site = component.Site;
-                        bool foundService = false;
-
-                        if (site != null)
-                        {
-                            ITypeResolutionService tr = (ITypeResolutionService)site.GetService(typeof(ITypeResolutionService));
-                            if (tr != null)
-                            {
-                                foundService = true;
-                                designerType = tr.GetType(da.DesignerTypeName);
-                            }
-                        }
-
-                        if (!foundService)
-                        {
-                            designerType = Type.GetType(da.DesignerTypeName);
-                        }
-
-                        Debug.Assert(designerType != null, "It may be okay for the designer not to load, but we failed to load designer for component of type '" + component.GetType().FullName + "' because designer of type '" + da.DesignerTypeName + "'");
-                        if (designerType != null)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (designerType != null)
-            {
-                designer = (IDesigner)SecurityUtils.SecureCreateInstance(designerType, null, true);
-            }
-
-            return designer;
-        }
-
+#if PLACEHOLDER
         /// <devdoc>
         ///     This dynamically binds an EventDescriptor to a type.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static EventDescriptor CreateEvent(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, name, type, attributes);
@@ -630,13 +466,11 @@ namespace System.ComponentModel
         ///     This creates a new event descriptor identical to an existing event descriptor.  The new event descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static EventDescriptor CreateEvent(Type componentType, EventDescriptor oldEventDescriptor, params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
 #endif
-
         /// <devdoc>
         ///     This method will search internal tables within TypeDescriptor for 
         ///     a TypeDescriptionProvider object that is associated with the given 
@@ -644,24 +478,21 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (objectType == null)
             {
-                throw new ArgumentNullException("objectType");
+                throw new ArgumentNullException(nameof(objectType));
             }
 
             if (argTypes != null)
             {
                 if (args == null)
                 {
-                    throw new ArgumentNullException("args");
+                    throw new ArgumentNullException(nameof(args));
                 }
 
                 if (argTypes.Length != args.Length)
                 {
-                    throw new ArgumentException(SR.GetString(SR.TypeDescriptorArgsCountMismatch));
+                    throw new ArgumentException(SR.TypeDescriptorArgsCountMismatch);
                 }
             }
 
@@ -685,11 +516,10 @@ namespace System.ComponentModel
 
             return instance;
         }
-
+#if FEATURE_REFLECTPROPERTYDESCRIPTOR
         /// <devdoc>
         ///     This dynamically binds a PropertyDescriptor to a type.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static PropertyDescriptor CreateProperty(Type componentType, string name, Type type, params Attribute[] attributes)
         {
             return new ReflectPropertyDescriptor(componentType, name, type, attributes);
@@ -699,7 +529,6 @@ namespace System.ComponentModel
         ///     This creates a new property descriptor identical to an existing property descriptor.  The new property descriptor
         ///     has the specified metadata attributes merged with the existing metadata attributes.
         /// </devdoc>
-        [ReflectionPermission(SecurityAction.LinkDemand, Flags = ReflectionPermissionFlag.MemberAccess)]
         public static PropertyDescriptor CreateProperty(Type componentType, PropertyDescriptor oldPropertyDescriptor, params Attribute[] attributes)
         {
             // We must do some special case work here for extended properties.  If the old property descriptor is really
@@ -720,515 +549,13 @@ namespace System.ComponentModel
                 {
                     return new ExtendedPropertyDescriptor(oldPropertyDescriptor, attributes);
                 }
-#if DEBUG
-                else
-                {
-                    DebugReflectPropertyDescriptor debugReflectDesc = attr.ExtenderProperty as DebugReflectPropertyDescriptor;
-                    if (debugReflectDesc != null)
-                    {
-                        return new DebugExtendedPropertyDescriptor(oldPropertyDescriptor, attributes);
-                    }
-                }
-#endif
             }
 
             // This is either a normal prop or the caller has changed target classes.
             //
             return new ReflectPropertyDescriptor(componentType, oldPropertyDescriptor, attributes);
         }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.  This method returns true if
-        ///     validation should be performed for the type.
-        /// </devdoc>
-#if DEBUG
-        private static bool DebugShouldValidate(object key)
-        {
-            // Check our switch first.
-            //
-            if (s_enableValidation.Enabled)
-            {
-                while (key != null)
-                {
-                    // We only validate if there are no custom providers all the way
-                    // up the class chain.
-                    TypeDescriptionNode node = s_providerTable[key] as TypeDescriptionNode;
-                    if (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
-                    {
-                        return false;
-                    }
-
-                    if (key is Type)
-                    {
-                        key = GetNodeForBaseType((Type)key);
-                    }
-                    else
-                    {
-                        key = key.GetType();
-                        if (((Type)key).IsCOMObject)
-                        {
-                            key = ComObjectType;
-                        }
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
 #endif
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(Type type, AttributeCollection attributes, AttributeCollection debugAttributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, AttributeCollection debugAttributes)
-        {
-#if DEBUG
-
-            if (attributes.Count >= debugAttributes.Count)
-            {
-                foreach (Attribute a in attributes)
-                {
-                    if (!(a is GuidAttribute) && !(a is ComVisibleAttribute))
-                    {
-                        bool found = false;
-                        bool typeFound = false;
-
-                        // Many attributes don't implement .Equals correctly,
-                        // so they will fail an equality check.  But we want to 
-                        // make sure that common ones like Browsable and ReadOnly
-                        // were correctly picked up.  So only check the ones in
-                        // component model.
-                        if (!a.GetType().FullName.StartsWith("System.Component"))
-                        {
-                            found = true;
-                            break;
-                        }
-
-                        if (!found)
-                        {
-                            foreach (Attribute b in debugAttributes)
-                            {
-                                if (!typeFound && a.GetType() == b.GetType())
-                                {
-                                    typeFound = true;
-                                }
-
-                                // Semitrust may throw here.  
-                                try
-                                {
-                                    if (a.Equals(b))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                catch
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!found && !a.IsDefaultAttribute())
-                        {
-                            if (typeFound)
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} was found but failed equality.  Perhaps attribute .Equals is not implemented correctly?", a.GetType().Name));
-                            }
-                            else
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} should not exist", a.GetType().Name));
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                foreach (Attribute b in debugAttributes)
-                {
-                    // We skip all interop attributes because interface merging has changed on purpose.  
-                    if (!(b is GuidAttribute) && !(b is ComVisibleAttribute) && !(b is InterfaceTypeAttribute) && !(b is ReadOnlyAttribute))
-                    {
-                        bool found = false;
-                        bool typeFound = false;
-
-                        // Many attributes don't implement .Equals correctly,
-                        // so they will fail an equality check.  But we want to 
-                        // make sure that common ones like Browsable and ReadOnly
-                        // were correctly picked up.  So only check the ones in
-                        // component model.
-                        if (!b.GetType().FullName.StartsWith("System.Component"))
-                        {
-                            found = true;
-                            break;
-                        }
-
-                        if (!found)
-                        {
-                            foreach (Attribute a in attributes)
-                            {
-                                if (!typeFound && a.GetType() == b.GetType())
-                                {
-                                    typeFound = true;
-                                }
-
-                                // Semitrust may throw here.  
-                                try
-                                {
-                                    if (b.Equals(a))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                catch
-                                {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!found && !b.IsDefaultAttribute())
-                        {
-                            if (!typeFound)
-                            {
-                                Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Attribute {0} should exist", b.GetType().Name));
-                            }
-                        }
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, Type type)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            AttributeCollection debugAttributes = DebugTypeDescriptor.GetAttributes(type);
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(AttributeCollection attributes, object instance, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            AttributeCollection debugAttributes = DebugTypeDescriptor.GetAttributes(instance, noCustomTypeDesc);
-            DebugValidate(attributes, debugAttributes);
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(TypeConverter converter, Type type)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            TypeConverter debugConverter = DebugTypeDescriptor.GetConverter(type);
-            Debug.Assert(debugConverter.GetType() == converter.GetType(), "TypeDescriptor engine Validation Failure.");
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(TypeConverter converter, object instance, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            TypeConverter debugConverter = DebugTypeDescriptor.GetConverter(instance, noCustomTypeDesc);
-            Debug.Assert(debugConverter.GetType() == converter.GetType(), "TypeDescriptor engine Validation Failure.");
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(EventDescriptorCollection events, Type type, Attribute[] attributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            EventDescriptorCollection debugEvents = DebugTypeDescriptor.GetEvents(type, attributes);
-            Debug.Assert(debugEvents.Count == events.Count, "TypeDescriptor engine Validation Failure. Event counts differ.");
-            foreach (EventDescriptor debugEvt in debugEvents)
-            {
-                EventDescriptor evt = null;
-
-                foreach (EventDescriptor realEvt in events)
-                {
-                    if (realEvt.Name.Equals(debugEvt.Name) && realEvt.EventType == debugEvt.EventType && realEvt.ComponentType == debugEvt.ComponentType)
-                    {
-                        evt = realEvt;
-                        break;
-                    }
-                }
-
-                Debug.Assert(evt != null, "TypeDescriptor engine Validation Failure. Event " + debugEvt.Name + " does not exist or is of the wrong type.");
-                if (evt != null)
-                {
-                    AttributeCollection attrs = evt.Attributes;
-                    if (attrs[typeof(AttributeProviderAttribute)] == null)
-                    {
-                        AttributeCollection debugAttrs = debugEvt.Attributes;
-                        DebugValidate(evt.EventType, attrs, debugAttrs);
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(EventDescriptorCollection events, object instance, Attribute[] attributes, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            EventDescriptorCollection debugEvents = DebugTypeDescriptor.GetEvents(instance, attributes, noCustomTypeDesc);
-            Debug.Assert(debugEvents.Count == events.Count, "TypeDescriptor engine Validation Failure. Event counts differ.");
-            foreach (EventDescriptor debugEvt in debugEvents)
-            {
-                EventDescriptor evt = null;
-
-                foreach (EventDescriptor realEvt in events)
-                {
-                    if (realEvt.Name.Equals(debugEvt.Name) && realEvt.EventType == debugEvt.EventType && realEvt.ComponentType == debugEvt.ComponentType)
-                    {
-                        evt = realEvt;
-                        break;
-                    }
-                }
-
-                Debug.Assert(evt != null, "TypeDescriptor engine Validation Failure. Event " + debugEvt.Name + " does not exist or is of the wrong type.");
-                if (evt != null)
-                {
-                    AttributeCollection attrs = evt.Attributes;
-                    if (attrs[typeof(AttributeProviderAttribute)] == null)
-                    {
-                        AttributeCollection debugAttrs = debugEvt.Attributes;
-                        DebugValidate(evt.EventType, attrs, debugAttrs);
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(PropertyDescriptorCollection properties, Type type, Attribute[] attributes)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(type)) return;
-            PropertyDescriptorCollection debugProperties = DebugTypeDescriptor.GetProperties(type, attributes);
-
-            if (debugProperties.Count > properties.Count)
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    if (prop == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should exist.", debugProp.Name, debugProp.GetType().Name));
-                    }
-                }
-            }
-            else if (properties.Count > debugProperties.Count)
-            {
-                foreach (PropertyDescriptor prop in properties)
-                {
-                    PropertyDescriptor debugProp = null;
-
-                    foreach (PropertyDescriptor realProp in debugProperties)
-                    {
-                        if (realProp.Name.Equals(prop.Name) && realProp.PropertyType == prop.PropertyType && realProp.ComponentType == prop.ComponentType)
-                        {
-                            debugProp = realProp;
-                            break;
-                        }
-                    }
-
-                    if (debugProp == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should not exist.", prop.Name, prop.GetType().Name));
-                    }
-                }
-            }
-            else
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    Debug.Assert(prop != null, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} exists but perhaps type mismatched?", debugProp.Name, debugProp.GetType().Name));
-                    if (prop != null)
-                    {
-                        AttributeCollection attrs = prop.Attributes;
-                        if (attrs[typeof(AttributeProviderAttribute)] == null)
-                        {
-                            AttributeCollection debugAttrs = debugProp.Attributes;
-                            DebugValidate(prop.PropertyType, attrs, debugAttrs);
-                        }
-                    }
-                }
-            }
-#endif
-        }
-
-        /// <devdoc>
-        ///     Debug code that runs the output of a TypeDescriptor query into a debug
-        ///     type descriptor that uses the V1.0 algorithm.  This code will assert
-        ///     if the two type descriptors do not agree.
-        /// </devdoc>
-        [Conditional("DEBUG")]
-        private static void DebugValidate(PropertyDescriptorCollection properties, object instance, Attribute[] attributes, bool noCustomTypeDesc)
-        {
-#if DEBUG
-            if (!DebugShouldValidate(instance)) return;
-            PropertyDescriptorCollection debugProperties = DebugTypeDescriptor.GetProperties(instance, attributes, noCustomTypeDesc);
-
-            if (debugProperties.Count > properties.Count)
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    if (prop == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should exist.", debugProp.Name, debugProp.GetType().Name));
-                    }
-                }
-            }
-            else if (properties.Count > debugProperties.Count)
-            {
-                foreach (PropertyDescriptor prop in properties)
-                {
-                    PropertyDescriptor debugProp = null;
-
-                    foreach (PropertyDescriptor realProp in debugProperties)
-                    {
-                        if (realProp.Name.Equals(prop.Name) && realProp.PropertyType == prop.PropertyType && realProp.ComponentType == prop.ComponentType)
-                        {
-                            debugProp = realProp;
-                            break;
-                        }
-                    }
-
-                    if (debugProp == null)
-                    {
-                        Debug.Fail(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} should not exist.", prop.Name, prop.GetType().Name));
-                    }
-                }
-            }
-            else
-            {
-                foreach (PropertyDescriptor debugProp in debugProperties)
-                {
-                    PropertyDescriptor prop = null;
-
-                    foreach (PropertyDescriptor realProp in properties)
-                    {
-                        if (realProp.Name.Equals(debugProp.Name) && realProp.PropertyType == debugProp.PropertyType && realProp.ComponentType == debugProp.ComponentType)
-                        {
-                            prop = realProp;
-                            break;
-                        }
-                    }
-
-                    Debug.Assert(prop != null, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor engine Validation Failure. Property {0} of type {1} exists but perhaps type mismatched?", debugProp.Name, debugProp.GetType().Name));
-                    if (prop != null)
-                    {
-                        AttributeCollection attrs = prop.Attributes;
-                        if (attrs[typeof(AttributeProviderAttribute)] == null)
-                        {
-                            AttributeCollection debugAttrs = debugProp.Attributes;
-                            DebugValidate(prop.PropertyType, attrs, debugAttrs);
-                        }
-                    }
-                }
-            }
-#endif
-        }
-
         /// <devdoc>
         ///     This  API is used to remove any members from the given
         ///     collection that do not match the attribute array.  If members
@@ -1276,30 +603,27 @@ namespace System.ComponentModel
 
             return newMembers;
         }
-#endif
 
         /// <devdoc>
         ///     The GetAssociation method returns the correct object to invoke 
         ///     for the requested type.  It never returns null.  
         /// </devdoc>
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static object GetAssociation(Type type, object primary)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             object associatedObject = primary;
 
-            if (!type.IsInstanceOfType(primary))
+            if (!type.GetTypeInfo().IsInstanceOfType(primary))
             {
                 // Check our association table for a match.
                 //
@@ -1323,7 +647,7 @@ namespace System.ComponentModel
                                     Trace("Associations : Removing dead reference in assocation table");
                                     associations.RemoveAt(idx);
                                 }
-                                else if (type.IsInstanceOfType(secondary))
+                                else if (type.GetTypeInfo().IsInstanceOfType(secondary))
                                 {
                                     Trace("Associations : Associated {0} to {1}", primary.GetType().Name, secondary.GetType().Name);
                                     associatedObject = secondary;
@@ -1333,6 +657,7 @@ namespace System.ComponentModel
                     }
                 }
 
+#if FEATURE_IDESIGNERHOST
                 // Not in our table.  We have a default association with a designer 
                 // if that designer is a component.
                 //
@@ -1355,7 +680,7 @@ namespace System.ComponentModel
                                 // an object that this PropertyDescriptor can't munch on, but it's
                                 // clearer to use that object instance instead of it's designer.
                                 //
-                                if (designer != null && type.IsInstanceOfType(designer))
+                                if (designer != null && type.GetTypeInfo().IsInstanceOfType(designer))
                                 {
                                     Trace("Associations : Associated {0} to {1}", primary.GetType().Name, designer.GetType().Name);
                                     associatedObject = designer;
@@ -1364,6 +689,7 @@ namespace System.ComponentModel
                         }
                     }
                 }
+#endif
             }
 
             return associatedObject;
@@ -1381,7 +707,6 @@ namespace System.ComponentModel
             }
 
             AttributeCollection attributes = GetDescriptor(componentType, "componentType").GetAttributes();
-            DebugValidate(attributes, componentType);
             return attributes;
         }
 
@@ -1477,7 +802,6 @@ namespace System.ComponentModel
                 attrs = new AttributeCollection(attrArray);
             }
 
-            DebugValidate(attrs, component, noCustomTypeDesc);
             return attrs;
         }
 
@@ -1545,26 +869,18 @@ namespace System.ComponentModel
         public static TypeConverter GetConverter(object component, bool noCustomTypeDesc)
         {
             TypeConverter converter = GetDescriptor(component, noCustomTypeDesc).GetConverter();
-            DebugValidate(converter, component, noCustomTypeDesc);
             return converter;
         }
-#endif
 
         /// <devdoc>
         ///    Gets a type converter for the specified type.
         /// </devdoc>
         public static TypeConverter GetConverter(Type type)
         {
-#if PLACEHOLDER
             TypeConverter converter = GetDescriptor(type, "type").GetConverter();
-            DebugValidate(converter, type);
             return converter;
-#else
-            return ReflectTypeDescriptionProvider.GetConverter(type);
-#endif
         }
 
-#if PLACEHOLDER
         /// <devdoc>
         ///     Gets the default event for the specified type of component.
         /// </devdoc>
@@ -1663,12 +979,12 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentException("component");
+                throw new ArgumentException(nameof(component));
             }
 
             if (component is IUnimplemented)
             {
-                throw new NotSupportedException(SR.GetString(SR.TypeDescriptorUnsupportedRemoteObject, component.GetType().FullName));
+                throw new NotSupportedException(SR.Format(SR.TypeDescriptorUnsupportedRemoteObject, component.GetType().FullName));
             }
 
 
@@ -1689,12 +1005,11 @@ namespace System.ComponentModel
         {
             if (component == null)
             {
-                throw new ArgumentException("component");
+                throw new ArgumentException(nameof(component));
             }
 
             return NodeFor(component).GetExtendedTypeDescriptor(component);
         }
-        #endif
 
         /// <devdoc>
         ///     Gets an editor with the specified base type for the
@@ -1702,9 +1017,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static object GetEditor(object component, Type editorBaseType)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             return GetEditor(component, editorBaseType, false);
         }
 
@@ -1717,7 +1029,7 @@ namespace System.ComponentModel
         {
             if (editorBaseType == null)
             {
-                throw new ArgumentNullException("editorBaseType");
+                throw new ArgumentNullException(nameof(editorBaseType));
             }
 
             return GetDescriptor(component, noCustomTypeDesc).GetEditor(editorBaseType);
@@ -1730,7 +1042,7 @@ namespace System.ComponentModel
         {
             if (editorBaseType == null)
             {
-                throw new ArgumentNullException("editorBaseType");
+                throw new ArgumentNullException(nameof(editorBaseType));
             }
 
             return GetDescriptor(type, "type").GetEditor(editorBaseType);
@@ -1773,7 +1085,6 @@ namespace System.ComponentModel
                 }
             }
 
-            DebugValidate(events, componentType, attributes);
             return events;
         }
 
@@ -1890,8 +1201,6 @@ namespace System.ComponentModel
                 evts = new EventDescriptorCollection(eventArray, true);
             }
 
-            DebugValidate(evts, component, attributes, noCustomTypeDesc);
-
             return evts;
         }
 
@@ -1943,13 +1252,14 @@ namespace System.ComponentModel
         /// </devdoc>
         public static string GetFullComponentName(object component)
         {
-            if (component == null) throw new ArgumentNullException("component");
+            if (component == null) throw new ArgumentNullException(nameof(component));
             return GetProvider(component).GetFullComponentName(component);
         }
 
         private static Type GetNodeForBaseType(Type searchType)
         {
-            if (searchType.IsInterface)
+            var typeInfo = searchType.GetTypeInfo();
+            if (typeInfo.IsInterface)
             {
                 return InterfaceType;
             }
@@ -1957,7 +1267,7 @@ namespace System.ComponentModel
             {
                 return null;
             }
-            return searchType.BaseType;
+            return typeInfo.BaseType;
         }
 
         /// <devdoc>
@@ -1973,7 +1283,6 @@ namespace System.ComponentModel
 
             return GetDescriptor(componentType, "componentType").GetProperties();
         }
-#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified type of 
@@ -1981,9 +1290,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             if (componentType == null)
             {
                 Debug.Fail("COMPAT:  Returning an empty collection, but you should not pass null here");
@@ -2001,7 +1307,6 @@ namespace System.ComponentModel
                 }
             }
 
-            DebugValidate(properties, componentType, attributes);
             return properties;
         }
 
@@ -2021,7 +1326,6 @@ namespace System.ComponentModel
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
         }
-#endif
 
         /// <devdoc>
         ///    Gets a collection of properties for a specified 
@@ -2030,9 +1334,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
-            throw new NotImplementedException();
-        }
-#if PLACEHOLDER
             return GetProperties(component, attributes, false);
         }
 
@@ -2133,8 +1434,6 @@ namespace System.ComponentModel
                 props = new PropertyDescriptorCollection(propArray, true);
             }
 
-            DebugValidate(props, component, attributes, noCustomTypeDesc);
-
             return props;
         }
 
@@ -2150,7 +1449,7 @@ namespace System.ComponentModel
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             return NodeFor(type, true);
@@ -2168,7 +1467,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             return NodeFor(instance, true);
@@ -2186,7 +1485,6 @@ namespace System.ComponentModel
             return NodeFor(type, false);
         }
 
-#endif
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
@@ -2196,13 +1494,13 @@ namespace System.ComponentModel
             throw new NotImplementedException();
             //if (type == null)
             //{
-            //    throw new ArgumentNullException("type");
+            //    throw new ArgumentNullException(nameof(type));
             //}
 
             //return NodeFor(type).GetReflectionType(type);
         }
 
-#if PLACEHOLDER
+
         /// <devdoc>
         ///     Returns an Type instance that can be used to perform reflection.
         /// </devdoc>
@@ -2211,7 +1509,7 @@ namespace System.ComponentModel
         {
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             return NodeFor(instance).GetReflectionType(instance);
@@ -2346,11 +1644,6 @@ namespace System.ComponentModel
             {
                 Type type = instance.GetType();
 
-                if (type.IsCOMObject)
-                {
-                    type = ComObjectType;
-                }
-
                 if (createDelegator)
                 {
                     node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(type));
@@ -2442,7 +1735,7 @@ namespace System.ComponentModel
                         Type keyType = key as Type;
                         if (keyType == null) keyType = key.GetType();
 
-                        target.Provider = new DelegatingTypeDescriptionProvider(keyType.BaseType);
+                        target.Provider = new DelegatingTypeDescriptionProvider(keyType.GetTypeInfo().BaseType);
                     }
                     else
                     {
@@ -2588,7 +1881,11 @@ namespace System.ComponentModel
                 case PIPELINE_ATTRIBUTES:
                     foreach (Attribute attr in members)
                     {
+#if FEATURE_ATTRIBUTE_TYPEID
                         filterTable[attr.TypeId] = attr;
+#else
+                        filterTable[attr] = attr;
+#endif
                     }
                     cacheResults = componentFilter.FilterAttributes(component, filterTable);
                     break;
@@ -2691,7 +1988,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
                         }
                         cacheValue = new AttributeCollection(attrArray);
                         break;
@@ -2704,7 +2001,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
                         }
                         cacheValue = new PropertyDescriptorCollection(propArray, true);
                         break;
@@ -2717,7 +2014,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetString(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
+                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
                         }
                         cacheValue = new EventDescriptorCollection(eventArray, true);
                         break;
@@ -2922,10 +2219,6 @@ namespace System.ComponentModel
 
         private static void Refresh(object component, bool refreshReflectionProvider)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(component);
-#endif
-
             if (component == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -2950,7 +2243,7 @@ namespace System.ComponentModel
                     foreach (DictionaryEntry de in s_providerTable)
                     {
                         Type nodeType = de.Key as Type;
-                        if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
+                        if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                         {
                             TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                             while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -3012,10 +2305,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static void Refresh(Type type)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(type);
-#endif
-
             if (type == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -3037,7 +2326,7 @@ namespace System.ComponentModel
                 foreach (DictionaryEntry de in s_providerTable)
                 {
                     Type nodeType = de.Key as Type;
-                    if (nodeType != null && type.IsAssignableFrom(nodeType) || nodeType == typeof(object))
+                    if (nodeType != null && type.GetTypeInfo().IsAssignableFrom(nodeType) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -3080,10 +2369,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public static void Refresh(Module module)
         {
-#if DEBUG
-            DebugTypeDescriptor.Refresh(module);
-#endif
-
             if (module == null)
             {
                 Debug.Fail("COMPAT:  Returning, but you should not pass null here");
@@ -3101,7 +2386,7 @@ namespace System.ComponentModel
                 foreach (DictionaryEntry de in s_providerTable)
                 {
                     Type nodeType = de.Key as Type;
-                    if (nodeType != null && nodeType.Module.Equals(module) || nodeType == typeof(object))
+                    if (nodeType != null && nodeType.GetTypeInfo().Module.Equals(module) || nodeType == typeof(object))
                     {
                         TypeDescriptionNode node = (TypeDescriptionNode)de.Value;
                         while (node != null && !(node.Provider is ReflectTypeDescriptionProvider))
@@ -3148,8 +2433,6 @@ namespace System.ComponentModel
         ///    Clears the properties and events for the specified 
         ///    assembly from the cache.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Machine | ResourceScope.Assembly, ResourceScope.Machine | ResourceScope.Assembly)]
         public static void Refresh(Assembly assembly)
         {
             if (assembly == null)
@@ -3162,25 +2445,22 @@ namespace System.ComponentModel
             {
                 Refresh(mod);
             }
-
-            // Debug type descriptor has the same code, so our call above will handle this.
         }
 
         /// <devdoc>
         ///     The RemoveAssociation method removes an association with an object.  
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociation(object primary, object secondary)
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             if (secondary == null)
             {
-                throw new ArgumentNullException("secondary");
+                throw new ArgumentNullException(nameof(secondary));
             }
 
             Hashtable assocTable = s_associationTable;
@@ -3211,13 +2491,12 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     The RemoveAssociations method removes all associations for a primary object.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveAssociations(object primary)
         {
             if (primary == null)
             {
-                throw new ArgumentNullException("primary");
+                throw new ArgumentNullException(nameof(primary));
             }
 
             Hashtable assocTable = s_associationTable;
@@ -3233,18 +2512,17 @@ namespace System.ComponentModel
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, Type type)
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             // Walk the nodes until we find the right one, and then remove it.
@@ -3258,18 +2536,17 @@ namespace System.ComponentModel
         ///     event to be raised for the object or type the provider is 
         ///     associated with.
         /// </devdoc>
-        [System.Security.Permissions.PermissionSetAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Name = "FullTrust")]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static void RemoveProvider(TypeDescriptionProvider provider, object instance)
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             // Walk the nodes until we find the right one, and then remove it.
@@ -3294,21 +2571,13 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
-
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
 
             RemoveProvider(provider, type);
         }
@@ -3329,23 +2598,15 @@ namespace System.ComponentModel
         {
             if (provider == null)
             {
-                throw new ArgumentNullException("provider");
+                throw new ArgumentNullException(nameof(provider));
             }
 
             if (instance == null)
             {
-                throw new ArgumentNullException("instance");
+                throw new ArgumentNullException(nameof(instance));
             }
 
             Type type = instance.GetType();
-
-            PermissionSet typeDescriptorPermission = new PermissionSet(PermissionState.None);
-            typeDescriptorPermission.AddPermission(new TypeDescriptorPermission(TypeDescriptorPermissionFlags.RestrictedRegistrationAccess));
-
-            PermissionSet targetPermissions = type.Assembly.PermissionSet;
-            targetPermissions = targetPermissions.Union(typeDescriptorPermission);
-
-            targetPermissions.Demand();
 
             RemoveProvider(provider, instance);
         }
@@ -3366,14 +2627,19 @@ namespace System.ComponentModel
             Attribute memberAttribute = member.Attributes[attribute.GetType()];
             if (memberAttribute == null)
             {
+#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 return !attribute.IsDefaultAttribute();
+#else
+                // TODO more reasonable alternative
+                return false;
+#endif
             }
             else
             {
-                return !(attribute.Match(memberAttribute));
+                return !attribute.Equals(memberAttribute);
             }
         }
-#endif
+
         /// <devdoc>
         ///     Sorts descriptors by name of the descriptor.
         /// </devdoc>
@@ -3382,13 +2648,11 @@ namespace System.ComponentModel
             throw new NotImplementedException();
             //if (infos == null)
             //{
-            //    throw new ArgumentNullException("infos");
+            //    throw new ArgumentNullException(nameof(infos));
             //}
 
             //ArrayList.Adapter(infos).Sort(MemberDescriptorComparer.Instance);
         }
-
-#if PLACEHOLDER
 
         /// <devdoc>
         ///     Internal tracing API for debugging type descriptor.
@@ -3396,7 +2660,8 @@ namespace System.ComponentModel
         [Conditional("DEBUG")]
         internal static void Trace(string message, params object[] args)
         {
-            Debug.WriteLineIf(s_traceDescriptor.Enabled, string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
+            // TODO Determine the value this tracing adds
+            Debug.WriteLine(string.Format(CultureInfo.InvariantCulture, "TypeDescriptor : {0}", string.Format(CultureInfo.InvariantCulture, message, args)));
         }
 
         /// <devdoc>
@@ -3464,7 +2729,11 @@ namespace System.ComponentModel
                         bool match = false;
                         for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                         {
+#if FEATURE_ATTRIBUTE_TYPEID
                             if (newArray[existingIdx].TypeId.Equals(newAttrs[idx].TypeId))
+#else
+                            if (newArray[existingIdx].Equals(newAttrs[idx]))
+#endif
                             {
                                 match = true;
                                 newArray[existingIdx] = newAttrs[idx];
@@ -3491,180 +2760,6 @@ namespace System.ComponentModel
                     }
 
                     return new AttributeCollection(finalAttr);
-                }
-            }
-        }
-
-        /// <devdoc>
-        ///     This class is a type description provider that works with the IComNativeDescriptorHandler
-        ///     interface.
-        /// </devdoc>
-        private sealed class ComNativeDescriptionProvider : TypeDescriptionProvider
-        {
-#pragma warning disable 618
-            private IComNativeDescriptorHandler _handler;
-
-            internal ComNativeDescriptionProvider(IComNativeDescriptorHandler handler)
-            {
-                _handler = handler;
-            }
-
-            /// <devdoc>
-            ///     Returns the COM handler object.
-            /// </devdoc>
-            internal IComNativeDescriptorHandler Handler
-            {
-                get
-                {
-                    return _handler;
-                }
-                set
-                {
-                    _handler = value;
-                }
-            }
-#pragma warning restore 618
-
-            /// <devdoc>
-            ///     Implements GetTypeDescriptor.  This creates a custom type
-            ///     descriptor that walks the linked list for each of its calls.
-            /// </devdoc>
-
-            [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
-            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
-            {
-                if (objectType == null)
-                {
-                    throw new ArgumentNullException("objectType");
-                }
-
-                if (instance == null)
-                {
-                    return null;
-                }
-
-                if (!objectType.IsInstanceOfType(instance))
-                {
-                    throw new ArgumentException("instance");
-                }
-
-                return new ComNativeTypeDescriptor(_handler, instance);
-            }
-
-            /// <devdoc>
-            ///     This type descriptor sits on top of a native
-            ///     descriptor handler.
-            /// </devdoc>
-            private sealed class ComNativeTypeDescriptor : ICustomTypeDescriptor
-            {
-#pragma warning disable 618
-                private IComNativeDescriptorHandler _handler;
-                private object _instance;
-
-                /// <devdoc>
-                ///     Creates a new ComNativeTypeDescriptor.
-                /// </devdoc>
-                internal ComNativeTypeDescriptor(IComNativeDescriptorHandler handler, object instance)
-                {
-                    _handler = handler;
-                    _instance = instance;
-                }
-#pragma warning restore 618
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                AttributeCollection ICustomTypeDescriptor.GetAttributes()
-                {
-                    return _handler.GetAttributes(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                string ICustomTypeDescriptor.GetClassName()
-                {
-                    return _handler.GetClassName(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                string ICustomTypeDescriptor.GetComponentName()
-                {
-                    return null;
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                TypeConverter ICustomTypeDescriptor.GetConverter()
-                {
-                    return _handler.GetConverter(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
-                {
-                    return _handler.GetDefaultEvent(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
-                {
-                    return _handler.GetDefaultProperty(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
-                {
-                    return _handler.GetEditor(_instance, editorBaseType);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
-                {
-                    return _handler.GetEvents(_instance);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
-                {
-                    return _handler.GetEvents(_instance, attributes);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
-                {
-                    return _handler.GetProperties(_instance, null);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
-                {
-                    return _handler.GetProperties(_instance, attributes);
-                }
-
-                /// <devdoc>
-                ///     ICustomTypeDescriptor implementation.
-                /// </devdoc>
-                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
-                {
-                    return _instance;
                 }
             }
         }
@@ -3750,7 +2845,7 @@ namespace System.ComponentModel
 
             public int Compare(object left, object right)
             {
-                return string.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name, false, CultureInfo.InvariantCulture);
+                return CultureInfo.InvariantCulture.CompareInfo.Compare(((MemberDescriptor)left).Name, ((MemberDescriptor)right).Name);
             }
         }
 
@@ -3868,7 +2963,7 @@ namespace System.ComponentModel
             {
                 if (editorBaseType == null)
                 {
-                    throw new ArgumentNullException("editorBaseType");
+                    throw new ArgumentNullException(nameof(editorBaseType));
                 }
 
                 object editor = _primary.GetEditor(editorBaseType);
@@ -3985,19 +3080,19 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 if (argTypes != null)
                 {
                     if (args == null)
                     {
-                        throw new ArgumentNullException("args");
+                        throw new ArgumentNullException(nameof(args));
                     }
 
                     if (argTypes.Length != args.Length)
                     {
-                        throw new ArgumentException(SR.GetString(SR.TypeDescriptorArgsCountMismatch));
+                        throw new ArgumentException(SR.TypeDescriptorArgsCountMismatch);
                     }
                 }
 
@@ -4012,7 +3107,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return Provider.GetCache(instance);
@@ -4026,7 +3121,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return new DefaultExtendedTypeDescriptor(this, instance);
@@ -4036,7 +3131,7 @@ namespace System.ComponentModel
             {
                 if (instance == null)
                 {
-                    throw new ArgumentNullException("instance");
+                    throw new ArgumentNullException(nameof(instance));
                 }
 
                 return Provider.GetExtenderProviders(instance);
@@ -4055,7 +3150,7 @@ namespace System.ComponentModel
             {
                 if (component == null)
                 {
-                    throw new ArgumentNullException("component");
+                    throw new ArgumentNullException(nameof(component));
                 }
 
                 return Provider.GetFullComponentName(component);
@@ -4069,7 +3164,7 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 return Provider.GetReflectionType(objectType, instance);
@@ -4079,7 +3174,7 @@ namespace System.ComponentModel
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
                 return Provider.GetRuntimeType(objectType);
@@ -4089,18 +3184,17 @@ namespace System.ComponentModel
             ///     Implements GetTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
             /// </devdoc>
-
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
             {
                 if (objectType == null)
                 {
-                    throw new ArgumentNullException("objectType");
+                    throw new ArgumentNullException(nameof(objectType));
                 }
 
-                if (instance != null && !objectType.IsInstanceOfType(instance))
+                if (instance != null && !objectType.GetTypeInfo().IsInstanceOfType(instance))
                 {
-                    throw new ArgumentException("instance");
+                    throw new ArgumentException(nameof(instance));
                 }
 
                 return new DefaultTypeDescriptor(this, objectType, instance);
@@ -4110,7 +3204,7 @@ namespace System.ComponentModel
             {
                 if (type == null)
                 {
-                    throw new ArgumentNullException("type");
+                    throw new ArgumentNullException(nameof(type));
                 }
                 return Provider.IsSupportedType(type);
             }
@@ -4151,9 +3245,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     AttributeCollection attrs = desc.GetAttributes();
-                    if (attrs == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
+                    if (attrs == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
                     return attrs;
                 }
 
@@ -4175,7 +3269,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     string name = desc.GetClassName();
                     if (name == null) name = _instance.GetType().FullName;
                     return name;
@@ -4199,7 +3293,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetComponentName();
                 }
 
@@ -4221,9 +3315,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     TypeConverter converter = desc.GetConverter();
-                    if (converter == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                    if (converter == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
                     return converter;
                 }
 
@@ -4245,7 +3339,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetDefaultEvent();
                 }
 
@@ -4267,7 +3361,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetDefaultProperty();
                 }
 
@@ -4278,7 +3372,7 @@ namespace System.ComponentModel
                 {
                     if (editorBaseType == null)
                     {
-                        throw new ArgumentNullException("editorBaseType");
+                        throw new ArgumentNullException(nameof(editorBaseType));
                     }
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -4294,7 +3388,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     return desc.GetEditor(editorBaseType);
                 }
 
@@ -4316,9 +3410,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     EventDescriptorCollection events = desc.GetEvents();
-                    if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                    if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     return events;
                 }
 
@@ -4345,9 +3439,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     EventDescriptorCollection evts = desc.GetEvents(attributes);
-                    if (evts == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                    if (evts == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     return evts;
                 }
 
@@ -4369,9 +3463,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     PropertyDescriptorCollection properties = desc.GetProperties();
-                    if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                    if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     return properties;
                 }
 
@@ -4398,9 +3492,9 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     PropertyDescriptorCollection properties = desc.GetProperties(attributes);
-                    if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                    if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     return properties;
                 }
 
@@ -4422,7 +3516,7 @@ namespace System.ComponentModel
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
-                    if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
+                    if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetExtendedTypeDescriptor"));
                     object owner = desc.GetPropertyOwner(pd);
                     if (owner == null) owner = _instance;
                     return owner;
@@ -4468,9 +3562,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         attrs = desc.GetAttributes();
-                        if (attrs == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
+                        if (attrs == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetAttributes"));
                     }
 
                     return attrs;
@@ -4496,7 +3590,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         name = desc.GetClassName();
                         if (name == null) name = _objectType.FullName;
                     }
@@ -4524,7 +3618,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         name = desc.GetComponentName();
                     }
 
@@ -4551,9 +3645,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         converter = desc.GetConverter();
-                        if (converter == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
+                        if (converter == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetConverter"));
                     }
 
                     return converter;
@@ -4579,7 +3673,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         defaultEvent = desc.GetDefaultEvent();
                     }
 
@@ -4606,7 +3700,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         defaultProperty = desc.GetDefaultProperty();
                     }
 
@@ -4620,7 +3714,7 @@ namespace System.ComponentModel
                 {
                     if (editorBaseType == null)
                     {
-                        throw new ArgumentNullException("editorBaseType");
+                        throw new ArgumentNullException(nameof(editorBaseType));
                     }
 
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -4638,7 +3732,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         editor = desc.GetEditor(editorBaseType);
                     }
 
@@ -4665,9 +3759,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         events = desc.GetEvents();
-                        if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                        if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     }
 
                     return events;
@@ -4693,9 +3787,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         events = desc.GetEvents(attributes);
-                        if (events == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
+                        if (events == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetEvents"));
                     }
 
                     return events;
@@ -4721,9 +3815,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         properties = desc.GetProperties();
-                        if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                        if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     }
 
                     return properties;
@@ -4749,9 +3843,9 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         properties = desc.GetProperties(attributes);
-                        if (properties == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
+                        if (properties == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetProperties"));
                     }
 
                     return properties;
@@ -4777,7 +3871,7 @@ namespace System.ComponentModel
                     else
                     {
                         ICustomTypeDescriptor desc = p.GetTypeDescriptor(_objectType, _instance);
-                        if (desc == null) throw new InvalidOperationException(SR.GetString(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
+                        if (desc == null) throw new InvalidOperationException(SR.Format(SR.TypeDescriptorProviderError, _node.Provider.GetType().FullName, "GetTypeDescriptor"));
                         owner = desc.GetPropertyOwner(pd);
                         if (owner == null) owner = _instance;
                     }
@@ -4788,23 +3882,11 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        ///     This is a simple internal type that allows external parties
-        ///     to public ina custom type description provider for COM
-        ///     objects.
-        /// </devdoc>
-        [TypeDescriptionProvider("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, " + AssemblyRef.SystemWindowsForms)]
-        private sealed class TypeDescriptorComObject
-        {
-        }
-
-        /// <devdoc>
         ///     This is a simple internal type that allows external parties to
         ///     register a custom type description provider for all interface types.
         /// </devdoc>
         private sealed class TypeDescriptorInterface
         {
         }
-#endif
     }
 }
-
