@@ -6575,7 +6575,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arm_load_jumptable_entry_addr (code, jte, ARMREG_LR);
 #else
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-		ARM_B (code, 2);
+		ARM_B (code, 1);
 		*(gpointer*)code = &single_step_tramp;
 		code += 4;
 		*(gpointer*)code = breakpoint_tramp;

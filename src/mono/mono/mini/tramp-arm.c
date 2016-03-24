@@ -910,7 +910,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
 
 	/* make ctx.eip hold the address of the call. */
-	ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
+	//ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
 	ARM_STR_IMM (code, ARMREG_LR, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, pc));
 
 	/* r0 now points to the MonoContext */
