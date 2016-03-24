@@ -1491,13 +1491,12 @@ namespace System.ComponentModel
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Type GetReflectionType(Type type)
         {
-            throw new NotImplementedException();
-            //if (type == null)
-            //{
-            //    throw new ArgumentNullException(nameof(type));
-            //}
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
-            //return NodeFor(type).GetReflectionType(type);
+            return NodeFor(type).GetReflectionType(type);
         }
 
 
@@ -3384,7 +3383,9 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
+#if FEATURE_EDITOR
                         return rp.GetExtendedEditor(_instance, editorBaseType);
+#endif
                     }
 
                     ICustomTypeDescriptor desc = p.GetExtendedTypeDescriptor(_instance);
@@ -3727,7 +3728,11 @@ namespace System.ComponentModel
 
                     if (rp != null)
                     {
+#if FEATURE_EDITOR
                         editor = rp.GetEditor(_objectType, _instance, editorBaseType);
+#else
+                        editor = null;
+#endif
                     }
                     else
                     {
