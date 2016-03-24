@@ -7201,13 +7201,6 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             // We only need to check for a negative value in sourceReg
             inst_RV_IV(INS_cmp, sourceReg, 0, size);
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
-            if (dstType == TYP_ULONG)
-            {
-                // cast from TYP_INT to TYP_ULONG
-                // The upper bits on sourceReg will already be zero by definition (x64)
-                srcType = TYP_ULONG;
-                size = EA_8BYTE;  
-            }
         }
         else
         {
@@ -7259,8 +7252,16 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             }
         }
 
-        if (targetReg != sourceReg)
-            inst_RV_RV(ins, targetReg, sourceReg, srcType, size);
+        if (targetReg != sourceReg
+#ifdef _TARGET_AMD64_
+            // On amd64, we can hit this path for a same-register
+            // 4-byte to 8-byte widening conversion, and need to
+            // emit the instruction to set the high bits correctly.
+            || (EA_ATTR(genTypeSize(dstType)) == EA_8BYTE
+                && EA_ATTR(genTypeSize(srcType)) == EA_4BYTE)
+#endif // _TARGET_AMD64_
+            )
+          inst_RV_RV(ins, targetReg, sourceReg, srcType, size);
     }
     else // non-overflow checking cast
     {
@@ -7327,7 +7328,14 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         else if (ins == INS_mov)
         {
             noway_assert(!needAndAfter);
-            if (targetReg != sourceReg)
+            if (targetReg != sourceReg
+#ifdef _TARGET_AMD64_
+                // On amd64, 'mov' is the opcode used to zero-extend from
+                // 4 bytes to 8 bytes.
+                || (EA_ATTR(genTypeSize(dstType)) == EA_8BYTE
+                    && EA_ATTR(genTypeSize(srcType)) == EA_4BYTE)
+#endif // _TARGET_AMD64_
+                )
             {
                 inst_RV_RV(ins, targetReg, sourceReg, srcType, size);
             }
