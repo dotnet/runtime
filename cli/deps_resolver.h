@@ -36,6 +36,8 @@ public:
         if (m_portable)
         {
             m_fx_deps_file = get_fx_deps(fx_dir, config->get_fx_name());
+            trace::verbose(_X("Using %s FX deps file"), m_fx_deps_file.c_str());
+            trace::verbose(_X("Using %s deps file"), m_deps_file.c_str());
             m_fx_deps = std::unique_ptr<deps_json_t>(new deps_json_t(false, m_fx_deps_file));
             m_deps = std::unique_ptr<deps_json_t>(new deps_json_t(true, m_deps_file, m_fx_deps->get_rid_fallback_graph()));
         }
@@ -74,7 +76,7 @@ private:
     static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
     {
         pal::string_t fx_deps = fx_dir;
-        pal::string_t fx_deps_name = pal::to_lower(fx_name) + _X(".deps.json");
+        pal::string_t fx_deps_name = fx_name + _X(".deps.json");
         append_path(&fx_deps, fx_deps_name.c_str());
         return fx_deps;
     }

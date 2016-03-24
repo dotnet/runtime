@@ -9,7 +9,6 @@
 pal::string_t get_runtime_config_from_file(const pal::string_t& file)
 {
     auto name = get_filename_without_ext(file);
-    name = name.substr(0, name.find(_X('.')));
     auto json_name = name + _X(".runtimeconfig.json");
     auto json_path = get_directory(file);
 
@@ -40,7 +39,7 @@ host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal
     pal::string_t own_dll_filename = strip_file_ext(own_name) + _X(".dll");
     pal::string_t own_dll = own_dir;
     append_path(&own_dll, own_dll_filename.c_str());
-    trace::info(_X("Exists %s"), own_dll.c_str());
+    trace::info(_X("Own DLL path=[%s]"), own_dll.c_str());
     if (coreclr_exists_in_dir(own_dir) || pal::file_exists(own_dll))
     {
         pal::string_t own_deps_json = own_dir;

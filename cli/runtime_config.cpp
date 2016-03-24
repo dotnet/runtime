@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "pal.h"
+#include "trace.h"
 #include "utils.h"
 #include "cpprest/json.h"
 #include "runtime_config.h"
@@ -13,6 +14,7 @@ runtime_config_t::runtime_config_t(const pal::string_t& path)
     , m_portable(false)
 {
     m_valid = ensure_parsed();
+    trace::verbose(_X("Runtime config [%s] is valid=[%d]"), path.c_str(), m_valid);
 } 
 
 bool runtime_config_t::parse_opts(const json_value& opts)
@@ -70,6 +72,7 @@ bool runtime_config_t::ensure_parsed()
     pal::ifstream_t file(m_path);
     if (!file.good())
     {
+        trace::verbose(_X("File stream not good %s"), m_path.c_str());
         return false;
     }
 
@@ -85,6 +88,7 @@ bool runtime_config_t::ensure_parsed()
     }
     catch (...)
     {
+        trace::warning(_X("Json exception occurred."));
         return false;
     }
     return true;

@@ -277,6 +277,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
         {
             std::vector<pal::string_t> known_opts = { _X("--depsfile"), _X("--additionalprobingpath") };
 
+            trace::verbose(_X("Exec mode, parsing known args"));
             int num_args = 0;
             std::unordered_map<pal::string_t, pal::string_t> opts;
             if (!parse_known_args(argc - 2, &argv[2], known_opts, &opts, &num_args))
@@ -302,8 +303,11 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             pal::string_t deps_file = opts.count(opts_deps_file) ? opts[opts_deps_file] : _X("");
             pal::string_t probe_path = opts.count(opts_probe_path) ? opts[opts_probe_path] : _X("");
 
+            trace::verbose(_X("Current argv is %s"), argv[cur_i]);
+
             pal::string_t app_or_deps = deps_file.empty() ? argv[cur_i] : deps_file;
-            auto config_file = get_runtime_config_from_file(app_or_deps);
+            pal::string_t no_json = deps_file.empty() ? app_or_deps : strip_file_ext(app_or_deps);
+            auto config_file = get_runtime_config_from_file(no_json);
             runtime_config_t config(config_file);
             if (!config.is_valid())
             {
