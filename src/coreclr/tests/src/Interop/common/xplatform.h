@@ -100,6 +100,15 @@ typedef union tagCY {
 	long int64;
 } CY, CURRENCY;
 
+
+class IUnknown
+{
+public:
+  virtual int  QueryInterface(void* riid,void** ppvObject);
+  virtual unsigned long  AddRef();
+  virtual unsigned long  Release();
+};
+
 #define CoTaskMemAlloc(p) malloc(p)
 #define CoTaskMemFree(p) free(p)
 
