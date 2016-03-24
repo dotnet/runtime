@@ -343,11 +343,38 @@ function create_core_overlay {
     cp -f "$coreFxNativeBinDir/Native/"*."$libExtension" "$coreOverlayDir/" 2>/dev/null
 
     cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
-    cp -f "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
     cp -n "$testDependenciesDir"/* "$coreOverlayDir/" 2>/dev/null
-    if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
-        rm -f "$coreOverlayDir/mscorlib.ni.dll"
-    fi
+}
+
+function precompile_overlay_assemblies {
+
+    if [ $doCrossgen == 1 ]; then
+    
+        local overlayDir=$CORE_ROOT
+        
+        filesToPrecompile=$(ls -trh $overlayDir/*.dll)
+        for fileToPrecompile in ${filesToPrecompile}
+        do
+            local filename=${fileToPrecompile}
+            # Precompile any assembly except mscorlib since we already have its NI image available.
+            if [[ "$filename" != *"mscorlib.dll"* ]]; then
+                if [[ "$filename" != *"mscorlib.ni.dll"* ]]; then
+                    echo Precompiling $filename
+                    $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 2>/dev/null
+                    local exitCode=$?
+                    if [ $exitCode == -2146230517 ]; then
+                        echo $filename is not a managed assembly.    
+                    elif [ $exitCode != 0 ]; then
+                        echo Unable to precompile $filename.
+                    else
+                        echo Successfully precompiled $filename
+                    fi
+                fi
+            fi
+        done
+    else
+        echo Skipping crossgen of FX assemblies.
+    fi    
 }
 
 function copy_test_native_bin_to_test_root {
@@ -627,6 +654,8 @@ coverageOutputDir=
 
 # Handle arguments
 verbose=0
+doCrossGen=0
+
 for i in "$@"
 do
     case $i in
@@ -636,6 +665,9 @@ do
             ;;
         -v|--verbose)
             verbose=1
+            ;;
+        --crossgen)
+            doCrossgen=1
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
@@ -752,6 +784,7 @@ fi
 
 xunit_output_begin
 create_core_overlay
+precompile_overlay_assemblies
 copy_test_native_bin_to_test_root
 load_unsupported_tests
 load_failing_tests
