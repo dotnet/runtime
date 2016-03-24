@@ -13,6 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SocketPerformanceAPMTests.cs" />
     <Compile Include="SocketPerformanceAsyncTests.cs" />
     <Compile Include="SocketTestClientAPMMock.cs" />    
     <Compile Include="SocketTestServerAPMMock.cs" />
@@ -23,9 +24,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
-      <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
       <Link>SocketCommon\SocketTestServerAsync.cs</Link>
