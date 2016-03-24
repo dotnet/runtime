@@ -1054,7 +1054,7 @@ static gboolean use_managed_allocator = TRUE;
 static MonoMethod*
 create_allocator (int atype, gboolean slowpath)
 {
-	int p_var, size_var;
+	int p_var, size_var, real_size_var;
 	guint32 slowpath_branch, max_size_branch;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
@@ -1252,8 +1252,14 @@ create_allocator (int atype, gboolean slowpath)
 		g_assert_not_reached ();
 	}
 
+	if (nursery_canaries_enabled ()) {
+		real_size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		mono_mb_emit_ldloc (mb, size_var);
+		mono_mb_emit_stloc(mb, real_size_var);
 	}
+	else
+		real_size_var = size_var;
+
 	/* size += ALLOC_ALIGN - 1; */
 	mono_mb_emit_ldloc (mb, size_var);
 	mono_mb_emit_icon (mb, SGEN_ALLOC_ALIGN - 1);
@@ -1292,6 +1298,11 @@ create_allocator (int atype, gboolean slowpath)
 	mono_mb_emit_ldloc (mb, size_var);
 	mono_mb_emit_byte (mb, CEE_CONV_I);
 	mono_mb_emit_byte (mb, CEE_ADD);
+
+	if (nursery_canaries_enabled ()) {
+			mono_mb_emit_icon (mb, CANARY_SIZE);
+			mono_mb_emit_byte (mb, CEE_ADD);
+	}
 	mono_mb_emit_stloc (mb, new_next_var);
 
 	/* if (G_LIKELY (new_next < tlab_temp_end)) */
@@ -1308,7 +1319,7 @@ create_allocator (int atype, gboolean slowpath)
 
 	/* FIXME: mono_gc_alloc_obj takes a 'size_t' as an argument, not an int32 */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldloc (mb, size_var);
+	mono_mb_emit_ldloc (mb, real_size_var);
 	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
 		mono_mb_emit_icall (mb, mono_gc_alloc_obj);
 	} else if (atype == ATYPE_VECTOR) {
@@ -1341,6 +1352,17 @@ create_allocator (int atype, gboolean slowpath)
 	mono_mb_emit_ldloc (mb, p_var);
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	/* mark object end with nursery word */
+	if (nursery_canaries_enabled ()) {
+			mono_mb_emit_ldloc (mb, p_var);
+			mono_mb_emit_ldloc (mb, real_size_var);
+			mono_mb_emit_byte (mb, MONO_CEE_ADD);
+			mono_mb_emit_icon8 (mb, (mword) CANARY_STRING);
+			mono_mb_emit_icon (mb, CANARY_SIZE);
+			mono_mb_emit_byte (mb, MONO_CEE_PREFIX1);
+			mono_mb_emit_byte (mb, CEE_CPBLK);
+	}
 
 	if (atype == ATYPE_VECTOR) {
 		/* arr->max_length = max_length; */
@@ -2973,9 +2995,6 @@ mono_gc_base_init (void)
 #endif
 
 	sgen_gc_init ();
-
-	if (nursery_canaries_enabled ())
-		sgen_set_use_managed_allocator (FALSE);
 
 #if defined(HAVE_KW_THREAD)
 	/* This can happen with using libmonosgen.so */
