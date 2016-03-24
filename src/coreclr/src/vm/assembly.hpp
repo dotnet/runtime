@@ -923,32 +923,7 @@ public:
         }
         CONTRACTL_END;
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-        if (IsAssemblyOnList(pAccessingAssembly, m_alPartialAccessFriendAssemblies))
-        {
-            return FriendAccessAppliesTo(pMember) && IsMemberVisibleToFriends(pMember);
-        }
-        else
-#endif // FEATURE_FRAMEWORK_INTERNAL
-            if (IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies))
-        {
-            return true;
-        }
-#if defined(FEATURE_STRONGNAME_TESTKEY_ALLOWED) && defined(FEATURE_FRAMEWORK_INTERNAL)
-        else if (pMember->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly()&&
-                 pAccessingAssembly->GetManifestFile() != NULL &&
-                 pAccessingAssembly->GetManifestFile()->IsProfileTestAssembly())
-        {
-            // Test hook - All platoform assemblies consider any test assembly which is part of the profile to implicitly
-            // be on the friends list.  This allows test access to the framework internal attributes, without
-            // having to add test assemblies to the explicit friend assembly list.
-            return FriendAccessAppliesTo(pMember) && IsMemberVisibleToFriends(pMember);
-        }
-#endif // FEATURE_STRONGNAME_TESTKEY_ALLOWED && FEATURE_FRAMEWORK_INTERNAL
-        else
-        {
-            return false;
-        }
+        return IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies);
     }
 
 #ifndef FEATURE_CORECLR
@@ -967,18 +942,7 @@ public:
         }
         CONTRACTL_END;
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-        if (IsAssemblyOnList(pAccessingAssembly, m_alPartialAccessFriendAssemblies))
-        {
-            return true;
-        }
-        else
-#endif // FEATURE_FRAMEWORK_INTERNAL
-        if (IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies))
-        {
-            return true;
-        }
-        return false;
+        return IsAssemblyOnList(pAccessingAssembly, m_alFullAccessFriendAssemblies);
     }
 #endif // !FEATURE_CORECLR
 
@@ -988,11 +952,6 @@ public:
     }
 
 private:
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    static const LPCSTR AllInternalsVisibleProperty;
-    static const DWORD FriendMemberHashSize = 31;                   // Number of buckets in the friend member hash table
-#endif // FEATURE_FRAMEWORK_INTERNAL
-
 #ifdef FEATURE_FUSION
     typedef IAssemblyName FriendAssemblyName_t;
     typedef NonVMComHolder<IAssemblyName> FriendAssemblyNameHolder;
@@ -1004,43 +963,10 @@ private:
     ArrayList                  m_alFullAccessFriendAssemblies;      // Friend assemblies which have access to all internals
     ArrayList                  m_subjectAssemblies;                 // Subject assemblies which we will not perform access checks against
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    ArrayList                  m_alPartialAccessFriendAssemblies;   // Friend assemblies which have access to only specific internals
-    EEPtrHashTable             m_htFriendMembers;                   // Cache of internal members checked for visibility to friend assemblies
-    Crst                       m_crstFriendMembersCache;            // Critical section guarding m_htFriendMembers
-#endif // FEATURE_FRAMEWORK_INTERNAL
-
     FriendAssemblyDescriptor();
 
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    void AddFriendAssembly(FriendAssemblyName_t *pFriendAssembly, bool fAllInternalsVisible);
-#else // FEATURE_FRAMEWORK_INTERNAL
     void AddFriendAssembly(FriendAssemblyName_t *pFriendAssembly);
-#endif // FEATURE_FRAMEWORK_INTERNAL
     void AddSubjectAssembly(FriendAssemblyName_t *pSubjectAssembly);
-
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    static
-    bool FriendAccessAppliesTo(FieldDesc *pFD);
-
-    static
-    bool FriendAccessAppliesTo(MethodDesc *pMD);
-
-    static
-    bool FriendAccessAppliesTo(MethodTable *pMT);
-
-    static
-    mdToken GetMetadataToken(FieldDesc *pFD);
-
-    static
-    mdToken GetMetadataToken(MethodDesc *pMD);
-
-    static
-    mdToken GetMetadataToken(MethodTable *pMT);
-
-    static
-    bool HasFriendAccessAttribute(IMDInternalImport *pMDImport);
-#endif // FEATURE_FRAMEWORK_INTERNAL
 
     static
     bool IsAssemblyOnList(Assembly *pAssembly, const ArrayList &alAssemblyNames)
@@ -1050,42 +976,6 @@ private:
 
     static
     bool IsAssemblyOnList(PEAssembly *pAssembly, const ArrayList &alAssemblyNames);
-
-#ifdef FEATURE_FRAMEWORK_INTERNAL
-    bool HasFriendAccessAttribute(IMDInternalImport *pMDImport, mdToken tkMember);
-
-    //---------------------------------------------------------------------------------------
-    //
-    // Checks to see if a specific member has the FriendAccessAllowed attribute
-    //
-    //
-
-    template<class T>
-    bool IsMemberVisibleToFriends(T *pMember)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            PRECONDITION(CheckPointer(pMember));
-            PRECONDITION(FriendAccessAppliesTo(pMember));
-        }
-        CONTRACTL_END;
-
-        CrstHolder lock(&m_crstFriendMembersCache);
-
-        HashDatum hd;
-        if (!m_htFriendMembers.GetValue(pMember, &hd))
-        {
-            bool fAllowsAccess = HasFriendAccessAttribute(pMember->GetMDImport(), GetMetadataToken(pMember));
-            hd = reinterpret_cast<HashDatum>(fAllowsAccess);
-            
-            m_htFriendMembers.InsertValue(pMember, hd);
-        }
-
-        return static_cast<bool>(!!hd);
-    }
-#endif // FEATURE_FRAMEWORK_INTERNAL
 };
 
 #endif // !DACCESS_COMPILE
