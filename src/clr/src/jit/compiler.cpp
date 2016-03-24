@@ -4751,20 +4751,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
         }
 #endif // ALT_JIT
 
-#if defined(CROSSGEN_COMPILE) && defined(_TARGET_ARM64_)
-
-        // Make this return conditional, so that we don't get warnings/errors for unreachable code
-        // We expect that compIsForInlining will always be false.
-        if (!compIsForInlining())
-        {
-            // TODO-ARM64-NYI: enable crossgen
-            // This is the Mock-Crossgen fix
-            // We just need crossgen to succeed so that layouts will work, so we always return CORJIT_SKIPPED
-            return CORJIT_SKIPPED;
-        }
-
-#endif  // defined(CROSSGEN_COMPILE) && defined(_TARGET_ARM64_)
-
 #ifdef DEBUG
 
         if (verbose)
