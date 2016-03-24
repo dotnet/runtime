@@ -53,12 +53,14 @@ namespace System.Net.Sockets.Tests
 
         #region Basic Arguments
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void Disposed_Throw()
+        public void Disposed_Throw(SocketImplementationType type)
         {
             int port;
-            using (SocketTestServer.SocketTestServerFactory(_serverAddress, out port))
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
@@ -73,12 +75,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void NullArgs_Throw()
+        public void NullArgs_Throw(SocketImplementationType type)
         {
             int port;
-            using (SocketTestServer.SocketTestServerFactory(_serverAddress, out port))
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
@@ -107,30 +111,36 @@ namespace System.Net.Sockets.Tests
             Assert.Equal("e.SendPacketsElements", ex.ParamName);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void NullList_Throws()
+        public void NullList_Throws(SocketImplementationType type)
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() =>
             {
-                SendPackets((SendPacketsElement[])null, SocketError.Success, 0);
+                SendPackets(type, (SendPacketsElement[])null, SocketError.Success, 0);
             });
 
             Assert.Equal("e.SendPacketsElements", ex.ParamName);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void NullElement_Ignored()
+        public void NullElement_Ignored(SocketImplementationType type)
         {
-            SendPackets((SendPacketsElement)null, 0);
+            SendPackets(type, (SendPacketsElement)null, 0);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void EmptyList_Ignored()
+        public void EmptyList_Ignored(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement[0], SocketError.Success, 0);
+            SendPackets(type, new SendPacketsElement[0], SocketError.Success, 0);
         }
 
         [Fact]
@@ -145,37 +155,47 @@ namespace System.Net.Sockets.Tests
 
         #region Buffers
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void NormalBuffer_Success()
+        public void NormalBuffer_Success(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(new byte[10]), 10);
+            SendPackets(type, new SendPacketsElement(new byte[10]), 10);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void NormalBufferRange_Success()
+        public void NormalBufferRange_Success(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(new byte[10], 5, 5), 5);
+            SendPackets(type, new SendPacketsElement(new byte[10], 5, 5), 5);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void EmptyBuffer_Ignored()
+        public void EmptyBuffer_Ignored(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(new byte[0]), 0);
+            SendPackets(type, new SendPacketsElement(new byte[0]), 0);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void BufferZeroCount_Ignored()
+        public void BufferZeroCount_Ignored(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(new byte[10], 4, 0), 0);
+            SendPackets(type, new SendPacketsElement(new byte[10], 4, 0), 0);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void BufferMixedBuffers_ZeroCountBufferIgnored()
+        public void BufferMixedBuffers_ZeroCountBufferIgnored(SocketImplementationType type)
         {
             SendPacketsElement[] elements = new SendPacketsElement[]
             {
@@ -183,19 +203,21 @@ namespace System.Net.Sockets.Tests
                 new SendPacketsElement(new byte[10], 4, 4),
                 new SendPacketsElement(new byte[10], 0, 4)
             };
-            SendPackets(elements, SocketError.Success, 8);
+            SendPackets(type, elements, SocketError.Success, 8);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void BufferZeroCountThenNormal_ZeroCountIgnored()
+        public void BufferZeroCountThenNormal_ZeroCountIgnored(SocketImplementationType type)
         {
             Assert.True(Capability.IPv6Support());
 
             EventWaitHandle completed = new ManualResetEvent(false);
 
             int port;
-            using (SocketTestServer.SocketTestServerFactory(_serverAddress, out port))
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {
@@ -240,84 +262,102 @@ namespace System.Net.Sockets.Tests
 
         #region Files
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_EmptyFileName_Throws()
+        public void SendPacketsElement_EmptyFileName_Throws(SocketImplementationType type)
         {
             Assert.Throws<ArgumentException>(() =>
             {
-                SendPackets(new SendPacketsElement(String.Empty), 0);
+                SendPackets(type, new SendPacketsElement(String.Empty), 0);
             });
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_BlankFileName_Throws()
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                // Existence is validated on send
-                SendPackets(new SendPacketsElement(" \t  "), 0);
-            });
-        }
-
-        [Fact]
-        [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_BadCharactersFileName_Throws()
+        public void SendPacketsElement_BlankFileName_Throws(SocketImplementationType type)
         {
             Assert.Throws<ArgumentException>(() =>
             {
                 // Existence is validated on send
-                SendPackets(new SendPacketsElement("blarkd@dfa?/sqersf"), 0);
+                SendPackets(type, new SendPacketsElement(" \t  "), 0);
             });
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_MissingDirectoryName_Throws()
+        public void SendPacketsElement_BadCharactersFileName_Throws(SocketImplementationType type)
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // Existence is validated on send
+                SendPackets(type, new SendPacketsElement("blarkd@dfa?/sqersf"), 0);
+            });
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        [ActiveIssue(4007, PlatformID.AnyUnix)]
+        public void SendPacketsElement_MissingDirectoryName_Throws(SocketImplementationType type)
         {
             Assert.Throws<DirectoryNotFoundException>(() =>
             {
                 // Existence is validated on send
-                SendPackets(new SendPacketsElement(@"nodir\nofile"), 0);
+                SendPackets(type, new SendPacketsElement(@"nodir\nofile"), 0);
             });
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_MissingFile_Throws()
+        public void SendPacketsElement_MissingFile_Throws(SocketImplementationType type)
         {
             Assert.Throws<FileNotFoundException>(() =>
             {
                 // Existence is validated on send
-                SendPackets(new SendPacketsElement("DoesntExit"), 0);
+                SendPackets(type, new SendPacketsElement("DoesntExit"), 0);
             });
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_File_Success()
+        public void SendPacketsElement_File_Success(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(TestFileName), s_testFileSize); // Whole File
+            SendPackets(type, new SendPacketsElement(TestFileName), s_testFileSize); // Whole File
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_FileZeroCount_Success()
+        public void SendPacketsElement_FileZeroCount_Success(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(TestFileName, 0, 0), s_testFileSize);  // Whole File
+            SendPackets(type, new SendPacketsElement(TestFileName, 0, 0), s_testFileSize);  // Whole File
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_FilePart_Success()
+        public void SendPacketsElement_FilePart_Success(SocketImplementationType type)
         {
-            SendPackets(new SendPacketsElement(TestFileName, 10, 20), 20);
+            SendPackets(type, new SendPacketsElement(TestFileName, 10, 20), 20);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_FileMultiPart_Success()
+        public void SendPacketsElement_FileMultiPart_Success(SocketImplementationType type)
         {
             SendPacketsElement[] elements = new SendPacketsElement[]
             {
@@ -325,23 +365,27 @@ namespace System.Net.Sockets.Tests
                 new SendPacketsElement(TestFileName, 30, 10),
                 new SendPacketsElement(TestFileName, 0, 10),
             };
-            SendPackets(elements, SocketError.Success, 40);
+            SendPackets(type, elements, SocketError.Success, 40);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_FileLargeOffset_Throws()
+        public void SendPacketsElement_FileLargeOffset_Throws(SocketImplementationType type)
         {
             // Length is validated on Send
-            SendPackets(new SendPacketsElement(TestFileName, 11000, 1), SocketError.InvalidArgument, 0);
+            SendPackets(type, new SendPacketsElement(TestFileName, 11000, 1), SocketError.InvalidArgument, 0);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        public void SendPacketsElement_FileLargeCount_Throws()
+        public void SendPacketsElement_FileLargeCount_Throws(SocketImplementationType type)
         {
             // Length is validated on Send
-            SendPackets(new SendPacketsElement(TestFileName, 5, 10000), SocketError.InvalidArgument, 0);
+            SendPackets(type, new SendPacketsElement(TestFileName, 5, 10000), SocketError.InvalidArgument, 0);
         }
 
         #endregion Files
@@ -364,24 +408,24 @@ namespace System.Net.Sockets.Tests
 
         #region Helpers
 
-        private void SendPackets(SendPacketsElement element, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement element, int bytesExpected)
         {
-            SendPackets(new SendPacketsElement[] { element }, SocketError.Success, bytesExpected);
+            SendPackets(type, new SendPacketsElement[] { element }, SocketError.Success, bytesExpected);
         }
 
-        private void SendPackets(SendPacketsElement element, SocketError expectedResut, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement element, SocketError expectedResut, int bytesExpected)
         {
-            SendPackets(new SendPacketsElement[] { element }, expectedResut, bytesExpected);
+            SendPackets(type, new SendPacketsElement[] { element }, expectedResut, bytesExpected);
         }
 
-        private void SendPackets(SendPacketsElement[] elements, SocketError expectedResut, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement[] elements, SocketError expectedResut, int bytesExpected)
         {
             Assert.True(Capability.IPv6Support());
 
             EventWaitHandle completed = new ManualResetEvent(false);
 
             int port;
-            using (SocketTestServer.SocketTestServerFactory(_serverAddress, out port))
+            using (SocketTestServer.SocketTestServerFactory(type, _serverAddress, out port))
             {
                 using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
                 {

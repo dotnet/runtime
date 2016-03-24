@@ -28,15 +28,143 @@ namespace System.Net.Sockets.Tests
             complete.Set();
         }
 
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Socket_ConnectDnsEndPoint_Success(SocketImplementationType type)
+        {
+            int port;
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
+
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            sock.Connect(new DnsEndPoint("localhost", port));
+
+            sock.Dispose();
+            server.Dispose();
+        }
+
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Socket_ConnectDnsEndPoint_Failure()
+        {
+            using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // TODO: Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
+                SocketException ex = Assert.ThrowsAny<SocketException>(() =>
+                {
+                    sock.Connect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort));
+                });
+
+                SocketError errorCode = ex.SocketErrorCode;
+                Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
+                    "SocketErrorCode: {0}" + errorCode);
+
+                // TODO: Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
+                ex = Assert.ThrowsAny<SocketException>(() =>
+                {
+                    sock.Connect(new DnsEndPoint("localhost", UnusedPort));
+                });
+
+                Assert.Equal(SocketError.ConnectionRefused, ex.SocketErrorCode);
+            }
+        }
+
+        [Fact]
+        public void Socket_SendToDnsEndPoint_ArgumentException()
+        {
+            using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    sock.SendTo(new byte[10], new DnsEndPoint("localhost", UnusedPort));
+                });
+            }
+        }
+
+        [Fact]
+        public void Socket_ReceiveFromDnsEndPoint_ArgumentException()
+        {
+            using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                int port = sock.BindToAnonymousPort(IPAddress.Loopback);
+                EndPoint endpoint = new DnsEndPoint("localhost", port);
+
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    sock.ReceiveFrom(new byte[10], ref endpoint);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Socket_BeginConnectDnsEndPoint_Success(SocketImplementationType type)
+        {
+            int port;
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
+
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", port), null, null);
+            sock.EndConnect(result);
+
+            sock.Dispose();
+            server.Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Socket_BeginConnectDnsEndPoint_Failure()
+        {
+            using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                // TODO: Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
+                SocketException ex = Assert.ThrowsAny<SocketException>(() =>
+                {
+                    IAsyncResult result = sock.BeginConnect(new DnsEndPoint("notahostname.invalid.corp.microsoft.com", UnusedPort), null, null);
+                    sock.EndConnect(result);
+                });
+
+                SocketError errorCode = ex.SocketErrorCode;
+                Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
+                    "SocketErrorCode: {0}" + errorCode);
+
+                // TODO: Behavior difference from .Net Desktop. This will actually throw InternalSocketException.
+                ex = Assert.ThrowsAny<SocketException>(() =>
+                {
+                    IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", UnusedPort), null, null);
+                    sock.EndConnect(result);
+                });
+
+                Assert.Equal(SocketError.ConnectionRefused, ex.SocketErrorCode);
+            }
+        }
+
+        [Fact]
+        public void Socket_BeginSendToDnsEndPoint_ArgumentException()
+        {
+            using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    sock.BeginSendTo(new byte[10], 0, 0, SocketFlags.None, new DnsEndPoint("localhost", UnusedPort), null, null);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]
         [PlatformSpecific(PlatformID.Windows)]
-        public void Socket_ConnectAsyncDnsEndPoint_Success()
+        public void Socket_ConnectAsyncDnsEndPoint_Success(SocketImplementationType type)
         {
             Assert.True(Capability.IPv4Support());
 
             int port;
-            SocketTestServer server = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
+            SocketTestServer server = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("localhost", port);
@@ -46,9 +174,12 @@ namespace System.Net.Sockets.Tests
             args.UserToken = complete;
 
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Assert.True(sock.ConnectAsync(args));
 
-            complete.WaitOne();
+            bool willRaiseEvent = sock.ConnectAsync(args);
+            if (willRaiseEvent)
+            {
+                Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
+            }
 
             Assert.Equal(SocketError.Success, args.SocketError);
             Assert.Null(args.ConnectByNameError);
@@ -77,7 +208,7 @@ namespace System.Net.Sockets.Tests
             bool willRaiseEvent = sock.ConnectAsync(args);
             if (willRaiseEvent)
             {
-                complete.WaitOne();
+                Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
             }
 
             AssertHostNotFoundOrNoData(args);
@@ -105,7 +236,7 @@ namespace System.Net.Sockets.Tests
             bool willRaiseEvent = sock.ConnectAsync(args);
             if (willRaiseEvent)
             {
-                complete.WaitOne();
+                Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
             }
 
             Assert.Equal(SocketError.ConnectionRefused, args.SocketError);
@@ -116,22 +247,22 @@ namespace System.Net.Sockets.Tests
             sock.Dispose();
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(SocketImplementationType.APM)]
+        [InlineData(SocketImplementationType.Async)]
         [Trait("IPv4", "true")]
         [Trait("IPv6", "true")]
         [ActiveIssue(4002, PlatformID.AnyUnix)]
-        public void Socket_StaticConnectAsync_Success()
+        public void Socket_StaticConnectAsync_Success(SocketImplementationType type)
         {
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
 
-            int port;
-            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(IPAddress.Loopback, out port);
-
-            int port6;
-            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(IPAddress.IPv6Loopback, out port6);
+            int port4, port6;
+            SocketTestServer server4 = SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port4);
+            SocketTestServer server6 = SocketTestServer.SocketTestServerFactory(type, IPAddress.IPv6Loopback, out port6);
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new DnsEndPoint("localhost", port);
+            args.RemoteEndPoint = new DnsEndPoint("localhost", port4);
             args.Completed += OnConnectAsyncCompleted;
 
             ManualResetEvent complete = new ManualResetEvent(false);
@@ -139,7 +270,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
 
-            complete.WaitOne();
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
 
             Assert.Equal(SocketError.Success, args.SocketError);
             Assert.Null(args.ConnectByNameError);
@@ -154,7 +285,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args));
 
-            complete.WaitOne();
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
 
             Assert.Equal(SocketError.Success, args.SocketError);
             Assert.Null(args.ConnectByNameError);
@@ -184,7 +315,7 @@ namespace System.Net.Sockets.Tests
                 OnConnectAsyncCompleted(null, args);
             }
 
-            complete.WaitOne();
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
 
             AssertHostNotFoundOrNoData(args);
 
@@ -209,7 +340,7 @@ namespace System.Net.Sockets.Tests
                 OnConnectAsyncCompleted(null, args);
             }
 
-            complete.WaitOne();
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
 
             Assert.Equal(SocketError.ConnectionRefused, args.SocketError);
             Assert.True(args.ConnectByNameError is SocketException);
@@ -228,7 +359,7 @@ namespace System.Net.Sockets.Tests
         [Trait("IPv6", "true")]
         public void Socket_StaticConnectAsync_SyncFailure()
         {
-            Assert.True(Capability.IPv6Support());
+            Assert.True(Capability.IPv6Support()); // IPv6 required because we use AF.InterNetworkV6
 
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("127.0.0.1", UnusedPort, AddressFamily.InterNetworkV6);
@@ -249,7 +380,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(args.ConnectByNameError is SocketException);
             errorCode = ((SocketException)args.ConnectByNameError).SocketErrorCode;
             Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
-                "SocketError " + errorCode);
+                "SocketError: " + errorCode);
         }
 
         #region GC Finalizer test
