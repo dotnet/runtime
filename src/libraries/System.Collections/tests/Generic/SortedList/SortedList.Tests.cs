@@ -118,6 +118,14 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void CantAcceptDuplicateKeysFromSourceDictionary()
+        {
+            Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };
+            Assert.Throws<ArgumentException>(null, () => new SortedList<string, int>(source, StringComparer.OrdinalIgnoreCase));
+        }
+
+
         #endregion
 
         #region ICollection tests
