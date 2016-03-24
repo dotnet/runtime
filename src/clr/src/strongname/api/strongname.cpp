@@ -317,8 +317,6 @@ SN_REVOCATION_REC *g_pRevocationRecords = NULL;
 
 
 
-#include "thetestkey.h"
-
 #ifndef DACCESS_COMPILE
 
 // The actions that can be performed upon opening a CSP with LocateCSP.
