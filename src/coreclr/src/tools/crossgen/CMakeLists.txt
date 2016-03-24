@@ -57,13 +57,9 @@ else()
         shlwapi
         bcrypt
         mdwinmd_crossgen
-        ${STATIC_MT_CRT_LIB}
+        msvcrt
     )
 
-    # ARM64_TODO: Enable this for Windows Arm64
-    if (NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
-        target_link_libraries(crossgen ${STATIC_MT_VCRT_LIB})
-    endif()
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(../../zap/crossgen ../../zap/crossgen)
