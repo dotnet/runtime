@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
 
         private const string SoftHyphen = "\u00AD";
         
-        public static IEnumerable<object[]> Compare_Basic_TestData()
+        public static IEnumerable<object[]> Compare_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", ignoreKanaIgnoreWidthIgnoreCase, 0 };
@@ -223,40 +223,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
         }
 
-        public static IEnumerable<object[]> Compare_Random_TestData()
-        {
-            string[] interestingStrings = new string[] { null, "", "a", "1", "-", "A", "!", "abc", "aBc", "a\u0400Bc", "I", "i", "\u0130", "\u0131", "A", "\uFF21", "\uFE57" };
-            foreach (string string1 in interestingStrings)
-            {
-                foreach (string string2 in interestingStrings)
-                {
-                    yield return new object[] { s_currentCompare, string1, string2, CompareOptions.Ordinal, PredictCompareOrdinalResult(string1, string2) };
-                }
-            }
-
-            for (int i = 0; i < 40; i++)
-            {
-                char c = s_randomDataGenerator.GetChar(-55);
-                yield return new object[] { s_currentCompare, new string(c, 1), new string(c, 1), CompareOptions.Ordinal, 0 };
-                for (int j = 0; j < c; j++)
-                {
-                    yield return new object[] { s_currentCompare, new string(c, 1), new string((char)j, 1), CompareOptions.Ordinal, 1 };
-                }
-            }
-
-            for (int i = 0; i < 1000; i++)
-            {
-                string string1 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                string string2 = s_randomDataGenerator.GetString(-55, false, 5, 20);
-                yield return new object[] { s_currentCompare, string1, string1, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string2, string2, CompareOptions.Ordinal, 0 };
-                yield return new object[] { s_currentCompare, string1, string2, CompareOptions.Ordinal, PredictCompareOrdinalResult(string1, string2) };
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(Compare_Basic_TestData))]
-        [MemberData(nameof(Compare_Random_TestData))]
+        [MemberData(nameof(Compare_TestData))]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             Compare(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
