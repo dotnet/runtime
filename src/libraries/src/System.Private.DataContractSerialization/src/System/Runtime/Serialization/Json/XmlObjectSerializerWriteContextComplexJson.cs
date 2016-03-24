@@ -341,7 +341,7 @@ namespace System.Runtime.Serialization.Json
                 oldItemContract.UnderlyingType.GetTypeInfo().IsGenericType &&
                 (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
             {
-                return ClassDataContract.CreateClassDataContractForKeyValue(oldItemContract.UnderlyingType, oldItemContract.Namespace, new string[] { JsonGlobals.KeyString, JsonGlobals.ValueString });
+                return DataContract.GetDataContract(oldItemContract.UnderlyingType);
             }
             return oldItemContract;
         }
