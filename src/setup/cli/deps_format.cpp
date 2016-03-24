@@ -336,7 +336,10 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
         const auto json = json_value::parse(file);
 
         const auto& runtime_target = json.at(_X("runtimeTarget"));
-        const pal::string_t& name = runtime_target.as_string();
+
+        const pal::string_t& name = runtime_target.is_string()?
+            runtime_target.as_string():
+            runtime_target.at(_X("name")).as_string();
 
         trace::verbose(_X("Loading deps file... %s as portable=[%d]"), deps_path.c_str(), portable);
 
