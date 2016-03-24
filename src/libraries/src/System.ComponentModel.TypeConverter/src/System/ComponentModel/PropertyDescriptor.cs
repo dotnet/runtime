@@ -148,8 +148,8 @@ namespace System.ComponentModel
         /// </devdoc>
         public virtual void AddValueChanged(object component, EventHandler handler)
         {
-            if (component == null) throw new ArgumentNullException("component");
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             if (_valueChangedHandlers == null)
             {
@@ -456,8 +456,8 @@ namespace System.ComponentModel
         /// </devdoc>
         public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
-            if (component == null) throw new ArgumentNullException("component");
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             if (_valueChangedHandlers != null)
             {

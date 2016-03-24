@@ -630,8 +630,8 @@ namespace System.ComponentModel
         /// </devdoc>
         public override void AddValueChanged(object component, EventHandler handler)
         {
-            if (component == null) throw new ArgumentNullException("component");
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             // If there's an event called <propertyname>Changed, hook the caller's handler directly up to that on the component
             EventDescriptor changedEvent = ChangedEventValue;
@@ -1148,8 +1148,8 @@ namespace System.ComponentModel
         /// </devdoc>
         public override void RemoveValueChanged(object component, EventHandler handler)
         {
-            if (component == null) throw new ArgumentNullException("component");
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (component == null) throw new ArgumentNullException(nameof(component));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             // If there's an event called <propertyname>Changed, we hooked the caller's
             // handler directly up to that on the component, so remove it now.

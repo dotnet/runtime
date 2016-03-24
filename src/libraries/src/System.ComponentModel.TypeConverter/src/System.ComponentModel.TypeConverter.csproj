@@ -31,13 +31,13 @@
     <!--<Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />-->
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
     <!--<Compile Include="System\ComponentModel\CultureInfoConverter.cs" />-->
-    <!--<Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
     <Compile Include="System\ComponentModel\DefaultEventAttribute.cs" />
     <Compile Include="System\ComponentModel\DefaultPropertyAttribute.cs" />
-    <!--<Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />-->
+    <Compile Include="System\ComponentModel\DelegatingTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibility.cs" />
     <Compile Include="System\ComponentModel\DesignerSerializationVisibilityAttribute.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
@@ -59,7 +59,7 @@
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <!--<Compile Include="System\ComponentModel\IListSource.cs" />-->
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
-    <!--<Compile Include="System\ComponentModel\ITypeDescriptorFilterService.cs" />-->
+    <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
     <!--<Compile Include="System\ComponentModel\ITypedList.cs" />-->
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
     <Compile Include="System\ComponentModel\MultilineStringConverter.cs" />
@@ -70,8 +70,8 @@
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
     <!--<Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />-->
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
-    <!--<Compile Include="System\ComponentModel\RefreshEventArgs.cs" />-->
-    <!--<Compile Include="System\ComponentModel\RefreshEventHandler.cs" />-->
+    <Compile Include="System\ComponentModel\RefreshEventArgs.cs" />
+    <Compile Include="System\ComponentModel\RefreshEventHandler.cs" />
     <Compile Include="System\ComponentModel\SByteConverter.cs" />
     <Compile Include="System\ComponentModel\SingleConverter.cs" />
     <Compile Include="System\ComponentModel\StringConverter.cs" />
@@ -79,13 +79,13 @@
     <Compile Include="System\ComponentModel\TypeConverter.cs" />
     <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptor.cs" />
-    <!--<Compile Include="System\ComponentModel\TypeDescriptionProvider.cs" />-->
+    <Compile Include="System\ComponentModel\TypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeListConverter.cs" />
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
-    <!--<Compile Include="System\ComponentModel\WeakHashtable.cs" />-->
+    <Compile Include="System\ComponentModel\WeakHashtable.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj">
