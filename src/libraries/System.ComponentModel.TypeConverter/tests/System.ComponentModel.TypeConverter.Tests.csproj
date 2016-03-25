@@ -27,6 +27,7 @@
     <Compile Include="CharConverterTests.cs" />
     <Compile Include="CollectionConverterTests.cs" />
     <Compile Include="ConverterTestBase.cs" />
+    <Compile Include="CustomTypeDescriptorTests.cs" />
     <Compile Include="DateTimeConverterTests.cs" />
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
@@ -41,6 +42,8 @@
     <Compile Include="Int32ConverterTests.cs" />
     <Compile Include="Int64ConverterTests.cs" />
     <Compile Include="MemberDescriptorTests.cs" />
+    <Compile Include="Mocks\MockEventDescriptor.cs" />
+    <Compile Include="Mocks\MockPropertyDescriptor.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />
