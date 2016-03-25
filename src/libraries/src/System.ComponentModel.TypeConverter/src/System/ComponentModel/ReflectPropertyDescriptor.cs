@@ -992,7 +992,7 @@ namespace System.ComponentModel
 
                 try
                 {
-                    GetMethodValue.Invoke(component, null);
+                    return GetMethodValue.Invoke(component, null);
                 }
                 catch (Exception t)
                 {
