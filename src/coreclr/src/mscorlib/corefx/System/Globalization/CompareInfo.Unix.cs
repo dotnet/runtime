@@ -252,6 +252,11 @@ namespace System.Globalization
             Contract.Assert(source != null);
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+            if (source.Length == 0)
+            {
+                return 0;
+            }
+
             int sortKeyLength = Interop.GlobalizationInterop.GetSortKey(m_sortHandle, source, source.Length, null, 0, options);
 
             // As an optimization, for small sort keys we allocate the buffer on the stack.
