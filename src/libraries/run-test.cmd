@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 
 :: To run tests outside of MSBuild.exe
 :: %1 is the path to the tests\<OSConfig> folder
