@@ -1686,6 +1686,9 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 static void
 asm_writer_emit_start (MonoImageWriter *acfg)
 {
+#if defined(TARGET_ASM_APPLE)
+	fprintf (acfg->fp, ".subsections_via_symbols\n");
+#endif
 }
 
 static int
