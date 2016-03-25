@@ -642,8 +642,11 @@ unsigned            Compiler::s_compMethodsCount = 0; // to produce unique label
 
 /* static */
 bool                Compiler::s_dspMemStats = false;
-bool                Compiler::s_inlDumpDataHeader = false;
 #endif
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+bool                Compiler::s_inlDumpDataHeader = false;
+#endif // if defined(DEBUG) || defined(INLINE_DATA)
 
 #ifndef DEBUGGING_SUPPORT
 /* static */
@@ -1265,9 +1268,9 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     // Set the inline info.
     impInlineInfo    = inlineInfo;
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
     inlLastSuccessfulPolicy = nullptr;
-#endif
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     eeInfoInitialized = false;
 
@@ -3969,9 +3972,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary);
 #endif
 
-#ifdef FEATURE_CLRSQM
-    RecordSqmStateAtEndOfCompilation();
-#endif // FEATURE_CLRSQM
+    RecordStateAtEndOfCompilation();
 
 #ifdef FEATURE_TRACELOGGING
     compJitTelemetry.NotifyEndOfCompilation();
@@ -4468,6 +4469,79 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 
+#if defined(DEBUG) || defined(INLINE_DATA)
+
+    // Inliner data display
+    if (JitConfig.JitInlineDumpData() != 0)
+    {
+        // Don't dump anything if limiting is on and we didn't reach
+        // the limit while inlining.
+        //
+        // This serves to filter out duplicate data.
+        const int limit = JitConfig.JitInlineLimit();
+
+        if ((limit < 0) || (fgInlinedCount == static_cast<unsigned>(limit)))
+        {
+            // If there weren't any successful inlines (no limit, or
+            // limit=0 case), we won't have a successful policy, so
+            // fake one up.
+            if (inlLastSuccessfulPolicy == nullptr)
+            {
+                assert(limit <= 0);
+                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
+                inlLastSuccessfulPolicy = InlinePolicy::GetPolicy(this, isPrejitRoot);
+
+                // Add in a bit of data....
+                const bool isForceInline = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
+                inlLastSuccessfulPolicy->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
+                inlLastSuccessfulPolicy->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, info.compMethodInfo->ILCodeSize);
+            }
+
+            if (!s_inlDumpDataHeader)
+            {
+                if (limit == 0)
+                {
+                    fprintf(stderr, "*** Inline Data: Policy=%s JitInlineLimit=%d ***\n",
+                                inlLastSuccessfulPolicy->GetName(),
+                                limit);
+                    fprintf(stderr, "Method,Version,HotSize,ColdSize,JitTime");
+                    inlLastSuccessfulPolicy->DumpSchema(stderr);
+                    fprintf(stderr, "\n");
+                }
+
+                s_inlDumpDataHeader = true;
+            }
+
+            // We'd really like the method identifier to be unique and
+            // durable across crossgen invocations. Not clear how to
+            // accomplish this, so we'll use the token for now.
+            //
+            // Post processing will have to filter out all data from
+            // methods where the root entry appears multiple times.
+            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
+
+            // Convert time spent jitting into milliseconds
+            unsigned microsecondsSpentJitting = 0;
+            if (m_compCycles > 0)
+            {
+                double countsPerSec = CycleTimer::CyclesPerSecond();
+                double counts = (double) m_compCycles;
+                microsecondsSpentJitting = (unsigned) ((counts / countsPerSec) * 1000 * 1000);
+            }
+
+            fprintf(stderr, "%08X,%u,%u,%u,%u",
+                        currentMethodToken,
+                        fgInlinedCount,
+                        info.compTotalHotCodeSize,
+                        info.compTotalColdCodeSize,
+                        microsecondsSpentJitting);
+            inlLastSuccessfulPolicy->DumpData(stderr);
+            fprintf(stderr, "\n");
+        }
+    }
+
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
 #ifdef DEBUG
     if (opts.dspOrder)
     {
@@ -4576,61 +4650,6 @@ void Compiler::compCompileFinish()
         printf("");         // in our logic this causes a flush
     }
 
-    // Inliner data display
-    if (JitConfig.JitInlineDumpData() != 0)
-    {
-        // Don't dump anything if limiting is on and we didn't reach
-        // the limit while inlining.
-        //
-        // This serves to filter out duplicate data.
-        const int limit = JitConfig.JitInlineLimit();
-
-        if ((limit < 0) || (fgInlinedCount == static_cast<unsigned>(limit)))
-        {
-            // If there weren't any successful inlines (no limit, or
-            // limit=0 case), we won't have a successful policy, so
-            // fake one up.
-            if (inlLastSuccessfulPolicy == nullptr)
-            {
-                assert(limit <= 0);
-                const bool isPrejitRoot = (opts.eeFlags & CORJIT_FLG_PREJIT) != 0;
-                inlLastSuccessfulPolicy = InlinePolicy::GetPolicy(this, isPrejitRoot);
-            }
-            
-            if (!s_inlDumpDataHeader)
-            {
-                if (limit == 0)
-                {
-                    printf("*** Inline Data: Policy=%s JitInlineLimit=%d ***\n", 
-                           inlLastSuccessfulPolicy->GetName(),
-                           limit);
-                    printf("Method,Version,HotSize,ColdSize,JitTime");
-                    inlLastSuccessfulPolicy->DumpSchema();
-                    printf("\n");
-                }
-                
-                s_inlDumpDataHeader = true;
-            }
-
-            // We'd really like the method identifier to be unique and
-            // durable across crossgen invocations. Not clear how to
-            // accomplish this, so we'll use the token for now.
-            //
-            // Post processing will have to filter out all data from
-            // methods where the root entry appears multiple times.
-            mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-            printf("%08X,%u,%u,%u,%u",
-                   currentMethodToken,
-                   fgInlinedCount,
-                   info.compTotalHotCodeSize,
-                   info.compTotalColdCodeSize,
-                   0);
-            inlLastSuccessfulPolicy->DumpData();
-            printf("\n");
-        }
-    }
-    
     // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
     // For ngen the int3 or breakpoint instruction will be right at the 
     // start of the ngen method and we will stop when we execute it.
@@ -6812,26 +6831,53 @@ void Compiler::PrintPerMethodLoopHoistStats()
 }
 #endif // LOOP_HOIST_STATS
 
-#ifdef FEATURE_CLRSQM
-void Compiler::RecordSqmStateAtEndOfInlining()
+//------------------------------------------------------------------------
+// RecordStateAtEndOfInlining: capture timing data (if enabled) after
+// inlining as completed.
+//
+// Note:
+// Records data needed for SQM and inlining data dumps.  Should be
+// called after inlining is complete.  (We do this after inlining
+// because this marks the last point at which the JIT is likely to
+// cause type-loading and class initialization).
+
+void Compiler::RecordStateAtEndOfInlining()
 {
-    m_compCyclesAtEndOfInlining;
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+
+    m_compCyclesAtEndOfInlining = 0;
+    m_compTickCountAtEndOfInlining = 0;
     bool b = CycleTimer::GetThreadCyclesS(&m_compCyclesAtEndOfInlining);
     if (!b) return; // We don't have a thread cycle counter.
     m_compTickCountAtEndOfInlining = GetTickCount();
+
+#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
 }
 
+//------------------------------------------------------------------------
+// RecordStateAtEndOfCompilation: capture timing data (if enabled) after
+// compilation is completed.
 
-void Compiler::RecordSqmStateAtEndOfCompilation()
+void Compiler::RecordStateAtEndOfCompilation()
 {
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+
+    // Common portion
+    m_compCycles = 0;
     unsigned __int64 compCyclesAtEnd;
     bool b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
     if (!b) return; // We don't have a thread cycle counter.
     assert(compCyclesAtEnd >= m_compCyclesAtEndOfInlining);
 
-    unsigned __int64 compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
-    unsigned __int64 mcycles64 = compCycles / ((unsigned __int64)1000000);
-    unsigned mcycles = 0;
+    m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
+
+#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+
+#ifdef FEATURE_CLRSQM
+
+    // SQM only portion
+    unsigned __int64 mcycles64 = m_compCycles / ((unsigned __int64)1000000);
+    unsigned mcycles;
     if (mcycles64 > UINT32_MAX)
     {
         mcycles = UINT32_MAX;
@@ -6840,6 +6886,7 @@ void Compiler::RecordSqmStateAtEndOfCompilation()
     {
         mcycles = (unsigned)mcycles64;
     }
+
     DWORD ticksAtEnd = GetTickCount();
     assert(ticksAtEnd >= m_compTickCountAtEndOfInlining);
     DWORD compTicks = ticksAtEnd - m_compTickCountAtEndOfInlining;
@@ -6853,9 +6900,9 @@ void Compiler::RecordSqmStateAtEndOfCompilation()
                             opts.MinOpts(),
                             info.compMethodHnd);
     }
-};
 
 #endif // FEATURE_CLRSQM
+}
 
 #if FUNC_INFO_LOGGING
 // static
