@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Capture OSGroup passed to command line for setting default FilterToOSGroup value below -->
+    <_OriginalOSGroup>$(OSGroup)</_OriginalOSGroup>
+  </PropertyGroup>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  
+  <PropertyGroup>
+    <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
+  </PropertyGroup>
+  
   <ItemGroup>
     <ExcludeProjects Condition="'$(OSEnvironment)'!='Windows_NT'" Include="**\Microsoft.VisualBasic.Tests.csproj" />
     <ExcludeProjects Condition="'$(OSGroup)'=='Windows_NT'" Include="**\System.Security.Cryptography.OpenSsl.Tests.csproj" />
