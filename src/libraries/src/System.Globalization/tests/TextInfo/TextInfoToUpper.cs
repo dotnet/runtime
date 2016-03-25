@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void ToUpper_Null_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new CultureInfo("en-US").TextInfo.ToUpper(null));
+            Assert.Throws<ArgumentNullException>("str", () => new CultureInfo("en-US").TextInfo.ToUpper(null));
         }
     }
 }
