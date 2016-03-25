@@ -4752,7 +4752,10 @@ ARG_WRITE:
                     return;
                 }
             }
-            else
+
+            // In non-inline cases, note written-to locals.
+
+            if (!isInlining)
             {
                 noway_assert(sz == sizeof(BYTE) || sz == sizeof(WORD));
                 if (codeAddr > codeEndp - sz)
