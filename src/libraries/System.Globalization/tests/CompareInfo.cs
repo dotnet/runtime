@@ -289,7 +289,6 @@ public partial class CompareInfoTests
     }
 
     [Fact]
-    [ActiveIssue(5463, PlatformID.AnyUnix)]
     public static void GetHashCodeOfString()
     {
         CompareInfo ci = CultureInfo.InvariantCulture.CompareInfo;

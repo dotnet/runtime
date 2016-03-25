@@ -25,7 +25,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // GetEnvironmentVariable by design doesn't respect changes via setenv
         public void RandomLongVariableNameCanRoundTrip()
         {
             // NOTE: The limit of 32766 characters enforced by desktop
