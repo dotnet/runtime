@@ -302,15 +302,15 @@ void deps_resolver_t::resolve_tpa_list(
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
-        // Is this entry present in the given dir?
-        else if (dir_assemblies.count(entry.asset_name))
-        {
-            add_tpa_asset(entry.asset_name, dir_assemblies.find(entry.asset_name)->second, &items, output);
-        }
-        // The app is portable so the asset should be picked up from relative subpath.
+        // The app is portable so the rid asset should be picked up from relative subpath.
         else if (is_portable && deps->try_ni(entry).to_full_path(app_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
+        }
+        // The app is portable, but there could be a rid-less asset in the app base.
+        else if (dir_assemblies.count(entry.asset_name))
+        {
+            add_tpa_asset(entry.asset_name, dir_assemblies.find(entry.asset_name)->second, &items, output);
         }
         // Is this entry present in the package restore dir?
         else if (!package_dir.empty() && deps->try_ni(entry).to_full_path(package_dir, &candidate))
@@ -323,10 +323,6 @@ void deps_resolver_t::resolve_tpa_list(
     std::for_each(deps_entries.begin(), deps_entries.end(), [&](const deps_entry_t& entry) {
         process_entry(m_portable, m_deps.get(), m_local_assemblies, entry);
     });
-    const auto& fx_entries = m_portable ? m_fx_deps->get_entries(deps_entry_t::asset_types::runtime) : empty;
-    std::for_each(fx_entries.begin(), fx_entries.end(), [&](const deps_entry_t& entry) {
-        process_entry(false, m_fx_deps.get(), m_fx_assemblies, entry);
-    });
 
     // Finally, if the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
@@ -334,6 +330,12 @@ void deps_resolver_t::resolve_tpa_list(
     {
         add_tpa_asset(kv.first, kv.second, &items, output);
     }
+
+    const auto& fx_entries = m_portable ? m_fx_deps->get_entries(deps_entry_t::asset_types::runtime) : empty;
+    std::for_each(fx_entries.begin(), fx_entries.end(), [&](const deps_entry_t& entry) {
+        process_entry(false, m_fx_deps.get(), m_fx_assemblies, entry);
+    });
+
     for (const auto& kv : m_fx_assemblies)
     {
         add_tpa_asset(kv.first, kv.second, &items, output);
