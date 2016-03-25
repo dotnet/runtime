@@ -70,8 +70,6 @@ CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,    "Local var liveness init",     
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_PERBLOCK,"Per block local var liveness",   "LIV-BLK",  false, PHASE_LCLVARLIVENESS)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INTERBLOCK,  "Global local var liveness",  "LIV-GLBL", false, PHASE_LCLVARLIVENESS)
 
-CompPhaseNameMacro(PHASE_LVA_ADJUST_REF_COUNTS,  "LVA adjust ref counts",          "REF-CNT",  false, -1)
-
 #ifdef LEGACY_BACKEND
 CompPhaseNameMacro(PHASE_RA_ASSIGN_VARS,         "RA assign vars",                 "REGALLOC", false, -1)
 #endif // LEGACY_BACKEND
