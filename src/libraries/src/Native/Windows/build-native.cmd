@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal
 
 :SetupArgs

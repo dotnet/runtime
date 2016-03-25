@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 rem
 rem This file invokes cmake and generates the build system for windows.
 set argC=0

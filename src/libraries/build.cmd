@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal
 
 :: Note: We've disabled node reuse because it causes file locking issues.
