@@ -7,12 +7,12 @@
     "NuGet.RuntimeModel": "3.5.0-beta-1068",
     "NuGet.Versioning": "3.5.0-beta-1068",
     "System.CommandLine": "0.1.0-e160119-1",
-    "System.Runtime.Serialization.Json": "4.0.2-rc2-23924",
+    "System.Runtime.Serialization.Json": "4.0.2-rc2-23925",
     "Microsoft.DotNet.ProjectModel": "1.0.0-*",
     "Microsoft.DotNet.Cli.Utils": "1.0.0-*",
     "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16537",
-    "Microsoft.NETCore.ConsoleHost": "1.0.0-rc2-23924",
-    "NETStandard.Library": "1.5.0-rc2-23924"
+    "Microsoft.NETCore.ConsoleHost": "1.0.0-rc2-23925",
+    "NETStandard.Library": "1.5.0-rc2-23925"
   },
   "frameworks": {
     "netstandardapp1.5": {
