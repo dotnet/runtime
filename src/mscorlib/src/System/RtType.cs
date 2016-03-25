@@ -476,11 +476,7 @@ namespace System
                                     Volatile.Write(ref m_cacheComplete, true);
                                 }
                                 else
-// We want the behavior where the results are returned in the same order
-#if !FEATURE_CORECLR
-                                else
-#endif
-                                list = m_allMembers;
+                                    list = m_allMembers;
                                 break;
 
                             default:
