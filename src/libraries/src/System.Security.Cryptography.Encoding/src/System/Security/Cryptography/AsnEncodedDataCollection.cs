@@ -85,7 +85,15 @@ namespace System.Security.Cryptography
 
         public void CopyTo(AsnEncodedData[] array, int index)
         {
-            ((ICollection)this).CopyTo(array, index);
+            // Need to do part of the argument validation ourselves as AsnEncodedDataCollection throws
+            // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
+
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+            if (index < 0 || index >= array.Length)
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+
+             _list.CopyTo(array, index);
         }
 
         bool ICollection.IsSynchronized
