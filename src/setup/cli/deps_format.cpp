@@ -97,6 +97,16 @@ void deps_json_t::reconcile_libraries_with_targets(
                         entry.relative_path.c_str());
                 }
 
+                if (i == deps_entry_t::asset_types::native &&
+                        entry.asset_name == LIBHOSTPOLICY_FILENAME)
+                {
+                    m_hostpolicy_index = m_deps_entries[i].size() - 1;
+                    trace::verbose(_X("Found hostpolicy from deps %d [%s, %s, %s]"),
+                        m_hostpolicy_index,
+                        entry.library_name.c_str(),
+                        entry.library_version.c_str(),
+                        entry.relative_path.c_str());
+                }
             }
         }
     }

@@ -12,6 +12,7 @@
 #include "runtime_config.h"
 #include "cpprest/json.h"
 #include "error_codes.h"
+#include "deps_format.h"
 
 pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime_config_t* runtime)
 {
@@ -23,7 +24,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     fx_ver_t specified(-1, -1, -1);
     if (!fx_ver_t::parse(fx_ver, &specified, false))
     {
-        trace::info(_X("The specified runtimeconfig.json version [%s] could not be parsed"), fx_ver.c_str());
+        trace::error(_X("The specified runtimeconfig.json version [%s] could not be parsed"), fx_ver.c_str());
         return pal::string_t();
     }
 
@@ -61,7 +62,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     }
 
     trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
-    return pal::directory_exists(fx_dir) ? fx_dir : pal::string_t();
+    return fx_dir;
 }
 
 pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
@@ -104,7 +105,7 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     }
     catch (...)
     {
-        trace::verbose(_X("A JSON parsing exception occurred"));
+        trace::error(_X("A JSON parsing exception occurred"));
     }
     trace::verbose(_X("CLI version is [%s] in global json file [%s]"), retval.c_str(), global_json.c_str());
     return retval;
@@ -329,8 +330,20 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
             else
             {
                 trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
-                corehost_init_t init(deps_file, probe_path, _X(""), host_mode_t::muxer, &config);
                 pal::string_t impl_dir = get_directory(app_or_deps);
+                if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_path.empty() && !deps_file.empty())
+                {
+                    deps_json_t deps_json(false, deps_file);
+                    pal::string_t candidate = impl_dir;
+                    if (!deps_json.has_hostpolicy_entry() ||
+                        !deps_json.get_hostpolicy_entry().to_full_path(probe_path, &candidate))
+                    {
+                        trace::error(_X("Policy library either not found in deps [%s] or not found in [%s]"), deps_file.c_str(), probe_path.c_str());
+                        return StatusCode::CoreHostLibMissingFailure;
+                    }
+                    impl_dir = get_directory(candidate);
+                }
+                corehost_init_t init(deps_file, probe_path, _X(""), host_mode_t::muxer, &config);
                 return execute_app(impl_dir, &init, new_argv.size(), new_argv.data());
             }
         }

@@ -65,6 +65,10 @@
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
+
+#define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
+#define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
+
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
 #endif
