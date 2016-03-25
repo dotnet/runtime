@@ -6,6 +6,7 @@
 #include "deps_entry.h"
 #include "trace.h"
 
+
 // -----------------------------------------------------------------------------
 // Given a "base" directory, yield the relative path of this file in the package
 // layout.
@@ -18,7 +19,7 @@
 // Returns:
 //    If the file exists in the path relative to the "base" directory.
 //
-bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str) const
+bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str) const
 {
     pal::string_t& candidate = *str;
 
@@ -40,21 +41,51 @@ bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str) c
 
     // Reserve space for the path below
     candidate.reserve(base.length() +
-        library_name.length() +
-        library_version.length() +
         pal_relative_path.length() + 3);
 
     candidate.assign(base);
-    append_path(&candidate, library_name.c_str());
-    append_path(&candidate, library_version.c_str());
     append_path(&candidate, pal_relative_path.c_str());
 
     bool exists = pal::file_exists(candidate);
     if (!exists)
     {
+        trace::verbose(_X("Relative path query did not exist %s"), candidate.c_str());
         candidate.clear();
     }
+    else
+    {
+        trace::verbose(_X("Relative path query exists %s"), candidate.c_str());
+    }
     return exists;
+}
+
+// -----------------------------------------------------------------------------
+// Given a "base" directory, yield the relative path of this file in the package
+// layout.
+//
+// Parameters:
+//    base - The base directory to look for the relative path of this entry
+//    str  - If the method returns true, contains the file path for this deps
+//           entry relative to the "base" directory
+//
+// Returns:
+//    If the file exists in the path relative to the "base" directory.
+//
+bool deps_entry_t::to_full_path(const pal::string_t& base, pal::string_t* str) const
+{
+    str->clear();
+
+    // Base directory must be present to obtain full path
+    if (base.empty())
+    {
+        return false;
+    }
+
+    pal::string_t new_base = base;
+    append_path(&new_base, library_name.c_str());
+    append_path(&new_base, library_version.c_str());
+
+    return to_rel_path(new_base, str);
 }
 
 // -----------------------------------------------------------------------------

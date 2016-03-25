@@ -286,6 +286,8 @@ void deps_resolver_t::resolve_tpa_list(
 
         pal::string_t candidate;
 
+        trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
         // Is this a serviceable entry and is there an entry in the servicing index?
         if (entry.is_serviceable && entry.library_type == _X("Package") &&
                 m_svc.find_redirection(entry.library_name, entry.library_version, entry.relative_path, &candidate))
@@ -303,7 +305,7 @@ void deps_resolver_t::resolve_tpa_list(
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
         // The app is portable so the rid asset should be picked up from relative subpath.
-        else if (is_portable && deps->try_ni(entry).to_full_path(app_dir, &candidate))
+        else if (is_portable && deps->try_ni(entry).to_rel_path(app_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
@@ -421,20 +423,20 @@ void deps_resolver_t::resolve_probe_dirs(
         std::for_each(fx_entries.begin(), fx_entries.end(), add_package_cache_entry);
     }
 
-    // App local path
-    add_unique_path(asset_type, app_dir, &items, output);
-
     // For portable path, the app relative directory must be used.
     if (m_portable)
     {
         std::for_each(entries.begin(), entries.end(), [&](const deps_entry_t& entry)
         {
-            if (entry.asset_type == asset_type && entry.to_full_path(package_dir, &candidate))
+            if (entry.asset_type == asset_type && entry.to_rel_path(app_dir, &candidate))
             {
                 add_unique_path(asset_type, action(candidate), &items, output);
             }
         });
     }
+
+    // App local path
+    add_unique_path(asset_type, app_dir, &items, output);
 
     // FX path if present
     if (!m_fx_dir.empty())
