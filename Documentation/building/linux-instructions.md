@@ -80,3 +80,31 @@ ellismg@linux:~/git/corefx$ ./build.sh
 ```
 
 After the build is complete you will be able to find the output in the `bin` folder.
+
+Build for ARM/Linux
+===================
+
+Libunwind-arm requires fixes that are not included in Ubuntu 14.04, yet. The fix allows libunwind-arm not to break when it is ordered to access unaccessible memory locations.
+
+First, import the patch from the libunwind upstream: http://git.savannah.gnu.org/gitweb/?p=libunwind.git;a=commit;h=770152268807e460184b4152e23aba9c86601090
+
+Then, expand the coverage of the upstream patch by:
+
+```
+diff --git a/src/arm/Ginit.c b/src/arm/Ginit.c
+index 1ed3dbf..c643032 100644
+--- a/src/arm/Ginit.c
++++ b/src/arm/Ginit.c
+@@ -128,6 +128,11 @@ access_mem (unw_addr_space_t as, unw_word_t addr, unw_word_t *val, int write,
+ {
+   if (write)
+     {
++      /* validate address */
++      const struct cursor *c = (const struct cursor *) arg;
++      if (c && validate_mem(addr))
++        return -1;
++
+       Debug (16, "mem[%x] <- %x\n", addr, *val);
+       *(unw_word_t *) addr = *val;
+     }
+```
