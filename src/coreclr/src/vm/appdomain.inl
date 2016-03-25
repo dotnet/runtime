@@ -19,20 +19,6 @@
 
 #include "appdomain.hpp"
 
-#ifdef FEATURE_CORECLR 
-inline void BaseDomain::SetAppDomainCompatMode(AppDomainCompatMode compatMode)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_CompatMode = compatMode;
-}
-
-inline BaseDomain::AppDomainCompatMode BaseDomain::GetAppDomainCompatMode()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_CompatMode;
-}
-#endif // FEATURE_CORECLR
-
 inline void AppDomain::SetUnloadInProgress(AppDomain *pThis)
 {
     WRAPPER_NO_CONTRACT;

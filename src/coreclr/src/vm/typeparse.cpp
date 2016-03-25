@@ -1033,14 +1033,7 @@ BOOL TypeName::TypeNameParser::NAME()
 
     GetIdentifier(m_pTypeName->AddName(), TypeNameId);
 
-    BOOL legacy = FALSE;
-#ifdef FEATURE_LEGACYNETCF
-    legacy = GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8;
-#endif
-    if (legacy && (m_nextToken == TypeNameComma))
-        NextTokenLegacyAssemSpec();
-    else
-        NextToken();
+    NextToken();
 
     if (TokenIs(TypeNamePlus))
     {
@@ -1546,17 +1539,6 @@ TypeHandle TypeName::GetTypeFromAsm(BOOL bForIntrospection)
     else if (pAssemblyGetType) 
     {
         th = GetTypeHaveAssembly(pAssemblyGetType, bThrowIfNotFound, bIgnoreCase, pKeepAlive);
-
-#ifdef FEATURE_LEGACYNETCF
-        // 443770 - [AppCompat]: Glow Artisan - CLR_EXCEPTION_NOSOS_e0434352_agcoredllCCoreServicesSetFrameDirty
-        // NetCF searches mscorlib even if GetType() is explicitly called on another assembly.
-        if (th.IsNull() && 
-            GetAppDomain()->GetAppDomainCompatMode() == BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8 &&
-            pAssemblyGetType != SystemDomain::SystemAssembly())
-        {
-            th = GetTypeHaveAssembly(SystemDomain::SystemAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
-        }        
-#endif
     }
     
     // Otherwise look in the caller's assembly then the system assembly

@@ -2142,12 +2142,6 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    else if (id == IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly)
-    {
-        *pInterface = static_cast<ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly*>(this);
-    }
-#endif
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugProcess*>(this));
@@ -2500,47 +2494,6 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     PUBLIC_API_END(hr);
     return hr;
 }
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-
-COM_METHOD CordbProcess::InvokePauseCallback()
-{
-    HRESULT hr = S_OK;
-    PUBLIC_API_ENTRY(this);
-    ATT_REQUIRE_STOPPED_MAY_FAIL(this);
-    
-    EX_TRY
-    {
-        DebuggerIPCEvent * pIPCEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
-        InitIPCEvent(pIPCEvent, DB_IPCE_NETCF_HOST_CONTROL_PAUSE, true, VMPTR_AppDomain::NullPtr());
-
-        hr = m_cordb->SendIPCEvent(this, pIPCEvent, CorDBIPC_BUFFER_SIZE);
-        hr = WORST_HR(hr, pIPCEvent->hr);
-    } 
-    EX_CATCH_HRESULT(hr);
-    
-    return hr;
-}
-
-COM_METHOD CordbProcess::InvokeResumeCallback()
-{
-    HRESULT hr = S_OK;
-    PUBLIC_API_ENTRY(this);
-    ATT_REQUIRE_STOPPED_MAY_FAIL(this);
-    
-    EX_TRY
-    {
-        DebuggerIPCEvent * pIPCEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
-        InitIPCEvent(pIPCEvent, DB_IPCE_NETCF_HOST_CONTROL_RESUME, true, VMPTR_AppDomain::NullPtr());
-
-        hr = m_cordb->SendIPCEvent(this, pIPCEvent, CorDBIPC_BUFFER_SIZE);
-        hr = WORST_HR(hr, pIPCEvent->hr);
-    } 
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-#endif
 
 HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
