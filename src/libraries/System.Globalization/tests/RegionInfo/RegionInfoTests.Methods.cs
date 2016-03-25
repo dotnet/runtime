@@ -31,10 +31,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void Ctor_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new RegionInfo(null)); // Culture is null
-            Assert.Throws<ArgumentException>(() => new RegionInfo("")); // Culture is non-existent
-            Assert.Throws<ArgumentException>(() => new RegionInfo("no-such-culture")); // Culture is non-existent
-            Assert.Throws<ArgumentException>(() => new RegionInfo("en")); // Culture is neutral
+            Assert.Throws<ArgumentNullException>("name", () => new RegionInfo(null)); // Culture is null
+            // TODO: include param name once dotnet/coreclr#3915 is merged and the CI updates
+            Assert.Throws<ArgumentException>(() => new RegionInfo("")); // Culture is invariant
+            Assert.Throws<ArgumentException>("name", () => new RegionInfo("no-such-culture")); // Culture is non-existent
+            Assert.Throws<ArgumentException>("name", () => new RegionInfo("en")); // Culture is neutral
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -44,6 +45,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new RegionInfo("en-US"), new RegionInfo("en-GB"), false };
             yield return new object[] { new RegionInfo("en-US"), new RegionInfo("zh-CN"), false };
             yield return new object[] { new RegionInfo("en-US"), new object(), false };
+            yield return new object[] { new RegionInfo("en-US"), null, false };
         }
 
         [Theory]
