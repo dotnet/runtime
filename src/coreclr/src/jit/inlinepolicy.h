@@ -9,7 +9,8 @@
 //
 // -- CLASSES --
 //
-// LegacyPolicy        - policy to provide legacy inline behavior
+// LegalPolicy         - partial class providing common legality checks
+// LegacyPolicy        - policy that provides legacy inline behavior
 // RandomPolicy        - randomized inlining
 // DiscretionaryPolicy - legacy variant with uniform size policy
 
@@ -19,29 +20,59 @@
 #include "jit.h"
 #include "inline.h"
 
-class CodeSeqSM;
-
-// LegacyPolicy implements the inlining policy used by the jit in its
-// initial release.
+// LegalPolicy is a partial policy that encapsulates the common
+// legality and ability checks the inliner must make.
 //
-// Generally speaking, the legacy policy expects the inlining attempt
+// Generally speaking, the legal policy expects the inlining attempt
 // to fail fast when a fatal or equivalent observation is made. So
 // once an observation causes failure, no more observations are
 // expected. However for the prejit scan case (where the jit is not
 // actually inlining, but is assessing a method's general
-// inlinability) the legacy policy allows multiple failing
+// inlinability) the legal policy allows multiple failing
 // observations provided they have the same impact. Only the first
 // observation that puts the policy into a failing state is
 // remembered. Transitions from failing states to candidate or success
 // states are not allowed.
 
-class LegacyPolicy : public InlinePolicy
+class LegalPolicy : public InlinePolicy
+{
+
+public:
+
+    // Constructor
+    LegalPolicy(bool isPrejitRoot)
+        : InlinePolicy(isPrejitRoot)
+    {
+        // empty
+    }
+
+    // Handle an observation that must cause inlining to fail.
+    void NoteFatal(InlineObservation obs) override;
+
+protected:
+
+    // Helper methods
+    void NoteInternal(InlineObservation obs);
+    void SetCandidate(InlineObservation obs);
+    void SetFailure(InlineObservation obs);
+    void SetNever(InlineObservation obs);
+};
+
+// Forward declaration for the state machine class used by the
+// LegacyPolicy
+
+class CodeSeqSM;
+
+// LegacyPolicy implements the inlining policy used by the jit in its
+// initial release.
+
+class LegacyPolicy : public LegalPolicy
 {
 public:
 
     // Construct a LegacyPolicy
     LegacyPolicy(Compiler* compiler, bool isPrejitRoot)
-        : InlinePolicy(isPrejitRoot)
+        : LegalPolicy(isPrejitRoot)
         , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
         , m_CodeSize(0)
@@ -68,7 +99,6 @@ public:
     // Policy observations
     void NoteSuccess() override;
     void NoteBool(InlineObservation obs, bool value) override;
-    void NoteFatal(InlineObservation obs) override;
     void NoteInt(InlineObservation obs, int value) override;
 
     // Policy determinations
@@ -86,10 +116,6 @@ public:
 protected:
 
     // Helper methods
-    void NoteInternal(InlineObservation obs);
-    void SetCandidate(InlineObservation obs);
-    void SetFailure(InlineObservation obs);
-    void SetNever(InlineObservation obs);
     double DetermineMultiplier();
     int DetermineNativeSizeEstimate();
     int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
@@ -124,7 +150,7 @@ protected:
 // RandomPolicy implements a policy that inlines at random.
 // It is mostly useful for stress testing.
 
-class RandomPolicy : public InlinePolicy
+class RandomPolicy : public LegalPolicy
 {
 public:
 
@@ -134,7 +160,6 @@ public:
     // Policy observations
     void NoteSuccess() override;
     void NoteBool(InlineObservation obs, bool value) override;
-    void NoteFatal(InlineObservation obs) override;
     void NoteInt(InlineObservation obs, int value) override;
 
     // Policy determinations
@@ -146,12 +171,6 @@ public:
     const char* GetName() const override { return "RandomPolicy"; }
 
 private:
-
-    // Helper methods
-    void NoteInternal(InlineObservation obs);
-    void SetCandidate(InlineObservation obs);
-    void SetFailure(InlineObservation obs);
-    void SetNever(InlineObservation obs);
 
     // Data members
     Compiler*               m_RootCompiler;

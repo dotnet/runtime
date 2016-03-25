@@ -60,6 +60,132 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 }
 
 //------------------------------------------------------------------------
+// NoteFatal: handle an observation with fatal impact
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegalPolicy::NoteFatal(InlineObservation obs)
+{
+    // As a safeguard, all fatal impact must be
+    // reported via noteFatal.
+    assert(InlGetImpact(obs) == InlineImpact::FATAL);
+    NoteInternal(obs);
+    assert(InlDecisionIsFailure(m_Decision));
+}
+
+//------------------------------------------------------------------------
+// NoteInternal: helper for handling an observation
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegalPolicy::NoteInternal(InlineObservation obs)
+{
+    // Note any INFORMATION that reaches here will now cause failure.
+    // Non-fatal INFORMATION observations must be handled higher up.
+    InlineTarget target = InlGetTarget(obs);
+
+    if (target == InlineTarget::CALLEE)
+    {
+        this->SetNever(obs);
+    }
+    else
+    {
+        this->SetFailure(obs);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetFailure: helper for setting a failing decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegalPolicy::SetFailure(InlineObservation obs)
+{
+    // Expect a valid observation
+    assert(InlIsValidObservation(obs));
+
+    switch (m_Decision)
+    {
+    case InlineDecision::FAILURE:
+        // Repeated failure only ok if evaluating a prejit root
+        // (since we can't fail fast because we're not inlining)
+        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
+        // (since we can't fail fast from lvaGrabTemp).
+        assert(m_IsPrejitRoot ||
+               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        m_Decision = InlineDecision::FAILURE;
+        m_Observation = obs;
+        break;
+    default:
+        // SUCCESS, NEVER, or ??
+        assert(!"Unexpected m_Decision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetNever: helper for setting a never decision
+//
+// Arguments:
+//    obs      - the current obsevation
+
+void LegalPolicy::SetNever(InlineObservation obs)
+{
+    // Expect a valid observation
+    assert(InlIsValidObservation(obs));
+
+    switch (m_Decision)
+    {
+    case InlineDecision::NEVER:
+        // Repeated never only ok if evaluating a prejit root
+        assert(m_IsPrejitRoot);
+        break;
+    case InlineDecision::UNDECIDED:
+    case InlineDecision::CANDIDATE:
+        m_Decision = InlineDecision::NEVER;
+        m_Observation = obs;
+        break;
+    default:
+        // SUCCESS, FAILURE or ??
+        assert(!"Unexpected m_Decision");
+        unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// SetCandidate: helper updating candidacy
+//
+// Arguments:
+//    obs      - the current obsevation
+//
+// Note:
+//    Candidate observations are handled here. If the inline has already
+//    failed, they're ignored. If there's already a candidate reason,
+//    this new reason trumps it.
+
+void LegalPolicy::SetCandidate(InlineObservation obs)
+{
+    // Ignore if this inline is going to fail.
+    if (InlDecisionIsFailure(m_Decision))
+    {
+        return;
+    }
+
+    // We should not have declared success yet.
+    assert(!InlDecisionIsSuccess(m_Decision));
+
+    // Update, overriding any previous candidacy.
+    m_Decision = InlineDecision::CANDIDATE;
+    m_Observation = obs;
+}
+
+//------------------------------------------------------------------------
 // NoteSuccess: handle finishing all the inlining checks successfully
 
 void LegacyPolicy::NoteSuccess()
@@ -203,21 +329,6 @@ void LegacyPolicy::NoteBool(InlineObservation obs, bool value)
 }
 
 //------------------------------------------------------------------------
-// NoteFatal: handle an observation with fatal impact
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::NoteFatal(InlineObservation obs)
-{
-    // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
-    assert(InlGetImpact(obs) == InlineImpact::FATAL);
-    NoteInternal(obs);
-    assert(InlDecisionIsFailure(m_Decision));
-}
-
-//------------------------------------------------------------------------
 // NoteInt: handle an observed integer value
 //
 // Arguments:
@@ -343,116 +454,6 @@ void LegacyPolicy::NoteInt(InlineObservation obs, int value)
     }
 }
 
-//------------------------------------------------------------------------
-// NoteInternal: helper for handling an observation
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::NoteInternal(InlineObservation obs)
-{
-    // Note any INFORMATION that reaches here will now cause failure.
-    // Non-fatal INFORMATION observations must be handled higher up.
-    InlineTarget target = InlGetTarget(obs);
-
-    if (target == InlineTarget::CALLEE)
-    {
-        this->SetNever(obs);
-    }
-    else
-    {
-        this->SetFailure(obs);
-    }
-}
-
-//------------------------------------------------------------------------
-// SetFailure: helper for setting a failing decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::SetFailure(InlineObservation obs)
-{
-    // Expect a valid observation
-    assert(InlIsValidObservation(obs));
-
-    switch (m_Decision)
-    {
-    case InlineDecision::FAILURE:
-        // Repeated failure only ok if evaluating a prejit root
-        // (since we can't fail fast because we're not inlining)
-        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
-        // (since we can't fail fast from lvaGrabTemp).
-        assert(m_IsPrejitRoot ||
-               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::FAILURE;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, NEVER, or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// SetNever: helper for setting a never decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void LegacyPolicy::SetNever(InlineObservation obs)
-{
-    // Expect a valid observation
-    assert(InlIsValidObservation(obs));
-
-    switch (m_Decision)
-    {
-    case InlineDecision::NEVER:
-        // Repeated never only ok if evaluating a prejit root
-        assert(m_IsPrejitRoot);
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::NEVER;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, FAILURE or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// SetCandidate: helper updating candidacy
-//
-// Arguments:
-//    obs      - the current obsevation
-//
-// Note:
-//    Candidate observations are handled here. If the inline has already
-//    failed, they're ignored. If there's already a candidate reason,
-//    this new reason trumps it.
-
-void LegacyPolicy::SetCandidate(InlineObservation obs)
-{
-    // Ignore if this inline is going to fail.
-    if (InlDecisionIsFailure(m_Decision))
-    {
-        return;
-    }
-
-    // We should not have declared success yet.
-    assert(!InlDecisionIsSuccess(m_Decision));
-
-    // Update, overriding any previous candidacy.
-    m_Decision = InlineDecision::CANDIDATE;
-    m_Observation = obs;
-}
 
 //------------------------------------------------------------------------
 // DetermineMultiplier: determine benefit multiplier for this inline
@@ -739,7 +740,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 //    seed -- seed value for the random number generator
 
 RandomPolicy::RandomPolicy(Compiler* compiler, bool isPrejitRoot, unsigned seed)
-    : InlinePolicy(isPrejitRoot)
+    : LegalPolicy(isPrejitRoot)
     , m_RootCompiler(compiler)
     , m_Random(nullptr)
     , m_CodeSize(0)
@@ -823,21 +824,6 @@ void RandomPolicy::NoteBool(InlineObservation obs, bool value)
 }
 
 //------------------------------------------------------------------------
-// NoteFatal: handle an observation with fatal impact
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void RandomPolicy::NoteFatal(InlineObservation obs)
-{
-    // As a safeguard, all fatal impact must be
-    // reported via noteFatal.
-    assert(InlGetImpact(obs) == InlineImpact::FATAL);
-    NoteInternal(obs);
-    assert(InlDecisionIsFailure(m_Decision));
-}
-
-//------------------------------------------------------------------------
 // NoteInt: handle an observed integer value
 //
 // Arguments:
@@ -873,117 +859,6 @@ void RandomPolicy::NoteInt(InlineObservation obs, int value)
         // Ignore all other information
         break;
     }
-}
-
-//------------------------------------------------------------------------
-// NoteInternal: helper for handling an observation
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void RandomPolicy::NoteInternal(InlineObservation obs)
-{
-    // Note any INFORMATION that reaches here will now cause failure.
-    // Non-fatal INFORMATION observations must be handled higher up.
-    InlineTarget target = InlGetTarget(obs);
-
-    if (target == InlineTarget::CALLEE)
-    {
-        this->SetNever(obs);
-    }
-    else
-    {
-        this->SetFailure(obs);
-    }
-}
-
-//------------------------------------------------------------------------
-// SetFailure: helper for setting a failing decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void RandomPolicy::SetFailure(InlineObservation obs)
-{
-    // Expect a valid observation
-    assert(InlIsValidObservation(obs));
-
-    switch (m_Decision)
-    {
-    case InlineDecision::FAILURE:
-        // Repeated failure only ok if evaluating a prejit root
-        // (since we can't fail fast because we're not inlining)
-        // or if inlining and the observation is CALLSITE_TOO_MANY_LOCALS
-        // (since we can't fail fast from lvaGrabTemp).
-        assert(m_IsPrejitRoot ||
-               (obs == InlineObservation::CALLSITE_TOO_MANY_LOCALS));
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::FAILURE;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, NEVER, or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// SetNever: helper for setting a never decision
-//
-// Arguments:
-//    obs      - the current obsevation
-
-void RandomPolicy::SetNever(InlineObservation obs)
-{
-    // Expect a valid observation
-    assert(InlIsValidObservation(obs));
-
-    switch (m_Decision)
-    {
-    case InlineDecision::NEVER:
-        // Repeated never only ok if evaluating a prejit root
-        assert(m_IsPrejitRoot);
-        break;
-    case InlineDecision::UNDECIDED:
-    case InlineDecision::CANDIDATE:
-        m_Decision = InlineDecision::NEVER;
-        m_Observation = obs;
-        break;
-    default:
-        // SUCCESS, FAILURE or ??
-        assert(!"Unexpected m_Decision");
-        unreached();
-    }
-}
-
-//------------------------------------------------------------------------
-// SetCandidate: helper updating candidacy
-//
-// Arguments:
-//    obs      - the current obsevation
-//
-// Note:
-//    Candidate observations are handled here. If the inline has already
-//    failed, they're ignored. If there's already a candidate reason,
-//    this new reason trumps it.
-
-void RandomPolicy::SetCandidate(InlineObservation obs)
-{
-    // Ignore if this inline is going to fail.
-    if (InlDecisionIsFailure(m_Decision))
-    {
-        return;
-    }
-
-    // We should not have declared success yet.
-    assert(!InlDecisionIsSuccess(m_Decision));
-
-    // Update, overriding any previous candidacy.
-    m_Decision = InlineDecision::CANDIDATE;
-    m_Observation = obs;
 }
 
 //------------------------------------------------------------------------
