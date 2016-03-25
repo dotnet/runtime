@@ -22,14 +22,7 @@ namespace System.Text.Tests
         public static void GetByteCount_Invalid(Encoding encoding)
         {
             // Chars is null
-            if (encoding is ASCIIEncoding)
-            {
-                Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((string)null));
-            }
-            else
-            {
-                Assert.Throws<ArgumentNullException>("s", () => encoding.GetByteCount((string)null));
-            }
+            Assert.Throws<ArgumentNullException>(encoding is ASCIIEncoding ? "chars" : "s", () => encoding.GetByteCount((string)null));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((char[])null));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount(null, 0, 0));
 
@@ -183,16 +176,8 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("bytes", () => encoding.GetString(null, 0, 0));
 
             // Index or count < 0
-            if (encoding is ASCIIEncoding)
-            {
-                Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => encoding.GetString(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => encoding.GetString(new byte[1], 0, -1));
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => encoding.GetString(new byte[1], -1, 0));
-                Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetString(new byte[1], 0, -1));
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(encoding is ASCIIEncoding ? "byteIndex" : "index", () => encoding.GetString(new byte[1], -1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(encoding is ASCIIEncoding ? "byteCount" : "count", () => encoding.GetString(new byte[1], 0, -1));
 
             // Index + count > bytes.Length
             Assert.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetString(new byte[1], 2, 0));
