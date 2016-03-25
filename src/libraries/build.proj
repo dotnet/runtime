@@ -17,6 +17,8 @@
     <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
     <!-- To disable building packages, set BuildPackages=false or pass /p:BuildPackages=false.-->
     <BuildPackages Condition="'$(BuildPackages)'==''">true</BuildPackages>
+    <!-- To disable building tests, set BuildTests=false or pass /p:BuildTests=false.-->
+    <BuildTests Condition="'$(BuildTests)'==''">true</BuildTests>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +26,7 @@
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
       <FilterToOSGroup Condition="'$(_OriginalOSGroup)' == ''">$(OSEnvironment)</FilterToOSGroup>
     </Project>
+    <Project Include="src\tests.builds" Condition="$(BuildTests)=='true'"/>
     <!-- signing must happen before packaging -->
     <Project Include="src\sign.builds" />
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'"/>
