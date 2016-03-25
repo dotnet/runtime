@@ -4,8 +4,6 @@
 #ifndef __LIBHOST_H__
 #define __LIBHOST_H__
 
-#define LIBHOST_NAME MAKE_LIBNAME("hostpolicy")
-
 enum host_mode_t
 {
     invalid = 0,

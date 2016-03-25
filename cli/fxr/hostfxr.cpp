@@ -21,7 +21,7 @@ int load_host_library(
     corehost_unload_fn* unload_fn)
 {
     pal::string_t host_path;
-    if (!library_exists_in_dir(lib_dir, LIBHOST_NAME, &host_path))
+    if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
     {
         return StatusCode::CoreHostLibMissingFailure;
     }
@@ -86,7 +86,7 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
     append_path(&path, COREHOST_PACKAGE_NAME);
     append_path(&path, COREHOST_PACKAGE_VERSION);
     append_path(&path, COREHOST_PACKAGE_COREHOST_RELATIVE_DIR);
-    if (library_exists_in_dir(path, LIBHOST_NAME))
+    if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME))
     {
         resolved_dir->assign(path);
     }
