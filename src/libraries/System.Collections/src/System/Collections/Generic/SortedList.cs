@@ -161,8 +161,8 @@ namespace System.Collections.Generic
                 Debug.Assert(count == _keys.Length);
                 if (count > 1)
                 {
-                    Array.Sort<TKey, TValue>(keys, _values, comparer);
                     comparer = Comparer; // obtain default if this is null.
+                    Array.Sort<TKey, TValue>(keys, _values, comparer);
                     for (int i = 1; i != keys.Length; ++i)
                     {
                         if (comparer.Compare(keys[i - 1], keys[i]) == 0)
