@@ -2924,9 +2924,6 @@ class CordbProcess :
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
     public IProcessShimHooks
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    , public ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly
-#endif
 {
     // Ctor is private. Use OpenVirtualProcess instead. 
     CordbProcess(ULONG64 clrInstanceId, IUnknown * pDataTarget, HMODULE hDacModule,  Cordb * pCordb, DWORD dwProcessID, ShimProcess * pShim);
@@ -3131,16 +3128,6 @@ public:
     // ICorDebugProcess8
     //-----------------------------------------------------------
     COM_METHOD EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    // ---------------------------------------------------------------
-    // ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly
-    // ---------------------------------------------------------------
-
-    COM_METHOD InvokePauseCallback();
-    COM_METHOD InvokeResumeCallback();
-
-#endif
 
     //-----------------------------------------------------------
     // Methods not exposed via a COM interface.
@@ -3427,9 +3414,7 @@ public:
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
                  type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_NGEN_COMPILER_FLAGS || 
-                 type == DB_IPCE_SET_VALUE_CLASS ||
-                 type == DB_IPCE_NETCF_HOST_CONTROL_PAUSE ||
-                 type == DB_IPCE_NETCF_HOST_CONTROL_RESUME);
+                 type == DB_IPCE_SET_VALUE_CLASS);
 
         ipce->type = type;
         ipce->hr = S_OK;

@@ -147,7 +147,7 @@ DEFINE_EXCEPTION(g_CodeContractsNS,    ContractException,              false,  C
 DEFINE_EXCEPTION(g_SystemNS,           ContextMarshalException,        false,  COR_E_CONTEXTMARSHAL)
 DEFINE_EXCEPTION(g_ReflectionNS,       CustomAttributeFormatException, false,  COR_E_CUSTOMATTRIBUTEFORMAT)
 
-#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#if defined(FEATURE_X509) || defined(FEATURE_CRYPTO)
 DEFINE_EXCEPTION(g_CryptographyNS,     CryptographicException,         false,  CORSEC_E_CRYPTO)
 #endif // FEATURE_X509 || FEATURE_CRYPTO
 #ifndef FEATURE_CORECLR

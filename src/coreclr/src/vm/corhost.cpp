@@ -1665,27 +1665,6 @@ HRESULT CorHost2::_CreateAppDomain(
                 
                 obj = StringObject::NewString(pPropertyValues[i]);
                 _gc.propertyValues->SetAt(i, obj);
-
-#ifdef FEATURE_LEGACYNETCF
-                // Look for the "AppDomainCompatSwitch" property and, if it exists, save its value
-                // in the AppDomain object.
-                if ((0 == _wcsicmp(pPropertyNames[i], W("AppDomainCompatSwitch"))) && (pPropertyValues[i] != NULL))
-                {
-                    if (0 == _wcsicmp(pPropertyValues[i], W("WindowsPhone_3.8.0.0")))
-                    {
-                        pDomain->SetAppDomainCompatMode(BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8);
-                    }
-                    else
-                    if (0 == _wcsicmp(pPropertyValues[i], W("WindowsPhone_3.7.0.0")))
-                    {
-                        pDomain->SetAppDomainCompatMode(BaseDomain::APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8);
-                    }
-                    else
-                   {
-                        // We currently don't know any other AppDomain compatibility switches
-                    }
-                }
-#endif // FEATURE_LEGACYNETCF
             }
         }
 
@@ -3912,10 +3891,6 @@ LPCWSTR CorHost2::s_wszAppDomainManagerAsm = NULL;
 LPCWSTR CorHost2::s_wszAppDomainManagerType = NULL;
 EInitializeNewDomainFlags CorHost2::s_dwDomainManagerInitFlags = eInitializeNewDomainFlags_None;
 
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-IHostNetCFDebugControlManager *CorHost2::m_HostNetCFDebugControlManager = NULL;
-#endif
-
 #ifndef FEATURE_CORECLR // not supported
 
 StringArrayList CorHost2::s_defaultDomainPropertyNames;
@@ -4580,16 +4555,6 @@ HRESULT CorHost2::SetHostControl(IHostControl* pHostControl)
         m_HostPolicyManager = policyManager;
     }
 #endif //!FEATURE_CORECLR
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    IHostNetCFDebugControlManager *hostNetCFDebugControlManager = NULL;
-    if (m_HostNetCFDebugControlManager == NULL &&
-            pHostControl->GetHostManager(__uuidof(IHostNetCFDebugControlManager),
-                                         (void**)&hostNetCFDebugControlManager) == S_OK &&
-            hostNetCFDebugControlManager != NULL) {
-            m_HostNetCFDebugControlManager = hostNetCFDebugControlManager;
-        }
-#endif
 
     if (m_HostControl == NULL)
     {

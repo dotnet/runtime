@@ -1009,14 +1009,6 @@ public:
     }
 #endif // FEATURE_INCLUDE_ALL_INTERFACES
 
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    static IHostNetCFDebugControlManager *GetHostNetCFDebugControlManager ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_HostNetCFDebugControlManager;
-    }
-#endif
-
     static int GetHostOverlappedExtensionSize()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1149,11 +1141,6 @@ protected:
     static BOOL m_dwFlagsFinalized;
     static DangerousNonHostedSpinLock m_FlagsLock; // protects the flags and host config
 #endif // !defined(FEATURE_CORECLR)
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-protected:
-    static IHostNetCFDebugControlManager *m_HostNetCFDebugControlManager;
-#endif
 
     SVAL_DECL(STARTUP_FLAGS, m_dwStartupFlags);
 };
