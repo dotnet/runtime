@@ -461,7 +461,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
-        [ActiveIssue(2459)]
         public void DriveLetter_Unix()
         {
             // On Unix, there's no special casing for drive letters, which are valid file names

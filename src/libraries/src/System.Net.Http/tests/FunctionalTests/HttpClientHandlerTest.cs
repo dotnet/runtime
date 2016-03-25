@@ -807,7 +807,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(3565, PlatformID.OSX)]
         public async Task PostAsync_Post_ChannelBindingHasExpectedValue()
         {
             using (var client = new HttpClient())

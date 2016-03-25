@@ -27,7 +27,6 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(812, PlatformID.AnyUnix)] // Unix implementation currently ignores timeout and cancellation token once the operation has been initiated]
         public async Task ConnectToNonExistentServer_Throws_TimeoutException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
