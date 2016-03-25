@@ -966,11 +966,27 @@ mono_error_raise_exception (MonoError *target_error)
 		mono_raise_exception (ex);
 }
 
-void
+/**
+ * mono_error_set_pending_exception:
+ * @error: The error
+ *
+ *
+ * If @error is set, convert it to an exception and set the pending exception for the current icall.
+ * Returns TRUE if @error was set, or FALSE otherwise, so that you can write:
+ *    if (mono_error_set_pending_exception (error)) {
+ *      { ... cleanup code ... }
+ *      return;
+ *    }
+ */
+gboolean
 mono_error_set_pending_exception (MonoError *error)
 {
 	MonoException *ex = mono_error_convert_to_exception (error);
-	if (ex)
+	if (ex) {
 		mono_set_pending_exception (ex);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 

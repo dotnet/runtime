@@ -1612,7 +1612,7 @@ mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);
 void
 mono_error_raise_exception (MonoError *target_error);
 
-void
+gboolean
 mono_error_set_pending_exception (MonoError *error);
 
 MonoArray *
