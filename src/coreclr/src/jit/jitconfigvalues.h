@@ -55,9 +55,6 @@ CONFIG_INTEGER(JitHashDump, W("JitHashDump"), -1) // Same as JitDump, but for a 
 CONFIG_INTEGER(JitHashDumpIR, W("JitHashDumpIR"), -1) // Same as JitDumpIR, but for a method hash
 CONFIG_INTEGER(JitHashHalt, W("JitHashHalt"), -1) // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, W("JitInlineAdditionalMultiplier"), 0)
-CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
-CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
-CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
 CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
 CONFIG_INTEGER(JitInlineSize, W("JITInlineSize"), DEFAULT_MAX_INLINE_SIZE)
 CONFIG_INTEGER(JitLargeBranches, W("JitLargeBranches"), 0) // Force using the largest conditional branch format
@@ -191,6 +188,12 @@ CONFIG_STRING(AltJitExcludeAssemblies, W("AltJitExcludeAssemblies")) // Do not u
 CONFIG_STRING(JitFuncInfoFile, W("JitFuncInfoLogFile")) // If set, gather JIT function info and write to this file.
 CONFIG_STRING(JitTimeLogCsv, W("JitTimeLogCsv")) // If set, gather JIT throughput data and write to a CSV file. This mode must be used in internal retail builds.
 CONFIG_STRING(TailCallOpt, W("TailCallOpt"))
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+CONFIG_INTEGER(JitInlineDumpData, W("JitInlineDumpData"), 0)
+CONFIG_INTEGER(JitInlineLimit, W("JitInlineLimit"), -1)
+CONFIG_INTEGER(JitInlinePolicyDiscretionary, W("JitInlinePolicyDiscretionary"), 0)
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
