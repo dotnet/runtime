@@ -5679,25 +5679,11 @@ void CodeGen::genPushCalleeSavedRegisters()
             assert(spAdjustment3 > 0);
             assert((spAdjustment3 % 16) == 0);
 
-            // Try to push the frame pointer setup down, so the unwind codes match better (there is no corresponding instruction in the epilog).
-            bool isFPEstablished = false;
-            int maxFPOffset = spAdjustment3 + alignmentAdjustment2;
-            if (!emitter::emitIns_valid_imm_for_add(maxFPOffset, EA_PTRSIZE))
-            {
-                getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, alignmentAdjustment2);
-                compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
-                isFPEstablished = true;
-            }
+            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, alignmentAdjustment2);
+            compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
 
             genStackPointerAdjustment(-spAdjustment3, initReg, pInitRegZeroed);
             offset += spAdjustment3;
-
-            if (!isFPEstablished)
-            {
-                getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, maxFPOffset);
-                compiler->unwindSetFrameReg(REG_FPBASE, maxFPOffset);
-                isFPEstablished = true;
-            }
         }
         else
         {
@@ -6308,17 +6294,9 @@ void            CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
 #elif defined(_TARGET_ARM64_)
 
-void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool               jmpEpilog,
-                                                                   /* IN OUT */ bool* pUnwindStarted)
+void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
-
-    // We're going to generate an unwindable instruction. If not, we need to optimize this.
-    if (!*pUnwindStarted)
-    {
-        compiler->unwindBegEpilog();
-        *pUnwindStarted = true;
-    }
 
     regMaskTP rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
@@ -6343,13 +6321,28 @@ void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool         
         if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize < 512))
         {
             frameType = 1;
+            if (compiler->compLocallocUsed)
+            {
+                // Restore sp from fp
+                //      mov sp, fp
+                inst_RV_RV(INS_mov, REG_SPBASE, REG_FPBASE);
+                compiler->unwindSetFrameReg(REG_FPBASE, 0);
+            }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
             calleeSaveSPOffset = totalFrameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES;
+
         }
         else if (totalFrameSize <= 512)
         {
             frameType = 2;
+            if (compiler->compLocallocUsed)
+            {
+                // Restore sp from fp
+                //      sub sp, fp, #outsz
+                getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+                compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+            }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
             calleeSaveSPOffset = totalFrameSize - genCountBits(regsToRestoreMask) * REGSIZE_BYTES;
@@ -6381,12 +6374,22 @@ void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool         
                 int alignmentAdjustment2 = spAdjustment2 - spAdjustment2Unaligned;
                 assert((alignmentAdjustment2 == 0) || (alignmentAdjustment2 == REGSIZE_BYTES));
 
-                // Generate:
-                //      add sp,sp,#outsz                ; if #outsz is not 16-byte aligned, we need to be more careful
-                int spAdjustment3 = compiler->lvaOutgoingArgSpaceSize - alignmentAdjustment2;
-                assert(spAdjustment3 > 0);
-                assert((spAdjustment3 % 16) == 0);
-                genStackPointerAdjustment(spAdjustment3, REG_IP0, nullptr);
+                if (compiler->compLocallocUsed)
+                {
+                    // Restore sp from fp. No need to update sp after this since we've set up fp before adjusting sp in prolog.
+                    //      sub sp, fp, #alignmentAdjustment2
+                    getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment2);
+                    compiler->unwindSetFrameReg(REG_FPBASE, alignmentAdjustment2);
+                }
+                else
+                {
+                    // Generate:
+                    //      add sp,sp,#outsz                ; if #outsz is not 16-byte aligned, we need to be more careful
+                    int spAdjustment3 = compiler->lvaOutgoingArgSpaceSize - alignmentAdjustment2;
+                    assert(spAdjustment3 > 0);
+                    assert((spAdjustment3 % 16) == 0);
+                    genStackPointerAdjustment(spAdjustment3, REG_IP0, nullptr);
+                }
 
                 // Generate:
                 //      ldp fp,lr,[sp]
@@ -6395,6 +6398,14 @@ void            CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool         
             }
             else
             {
+                if (compiler->compLocallocUsed)
+                {
+                    // Restore sp from fp
+                    //      sub sp, fp, #outsz
+                    getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+                    compiler->unwindSetFrameReg(REG_FPBASE, compiler->lvaOutgoingArgSpaceSize);
+                }
+
                 // Generate:
                 //      ldp fp,lr,[sp,#outsz]
                 //      add sp,sp,#remainingFrameSz     ; might need to load this constant in a scratch register if it's large
@@ -9392,33 +9403,9 @@ void                CodeGen::genFnEpilog(BasicBlock* block)
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
 
-    // We delay starting the unwind codes until we have an instruction which we know
-    // needs an unwind code.
+    compiler->unwindBegEpilog();
 
-    bool unwindStarted = false;
-
-    // Tear down the stack frame
-
-    if (compiler->compLocallocUsed)
-    {
-        if (!unwindStarted)
-        {
-            compiler->unwindBegEpilog();
-            unwindStarted = true;
-        }
-        // mov FP into SP
-        inst_RV_RV(INS_mov, REG_SPBASE, REG_FPBASE);
-        compiler->unwindSetFrameReg(REG_FPBASE, 0);
-    }
-
-    genPopCalleeSavedRegistersAndFreeLclFrame(jmpEpilog, &unwindStarted);
-
-    if (!unwindStarted)
-    {
-        // If we haven't generated anything yet, we're certainly going to generate at least one instruction next.
-        compiler->unwindBegEpilog();
-        unwindStarted = true;
-    }
+    genPopCalleeSavedRegistersAndFreeLclFrame(jmpEpilog);
 
     if (jmpEpilog)
     {
