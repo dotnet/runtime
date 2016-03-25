@@ -187,6 +187,8 @@ static gboolean is_sr_mono_property (MonoClass *klass);
 static gboolean is_sre_method_on_tb_inst (MonoClass *klass);
 static gboolean is_sre_ctor_on_tb_inst (MonoClass *klass);
 
+static gboolean type_is_reference (MonoType *type);
+
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
 static MonoMethod * inflate_method (MonoReflectionType *type, MonoObject *obj, MonoError *error);
@@ -9216,6 +9218,28 @@ handle_type:
 }
 
 static MonoObject*
+load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const char* p, const char** end, MonoError *error)
+{
+	mono_error_init (error);
+
+	gboolean is_ref = type_is_reference (t);
+
+	void *val = load_cattr_value (image, t, p, end, error);
+	if (!is_ok (error)) {
+		if (is_ref)
+			g_free (val);
+		return NULL;
+	}
+
+	if (is_ref)
+		return (MonoObject*)val;
+
+	MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type (t), val, error);
+	g_free (val);
+	return boxed;
+}
+
+static MonoObject*
 create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 {
 	static MonoMethod *ctor;
@@ -9550,21 +9574,10 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		MonoObject *obj;
-		void *val;
 
-		val = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p, error);
-		if (!mono_error_ok (error)) {
-			if (!type_is_reference (mono_method_signature (method)->params [i]))
-				g_free (val);
-			return;
-		}
-
-		obj = (MonoObject *)(type_is_reference (mono_method_signature (method)->params [i]) ?
-			val : mono_value_box (domain, mono_class_from_mono_type (mono_method_signature (method)->params [i]), val));
+		obj = load_cattr_value_boxed (domain, image, mono_method_signature (method)->params [i], p, &p, error);
+		return_if_nok (error);
 		mono_array_setref (typedargs, i, obj);
-
-		if (!type_is_reference (mono_method_signature (method)->params [i]))
-			g_free (val);
 	}
 
 	named = p;
@@ -9607,7 +9620,6 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		if (named_type == 0x53) {
 			MonoObject *obj;
 			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
-			void *val;
 
 			if (!field) {
 				g_free (name);
@@ -9617,23 +9629,17 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			arginfo [j].type = field->type;
 			arginfo [j].field = field;
 
-			val = load_cattr_value (image, field->type, named, &named, error);
-			if (!mono_error_ok (error)) {
-				if (!type_is_reference (field->type))
-					g_free (val);
+			obj = load_cattr_value_boxed (domain, image, field->type, named, &named, error);
+			if (!is_ok (error)) {
 				g_free (name);
 				return;
 			}
-
-			obj = (MonoObject *)(type_is_reference (field->type) ? val : mono_value_box (domain, mono_class_from_mono_type (field->type), val));
 			mono_array_setref (namedargs, j, obj);
-			if (!type_is_reference (field->type))
-				g_free (val);
+
 		} else if (named_type == 0x54) {
 			MonoObject *obj;
 			MonoType *prop_type;
 			MonoProperty *prop = mono_class_get_property_from_name (attrklass, name);
-			void *val;
 
 			if (!prop || !prop->set) {
 				g_free (name);
@@ -9646,18 +9652,12 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			arginfo [j].type = prop_type;
 			arginfo [j].prop = prop;
 
-			val = load_cattr_value (image, prop_type, named, &named, error);
-			if (!mono_error_ok (error)) {
-				if (!type_is_reference (prop_type))
-					g_free (val);
+			obj = load_cattr_value_boxed (domain, image, prop_type, named, &named, error);
+			if (!is_ok (error)) {
 				g_free (name);
 				return;
 			}
-
-			obj = (MonoObject *)(type_is_reference (prop_type) ? val : mono_value_box (domain, mono_class_from_mono_type (prop_type), val));
 			mono_array_setref (namedargs, j, obj);
-			if (!type_is_reference (prop_type))
-				g_free (val);
 		}
 		g_free (name);
 	}

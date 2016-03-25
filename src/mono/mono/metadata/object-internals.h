@@ -1454,8 +1454,11 @@ mono_get_addr_from_ftnptr (gpointer descr);
 void
 mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass);
 
+MonoObject *
+mono_value_box_checked (MonoDomain *domain, MonoClass *klass, void* val, MonoError *error);
+
 MonoObject*
-mono_nullable_box (guint8 *buf, MonoClass *klass);
+mono_nullable_box (guint8 *buf, MonoClass *klass, MonoError *error);
 
 #ifdef MONO_SMALL_CONFIG
 #define MONO_IMT_SIZE 9

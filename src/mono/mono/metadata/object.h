@@ -162,6 +162,7 @@ mono_object_hash            (MonoObject* obj);
 MONO_API MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
