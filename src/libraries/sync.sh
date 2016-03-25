@@ -51,7 +51,7 @@ $working_tree_root/init-tools.sh
 
 if [ "$sync_src" == true ]; then
     echo "Fetching git database from remote repos..."
-    git fetch --all -p -v &>> $sync_log
+    git fetch --all -p -v >> $sync_log
     if [ $? -ne 0 ]; then
         echo -e "\ngit fetch failed. Aborting sync." >> $sync_log
         echo "ERROR: An error occurred while fetching remote source code; see $sync_log for more details."
