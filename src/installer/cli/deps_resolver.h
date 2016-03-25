@@ -112,7 +112,9 @@ private:
 
     // Map of simple name -> full path of local/fx assemblies populated
     // in priority order of their extensions.
-    std::unordered_map<pal::string_t, pal::string_t> m_sxs_assemblies;
+    typedef std::unordered_map<pal::string_t, pal::string_t> dir_assemblies_t;
+    dir_assemblies_t m_local_assemblies;
+    dir_assemblies_t m_fx_assemblies;
 
     // Special entry for coreclr in the deps entries
     int m_coreclr_index;

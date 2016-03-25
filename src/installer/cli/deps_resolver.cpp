@@ -74,7 +74,7 @@ void add_unique_path(
 void deps_resolver_t::get_dir_assemblies(
     const pal::string_t& dir,
     const pal::string_t& dir_name,
-    std::unordered_map<pal::string_t, pal::string_t>* dir_assemblies)
+    dir_assemblies_t* dir_assemblies)
 {
     trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
 
@@ -257,7 +257,7 @@ void deps_resolver_t::resolve_tpa_list(
         const pal::string_t& clr_dir,
         pal::string_t* output)
 {
-    std::vector<deps_entry_t> empty(0);
+    const std::vector<deps_entry_t> empty(0);
 
     pal::string_t ni_package_cache_dir;
     if (!package_cache_dir.empty())
@@ -267,18 +267,16 @@ void deps_resolver_t::resolve_tpa_list(
     }
 
     // Obtain the local assemblies in the app dir.
+    get_dir_assemblies(app_dir, _X("local"), &m_local_assemblies);
     if (m_portable)
     {
-        get_dir_assemblies(m_fx_dir, _X("fx"), &m_sxs_assemblies);
-    }
-    else
-    {
-        get_dir_assemblies(app_dir, _X("local"), &m_sxs_assemblies);
+        // For portable also obtain FX dir assemblies.
+        get_dir_assemblies(m_fx_dir, _X("fx"), &m_fx_assemblies);
     }
 
     std::set<pal::string_t> items;
 
-    auto process_entry = [&](bool is_portable, deps_json_t* deps, const deps_entry_t& entry)
+    auto process_entry = [&](bool is_portable, deps_json_t* deps, const dir_assemblies_t& dir_assemblies, const deps_entry_t& entry)
     {
         // Is this asset a "runtime" type?
         if (items.count(entry.asset_name))
@@ -304,10 +302,10 @@ void deps_resolver_t::resolve_tpa_list(
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
-        // Is this entry present locally?
-        else if (!is_portable && m_sxs_assemblies.count(entry.asset_name))
+        // Is this entry present in the given dir?
+        else if (dir_assemblies.count(entry.asset_name))
         {
-            add_tpa_asset(entry.asset_name, m_sxs_assemblies.find(entry.asset_name)->second, &items, output);
+            add_tpa_asset(entry.asset_name, dir_assemblies.find(entry.asset_name)->second, &items, output);
         }
         // The app is portable so the asset should be picked up from relative subpath.
         else if (is_portable && deps->try_ni(entry).to_full_path(app_dir, &candidate))
@@ -323,16 +321,20 @@ void deps_resolver_t::resolve_tpa_list(
     
     const auto& deps_entries = m_deps->get_entries(deps_entry_t::asset_types::runtime);
     std::for_each(deps_entries.begin(), deps_entries.end(), [&](const deps_entry_t& entry) {
-        process_entry(m_portable, m_deps.get(), entry);
+        process_entry(m_portable, m_deps.get(), m_local_assemblies, entry);
     });
     const auto& fx_entries = m_portable ? m_fx_deps->get_entries(deps_entry_t::asset_types::runtime) : empty;
     std::for_each(fx_entries.begin(), fx_entries.end(), [&](const deps_entry_t& entry) {
-        process_entry(false, m_fx_deps.get(), entry);
+        process_entry(false, m_fx_deps.get(), m_fx_assemblies, entry);
     });
 
     // Finally, if the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
-    for (const auto& kv : m_sxs_assemblies)
+    for (const auto& kv : m_local_assemblies)
+    {
+        add_tpa_asset(kv.first, kv.second, &items, output);
+    }
+    for (const auto& kv : m_fx_assemblies)
     {
         add_tpa_asset(kv.first, kv.second, &items, output);
     }
