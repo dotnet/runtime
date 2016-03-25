@@ -3926,21 +3926,6 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 	return code;
 }
 
-#define REAL_PRINT_REG(text,reg) \
-mono_assert (reg >= 0); \
-amd64_push_reg (code, AMD64_RAX); \
-amd64_push_reg (code, AMD64_RDX); \
-amd64_push_reg (code, AMD64_RCX); \
-amd64_push_reg (code, reg); \
-amd64_push_imm (code, reg); \
-amd64_push_imm (code, text " %d %p\n"); \
-amd64_mov_reg_imm (code, AMD64_RAX, printf); \
-amd64_call_reg (code, AMD64_RAX); \
-amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 3*4); \
-amd64_pop_reg (code, AMD64_RCX); \
-amd64_pop_reg (code, AMD64_RDX); \
-amd64_pop_reg (code, AMD64_RAX);
-
 /* benchmark and set based on cpu */
 #define LOOP_ALIGNMENT 8
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)

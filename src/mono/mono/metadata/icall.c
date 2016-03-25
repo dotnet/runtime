@@ -6275,7 +6275,14 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	mono_class_init_checked (delegate_class, &error);
 	mono_error_raise_exception (&error);
 
-	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
+	if (!(delegate_class->parent == mono_defaults.multicastdelegate_class)) {
+		/* FIXME improve this exception message */
+		mono_error_set_execution_engine (&error, "file %s: line %d (%s): assertion failed: (%s)", __FILE__, __LINE__,
+						 __func__,
+						 "delegate_class->parent == mono_defaults.multicastdelegate_class");
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	if (mono_security_core_clr_enabled ()) {
 		if (!mono_security_core_clr_ensure_delegate_creation (method, throwOnBindFailure))

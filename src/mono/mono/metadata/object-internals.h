@@ -16,55 +16,6 @@
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-coop-mutex.h"
 
-#if 1
-#ifdef __GNUC__
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d (%s): "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		__PRETTY_FUNCTION__, #expr);				  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d (%s): "		  \
-     "should not be reached", __FILE__, __LINE__, __PRETTY_FUNCTION__);	  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#else /* not GNUC */
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d: "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		#expr);							  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d): "			  \
-     "should not be reached", __FILE__, __LINE__);			  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#endif
-#else
-#define mono_assert(expr) g_assert(expr)
-#define mono_assert_not_reached() g_assert_not_reached() 
-#endif
-
 /* Use this as MONO_CHECK_ARG_NULL (arg,expr,) in functions returning void */
 #define MONO_CHECK_ARG(arg, expr, retval)		G_STMT_START{		  \
 		if (G_UNLIKELY (!(expr)))							  \
@@ -733,17 +684,6 @@ mono_domain_get_tls_offset (void);
  */
 
 #define IS_MONOTYPE(obj) (!(obj) || (((MonoObject*)(obj))->vtable->klass->image == mono_defaults.corlib && ((MonoReflectionType*)(obj))->type != NULL))
-
-/* 
- * Make sure the argument, which should be a System.Type is a System.MonoType object 
- * or equivalent, and not an instance of 
- * a user defined subclass of System.Type. This should be used in places were throwing
- * an exception is safe.
- */
-#define CHECK_MONOTYPE(obj) do { \
-	if (!IS_MONOTYPE (obj)) \
-		mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported")); \
-	} while (0)
 
 /* This should be used for accessing members of Type[] arrays */
 #define mono_type_array_get(arr,index) monotype_cast (mono_array_get ((arr), gpointer, (index)))

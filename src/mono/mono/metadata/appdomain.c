@@ -2146,10 +2146,11 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 void
 ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 {
+	MonoException *exc = NULL;
 	MonoDomain * domain = mono_domain_get_by_id (domain_id);
 
 	if (NULL == domain) {
-		MonoException *exc = mono_get_exception_execution_engine ("Failed to unload domain, domain id not found");
+		mono_get_exception_execution_engine ("Failed to unload domain, domain id not found");
 		mono_set_pending_exception (exc);
 		return;
 	}
@@ -2169,7 +2170,9 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 	return;
 #endif
 
-	mono_domain_unload (domain);
+	mono_domain_try_unload (domain, (MonoObject**)&exc);
+	if (exc)
+		mono_set_pending_exception (exc);
 }
 
 gboolean
@@ -2516,8 +2519,6 @@ mono_domain_unload (MonoDomain *domain)
 {
 	MonoObject *exc = NULL;
 	mono_domain_try_unload (domain, &exc);
-	if (exc)
-		mono_raise_exception ((MonoException*)exc);
 }
 
 static guint32
