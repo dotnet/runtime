@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsnEncodedData.cs" />
+    <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="DerEncoderTests.cs" />
     <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
