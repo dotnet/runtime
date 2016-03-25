@@ -77,9 +77,11 @@ public:
     // Policy policies
     bool PropagateNeverToRuntime() const override { return true; }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
+
     const char* GetName() const override { return "LegacyPolicy"; }
-#endif
+
+#endif // (DEBUG) || defined(INLINE_DATA)
 
 protected:
 
@@ -159,6 +161,10 @@ private:
     bool                    m_IsForceInlineKnown :1;
 };
 
+#endif // DEBUG
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+
 // DiscretionaryPolicy is a variant of the legacy policy.  It differs
 // in that there is no ALWAYS_INLINE class, there is no IL size limit,
 // and in prejit mode, discretionary failures do not set the "NEVER"
@@ -184,8 +190,8 @@ public:
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
 
     // Externalize data
-    void DumpData() const override;
-    void DumpSchema() const override;
+    void DumpData(FILE* file) const override;
+    void DumpSchema(FILE* file) const override;
 
     // Miscellaneous
     const char* GetName() const override { return "DiscretionaryPolicy"; }
@@ -202,6 +208,6 @@ private:
     unsigned    m_CallCount;
 };
 
-#endif // DEBUG
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #endif // _INLINE_POLICY_H_
