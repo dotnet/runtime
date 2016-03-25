@@ -13,8 +13,6 @@ namespace System.Globalization.Tests
         private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
         private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
         
         // On Windows, hiragana characters sort after katakana.
         // On ICU, it is the opposite
@@ -415,27 +413,6 @@ namespace System.Globalization.Tests
                 }
             }
             return char.MinValue; // There are no unassigned Unicode characters from \u0000 - \uFFFF
-        }
-
-        private static int PredictCompareOrdinalResult(string string1, string string2)
-        {
-            if (string1 == null)
-            {
-                if (string2 == null) return 0;
-                else return -1;
-            }
-            if (string2 == null) return 1;
-
-            for (int i = 0; i < string1.Length; i++)
-            {
-                if (i >= string2.Length) return 1;
-                if (string1[i] > string2[i]) return 1;
-                if (string1[i] < string2[i]) return -1;
-            }
-
-            if (string2.Length > string1.Length) return -1;
-
-            return 0;
         }
     }
 }
