@@ -20,27 +20,6 @@ namespace System.Globalization.Tests
             }
         }
 
-        internal static string GetPositiveInfinitySymbol(string localeName)
-        {
-            if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10)
-            {
-                if (string.Equals(localeName, "en-US", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "Infinity";
-                }
-                if (string.Equals(localeName, "fr-FR", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "Infini";
-                }
-
-                throw DateTimeFormatInfoData.GetCultureNotSupportedException(new CultureInfo(localeName));
-            }
-            else
-            {
-                return "\u221E";
-            }
-        }
-
         internal static int[] GetCurrencyNegativePatterns(string localeName)
         {
             // CentOS uses an older ICU than Ubuntu, which means the "Linux" values need to allow for
