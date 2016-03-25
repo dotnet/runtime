@@ -49,7 +49,6 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [ActiveIssue(5436, PlatformID.AnyUnix)]
         [InlineData("abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true)]
         [InlineData("abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false)]
         [InlineData("abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true)]
@@ -61,7 +60,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5436, PlatformID.AnyUnix)]
         public void GetHashCode_EmptyString()
         {
             Assert.Equal(0, CultureInfo.InvariantCulture.CompareInfo.GetHashCode("", CompareOptions.None));
