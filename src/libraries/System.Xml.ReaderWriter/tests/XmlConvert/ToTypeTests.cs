@@ -606,10 +606,10 @@ namespace System.Xml.Tests
             string expDateTime = String.Format("2002-12-30T23:15:55.1{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
 
             CError.Compare(XmlConvert.ToString(dt), expDateTime, "datetime");
-            dt = new DateTime(1, 1, 1, 23, 59, 59);
+            dt = new DateTime(2000, 1, 1, 23, 59, 59);
             dt = dt.AddTicks(9999999);
             span = TimeZoneInfo.Local.GetUtcOffset(dt);
-            expDateTime = String.Format("0001-01-01T23:59:59.9999999{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
+            expDateTime = String.Format("2000-01-01T23:59:59.9999999{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
             CError.Compare(XmlConvert.ToString(dt), expDateTime, "millisecs");
 
             dt = new DateTime(2002, 12, 30, 23, 15, 55);
