@@ -2617,49 +2617,6 @@ FCIMPL2(FC_BOOL_RET, SignatureNative::CompareSig, SignatureNative* pLhsUNSAFE, S
 }
 FCIMPLEND
 
-#if FEATURE_LEGACYNETCF
-FCIMPL4(FC_BOOL_RET, SignatureNative::CompareSigForAppCompat, SignatureNative* pLhsUNSAFE, ReflectClassBaseObject * pTypeLhsUNSAFE, SignatureNative* pRhsUNSAFE, ReflectClassBaseObject * pTypeRhsUNSAFE)
-{
-    FCALL_CONTRACT;
-    
-    INT32 ret = 0;
-
-    struct
-    {
-        SIGNATURENATIVEREF pLhs;
-        REFLECTCLASSBASEREF refTypeLhs;
-        SIGNATURENATIVEREF pRhs;
-        REFLECTCLASSBASEREF refTypeRhs;
-    } gc;
-
-    gc.pLhs = (SIGNATURENATIVEREF)pLhsUNSAFE;
-    gc.refTypeLhs = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeLhsUNSAFE);
-    gc.pRhs = (SIGNATURENATIVEREF)pRhsUNSAFE;
-    gc.refTypeRhs = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeRhsUNSAFE);
-
-    if ((gc.refTypeLhs == NULL) || (gc.refTypeRhs == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle1 = gc.refTypeLhs->GetType();
-    TypeHandle typeHandle2 = gc.refTypeRhs->GetType();
-
-    // The type contexts will be used in substituting formal type arguments in generic types.
-    SigTypeContext typeContext1(typeHandle1);
-    SigTypeContext typeContext2(typeHandle2);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        MetaSig metaSig1(gc.pLhs->GetCorSig(), gc.pLhs->GetCorSigSize(), gc.pLhs->GetModule(), &typeContext1);
-        MetaSig metaSig2(gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), &typeContext2);
-
-        ret = MetaSig::CompareMethodSigs(metaSig1, metaSig2, FALSE);
-    }
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-#endif
-
 void QCALLTYPE RuntimeMethodHandle::GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray)
 {
     QCALL_CONTRACT;

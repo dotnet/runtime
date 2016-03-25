@@ -1554,22 +1554,6 @@ public:
                                    bool enumThis);
 #endif
 
-#ifdef FEATURE_CORECLR
-public:
-    enum AppDomainCompatMode
-    {
-        APPDOMAINCOMPAT_NONE
-#ifdef FEATURE_LEGACYNETCF
-        , APPDOMAINCOMPAT_APP_EARLIER_THAN_WP8 // for "AppDomainCompatSwitch" == "WindowsPhone_3.7.0.0" or "AppDomainCompatSwitch" == "WindowsPhone_3.8.0.0"
-#endif
-    };
-    void SetAppDomainCompatMode(AppDomainCompatMode compatMode);
-    AppDomainCompatMode GetAppDomainCompatMode();
-    
-private:
-    AppDomainCompatMode m_CompatMode;
-#endif // FEATURE_CORECLR   
-
 };  // class BaseDomain
 
 enum
