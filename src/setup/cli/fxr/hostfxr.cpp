@@ -67,6 +67,9 @@ int execute_app(
         code = host_main(argc, argv);
         (void)host_unload();
     }
+
+    pal::unload_library(corehost);
+
     return code;
 }
 

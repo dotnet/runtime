@@ -81,7 +81,9 @@ int run(const int argc, const pal::char_t* argv[])
 
     // Obtain entrypoint symbols
     hostfxr_main_fn main_fn = (hostfxr_main_fn) pal::get_symbol(fxr, "hostfxr_main");
-    return main_fn(argc, argv);
+    int code = main_fn(argc, argv);
+    pal::unload_library(fxr);
+    return code;
 }
 
 #if defined(_WIN32)
