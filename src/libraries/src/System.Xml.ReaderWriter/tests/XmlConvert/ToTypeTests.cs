@@ -53,7 +53,6 @@ namespace System.Xml.Tests
             AddChild(new CVariation(ToType37) { Attribute = new Variation("ToString(byte, bool, char) - valid cases") });
             AddChild(new CVariation(ToType38) { Attribute = new Variation("ToString(TimeSpan) - valid cases") });
             AddChild(new CVariation(ToType39) { Attribute = new Variation("ToString(Guid) - valid cases") });
-            AddChild(new CVariation(ToType40) { Attribute = new Variation("ToString(DateTime) - valid cases") });
             AddChild(new CVariation(ToType40a) { Attribute = new Variation("ToString(int16, in32, int64, uint32, uint64) - valid cases") });
             AddChild(new CVariation(ToType42) { Attribute = new Variation("PositiveZero and NegativeZero double, float, bug regression 76523") });
             AddChild(new CVariation(ToType52) { Attribute = new Variation("ToDateTimeOffset(String s, String[] formats) - valid cases") { Param = "datetimeOffset.formats" } });
@@ -593,42 +592,6 @@ namespace System.Xml.Tests
 
             return TestInvalid(array, "byte");
         }
-
-        /// <summary>
-        ///     ToString(DateTime) - valid cases.  Need to disable for warning
-        /// </summary>
-        /// <returns></returns>
-#pragma warning disable 618
-        public int ToType40()
-        {
-            var dt = new DateTime(2002, 12, 30, 23, 15, 55, 100);
-            TimeSpan span = TimeZoneInfo.Local.GetUtcOffset(dt);
-            string expDateTime = String.Format("2002-12-30T23:15:55.1{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
-
-            CError.Compare(XmlConvert.ToString(dt), expDateTime, "datetime");
-            dt = new DateTime(2000, 1, 1, 23, 59, 59);
-            dt = dt.AddTicks(9999999);
-            span = TimeZoneInfo.Local.GetUtcOffset(dt);
-            expDateTime = String.Format("2000-01-01T23:59:59.9999999{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
-            CError.Compare(XmlConvert.ToString(dt), expDateTime, "millisecs");
-
-            dt = new DateTime(2002, 12, 30, 23, 15, 55);
-            span = TimeZoneInfo.Local.GetUtcOffset(dt);
-            expDateTime = String.Format("2002-12-30T23:15:55{0:+0#;-0#}:{1:00}", span.Hours, span.Minutes);
-            CError.Compare(XmlConvert.ToString(dt), expDateTime, "datetime");
-
-            dt = new DateTime(2002, 12, 30, 23, 15, 55, 0);
-            CError.Compare(XmlConvert.ToString(dt, "HH:mm:ss"), "23:15:55", "datetime");
-
-            dt = new DateTime(2002, 12, 30, 23, 15, 55, 0);
-            CError.Compare(XmlConvert.ToString(dt, "HH:mm:ssZ"), "23:15:55Z", "datetime");
-
-            dt = new DateTime(2002, 12, 30, 23, 15, 55, 0);
-            CError.Compare(XmlConvert.ToString(dt, "yyyy-MM-dd"), "2002-12-30", "datetime");
-
-            return TEST_PASS;
-        }
-#pragma warning restore 618
 
         //[Variation("ToString(int16, in32, int64, uint32, uint64) - valid cases")]
         public int ToType40a()
