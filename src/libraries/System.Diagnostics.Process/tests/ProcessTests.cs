@@ -398,45 +398,17 @@ namespace System.Diagnostics.Tests
             Assert.InRange(processorTimeAtHalfSpin, processorTimeBeforeSpin, Process.GetCurrentProcess().TotalProcessorTime.TotalSeconds);
         }
 
-        [ActiveIssue(5805)]
         [Fact]
         public void TestProcessStartTime()
         {
-            DateTime systemBootTime = DateTime.UtcNow - TimeSpan.FromMilliseconds(Environment.TickCount);
-            Process p = CreateProcessLong();
-
-            Assert.Throws<InvalidOperationException>(() => p.StartTime);
-            try
+            TimeSpan allowedWindow = TimeSpan.FromSeconds(3);
+            DateTime testStartTime = DateTime.UtcNow;
+            using (var remote = RemoteInvoke(() => { Console.Write(Process.GetCurrentProcess().StartTime.ToUniversalTime()); return SuccessExitCode; },
+                new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
             {
-                p.Start();
-
-                // Time in unix, is measured in jiffies, which is incremented by one for every timer interrupt since the boot time.
-                // Thus, because there are HZ timer interrupts in a second, there are HZ jiffies in a second. Hence 1\HZ, will
-                // be the resolution of system timer. The lowest value of HZ on unix is 100, hence the timer resolution is 10 ms.
-                // On Windows, timer resolution is 15 ms from MSDN DateTime.Now. Hence, allowing error in 15ms [max(10,15)].
-
-                long intervalTicks = new TimeSpan(0, 0, 0, 0, 15).Ticks;
-                long beforeTicks = systemBootTime.Ticks;
-
-                try
-                {
-                    // Ensure the process has started, p.id throws InvalidOperationException, if the process has not yet started.
-                    Assert.Equal(p.Id, Process.GetProcessById(p.Id).Id);
-                    long startTicks = p.StartTime.ToUniversalTime().Ticks;
-                    long afterTicks = DateTime.UtcNow.Ticks + intervalTicks;
-                    Assert.InRange(startTicks, beforeTicks, afterTicks);
-                }
-                catch (InvalidOperationException)
-                {
-                    Assert.True(p.StartTime.ToUniversalTime().Ticks > beforeTicks);
-                }
-            }
-            finally
-            {
-                if (!p.HasExited)
-                    p.Kill();
-
-                Assert.True(p.WaitForExit(WaitInMS));
+                DateTime remoteStartTime = DateTime.Parse(remote.Process.StandardOutput.ReadToEnd());
+                DateTime curTime = DateTime.UtcNow;
+                Assert.InRange(remoteStartTime, testStartTime - allowedWindow, curTime + allowedWindow);
             }
         }
 
