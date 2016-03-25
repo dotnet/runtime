@@ -2407,8 +2407,6 @@ public :
     void                lvaRecursiveDecRefCounts(GenTreePtr tree);
     void                lvaRecursiveIncRefCounts(GenTreePtr tree);
 
-    void                lvaAdjustRefCnts    ();
-
 #ifdef  DEBUG
     struct lvaStressLclFldArgs
     {
