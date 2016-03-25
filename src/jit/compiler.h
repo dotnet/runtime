@@ -2526,10 +2526,11 @@ public :
     // Get the maximum IL size allowed for an inline
     unsigned             getImpInlineSize() const { return impInlineSize; }
 
-#ifdef DEBUG
-    unsigned             getInlinedCount() const { return fgInlinedCount; }
-    InlinePolicy*        inlLastSuccessfulPolicy;
-#endif
+#if defined(DEBUG) || defined(INLINE_DATA)
+    unsigned             fgInlinedCount; // Number of successful inline expansion of this method.
+    InlinePolicy*        inlLastSuccessfulPolicy; // Policy used in last successful inline.
+    static bool          s_inlDumpDataHeader;  // Print header schema for inline data
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // The Compiler* that is the root of the inlining tree of which "this" is a member.
     Compiler*            impInlineRoot();
@@ -4697,7 +4698,6 @@ private:
     bool                gtIsActiveCSE_Candidate(GenTreePtr tree);
 
 #ifdef DEBUG
-    unsigned            fgInlinedCount; // Number of successful inline expansion of this method.
     bool                fgPrintInlinedMethods;
 #endif
     
@@ -7570,7 +7570,6 @@ public :
 #ifdef DEBUG
 
     static bool             s_dspMemStats;    // Display per-phase memory statistics for every function
-    static bool             s_inlDumpDataHeader;  // Print header schema for inline data
 
     template<typename T>
     T dspPtr(T p)
@@ -8595,18 +8594,21 @@ private:
 #endif
     inline    void                EndPhase(Phases phase);  // Indicate the end of the given phase.
 
-#ifdef FEATURE_CLRSQM
+#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64             m_compCyclesAtEndOfInlining;          // The thread-virtualized cycle count at the end of the inlining phase in the current compilation.
+    unsigned __int64             m_compCycles;                         // Net cycle count for current compilation
     DWORD                        m_compTickCountAtEndOfInlining;       // The result of GetTickCount() (# ms since some epoch marker) at the end of the inlining phase in the current compilation.
+#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
     // type-loading and class initialization).
-    void                    RecordSqmStateAtEndOfInlining();
+    void                    RecordStateAtEndOfInlining();
     // Assumes being called at the end of compilation.  Update the SQM state.
-    void                    RecordSqmStateAtEndOfCompilation();
+    void                    RecordStateAtEndOfCompilation();
 
+#ifdef FEATURE_CLRSQM
     // Does anything SQM related necessary at process shutdown time.
     static void             ProcessShutdownSQMWork(ICorStaticInfo* statInfo);
 #endif // FEATURE_CLRSQM
