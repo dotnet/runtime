@@ -50,10 +50,6 @@ LocaleID RuntimeGetFileSystemLocale();
 
 BOOL RuntimeFileNotFound(HRESULT hr);
 
-#ifdef FEATURE_LEGACYNETCF
-BOOL RuntimeIsLegacyNetCF(DWORD adid);
-#endif
-
 // Helper function to get an Internal interface with an in-memory metadata section
 STDAPI  GetMetaDataInternalInterface(
     LPVOID      pData,                  // [IN] in memory metadata section

@@ -2056,25 +2056,6 @@ interface ICLRExecutionManager : IUnknown
 
 #endif // FEATURE_CORECLR
 
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-/* This is an interface that NetCF created first for the phone.
-   It allows the host (SL) to pause the user interface thread
-   when a managed debugger has suspended the application.
-*/
-[
-    uuid(F2833A0C-F944-48d8-940E-F59425EDBFCF),
-    version(1.0),
-    helpstring("NetCF Host debugger control interface"),
-    pointer_default(unique),
-    local
-]
-interface IHostNetCFDebugControlManager : IUnknown
-{
-    HRESULT NotifyPause(DWORD dwReserved);
-    HRESULT NotifyResume(DWORD dwReserved);
-}
-#endif
-
 //*****************************************************************************
 // Interface to utilize HostProtection
 //*****************************************************************************

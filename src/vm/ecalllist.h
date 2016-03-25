@@ -847,7 +847,7 @@ FCFuncStart(gBCLDebugFuncs)
     FCFuncElement("GetRegistryLoggingValues", ManagedLoggingHelper::GetRegistryLoggingValues)
 FCFuncEnd()
 
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCFuncStart(gCryptographyUtilsFuncs)
     FCFuncElement("_AcquireCSP", COMCryptography::_AcquireCSP)
     FCFuncElement("_CreateCSP", COMCryptography::_CreateCSP)
@@ -917,7 +917,7 @@ FCFuncStart(gRSACryptoServiceProviderFuncs)
     QCFuncElement("DecryptKey", COMCryptography::DecryptKey)
     QCFuncElement("EncryptKey", COMCryptography::EncryptKey)
 FCFuncEnd()
-#endif // FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+#endif // FEATURE_CRYPTO
 
 FCFuncStart(gAppDomainManagerFuncs)
     QCFuncElement("GetEntryAssembly", AssemblyNative::GetEntryAssembly)
@@ -2334,7 +2334,7 @@ FCClassElement("PunkSafeHandle", "System.Reflection.Emit", gSymWrapperCodePunkSa
 #ifndef FEATURE_CORECLR
 FCClassElement("RNGCryptoServiceProvider", "System.Security.Cryptography", gRNGCryptoServiceProviderFuncs)
 #endif
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCClassElement("RSACryptoServiceProvider", "System.Security.Cryptography", gRSACryptoServiceProviderFuncs)
 #endif
 #ifdef FEATURE_RWLOCK
@@ -2376,19 +2376,19 @@ FCClassElement("SafeCertStoreHandle", "System.Security.Cryptography.X509Certific
 #endif // FEATURE_CORECLR
 #endif // FEATURE_X509
 FCClassElement("SafeHandle", "System.Runtime.InteropServices", gSafeHandleFuncs)
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCClassElement("SafeHashHandle", "System.Security.Cryptography", gSafeHashHandleFuncs)
-#endif // FEATURE_CRYPTO || FEATURE_LEGACYNETCFCRYPTO
+#endif // FEATURE_CRYPTO
 #if defined(FEATURE_ISOSTORE) && !defined(FEATURE_ISOSTORE_LIGHT)
 FCClassElement("SafeIsolatedStorageFileHandle", "System.IO.IsolatedStorage", gIsolatedStorageFileHandle)
 #endif // FEATURE_ISOSTORE && !FEATURE_ISOSTORE_LIGHT
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCClassElement("SafeKeyHandle", "System.Security.Cryptography", gSafeKeyHandleFuncs)
 #endif
 #ifdef FEATURE_CAS_POLICY
 FCClassElement("SafePEFileHandle", "Microsoft.Win32.SafeHandles", gPEFileFuncs)
 #endif // FEATURE_CAS_POLICY
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCClassElement("SafeProvHandle", "System.Security.Cryptography", gSafeProvHandleFuncs)
 #endif
 #ifndef FEATURE_CORECLR
@@ -2443,7 +2443,7 @@ FCClassElement("URLString", "System.Security.Util", gCOMUrlStringFuncs)
 FCClassElement("UriMarshaler", "System.StubHelpers", gUriMarshalerFuncs)
 #endif
 FCClassElement("Utf8String", "System", gUtf8String)
-#if defined(FEATURE_CRYPTO) || defined(FEATURE_LEGACYNETCFCRYPTO)
+#ifdef FEATURE_CRYPTO
 FCClassElement("Utils", "System.Security.Cryptography", gCryptographyUtilsFuncs)
 #endif
 FCClassElement("ValueClassMarshaler", "System.StubHelpers", gValueClassMarshalerFuncs)
