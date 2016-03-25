@@ -975,7 +975,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public override object GetValue(object component)
         {
-            Debug.WriteLine($"[{Name}]: GetValue({component?.ToString() ?? "(null)"})");
+            Debug.WriteLine($"[{Name}]: GetValue({component?.GetType().Name ?? "(null)"})");
 
             if (IsExtender)
             {
@@ -1179,7 +1179,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public override void SetValue(object component, object value)
         {
-            Debug.WriteLine($"[{Name}]: SetValue({component?.ToString() ?? "(null)"}, {value?.ToString() ?? "(null)"})");
+            Debug.WriteLine($"[{Name}]: SetValue({component?.GetType().Name ?? "(null)"}, {value?.GetType().Name ?? "(null)"})");
 
             if (component != null)
             {
