@@ -26,6 +26,7 @@ public:
     deps_json_t()
         : m_valid(false)
         , m_coreclr_index(-1)
+        , m_hostpolicy_index(-1)
     {
     }
 
@@ -51,10 +52,21 @@ public:
         return m_coreclr_index >= 0;
     }
 
+    bool has_hostpolicy_entry()
+    {
+        return m_hostpolicy_index >= 0;
+    }
+
     const deps_entry_t& get_coreclr_entry()
     {
         assert(has_coreclr_entry());
         return m_deps_entries[deps_entry_t::asset_types::native][m_coreclr_index];
+    }
+
+    const deps_entry_t& get_hostpolicy_entry()
+    {
+        assert(has_hostpolicy_entry());
+        return m_deps_entries[deps_entry_t::asset_types::native][m_hostpolicy_index];
     }
 
     bool is_valid()
@@ -90,6 +102,7 @@ private:
 	std::unordered_map<pal::string_t, int> m_ni_entries;
     rid_fallback_graph_t m_rid_fallback_graph;
     int m_coreclr_index;
+    int m_hostpolicy_index;
     bool m_valid;
 };
 
