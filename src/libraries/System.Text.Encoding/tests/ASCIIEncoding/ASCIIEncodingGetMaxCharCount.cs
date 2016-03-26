@@ -24,11 +24,5 @@ namespace System.Text.Tests
         {
             Assert.Equal(expected, new ASCIIEncoding().GetMaxCharCount(byteCount));
         }
-
-        [Fact]
-        public void GetMaxCharCount_Invalid()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => new ASCIIEncoding().GetMaxCharCount(-1));
-        }
     }
 }
