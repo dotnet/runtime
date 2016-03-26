@@ -623,10 +623,10 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                         {
                             originalSize = 2 * TARGET_POINTER_SIZE;
                         }
-                        else if (actualArgNode->gtOper == GT_LDOBJ)
+                        else if (actualArgNode->gtOper == GT_OBJ)
                         {
-                            CORINFO_CLASS_HANDLE ldObjClass = actualArgNode->gtLdObj.gtClass;
-                            originalSize = compiler->info.compCompHnd->getClassSize(ldObjClass);
+                            CORINFO_CLASS_HANDLE objClass = actualArgNode->gtObj.gtClass;
+                            originalSize = compiler->info.compCompHnd->getClassSize(objClass);
                         }
                         else
                         {
