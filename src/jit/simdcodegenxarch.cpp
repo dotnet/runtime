@@ -537,8 +537,7 @@ CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg
             }
             else
             {
-                instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, type);
-                inst_RV_RV(ins, targetReg, targetReg, targetType, emitTypeSize(targetType));
+                genSIMDZero(targetType, TYP_FLOAT, targetReg);
                 inst_RV_RV(ins_Store(type), targetReg, srcReg);
             }
             break;
@@ -554,6 +553,14 @@ CodeGen::genSIMDScalarMove(var_types type, regNumber targetReg, regNumber srcReg
             unreached();
         }
     }
+}
+
+void
+CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg)
+{
+    // pxor reg, reg
+    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType);
+    inst_RV_RV(ins, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
 }
 
 //------------------------------------------------------------------------
@@ -586,9 +593,7 @@ CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     {
         if (op1->IsZero())
         {   
-            // pxor reg, reg
-            ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType);
-            inst_RV_RV(ins, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
+            genSIMDZero(targetType, baseType, targetReg);
         }
         else if ((baseType == TYP_INT && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffff) ||
                  (baseType == TYP_LONG && op1->IsCnsIntOrI() && op1->AsIntConCommon()->IconValue() == 0xffffffffffffffffLL))
@@ -732,12 +737,11 @@ CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     assert(genCountBits(simdNode->gtRsvdRegs) == 1);
     regNumber vectorReg = genRegNumFromMask(simdNode->gtRsvdRegs);
 
-    // Zero out vectorReg if we are constructing a vector whose size is not equal to the SIMD vector size.
+    // Zero out vectorReg if we are constructing a vector whose size is not equal to targetType vector size.
     // For example in case of Vector4f we don't need to zero when using SSE2.
     if (compiler->isSubRegisterSIMDType(simdNode))
     {
-        instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType);
-        inst_RV_RV(ins, vectorReg, vectorReg, targetType, emitActualTypeSize(targetType));
+        genSIMDZero(targetType, baseType, vectorReg);
     }
 
     unsigned int baseTypeSize = genTypeSize(baseType);

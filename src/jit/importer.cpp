@@ -588,6 +588,7 @@ inline
 void                Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
 {
     assert(stmt->gtOper == GT_STMT);
+    noway_assert(impTreeLast != nullptr);
 
     /* If the statement being appended has any side-effects, check the stack
        to see if anything needs to be spilled to preserve correct ordering. */
@@ -599,7 +600,8 @@ void                Compiler::impAppendStmt(GenTreePtr stmt, unsigned chkLevel)
        we handle them specially using impSpillLclRefs(). Temp locals should
        be fine too. */
 
-    if ((expr->gtOper == GT_ASG) && (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
+    if ((expr->gtOper == GT_ASG) &&
+        (expr->gtOp.gtOp1->gtOper == GT_LCL_VAR) &&
         !(expr->gtOp.gtOp1->gtFlags & GTF_GLOB_REF) &&
         !gtHasLocalsWithAddrOp(expr->gtOp.gtOp2))
     {
@@ -872,7 +874,7 @@ GenTreeArgList*     Compiler::impPopList(unsigned   count,
 
         if (varTypeIsStruct(temp))
         {
-            // Morph trees that aren't already LDOBJs or MKREFANY to be LDOBJs
+            // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
             structType = ti.GetClassHandleForValueClass();
             temp = impNormStructVal(temp, structType, (unsigned)CHECK_SPILL_ALL);
@@ -1068,11 +1070,11 @@ GenTreePtr Compiler::impAssignStruct(GenTreePtr     dest,
 
     assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN ||
            dest->gtOper == GT_FIELD   || dest->gtOper == GT_IND    ||
-           dest->gtOper == GT_LDOBJ);
+           dest->gtOper == GT_OBJ);
 
     GenTreePtr destAddr;
 
-    if (dest->gtOper == GT_IND || dest->gtOper == GT_LDOBJ)
+    if (dest->gtOper == GT_IND || dest->gtOper == GT_OBJ)
     {
         destAddr = dest->gtOp.gtOp1;
     }
@@ -1099,7 +1101,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
     // TODO-ARM-BUG: Does ARM need this?
     // TODO-ARM64-BUG: Does ARM64 need this?
     assert(src->gtOper == GT_LCL_VAR  || src->gtOper == GT_FIELD    ||
-           src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
+           src->gtOper == GT_IND      || src->gtOper == GT_OBJ    ||
            src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
            src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
            src->gtOper == GT_ADDR     ||
@@ -1108,7 +1110,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
     assert(varTypeIsStruct(src));
 
     assert(src->gtOper == GT_LCL_VAR  || src->gtOper == GT_FIELD    ||
-           src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
+           src->gtOper == GT_IND      || src->gtOper == GT_OBJ      ||
            src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
            src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
            (src->TypeGet() != TYP_STRUCT && (GenTree::OperIsSIMD(src->gtOper) || src->gtOper == GT_LCL_FLD)));
@@ -1197,9 +1199,9 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
             return gtNewAssignNode(dest, src);
         }
     }
-    else if (src->gtOper == GT_LDOBJ)
+    else if (src->gtOper == GT_OBJ)
     {
-        assert(src->gtLdObj.gtClass == structHnd);
+        assert(src->gtObj.gtClass == structHnd);
         src = src->gtOp.gtOp1;        
     }
     else if (src->gtOper == GT_MKREFANY)
@@ -1280,14 +1282,14 @@ GenTreePtr Compiler::impGetStructAddr(GenTreePtr    structVal,
 
     genTreeOps      oper = structVal->gtOper;   
 
-    if (oper == GT_LDOBJ && willDeref)
+    if (oper == GT_OBJ && willDeref)
     {
-        assert(structVal->gtLdObj.gtClass == structHnd);
-        return(structVal->gtLdObj.gtOp1);
+        assert(structVal->gtObj.gtClass == structHnd);
+        return(structVal->gtObj.gtOp.gtOp1);
     }
-    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_LDOBJ || oper == GT_MKREFANY)
+    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY)
     {
-        unsigned    tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/ldobj"));
+        unsigned    tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
         impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
@@ -1408,8 +1410,8 @@ var_types       Compiler::impNormStructType(CORINFO_CLASS_HANDLE  structHnd,
 }
 
 //****************************************************************************
-//  Given TYP_STRUCT value 'structVal', make sure it is 'canonical'
-//  is must be either a LDOBJ or a MKREFANY node 
+//  Given TYP_STRUCT value 'structVal', make sure it is 'canonical', that is
+//  it is either an OBJ or a MKREFANY node.
 //
 GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
                                            CORINFO_CLASS_HANDLE  structHnd,
@@ -1447,10 +1449,6 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
         structVal->gtType = structType;
         break;
 
-    case GT_IND:
-        structVal->gtType = structType;
-        break;
-
     case GT_INDEX:
         structVal->gtIndex.gtStructElemClass = structHnd;
         structVal->gtIndex.gtIndElemSize = info.compCompHnd->getClassSize(structHnd);
@@ -1465,21 +1463,24 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
     case GT_LCL_FLD:
         break;
 
-    case GT_LDOBJ:
+    case GT_OBJ:
+    case GT_IND:
         // These should already have the appropriate type.
         assert(structVal->gtType == structType);
         break;
 
 #ifdef FEATURE_SIMD
     case GT_SIMD:
-        // These don't preserve the handle.
-        assert(varTypeIsSIMD(structVal));
+        assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
         break;
 #endif // FEATURE_SIMD
 
     case GT_COMMA:
         {
+            // The second thing is the struct node.
             GenTree* op2 = structVal->gtOp.gtOp2;
+            assert(op2->gtType == structType);
+
             impNormStructVal(op2, structHnd, curLevel, forceNormalization);
             structType = op2->TypeGet();
             structVal->gtType = structType;
@@ -1492,13 +1493,13 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
     }
 
     // Is it already normalized?
-    if (!forceNormalization && (structVal->gtOper == GT_MKREFANY || structVal->gtOper == GT_LDOBJ))
+    if (!forceNormalization && (structVal->gtOper == GT_MKREFANY || structVal->gtOper == GT_OBJ))
         return(structVal);
 
-    // Normalize it by wraping it in a LDOBJ
+    // Normalize it by wraping it in an OBJ
 
     GenTreePtr structAddr  = impGetStructAddr(structVal, structHnd, curLevel, !forceNormalization); // get the addr of struct
-    GenTreePtr structLdobj = new (this, GT_LDOBJ) GenTreeLdObj(structType, structAddr, structHnd);
+    GenTreePtr structObj = new (this, GT_OBJ) GenTreeObj(structType, structAddr, structHnd);
 
     if (structAddr->gtOper == GT_ADDR)
     {
@@ -1509,18 +1510,18 @@ GenTreePtr      Compiler::impNormStructVal(GenTreePtr    structVal,
     }
     if (structVal->IsLocal())
     {
-        // A LDOBJ on a ADDR(LCL_VAR) can never raise an exception
+        // A OBJ on a ADDR(LCL_VAR) can never raise an exception
         // so we don't set GTF_EXCEPT here.
         //
-        // TODO-CQ: Clear the GTF_GLOB_REF flag on structLdobj as well
+        // TODO-CQ: Clear the GTF_GLOB_REF flag on structObj as well
         //          but this needs additional work when inlining.
     }
     else  
     {
-        // In general a LDOBJ is an IND and could raise an exception
-        structLdobj->gtFlags |= GTF_EXCEPT;
+        // In general a OBJ is an IND and could raise an exception
+        structObj->gtFlags |= GTF_EXCEPT;
     }
-    return(structLdobj);
+    return(structObj);
 }
 
 
@@ -1848,7 +1849,7 @@ GenTreePtr          Compiler::impRuntimeLookupToTree(CORINFO_RUNTIME_LOOKUP_KIND
  *  Spills the stack at verCurrentState.esStack[level] and replaces it with a temp.
  *  If tnum!=BAD_VAR_NUM, the temp var used to replace the tree is tnum,
  *     else, grab a new temp.
- *  For structs (which can be pushed on the stack using ldobj, etc),
+ *  For structs (which can be pushed on the stack using obj, etc),
  *  special handling is needed
  */
 
@@ -2847,8 +2848,8 @@ GenTreePtr      Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO * sig)
 
     //
     // At this point we are ready to commit to implementing the InitializeArray 
-    // instrinsic using a GT_COPYBLK node.  Pop the arguments from the stack and
-    // return the GT_COPYBLK node.
+    // instrinsic using a struct assignment.  Pop the arguments from the stack and
+    // return the struct assignment node.
     //
 
     impPopStack();
@@ -4706,7 +4707,7 @@ GenTreePtr Compiler::impTransformThis (GenTreePtr thisPtr,
             GenTreePtr obj = thisPtr;
             
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = gtNewLdObjNode(pConstrainedResolvedToken->hClass, obj);
+            obj = gtNewObjNode(pConstrainedResolvedToken->hClass, obj);
             obj->gtFlags |= GTF_EXCEPT;
             
             CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
@@ -4714,7 +4715,7 @@ GenTreePtr Compiler::impTransformThis (GenTreePtr thisPtr,
             {
                 obj->ChangeOperUnchecked(GT_IND);
                 
-                // ldobj could point anywhere, example a boxed class static int
+                // Obj could point anywhere, example a boxed class static int
                 obj->gtFlags |= GTF_IND_TGTANYWHERE;
                 
                 obj->gtType = JITtype2varType(jitTyp);
@@ -5212,7 +5213,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN * pResolv
                 if (varTypeIsStruct(lclTyp))
                 {
                     // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-                    op1 = gtNewLdObjNode(pFieldInfo->structType, op1);
+                    op1 = gtNewObjNode(pFieldInfo->structType, op1);
                 }
                 else
                 {
@@ -7174,12 +7175,12 @@ REDO_RETURN_NODE:
     {
         op->ChangeOper(GT_LCL_FLD);
     }
-    else if (op->gtOper == GT_LDOBJ)
+    else if (op->gtOper == GT_OBJ)
     {
-        GenTreePtr op1 = op->gtLdObj.gtOp1;
+        GenTreePtr op1 = op->AsObj()->Addr();
 
-        // We will fold away LDOBJ/ADDR
-        // except for LDOBJ/ADDR/INDEX
+        // We will fold away OBJ/ADDR
+        // except for OBJ/ADDR/INDEX
         //     as the array type influences the array element's offset
         //     Later in this method we change op->gtType to info.compRetNativeType
         //     This is not correct when op is a GT_INDEX as the starting offset
@@ -7193,9 +7194,7 @@ REDO_RETURN_NODE:
             op = op1->gtOp.gtOp1;
             goto REDO_RETURN_NODE;
         }
-
-        op->gtLdObj.gtClass = nullptr;
-        op->gtLdObj.gtFldTreeList = nullptr;
+        op->gtObj.gtClass = NO_CLASS_HANDLE;
         op->ChangeOperUnchecked(GT_IND);
         op->gtFlags |= GTF_IND_TGTANYWHERE;
     }
@@ -7219,7 +7218,7 @@ REDO_RETURN_NODE:
             // No need to spill anything as we're about to return.
             impAssignTempGen(tmpNum, op, info.compMethodInfo->args.retTypeClass, (unsigned)CHECK_SPILL_NONE);
 
-            // Don't both creating a GT_ADDR & GT_LDOBJ jsut to undo all of that
+            // Don't create both a GT_ADDR & GT_OBJ just to undo all of that; instead,
             // jump directly to a GT_LCL_FLD.
             op = gtNewLclvNode(tmpNum, info.compRetNativeType);
             op->ChangeOper(GT_LCL_FLD);
@@ -7243,7 +7242,7 @@ REDO_RETURN_NODE:
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif // DEBUG
 
-            // Don't change the gtType node just yet, it will get changed later
+            // Don't change the gtType of the node just yet, it will get changed later.
             return op;
         }
     }
@@ -8792,6 +8791,7 @@ DECODE_OPCODE:
 
             GenTreePtr      op3;
             genTreeOps      oper;
+            unsigned        size;
 
             int             val;
 
@@ -9674,14 +9674,23 @@ ARR_LD_POST_VERIFY:
 
                 // remember the element size
                 if (lclTyp == TYP_REF)
+                {
                     op1->gtIndex.gtIndElemSize = sizeof(void*);
+                }
                 else
                 {
                     // If ldElemClass is precisely a primitive type, use that, otherwise, preserve the struct type.
                     if (info.compCompHnd->getTypeForPrimitiveValueClass(ldelemClsHnd) == CORINFO_TYPE_UNDEF)
+                    {
                         op1->gtIndex.gtStructElemClass = ldelemClsHnd;
+                    }
                     assert(lclTyp != TYP_STRUCT || op1->gtIndex.gtStructElemClass != nullptr);
-                    op1->gtIndex.gtIndElemSize = info.compCompHnd->getClassSize(ldelemClsHnd);
+                    if (lclTyp == TYP_STRUCT)
+                    {
+                        size = info.compCompHnd->getClassSize(ldelemClsHnd);
+                        op1->gtIndex.gtIndElemSize = size;
+                        op1->gtType = lclTyp;
+                    }
                 }
 
                 if ((opcode == CEE_LDELEMA) || ldstruct)
@@ -9699,8 +9708,8 @@ ARR_LD_POST_VERIFY:
 
             if (ldstruct)
             {
-                // Do a LDOBJ on the result
-                op1 = gtNewLdObjNode(ldelemClsHnd, op1);
+                // Create an OBJ for the result
+                op1 = gtNewObjNode(ldelemClsHnd, op1);
                 op1->gtFlags |= GTF_EXCEPT;
             }
             impPushOnStack(op1, tiRetVal);
@@ -10708,7 +10717,7 @@ _CONV:
                 if (varTypeIsStruct(op1))
                 {                    
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                    // Non-calls, such as ldobj or ret_expr, have to go through this.
+                    // Non-calls, such as obj or ret_expr, have to go through this.
                     // Calls with large struct return value have to go through this.
                     // Helper calls with small struct return value also have to go 
                     // through this since they do not follow Unix calling convention.
@@ -11779,7 +11788,9 @@ DO_LDFTN:
 
             /* Preserve 'small' int types */
             if  (lclTyp > TYP_INT)
+            {
                 lclTyp = genActualType(lclTyp);
+            }
 
             bool usesHelper = false;
 
@@ -11945,7 +11956,7 @@ DO_LDFTN:
 
                     if (!usesHelper)
                     {
-                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) || (op1->OperGet() == GT_LDOBJ));
+                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) || (op1->OperGet() == GT_OBJ));
                         op1->gtFlags |= GTF_IND_VOLATILE;
                     }
                 }
@@ -11954,7 +11965,7 @@ DO_LDFTN:
                 {
                     if (!usesHelper)
                     {
-                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) || (op1->OperGet() == GT_LDOBJ));
+                        assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND) || (op1->OperGet() == GT_OBJ));
                         op1->gtFlags |= GTF_IND_UNALIGNED;
                     }
                 }
@@ -12072,8 +12083,10 @@ FIELD_DONE:
             }
 
             /* Preserve 'small' int types */
-            if  (lclTyp > TYP_INT)
+            if (lclTyp > TYP_INT)
+            {
                 lclTyp = genActualType(lclTyp);
+            }
 
             switch (fieldInfo.fieldAccessor)
             {
@@ -12462,7 +12475,7 @@ FIELD_DONE:
             // make certain it is normalized;
             op1 = impNormStructVal(op1, impGetRefAnyClass(), (unsigned)CHECK_SPILL_ALL);
 
-            if (op1->gtOper == GT_LDOBJ)
+            if (op1->gtOper == GT_OBJ)
             {
                 // Get the address of the refany
                 op1 = op1->gtOp.gtOp1;
@@ -12576,8 +12589,8 @@ FIELD_DONE:
             /* Pop the object and create the unbox helper call */
             /* You might think that for UNBOX_ANY we need to push a different */
             /* (non-byref) type, but here we're making the tiRetVal that is used */
-            /* for the intermediate pointer which we then transfer onto the LDOBJ */
-            /* instruction.  LDOBJ then creates the appropriate tiRetVal. */
+            /* for the intermediate pointer which we then transfer onto the OBJ */
+            /* instruction.  OBJ then creates the appropriate tiRetVal. */
             if (tiVerificationNeeded)
             { 
                 typeInfo tiUnbox = impStackTop().seTypeInfo;
@@ -12679,7 +12692,7 @@ FIELD_DONE:
               | UNBOX     | push the BYREF          | spill the STRUCT to a local, |
               |           |                         | push the BYREF to this local |
               |--------------------------------------------------------------------- 
-              | UNBOX_ANY | push a GT_LDOBJ of      | push the STRUCT              |
+              | UNBOX_ANY | push a GT_OBJ of        | push the STRUCT              |
               |           | the BYREF               | For Linux when the           |
               |           |                         |  struct is returned in two   |
               |           |                         |  registers create a temp     |
@@ -12720,8 +12733,8 @@ FIELD_DONE:
                 {                         
                     // Normal unbox helper returns a TYP_BYREF.
                     impPushOnStack(op1, tiRetVal);
-                    oper = GT_LDOBJ;
-                    goto LDOBJ;
+                    oper = GT_OBJ;
+                    goto OBJ;
                   }
 
                 assert(helper == CORINFO_HELP_UNBOX_NULLABLE && "Make sure the helper is nullable!");
@@ -12757,12 +12770,12 @@ FIELD_DONE:
                         impPushOnStack(op1, tiRetVal);
 
                         // Load the struct.
-                        oper = GT_LDOBJ;
+                        oper = GT_OBJ;
 
                         assert(op1->gtType == TYP_BYREF);
                         assert(!tiVerificationNeeded || tiRetVal.IsByRef());
 
-                        goto LDOBJ;
+                        goto OBJ;
                     }   
                     else
                     {
@@ -13230,14 +13243,14 @@ INITBLK_OR_INITOBJ:
 
 
         case CEE_LDOBJ: {
-            oper = GT_LDOBJ;
+            oper = GT_OBJ;
             assertImp(sz == sizeof(unsigned));
 
             _impResolveToken(CORINFO_TOKENKIND_Class);
 
             JITDUMP(" %08X", resolvedToken.token);
 
-LDOBJ:
+OBJ:
 
             tiRetVal =  verMakeTypeInfo(resolvedToken.hClass);
 
@@ -13292,9 +13305,9 @@ LDOBJ:
             }
             else
             {
-                // LDOBJ returns a struct
+                // OBJ returns a struct
                 // and an inline argument which is the class token of the loaded obj
-                op1 = gtNewLdObjNode(resolvedToken.hClass, op1);
+                op1 = gtNewObjNode(resolvedToken.hClass, op1);
             }
             op1->gtFlags |= GTF_EXCEPT;
             

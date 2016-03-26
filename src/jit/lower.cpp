@@ -1311,16 +1311,16 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         {
             unsigned numRefs = 0;
             BYTE* gcLayout = new (comp, CMK_Codegen) BYTE[fp->numSlots];
-            // We use GT_LDOBJ for non-SIMD struct arguments. However, for
-            // SIMD arguments the GT_LDOBJ has already been transformed.
-            if (arg->gtOper != GT_LDOBJ)
+            // We use GT_OBJ for non-SIMD struct arguments. However, for
+            // SIMD arguments the GT_OBJ has already been transformed.
+            if (arg->gtOper != GT_OBJ)
             {
                 assert(varTypeIsSIMD(arg));
             }
             else
             {
                 assert(!varTypeIsSIMD(arg));
-                numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+                numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
             }
 
             putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);

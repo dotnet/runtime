@@ -1213,7 +1213,7 @@ public:
         case GT_COPYBLK:
         case GT_COPYOBJ:
         case GT_INITBLK:
-        case GT_LDOBJ:
+        case GT_OBJ:
         case GT_BOX:
         case GT_ARR_INDEX:
         case GT_ARR_ELEM:
@@ -2869,6 +2869,27 @@ protected:
 #endif // DEBUGGABLE_GENTREE
 };
 
+// gtObj  -- 'object' (GT_OBJ). */
+
+struct GenTreeObj: public GenTreeUnOp
+{
+    // The address of the block.
+    GenTreePtr&     Addr()          { return gtOp1; }
+
+    CORINFO_CLASS_HANDLE gtClass;   // the class of the object
+
+    GenTreeObj(var_types type, GenTreePtr addr, CORINFO_CLASS_HANDLE cls) : 
+        GenTreeUnOp(GT_OBJ, type, addr),
+        gtClass(cls)
+        {
+            gtFlags |= GTF_GLOB_REF; // An Obj is always a global reference.
+        }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeObj() : GenTreeUnOp() {}
+#endif
+};
+
 // Represents a CpObj MSIL Node.
 struct GenTreeCpObj : public GenTreeBlkOp
 {
@@ -3270,24 +3291,7 @@ struct GenTreeStmt: public GenTree
 #endif
 };
 
-/* gtLdObj  -- 'push object' (GT_LDOBJ). */
 
-struct GenTreeLdObj: public GenTreeUnOp
-{
-    CORINFO_CLASS_HANDLE gtClass;   // object being loaded   
-                                    // TODO-Cleanup: Consider adding the GC layout information to this node
-    GenTreePtr *    gtFldTreeList;  // The list of trees that represents the fields of this struct
-
-    GenTreeLdObj(var_types type, GenTreePtr op, CORINFO_CLASS_HANDLE cls) : 
-        GenTreeUnOp(GT_LDOBJ, type, op),
-        gtClass(cls), gtFldTreeList(NULL)
-        {
-            gtFlags |= GTF_GLOB_REF; // A LdObj is always a global reference.
-        }
-#if DEBUGGABLE_GENTREE
-    GenTreeLdObj() : GenTreeUnOp() {}
-#endif
-};
 
 
 /*  NOTE: Any tree nodes that are larger than 8 bytes (two ints or
