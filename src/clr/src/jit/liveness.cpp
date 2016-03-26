@@ -1859,13 +1859,13 @@ SKIP_QMARK:
 #ifdef LEGACY_BACKEND
         // Generally, the last use information is associated with the lclVar node.
         // However, for LEGACY_BACKEND, the information must be associated
-        // with the LDOBJ itself for promoted structs.
+        // with the OBJ itself for promoted structs.
         // In that case, the LDOBJ may be require an implementation that might itself allocate registers,
         // so the variable(s) should stay live until the end of the LDOBJ.
         // Note that for promoted structs lvTracked is false.
 
         GenTreePtr lclVarTree = nullptr;
-        if (tree->gtOper == GT_LDOBJ)
+        if (tree->gtOper == GT_OBJ)
         {
             // fgIsIndirOfAddrOfLocal returns nullptr if the tree is 
             // not an indir(addr(local)), in which case we will set lclVarTree
@@ -2208,7 +2208,7 @@ bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP l
         }
         else if (asgNode == nullptr)
         {
-            // This may be followed by GT_IND/assign, GT_STOREIND or GT_LIST/block-op.
+            // This may be followed by GT_IND/assign or GT_STOREIND.
             if (nextNode == nullptr)
             {
                 return false;

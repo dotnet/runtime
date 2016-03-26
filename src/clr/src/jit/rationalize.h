@@ -168,7 +168,7 @@ private:
     bool       BreakFirstLevelQuestions (BasicBlock* block, GenTree* tree);
     
     // SIMD related transformations
-    static void RewriteLdObj(GenTreePtr* ppTree, Compiler::fgWalkData* data);
+    static void RewriteObj(GenTreePtr* ppTree, Compiler::fgWalkData* data);
     static void RewriteCopyBlk(GenTreePtr* ppTree, Compiler::fgWalkData* data);
     static void RewriteInitBlk(GenTreePtr* ppTree, Compiler::fgWalkData* data);
 
