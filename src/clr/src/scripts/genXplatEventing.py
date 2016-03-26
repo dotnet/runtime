@@ -6,7 +6,7 @@
 #
 #USAGE:
 #Add Events: modify <root>src/vm/ClrEtwAll.man
-#Look at the Code in  <root>/src/inc/genXplatLttng.py for using subroutines in this file
+#Look at the Code in  <root>/src/scripts/genXplatLttng.py for using subroutines in this file
 #
 
 # Python 2 compatibility
