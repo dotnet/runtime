@@ -1767,7 +1767,7 @@ protected:
                                              GenTreePtr src, GenTreePtr size,
                                              bool volatil);
 public:
-    GenTreeLdObj*           gtNewLdObjNode  (CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
+    GenTreeObj*             gtNewObjNode    (CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr);
 
     GenTreeBlkOp*           gtNewCpObjNode  (GenTreePtr dst, GenTreePtr src,
                                              CORINFO_CLASS_HANDLE structHnd, bool volatil);
@@ -6676,10 +6676,10 @@ public :
                                                             regMaskTP* pArgSkippedRegMask);
 #endif // _TARGET_ARM_
 
-    // If "tree" is a indirection (GT_IND, or GT_LDOBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR node, else NULL.
+    // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR node, else NULL.
     GenTreePtr          fgIsIndirOfAddrOfLocal(GenTreePtr tree);
 
-    // This is indexed by GT_LDOBJ nodes that are address of promoted struct variables, which
+    // This is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
     // table, one may assume that all the (tracked) field vars die at this point.  Otherwise,
     // the node maps to a pointer to a VARSET_TP, containing set bits for each of the tracked field
@@ -6872,25 +6872,48 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     CORINFO_CLASS_HANDLE    SIMDVectorHandle;
 
     // Get the handle for a SIMD type.
-    // For the purposes of type handles, we treat all Vector<T> as Vector<float> in the JIT,
-    // as the actual instantiation type doesn't impact this code (that is always captured,
-    // where semantically meaningful, in the "baseType" of SIMD nodes or lclVars.
-    CORINFO_CLASS_HANDLE    getStructHandleForSIMDType(var_types type)
+    CORINFO_CLASS_HANDLE    gtGetStructHandleForSIMD(var_types simdType, var_types simdBaseType)
     {
-        noway_assert(varTypeIsSIMD(type));
-        CORINFO_CLASS_HANDLE structHnd;
-        switch (type)
+        if (simdBaseType == TYP_FLOAT)
         {
-            case TYP_SIMD8:     structHnd = SIMDVector2Handle;                 break;
-            case TYP_SIMD12:    structHnd = SIMDVector3Handle;                 break;
-            case TYP_SIMD16:    structHnd = SIMDVector4Handle;                 break;
-#ifdef FEATURE_AVX_SUPPORT
-            case TYP_SIMD32:    structHnd = SIMDFloatHandle;                   break;
-#endif // FEATURE_AVX_SUPPORT
-            default:            unreached();
+            switch(simdType)
+            {
+            case TYP_SIMD8:
+                return SIMDVector2Handle;
+            case TYP_SIMD12:
+                return SIMDVector3Handle;
+            case TYP_SIMD16:
+                if ((getSIMDVectorType() == TYP_SIMD32) ||
+                    (SIMDVector4Handle != NO_CLASS_HANDLE))
+                {
+                    return SIMDVector4Handle;
+                }
+                break;
+            case TYP_SIMD32:
+                break;
+            default:
+                unreached();
+            }
         }
-        return structHnd;    
+        assert(simdType == getSIMDVectorType());
+        switch(simdBaseType)
+        {
+        case TYP_FLOAT:     return SIMDFloatHandle;
+        case TYP_DOUBLE:    return SIMDDoubleHandle;
+        case TYP_INT:       return SIMDIntHandle;
+        case TYP_CHAR:      return SIMDUShortHandle;
+        case TYP_USHORT:    return SIMDUShortHandle;
+        case TYP_UBYTE:     return SIMDUByteHandle;
+        case TYP_SHORT:     return SIMDShortHandle;
+        case TYP_BYTE:      return SIMDByteHandle;
+        case TYP_LONG:      return SIMDLongHandle;
+        case TYP_UINT:      return SIMDUIntHandle;
+        case TYP_ULONG:     return SIMDULongHandle;
+        default:            assert(!"Didn't find a class handle for simdType");
+        }
+        return NO_CLASS_HANDLE;
     }
+
     // SIMD Methods
     CORINFO_METHOD_HANDLE   SIMDVectorFloat_set_Item;
     CORINFO_METHOD_HANDLE   SIMDVectorFloat_get_Length;

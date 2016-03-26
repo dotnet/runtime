@@ -10551,13 +10551,9 @@ LockBinOpCommon:
             return;
         }
 
-        case GT_LDOBJ:
-            // We need to decide whether all GT_LDOBJ nodes should be eliminated in importation/morphing (by
-            // translation into copyblk or ldind), or whether it is legal to have as arguments to this
-            // method, where we have to generate code for them.
-            // On AMD64, at least, we can get here...
-            NYI("Handle GT_LDOBJ, or eliminate them earlier.");
-            unreached();
+        case GT_OBJ:
+            // All GT_OBJ nodes must have been morphed prior to this.
+            noway_assert(!"Should not see a GT_OBJ node during CodeGen.");
 
         default:
 #ifdef DEBUG
@@ -16533,7 +16529,7 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
                 arg = arg->gtOp.gtOp2;
             }
 
-            noway_assert(arg->gtOper == GT_LDOBJ 
+            noway_assert(arg->gtOper == GT_OBJ 
                          || arg->gtOper == GT_MKREFANY
                          || arg->gtOper == GT_IND);
             noway_assert((arg->gtFlags & GTF_REVERSE_OPS) == 0);
@@ -16571,12 +16567,12 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
             }
             else
             {
-                noway_assert(arg->gtOper == GT_LDOBJ);
+                noway_assert(arg->gtOper == GT_OBJ);
 
-                if (arg->gtLdObj.gtOp1->gtOper == GT_ADDR &&
-                    arg->gtLdObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+                if (arg->gtObj.gtOp1->gtOper == GT_ADDR &&
+                    arg->gtObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
                 {              
-                    GenTreePtr   structLocalTree  = arg->gtLdObj.gtOp1->gtOp.gtOp1;
+                    GenTreePtr   structLocalTree  = arg->gtObj.gtOp1->gtOp.gtOp1;
                     unsigned     structLclNum     = structLocalTree->gtLclVarCommon.gtLclNum;
                     LclVarDsc *  varDsc           = &compiler->lvaTable[structLclNum];
 
@@ -16598,7 +16594,7 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
                         addrReg = 0;
 
                         // Get the number of BYTES to copy to the stack                     
-                        opsz = roundUp(compiler->info.compCompHnd->getClassSize(arg->gtLdObj.gtClass), sizeof(void*));                  
+                        opsz = roundUp(compiler->info.compCompHnd->getClassSize(arg->gtObj.gtClass), sizeof(void*));                  
                         size_t bytesToBeCopied = opsz;
                 
                         // postponedFields is true if we have any postponed fields
@@ -16618,6 +16614,9 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
                         regMaskTP  postponedRegKind       = RBM_NONE;
                         size_t     expectedAlignedOffset  = UINT_MAX;
                     
+                        VARSET_TP* deadVarBits = NULL;
+                        compiler->GetPromotedStructDeathVars()->Lookup(structLocalTree, &deadVarBits);
+
                         // Reverse loop, starts pushing from the end of the struct (i.e. the highest field offset)
                         //
                         for (int varNum = varDsc->lvFieldLclStart + varDsc->lvFieldCnt - 1;
@@ -16741,10 +16740,19 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
                                             genSinglePush();
                                         }
                                         
-                                        GenTreePtr fieldTree = arg->gtLdObj.gtFldTreeList[(varNum - varDsc->lvFieldLclStart)];
-                                        noway_assert(fieldTree->gtOper == GT_REG_VAR);
 #if FEATURE_STACK_FP_X87
-
+                                        GenTree* fieldTree = new (compiler, GT_REG_VAR) GenTreeLclVar(fieldVarDsc->lvType, varNum, BAD_IL_OFFSET);
+                                        fieldTree->gtOper = GT_REG_VAR;
+                                        fieldTree->gtRegNum = fieldVarDsc->lvRegNum;
+                                        fieldTree->gtRegVar.gtRegNum = fieldVarDsc->lvRegNum;
+                                        if ((arg->gtFlags & GTF_VAR_DEATH) != 0) 
+                                        {
+                                            if (fieldVarDsc->lvTracked && 
+                                                (deadVarBits == NULL || VarSetOps::IsMember(compiler, *deadVarBits, fieldVarDsc->lvVarIndex)))
+                                            {
+                                                fieldTree->gtFlags |= GTF_VAR_DEATH;
+                                            }
+                                        }
                                         genCodeForTreeStackFP_Leaf(fieldTree);
                         
                                         // Take reg to top of stack
@@ -16913,28 +16921,18 @@ size_t              CodeGen::genPushArgList(GenTreePtr  call)
                         break; 
                     }
 
-                    // If we have field tree nodes, we need to update liveset for them
-                    GenTreePtr * fldTreeList = arg->gtLdObj.gtFldTreeList;
-                    if (fldTreeList != NULL)
-                    {
-                        unsigned fieldCount = compiler->lvaTable[structLocalTree->gtLclVarCommon.gtLclNum].lvFieldCnt; 
-                        for (unsigned i = 0; i < fieldCount; i++)
-                        {
-                            if (fldTreeList[i] != NULL) genUpdateLife(fldTreeList[i]);
-                        }
-                    }
                 }
 
-                genCodeForTree(arg->gtLdObj.gtOp1, 0);
-                noway_assert(arg->gtLdObj.gtOp1->gtFlags & GTF_REG_VAL);
-                regNumber reg = arg->gtLdObj.gtOp1->gtRegNum;
+                genCodeForTree(arg->gtObj.gtOp1, 0);
+                noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                regNumber reg = arg->gtObj.gtOp1->gtRegNum;
                 // Get the number of DWORDS to copy to the stack
-                opsz = roundUp(compiler->info.compCompHnd->getClassSize(arg->gtLdObj.gtClass), sizeof(void*));
+                opsz = roundUp(compiler->info.compCompHnd->getClassSize(arg->gtObj.gtClass), sizeof(void*));
                 unsigned slots = (unsigned)(opsz / sizeof(void*));
 
                 BYTE* gcLayout = new (compiler, CMK_Codegen) BYTE[slots];
 
-                compiler->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+                compiler->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
 
                 BOOL bNoneGC = TRUE;
                 for (int i = slots - 1; i >= 0; --i)
@@ -17385,14 +17383,14 @@ DEFERRED:
                 genUpdateLife(op1);
                 arg = arg->gtOp.gtOp2;
             }
-            noway_assert((arg->OperGet() == GT_LDOBJ) || (arg->OperGet() == GT_MKREFANY));
+            noway_assert((arg->OperGet() == GT_OBJ) || (arg->OperGet() == GT_MKREFANY));
 
             CORINFO_CLASS_HANDLE clsHnd;
             unsigned             argAlign;
             unsigned             slots;
             BYTE*                gcLayout = NULL;
 
-            // If the struct being passed is a LDOBJ of a local struct variable that is promoted (in the
+            // If the struct being passed is a OBJ of a local struct variable that is promoted (in the
             // INDEPENDENT fashion, which doesn't require writes to be written through to the variable's
             // home stack loc) "promotedStructLocalVarDesc" will be set to point to the local variable
             // table entry for the promoted struct local.  As we fill slots with the contents of a
@@ -17406,9 +17404,9 @@ DEFERRED:
             unsigned             promotedStructOffsetOfFirstStackSlot = 0;
             unsigned             argOffsetOfFirstStackSlot = UINT32_MAX;  // Indicates uninitialized.
 
-            if (arg->OperGet() == GT_LDOBJ)
+            if (arg->OperGet() == GT_OBJ)
             {
-                clsHnd = arg->gtLdObj.gtClass;
+                clsHnd = arg->gtObj.gtClass;
                 unsigned originalSize = compiler->info.compCompHnd->getClassSize(clsHnd);
                 argAlign = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
                 argSize = (unsigned)(roundUp(originalSize, TARGET_POINTER_SIZE));
@@ -17420,10 +17418,10 @@ DEFERRED:
                 compiler->info.compCompHnd->getClassGClayout(clsHnd, gcLayout);
 
                 // Are we loading a promoted struct local var?
-                if (arg->gtLdObj.gtOp1->gtOper == GT_ADDR &&
-                    arg->gtLdObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+                if (arg->gtObj.gtOp1->gtOper == GT_ADDR &&
+                    arg->gtObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
                 {
-                    structLocalTree               = arg->gtLdObj.gtOp1->gtOp.gtOp1;
+                    structLocalTree               = arg->gtObj.gtOp1->gtOp.gtOp1;
                     unsigned     structLclNum     = structLocalTree->gtLclVarCommon.gtLclNum;
                     LclVarDsc *  varDsc           = &compiler->lvaTable[structLclNum];
 
@@ -17461,17 +17459,17 @@ DEFERRED:
 
             // This code passes a TYP_STRUCT by value using the outgoing arg space var
             //
-            if (arg->OperGet() == GT_LDOBJ)
+            if (arg->OperGet() == GT_OBJ)
             {
                 regNumber regSrc = REG_STK;
-                regNumber regTmp = REG_STK;  // This will get set below if the ldobj is not of a promoted struct local.
+                regNumber regTmp = REG_STK;  // This will get set below if the obj is not of a promoted struct local.
                 int cStackSlots = 0;
 
                 if (promotedStructLocalVarDesc == NULL)
                 {
-                    genComputeReg(arg->gtLdObj.gtOp1, 0,  RegSet::ANY_REG, RegSet::KEEP_REG);
-                    noway_assert(arg->gtLdObj.gtOp1->gtFlags & GTF_REG_VAL);
-                    regSrc = arg->gtLdObj.gtOp1->gtRegNum;
+                    genComputeReg(arg->gtObj.gtOp1, 0,  RegSet::ANY_REG, RegSet::KEEP_REG);
+                    noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                    regSrc = arg->gtObj.gtOp1->gtRegNum;
                 }
                          
                 // The number of bytes to add "argOffset" to get the arg offset of the current slot.
@@ -18259,7 +18257,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
                 genUpdateLife(op1);
                 arg = arg->gtOp.gtOp2;
             }
-            noway_assert((arg->OperGet() == GT_LDOBJ) || (arg->OperGet() == GT_LCL_VAR) || (arg->OperGet() == GT_MKREFANY));
+            noway_assert((arg->OperGet() == GT_OBJ) || (arg->OperGet() == GT_LCL_VAR) || (arg->OperGet() == GT_MKREFANY));
 
             // This code passes a TYP_STRUCT by value using
             // the argument registers first and 
@@ -18322,7 +18320,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
             // that go dead after this use of the variable in the argument list.
             regMaskTP deadFieldVarRegs = RBM_NONE;
 
-            // If the struct being passed is a LDOBJ of a local struct variable that is promoted (in the
+            // If the struct being passed is an OBJ of a local struct variable that is promoted (in the
             // INDEPENDENT fashion, which doesn't require writes to be written through to the variables
             // home stack loc) "promotedStructLocalVarDesc" will be set to point to the local variable
             // table entry for the promoted struct local.  As we fill slots with the contents of a
@@ -18338,13 +18336,13 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
             
             BYTE *    gcLayout = NULL;
             regNumber regSrc = REG_NA;
-            if (arg->gtOper == GT_LDOBJ)
+            if (arg->gtOper == GT_OBJ)
             {
                 // Are we loading a promoted struct local var?
-                if (arg->gtLdObj.gtOp1->gtOper == GT_ADDR &&
-                    arg->gtLdObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
+                if (arg->gtObj.gtOp1->gtOper == GT_ADDR &&
+                    arg->gtObj.gtOp1->gtOp.gtOp1->gtOper == GT_LCL_VAR)
                 {
-                    structLocalTree               = arg->gtLdObj.gtOp1->gtOp.gtOp1;
+                    structLocalTree               = arg->gtObj.gtOp1->gtOp.gtOp1;
                     unsigned     structLclNum     = structLocalTree->gtLclVarCommon.gtLclNum;
                     LclVarDsc *  varDsc           = &compiler->lvaTable[structLclNum];
 
@@ -18366,16 +18364,16 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
                 {
                     // If it's not a promoted struct variable, set "regSrc" to the address
                     // of the struct local.
-                    genComputeReg(arg->gtLdObj.gtOp1, regNeedMask, RegSet::EXACT_REG, RegSet::KEEP_REG);
-                    noway_assert(arg->gtLdObj.gtOp1->gtFlags & GTF_REG_VAL);
-                    regSrc = arg->gtLdObj.gtOp1->gtRegNum;
+                    genComputeReg(arg->gtObj.gtOp1, regNeedMask, RegSet::EXACT_REG, RegSet::KEEP_REG);
+                    noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                    regSrc = arg->gtObj.gtOp1->gtRegNum;
                     // Remove this register from the set of registers that we pick from, unless slots equals 1
                     if (slots > 1)
                         regNeedMask &= ~genRegMask(regSrc);
                 }
 
                 gcLayout = new (compiler, CMK_Codegen) BYTE[slots];
-                compiler->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+                compiler->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
             }
             else if (arg->gtOper == GT_LCL_VAR)
             {
@@ -18612,7 +18610,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
                 } while (needOverwriteRegSrc != overwriteRegSrc);
             }
 
-            if ((arg->gtOper == GT_LDOBJ )&& (promotedStructLocalVarDesc == NULL))
+            if ((arg->gtOper == GT_OBJ) && (promotedStructLocalVarDesc == NULL))
             {
                 regSet.rsMarkRegFree(genRegMask(regSrc));
             }
