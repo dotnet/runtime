@@ -1716,7 +1716,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
         {
             if (!(mtype2 != ELEMENT_TYPE_CLASS &&
                   mtype2 != ELEMENT_TYPE_STRING &&
-                  mtype2 != ELEMENT_TYPE_CLASS &&
                   mtype2 != ELEMENT_TYPE_OBJECT &&
                   mtype2 != ELEMENT_TYPE_SZARRAY))
             {
