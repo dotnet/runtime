@@ -15,7 +15,7 @@ void
 mono_threadpool_ms_cleanup (void);
 
 MonoAsyncResult *
-mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params);
+mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params, MonoError *error);
 MonoObject *
 mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc);
 
@@ -59,7 +59,7 @@ ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (void);
 
 /* Internals */
 
-void
-mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item);
+gboolean
+mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, MonoError *error);
 
 #endif // _MONO_THREADPOOL_MICROSOFT_H_

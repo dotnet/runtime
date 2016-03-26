@@ -254,7 +254,11 @@ do_console_cancel_event (void)
 	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
 	g_assert (method != NULL);
 
-	mono_threadpool_ms_begin_invoke (domain, (MonoObject*) load_value, method, NULL);
+	mono_threadpool_ms_begin_invoke (domain, (MonoObject*) load_value, method, NULL, &error);
+	if (!is_ok (&error)) {
+		g_warning ("Couldn't invoke System.Console cancel handler due to %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+	}
 }
 
 static int need_cancel = FALSE;
