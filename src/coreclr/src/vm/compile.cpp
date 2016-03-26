@@ -2496,7 +2496,7 @@ void CEECompileInfo::EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuild
     }
 #endif
 
-    if ((dwFlags & dwFlags & READYTORUN_LAYOUT_Alignment) && !(dwFlags & READYTORUN_LAYOUT_Alignment_Native))
+    if ((dwFlags & READYTORUN_LAYOUT_Alignment) && !(dwFlags & READYTORUN_LAYOUT_Alignment_Native))
     {
         pSigBuilder->AppendData(dwAlignment);
     }
