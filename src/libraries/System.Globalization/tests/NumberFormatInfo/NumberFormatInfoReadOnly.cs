@@ -14,6 +14,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new NumberFormatInfo(), false };
             yield return new object[] { new CultureInfo("en-US").NumberFormat, false };
             yield return new object[] { NumberFormatInfo.InvariantInfo, true };
+            yield return new object[] { NumberFormatInfo.ReadOnly(new CultureInfo("en-US").NumberFormat), true };
         }
 
         [Theory]
@@ -24,6 +25,13 @@ namespace System.Globalization.Tests
 
             NumberFormatInfo readOnlyFormat = NumberFormatInfo.ReadOnly(format);
             Assert.True(readOnlyFormat.IsReadOnly);
+        }
+
+        [Fact]
+        public void ReadOnly_ReadOnlyFormat()
+        {
+            NumberFormatInfo readOnlyFormat = NumberFormatInfo.ReadOnly(new NumberFormatInfo());
+            Assert.Same(readOnlyFormat, NumberFormatInfo.ReadOnly(readOnlyFormat));
         }
 
         [Fact]
