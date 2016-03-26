@@ -15,7 +15,7 @@
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">netstandard1.5</PackageTargetFramework>
-    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462'">win7</PackageTargetRuntime >
+    <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net462'">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime >
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netstandard15aot'">win-aot</PackageTargetRuntime >
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netstandard15aot'">unix-aot</PackageTargetRuntime >
