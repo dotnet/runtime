@@ -3883,17 +3883,6 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     fgDebugCheckLinks();
 #endif
 
-    if  (!opts.MinOpts() && !opts.compDbgCode)
-    {
-        /* Adjust ref counts based on interference levels */
-
-        lvaAdjustRefCnts();
-        EndPhase(PHASE_LVA_ADJUST_REF_COUNTS);
-    }
-
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-#endif
 
     /* Enable this to gather statistical data such as
      * call and register argument info, flowgraph and loop info, etc. */

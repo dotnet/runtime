@@ -2530,10 +2530,6 @@ var_types          Compiler::lvaGetRealType(unsigned lclNum)
     return lvaTable[lclNum].TypeGet();
 }
 
-/*****************************************************************************/
-inline void         Compiler::lvaAdjustRefCnts() {}
-
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
