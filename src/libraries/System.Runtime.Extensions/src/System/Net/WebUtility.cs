@@ -625,11 +625,9 @@ namespace System.Net
 
             private void FlushBytes()
             {
-                if (_numBytes > 0)
-                {
-                    _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
-                    _numBytes = 0;
-                }
+                Debug.Assert(_numBytes > 0);
+                _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                _numBytes = 0;
             }
 
             internal UrlDecoder(int bufferSize, Encoding encoding)
