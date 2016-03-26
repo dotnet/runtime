@@ -11,16 +11,34 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> NegativeInfinitySymbol_TestData()
         {
-            yield return new object[] { NumberFormatInfo.InvariantInfo, "-Infinity" };
-            yield return new object[] { new CultureInfo("en-US").NumberFormat, NumberFormatInfoData.GetNegativeInfinitySymbol("en-US") };
-            yield return new object[] { new CultureInfo("fr-FR").NumberFormat, NumberFormatInfoData.GetNegativeInfinitySymbol("fr-FR") };
+            yield return new object[] { NumberFormatInfo.InvariantInfo };
+            yield return new object[] { new CultureInfo("en-US").NumberFormat };
+            yield return new object[] { new CultureInfo("fr-FR").NumberFormat };
         }
 
         [Theory]
         [MemberData(nameof(NegativeInfinitySymbol_TestData))]
-        public void NegativeInfinitySymbol_Get(NumberFormatInfo format, string expected)
+        public void NegativeInfinitySymbol_Get(NumberFormatInfo format)
         {
-            Assert.Equal(expected, format.NegativeInfinitySymbol);
+            Assert.Equal(float.NegativeInfinity.ToString(format), format.NegativeInfinitySymbol);
+        }
+
+        [Theory]
+        [InlineData("string")]
+        [InlineData("   ")]
+        [InlineData("")]
+        public void NegativeInfinitySymbol_Set(string newNegativeInfinitySymbol)
+        {
+            NumberFormatInfo format = new NumberFormatInfo();
+            format.NegativeInfinitySymbol = newNegativeInfinitySymbol;
+            Assert.Equal(newNegativeInfinitySymbol, format.NegativeInfinitySymbol);
+        }
+
+        [Fact]
+        public void NegativeInfinitySymbol_Set_Invalid()
+        {
+            Assert.Throws<ArgumentNullException>("NegativeInfinitySymbol", () => new NumberFormatInfo().NegativeInfinitySymbol = null);
+            Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NegativeInfinitySymbol = "");
         }
     }
 }

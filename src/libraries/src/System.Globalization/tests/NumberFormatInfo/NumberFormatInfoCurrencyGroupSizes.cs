@@ -28,6 +28,8 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData(new int[0])]
         [InlineData(new int[] { 2, 3, 4 })]
+        [InlineData(new int[] { 2, 3, 4, 0 })]
+        [InlineData(new int[] { 0 })]
         public void CurrencyGroupSizes_Set(int[] newCurrencyGroupSizes)
         {
             NumberFormatInfo format = new NumberFormatInfo();
@@ -42,6 +44,7 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { -1, 1, 2 });
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 98, 99, 100 });
             Assert.Throws<ArgumentException>("CurrencyGroupSizes", () => new NumberFormatInfo().CurrencyGroupSizes = new int[] { 0, 1, 2 });
+
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyGroupSizes = new int[] { 1, 2, 3 });
         }
     }
