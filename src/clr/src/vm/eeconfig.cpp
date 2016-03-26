@@ -33,6 +33,9 @@
 #ifdef FEATURE_WIN_DB_APPCOMPAT
 #include "QuirksApi.h"
 #endif
+#ifdef FEATURE_CORECLR
+#include "configuration.h"
+#endif
 
 using namespace clr;
 
@@ -789,10 +792,18 @@ HRESULT EEConfig::sync()
         g_fEnableARM = TRUE;
     }
 
-    int forceGCconcurrent = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
-    if ((forceGCconcurrent > 0) || (forceGCconcurrent == -1 && g_IGCconcurrent))
+    bool gcConcurrentWasForced = false;
+#ifdef FEATURE_CORECLR
+    gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), CLRConfig::UNSUPPORTED_gcConcurrent);
+    if (gcConcurrentWasForced)
         iGCconcurrent = TRUE;
-    
+#else
+    int gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
+    gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
+    if (gcConcurrentWasForced || (gcConcurrentConfigVal == -1 && g_IGCconcurrent))
+        iGCconcurrent = TRUE;
+#endif
+
     // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
     if (IsCompilationProcess())
         iGCconcurrent = FALSE;
@@ -853,7 +864,7 @@ HRESULT EEConfig::sync()
 
         if (bGCStressAndHeapVerifyAllowed)
         {
-            if (forceGCconcurrent > 0)
+            if (gcConcurrentWasForced)
             {
 #ifdef _DEBUG
                 iFastGCStress = 0;
@@ -901,7 +912,7 @@ HRESULT EEConfig::sync()
     if (g_IGCHoardVM)
         iGCHoardVM = g_IGCHoardVM;
     else
-        iGCHoardVM = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCRetainVM, iGCHoardVM);
+        iGCHoardVM = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCRetainVM);
 
     if (!iGCLOHCompactionMode) iGCLOHCompactionMode = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCLOHCompact, iGCLOHCompactionMode);
 
