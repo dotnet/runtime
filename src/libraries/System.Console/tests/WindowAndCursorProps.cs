@@ -102,6 +102,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
+    [ActiveIssue(6223)]
     public static void Title()
     {
         Assert.NotNull(Console.Title);
