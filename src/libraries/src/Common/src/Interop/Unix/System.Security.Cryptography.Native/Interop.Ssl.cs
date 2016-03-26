@@ -321,27 +321,20 @@ namespace Microsoft.Win32.SafeHandles
             internal int ApplicationDataOffset;
         }
 
+        private const int CertHashMaxSize = 128;
         private static readonly byte[] s_tlsServerEndPointByteArray = Encoding.UTF8.GetBytes("tls-server-end-point:");
         private static readonly byte[] s_tlsUniqueByteArray = Encoding.UTF8.GetBytes("tls-unique:");
         private static readonly int s_secChannelBindingSize = Marshal.SizeOf<SecChannelBindings>();
+
         private readonly int _cbtPrefixByteArraySize;
-        private const int CertHashMaxSize = 128;
-
-        internal int Length
-        {
-            get;
-            private set;
-        }
-
-        internal IntPtr CertHashPtr
-        {
-            get;
-            private set;
-        }
+        internal int Length { get; private set; }
+        internal IntPtr CertHashPtr { get; private set; }
 
         internal void SetCertHash(byte[] certHashBytes)
         {
             Debug.Assert(certHashBytes != null, "check certHashBytes is not null");
+            Debug.Assert(certHashBytes.Length <= CertHashMaxSize);
+
             int length = certHashBytes.Length;
             Marshal.Copy(certHashBytes, 0, CertHashPtr, length);
             SetCertHashLength(length);
@@ -349,18 +342,10 @@ namespace Microsoft.Win32.SafeHandles
 
         private byte[] GetPrefixBytes(ChannelBindingKind kind)
         {
-            if (kind == ChannelBindingKind.Endpoint)
-            {
-                return s_tlsServerEndPointByteArray;
-            }
-            else if (kind == ChannelBindingKind.Unique)
-            {
-                return s_tlsUniqueByteArray;
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
+            Debug.Assert(kind == ChannelBindingKind.Endpoint || kind == ChannelBindingKind.Unique);
+            return kind == ChannelBindingKind.Endpoint ?
+                s_tlsServerEndPointByteArray :
+                s_tlsUniqueByteArray;
         }
 
         internal SafeChannelBindingHandle(ChannelBindingKind kind)
@@ -388,10 +373,7 @@ namespace Microsoft.Win32.SafeHandles
             Marshal.StructureToPtr(channelBindings, handle, true);
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero;
 
         protected override bool ReleaseHandle()
         {
