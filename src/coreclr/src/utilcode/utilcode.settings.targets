@@ -45,6 +45,7 @@
         <CppCompile Include="$(UtilCodeSrcDir)\SplitPath.cpp" />
         
         <CppCompile Include="$(UtilCodeSrcDir)\ClrConfig.cpp" />
+        <CppCompile Include="$(UtilCodeSrcDir)\configuration.cpp" />
         <CppCompile Include="$(UtilCodeSrcDir)\RegUtil.cpp" />
         <CppCompile Include="$(UtilCodeSrcDir)\RegistryWrapper.cpp" />
         
