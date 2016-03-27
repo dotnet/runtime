@@ -34,7 +34,9 @@ namespace System.Globalization.Tests
             new TaiwanLunisolarCalendar(),
             new ChineseLunisolarCalendar(),
             new KoreanLunisolarCalendar(),
-            new PersianCalendar()
+            new PersianCalendar(),
+            new JapaneseLunisolarCalendar(),
+            new UmAlQuraCalendar()
         };
 
         private static int MinEra(Calendar calendar) => calendar.GetEra(calendar.MinSupportedDateTime);
