@@ -12894,7 +12894,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 	}
 
 	klass->instance_size = MAX (klass->instance_size, real_size);
-	mono_class_layout_fields (klass);
+	mono_class_layout_fields (klass, klass->instance_size);
 }
 
 static void

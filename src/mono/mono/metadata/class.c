@@ -1480,6 +1480,7 @@ mono_class_setup_fields (MonoClass *klass)
 	int i, blittable = TRUE;
 	guint32 real_size = 0;
 	guint32 packing_size = 0;
+	int instance_size;
 	gboolean explicit_size;
 	MonoClassField *field;
 	MonoGenericContainer *container = NULL;
@@ -1555,7 +1556,7 @@ mono_class_setup_fields (MonoClass *klass)
 		}
 	}
 
-	klass->instance_size = 0;
+	instance_size = 0;
 	if (!klass->rank)
 		klass->sizes.class_size = 0;
 
@@ -1569,13 +1570,13 @@ mono_class_setup_fields (MonoClass *klass)
 				return;
 			}
 		}
-		klass->instance_size += klass->parent->instance_size;
+		instance_size += klass->parent->instance_size;
 		klass->min_align = klass->parent->min_align;
 		/* we use |= since it may have been set already */
 		klass->has_references |= klass->parent->has_references;
 		blittable = klass->parent->blittable;
 	} else {
-		klass->instance_size = sizeof (MonoObject);
+		instance_size = sizeof (MonoObject);
 		klass->min_align = 1;
 	}
 
@@ -1597,14 +1598,16 @@ mono_class_setup_fields (MonoClass *klass)
 			return;
 		}
 		klass->packing_size = packing_size;
-		real_size += klass->instance_size;
+		real_size += instance_size;
 	}
 
 	if (!top) {
 		if (explicit_size && real_size) {
-			klass->instance_size = MAX (real_size, klass->instance_size);
+			instance_size = MAX (real_size, instance_size);
 		}
 		klass->blittable = blittable;
+		if (!klass->instance_size)
+			klass->instance_size = instance_size;
 		mono_memory_barrier ();
 		klass->size_inited = 1;
 		klass->fields_inited = 1;
@@ -1718,12 +1721,12 @@ mono_class_setup_fields (MonoClass *klass)
 		return;
 	}
 	if (explicit_size && real_size) {
-		klass->instance_size = MAX (real_size, klass->instance_size);
+		instance_size = MAX (real_size, instance_size);
 	}
 
 	if (mono_class_has_failure (klass))
 		return;
-	mono_class_layout_fields (klass);
+	mono_class_layout_fields (klass, instance_size);
 
 	/*valuetypes can't be neither bigger than 1Mb or empty. */
 	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + sizeof (MonoObject))))
@@ -1804,6 +1807,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 /*
  * mono_class_layout_fields:
  * @class: a class
+ * @instance_size: base instance size
  *
  * Compute the placement of fields inside an object or struct, according to
  * the layout rules and set the following fields in @class:
@@ -1816,7 +1820,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
  * LOCKING: this is supposed to be called with the loader lock held.
  */
 void
-mono_class_layout_fields (MonoClass *klass)
+mono_class_layout_fields (MonoClass *klass, int instance_size)
 {
 	int i;
 	const int top = klass->field.count;
@@ -1897,7 +1901,6 @@ mono_class_layout_fields (MonoClass *klass)
 	/*
 	 * Compute field layout and total size (not considering static fields)
 	 */
-
 	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
@@ -1973,11 +1976,11 @@ mono_class_layout_fields (MonoClass *klass)
 				real_size = field->offset + size;
 			}
 
-			klass->instance_size = MAX (real_size, klass->instance_size);
+			instance_size = MAX (real_size, instance_size);
        
-			if (klass->instance_size & (klass->min_align - 1)) {
-				klass->instance_size += klass->min_align - 1;
-				klass->instance_size &= ~(klass->min_align - 1);
+			if (instance_size & (klass->min_align - 1)) {
+				instance_size += klass->min_align - 1;
+				instance_size &= ~(klass->min_align - 1);
 			}
 		}
 		break;
@@ -2062,10 +2065,10 @@ mono_class_layout_fields (MonoClass *klass)
 			g_free (ref_bitmap);
 		}
 
-		klass->instance_size = MAX (real_size, klass->instance_size);
-		if (klass->instance_size & (klass->min_align - 1)) {
-			klass->instance_size += klass->min_align - 1;
-			klass->instance_size &= ~(klass->min_align - 1);
+		instance_size = MAX (real_size, instance_size);
+		if (instance_size & (klass->min_align - 1)) {
+			instance_size += klass->min_align - 1;
+			instance_size &= ~(klass->min_align - 1);
 		}
 		break;
 	}
@@ -2081,11 +2084,17 @@ mono_class_layout_fields (MonoClass *klass)
 		 * unaligned accesses otherwise. See #78990 for a testcase.
 		 */
 		if (mono_align_small_structs) {
-			if (klass->instance_size <= sizeof (MonoObject) + sizeof (gpointer))
-				klass->min_align = MAX (klass->min_align, klass->instance_size - sizeof (MonoObject));
+			if (instance_size <= sizeof (MonoObject) + sizeof (gpointer))
+				klass->min_align = MAX (klass->min_align, instance_size - sizeof (MonoObject));
 		}
 	}
 
+	if (klass->instance_size && !klass->image->dynamic) {
+		/* Might be already set using cached info */
+		g_assert (klass->instance_size == instance_size);
+	} else {
+		klass->instance_size = instance_size;
+	}
 	mono_memory_barrier ();
 	klass->size_inited = 1;
 
