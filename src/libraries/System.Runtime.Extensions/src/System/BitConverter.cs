@@ -364,20 +364,39 @@ namespace System
             }
 
             int chArrayLength = length * 3;
-
-            char[] chArray = new char[chArrayLength];
-            int i = 0;
-            int index = startIndex;
-            for (i = 0; i < chArrayLength; i += 3)
+            const int StackLimit = 512; // arbitrary limit to switch from stack to heap allocation
+            unsafe
             {
-                byte b = value[index++];
-                chArray[i] = GetHexValue(b / 16);
-                chArray[i + 1] = GetHexValue(b % 16);
-                chArray[i + 2] = '-';
+                if (chArrayLength < StackLimit)
+                {
+                    char* chArrayPtr = stackalloc char[chArrayLength];
+                    return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
+                }
+                else
+                {
+                    fixed (char* chArrayPtr = new char[chArrayLength])
+                        return ToString(value, startIndex, length, chArrayPtr, chArrayLength);
+                }
+            }
+        }
+
+        private static unsafe string ToString(byte[] value, int startIndex, int length, char* chArray, int chArrayLength)
+        {
+            Debug.Assert(length > 0);
+            Debug.Assert(chArrayLength == length * 3);
+
+            char* p = chArray;
+            int endIndex = startIndex + length;
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                byte b = value[i];
+                *p++ = GetHexValue(b >> 4);
+                *p++ = GetHexValue(b & 0xF);
+                *p++ = '-';
             }
 
             // We don't need the last '-' character
-            return new string(chArray, 0, chArray.Length - 1);
+            return new string(chArray, 0, chArrayLength - 1);
         }
 
         // Converts an array of bytes into a String.  
