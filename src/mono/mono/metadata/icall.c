@@ -4373,8 +4373,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 
 	mono_ptr_array_destroy (tmp_array);
 
-	if (!str)
-		g_free (str);
+	g_free (str);
 
 	return res;
 }
