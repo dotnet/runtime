@@ -4759,7 +4759,7 @@ namespace System.Net.Sockets
 
             if (s_loggingEnabled)
             {
-                NetEventSource.Enter(NetEventSource.ComponentType.Socket, this, "SendAsync", retval);
+                NetEventSource.Exit(NetEventSource.ComponentType.Socket, this, "SendAsync", retval);
             }
 
             return retval;
