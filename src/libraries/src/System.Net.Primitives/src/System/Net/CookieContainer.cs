@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
 
@@ -728,17 +728,17 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(uri));
             }
-            return InternalGetCookies(uri);
+            return InternalGetCookies(uri) ?? new CookieCollection();
         }
 
         internal CookieCollection InternalGetCookies(Uri uri)
         {
             bool isSecure = (uri.Scheme == UriScheme.Https);
             int port = uri.Port;
-            CookieCollection cookies = new CookieCollection();
+            CookieCollection cookies = null;
 
             List<string> domainAttributeMatchAnyCookieVariant = new List<string>();
-            List<string> domainAttributeMatchOnlyCookieVariantPlain = new List<string>();
+            List<string> domainAttributeMatchOnlyCookieVariantPlain = null;
 
             string fqdnRemote = uri.Host;
 
@@ -780,6 +780,11 @@ namespace System.Net
                     {
                         while ((dot < last) && (dot = fqdnRemote.IndexOf('.', dot + 1)) != -1)
                         {
+                            if (domainAttributeMatchOnlyCookieVariantPlain == null)
+                            {
+                                domainAttributeMatchOnlyCookieVariantPlain = new List<string>();
+                            }
+
                             // These candidates can only match CookieVariant.Plain cookies.
                             domainAttributeMatchOnlyCookieVariantPlain.Add(fqdnRemote.Substring(dot));
                         }
@@ -787,13 +792,16 @@ namespace System.Net
                 }
             }
 
-            BuildCookieCollectionFromDomainMatches(uri, isSecure, port, cookies, domainAttributeMatchAnyCookieVariant, false);
-            BuildCookieCollectionFromDomainMatches(uri, isSecure, port, cookies, domainAttributeMatchOnlyCookieVariantPlain, true);
+            BuildCookieCollectionFromDomainMatches(uri, isSecure, port, ref cookies, domainAttributeMatchAnyCookieVariant, false);
+            if (domainAttributeMatchOnlyCookieVariantPlain != null)
+            {
+                BuildCookieCollectionFromDomainMatches(uri, isSecure, port, ref cookies, domainAttributeMatchOnlyCookieVariantPlain, true);
+            }
 
             return cookies;
         }
 
-        private void BuildCookieCollectionFromDomainMatches(Uri uri, bool isSecure, int port, CookieCollection cookies, List<string> domainAttribute, bool matchOnlyPlainCookie)
+        private void BuildCookieCollectionFromDomainMatches(Uri uri, bool isSecure, int port, ref CookieCollection cookies, List<string> domainAttribute, bool matchOnlyPlainCookie)
         {
             for (int i = 0; i < domainAttribute.Count; i++)
             {
@@ -819,7 +827,7 @@ namespace System.Net
 
                             CookieCollection cc = pair.Value;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
-                            MergeUpdateCollections(cookies, cc, port, isSecure, matchOnlyPlainCookie);
+                            MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
 
                             if (path == "/")
                             {
@@ -840,7 +848,7 @@ namespace System.Net
                     if (cc != null)
                     {
                         cc.TimeStamp(CookieCollection.Stamp.Set);
-                        MergeUpdateCollections(cookies, cc, port, isSecure, matchOnlyPlainCookie);
+                        MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
                     }
                 }
 
@@ -856,11 +864,11 @@ namespace System.Net
             }
         }
 
-        private void MergeUpdateCollections(CookieCollection destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)
+        private void MergeUpdateCollections(ref CookieCollection destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)
         {
             lock (source)
             {
-                // Cannot use foreach as we going update 'source'
+                // Cannot use foreach as we are going to update 'source'
                 for (int idx = 0; idx < source.Count; ++idx)
                 {
                     bool to_add = false;
@@ -910,6 +918,10 @@ namespace System.Net
                             // In 'source' are already ordered.
                             // If two same cookies come from different 'source' then they
                             // will follow (not replace) each other.
+                            if (destination == null)
+                            {
+                                destination = new CookieCollection();
+                            }
                             destination.InternalAdd(cookie, false);
                         }
                     }
@@ -930,21 +942,30 @@ namespace System.Net
         internal string GetCookieHeader(Uri uri, out string optCookie2)
         {
             CookieCollection cookies = InternalGetCookies(uri);
+            if (cookies == null)
+            {
+                optCookie2 = string.Empty;
+                return string.Empty;
+            }
+
             string delimiter = string.Empty;
 
-            var builder = new StringBuilder();
-            foreach (Cookie cookie in cookies)
+            var builder = StringBuilderCache.Acquire();
+            for (int i = 0; i < cookies.Count; i++)
             {
-                builder.Append(delimiter).Append(cookie.ToString());
+                builder.Append(delimiter);
+                cookies[i].ToString(builder);
+
                 delimiter = "; ";
             }
+
             optCookie2 = cookies.IsOtherVersionSeen ?
                           (Cookie.SpecialAttributeLiteral +
                            Cookie.VersionAttributeName +
                            Cookie.EqualsLiteral +
                            Cookie.MaxSupportedVersionString) : string.Empty;
 
-            return builder.ToString();
+            return StringBuilderCache.GetStringAndRelease(builder);
         }
 
         public void SetCookies(Uri uri, string cookieHeader)
