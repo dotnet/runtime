@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Net.Http.Tests
+namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientHandler_ServerCertificates_Test
     {
@@ -208,6 +209,54 @@ namespace System.Net.Http.Tests
             using (var client = new HttpClient(handler))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
+            }
+        }
+
+        [Fact]
+        public async Task PostAsync_Post_ChannelBinding_ConfiguredCorrectly()
+        {
+            var content = new ChannelBindingAwareContent("Test contest");
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.PostAsync(HttpTestServers.SecureRemoteEchoServer, content))
+            {
+                // Validate status.
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Validate the ChannelBinding object exists.
+                ChannelBinding channelBinding = content.ChannelBinding;
+                Assert.NotNull(channelBinding);
+
+                // Validate the ChannelBinding's validity.
+                if (BackendSupportsCustomCertificateHandling)
+                {
+                    Assert.False(channelBinding.IsInvalid, "Expected valid binding");
+                    Assert.NotEqual(IntPtr.Zero, channelBinding.DangerousGetHandle());
+
+                    // Validate the ChannelBinding's description.
+                    string channelBindingDescription = channelBinding.ToString();
+                    Assert.NotNull(channelBindingDescription);
+                    Assert.NotEmpty(channelBindingDescription);
+                    Assert.True((channelBindingDescription.Length + 1) % 3 == 0, $"Unexpected length {channelBindingDescription.Length}");
+                    for (int i = 0; i < channelBindingDescription.Length; i++)
+                    {
+                        char c = channelBindingDescription[i];
+                        if (i % 3 == 2)
+                        {
+                            Assert.Equal(' ', c);
+                        }
+                        else
+                        {
+                            Assert.True((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'), $"Expected hex, got {c}");
+                        }
+                    }
+                }
+                else
+                {
+                    // Backend doesn't support getting the details to create the CBT.
+                    Assert.True(channelBinding.IsInvalid, "Expected invalid binding");
+                    Assert.Equal(IntPtr.Zero, channelBinding.DangerousGetHandle());
+                    Assert.Null(channelBinding.ToString());
+                }
             }
         }
 
