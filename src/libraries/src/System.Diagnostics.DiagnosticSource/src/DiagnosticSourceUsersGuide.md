@@ -120,7 +120,7 @@ Thus the event names only need to be unique within a component.
 
 #### DiagnositicListener Names
 
- * DO - Think about the likely scenarios for USING information when deciding how may 
+ * CONSIDER - the likely scenarios for USING information when deciding how may 
    DiagnositicListener to have and the events in each.   Keep in mind that it is **very easy
    and efficient** to filter all the events in a particular listener so ideally the 
    most important scnearios involve turning in whole listners.    You may need to split
@@ -129,7 +129,7 @@ Thus the event names only need to be unique within a component.
    or the other, so having a System.Net.Http.Incomming and System.Net.Http.OutGoing for
    each sub-case is good.  
 
- * DO - Consider the likely volume of events.   High volume events may deserve their own
+ * CONSIDER -  the likely volume of events.   High volume events may deserve their own
    DiagnositicListener.   You don't really want to mix high volume and low volume events
    in the same listener unless they both support the same scenario.   It is OK however to
    put several **low volume** events in a 'miscelaneous' listener, even if they support different 
@@ -155,7 +155,7 @@ Thus the event names only need to be unique within a component.
    are already qualified by the Listener so the name only needs to be unique within a listener. 
    Short names make the 'IsEnabled' faster.  
 
- * Do use the 'Start' and 'Stop' suffixes for events that define an interval of time.  For example   
+ * DO - use the 'Start' and 'Stop' suffixes for events that define an interval of time.  For example   
    Naming one event 'RequestStart' and the another 'ReqeustStop' is good because tools can use the
    convention to determine that the time interval betweeen them is interesting.  
 
