@@ -1465,15 +1465,17 @@ void                Compiler::compInit(ArenaAllocator * pAlloc, InlineInfo * inl
     SIMDLongHandle       = nullptr;
     SIMDUIntHandle       = nullptr;
     SIMDULongHandle      = nullptr;
-    SIMDVector2Handle   = nullptr;
-    SIMDVector3Handle   = nullptr;
-    SIMDVector4Handle   = nullptr;
+    SIMDVector2Handle    = nullptr;
+    SIMDVector3Handle    = nullptr;
+    SIMDVector4Handle    = nullptr;
     SIMDVectorHandle     = nullptr;
 #endif
 
 #ifdef DEBUG
     inlRNG = nullptr;
 #endif
+
+    compUsesThrowHelper = false;
 }
 
 /*****************************************************************************
