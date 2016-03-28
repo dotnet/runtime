@@ -132,6 +132,11 @@ namespace System.Net.Http
         {
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
         #endregion Write
     }
 }
