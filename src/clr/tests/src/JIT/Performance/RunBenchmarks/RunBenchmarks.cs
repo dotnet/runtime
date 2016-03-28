@@ -635,7 +635,7 @@ namespace BenchmarkConsoleApplication
 
             string[] path = directoryName.Split(DirectorySeparatorCharSet,
                     StringSplitOptions.RemoveEmptyEntries);
-            string platformSpecificDirectoryName = Path.Combine(path);
+            string platformSpecificDirectoryName = System.IO.Path.Combine(path);
 
             bool absolutePath = false;
             char firstChar = directoryName[0];
@@ -810,9 +810,9 @@ namespace BenchmarkConsoleApplication
             foreach (var benchmark in benchmarkList)
             {
                 string benchmarksRootDirectory = Controls.BenchmarksRootDirectory;
-                string benchmarkDirectory = Path.Combine(benchmarksRootDirectory, benchmark.WorkingDirectory);
+                string benchmarkDirectory = System.IO.Path.Combine(benchmarksRootDirectory, benchmark.WorkingDirectory);
                 string workingDirectory = benchmarkDirectory;
-                string executableName = Path.Combine(workingDirectory, benchmark.ExeName);
+                string executableName = System.IO.Path.Combine(workingDirectory, benchmark.ExeName);
 
                 Console.WriteLine("{0}", executableName);
             }
@@ -903,7 +903,7 @@ namespace BenchmarkConsoleApplication
             bool doVerbose = Controls.DoVerbose;
             string complusVersion = Controls.ComplusVersion;
             string benchmarksRootDirectory = Controls.BenchmarksRootDirectory;
-            string benchmarkDirectory = Path.Combine(benchmarksRootDirectory, benchmark.WorkingDirectory);
+            string benchmarkDirectory = System.IO.Path.Combine(benchmarksRootDirectory, benchmark.WorkingDirectory);
             bool doRunInShell = benchmark.DoRunInShell;
             bool useSSE = benchmark.UseSSE;
             bool useAVX = benchmark.UseAVX;
@@ -920,7 +920,7 @@ namespace BenchmarkConsoleApplication
             }
 
             string workingDirectory = benchmarkDirectory;
-            string fileName = Path.Combine(workingDirectory, benchmark.ExeName);
+            string fileName = System.IO.Path.Combine(workingDirectory, benchmark.ExeName);
             string args = benchmark.ExeArgs;
 
             if (runner != "")
