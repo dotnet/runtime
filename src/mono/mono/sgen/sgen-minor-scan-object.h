@@ -80,7 +80,14 @@ SERIAL_SCAN_VTYPE (GCObject *full_object, char *start, SgenDescriptor desc, Sgen
 #include "sgen-scan-object.h"
 }
 
+static void
+SERIAL_SCAN_PTR_FIELD (GCObject *full_object, GCObject **ptr, SgenGrayQueue *queue)
+{
+	HANDLE_PTR (ptr, NULL);
+}
+
 #define FILL_MINOR_COLLECTOR_SCAN_OBJECT(collector)	do {			\
 		(collector)->serial_ops.scan_object = SERIAL_SCAN_OBJECT;	\
 		(collector)->serial_ops.scan_vtype = SERIAL_SCAN_VTYPE; \
+		(collector)->serial_ops.scan_ptr_field = SERIAL_SCAN_PTR_FIELD;	\
 	} while (0)

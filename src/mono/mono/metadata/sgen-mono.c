@@ -1591,7 +1591,7 @@ find_next_card (guint8 *card_data, guint8 *end)
 #define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
 
 gboolean
-sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
+sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx)
 {
 	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
@@ -1671,20 +1671,11 @@ LOOP_HEAD:
 				for (; elem < card_end; elem += elem_size)
 					scan_vtype_func (obj, elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
 			} else {
-				CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+				ScanPtrFieldFunc scan_ptr_field_func = ctx.ops->scan_ptr_field;
 
 				HEAVY_STAT (++los_array_cards);
-				for (; elem < card_end; elem += SIZEOF_VOID_P) {
-					GCObject *new_;
-					gpointer old = *(gpointer*)elem;
-					if ((mod_union && old) || G_UNLIKELY (sgen_ptr_in_nursery (old))) {
-						HEAVY_STAT (++los_array_remsets);
-						copy_func ((GCObject**)elem, ctx.queue);
-						new_ = *(GCObject **)elem;
-						if (G_UNLIKELY (sgen_ptr_in_nursery (new_)))
-							sgen_add_to_global_remset (elem, new_);
-					}
-				}
+				for (; elem < card_end; elem += SIZEOF_VOID_P)
+					scan_ptr_field_func (obj, (GCObject**)elem, ctx.queue);
 			}
 
 			binary_protocol_card_scan (first_elem, elem - first_elem);

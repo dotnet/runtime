@@ -245,6 +245,8 @@ static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
 static gboolean enable_nursery_canaries = FALSE;
 
+static gboolean precleaning_enabled = TRUE;
+
 #ifdef HEAVY_STATISTICS
 guint64 stat_objects_alloced_degraded = 0;
 guint64 stat_bytes_alloced_degraded = 0;
@@ -1392,7 +1394,7 @@ job_scan_major_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJo
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
 
 	g_assert (concurrent_collection_in_progress);
-	major_collector.scan_card_table (TRUE, ctx);
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx);
 }
 
 static void
@@ -1403,7 +1405,20 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
 
 	g_assert (concurrent_collection_in_progress);
-	sgen_los_scan_card_table (TRUE, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx);
+}
+
+static void
+job_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
+{
+	WorkerData *worker_data = (WorkerData *)worker_data_untyped;
+	ScanJob *job_data = (ScanJob*)job;
+	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
+
+	g_assert (concurrent_collection_in_progress);
+
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx);
 }
 
 static void
@@ -1767,6 +1782,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 
 	major_collector.init_to_space ();
 
+	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 	/*
 	 * The concurrent collector doesn't move objects, neither on
 	 * the major heap nor in the nursery, so we can mark even
@@ -1774,12 +1790,19 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * collector we start the workers after pinning.
 	 */
 	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
-		sgen_workers_start_all_workers (object_ops);
+		if (precleaning_enabled) {
+			ScanJob *sj;
+			/* Mod union preclean job */
+			sj = (ScanJob*)sgen_thread_pool_job_alloc ("preclean mod union cardtable", job_mod_union_preclean, sizeof (ScanJob));
+			sj->ops = object_ops;
+			sgen_workers_start_all_workers (object_ops, &sj->job);
+		} else {
+			sgen_workers_start_all_workers (object_ops, NULL);
+		}
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		if (sgen_workers_have_idle_work ()) {
-			sgen_workers_start_all_workers (object_ops);
+			sgen_workers_start_all_workers (object_ops, NULL);
 			sgen_workers_join ();
 		}
 	}
@@ -2928,6 +2951,15 @@ sgen_gc_init (void)
 			}
 			if (!strcmp (opt, "no-cementing")) {
 				cement_enabled = FALSE;
+				continue;
+			}
+
+			if (!strcmp (opt, "precleaning")) {
+				precleaning_enabled = TRUE;
+				continue;
+			}
+			if (!strcmp (opt, "no-precleaning")) {
+				precleaning_enabled = FALSE;
 				continue;
 			}
 

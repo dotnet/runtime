@@ -268,6 +268,37 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #include "sgen-scan-object.h"
 }
 
+#ifdef SCAN_VTYPE_FUNCTION_NAME 
+static void
+SCAN_VTYPE_FUNCTION_NAME (GCObject *full_object, char *start, SgenDescriptor desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
+{
+	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
+
+#ifdef HEAVY_STATISTICS
+	/* FIXME: We're half scanning this object.  How do we account for that? */
+	//add_scanned_object (start);
+#endif
+
+	/* The descriptors include info about the object header as well */
+	start -= SGEN_CLIENT_OBJECT_HEADER_SIZE;
+
+	/* We use the same HANDLE_PTR from the obj scan function */
+#define SCAN_OBJECT_NOVTABLE
+#define SCAN_OBJECT_PROTOCOL
+#include "sgen-scan-object.h"
+
+	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
+}
+#endif
+
+#ifdef SCAN_PTR_FIELD_FUNCTION_NAME
+static void
+SCAN_PTR_FIELD_FUNCTION_NAME (GCObject *full_object, GCObject **ptr, SgenGrayQueue *queue)
+{
+	HANDLE_PTR (ptr, NULL);
+}
+#endif
+
 static gboolean
 DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 {
@@ -293,5 +324,9 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 
 #undef COPY_OR_MARK_FUNCTION_NAME
 #undef COPY_OR_MARK_WITH_EVACUATION
+#undef COPY_OR_MARK_CONCURRENT
+#undef COPY_OR_MARK_CONCURRENT_WITH_EVACUATION
 #undef SCAN_OBJECT_FUNCTION_NAME
+#undef SCAN_VTYPE_FUNCTION_NAME
+#undef SCAN_PTR_FIELD_FUNCTION_NAME
 #undef DRAIN_GRAY_STACK_FUNCTION_NAME
