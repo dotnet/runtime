@@ -275,6 +275,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API void*
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_load_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
 

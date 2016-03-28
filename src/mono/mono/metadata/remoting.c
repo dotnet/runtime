@@ -194,6 +194,7 @@ mono_remoting_marshal_init (void)
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+		/* mono_load_remote_field_new_icall registered  by mini-runtime.c */
 	}
 
 	icalls_registered = TRUE;
@@ -1286,7 +1287,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 MonoMethod *
 mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	static MonoMethod* cached = NULL;
@@ -1313,15 +1314,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
-	csig->params [1] = &mono_defaults.int_class->byval_arg;
-	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->ret = &mono_defaults.object_class->byval_arg;
-	csig->pinvoke = 1;
-
-	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
-	mono_marshal_emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_icall (mb, mono_load_remote_field_new_icall);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif

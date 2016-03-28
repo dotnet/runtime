@@ -1448,6 +1448,12 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *kl
 void*
 mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res, MonoError *error);
 
+MonoObject *
+mono_load_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field);
+
+MonoObject *
+mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoError *error);
+
 #endif
 
 gpointer
