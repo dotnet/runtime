@@ -11133,11 +11133,11 @@ handle_type:
 		
 		klass = mono_object_class (arg);
 
-		if (mono_object_isinst_checked (arg, mono_defaults.systemtype_class, &error)) {
+		if (mono_object_isinst_checked (arg, mono_defaults.systemtype_class, error)) {
 			*p++ = 0x50;
 			goto handle_type;
 		} else {
-			mono_error_raise_exception (&error); /* FIXME don't raise here */
+			return_if_nok (error);
 		}
 
 		if (klass->enumtype) {
