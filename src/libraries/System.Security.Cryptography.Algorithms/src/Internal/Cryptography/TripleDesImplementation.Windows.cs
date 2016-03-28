@@ -20,7 +20,7 @@ namespace Internal.Cryptography
         {
             SafeAlgorithmHandle algorithm = GetCipherAlgorithm(cipherMode);
 
-            BasicSymmetricCipher cipher = new CngCipher(algorithm, cipherMode, blockSize, key, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(algorithm, cipherMode, blockSize, key, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
