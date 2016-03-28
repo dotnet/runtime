@@ -85,6 +85,14 @@ namespace System.ComponentModel
         /// <devdoc>
         ///    <para>Converts the specified text into an object.</para>
         /// </devdoc>
+        public object ConvertFromString(ITypeDescriptorContext context, string text)
+        {
+            return ConvertFrom(context, CultureInfo.CurrentCulture, text);
+        }
+
+        /// <devdoc>
+        ///    <para>Converts the specified text into an object.</para>
+        /// </devdoc>
         public object ConvertFromString(ITypeDescriptorContext context, CultureInfo culture, string text)
         {
             return ConvertFrom(context, culture, text);
