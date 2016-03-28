@@ -1856,11 +1856,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	}
 		
 	default: {
-		char *msg = g_strdup_printf ("marshalling conversion %d not implemented", conv);
-		MonoException *exc = mono_get_exception_not_implemented (msg);
-		g_warning ("%s", msg);
-		g_free (msg);
-		mono_raise_exception (exc);
+		g_error ("marshalling conversion %d not implemented", conv);
 	}
 	}
 }
