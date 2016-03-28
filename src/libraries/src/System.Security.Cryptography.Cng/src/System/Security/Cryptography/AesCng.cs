@@ -9,11 +9,8 @@
 // that each of these derive from a different class, it can't be helped.
 // 
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-
 using Internal.Cryptography;
+using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
@@ -109,6 +106,11 @@ namespace System.Security.Cryptography
         bool ICngSymmetricAlgorithm.IsWeakKey(byte[] key)
         {
             return false;
+        }
+
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
+        {
+            return AesBCryptModes.GetSharedHandle(Mode);
         }
 
         private CngSymmetricAlgorithmCore _core;

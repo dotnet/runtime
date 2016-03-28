@@ -68,6 +68,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\AesBCryptModes.cs">
+      <Link>Interop\Windows\BCrypt\AesBCryptModes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
@@ -115,6 +118,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs">
       <Link>Internal\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
+      <Link>Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
       <Link>Internal\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>
