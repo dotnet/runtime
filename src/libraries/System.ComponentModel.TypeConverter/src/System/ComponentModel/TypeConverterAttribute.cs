@@ -16,6 +16,24 @@ namespace System.ComponentModel
         private string _typeName;
 
         /// <devdoc>
+        ///    <para>
+        ///        Specifies the type to use as a converter for the object this attribute is bound to. This
+        ///        <see langword='static '/>field is read-only. </para>
+        /// </devdoc>
+        public static readonly TypeConverterAttribute Default = new TypeConverterAttribute();
+
+        /// <devdoc>
+        ///    <para>
+        ///       Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class with the
+        ///       default type converter, which is an empty string ("").
+        ///    </para>
+        /// </devdoc>
+        public TypeConverterAttribute()
+        {
+            _typeName = string.Empty;
+        }
+
+        /// <devdoc>
         ///     <para>
         ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
         ///         using the specified type as the data converter for the object this attribute is bound to.
