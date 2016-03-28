@@ -383,7 +383,7 @@ namespace System.Net.Http
             if (IsBuffered)
             {
                 // If we already buffered the content, just return a completed task.
-                return CreateCompletedTask();
+                return Task.CompletedTask;
             }
 
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
@@ -577,14 +577,6 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.PrintError(NetEventSource.ComponentType.Http, string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_log_content_no_task_returned_copytoasync, this.GetType().ToString()));
                 throw new InvalidOperationException(SR.net_http_content_no_task_returned);
             }
-        }
-
-        private static Task CreateCompletedTask()
-        {
-            TaskCompletionSource<object> completed = new TaskCompletionSource<object>();
-            bool resultSet = completed.TrySetResult(null);
-            Debug.Assert(resultSet, "Can't set Task as completed.");
-            return completed.Task;
         }
 
         private static Exception GetStreamCopyException(Exception originalException)
