@@ -119,8 +119,44 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        [Theory]
+        [InlineData(typeof(TestAttribute1), true)]
+        [InlineData(typeof(TestAttribute2), false)]
+        [InlineData(typeof(TestAttributeWithDefaultMethodTrue), true)] // Types that are default are created and returned
+        public void ItemIndexByType(Type type, bool isInCollection)
+        {
+            var attributes = new Attribute[]
+            {
+                new TestAttribute1(),
+                new TestAttribute3(),
+                new TestAttribute4(),
+                new TestAttribute1(),
+                new TestAttribute5b()
+            };
+
+            var collection = new AttributeCollection(attributes);
+
+            Assert.Equal(isInCollection, collection[type] != null);
+        }
+
         [Fact]
-        public void ItemIndexByType()
+        public void ItemIndexByTypeWithDefault()
+        {
+            var collection = new AttributeCollection();
+
+            Assert.Same(TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue.Default, collection[typeof(TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue)]);
+        }
+
+        [Fact]
+        public void ItemIndexByTypeWithDefaultFieldButNotDefault()
+        {
+            var collection = new AttributeCollection();
+
+            Assert.Same(TestAttributeWithDefaultFieldButNotDefault.Default, collection[typeof(TestAttributeWithDefaultFieldButNotDefault)]);
+        }
+
+        [Fact]
+        public void ItemIndexByTypeCacheTest()
         {
             var attributes = new Attribute[]
             {
@@ -146,6 +182,12 @@ namespace System.ComponentModel.Tests
                 // Search for TestAttribute5a even though we included TestAttribute5b as the index search
                 // will look up the inheritance hierarchy if needed
                 Assert.Same(attributes[5], collection[typeof(TestAttribute5a)]);
+
+                // This attribute is not available, so we expect a null to be returned
+                Assert.Null(collection[typeof(TestAttribute6)]);
+
+                // Attributes that are marked as the 'Default' will always be returned
+                Assert.NotNull(collection[typeof(TestAttributeWithDefaultMethodTrue)]);
             }
         }
 
@@ -219,5 +261,29 @@ namespace System.ComponentModel.Tests
         private class TestAttribute4 : Attribute { }
         private class TestAttribute5a : Attribute { }
         private class TestAttribute5b : TestAttribute5a { }
+        private class TestAttribute6 : Attribute { }
+
+        private class TestAttributeWithDefaultMethodTrue : ComponentModelAttribute
+        {
+            public override bool IsDefaultAttribute()
+            {
+                return true;
+            }
+        }
+
+        private class TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue : ComponentModelAttribute
+        {
+            public static readonly TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue Default = new TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue();
+
+            public override bool IsDefaultAttribute()
+            {
+                return true;
+            }
+        }
+
+        private class TestAttributeWithDefaultFieldButNotDefault : Attribute
+        {
+            public static readonly TestAttributeWithDefaultFieldButNotDefault Default = new TestAttributeWithDefaultFieldButNotDefault();
+        }
     }
 }
