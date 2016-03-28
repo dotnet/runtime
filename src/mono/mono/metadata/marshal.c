@@ -211,11 +211,11 @@ init_safe_handle ()
 }
 
 static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+register_icall (gpointer func, const char *name, const char *sigstr, gboolean no_wrapper)
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
-	mono_register_jit_icall (func, name, sig, save);
+	mono_register_jit_icall (func, name, sig, no_wrapper);
 }
 
 MonoMethodSignature*
