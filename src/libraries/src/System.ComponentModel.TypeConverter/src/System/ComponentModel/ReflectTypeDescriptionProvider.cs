@@ -1292,7 +1292,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(properties.Any(dbgProp => dbgProp == null), "Holes in property array for type " + type);
+                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), "Holes in property array for type " + type);
 
                     s_propertyCache[type] = properties;
                 }
