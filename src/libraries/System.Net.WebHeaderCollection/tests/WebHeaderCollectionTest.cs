@@ -151,7 +151,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_InvalidName_Throws(string name)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w[name] = "test");
+            Assert.Throws<ArgumentException>("name", () => w[name] = "test");
         }
 
         public static object[][] InvalidValues = {
@@ -166,7 +166,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Setter_InvalidValue_Throws(string value)
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w["custom"] = value);
+            Assert.Throws<ArgumentException>("value", () => w["custom"] = value);
         }
 
         public static object[][] ValidValues = {
@@ -215,7 +215,7 @@ namespace System.Net.WebHeaderCollectionTests
         public void Remove_IllegalCharacter_Throws()
         {
             WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w.Remove("{"));
+            Assert.Throws<ArgumentException>("name", () => w.Remove("{"));
         }
 
         [Fact]
