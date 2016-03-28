@@ -25,9 +25,7 @@ namespace System.Net.Http
             _offset = 0;
             _count = content.Length;
             
-#if NETNative
             SetBuffer(_content, _offset, _count);
-#endif
         }
 
         public ByteArrayContent(byte[] content, int offset, int count)
@@ -49,9 +47,7 @@ namespace System.Net.Http
             _offset = offset;
             _count = count;
             
-#if NETNative
             SetBuffer(_content, _offset, _count);
-#endif
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)

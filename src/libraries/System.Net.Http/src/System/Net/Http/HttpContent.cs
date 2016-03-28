@@ -135,22 +135,15 @@ namespace System.Net.Http
             get { return _bufferedContent != null; }
         }
 
-#if NETNative        
         internal void SetBuffer(byte[] buffer, int offset, int count)
         {
-            _bufferedContent = new MemoryStream(buffer, offset, count, false, true);
+            _bufferedContent = new MemoryStream(buffer, offset, count, writable: false, publiclyVisible: true);
         }
         
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            if (_bufferedContent == null)
-            {
-                return false;
-            }
-            
-            return _bufferedContent.TryGetBuffer(out buffer);
+            return _bufferedContent != null && _bufferedContent.TryGetBuffer(out buffer);
         }
-#endif
      
         protected HttpContent()
         {
@@ -192,9 +185,11 @@ namespace System.Net.Http
                 Encoding encoding = null;
                 int bomLength = -1;
 
-                byte[] data = innerThis.GetDataBuffer(innerThis._bufferedContent);
-
-                int dataLength = (int)innerThis._bufferedContent.Length; // Data is the raw buffer, it may not be full.
+                ArraySegment<byte> buffer;
+                if (!innerThis.TryGetBuffer(out buffer))
+                {
+                    buffer = new ArraySegment<byte>(innerThis._bufferedContent.ToArray());
+                }
 
                 // If we do have encoding information in the 'Content-Type' header, use that information to convert
                 // the content to a string.
@@ -205,7 +200,7 @@ namespace System.Net.Http
                         encoding = Encoding.GetEncoding(innerThis.Headers.ContentType.CharSet);
 
                         // Byte-order-mark (BOM) characters may be present even if a charset was specified.
-                        bomLength = GetPreambleLength(data, dataLength, encoding);
+                        bomLength = GetPreambleLength(buffer, encoding);
                     }
                     catch (ArgumentException e)
                     {
@@ -218,7 +213,7 @@ namespace System.Net.Http
                 // then check for a BOM in the data to figure out the encoding.
                 if (encoding == null)
                 {
-                    if (!TryDetectEncoding(data, dataLength, out encoding, out bomLength))
+                    if (!TryDetectEncoding(buffer, out encoding, out bomLength))
                     {
                         // Use the default encoding (UTF8) if we couldn't detect one.
                         encoding = DefaultStringEncoding;
@@ -232,7 +227,7 @@ namespace System.Net.Http
                 try
                 {
                     // Drop the BOM when decoding the data.
-                    string result = encoding.GetString(data, bomLength, dataLength - bomLength);
+                    string result = encoding.GetString(buffer.Array, buffer.Offset + bomLength, buffer.Count - bomLength);
                     innerTcs.TrySetResult(result);
                 }
                 catch (Exception ex)
@@ -269,15 +264,10 @@ namespace System.Net.Http
 
             TaskCompletionSource<Stream> tcs = new TaskCompletionSource<Stream>(this);
 
-            if (_contentReadStream == null && IsBuffered)
+            ArraySegment<byte> buffer;
+            if (_contentReadStream == null && TryGetBuffer(out buffer))
             {
-                byte[] data = this.GetDataBuffer(_bufferedContent);
-
-                // We can cast bufferedContent.Length to 'int' since the length will always be in the 'int' range
-                // The .NET Framework doesn't support array lengths > int.MaxValue.
-                Debug.Assert(_bufferedContent.Length <= (long)int.MaxValue);
-                _contentReadStream = new MemoryStream(data, 0,
-                    (int)_bufferedContent.Length, false);
+                _contentReadStream = new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false);
             }
 
             if (_contentReadStream != null)
@@ -314,10 +304,10 @@ namespace System.Net.Http
             try
             {
                 Task task = null;
-                if (IsBuffered)
+                ArraySegment<byte> buffer;
+                if (TryGetBuffer(out buffer))
                 {
-                    byte[] data = this.GetDataBuffer(_bufferedContent);
-                    task = stream.WriteAsync(data, 0, (int)_bufferedContent.Length);
+                    task = stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count);
                 }
                 else
                 {
@@ -526,12 +516,6 @@ namespace System.Net.Http
             return new LimitMemoryStream((int)maxBufferSize, 0);
         }
 
-        private byte[] GetDataBuffer(MemoryStream stream)
-        {
-            // TODO: Use TryGetBuffer() instead of ToArray().
-            return stream.ToArray();
-        }
-
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)
@@ -598,57 +582,63 @@ namespace System.Net.Http
             return result;
         }
 
-        private static int GetPreambleLength(byte[] data, int dataLength, Encoding encoding)
+        private static int GetPreambleLength(ArraySegment<byte> buffer, Encoding encoding)
         {
+            byte[] data = buffer.Array;
+            int offset = buffer.Offset;
+            int dataLength = buffer.Count;
+
             Debug.Assert(data != null);
-            Debug.Assert(dataLength <= data.Length);
             Debug.Assert(encoding != null);
 
             switch (encoding.CodePage)
             {
                 case UTF8CodePage:
                     return (dataLength >= UTF8PreambleLength
-                        && data[0] == UTF8PreambleByte0
-                        && data[1] == UTF8PreambleByte1
-                        && data[2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
+                        && data[offset + 0] == UTF8PreambleByte0
+                        && data[offset + 1] == UTF8PreambleByte1
+                        && data[offset + 2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
 #if !NETNative
                 // UTF32 not supported on Phone
                 case UTF32CodePage:
                     return (dataLength >= UTF32PreambleLength
-                        && data[0] == UTF32PreambleByte0
-                        && data[1] == UTF32PreambleByte1
-                        && data[2] == UTF32PreambleByte2
-                        && data[3] == UTF32PreambleByte3) ? UTF32PreambleLength : 0;
+                        && data[offset + 0] == UTF32PreambleByte0
+                        && data[offset + 1] == UTF32PreambleByte1
+                        && data[offset + 2] == UTF32PreambleByte2
+                        && data[offset + 3] == UTF32PreambleByte3) ? UTF32PreambleLength : 0;
 #endif
                 case UnicodeCodePage:
                     return (dataLength >= UnicodePreambleLength
-                        && data[0] == UnicodePreambleByte0
-                        && data[1] == UnicodePreambleByte1) ? UnicodePreambleLength : 0;
+                        && data[offset + 0] == UnicodePreambleByte0
+                        && data[offset + 1] == UnicodePreambleByte1) ? UnicodePreambleLength : 0;
 
                 case BigEndianUnicodeCodePage:
                     return (dataLength >= BigEndianUnicodePreambleLength
-                        && data[0] == BigEndianUnicodePreambleByte0
-                        && data[1] == BigEndianUnicodePreambleByte1) ? BigEndianUnicodePreambleLength : 0;
+                        && data[offset + 0] == BigEndianUnicodePreambleByte0
+                        && data[offset + 1] == BigEndianUnicodePreambleByte1) ? BigEndianUnicodePreambleLength : 0;
 
                 default:
                     byte[] preamble = encoding.GetPreamble();
-                    return ByteArrayHasPrefix(data, dataLength, preamble) ? preamble.Length : 0;
+                    return BufferHasPrefix(buffer, preamble) ? preamble.Length : 0;
             }
         }
 
-        private static bool TryDetectEncoding(byte[] data, int dataLength, out Encoding encoding, out int preambleLength)
+        private static bool TryDetectEncoding(ArraySegment<byte> buffer, out Encoding encoding, out int preambleLength)
         {
+            byte[] data = buffer.Array;
+            int offset = buffer.Offset;
+            int dataLength = buffer.Count;
+
             Debug.Assert(data != null);
-            Debug.Assert(dataLength <= data.Length);
 
             if (dataLength >= 2)
             {
-                int first2Bytes = data[0] << 8 | data[1];
+                int first2Bytes = data[offset + 0] << 8 | data[offset + 1];
 
                 switch (first2Bytes)
                 {
                     case UTF8PreambleFirst2Bytes:
-                        if (dataLength >= UTF8PreambleLength && data[2] == UTF8PreambleByte2)
+                        if (dataLength >= UTF8PreambleLength && data[offset + 2] == UTF8PreambleByte2)
                         {
                             encoding = Encoding.UTF8;
                             preambleLength = UTF8PreambleLength;
@@ -659,7 +649,7 @@ namespace System.Net.Http
                     case UTF32OrUnicodePreambleFirst2Bytes:
 #if !NETNative
                         // UTF32 not supported on Phone
-                        if (dataLength >= UTF32PreambleLength && data[2] == UTF32PreambleByte2 && data[3] == UTF32PreambleByte3)
+                        if (dataLength >= UTF32PreambleLength && data[offset + 2] == UTF32PreambleByte2 && data[offset + 3] == UTF32PreambleByte3)
                         {
                             encoding = Encoding.UTF32;
                             preambleLength = UTF32PreambleLength;
@@ -684,29 +674,35 @@ namespace System.Net.Http
             return false;
         }
 
-        private static bool ByteArrayHasPrefix(byte[] byteArray, int dataLength, byte[] prefix)
+        private static bool BufferHasPrefix(ArraySegment<byte> buffer, byte[] prefix)
         {
-            if (prefix == null || byteArray == null || prefix.Length > dataLength || prefix.Length == 0)
+            byte[] byteArray = buffer.Array;
+            if (prefix == null || byteArray == null || prefix.Length > buffer.Count || prefix.Length == 0)
                 return false;
-            for (int i = 0; i < prefix.Length; i++)
+
+            for (int i = 0, j = buffer.Offset; i < prefix.Length; i++, j++)
             {
-                if (prefix[i] != byteArray[i])
+                if (prefix[i] != byteArray[j])
                     return false;
             }
+
             return true;
         }
 
         #endregion Helpers
 
-        private class LimitMemoryStream : MemoryStream
+        internal sealed class LimitMemoryStream : MemoryStream
         {
-            private int _maxSize;
+            private readonly int _maxSize;
 
             public LimitMemoryStream(int maxSize, int capacity)
                 : base(capacity)
             {
+                Debug.Assert(capacity <= maxSize);
                 _maxSize = maxSize;
             }
+
+            public int MaxSize => _maxSize;
 
             public override void Write(byte[] buffer, int offset, int count)
             {
