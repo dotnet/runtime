@@ -7398,11 +7398,36 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 gpointer
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res)
 {
+	MonoError error;
+	gpointer result = mono_load_remote_field_checked (this_obj, klass, field, res, &error);
+	mono_error_cleanup (&error);
+	return result;
+}
+
+/**
+ * mono_load_remote_field_checked:
+ * @this: pointer to an object
+ * @klass: klass of the object containing @field
+ * @field: the field to load
+ * @res: a storage to store the result
+ * @error: set on error
+ *
+ * This method is called by the runtime on attempts to load fields of
+ * transparent proxy objects. @this points to such TP, @klass is the class of
+ * the object containing @field. @res is a storage location which can be
+ * used to store the result.
+ *
+ * Returns: an address pointing to the value of field.  On failure returns NULL and sets @error.
+ */
+gpointer
+mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
-
 	static MonoMethod *getter = NULL;
+
+	mono_error_init (error);
+
 	MonoDomain *domain = mono_domain_get ();
 	MonoTransparentProxy *tp = (MonoTransparentProxy *) this_obj;
 	MonoClass *field_class;
@@ -7421,17 +7446,19 @@ mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *
 	
 	if (!getter) {
 		getter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldGetter", -1);
-		if (!getter)
-			mono_raise_exception (mono_get_exception_not_supported ("Linked away."));
+		if (!getter) {
+			mono_error_set_not_supported (error, "Linked away.");
+			return NULL;
+		}
 	}
 	
 	field_class = mono_class_from_mono_type (field->type);
 
-	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
+	return_val_if_nok (error, NULL);
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, getter, NULL, error);
+	return_val_if_nok (error, NULL);
 	mono_message_init (domain, msg, rm, out_args);
 
 	full_name = mono_type_get_full_name (klass);
@@ -7439,15 +7466,18 @@ mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *
 	mono_array_setref (msg->args, 1, mono_string_new (domain, mono_field_get_name (field)));
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, error);
+	return_val_if_nok (error, NULL);
 
-	if (exc) mono_raise_exception ((MonoException *)exc);
+	if (exc) {
+		mono_error_set_exception_instance (error, (MonoException *)exc);
+		return NULL;
+	}
 
 	if (mono_array_length (out_args) == 0)
 		return NULL;
 
-	*res = mono_array_get (out_args, MonoObject *, 0); /* FIXME: GC write abrrier for res */
+	mono_gc_wbarrier_generic_store (*res, mono_array_get (out_args, MonoObject *, 0));
 
 	if (field_class->valuetype) {
 		return ((char *)*res) + sizeof (MonoObject);

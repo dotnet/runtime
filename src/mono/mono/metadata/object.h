@@ -271,6 +271,7 @@ mono_runtime_set_main_args  (int argc, char* argv[]);
 
 /* The following functions won't be available with mono was configured with remoting disabled. */
 /*#ifndef DISABLE_REMOTING */
+MONO_RT_EXTERNAL_ONLY
 MONO_API void*
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void **res);
 

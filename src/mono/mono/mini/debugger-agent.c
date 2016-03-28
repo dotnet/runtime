@@ -9255,6 +9255,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 static ErrorCode
 object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
+	MonoError error;
 	int objid;
 	ErrorCode err;
 	MonoObject *obj;
@@ -9332,7 +9333,11 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				if (remote_obj) {
 #ifndef DISABLE_REMOTING
-					field_value = mono_load_remote_field(obj, obj_type, f, &field_storage);
+					field_value = mono_load_remote_field_checked(obj, obj_type, f, &field_storage, &error);
+					if (!is_ok (&error)) {
+						mono_error_cleanup (&error); /* FIXME report the error */
+						return ERR_INVALID_OBJECT;
+					}
 #else
 					g_assert_not_reached ();
 #endif
