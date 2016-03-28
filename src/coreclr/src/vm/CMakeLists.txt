@@ -199,6 +199,7 @@ set(VM_SOURCES_WKS
     mscorlib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
+    nativeeventsource.cpp
     nativeoverlapped.cpp
     objectlist.cpp
     olevariant.cpp
