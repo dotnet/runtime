@@ -968,7 +968,7 @@ compare_hash_entries (const HashEntry *e1, const HashEntry *e2)
 
 DEF_QSORT_INLINE(hash_entries, HashEntry*, compare_hash_entries)
 
-static unsigned long step_1, step_2, step_3, step_4, step_5, step_6;
+static gint64 step_1, step_2, step_3, step_4, step_5, step_6;
 static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
