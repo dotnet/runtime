@@ -154,7 +154,7 @@ namespace Internal.Cryptography
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCng(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 
