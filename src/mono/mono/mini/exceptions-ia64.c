@@ -236,18 +236,20 @@ static void
 throw_exception (MonoObject *exc, guint64 rethrow)
 {
 	unw_context_t unw_ctx;
+	MonoError error;
 	MonoContext ctx;
 	MonoJitInfo *ji;
 	unw_word_t ip, sp;
 	int res;
 
-	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+	if (mono_object_isinst (exc, mono_defaults.exception_class, &error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		}
 	}
+	mono_error_assert_ok (&error);
 
 	res = unw_getcontext (&unw_ctx);
 	g_assert (res == 0);

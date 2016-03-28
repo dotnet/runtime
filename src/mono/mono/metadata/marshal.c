@@ -237,6 +237,15 @@ mono_marshal_init_tls (void)
 	mono_native_tls_alloc (&load_type_info_tls_id, NULL);
 }
 
+static MonoObject*
+mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
+{
+	MonoError error;
+	MonoObject *result = mono_object_isinst_checked (obj, klass, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
 void
 mono_marshal_init (void)
 {
@@ -284,7 +293,7 @@ mono_marshal_init (void)
 		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr int32", FALSE);
 		register_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", "void ptr ptr int32", FALSE);
 		register_icall (g_free, "g_free", "void ptr", FALSE);
-		register_icall (mono_object_isinst, "mono_object_isinst", "object object ptr", FALSE);
+		register_icall (mono_object_isinst_icall, "mono_object_isinst_icall", "object object ptr", FALSE);
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
@@ -8593,7 +8602,9 @@ mono_marshal_get_castclass_with_cache (void)
 static MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache)
 {
-	MonoObject *isinst = mono_object_isinst (obj, klass);
+	MonoError error;
+	MonoObject *isinst = mono_object_isinst_checked (obj, klass, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 #ifndef DISABLE_REMOTING
 	if (obj->vtable->klass == mono_defaults.transparent_proxy_class)
@@ -9496,7 +9507,7 @@ get_virtual_stelemref_wrapper (int kind)
 		/*if (mono_object_isinst (value, aklass)) */
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_icall (mb, mono_object_isinst);
+		mono_mb_emit_icall (mb, mono_object_isinst_icall);
 		b2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		/* do_store: */
@@ -9610,7 +9621,7 @@ get_virtual_stelemref_wrapper (int kind)
 		/*if (mono_object_isinst (value, aklass)) */
 		mono_mb_emit_ldarg (mb, 2);
 		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_icall (mb, mono_object_isinst);
+		mono_mb_emit_icall (mb, mono_object_isinst_icall);
 		b2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		/* if (vklass->idepth < aklass->idepth) goto failue */
@@ -9936,7 +9947,7 @@ mono_marshal_get_stelemref (void)
 	
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_icall (mb, mono_object_isinst);
+	mono_mb_emit_icall (mb, mono_object_isinst_icall);
 	
 	b4 = mono_mb_emit_branch (mb, CEE_BRTRUE);
 	mono_mb_patch_addr (mb, b4, copy_pos - (b4 + 4));

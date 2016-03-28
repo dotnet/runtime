@@ -1615,7 +1615,7 @@ mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);
 void
 mono_error_raise_exception (MonoError *target_error);
 
-void
+gboolean
 mono_error_set_pending_exception (MonoError *error);
 
 MonoArray *
@@ -1635,6 +1635,12 @@ ves_icall_object_new_fast (MonoVTable *vtable);
 
 MonoObject *
 mono_object_clone_checked (MonoObject *obj, MonoError *error);
+
+MonoObject *
+mono_object_isinst_checked (MonoObject *obj, MonoClass *klass, MonoError *error);
+
+MonoObject *
+mono_object_isinst_mbyref_checked   (MonoObject *obj, MonoClass *klass, MonoError *error);
 
 MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
