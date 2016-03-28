@@ -111,7 +111,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void IgnoreSubDirectoryFiles()
+        public virtual void IgnoreSubDirectoryFiles()
         {
             string subDir = GetTestFileName();
             Directory.CreateDirectory(Path.Combine(TestDirectory, subDir));
