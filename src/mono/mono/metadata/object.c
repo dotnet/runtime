@@ -7328,9 +7328,11 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
  * Restore results from message based processing back to arguments pointers
  */
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args)
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_error_init (error);
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 	int i, j, type, size, out_len;
@@ -7346,8 +7348,10 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 
 		if (pt->byref) {
 			char *arg;
-			if (j >= out_len)
-				mono_raise_exception (mono_get_exception_execution_engine ("The proxy call returned an incorrect number of output arguments"));
+			if (j >= out_len) {
+				mono_error_set_execution_engine (error, "The proxy call returned an incorrect number of output arguments");
+				return;
+			}
 
 			arg = (char *)mono_array_get (out_args, gpointer, j);
 			type = pt->type;

@@ -620,7 +620,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 			      MonoDelegate **cb, MonoObject **state);
 
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
+mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
 void
 mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method);

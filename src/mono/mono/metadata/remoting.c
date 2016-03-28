@@ -399,7 +399,8 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);
 
-	mono_method_return_message_restore (method, params, out_args);
+	mono_method_return_message_restore (method, params, out_args, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	return res;
 } 
