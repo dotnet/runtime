@@ -20,7 +20,12 @@ namespace System.Net.Http
     {
         #region Fields
 
-        private const string crlf = "\r\n";
+        private const string CrLf = "\r\n";
+
+        private static readonly int s_crlfLength = GetEncodedLength(CrLf);
+        private static readonly int s_dashDashLength = GetEncodedLength("--");
+        private static readonly int s_colonSpaceLength = GetEncodedLength(": ");
+        private static readonly int s_commaSpaceLength = GetEncodedLength(", ");
 
         private List<HttpContent> _nestedContent;
         private string _boundary;
@@ -186,7 +191,7 @@ namespace System.Net.Http
             _nextContentIndex = 0;
 
             // Start Boundary, chain everything else.
-            EncodeStringToStreamAsync(_outputStream, "--" + _boundary + crlf)
+            EncodeStringToStreamAsync(_outputStream, "--" + _boundary + CrLf)
                 .ContinueWithStandard(WriteNextContentHeadersAsync);
 
             return localTcs.Task;
@@ -209,15 +214,12 @@ namespace System.Net.Http
                     return;
                 }
 
-                string internalBoundary = crlf + "--" + _boundary + crlf;
                 StringBuilder output = new StringBuilder();
-                if (_nextContentIndex == 0)
+                if (_nextContentIndex != 0) // First time, don't write dividing boundary.
                 {
-                    // First time, don't write dividing boundary.
-                }
-                else
-                {
-                    output.Append(internalBoundary);
+                    output.Append(CrLf + "--"); // const strings
+                    output.Append(_boundary);
+                    output.Append(CrLf);
                 }
 
                 HttpContent content = _nestedContent[_nextContentIndex];
@@ -225,10 +227,19 @@ namespace System.Net.Http
                 // Headers
                 foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
                 {
-                    output.Append(headerPair.Key + ": " + string.Join(", ", headerPair.Value) + crlf);
+                    output.Append(headerPair.Key);
+                    output.Append(": ");
+                    string delim = string.Empty;
+                    foreach (string value in headerPair.Value)
+                    {
+                        output.Append(delim);
+                        output.Append(value);
+                        delim = ", ";
+                    }
+                    output.Append(CrLf);
                 }
 
-                output.Append(crlf); // Extra CRLF to end headers (even if there are no headers).
+                output.Append(CrLf); // Extra CRLF to end headers (even if there are no headers).
 
                 EncodeStringToStreamAsync(_outputStream, output.ToString())
                     .ContinueWithStandard(WriteNextContentAsync);
@@ -266,7 +277,7 @@ namespace System.Net.Http
         {
             try
             {
-                EncodeStringToStreamAsync(_outputStream, crlf + "--" + _boundary + "--" + crlf)
+                EncodeStringToStreamAsync(_outputStream, CrLf + "--" + _boundary + "--" + CrLf)
                     .ContinueWithStandard(task =>
                     {
                         if (task.IsFaulted)
@@ -310,11 +321,13 @@ namespace System.Net.Http
 
         protected internal override bool TryComputeLength(out long length)
         {
+            int boundaryLength = GetEncodedLength(_boundary);
+
             long currentLength = 0;
-            long internalBoundaryLength = GetEncodedLength(crlf + "--" + _boundary + crlf);
+            long internalBoundaryLength = s_crlfLength + s_dashDashLength + boundaryLength + s_crlfLength;
 
             // Start Boundary.
-            currentLength += GetEncodedLength("--" + _boundary + crlf);
+            currentLength += s_dashDashLength + boundaryLength + s_crlfLength;
 
             bool first = true;
             foreach (HttpContent content in _nestedContent)
@@ -332,10 +345,23 @@ namespace System.Net.Http
                 // Headers.
                 foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
                 {
-                    currentLength += GetEncodedLength(headerPair.Key + ": " + string.Join(", ", headerPair.Value) + crlf);
+                    currentLength += GetEncodedLength(headerPair.Key) + s_colonSpaceLength;
+
+                    int valueCount = 0;
+                    foreach (string value in headerPair.Value)
+                    {
+                        currentLength += GetEncodedLength(value);
+                        valueCount++;
+                    }
+                    if (valueCount > 1)
+                    {
+                        currentLength += (valueCount - 1) * s_commaSpaceLength;
+                    }
+
+                    currentLength += s_crlfLength;
                 }
 
-                currentLength += crlf.Length;
+                currentLength += s_crlfLength;
 
                 // Content.
                 long tempContentLength = 0;
@@ -348,7 +374,7 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += GetEncodedLength(crlf + "--" + _boundary + "--" + crlf);
+            currentLength += s_crlfLength + s_dashDashLength + boundaryLength + s_dashDashLength + s_crlfLength;
 
             length = currentLength;
             return true;
