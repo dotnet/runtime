@@ -6096,8 +6096,10 @@ mono_object_isinst_mbyref_checked (MonoObject *obj, MonoClass *klass, MonoError 
 		gpointer pa [2];
 
 		im = mono_class_get_method_from_name (rpklass, "CanCastTo", -1);
-		if (!im)
-			mono_raise_exception (mono_get_exception_not_supported ("Linked away."));
+		if (!im) {
+			mono_error_set_not_supported (error, "Linked away.");
+			return NULL;
+		}
 		im = mono_object_get_virtual_method (rp, im);
 		g_assert (im);
 	
