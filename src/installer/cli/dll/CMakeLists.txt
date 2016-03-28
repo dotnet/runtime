@@ -25,13 +25,13 @@ set(SOURCES
     ../json/casablanca/src/json/json_parsing.cpp
     ../json/casablanca/src/json/json_serialization.cpp
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
+    ../fxr/fx_ver.cpp
     ../args.cpp
     ../hostpolicy.cpp
     ../coreclr.cpp
     ../deps_resolver.cpp
     ../deps_format.cpp
-    ../deps_entry.cpp
-    ../servicing_index.cpp)
+    ../deps_entry.cpp)
 
 
 if(WIN32)
