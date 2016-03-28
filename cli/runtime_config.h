@@ -15,6 +15,7 @@ public:
     const pal::string_t& get_gc_server() const;
     const pal::string_t& get_fx_version() const;
     const pal::string_t& get_fx_name() const;
+    const std::vector<pal::string_t>& get_probe_paths() const;
     bool get_fx_roll_fwd() const;
     bool get_portable() const;
     bool parse_opts(const json_value& opts);
@@ -26,6 +27,7 @@ private:
     std::unordered_map<pal::string_t, pal::string_t> m_properties;
     std::vector<std::string> m_prop_keys;
     std::vector<std::string> m_prop_values;
+    std::vector<pal::string_t> m_probe_paths;
     pal::string_t m_fx_name;
     pal::string_t m_fx_ver;
     bool m_fx_roll_fwd;
