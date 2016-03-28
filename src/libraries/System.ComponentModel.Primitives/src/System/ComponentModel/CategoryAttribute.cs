@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       visual designer.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public class CategoryAttribute : Attribute
+    public class CategoryAttribute : ComponentModelAttribute
     {
         private static volatile CategoryAttribute s_appearance;
         private static volatile CategoryAttribute s_asynchronous;
@@ -321,7 +321,6 @@ namespace System.ComponentModel
             return SR.GetResourceString("PropertyCategory" + value, null);
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// </devdoc>
         /// <devdoc>
@@ -332,6 +331,5 @@ namespace System.ComponentModel
         {
             return Category.Equals(Default.Category);
         }
-#endif
     }
 }

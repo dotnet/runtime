@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Primitives.Tests
@@ -28,6 +29,21 @@ namespace System.ComponentModel.Primitives.Tests
             var attribute = new NotifyParentPropertyAttribute(value);
 
             Assert.Equal(value, attribute.NotifyParent);
+        }
+
+        [Theory]
+        [MemberData(nameof(NotifyParentPropertyAttributeData))]
+        public void NameTests(NotifyParentPropertyAttribute attribute, bool isNotifyParent, bool isDefault)
+        {
+            Assert.Equal(isNotifyParent, attribute.NotifyParent);
+            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
+        }
+
+        private static IEnumerable<object[]> NotifyParentPropertyAttributeData()
+        {
+            yield return new object[] { NotifyParentPropertyAttribute.Default, false, true };
+            yield return new object[] { new NotifyParentPropertyAttribute(true), true, false };
+            yield return new object[] { new NotifyParentPropertyAttribute(false), false, true };
         }
     }
 }

@@ -30,6 +30,7 @@
     <!--<Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />-->
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
     <!--<Compile Include="System\ComponentModel\CultureInfoConverter.cs" />-->
+    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />

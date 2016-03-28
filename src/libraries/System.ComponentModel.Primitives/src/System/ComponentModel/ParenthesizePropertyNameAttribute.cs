@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       properties window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ParenthesizePropertyNameAttribute : Attribute
+    public sealed class ParenthesizePropertyNameAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -78,7 +78,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// <para>Gets a value indicating whether this attribute is set to <see langword='true'/> by default.</para>
         /// </devdoc>
@@ -86,6 +85,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

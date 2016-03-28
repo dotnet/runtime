@@ -10,7 +10,7 @@ namespace System.ComponentModel
     ///       other objects in a properties window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class MergablePropertyAttribute : Attribute
+    public sealed class MergablePropertyAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -89,7 +89,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// </devdoc>
         /// <internalonly/>
@@ -97,6 +96,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

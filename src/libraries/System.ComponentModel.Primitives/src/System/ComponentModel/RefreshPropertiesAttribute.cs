@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///    <para> Specifies how a designer refreshes when the property value is changed.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class RefreshPropertiesAttribute : Attribute
+    public sealed class RefreshPropertiesAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -86,7 +86,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         ///    <para>Gets a value indicating whether the current attribute is the default.</para>
         /// </devdoc>
@@ -94,6 +93,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

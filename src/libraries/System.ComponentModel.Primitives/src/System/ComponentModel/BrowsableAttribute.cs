@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       a property browsing window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class BrowsableAttribute : Attribute
+    public sealed class BrowsableAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -80,7 +80,6 @@ namespace System.ComponentModel
             return _browsable.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
@@ -88,6 +87,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

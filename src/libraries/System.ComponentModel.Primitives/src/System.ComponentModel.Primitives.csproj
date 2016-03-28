@@ -20,6 +20,7 @@
     <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
     <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
+    <Compile Include="System\ComponentModel\ComponentModelAttribute.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />
     <Compile Include="System\ComponentModel\IComponent.cs" />

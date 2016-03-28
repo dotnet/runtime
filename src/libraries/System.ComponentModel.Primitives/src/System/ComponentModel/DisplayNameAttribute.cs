@@ -9,7 +9,7 @@ namespace System.ComponentModel
     /// </devdoc>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class | AttributeTargets.Method)]
-    public class DisplayNameAttribute : Attribute
+    public class DisplayNameAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DisplayNameAttribute'/> , which is an
@@ -78,7 +78,6 @@ namespace System.ComponentModel
             return DisplayName.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
@@ -86,6 +85,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }
