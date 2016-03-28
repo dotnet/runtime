@@ -2626,12 +2626,7 @@ namespace System.ComponentModel
             Attribute memberAttribute = member.Attributes[attribute.GetType()];
             if (memberAttribute == null)
             {
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 return !attribute.IsDefaultAttribute();
-#else
-                // TODO more reasonable alternative
-                return false;
-#endif
             }
             else
             {

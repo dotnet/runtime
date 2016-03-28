@@ -11,7 +11,7 @@ namespace System.ComponentModel
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Event)]
-    public sealed class DesignerSerializationVisibilityAttribute : Attribute
+    public sealed class DesignerSerializationVisibilityAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -99,7 +99,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// </devdoc>
         /// <internalonly/>
@@ -107,6 +106,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

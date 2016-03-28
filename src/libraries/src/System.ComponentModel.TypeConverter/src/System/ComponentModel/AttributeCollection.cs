@@ -312,14 +312,12 @@ namespace System.ComponentModel
                     {
                         attr = (Attribute)ci.Invoke(new object[0]);
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                         // If we successfully created, verify that it is the
                         // default.  Attributes don't have to abide by this rule.
                         if (!attr.IsDefaultAttribute())
                         {
                             attr = null;
                         }
-#endif
                     }
                 }
 

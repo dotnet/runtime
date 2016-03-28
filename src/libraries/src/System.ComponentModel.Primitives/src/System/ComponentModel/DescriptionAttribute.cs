@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       or event.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public class DescriptionAttribute : Attribute
+    public class DescriptionAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DescriptionAttribute'/> , which is an
@@ -78,7 +78,6 @@ namespace System.ComponentModel
             return Description.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
@@ -86,7 +85,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
-
     }
 }

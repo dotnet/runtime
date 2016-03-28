@@ -12,7 +12,7 @@ namespace System.ComponentModel
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ExtenderProvidedPropertyAttribute : Attribute
+    public sealed class ExtenderProvidedPropertyAttribute : ComponentModelAttribute
     {
         private PropertyDescriptor _extenderProperty;
         private IExtenderProvider _provider;
@@ -87,7 +87,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
@@ -95,6 +94,5 @@ namespace System.ComponentModel
         {
             return _receiverType == null;
         }
-#endif
     }
 }

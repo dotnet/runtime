@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///  Specifies that a object has no sub properties that are editable.
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ImmutableObjectAttribute : Attribute
+    public sealed class ImmutableObjectAttribute : ComponentModelAttribute
     {
         /// <devdoc>
         ///  Specifies that a object has no sub properties that are editable.
@@ -78,7 +78,6 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
@@ -86,6 +85,5 @@ namespace System.ComponentModel
         {
             return this.Equals(Default);
         }
-#endif
     }
 }
