@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.ComponentModel
 {
     /// <devdoc>
-    ///    <para>Specifies what type to use as
-    ///       a converter for the object
-    ///       this
-    ///       attribute is bound to. This class cannot
-    ///       be inherited.</para>
+    ///    <para>
+    ///        Specifies what type to use as a converter for the object this
+    ///        attribute is bound to. This class cannot be inherited.
+    ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
@@ -19,10 +16,10 @@ namespace System.ComponentModel
         private string _typeName;
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
-        ///    the specified type as the data converter for the object this attribute
-        ///    is bound
-        ///    to.</para>
+        ///     <para>
+        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
+        ///         using the specified type as the data converter for the object this attribute is bound to.
+        ///     </para>
         /// </devdoc>
         public TypeConverterAttribute(Type type)
         {
@@ -30,8 +27,10 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
-        ///    the specified type name as the data converter for the object this attribute is bound to.</para>
+        ///     <para>
+        ///         Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class,
+        ///         using the specified type name as the data converter for the object this attribute is bound to.
+        ///     </para>
         /// </devdoc>
         public TypeConverterAttribute(string typeName)
         {
@@ -39,9 +38,10 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        /// <para>Gets the fully qualified type name of the <see cref='System.Type'/>
-        /// to use as a converter for the object this attribute
-        /// is bound to.</para>
+        ///     <para>
+        ///         Gets the fully qualified type name of the <see cref='System.Type'/> to use as a converter for
+        ///         the object this attribute is bound to.
+        ///     </para>
         /// </devdoc>
         public string ConverterTypeName
         {
@@ -63,4 +63,3 @@ namespace System.ComponentModel
         }
     }
 }
-
