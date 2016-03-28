@@ -54,5 +54,3 @@ If you see errors along the lines of `SendFailure (Error writing headers)` you m
 ```sh
 mozroots --import --sync
 ```
-
-`System.Diagnostics.Debug.Tests` does not build on Unix. https://github.com/dotnet/corefx/issues/1609
