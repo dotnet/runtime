@@ -13,12 +13,12 @@ arguments_t::arguments_t() :
     app_argc(0),
     app_argv(nullptr),
     dotnet_packages_cache(_X("")),
-    dotnet_servicing(_X("")),
+    dotnet_extensions(_X("")),
     deps_path(_X(""))
 {
 }
 
-bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_dir, host_mode_t mode,
+bool parse_arguments(const pal::string_t& deps_path, const std::vector<pal::string_t>& probe_paths, host_mode_t mode,
     const int argc, const pal::char_t* argv[], arguments_t* arg_out)
 {
     arguments_t& args = *arg_out;
@@ -80,7 +80,10 @@ bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_
     pal::string_t opts_deps_file = _X("--depsfile");
     pal::string_t opts_probe_path = _X("--additionalprobingpath");
     pal::string_t deps_file = opts.count(opts_deps_file) ? opts[opts_deps_file] : deps_path;
-    pal::string_t probe_path = opts.count(opts_probe_path) ? opts[opts_probe_path] : probe_dir;
+    if (opts.count(opts_probe_path))
+    {
+        args.probe_paths.push_back(opts[opts_probe_path]);
+    }
 
     if (!deps_file.empty())
     {
@@ -88,7 +91,10 @@ bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_
         args.app_dir = get_directory(args.deps_path);
     }
 
-    args.probe_dir = probe_path;
+    for (const auto& probe : probe_paths)
+    {
+        args.probe_paths.push_back(probe);
+    }
     
     if (args.deps_path.empty())
     {
@@ -102,7 +108,8 @@ bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_
         args.deps_path.append(_X(".deps.json"));
     }
 
-    pal::getenv(_X("DOTNET_PACKAGES_CACHE"), &args.dotnet_packages_cache);
-    pal::getenv(_X("DOTNET_SERVICING"), &args.dotnet_servicing);
+    pal::getenv(_X("DOTNET_HOSTING_OPTIMIZATION_CACHE"), &args.dotnet_packages_cache);
+    pal::get_default_extensions_directory(&args.dotnet_extensions);
+
     return true;
 }

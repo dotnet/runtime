@@ -6,6 +6,7 @@
 #include "pal.h"
 #include "utils.h"
 #include "libhost.h"
+#include "fx_ver.h"
 #include "fx_muxer.h"
 #include "error_codes.h"
 
@@ -76,9 +77,13 @@ int execute_app(
 bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 {
     pal::string_t svc_dir;
-    if (!pal::getenv(_X("DOTNET_SERVICING"), &svc_dir))
+    pal::get_default_extensions_directory(&svc_dir);
+
+    pal::string_t version = _STRINGIFY(HOST_POLICY_PKG_VER);
+
+    fx_ver_t lib_ver(-1, -1, -1);
+    if (!fx_ver_t::parse(version, &lib_ver, false))
     {
-        trace::verbose(_X("Servicing root doesn't exist"));
         return false;
     }
 
@@ -87,17 +92,16 @@ bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
     {
         replace_char(&rel_dir, '/', DIR_SEPARATOR);
     }
-
+    
     pal::string_t path = svc_dir;
     append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME));
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_VER));
+
+    pal::string_t max_ver;
+    try_patch_roll_forward_in_dir(path, lib_ver, &max_ver, false);
+    
+    append_path(&path, max_ver.c_str());
     append_path(&path, rel_dir.c_str());
-    append_path(&path, LIBHOSTPOLICY_NAME);
-    if (!pal::realpath(&path))
-    {
-        trace::verbose(_X("Servicing root ::realpath(%s) doesn't exist"), path.c_str());
-        return false;
-    }
+
     if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
     {
         resolved_dir->assign(path);
@@ -127,7 +131,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
     case split_fx:
         {
             trace::info(_X("Host operating in split mode; own dir=[%s]"), own_dir.c_str());
-            corehost_init_t init(_X(""), _X(""), own_dir, host_mode_t::split_fx, nullptr);
+            corehost_init_t init(_X(""), std::vector<pal::string_t>(), own_dir, host_mode_t::split_fx, nullptr);
             return execute_app(own_dir, &init, argc, argv);
         }
 
@@ -136,7 +140,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
             trace::info(_X("Host operating from standalone app dir %s"), own_dir.c_str());
 
             pal::string_t svc_dir;
-            corehost_init_t init(_X(""), _X(""), _X(""), host_mode_t::standalone, nullptr);
+            corehost_init_t init(_X(""), std::vector<pal::string_t>(), _X(""), host_mode_t::standalone, nullptr);
             return execute_app(
                 hostpolicy_exists_in_svc(&svc_dir) ? svc_dir : own_dir, &init, argc, argv);
         }
