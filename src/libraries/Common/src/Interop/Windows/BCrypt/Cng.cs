@@ -5,9 +5,6 @@
 using System;
 using System.Text;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
