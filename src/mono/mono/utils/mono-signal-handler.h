@@ -9,9 +9,52 @@
 
 #include "config.h"
 
-#ifdef ENABLE_EXTENSION_MODULE
-#include "../../../mono-extensions/mono/utils/mono-signal-handler.h"
+/*
+ * When a signal is delivered to a thread on a Krait Android device
+ * that's in the middle of skipping over an "IT" block, such as this
+ * one:
+ *
+ * 0x40184ef0 <dlfree+1308>:	ldr	r1, [r3, #0]
+ * 0x40184ef2 <dlfree+1310>:	add.w	r5, r12, r2, lsl #3
+ * 0x40184ef6 <dlfree+1314>:	lsls.w	r2, r0, r2
+ * 0x40184efa <dlfree+1318>:	tst	r2, r1
+ * ### this is the IT instruction
+ * 0x40184efc <dlfree+1320>:	itt	eq
+ * 0x40184efe <dlfree+1322>:	orreq	r2, r1
+ * ### signal arrives here
+ * 0x40184f00 <dlfree+1324>:	streq	r2, [r3, #0]
+ * 0x40184f02 <dlfree+1326>:	beq.n	0x40184f1a <dlfree+1350>
+ * 0x40184f04 <dlfree+1328>:	ldr	r2, [r5, #8]
+ * 0x40184f06 <dlfree+1330>:	ldr	r3, [r3, #16]
+ *
+ * then the first few (at most four, one would assume) instructions of
+ * the signal handler (!) might be skipped.  They happen to be the
+ * push of the frame pointer and return address, so once the signal
+ * handler has done its work, it returns into a SIGSEGV.
+ */
+
+#if defined (TARGET_ARM) && defined (HAVE_ARMV7) && defined (TARGET_ANDROID)
+#define KRAIT_IT_BUG_WORKAROUND	1
 #endif
+
+#ifdef KRAIT_IT_BUG_WORKAROUND
+#define MONO_SIGNAL_HANDLER_FUNC(access, name, arglist)		\
+	static void __krait_ ## name arglist;	\
+	__attribute__ ((naked)) access void				\
+	name arglist							\
+	{								\
+		asm volatile (						\
+			      "mov r0, r0\n\t"				\
+			      "mov r0, r0\n\t"				\
+			      "mov r0, r0\n\t"				\
+			      "mov r0, r0\n\t");			\
+		asm volatile (						\
+			      "bx %0"					\
+			      : : "r" (__krait_ ## name));		\
+	}	\
+	static void __krait_ ## name arglist
+#endif
+
 
 /* Don't use this */
 #ifndef MONO_SIGNAL_HANDLER_FUNC
