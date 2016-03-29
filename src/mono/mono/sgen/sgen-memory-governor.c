@@ -225,6 +225,7 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
 	}
 	last_major_num_sections = major_collector.get_num_major_sections ();
+	last_los_memory_usage = los_memory_usage;
 }
 
 /*
