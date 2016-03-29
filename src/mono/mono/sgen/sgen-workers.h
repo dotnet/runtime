@@ -20,7 +20,6 @@ struct _WorkerData {
 void sgen_workers_init (int num_workers);
 void sgen_workers_stop_all_workers (void);
 void sgen_workers_start_all_workers (SgenObjectOperations *object_ops, SgenThreadPoolJob *finish_job);
-void sgen_workers_ensure_awake (void);
 void sgen_workers_init_distribute_gray_queue (void);
 void sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue);
 void sgen_workers_wait_for_jobs_finished (void);
@@ -30,6 +29,7 @@ void sgen_workers_join (void);
 gboolean sgen_workers_have_idle_work (void);
 gboolean sgen_workers_all_done (void);
 gboolean sgen_workers_are_working (void);
-SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void);
+void sgen_workers_assert_gray_queue_is_empty (void);
+void sgen_workers_take_from_queue_and_awake (SgenGrayQueue *queue);
 
 #endif

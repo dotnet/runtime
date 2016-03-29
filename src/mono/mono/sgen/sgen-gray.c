@@ -217,7 +217,6 @@ sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enq
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 
 	queue->alloc_prepare_func = NULL;
-	queue->alloc_prepare_data = NULL;
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE
 	queue->enqueue_check_func = enqueue_check_func;
 #endif
@@ -237,23 +236,13 @@ sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 {
 	sgen_gray_object_queue_init (queue, NULL);
 	queue->alloc_prepare_func = invalid_prepare_func;
-	queue->alloc_prepare_data = NULL;
 }
 
 void
-sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
+sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func)
 {
-	SGEN_ASSERT (0, !queue->alloc_prepare_func && !queue->alloc_prepare_data, "Can't set gray queue alloc-prepare twice");
+	SGEN_ASSERT (0, !queue->alloc_prepare_func, "Can't set gray queue alloc-prepare twice");
 	queue->alloc_prepare_func = alloc_prepare_func;
-	queue->alloc_prepare_data = data;
-}
-
-void
-sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
-		GrayQueueAllocPrepareFunc alloc_prepare_func, void *data)
-{
-	sgen_gray_object_queue_init (queue, enqueue_check_func);
-	sgen_gray_queue_set_alloc_prepare (queue, alloc_prepare_func, data);
 }
 
 void
@@ -266,13 +255,6 @@ sgen_gray_object_queue_deinit (SgenGrayQueue *queue)
 		sgen_gray_object_free_queue_section (queue->free_list);
 		queue->free_list = next;
 	}
-}
-
-void
-sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue)
-{
-	queue->alloc_prepare_func = NULL;
-	queue->alloc_prepare_data = NULL;
 }
 
 static void

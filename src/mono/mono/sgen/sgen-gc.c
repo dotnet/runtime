@@ -429,32 +429,12 @@ sgen_workers_get_job_gray_queue (WorkerData *worker_data)
 }
 
 static void
-gray_queue_redirect (SgenGrayQueue *queue)
-{
-	gboolean wake = FALSE;
-
-	for (;;) {
-		GrayQueueSection *section = sgen_gray_object_dequeue_section (queue);
-		if (!section)
-			break;
-		sgen_section_gray_queue_enqueue ((SgenSectionGrayQueue *)queue->alloc_prepare_data, section);
-		wake = TRUE;
-	}
-
-	if (wake) {
-		g_assert (concurrent_collection_in_progress);
-		sgen_workers_ensure_awake ();
-	}
-}
-
-static void
 gray_queue_enable_redirect (SgenGrayQueue *queue)
 {
-	if (!concurrent_collection_in_progress)
-		return;
+	SGEN_ASSERT (0, concurrent_collection_in_progress, "Where are we redirecting the gray queue to, without a concurrent collection?");
 
-	sgen_gray_queue_set_alloc_prepare (queue, gray_queue_redirect, sgen_workers_get_distribute_section_gray_queue ());
-	gray_queue_redirect (queue);
+	sgen_gray_queue_set_alloc_prepare (queue, sgen_workers_take_from_queue_and_awake);
+	sgen_workers_take_from_queue_and_awake (queue);
 }
 
 void
@@ -1904,7 +1884,7 @@ major_start_collection (const char *reason, gboolean concurrent, size_t *old_nex
 
 	current_collection_generation = GENERATION_OLD;
 
-	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
+	sgen_workers_assert_gray_queue_is_empty ();
 
 	if (!concurrent)
 		sgen_cement_reset ();
@@ -1963,7 +1943,7 @@ major_finish_collection (const char *reason, gboolean is_overflow, size_t old_ne
 		object_ops = &major_collector.major_ops_serial;
 	}
 
-	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
+	sgen_workers_assert_gray_queue_is_empty ();
 
 	/* all the objects in the heap */
 	finish_gray_stack (GENERATION_OLD, CONTEXT_FROM_OBJECT_OPERATIONS (object_ops, &gray_queue));
@@ -2058,7 +2038,7 @@ major_finish_collection (const char *reason, gboolean is_overflow, size_t old_ne
 	memset (&counts, 0, sizeof (ScannedObjectCounts));
 	major_collector.finish_major_collection (&counts);
 
-	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
+	sgen_workers_assert_gray_queue_is_empty ();
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after major collection has finished");
 	if (concurrent_collection_in_progress)
@@ -2124,8 +2104,7 @@ major_start_concurrent_collection (const char *reason)
 
 	// FIXME: store reason and pass it when finishing
 	major_start_collection (reason, TRUE, NULL);
-
-	gray_queue_redirect (&gray_queue);
+	SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&gray_queue), "What's left in the gray queue?");
 
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 
