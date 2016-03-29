@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <AdditionalProperties>BuildPackageLibraryReferences=false</AdditionalProperties>
+    <PackageReportDir Condition="'$(PackageReportDir)' == ''">$(BinDir)pkg/reports/</PackageReportDir>
   </PropertyGroup>
   
   <ItemGroup>
@@ -14,6 +15,18 @@
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>
+
+  <UsingTask TaskName="GenerateNetStandardSupportTable" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
+  <Target Name="GenerateNETStandardDocs">
+    <Error Condition="'$(WcfPackageReportDir)' == ''" 
+           Text="WcfPackageReportDir must be specified to point to the package report directory of the WCF repo.  EG: /p:WcfPackageReportDir=c:\src\wcf\bin\pkg\reports\" />
+    <ItemGroup>
+      <Reports Include="$(PackageReportDir)*.json" />
+      <Reports Include="$(WcfPackageReportDir)*.json" />
+    </ItemGroup>
+
+    <GenerateNetStandardSupportTable Reports="@(Reports)" DocFilePath="$(ProjectDir)Documentation\architecture\net-platform-standard.md" InsertIntoFile="True" />
+  </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>
