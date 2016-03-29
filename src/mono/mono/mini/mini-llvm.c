@@ -2068,6 +2068,11 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	MonoClass *exc_class;
 	LLVMValueRef args [2];
 	LLVMValueRef callee;
+	gboolean no_pc = FALSE;
+
+	if (IS_TARGET_AMD64)
+		/* Some platforms don't require the pc argument */
+		no_pc = TRUE;
 	
 	ex_bb = gen_bb (ctx, "EX_BB");
 	if (ctx->llvm_only)
@@ -2112,7 +2117,10 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		LLVMTypeRef sig;
 		const char *icall_name;
 
-		sig = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), LLVMPointerType (LLVMInt8Type (), 0), FALSE);
+		if (no_pc)
+			sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
+		else
+			sig = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), LLVMPointerType (LLVMInt8Type (), 0), FALSE);
 		icall_name = "llvm_throw_corlib_exception_abs_trampoline";
 
 		if (ctx->cfg->compile_aot) {
@@ -2150,8 +2158,12 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	 * The LLVM mono branch contains changes so a block address can be passed as an
 	 * argument to a call.
 	 */
-	args [1] = LLVMBlockAddress (ctx->lmethod, ex_bb);
-	emit_call (ctx, bb, &builder, callee, args, 2);
+	if (no_pc) {
+		emit_call (ctx, bb, &builder, callee, args, 1);
+	} else {
+		args [1] = LLVMBlockAddress (ctx->lmethod, ex_bb);
+		emit_call (ctx, bb, &builder, callee, args, 2);
+	}
 
 	LLVMBuildUnreachable (builder);
 
