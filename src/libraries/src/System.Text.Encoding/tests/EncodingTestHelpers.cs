@@ -32,7 +32,7 @@ namespace System.Text.Tests
 
             // Use GetBytes(char[], int, int, byte[], int)
             byte[] charArrayBytes = (byte[])bytes.Clone();
-            int charArrayResult = encoding.GetBytes(source, index, count, charArrayBytes, byteIndex);
+            int charArrayResult = encoding.GetBytes(source.ToCharArray(), index, count, charArrayBytes, byteIndex);
             Assert.Equal(expected, charArrayResult);
         }
 
