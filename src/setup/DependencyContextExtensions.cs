@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -11,25 +12,45 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static IEnumerable<string> GetDefaultNativeAssets(this DependencyContext self)
         {
-            return ResolveAssets(self, string.Empty, l => l.NativeLibraryGroups);
+            return self.RuntimeLibraries.SelectMany(library => library.GetDefaultNativeAssets(self));
         }
 
         public static IEnumerable<string> GetRuntimeNativeAssets(this DependencyContext self, string runtimeIdentifier)
         {
-            return ResolveAssets(self, runtimeIdentifier, l => l.NativeLibraryGroups);
+            return self.RuntimeLibraries.SelectMany(library => library.GetRuntimeNativeAssets(self, runtimeIdentifier));
         }
 
-        public static IEnumerable<string> GetDefaultAssemblyNames(this DependencyContext self)
+        public static IEnumerable<string> GetDefaultNativeAssets(this RuntimeLibrary self, DependencyContext context)
         {
-            return ResolveAssets(self, string.Empty, l => l.RuntimeAssemblyGroups).Select(GetAssemblyName);
+            return ResolveAssets(context, string.Empty, self.NativeLibraryGroups);
         }
 
-        public static IEnumerable<string> GetRuntimeAssemblyNames(this DependencyContext self, string runtimeIdentifier)
+        public static IEnumerable<string> GetRuntimeNativeAssets(this RuntimeLibrary self, DependencyContext context, string runtimeIdentifier)
         {
-            return ResolveAssets(self, runtimeIdentifier, l => l.RuntimeAssemblyGroups).Select(GetAssemblyName);
+            return ResolveAssets(context, runtimeIdentifier, self.NativeLibraryGroups);
         }
 
-        private static string GetAssemblyName(string assetPath)
+        public static IEnumerable<AssemblyName> GetDefaultAssemblyNames(this DependencyContext self)
+        {
+            return self.RuntimeLibraries.SelectMany(library => library.GetDefaultAssemblyNames(self));
+        }
+
+        public static IEnumerable<AssemblyName> GetRuntimeAssemblyNames(this DependencyContext self, string runtimeIdentifier)
+        {
+            return self.RuntimeLibraries.SelectMany(library => library.GetRuntimeAssemblyNames(self, runtimeIdentifier));
+        }
+
+        public static IEnumerable<AssemblyName> GetDefaultAssemblyNames(this RuntimeLibrary self, DependencyContext context)
+        {
+            return ResolveAssets(context, string.Empty, self.RuntimeAssemblyGroups).Select(GetAssemblyName);
+        }
+
+        public static IEnumerable<AssemblyName> GetRuntimeAssemblyNames(this RuntimeLibrary self, DependencyContext context, string runtimeIdentifier)
+        {
+            return ResolveAssets(context, runtimeIdentifier, self.RuntimeAssemblyGroups).Select(GetAssemblyName);
+        }
+
+        private static AssemblyName GetAssemblyName(string assetPath)
         {
             var name = Path.GetFileNameWithoutExtension(assetPath);
             if (name == null)
@@ -42,14 +63,17 @@ namespace Microsoft.Extensions.DependencyModel
                 name = name.Substring(0, name.Length - NativeImageSufix.Length);
             }
 
-            return name;
+            return new AssemblyName(name);
         }
 
-        private static IEnumerable<string> ResolveAssets(DependencyContext context, string runtimeIdentifier, Func<RuntimeLibrary, IEnumerable<RuntimeAssetGroup>> groupSelector)
+        private static IEnumerable<string> ResolveAssets(
+            DependencyContext context, 
+            string runtimeIdentifier, 
+            IEnumerable<RuntimeAssetGroup> assets)
         {
             var fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
             var rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
-            return context.RuntimeLibraries.SelectMany(l => SelectAssets(rids, groupSelector(l)));
+            return SelectAssets(rids, assets);
         }
 
         private static IEnumerable<string> SelectAssets(IEnumerable<string> rids, IEnumerable<RuntimeAssetGroup> groups)
