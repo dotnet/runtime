@@ -2,40 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoParent
     {
-        [Fact]
-        public void PosTest1()
+        [Theory]
+        [InlineData("en-US", "en")]
+        [InlineData("en", "")]
+        [InlineData("", "")]
+        public void Parent(string name, string expectedParentName)
         {
-            CultureInfo myExpectParentCulture = new CultureInfo("en");
-            CultureInfo myTestCulture = new CultureInfo("en-us");
-            Assert.Equal(myTestCulture.Parent, myExpectParentCulture);
+            CultureInfo culture = new CultureInfo(name);
+            Assert.Equal(new CultureInfo(expectedParentName), culture.Parent);
         }
 
         [Fact]
-        public void PosTest2()
-        {
-            CultureInfo myTestCulture = new CultureInfo("en");
-            CultureInfo myExpectParent = CultureInfo.InvariantCulture;
-            Assert.Equal(myTestCulture.Parent, myExpectParent);
-        }
-
-        [Fact]
-        public void PosTest3()
-        {
-            CultureInfo myExpectParent1 = new CultureInfo("");
-            CultureInfo myTestCulture = CultureInfo.InvariantCulture;
-            Assert.Equal(myTestCulture.Parent, myExpectParent1);
-        }
-
-        [Fact]
-        public void PosTest4()
+        public void Parent_ParentChain()
         {
             CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");
             Assert.Equal("uz-Cyrl", myExpectParentCulture.Parent.Name);
