@@ -283,6 +283,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
 

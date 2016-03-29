@@ -7719,9 +7719,42 @@ mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoCla
 void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	MonoError error;
+	(void) mono_store_remote_field_new_checked (this_obj, klass, field, arg, &error);
+	mono_error_cleanup (&error);
+}
+
+/**
+ * mono_store_remote_field_new_icall:
+ * @this_obj:
+ * @klass:
+ * @field:
+ * @arg:
+ *
+ * Missing documentation
+ */
+void
+mono_store_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg)
+{
+	MonoError error;
+	(void) mono_store_remote_field_new_checked (this_obj, klass, field, arg, &error);
+	mono_error_set_pending_exception (&error);
+}
+
+/**
+ * mono_store_remote_field_new_checked:
+ * @this_obj:
+ * @klass:
+ * @field:
+ * @arg:
+ * @error:
+ *
+ * Missing documentation
+ */
+gboolean
+mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 
 	static MonoMethod *setter = NULL;
 	MonoDomain *domain = mono_domain_get ();
@@ -7732,6 +7765,8 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	MonoObject *exc;
 	char* full_name;
 
+	mono_error_init (error);
+
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 
 	field_class = mono_class_from_mono_type (field->type);
@@ -7739,19 +7774,21 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	if (mono_class_is_contextbound (tp->remote_class->proxy_class) && tp->rp->context == (MonoObject *) mono_context_get ()) {
 		if (field_class->valuetype) mono_field_set_value (tp->rp->unwrapped_server, field, ((gchar *) arg) + sizeof (MonoObject));
 		else mono_field_set_value (tp->rp->unwrapped_server, field, arg);
-		return;
+		return TRUE;
 	}
 
 	if (!setter) {
 		setter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldSetter", -1);
-		if (!setter)
-			mono_raise_exception (mono_get_exception_not_supported ("Linked away."));
+		if (!setter) {
+			mono_error_set_not_supported (error, "Linked away.");
+			return FALSE;
+		}
 	}
 
-	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
+	return_val_if_nok (error, FALSE);
+	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, setter, NULL, error);
+	return_val_if_nok (error, FALSE);
 	mono_message_init (domain, msg, rm, NULL);
 
 	full_name = mono_type_get_full_name (klass);
@@ -7760,10 +7797,14 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 	mono_array_setref (msg->args, 2, arg);
 	g_free (full_name);
 
-	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, error);
+	return_val_if_nok (error, FALSE);
 
-	if (exc) mono_raise_exception ((MonoException *)exc);
+	if (exc) {
+		mono_error_set_exception_instance (error, (MonoException *)exc);
+		return FALSE;
+	}
+	return TRUE;
 }
 #endif
 

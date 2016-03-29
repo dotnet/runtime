@@ -3901,7 +3901,7 @@ register_icalls (void)
 	register_icall (mono_thread_force_interruption_checkpoint_noraise, "mono_thread_force_interruption_checkpoint_noraise", "object", FALSE);
 #ifndef DISABLE_REMOTING
 	register_icall (mono_load_remote_field_new_icall, "mono_load_remote_field_new_icall", "object object ptr ptr", FALSE);
-	register_icall (mono_store_remote_field_new, "mono_store_remote_field_new", "void object ptr ptr object", FALSE);
+	register_icall (mono_store_remote_field_new_icall, "mono_store_remote_field_new_icall", "void object ptr ptr object", FALSE);
 #endif
 
 #if defined(__native_client__) || defined(__native_client_codegen__)
