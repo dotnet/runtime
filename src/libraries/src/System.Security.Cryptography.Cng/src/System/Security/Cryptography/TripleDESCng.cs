@@ -17,11 +17,9 @@ namespace System.Security.Cryptography
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350")] // We are providing the implementation for 3DES not consuming it
     public sealed class TripleDESCng : TripleDES, ICngSymmetricAlgorithm
     {
-        private const string s_Algorithm = Interop.NCrypt.NCRYPT_3DES_ALGORITHM;
-
         public TripleDESCng()
         {
-            _core = new CngSymmetricAlgorithmCore(s_Algorithm, this);
+            _core = new CngSymmetricAlgorithmCore(this);
         }
 
         public TripleDESCng(string keyName)
@@ -36,7 +34,7 @@ namespace System.Security.Cryptography
 
         public TripleDESCng(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
-            _core = new CngSymmetricAlgorithmCore(s_Algorithm, this, keyName, provider, openOptions);
+            _core = new CngSymmetricAlgorithmCore(this, keyName, provider, openOptions);
         }
 
         public override byte[] Key
@@ -120,7 +118,12 @@ namespace System.Security.Cryptography
 
         SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
         {
-            return AesBCryptModes.GetSharedHandle(Mode);
+            return TripleDesBCryptModes.GetSharedHandle(Mode);
+        }
+
+        string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()
+        {
+            return Interop.NCrypt.NCRYPT_3DES_ALGORITHM;
         }
 
         private CngSymmetricAlgorithmCore _core;

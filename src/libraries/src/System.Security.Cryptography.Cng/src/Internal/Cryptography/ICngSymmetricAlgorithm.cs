@@ -29,6 +29,7 @@ namespace Internal.Cryptography
         // Other members.
         bool IsWeakKey(byte[] key);
         SafeAlgorithmHandle GetEphemeralModeHandle();
+        string GetNCryptAlgorithmIdentifier();
     }
 }
 
