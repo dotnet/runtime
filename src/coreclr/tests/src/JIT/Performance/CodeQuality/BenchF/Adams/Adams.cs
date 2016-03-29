@@ -23,7 +23,7 @@ public static class Adams
 #if DEBUG
     public static int Iterations = 1;
 #else
-    public static int Iterations = 10000000;
+    public static int Iterations = 200000;
 #endif
 
     static double g_xn, g_yn, g_dn, g_en;
