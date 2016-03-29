@@ -315,7 +315,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5436, Xunit.PlatformID.AnyUnix)]
         public void Compare_Issue5463()
         {
             // TODO: Remove this function, and combine into Compare_TestData once 5463 is fixed

@@ -66,7 +66,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsSuffix_Hungarian()
         {
             // TODO: Remove this function, and combine into IsSuffix_TestData once 5463 is fixed
@@ -74,7 +74,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IsSuffix_UnassignedUnicode()
         {
             IsSuffix(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", CompareOptions.None, true);

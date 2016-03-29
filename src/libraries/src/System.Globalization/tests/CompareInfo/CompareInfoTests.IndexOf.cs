@@ -202,7 +202,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IndexOf_Aesc_Ligature_TestData))]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IndexOf_Aesc_Ligature(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected)
         {
             // TODO: Remove this function, and combine into IndexOf_String once 5463 is fixed
@@ -210,7 +210,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IndexOf_UnassignedUnicode()
         {
             IndexOf_String(s_invariantCompare, "FooBar", "Foo" + UnassignedUnicodeCharacter() + "Bar", 0, 6, CompareOptions.None, 0);
@@ -218,7 +218,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void IndexOf_Hungarian()
         {
             // TODO: Remove this function, and combine into IndexOf_TestData once 5463 is fixed

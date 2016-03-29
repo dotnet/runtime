@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(5463, PlatformID.AnyUnix)]
+        [ActiveIssue(5463, Xunit.PlatformID.AnyUnix)]
         public void CompareInfo_EsESTraditional()
         {
             // TOOD: Once #5463 is fixed, combine this into the InlineData for CompareInfo_Compare
