@@ -618,23 +618,25 @@ create_internal_thread (MonoError *error)
 	return thread;
 }
 
-static void
-init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate)
+static gboolean
+init_root_domain_thread (MonoInternalThread *thread, MonoThread *candidate, MonoError *error)
 {
-	MonoError error;
 	MonoDomain *domain = mono_get_root_domain ();
 
+	mono_error_init (error);
 	if (!candidate || candidate->obj.vtable->domain != domain) {
-		candidate = new_thread_with_internal (domain, thread, &error);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		candidate = new_thread_with_internal (domain, thread, error);
+		return_val_if_nok (error, FALSE);
 	}
 	set_current_thread_for_domain (domain, thread, candidate);
 	g_assert (!thread->root_domain_thread);
 	MONO_OBJECT_SETREF (thread, root_domain_thread, candidate);
+	return TRUE;
 }
 
 static guint32 WINAPI start_wrapper_internal(void *data)
 {
+	MonoError error;
 	MonoThreadInfo *info;
 	StartInfo *start_info = (StartInfo *)data;
 	guint32 (*start_func)(void *);
@@ -683,7 +685,8 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	/* We have to do this here because mono_thread_new_init()
 	   requires that root_domain_thread is set up. */
 	thread_adjust_static_data (internal);
-	init_root_domain_thread (internal, start_info->obj);
+	init_root_domain_thread (internal, start_info->obj, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
 
 	/* This MUST be called before any managed code can be
 	 * executed, as it calls the callback function that (for the
@@ -1023,7 +1026,9 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach, MonoError *e
 
 	thread_adjust_static_data (thread);
 
-	init_root_domain_thread (thread, current_thread);
+	init_root_domain_thread (thread, current_thread, error);
+	return_val_if_nok (error, NULL);
+
 	if (domain != mono_get_root_domain ())
 		set_current_thread_for_domain (domain, thread, current_thread);
 
