@@ -257,22 +257,29 @@ internal static partial class Interop
             parser.MoveNextOrFail(); // startcode
             parser.MoveNextOrFail(); // endcode
             results.startstack = parser.ParseNextUInt64();
-            parser.MoveNextOrFail(); // kstkesp
-            parser.MoveNextOrFail(); // kstkeip
-            parser.MoveNextOrFail(); // signal
-            parser.MoveNextOrFail(); // blocked
-            parser.MoveNextOrFail(); // sigignore
-            parser.MoveNextOrFail(); // sigcatch
-            parser.MoveNextOrFail(); // wchan
-            parser.MoveNextOrFail(); // nswap
-            parser.MoveNextOrFail(); // cnswap
-            parser.MoveNextOrFail(); // exit_signal
-            parser.MoveNextOrFail(); // processor
-            parser.MoveNextOrFail(); // rt_priority
-            parser.MoveNextOrFail(); // policy
-            parser.MoveNextOrFail(); // delayacct_blkio_ticks
-            parser.MoveNextOrFail(); // guest_time
-            parser.MoveNextOrFail(); // cguest_time
+
+            // The following lines are commented out as there's no need to parse through
+            // the rest of the entry (we've gotten all of the data we need).  Should any
+            // of these fields be needed in the future, uncomment all of the lines up
+            // through and including the one that's needed.  For now, these are being left 
+            // commented to document what's available in the remainder of the entry.
+
+            //parser.MoveNextOrFail(); // kstkesp
+            //parser.MoveNextOrFail(); // kstkeip
+            //parser.MoveNextOrFail(); // signal
+            //parser.MoveNextOrFail(); // blocked
+            //parser.MoveNextOrFail(); // sigignore
+            //parser.MoveNextOrFail(); // sigcatch
+            //parser.MoveNextOrFail(); // wchan
+            //parser.MoveNextOrFail(); // nswap
+            //parser.MoveNextOrFail(); // cnswap
+            //parser.MoveNextOrFail(); // exit_signal
+            //parser.MoveNextOrFail(); // processor
+            //parser.MoveNextOrFail(); // rt_priority
+            //parser.MoveNextOrFail(); // policy
+            //parser.MoveNextOrFail(); // delayacct_blkio_ticks
+            //parser.MoveNextOrFail(); // guest_time
+            //parser.MoveNextOrFail(); // cguest_time
 
             result = results;
             return true;
