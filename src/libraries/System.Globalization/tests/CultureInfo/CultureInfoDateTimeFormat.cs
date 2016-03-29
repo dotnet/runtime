@@ -32,6 +32,24 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void TestSettingThreadCultures()
+        {
+            CultureInfo culture = new CultureInfo("ja-JP");
+            CultureInfo origCulture = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = culture;
+                DateTime dt = new DateTime(2014, 3, 14, 3, 14, 0);
+                Assert.True(dt.ToString().Equals(dt.ToString(culture)));
+                Assert.True(dt.ToString().Equals(dt.ToString(culture.DateTimeFormat)));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = origCulture;
+            }
+        }
+
+        [Fact]
         public void DateTimeFormatInfo_Set_Properties()
         {
             CultureInfo culture = new CultureInfo("fr");
