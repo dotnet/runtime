@@ -1869,8 +1869,11 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return NULL;
 	}
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_field (cf);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	MonoObject * result = mono_field_get_value_object_checked (domain, cf, obj, &error);
 	mono_error_set_pending_exception (&error);
@@ -1891,8 +1894,11 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return;
 	}
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_field (cf);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	type = mono_field_get_type_checked (cf, &error);
 	if (!mono_error_ok (&error)) {
