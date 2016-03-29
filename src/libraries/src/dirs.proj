@@ -4,7 +4,6 @@
   <ItemGroup>
     <Project Include="ref.builds" />
     <Project Include="src.builds" />
-    <Project Include="tests.builds" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
