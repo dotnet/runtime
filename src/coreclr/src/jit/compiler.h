@@ -275,9 +275,8 @@ public:
     unsigned char       lvOverlappingFields :1;  // True when we have a struct with possibly overlapping fields
     unsigned char       lvContainsHoles     :1;  // True when we have a promoted struct that contains holes
     unsigned char       lvCustomLayout      :1;  // True when this struct has "CustomLayout"
-#if FEATURE_MULTIREG_ARGS_OR_RET
-    unsigned char       lvIsMultiRegArgOrRet:1; // Is this argument variable holding a value passed or returned in multiple registers?
-#endif
+    unsigned char       lvIsMultiRegArgOrRet:1; // Is this a struct that would be passed or returned in multiple registers?
+
 #ifdef _TARGET_ARM_
     // TODO-Cleanup: Can this be subsumed by the above?
     unsigned char       lvIsHfaRegArg:1;        // Is this argument variable holding a HFA register argument.
@@ -8812,6 +8811,7 @@ public:
     var_types getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
 }; // end of class Compiler
 
 // Inline methods of CompAllocator.
