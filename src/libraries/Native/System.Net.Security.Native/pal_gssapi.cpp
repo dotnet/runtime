@@ -35,6 +35,7 @@ static_assert(PAL_GSS_CONTINUE_NEEDED == GSS_S_CONTINUE_NEEDED, "");
 
 #if !HAVE_GSS_SPNEGO_MECHANISM
 static char gss_spnego_oid_value[] = "\x2b\x06\x01\x05\x05\x02"; // Binary representation of SPNEGO Oid (RFC 4178)
+static gss_OID_desc gss_mech_spnego_OID_desc = {.length = 6, .elements = static_cast<void*>(gss_spnego_oid_value)};
 #endif
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
@@ -59,7 +60,6 @@ static uint32_t NetSecurityNative_AcquireCredSpNego(uint32_t* minorStatus,
 #if HAVE_GSS_SPNEGO_MECHANISM
     gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = GSS_SPNEGO_MECHANISM};
 #else
-    gss_OID_desc gss_mech_spnego_OID_desc = {.length = 6, .elements = static_cast<void*>(gss_spnego_oid_value)};
     gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = &gss_mech_spnego_OID_desc};
 #endif
     return gss_acquire_cred(
@@ -164,7 +164,6 @@ extern "C" uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     assert(!isNtlm && "NTLM is not supported by MIT libgssapi_krb5");
     (void)isNtlm; // unused
 
-    gss_OID_desc gss_mech_spnego_OID_desc = {.length = 6, .elements = static_cast<void*>(gss_spnego_oid_value)};
     gss_OID desiredMech = &gss_mech_spnego_OID_desc;
 #endif
 

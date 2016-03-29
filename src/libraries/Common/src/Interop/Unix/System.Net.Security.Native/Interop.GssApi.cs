@@ -79,7 +79,6 @@ internal static partial class Interop
             Interop.NetSecurityNative.GssBuffer encryptedBuffer = default(Interop.NetSecurityNative.GssBuffer);
             try
             {
-
                 NetSecurityNative.Status minorStatus;
                 NetSecurityNative.Status status = NetSecurityNative.WrapBuffer(out minorStatus, context, encrypt, buffer, offset, count, ref encryptedBuffer);
                 if (status != NetSecurityNative.Status.GSS_S_COMPLETE)
