@@ -499,8 +499,7 @@ protected:
 
 #if defined(_TARGET_ARM64_)
 
-    void                genPopCalleeSavedRegistersAndFreeLclFrame(bool               jmpEpilog,
-                                                                  /* IN OUT */ bool* pUnwindStarted);
+    void                genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog);
 
 #else // !defined(_TARGET_ARM64_)
 
