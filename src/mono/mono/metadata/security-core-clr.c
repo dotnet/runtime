@@ -734,18 +734,19 @@ can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
 /*
  * mono_security_core_clr_ensure_delegate_creation:
  *
- *	Return TRUE if a delegate can be created on the specified method. 
- *	CoreCLR also affect the binding, so throwOnBindFailure must be 
- * 	FALSE to let this function return (FALSE) normally, otherwise (if
- *	throwOnBindFailure is TRUE) it will throw an ArgumentException.
+ *	Return TRUE if a delegate can be created on the specified
+ *	method.  CoreCLR can also affect the binding, this function may
+ *	return (FALSE) and set @error to an ArgumentException.
  *
- *	A MethodAccessException is thrown if the specified method is not
+ *	@error is set to a MethodAccessException if the specified method is not
  *	visible from the caller point of view.
  */
 gboolean
-mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure)
+mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, MonoError *error)
 {
 	MonoMethod *caller;
+
+	mono_error_init (error);
 
 	/* note: mscorlib creates delegates to avoid reflection (optimization), we ignore those cases */
 	if (can_avoid_corlib_reflection_delegate_optimization (method))
@@ -758,13 +759,10 @@ mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean th
 
 	/* otherwise it (as a Transparent caller) cannot create a delegate on a Critical method... */
 	if (mono_security_core_clr_method_level (method, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL) {
-		/* but this throws only if 'throwOnBindFailure' is TRUE */
-		if (!throwOnBindFailure)
-			return FALSE;
-
-		mono_raise_exception (get_argument_exception (
+		mono_error_set_exception_instance (error, get_argument_exception (
 			"Transparent method %s cannot create a delegate on Critical method %s.", 
 			caller, method));
+		return FALSE;
 	}
 
 	if (mono_security_core_clr_get_options () & MONO_SECURITY_CORE_CLR_OPTIONS_RELAX_DELEGATE) {
@@ -774,9 +772,10 @@ mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean th
 
 	/* also it cannot create the delegate on a method that is not visible from it's (caller) point of view */
 	if (!check_method_access (caller, method)) {
-		mono_raise_exception (get_method_access_exception (
+		mono_error_set_exception_instance (error, get_method_access_exception (
 			"Transparent method %s cannot create a delegate on private/internal method %s.", 
 			caller, method));
+		return FALSE;
 	}
 
 	return TRUE;
@@ -1072,8 +1071,9 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method, Mono
 }
 
 gboolean
-mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure)
+mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, MonoError *error)
 {
+	mono_error_init (error);
 	return TRUE;
 }
 

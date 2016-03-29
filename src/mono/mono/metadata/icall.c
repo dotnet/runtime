@@ -6336,8 +6336,13 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	}
 
 	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_ensure_delegate_creation (method, throwOnBindFailure))
+		if (!mono_security_core_clr_ensure_delegate_creation (method, &error)) {
+			if (throwOnBindFailure)
+				mono_error_set_pending_exception (&error);
+			else
+				mono_error_cleanup (&error);
 			return NULL;
+		}
 	}
 
 	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
