@@ -46,7 +46,6 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Methods.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Properties.cs" />
-    <Compile Include="TextInfo.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
