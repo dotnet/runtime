@@ -29,11 +29,10 @@
     <Compile Include="PropertyTests.cs" />
     <Compile Include="RsaCngTests.cs" />
     <Compile Include="ECDsaCngTests.cs" />
+    <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="TestData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="InvasiveCngTests.cs" />
-
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
@@ -55,8 +54,9 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
     </Compile>
+    <Compile Include="AesCngTests.cs" />
     <Compile Include="AesProvider.cs" />
-
+    <Compile Include="TripleDESCngTests.cs" />
     <Compile Include="TripleDESCngProvider.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
