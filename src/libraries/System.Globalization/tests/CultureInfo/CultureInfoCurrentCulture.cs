@@ -77,11 +77,13 @@ namespace System.Globalization.Tests
                 CultureInfo.DefaultThreadCurrentCulture = jaCulture;
                 CultureInfo.DefaultThreadCurrentUICulture = jaCulture;
 
-                Task.Run(() =>
+                Task task = Task.Run(() =>
                 {
                     Assert.Equal(CultureInfo.CurrentCulture, jaCulture);
                     Assert.Equal(CultureInfo.CurrentUICulture, jaCulture);
-                }).Wait();
+                });
+                ((IAsyncResult)task).AsyncWaitHandle.WaitOne();
+                task.Wait();
             }
             finally
             {
