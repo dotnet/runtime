@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Threading;
 
 // The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
@@ -181,19 +182,6 @@ namespace System.Net
             }
         }
 
-        private string _Domain
-        {
-            get
-            {
-                return (Plain || _domainImplicit || (_domain.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + DomainAttributeName
-                       + EqualsLiteral + (IsQuotedDomain ? "\"" : string.Empty)
-                       + _domain + (IsQuotedDomain ? "\"" : string.Empty));
-            }
-        }
-
         internal bool DomainImplicit
         {
             get
@@ -269,19 +257,6 @@ namespace System.Net
             {
                 _path = value ?? string.Empty;
                 _pathImplicit = false;
-            }
-        }
-
-        private string _Path
-        {
-            get
-            {
-                return (Plain || _pathImplicit || (_path.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + PathAttributeName
-                       + EqualsLiteral
-                       + _path);
             }
         }
 
@@ -666,17 +641,6 @@ namespace System.Net
             }
         }
 
-        private string _Port
-        {
-            get
-            {
-                return _portImplicit ? string.Empty :
-                      (SpecialAttributeLiteral
-                       + PortAttributeName
-                       + ((_port.Length == 0) ? string.Empty : (EqualsLiteral + _port)));
-            }
-        }
-
         public bool Secure
         {
             get
@@ -763,18 +727,6 @@ namespace System.Net
             }
         }
 
-        private string _Version
-        {
-            get
-            {
-                return (Version == 0) ? string.Empty :
-                                       (SpecialAttributeLiteral
-                                       + VersionAttributeName
-                                       + EqualsLiteral + (IsQuotedVersion ? "\"" : string.Empty)
-                                       + _version.ToString(NumberFormatInfo.InvariantInfo) + (IsQuotedVersion ? "\"" : string.Empty));
-            }
-        }
-
         public override bool Equals(object comparand)
         {
             Cookie other = comparand as Cookie;
@@ -794,22 +746,65 @@ namespace System.Net
 
         public override string ToString()
         {
-            string domain = _Domain;
-            string path = _Path;
-            string port = _Port;
-            string version = _Version;
+            StringBuilder sb = StringBuilderCache.Acquire();
+            ToString(sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
 
-            string result =
-                    ((version.Length == 0) ? string.Empty : (version + SeparatorLiteral))
-                    + Name + EqualsLiteral + Value
-                    + ((path.Length == 0) ? string.Empty : (SeparatorLiteral + path))
-                    + ((domain.Length == 0) ? string.Empty : (SeparatorLiteral + domain))
-                    + ((port.Length == 0) ? string.Empty : (SeparatorLiteral + port));
-            if (result == "=")
+        internal void ToString(StringBuilder sb)
+        {
+            int beforeLength = sb.Length;
+
+            // Add the Cookie version if necessary.
+            if (Version != 0)
             {
-                return string.Empty;
+                sb.Append(SpecialAttributeLiteral + VersionAttributeName + EqualsLiteral); // const strings
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(_version.ToString(NumberFormatInfo.InvariantInfo));
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(SeparatorLiteral);
             }
-            return result;
+
+            // Add the Cookie Name=Value pair.
+            sb.Append(Name).Append(EqualsLiteral).Append(Value);
+
+            if (!Plain)
+            {
+                // Add the Path if necessary.
+                if (!_pathImplicit && _path.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PathAttributeName + EqualsLiteral); // const strings
+                    sb.Append(_path);
+                }
+
+                // Add the Domain if necessary.
+                if (!_domainImplicit && _domain.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + DomainAttributeName + EqualsLiteral); // const strings
+                    if (IsQuotedDomain) sb.Append('"');
+                    sb.Append(_domain);
+                    if (IsQuotedDomain) sb.Append('"');
+                }
+            }
+
+            // Add the Port if necessary.
+            if (!_portImplicit)
+            {
+                sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PortAttributeName); // const strings
+                if (_port.Length > 0)
+                {
+                    sb.Append(EqualsLiteral);
+                    sb.Append(_port);
+                }
+            }
+
+            // Check to see whether the only thing we added was "=", and if so,
+            // remove it so that we leave the StringBuilder unchanged in contents.
+            int afterLength = sb.Length;
+            if (afterLength == (1 + beforeLength) && sb[beforeLength] == '=')
+            {
+                sb.Length = beforeLength;
+            }
         }
 
         internal string ToServerString()
