@@ -12,158 +12,158 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableByteTest(bool useInterpreter)
         {
             byte?[] values = new byte?[] { null, 0, 1, byte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableByte(values[i], values[j]);
+                    VerifyAddCheckedNullableByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableCharTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableCharTest(bool useInterpreter)
         {
             char?[] values = new char?[] { null, '\0', '\b', 'A', '\uffff' };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableChar(values[i], values[j]);
+                    VerifyAddCheckedNullableChar(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableDecimalTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableDecimalTest(bool useInterpreter)
         {
             decimal?[] values = new decimal?[] { null, decimal.Zero, decimal.One, decimal.MinusOne, decimal.MinValue, decimal.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableDecimal(values[i], values[j]);
+                    VerifyAddCheckedNullableDecimal(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableDoubleTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableDoubleTest(bool useInterpreter)
         {
             double?[] values = new double?[] { null, 0, 1, -1, double.MinValue, double.MaxValue, double.Epsilon, double.NegativeInfinity, double.PositiveInfinity, double.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableDouble(values[i], values[j]);
+                    VerifyAddCheckedNullableDouble(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableFloatTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableFloatTest(bool useInterpreter)
         {
             float?[] values = new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableFloat(values[i], values[j]);
+                    VerifyAddCheckedNullableFloat(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableIntTest(bool useInterpreter)
         {
             int?[] values = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableInt(values[i], values[j]);
+                    VerifyAddCheckedNullableInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableLongTest(bool useInterpreter)
         {
             long?[] values = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableLong(values[i], values[j]);
+                    VerifyAddCheckedNullableLong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableSByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableSByteTest(bool useInterpreter)
         {
             sbyte?[] values = new sbyte?[] { null, 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableSByte(values[i], values[j]);
+                    VerifyAddCheckedNullableSByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableShortTest(bool useInterpreter)
         {
             short?[] values = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableShort(values[i], values[j]);
+                    VerifyAddCheckedNullableShort(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableUIntTest(bool useInterpreter)
         {
             uint?[] values = new uint?[] { null, 0, 1, uint.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableUInt(values[i], values[j]);
+                    VerifyAddCheckedNullableUInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableULongTest(bool useInterpreter)
         {
             ulong?[] values = new ulong?[] { null, 0, 1, ulong.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableULong(values[i], values[j]);
+                    VerifyAddCheckedNullableULong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedAddCheckedNullableUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedAddCheckedNullableUShortTest(bool useInterpreter)
         {
             ushort?[] values = new ushort?[] { null, 0, 1, ushort.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyAddCheckedNullableUShort(values[i], values[j]);
+                    VerifyAddCheckedNullableUShort(values[i], values[j], useInterpreter);
                 }
             }
         }
@@ -174,69 +174,69 @@ namespace System.Linq.Expressions.Tests
 
         public static byte AddCheckedNullableByte(byte a, byte b)
         {
-            return (byte)checked(a + b);
+            return checked((byte)(a + b));
         }
 
         public static char AddCheckedNullableChar(char a, char b)
         {
-            return (char)checked(a + b);
+            return checked((char)(a + b));
         }
 
         public static decimal AddCheckedNullableDecimal(decimal a, decimal b)
         {
-            return (decimal)checked(a + b);
+            return checked(a + b);
         }
 
         public static double AddCheckedNullableDouble(double a, double b)
         {
-            return (double)checked(a + b);
+            return checked(a + b);
         }
 
         public static float AddCheckedNullableFloat(float a, float b)
         {
-            return (float)checked(a + b);
+            return checked(a + b);
         }
 
         public static int AddCheckedNullableInt(int a, int b)
         {
-            return (int)checked(a + b);
+            return checked(a + b);
         }
 
         public static long AddCheckedNullableLong(long a, long b)
         {
-            return (long)checked(a + b);
+            return checked(a + b);
         }
 
         public static sbyte AddCheckedNullableSByte(sbyte a, sbyte b)
         {
-            return (sbyte)checked(a + b);
+            return checked((sbyte)(a + b));
         }
 
         public static short AddCheckedNullableShort(short a, short b)
         {
-            return (short)checked(a + b);
+            return checked((short)(a + b));
         }
 
         public static uint AddCheckedNullableUInt(uint a, uint b)
         {
-            return (uint)checked(a + b);
+            return checked(a + b);
         }
 
         public static ulong AddCheckedNullableULong(ulong a, ulong b)
         {
-            return (ulong)checked(a + b);
+            return checked(a + b);
         }
 
         public static ushort AddCheckedNullableUShort(ushort a, ushort b)
         {
-            return (ushort)checked(a + b);
+            return checked((ushort)(a + b));
         }
 
         #endregion
 
         #region Test verifiers
 
-        private static void VerifyAddCheckedNullableByte(byte? a, byte? b)
+        private static void VerifyAddCheckedNullableByte(byte? a, byte? b, bool useInterpreter)
         {
             Expression<Func<byte?>> e =
                 Expression.Lambda<Func<byte?>>(
@@ -244,43 +244,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte?)),
                         Expression.Constant(b, typeof(byte?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableByte")));
-            Func<byte?> f = e.Compile();
+            Func<byte?> f = e.Compile(useInterpreter);
 
-            byte? result = default(byte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            byte? expected = default(byte);
-            Exception csEx = null;
-            try
-            {
-                expected = (byte?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            int? expected = a + b;
+            if (expected > byte.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableChar(char? a, char? b)
+        private static void VerifyAddCheckedNullableChar(char? a, char? b, bool useInterpreter)
         {
             Expression<Func<char?>> e =
                 Expression.Lambda<Func<char?>>(
@@ -288,43 +261,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(char?)),
                         Expression.Constant(b, typeof(char?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableChar")));
-            Func<char?> f = e.Compile();
+            Func<char?> f = e.Compile(useInterpreter);
 
-            char? result = default(char);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            char? expected = default(char);
-            Exception csEx = null;
-            try
-            {
-                expected = (char?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            int? expected = a + b;
+            if (expected > char.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableDecimal(decimal? a, decimal? b)
+        private static void VerifyAddCheckedNullableDecimal(decimal? a, decimal? b, bool useInterpreter)
         {
             Expression<Func<decimal?>> e =
                 Expression.Lambda<Func<decimal?>>(
@@ -332,43 +278,23 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(decimal?)),
                         Expression.Constant(b, typeof(decimal?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableDecimal")));
-            Func<decimal?> f = e.Compile();
+            Func<decimal?> f = e.Compile(useInterpreter);
 
-            decimal? result = default(decimal);
-            Exception fEx = null;
+            decimal? expected = null;
             try
             {
-                result = f();
+                expected = checked(a + b);
             }
-            catch (Exception ex)
+            catch (OverflowException)
             {
-                fEx = ex;
+                Assert.Throws<OverflowException>(() => f());
+                return;
             }
 
-            decimal? expected = default(decimal);
-            Exception csEx = null;
-            try
-            {
-                expected = (decimal?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableDouble(double? a, double? b)
+        private static void VerifyAddCheckedNullableDouble(double? a, double? b, bool useInterpreter)
         {
             Expression<Func<double?>> e =
                 Expression.Lambda<Func<double?>>(
@@ -376,43 +302,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(double?)),
                         Expression.Constant(b, typeof(double?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableDouble")));
-            Func<double?> f = e.Compile();
+            Func<double?> f = e.Compile(useInterpreter);
 
-            double? result = default(double);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            double? expected = default(double);
-            Exception csEx = null;
-            try
-            {
-                expected = (double?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a + b, f());
         }
 
-        private static void VerifyAddCheckedNullableFloat(float? a, float? b)
+        private static void VerifyAddCheckedNullableFloat(float? a, float? b, bool useInterpreter)
         {
             Expression<Func<float?>> e =
                 Expression.Lambda<Func<float?>>(
@@ -420,43 +315,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(float?)),
                         Expression.Constant(b, typeof(float?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableFloat")));
-            Func<float?> f = e.Compile();
+            Func<float?> f = e.Compile(useInterpreter);
 
-            float? result = default(float);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            float? expected = default(float);
-            Exception csEx = null;
-            try
-            {
-                expected = (float?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a + b, f());
         }
 
-        private static void VerifyAddCheckedNullableInt(int? a, int? b)
+        private static void VerifyAddCheckedNullableInt(int? a, int? b, bool useInterpreter)
         {
             Expression<Func<int?>> e =
                 Expression.Lambda<Func<int?>>(
@@ -464,43 +328,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int?)),
                         Expression.Constant(b, typeof(int?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableInt")));
-            Func<int?> f = e.Compile();
+            Func<int?> f = e.Compile(useInterpreter);
 
-            int? result = default(int);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            int? expected = default(int);
-            Exception csEx = null;
-            try
-            {
-                expected = (int?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            long? expected = (long?)a + b;
+            if (expected < int.MinValue | expected > int.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal((int?)expected, f());
         }
 
-        private static void VerifyAddCheckedNullableLong(long? a, long? b)
+        private static void VerifyAddCheckedNullableLong(long? a, long? b, bool useInterpreter)
         {
             Expression<Func<long?>> e =
                 Expression.Lambda<Func<long?>>(
@@ -508,43 +345,24 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long?)),
                         Expression.Constant(b, typeof(long?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableLong")));
-            Func<long?> f = e.Compile();
+            Func<long?> f = e.Compile(useInterpreter);
 
-            long? result = default(long);
-            Exception fEx = null;
+            long? expected = null;
             try
             {
-                result = f();
+                expected = checked(a + b);
             }
-            catch (Exception ex)
+            catch (OverflowException)
             {
-                fEx = ex;
+                Assert.Throws<OverflowException>(() => f());
+                return;
             }
 
-            long? expected = default(long);
-            Exception csEx = null;
-            try
-            {
-                expected = (long?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
+            Assert.Equal(expected, f());
 
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
         }
 
-        private static void VerifyAddCheckedNullableSByte(sbyte? a, sbyte? b)
+        private static void VerifyAddCheckedNullableSByte(sbyte? a, sbyte? b, bool useInterpreter)
         {
             Expression<Func<sbyte?>> e =
                 Expression.Lambda<Func<sbyte?>>(
@@ -552,43 +370,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte?)),
                         Expression.Constant(b, typeof(sbyte?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableSByte")));
-            Func<sbyte?> f = e.Compile();
+            Func<sbyte?> f = e.Compile(useInterpreter);
 
-            sbyte? result = default(sbyte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            sbyte? expected = default(sbyte);
-            Exception csEx = null;
-            try
-            {
-                expected = (sbyte?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            int? expected = a + b;
+            if (expected < sbyte.MinValue | expected > sbyte.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableShort(short? a, short? b)
+        private static void VerifyAddCheckedNullableShort(short? a, short? b, bool useInterpreter)
         {
             Expression<Func<short?>> e =
                 Expression.Lambda<Func<short?>>(
@@ -596,43 +387,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short?)),
                         Expression.Constant(b, typeof(short?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableShort")));
-            Func<short?> f = e.Compile();
+            Func<short?> f = e.Compile(useInterpreter);
 
-            short? result = default(short);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            short? expected = default(short);
-            Exception csEx = null;
-            try
-            {
-                expected = (short?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            int? expected = a + b;
+            if (expected < short.MinValue | expected > short.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableUInt(uint? a, uint? b)
+        private static void VerifyAddCheckedNullableUInt(uint? a, uint? b, bool useInterpreter)
         {
             Expression<Func<uint?>> e =
                 Expression.Lambda<Func<uint?>>(
@@ -640,43 +404,16 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint?)),
                         Expression.Constant(b, typeof(uint?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableUInt")));
-            Func<uint?> f = e.Compile();
+            Func<uint?> f = e.Compile(useInterpreter);
 
-            uint? result = default(uint);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            uint? expected = default(uint);
-            Exception csEx = null;
-            try
-            {
-                expected = (uint?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            ulong? expected = (ulong?)a + b;
+            if (expected > uint.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableULong(ulong? a, ulong? b)
+        private static void VerifyAddCheckedNullableULong(ulong? a, ulong? b, bool useInterpreter)
         {
             Expression<Func<ulong?>> e =
                 Expression.Lambda<Func<ulong?>>(
@@ -684,43 +421,23 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong?)),
                         Expression.Constant(b, typeof(ulong?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableULong")));
-            Func<ulong?> f = e.Compile();
+            Func<ulong?> f = e.Compile(useInterpreter);
 
-            ulong? result = default(ulong);
-            Exception fEx = null;
+            ulong? expected = null;
             try
             {
-                result = f();
+                expected = checked(a + b);
             }
-            catch (Exception ex)
+            catch (OverflowException)
             {
-                fEx = ex;
+                Assert.Throws<OverflowException>(() => f());
+                return;
             }
 
-            ulong? expected = default(ulong);
-            Exception csEx = null;
-            try
-            {
-                expected = (ulong?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(expected, f());
         }
 
-        private static void VerifyAddCheckedNullableUShort(ushort? a, ushort? b)
+        private static void VerifyAddCheckedNullableUShort(ushort? a, ushort? b, bool useInterpreter)
         {
             Expression<Func<ushort?>> e =
                 Expression.Lambda<Func<ushort?>>(
@@ -728,40 +445,13 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort?)),
                         Expression.Constant(b, typeof(ushort?)),
                         typeof(LiftedAddCheckedNullableTests).GetTypeInfo().GetDeclaredMethod("AddCheckedNullableUShort")));
-            Func<ushort?> f = e.Compile();
+            Func<ushort?> f = e.Compile(useInterpreter);
 
-            ushort? result = default(ushort);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ushort? expected = default(ushort);
-            Exception csEx = null;
-            try
-            {
-                expected = (ushort?)checked(a + b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
+            int? expected = a + b;
+            if (expected > ushort.MaxValue)
+                Assert.Throws<OverflowException>(() => f());
             else
-            {
-                Assert.Equal(expected, result);
-            }
+                Assert.Equal(expected, f());
         }
 
         #endregion
