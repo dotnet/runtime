@@ -90,8 +90,8 @@ namespace System.Globalization.Tests
                 CultureInfo.DefaultThreadCurrentCulture = originalDefaultThreadCurrentCulture;
                 CultureInfo.DefaultThreadCurrentUICulture = originalDefaultThreadCurrentUICulture;
             }
-            Assert.False(CultureInfo.CurrentCulture.Equals(jaCulture));
-            Assert.False(CultureInfo.CurrentUICulture.Equals(jaCulture));
+            Assert.NotEqual(CultureInfo.CurrentCulture,jaCulture);
+            Assert.NotEqual(CultureInfo.CurrentUICulture, jaCulture);
         }
     }
 }
