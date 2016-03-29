@@ -75,37 +75,25 @@ int execute_app(
 
 bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir)
 {
+#ifdef COREHOST_PACKAGE_SERVICING
     pal::string_t svc_dir;
     if (!pal::getenv(_X("DOTNET_SERVICING"), &svc_dir))
     {
-        trace::verbose(_X("Servicing root doesn't exist"));
         return false;
-    }
-
-    pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
-    if (DIR_SEPARATOR != '/')
-    {
-        replace_char(&rel_dir, '/', DIR_SEPARATOR);
     }
 
     pal::string_t path = svc_dir;
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME));
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_VER));
-    append_path(&path, rel_dir.c_str());
-    append_path(&path, LIBHOSTPOLICY_NAME);
-    if (!pal::realpath(&path))
-    {
-        trace::verbose(_X("Servicing root ::realpath(%s) doesn't exist"), path.c_str());
-        return false;
-    }
-    if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
+    append_path(&path, COREHOST_PACKAGE_NAME);
+    append_path(&path, COREHOST_PACKAGE_VERSION);
+    append_path(&path, COREHOST_PACKAGE_COREHOST_RELATIVE_DIR);
+    if (library_exists_in_dir(path, LIBHOSTPOLICY_NAME))
     {
         resolved_dir->assign(path);
-        trace::verbose(_X("[%s] exists in servicing [%s]"), LIBHOSTPOLICY_NAME, path.c_str());
-        return true;
     }
-    trace::verbose(_X("[%s] doesn't exist in servicing [%s]"), LIBHOSTPOLICY_NAME, path.c_str());
+    return true;
+#else
     return false;
+#endif
 }
 
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])

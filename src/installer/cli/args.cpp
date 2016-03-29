@@ -18,6 +18,15 @@ arguments_t::arguments_t() :
 {
 }
 
+void display_help()
+{
+    xerr <<
+        _X("Usage: " HOST_EXE_NAME " [ASSEMBLY] [ARGUMENTS]\n")
+        _X("Execute the specified managed assembly with the passed in arguments\n\n")
+        _X("The Host's behavior can be altered using the following environment variables:\n")
+        _X(" COREHOST_TRACE          Set to affect trace levels (0 = Errors only (default), 1 = Warnings, 2 = Info, 3 = Verbose)\n");
+}
+
 bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_dir, host_mode_t mode,
     const int argc, const pal::char_t* argv[], arguments_t* arg_out)
 {
@@ -37,6 +46,7 @@ bool parse_arguments(const pal::string_t& deps_path, const pal::string_t& probe_
         // corerun mode. First argument is managed app
         if (argc < 2)
         {
+            display_help();
             return false;
         }
         args.managed_application = pal::string_t(argv[1]);

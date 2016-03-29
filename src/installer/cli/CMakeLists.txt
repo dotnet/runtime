@@ -42,8 +42,8 @@ else()
     list(APPEND SOURCES ../common/pal.unix.cpp)
 endif()
 
-add_executable(dotnet ${SOURCES})
-install(TARGETS dotnet DESTINATION bin)
+add_executable(corehost ${SOURCES})
+install(TARGETS corehost DESTINATION bin)
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 
@@ -54,7 +54,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     add_definitions(-D__LINUX__)
-    target_link_libraries (dotnet "dl" "pthread")
+    target_link_libraries (corehost "dl" "pthread")
 endif()
 
 add_subdirectory(dll)
