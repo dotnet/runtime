@@ -60,15 +60,21 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
 
 pal::string_t get_executable(const pal::string_t& filename)
 {
-    pal::string_t result(filename);
-
-    if (ends_with(result, _X(".exe"), false))
+    pal::string_t exe_suffix = pal::exe_suffix();
+    if (exe_suffix.empty())
     {
-        // We need to strip off the old extension
-        result.erase(result.size() - 4);
+        return filename;
     }
 
-    return result;
+    if (ends_with(filename, exe_suffix, false))
+    {
+        // We need to strip off the old extension
+        pal::string_t result(filename);
+        result.erase(result.size() - exe_suffix.size());
+        return result;
+    }
+
+    return filename;
 }
 
 pal::string_t strip_file_ext(const pal::string_t& path)
