@@ -177,7 +177,8 @@ static void
 init_private_gray_queue (WorkerData *data)
 {
 	sgen_gray_object_queue_init (&data->private_gray_queue,
-			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL);
+			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL,
+			FALSE);
 }
 
 static void
