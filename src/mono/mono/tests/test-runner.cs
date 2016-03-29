@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Xml;
 using System.Text.RegularExpressions;
+using Mono.Unix.Native;
 
 //
 // This is a simple test runner with support for parallel execution
@@ -266,6 +267,13 @@ public class TestRunner
 					if (!p.WaitForExit (timeout * 1000)) {
 						lock (monitor) {
 							timedout.Add (data);
+						}
+
+						// Force the process to print a thread dump
+						try {
+							Syscall.kill (p.Id, Signum.SIGQUIT);
+							Thread.Sleep (1000);
+						} catch {
 						}
 
 						output.Write ("timed out");
