@@ -52,28 +52,28 @@ Each platform has it own rules for how it anchors certain assemblies. In .NET Fr
 
 In general, class libraries which target a lower .NET Platform Standard version, like 1.0, can be loaded by the largest number of existing platforms, but will have access to a smaller set of APIs. On the other hand, class libraries which target a higher .NET Platform Standard version, like 1.3, can be loaded by a smaller number of newer platforms, but will have access to a larger, more recent set of APIs.
 
-| Target Platform Name | Alias |  |  |  |  |  |
-| :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
-|.NET Platform Standard | netstandard | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
-|.NET Framework|net|&rarr;|&rarr;|&rarr;|&rarr;|4.6.x|
-|||&rarr;|&rarr;|&rarr;|4.6||
-|||&rarr;|&rarr;|4.5.2||
-|||&rarr;|&rarr;|4.5.1||
-|||&rarr;|4.5|||
-|Universal Windows Platform|uap|&rarr;|&rarr;|&rarr;|10.0|
-|Windows|win|&rarr;|&rarr;|8.1||
-|||&rarr;|8.0|||
-|Windows Phone|wpa|&rarr;|&rarr;|8.1||
-|||&rarr;|8.0|||
-|Windows Phone Silverlight|wp|8.1||||
-|||8.0||||
-|DNX Core|dnxcore|&rarr;|&rarr;|&rarr;|&rarr;|5.0|
-|Mono/Xamarin Platforms||&rarr;|&rarr;|&rarr;|&rarr;|*|
-|Mono||&rarr;|&rarr;|*|||
+| Target Platform Name | Alias |  |  |  |  |  | |
+| :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
+|.NET Platform Standard | netstandard | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 |
+|.NET Core|netcoreapp|&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|1.0|
+|.NET Framework|net|&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|4.6.2|
+|||&rarr;|&rarr;|&rarr;|&rarr;|4.6.1||
+|||&rarr;|&rarr;|&rarr;|4.6|||
+|||&rarr;|&rarr;|4.5.2||||
+|||&rarr;|&rarr;|4.5.1||||
+|||&rarr;|4.5|||||
+|Universal Windows Platform|uap|&rarr;|&rarr;|&rarr;|&rarr;|10.0||
+|Windows|win|&rarr;|&rarr;|8.1||||
+|||&rarr;|8.0|||||
+|Windows Phone|wpa|&rarr;|&rarr;|8.1||||
+|Windows Phone Silverlight|wp|8.1||||||
+|||8.0||||||
+|Mono/Xamarin Platforms||&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|*|
+|Mono||&rarr;|&rarr;|*|||||
 
 ### Observations
 
-- If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, Universal Windows Platform 10 (UWP), DNX Core 5.0 and Mono/Xamarin platforms. 
+- If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, .NET Core, Universal Windows Platform 10 (UWP), and Mono/Xamarin platforms.
 - If a library targets .NET Platform Standard version 1.3, it can consume libraries from all previous .NET Platform Standard versions (1.2, 1.1, 1.0).
 - The earliest .NET Framework to support a .NET Platform Standard version is .NET Framework 4.5. This is because the new portable API surface area (aka **System.Runtime** based surface area) that is used as the foundation for the .NET Platform Standard only became available in that version of .NET Framework. Targeting .NET Framework <= 4.0 requires multi-targeting.
 - Each .NET Platform Standard version enables more API surface, which means it's available on fewer platforms. As the platforms update, their newer versions jump up into newer .NET Platform Standard versions.
@@ -110,27 +110,26 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 
 | .NET Platform Standard version | NuGet identifier |
 | ---------| --------------- |
-| 1.0 - 1.4 | netstandard1.0 - netstandard1.4 |
+| 1.0 - 1.5 | netstandard1.0 - netstandard1.5 |
 
 ### Specific platform mapping
 
 | Platform | NuGet identifier |
 | ---------| --------------- |
 | .NET Framework 2.0 - 4.6 | net20 - net46 |
-|.NET Micro Framework | netmf |
+| .NET Core | netcoreapp |
+| .NET Micro Framework | netmf |
 | Windows 8 | win8, netcore45 |
 | Windows 8.1 | win8, netcore451 |
 | Windows Phone Silverlight (8, 8.1) | wp8, wp81 |
 | Windows Phone 8.1 | wpa8.1 |
 | Universal Windows Platform 10 | uap10, netcore50 |
-| DNX on .NET Framework 4.5.1 - 4.6 | dnx451 - dnx46 |
-| DNX on .NET Core 5.0 | dnxcore50  |
 | Silverlight 4, 5 | sl4, sl5 |
 | MonoAndroid | monoandroid |
 | MonoTouch | monotouch |
 | MonoMac | monomac |
 | Xamarin iOS | xamarinios |
-| Xamarin PlayStation 3 | xamarinpsthree | 
+| Xamarin PlayStation 3 | xamarinpsthree |
 | Xamarin PlayStation 4 | xamarinpsfour |
 | Xamarin PlayStation Vita | xamarinpsvita |
 | Xamarin Watch OS | xamarinwatchos |
@@ -144,6 +143,8 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 | ---------| --------------- |
 | ASP.NET 5.0 on .NET Framework | aspnet50 |
 | ASP.NET 5.0 on .NET Core | aspnetcore50 |
+| DNX on .NET Framework 4.5.1 - 4.6 | dnx451 - dnx46 |
+| DNX on .NET Core 5.0 | dnxcore50  |
 | Windows 8 | winrt |
 
 ### Package authoring
