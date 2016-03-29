@@ -343,7 +343,6 @@ nursery_canaries_enabled (void)
  * ######################################################################
  */
 MonoCoopMutex gc_mutex;
-gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
@@ -3179,11 +3178,7 @@ sgen_gc_lock (void)
 void
 sgen_gc_unlock (void)
 {
-	gboolean try_free = sgen_try_free_some_memory;
-	sgen_try_free_some_memory = FALSE;
 	mono_coop_mutex_unlock (&gc_mutex);
-	if (try_free)
-		mono_thread_hazardous_try_free_some ();
 }
 
 void
@@ -3249,8 +3244,6 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	world_is_stopped = FALSE;
 
 	binary_protocol_world_restarted (generation, sgen_timestamp ());
-
-	sgen_try_free_some_memory = TRUE;
 
 	if (sgen_client_bridge_need_processing ())
 		sgen_client_bridge_processing_finish (generation);
