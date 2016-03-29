@@ -453,7 +453,7 @@ namespace System.ComponentModel
                 associations.Add(new WeakReference(secondary));
             }
         }
-#if PLACEHOLDER
+
         /// <devdoc>
         ///     This dynamically binds an EventDescriptor to a type.
         /// </devdoc>
@@ -470,7 +470,7 @@ namespace System.ComponentModel
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
-#endif
+
         /// <devdoc>
         ///     This method will search internal tables within TypeDescriptor for 
         ///     a TypeDescriptionProvider object that is associated with the given 
@@ -516,7 +516,6 @@ namespace System.ComponentModel
 
             return instance;
         }
-#if FEATURE_REFLECTPROPERTYDESCRIPTOR
         /// <devdoc>
         ///     This dynamically binds a PropertyDescriptor to a type.
         /// </devdoc>
@@ -555,7 +554,7 @@ namespace System.ComponentModel
             //
             return new ReflectPropertyDescriptor(componentType, oldPropertyDescriptor, attributes);
         }
-#endif
+
         /// <devdoc>
         ///     This  API is used to remove any members from the given
         ///     collection that do not match the attribute array.  If members

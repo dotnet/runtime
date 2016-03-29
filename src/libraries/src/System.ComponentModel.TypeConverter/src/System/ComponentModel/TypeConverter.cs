@@ -9,15 +9,13 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <devdoc>
-    ///    <para> Converts the value of an object into a different data type. </para>
+    ///    <para>Converts the value of an object into a different data type.</para>
     /// </devdoc>
     public class TypeConverter
     {
         /// <devdoc>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can convert an object in the
-        ///        given source type to the native type of the converter.
-        ///    </para>
+        ///    <para>Gets a value indicating whether this converter can convert an object in the
+        ///       given source type to the native type of the converter.</para>
         /// </devdoc>
         public bool CanConvertFrom(Type sourceType)
         {
