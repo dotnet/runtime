@@ -4,18 +4,9 @@
 
 namespace System.ComponentModel
 {
-    using Microsoft.Win32;
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     /// <devdoc>
     ///    <para>The exception that is thrown when a thread that an operation should execute on no longer exists or is not pumping messages</para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
-    [Serializable]
     public class InvalidAsynchronousStateException : ArgumentException
     {
         /// <devdoc>
@@ -40,13 +31,6 @@ namespace System.ComponentModel
         /// </devdoc>
         public InvalidAsynchronousStateException(string message, Exception innerException)
             : base(message, innerException)
-        {
-        }
-        /// <devdoc>
-        ///     Need this constructor since Exception implements ISerializable. We don't have any fields,
-        ///     so just forward this to base.
-        /// </devdoc>
-        protected InvalidAsynchronousStateException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
     }

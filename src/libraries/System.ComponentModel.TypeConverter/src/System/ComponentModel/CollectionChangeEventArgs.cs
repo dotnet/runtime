@@ -4,19 +4,13 @@
 
 namespace System.ComponentModel
 {
-    using System;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-
     /// <devdoc>
     /// <para>Provides data for the <see langword='CollectionChange '/> event.</para>
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     public class CollectionChangeEventArgs : EventArgs
     {
-        private CollectionChangeAction _action;
-        private object _element;
+        private readonly CollectionChangeAction _action;
+        private readonly object _element;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.CollectionChangeEventArgs'/> class.</para>
