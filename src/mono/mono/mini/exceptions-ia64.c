@@ -242,7 +242,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 	unw_word_t ip, sp;
 	int res;
 
-	if (mono_object_isinst (exc, mono_defaults.exception_class, &error)) {
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
