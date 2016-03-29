@@ -14,9 +14,13 @@ arguments="$@"
 echo -e "Running build-packages.sh $arguments" > $build_packages_log
 
 # Parse arguments
-if [ $arguments == "-h" ] || [ $arguments == "--help" ]; then
+if [ "$arguments" == "-h" ] || [ "$arguments" == "--help" ]; then
     usage
 fi
+
+# Ensure that MSBuild is available
+echo "Running init-tools.sh"
+$working_tree_root/init-tools.sh
 
 echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $arguments /nologo /v:minimal /flp:v=detailed;Append;LogFile=$build_packages_log" >> $build_packages_log
 $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $arguments /nologo /v:minimal "/flp:v=detailed;Append;LogFile=$build_packages_log"
