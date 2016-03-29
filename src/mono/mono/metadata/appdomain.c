@@ -257,7 +257,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_install_assembly_postload_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_postload_refonly_search_hook ((MonoAssemblySearchFunc)mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
-	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
 	mono_thread_init (start_cb, attach_cb);
 

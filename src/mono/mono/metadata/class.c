@@ -7457,7 +7457,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error)
 			mono_error_set_bad_image (error, image,"Bad token table for dynamic image: %x", table);
 			return NULL;
 		}
-		klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, NULL); /*FIXME proper error handling*/
+		klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, NULL, error);
 		goto done;
 	}
 
@@ -7507,8 +7507,11 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 	mono_error_init (error);
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
-	if (image_is_dynamic (image))
-		return mono_class_get_type ((MonoClass *)mono_lookup_dynamic_token (image, type_token, context));
+	if (image_is_dynamic (image)) {
+		MonoClass *klass = (MonoClass *)mono_lookup_dynamic_token (image, type_token, context, error);
+		return_val_if_nok (error, NULL);
+		return mono_class_get_type (klass);
+	}
 
 	if ((type_token & 0xff000000) != MONO_TOKEN_TYPE_SPEC) {
 		MonoClass *klass = mono_class_get_checked (image, type_token, error);
@@ -8783,8 +8786,9 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 
 	if (image_is_dynamic (image)) {
 		MonoClass *tmp_handle_class;
-		gpointer obj = mono_lookup_dynamic_token_class (image, token, TRUE, &tmp_handle_class, context);
+		gpointer obj = mono_lookup_dynamic_token_class (image, token, TRUE, &tmp_handle_class, context, error);
 
+		mono_error_assert_ok (error);
 		g_assert (tmp_handle_class);
 		if (handle_class)
 			*handle_class = tmp_handle_class;
@@ -8864,30 +8868,18 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 	return NULL;
 }
 
-/**
- * This function might need to call runtime functions so it can't be part
- * of the metadata library.
- */
-static MonoLookupDynamicToken lookup_dynamic = NULL;
-
-void
-mono_install_lookup_dynamic_token (MonoLookupDynamicToken func)
-{
-	lookup_dynamic = func;
-}
-
 gpointer
-mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context)
+mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error)
 {
 	MonoClass *handle_class;
-
-	return lookup_dynamic (image, token, TRUE, &handle_class, context);
+	mono_error_init (error);
+	return mono_reflection_lookup_dynamic_token (image, token, TRUE, &handle_class, context, error);
 }
 
 gpointer
-mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
-	return lookup_dynamic (image, token, valid_token, handle_class, context);
+	return mono_reflection_lookup_dynamic_token (image, token, valid_token, handle_class, context, error);
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;

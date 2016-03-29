@@ -13695,25 +13695,27 @@ mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 
  * LOCKING: Take the loader lock
  */
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
 	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
 	MonoObject *obj;
 	MonoClass *klass;
 
+	mono_error_init (error);
+	
 	obj = lookup_dyn_token (assembly, token);
 	if (!obj) {
 		if (valid_token)
 			g_error ("Could not find required dynamic token 0x%08x", token);
-		else
+		else {
+			mono_error_set_execution_engine (error, "Could not find dynamic token 0x%08x", token);
 			return NULL;
+		}
 	}
 
 	if (!handle_class)
 		handle_class = &klass;
-	gpointer result = resolve_object (image, obj, handle_class, context, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	gpointer result = resolve_object (image, obj, handle_class, context, error);
 	return result;
 }
 

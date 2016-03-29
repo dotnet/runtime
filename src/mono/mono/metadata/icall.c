@@ -5825,10 +5825,13 @@ mono_memberref_is_method (MonoImage *image, guint32 token)
 		mono_metadata_decode_blob_size (sig, &sig);
 		return (*sig != 0x6);
 	} else {
+		MonoError error;
 		MonoClass *handle_class;
 
-		if (!mono_lookup_dynamic_token_class (image, token, FALSE, &handle_class, NULL))
+		if (!mono_lookup_dynamic_token_class (image, token, FALSE, &handle_class, NULL, &error)) {
+			mono_error_cleanup (&error); /* just probing, ignore error */
 			return FALSE;
+		}
 
 		return mono_defaults.methodhandle_class == handle_class;
 	}
@@ -5869,12 +5872,14 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 
 	if (image_is_dynamic (image)) {
 		if ((table == MONO_TABLE_TYPEDEF) || (table == MONO_TABLE_TYPEREF)) {
-			klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+			klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &error);
+			mono_error_cleanup (&error);
 			return klass ? &klass->byval_arg : NULL;
 		}
 
 		init_generic_context_from_args (&context, type_args, method_args);
-		klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context);
+		klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &error);
+		mono_error_cleanup (&error);
 		return klass ? &klass->byval_arg : NULL;
 	}
 
@@ -5917,8 +5922,11 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 	}
 
 	if (image_is_dynamic (image)) {
-		if (table == MONO_TABLE_METHOD)
-			return (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+		if (table == MONO_TABLE_METHOD) {
+			method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &error);
+			mono_error_cleanup (&error);
+			return method;
+		}
 
 		if ((table == MONO_TABLE_MEMBERREF) && !(mono_memberref_is_method (image, token))) {
 			*resolve_error = ResolveTokenError_BadTable;
@@ -5926,7 +5934,9 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		}
 
 		init_generic_context_from_args (&context, type_args, method_args);
-		return (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context);
+		method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &error);
+		mono_error_cleanup (&error);
+		return method;
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
@@ -5946,23 +5956,27 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 }
 
 ICALL_EXPORT MonoString*
-ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32 token, MonoResolveTokenError *resolve_error)
 {
+	MonoError error;
 	int index = mono_metadata_token_index (token);
 
-	*error = ResolveTokenError_Other;
+	*resolve_error = ResolveTokenError_Other;
 
 	/* Validate token */
 	if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
-		*error = ResolveTokenError_BadTable;
+		*resolve_error = ResolveTokenError_BadTable;
 		return NULL;
 	}
 
-	if (image_is_dynamic (image))
-		return (MonoString *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+	if (image_is_dynamic (image)) {
+		MonoString * result = (MonoString *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &error);
+		mono_error_cleanup (&error);
+		return result;
+	}
 
 	if ((index <= 0) || (index >= image->heap_us.size)) {
-		*error = ResolveTokenError_OutOfRange;
+		*resolve_error = ResolveTokenError_OutOfRange;
 		return NULL;
 	}
 
@@ -5990,8 +6004,11 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 	}
 
 	if (image_is_dynamic (image)) {
-		if (table == MONO_TABLE_FIELD)
-			return (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+		if (table == MONO_TABLE_FIELD) {
+			field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &error);
+			mono_error_cleanup (&error);
+			return field;
+		}
 
 		if (mono_memberref_is_method (image, token)) {
 			*resolve_error = ResolveTokenError_BadTable;
@@ -5999,7 +6016,9 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		}
 
 		init_generic_context_from_args (&context, type_args, method_args);
-		return (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context);
+		field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &error);
+		mono_error_cleanup (&error);
+		return field;
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {

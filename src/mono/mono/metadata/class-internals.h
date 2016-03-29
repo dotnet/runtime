@@ -918,8 +918,6 @@ extern MonoStats mono_stats;
 typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
 typedef gpointer (*MonoDelegateTrampoline)       (MonoDomain *domain, MonoClass *klass);
 
-typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context);
-
 typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
 
 typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
@@ -1011,13 +1009,10 @@ void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func);
 
 gpointer
-mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context);
+mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 
 gpointer
-mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context);
-
-void
-mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
 gpointer
 mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper);

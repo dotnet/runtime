@@ -1837,8 +1837,11 @@ mono_metadata_parse_signature (MonoImage *image, guint32 token)
 	guint32 sig;
 	const char *ptr;
 
-	if (image_is_dynamic (image))
-		return (MonoMethodSignature *)mono_lookup_dynamic_token (image, token, NULL);
+	if (image_is_dynamic (image)) {
+		ret = (MonoMethodSignature *)mono_lookup_dynamic_token (image, token, NULL, &error);
+		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		return ret;
+	}
 
 	g_assert (mono_metadata_token_table(token) == MONO_TABLE_STANDALONESIG);
 		
