@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -56,6 +57,39 @@ namespace System.Globalization.Tests
                 CultureInfo.CurrentUICulture = defaultUICulture;
             }
             Assert.Equal(CultureInfo.CurrentUICulture, defaultUICulture);
+        }
+
+        [Fact]
+        public static void DefaultThreadCurrentCulture()
+        {
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo originalUICulture = CultureInfo.CurrentUICulture;
+            CultureInfo originalDefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo originalDefaultThreadCurrentUICulture = CultureInfo.DefaultThreadCurrentUICulture;
+            CultureInfo jaCulture = new CultureInfo("ja-JP");
+
+            // Run the test only when we have a culture different than ja-JP
+            if (originalCulture.Equals(jaCulture) || originalUICulture.Equals(jaCulture))
+                return;
+
+            try
+            {
+                CultureInfo.DefaultThreadCurrentCulture = jaCulture;
+                CultureInfo.DefaultThreadCurrentUICulture = jaCulture;
+
+                Task.Run(() =>
+                {
+                    Assert.True(CultureInfo.CurrentCulture.Equals(jaCulture));
+                    Assert.True(CultureInfo.CurrentUICulture.Equals(jaCulture));
+                }).Wait();
+            }
+            finally
+            {
+                CultureInfo.DefaultThreadCurrentCulture = originalDefaultThreadCurrentCulture;
+                CultureInfo.DefaultThreadCurrentUICulture = originalDefaultThreadCurrentUICulture;
+            }
+            Assert.False(CultureInfo.CurrentCulture.Equals(jaCulture));
+            Assert.False(CultureInfo.CurrentUICulture.Equals(jaCulture));
         }
     }
 }
