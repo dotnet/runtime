@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class Test
+    public class DateTimeFormatInfoCurrentCultureTests
     {
         [Fact]
-        public void TestCurrentCulture()
+        public void CurrentCulture()
         {
-            // run all tests in one method to avoid multi-threading issues
+            // Run all tests in one method to avoid multi-threading issues
             CultureInfo defaultCulture = CultureInfo.CurrentCulture;
             Assert.NotEqual(CultureInfo.InvariantCulture, defaultCulture);
 
@@ -36,9 +34,9 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void TestCurrentUICulture()
+        public void CurrentUICulture()
         {
-            // run all tests in one method to avoid multi-threading issues
+            // Run all tests in one method to avoid multi-threading issues
             CultureInfo defaultUICulture = CultureInfo.CurrentUICulture;
             Assert.NotEqual(CultureInfo.InvariantCulture, defaultUICulture);
 

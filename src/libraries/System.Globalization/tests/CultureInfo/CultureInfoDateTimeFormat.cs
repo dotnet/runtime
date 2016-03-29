@@ -2,76 +2,54 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Globalization;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
     public class CultureInfoDateTimeFormat
     {
-        [Fact]
-        public void PosTest1()
+        public static IEnumerable<object[]> DateTimeFormatInfo_Set_TestData()
         {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            DateTimeFormatInfo myDateTimeFormat = new DateTimeFormatInfo();
-            myDateTimeFormat.AMDesignator = "a.m.";
-            myDateTimeFormat.MonthDayPattern = "MMMM-dd";
-            myDateTimeFormat.ShortTimePattern = "HH|mm";
-            myCultureInfo.DateTimeFormat = myDateTimeFormat;
-            Assert.Equal("a.m.", myCultureInfo.DateTimeFormat.AMDesignator);
-            Assert.Equal("MMMM-dd", myCultureInfo.DateTimeFormat.MonthDayPattern);
-            Assert.Equal("HH|mm", myCultureInfo.DateTimeFormat.ShortTimePattern);
-        }
+            DateTimeFormatInfo customDateTimeFormatInfo1 = new DateTimeFormatInfo();
+            customDateTimeFormatInfo1.AMDesignator = "a.m.";
+            customDateTimeFormatInfo1.MonthDayPattern = "MMMM-dd";
+            customDateTimeFormatInfo1.ShortTimePattern = "HH|mm";
+            yield return new object[] { "en-US", customDateTimeFormatInfo1 };
 
-        [Fact]
-        public void PosTest2()
-        {
-            CultureInfo myCultureInfo = new CultureInfo("fr");
-            myCultureInfo.DateTimeFormat.AMDesignator = "a.m.";
-            Assert.Equal("a.m.", myCultureInfo.DateTimeFormat.AMDesignator);
-
-            myCultureInfo.DateTimeFormat.MonthDayPattern = "MMMM-dd";
-            Assert.Equal("MMMM-dd", myCultureInfo.DateTimeFormat.MonthDayPattern);
-
-            myCultureInfo.DateTimeFormat.ShortTimePattern = "HH|mm";
-            Assert.Equal("HH|mm", myCultureInfo.DateTimeFormat.ShortTimePattern);
+            DateTimeFormatInfo customDateTimeFormatInfo2 = new DateTimeFormatInfo();
+            customDateTimeFormatInfo2.LongTimePattern = "H:mm:ss";
+            yield return new object[] { "fi-FI", customDateTimeFormatInfo2 };
         }
 
         [Theory]
-        [InlineData("fi-FI")]
-        public void TestLongTimePatternLocale2(string locale)
+        [MemberData(nameof(DateTimeFormatInfo_Set_TestData))]
+        public void DateTimeFormatInfo_Set(string name, DateTimeFormatInfo newDateTimeFormatInfo)
         {
-            CultureInfo myTestCulture = new CultureInfo(locale);
-            DateTimeFormatInfo myDateTimeFormat = new DateTimeFormatInfo();
-            myDateTimeFormat.LongTimePattern = "H:mm:ss";
-            myTestCulture.DateTimeFormat = myDateTimeFormat;
-            Assert.Equal("H:mm:ss", myTestCulture.DateTimeFormat.LongTimePattern);
+            CultureInfo culture = new CultureInfo(name);
+            culture.DateTimeFormat = newDateTimeFormatInfo;
+            Assert.Equal(newDateTimeFormatInfo, culture.DateTimeFormat);
         }
 
         [Fact]
-        public void NegTest1()
+        public void DateTimeFormatInfo_Set_Properties()
         {
-            CultureInfo myCultureInfo = new CultureInfo("en-US");
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                DateTimeFormatInfo myDateTimeFormat = null;
-                myCultureInfo.DateTimeFormat = myDateTimeFormat;
-            });
+            CultureInfo culture = new CultureInfo("fr");
+            culture.DateTimeFormat.AMDesignator = "a.m.";
+            Assert.Equal("a.m.", culture.DateTimeFormat.AMDesignator);
+
+            culture.DateTimeFormat.MonthDayPattern = "MMMM-dd";
+            Assert.Equal("MMMM-dd", culture.DateTimeFormat.MonthDayPattern);
+
+            culture.DateTimeFormat.ShortTimePattern = "HH|mm";
+            Assert.Equal("HH|mm", culture.DateTimeFormat.ShortTimePattern);
         }
 
         [Fact]
-        public void NegTest2()
+        public void DateTimeFormat_Set_Invalid()
         {
-            CultureInfo myCultureInfo = CultureInfo.InvariantCulture; // InvariantCulture is a Read-Only culture
-            Assert.True(myCultureInfo.IsReadOnly);
-            DateTimeFormatInfo myDateTimeFormat = new DateTimeFormatInfo();
-            myDateTimeFormat.AMDesignator = "a.m.";
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                myCultureInfo.DateTimeFormat = myDateTimeFormat;
-            });
+            Assert.Throws<ArgumentNullException>("value", () => new CultureInfo("en-US").DateTimeFormat = null); // Value is null
+            Assert.Throws<InvalidOperationException>(() => CultureInfo.InvariantCulture.DateTimeFormat = new DateTimeFormatInfo()); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
 }
