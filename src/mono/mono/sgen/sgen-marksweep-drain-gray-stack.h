@@ -234,7 +234,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 				COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 			}						\
 		} else {                                                \
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)) && !sgen_cement_is_forced (__old))) \
 				mark_mod_union_card ((full_object), (void**)(ptr), __old); \
 			}						\
 		} while (0)
@@ -246,7 +246,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 			PREFETCH_READ (__old);			\
 			COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 		} else {                                                \
-			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
+			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)) && !sgen_cement_is_forced (__old))) \
 				mark_mod_union_card ((full_object), (void**)(ptr), __old); \
 			}						\
 		} while (0)

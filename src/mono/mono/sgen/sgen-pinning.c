@@ -182,6 +182,7 @@ typedef struct _CementHashEntry CementHashEntry;
 struct _CementHashEntry {
 	GCObject *obj;
 	unsigned int count;
+	gboolean forced; /* if it should stay cemented after the finishing pause */
 };
 
 static CementHashEntry cement_hash [SGEN_CEMENT_HASH_SIZE];
@@ -197,8 +198,68 @@ sgen_cement_init (gboolean enabled)
 void
 sgen_cement_reset (void)
 {
-	memset (cement_hash, 0, sizeof (cement_hash));
+	int i;
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; i++) {
+		if (cement_hash [i].forced) {
+			cement_hash [i].forced = FALSE;
+		} else {
+			cement_hash [i].obj = NULL;
+			cement_hash [i].count = 0;
+		}
+	}
 	binary_protocol_cement_reset ();
+}
+
+
+/*
+ * The pin_queue should be full and sorted, without entries from the cemented
+ * objects. We traverse the cement hash and check if each object is pinned in
+ * the pin_queue (the pin_queue contains entries between obj and obj+obj_len)
+ */
+void
+sgen_cement_force_pinned (void)
+{
+	int i;
+
+	if (!cement_enabled)
+		return;
+
+	for (i = 0; i < SGEN_CEMENT_HASH_SIZE; i++) {
+		GCObject *obj = cement_hash [i].obj;
+		size_t index;
+		if (!obj)
+			continue;
+		if (cement_hash [i].count < SGEN_CEMENT_THRESHOLD)
+			continue;
+		SGEN_ASSERT (0, !cement_hash [i].forced, "Why do we have a forced cemented object before forcing ?");
+
+		/* Returns the index of the target or of the first element greater than it */
+		index = sgen_pointer_queue_search (&pin_queue, obj);
+		if (index == pin_queue.next_slot)
+			continue;
+		SGEN_ASSERT (0, pin_queue.data [index] >= (gpointer)obj, "Binary search should return a pointer greater than the search target");
+		if (pin_queue.data [index] < (gpointer)((char*)obj + sgen_safe_object_get_size (obj)))
+			cement_hash [i].forced = TRUE;
+	}
+}
+
+gboolean
+sgen_cement_is_forced (GCObject *obj)
+{
+	guint hv = sgen_aligned_addr_hash (obj);
+	int i = SGEN_CEMENT_HASH (hv);
+
+	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Looking up cementing for non-nursery objects makes no sense");
+
+	if (!cement_enabled)
+		return FALSE;
+
+	if (!cement_hash [i].obj)
+		return FALSE;
+	if (cement_hash [i].obj != obj)
+		return FALSE;
+
+	return cement_hash [i].forced;
 }
 
 gboolean
