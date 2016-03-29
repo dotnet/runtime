@@ -270,7 +270,7 @@ namespace System.Xml.Schema
         private static short Int32ToInt16(int value)
         {
             if (value < (int)Int16.MinValue || value > (int)Int16.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Int16" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(Int16) }));
 
             return (short)value;
         }
@@ -278,7 +278,7 @@ namespace System.Xml.Schema
         private static byte Int32ToByte(int value)
         {
             if (value < (int)Byte.MinValue || value > (int)Byte.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "Byte" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(Byte) }));
 
             return (byte)value;
         }
@@ -286,7 +286,7 @@ namespace System.Xml.Schema
         private static ulong DecimalToUInt64(decimal value)
         {
             if (value < (decimal)UInt64.MinValue || value > (decimal)UInt64.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt64" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(UInt64) }));
 
             return (ulong)value;
         }
@@ -294,7 +294,7 @@ namespace System.Xml.Schema
         private static sbyte Int32ToSByte(int value)
         {
             if (value < (int)SByte.MinValue || value > (int)SByte.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "SByte" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(SByte) }));
 
             return (sbyte)value;
         }
@@ -336,7 +336,7 @@ namespace System.Xml.Schema
         private static ushort Int32ToUInt16(int value)
         {
             if (value < (int)UInt16.MinValue || value > (int)UInt16.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt16" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(UInt16) }));
 
             return (ushort)value;
         }
@@ -344,7 +344,7 @@ namespace System.Xml.Schema
         private static uint Int64ToUInt32(long value)
         {
             if (value < (long)UInt32.MinValue || value > (long)UInt32.MaxValue)
-                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), "UInt32" }));
+                throw new OverflowException(SR.Format(SR.XmlConvert_Overflow, new string[] { XmlConvert.ToString(value), nameof(UInt32) }));
 
             return (uint)value;
         }
