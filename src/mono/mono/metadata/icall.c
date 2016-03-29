@@ -3075,8 +3075,11 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 
 	*exc = NULL;
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_method (m);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_method (m, &error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, &error)) {

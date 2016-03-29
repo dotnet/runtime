@@ -44,7 +44,8 @@ extern void mono_security_core_clr_check_override (MonoClass *klass, MonoMethod 
 
 extern gboolean
 mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field, MonoError *error);
-extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method);
+extern gboolean
+mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method, MonoError *error);
 extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure);
 extern MonoException* mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class);
 
