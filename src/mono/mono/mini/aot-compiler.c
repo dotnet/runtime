@@ -7865,8 +7865,10 @@ compile_thread_main (gpointer *user_data)
 	GPtrArray *methods = (GPtrArray *)user_data [2];
 	int i;
 
+	MonoError error;
 	MonoThread *thread = mono_thread_attach (domain);
-	mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "AOT compiler"), TRUE);
+	mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "AOT compiler"), TRUE, &error);
+	mono_error_assert_ok (&error);
 
 	for (i = 0; i < methods->len; ++i)
 		compile_method (acfg, (MonoMethod *)g_ptr_array_index (methods, i));

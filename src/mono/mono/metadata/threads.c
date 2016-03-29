@@ -1353,14 +1353,16 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 }
 
 void 
-mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed)
+mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean managed, MonoError *error)
 {
 	LOCK_THREAD (this_obj);
+
+	mono_error_init (error);
 
 	if ((this_obj->flags & MONO_THREAD_FLAG_NAME_SET) && !this_obj->threadpool_thread) {
 		UNLOCK_THREAD (this_obj);
 		
-		mono_raise_exception (mono_get_exception_invalid_operation ("Thread.Name can only be set once."));
+		mono_error_set_invalid_operation (error, "Thread.Name can only be set once.");
 		return;
 	}
 	if (this_obj->name) {
@@ -1391,7 +1393,9 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 void 
 ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name)
 {
-	mono_thread_set_name_internal (this_obj, name, TRUE);
+	MonoError error;
+	mono_thread_set_name_internal (this_obj, name, TRUE, &error);
+	mono_error_set_pending_exception (&error);
 }
 
 /*

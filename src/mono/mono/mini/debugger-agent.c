@@ -9675,6 +9675,7 @@ wait_for_attach (void)
 static guint32 WINAPI
 debugger_thread (void *arg)
 {
+	MonoError error;
 	int res, len, id, flags, command = 0;
 	CommandSet command_set = (CommandSet)0;
 	guint8 header [HEADER_LENGTH];
@@ -9691,7 +9692,8 @@ debugger_thread (void *arg)
 
 	attach_cookie = mono_jit_thread_attach (mono_get_root_domain (), &attach_dummy);
 	MonoInternalThread *thread = mono_thread_internal_current ();
-	mono_thread_set_name_internal (thread, mono_string_new (mono_get_root_domain (), "Debugger agent"), TRUE);
+	mono_thread_set_name_internal (thread, mono_string_new (mono_get_root_domain (), "Debugger agent"), TRUE, &error);
+	mono_error_assert_ok (&error);
 
 	thread->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 
