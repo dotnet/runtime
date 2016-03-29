@@ -757,6 +757,8 @@ finalizer_thread (gpointer unused)
 
 		reference_queue_proccess_all ();
 
+		mono_thread_hazardous_try_free_all ();
+
 		/* Avoid posting the pending done event until there are pending finalizers */
 		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0) {
 			/* Don't wait again at the start of the loop */

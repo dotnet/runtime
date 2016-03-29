@@ -305,31 +305,6 @@ try_free_delayed_free_item (HazardFreeContext context)
 	return TRUE;
 }
 
-void
-mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-                                     HazardFreeLocking locking, HazardFreeContext context)
-{
-	int i;
-
-	/* First try to free a few entries in the delayed free
-	   table. */
-	for (i = 0; i < 3; ++i)
-		try_free_delayed_free_item (context);
-
-	/* Now see if the pointer we're freeing is hazardous.  If it
-	   isn't, free it.  Otherwise put it in the delay list. */
-	if ((context == HAZARD_FREE_ASYNC_CTX && locking == HAZARD_FREE_MAY_LOCK) ||
-	    is_pointer_hazardous (p)) {
-		DelayedFreeItem item = { p, free_func, locking };
-
-		++hazardous_pointer_count;
-
-		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
-	} else {
-		free_func (p);
-	}
-}
-
 /**
  * mono_thread_hazardous_try_free:
  * @p: the pointer to free
@@ -373,7 +348,7 @@ mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
 {
 	DelayedFreeItem item = { p, free_func, HAZARD_FREE_MAY_LOCK };
 
-	++hazardous_pointer_count;
+	InterlockedIncrement (&hazardous_pointer_count);
 
 	mono_lock_free_array_queue_push (&delayed_free_queue, &item);
 }

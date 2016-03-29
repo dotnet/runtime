@@ -31,8 +31,6 @@ typedef enum {
 gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
 void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func);
 
-void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-                                          HazardFreeLocking locking, HazardFreeContext context);
 void mono_thread_hazardous_try_free_all (void);
 void mono_thread_hazardous_try_free_some (void);
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);

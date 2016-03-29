@@ -126,7 +126,7 @@ try_again:
 				mono_memory_write_barrier ();
 				mono_hazard_pointer_clear (hp, 1);
 				if (list->free_node_func)
-					mono_thread_hazardous_free_or_queue (cur, list->free_node_func, list->locking, context);
+					mono_thread_hazardous_queue_free (cur, list->free_node_func);
 			} else
 				goto try_again;
 		}
@@ -198,7 +198,7 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 			mono_memory_write_barrier ();
 			mono_hazard_pointer_clear (hp, 1);
 			if (list->free_node_func)
-				mono_thread_hazardous_free_or_queue (value, list->free_node_func, list->locking, context);
+				mono_thread_hazardous_try_free (value, list->free_node_func);
 		} else
 			mono_lls_find (list, hp, value->key, context);
 		return TRUE;
