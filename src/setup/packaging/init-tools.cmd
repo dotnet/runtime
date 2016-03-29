@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal
 
 REM Workaround https://github.com/dotnet/coreclr/issues/2153
