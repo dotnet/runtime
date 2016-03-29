@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using System.Threading;
 
 // The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
@@ -221,20 +222,6 @@ namespace System.Net
             }
         }
 
-        private string _Domain
-        {
-            get
-            {
-                return (Plain || m_domain_implicit || (m_domain.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + DomainAttributeName
-                       + EqualsLiteral + (IsQuotedDomain ? "\"" : string.Empty)
-                       + m_domain + (IsQuotedDomain ? "\"" : string.Empty)
-                       );
-            }
-        }
-
         internal bool DomainImplicit
         {
             get
@@ -322,20 +309,6 @@ namespace System.Net
             {
                 m_path = (value == null ? String.Empty : value);
                 m_path_implicit = false;
-            }
-        }
-
-        private string _Path
-        {
-            get
-            {
-                return (Plain || m_path_implicit || (m_path.Length == 0))
-                    ? string.Empty
-                    : (SpecialAttributeLiteral
-                       + PathAttributeName
-                       + EqualsLiteral
-                       + m_path
-                       );
             }
         }
 
@@ -729,18 +702,6 @@ namespace System.Net
             }
         }
 
-        private string _Port
-        {
-            get
-            {
-                return m_port_implicit ? string.Empty :
-                      (SpecialAttributeLiteral
-                       + PortAttributeName
-                       + ((m_port.Length == 0) ? string.Empty : (EqualsLiteral + m_port))
-                       );
-            }
-        }
-
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
@@ -834,18 +795,6 @@ namespace System.Net
             }
         }
 
-        private string _Version
-        {
-            get
-            {
-                return (Version == 0) ? string.Empty :
-                                       (SpecialAttributeLiteral
-                                       + VersionAttributeName
-                                       + EqualsLiteral + (IsQuotedVersion ? "\"" : string.Empty)
-                                       + m_version.ToString(NumberFormatInfo.InvariantInfo) + (IsQuotedVersion ? "\"" : string.Empty));
-            }
-        }
-
         // methods
 
 
@@ -897,23 +846,65 @@ namespace System.Net
         /// </devdoc>
         public override string ToString()
         {
-            string domain = _Domain;
-            string path = _Path;
-            string port = _Port;
-            string version = _Version;
+            var sb = new StringBuilder();
+            ToString(sb);
+            return sb.ToString();
+        }
 
-            string result =
-                    ((version.Length == 0) ? string.Empty : (version + SeparatorLiteral))
-                    + Name + EqualsLiteral + Value
-                    + ((path.Length == 0) ? string.Empty : (SeparatorLiteral + path))
-                    + ((domain.Length == 0) ? string.Empty : (SeparatorLiteral + domain))
-                    + ((port.Length == 0) ? string.Empty : (SeparatorLiteral + port))
-                    ;
-            if (result == "=")
+        internal void ToString(StringBuilder sb)
+        {
+            int beforeLength = sb.Length;
+
+            // Add the Cookie version if necessary.
+            if (Version != 0)
             {
-                return string.Empty;
+                sb.Append(SpecialAttributeLiteral + VersionAttributeName + EqualsLiteral); // const strings
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(m_version.ToString(NumberFormatInfo.InvariantInfo));
+                if (IsQuotedVersion) sb.Append('"');
+                sb.Append(SeparatorLiteral);
             }
-            return result;
+
+            // Add the Cookie Name=Value pair.
+            sb.Append(Name).Append(EqualsLiteral).Append(Value);
+
+            if (!Plain)
+            {
+                // Add the Path if necessary.
+                if (!m_path_implicit && m_path.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PathAttributeName + EqualsLiteral); // const strings
+                    sb.Append(m_path);
+                }
+
+                // Add the Domain if necessary.
+                if (!m_domain_implicit && m_domain.Length > 0)
+                {
+                    sb.Append(SeparatorLiteral + SpecialAttributeLiteral + DomainAttributeName + EqualsLiteral); // const strings
+                    if (IsQuotedDomain) sb.Append('"');
+                    sb.Append(m_domain);
+                    if (IsQuotedDomain) sb.Append('"');
+                }
+            }
+
+            // Add the Port if necessary.
+            if (!m_port_implicit)
+            {
+                sb.Append(SeparatorLiteral + SpecialAttributeLiteral + PortAttributeName); // const strings
+                if (m_port.Length > 0)
+                {
+                    sb.Append(EqualsLiteral);
+                    sb.Append(m_port);
+                }
+            }
+
+            // Check to see whether the only thing we added was "=", and if so,
+            // remove it so that we leave the StringBuilder unchanged in contents.
+            int afterLength = sb.Length;
+            if (afterLength == (1 + beforeLength) && sb[beforeLength] == '=')
+            {
+                sb.Length = beforeLength;
+            }
         }
 
         internal string ToServerString()
