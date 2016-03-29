@@ -207,11 +207,7 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked policy [%s/%s/%s] main = {"),
-            _STRINGIFY(HOST_POLICY_PKG_NAME),
-            _STRINGIFY(HOST_POLICY_PKG_VER),
-            _STRINGIFY(HOST_POLICY_PKG_REL_DIR));
-
+        trace::info(_X("--- Invoked policy main = {"));
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);
