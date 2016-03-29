@@ -28,6 +28,9 @@ typedef enum {
 	HAZARD_FREE_ASYNC_CTX,
 } HazardFreeContext;
 
+gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
+void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func);
+
 void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
                                           HazardFreeLocking locking, HazardFreeContext context);
 void mono_thread_hazardous_try_free_all (void);

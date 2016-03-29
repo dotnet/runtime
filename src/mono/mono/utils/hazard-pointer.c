@@ -330,6 +330,55 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 	}
 }
 
+/**
+ * mono_thread_hazardous_try_free:
+ * @p: the pointer to free
+ * @free_func: the function that can free the pointer
+ *
+ * If @p is not a hazardous pointer it will be immediately freed by calling @free_func.
+ * Otherwise it will be queued for later.
+ *
+ * Use this function if @free_func can ALWAYS be called in the context where this function is being called.
+ *
+ * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
+ * See mono_thread_hazardous_try_free_some for when it's appropriate.
+ *
+ * Return: TRUE if @p was free or FALSE if it was queued.
+ */
+gboolean
+mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func)
+{
+	if (!is_pointer_hazardous (p)) {
+		free_func (p);
+		return TRUE;
+	} else {
+		mono_thread_hazardous_queue_free (p, free_func);
+		return FALSE;
+	}
+}
+
+/**
+ * mono_thread_hazardous_queue_free:
+ * @p: the pointer to free
+ * @free_func: the function that can free the pointer
+ *
+ * Queue @p to be freed later. @p will be freed once the hazard free queue is pumped.
+ *
+ * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
+ * See mono_thread_hazardous_try_free_some for when it's appropriate.
+ *
+ */
+void
+mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
+{
+	DelayedFreeItem item = { p, free_func, HAZARD_FREE_MAY_LOCK };
+
+	++hazardous_pointer_count;
+
+	mono_lock_free_array_queue_push (&delayed_free_queue, &item);
+}
+
+
 void
 mono_thread_hazardous_try_free_all (void)
 {
