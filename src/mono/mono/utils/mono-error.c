@@ -393,7 +393,7 @@ mono_error_set_execution_engine (MonoError *oerror, const char *msg_format, ...)
 }
 
 /**
- * mono_error_set_execution_engine:
+ * mono_error_set_not_supported:
  *
  * System.NotSupportedException
  */
@@ -403,6 +403,20 @@ mono_error_set_not_supported (MonoError *oerror, const char *msg_format, ...)
 	va_list args;
 	va_start (args, msg_format);
 	mono_error_set_generic_errorv (oerror, "System", "NotSupportedException", msg_format, args);
+	va_end (args);
+}
+
+/**
+ * mono_error_set_invalid_operation:
+ *
+ * System.InvalidOperationException
+ */
+void
+mono_error_set_invalid_operation (MonoError *oerror, const char *msg_format, ...)
+{
+	va_list args;
+	va_start (args, msg_format);
+	mono_error_set_generic_errorv (oerror, "System", "InvalidOperationException", msg_format, args);
 	va_end (args);
 }
 

@@ -103,6 +103,9 @@ void
 mono_error_set_not_supported (MonoError *error, const char *msg_format, ...);
 
 void
+mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...);
+
+void
 mono_error_set_exception_instance (MonoError *error, MonoException *exc);
 
 MonoException*
