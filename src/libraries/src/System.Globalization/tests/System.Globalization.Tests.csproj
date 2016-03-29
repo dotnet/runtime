@@ -46,7 +46,6 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoPercentPositivePattern.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Methods.cs" />
     <Compile Include="RegionInfo\RegionInfoTests.Properties.cs" />
-    <Compile Include="TextInfo.cs" />
     <Compile Include="CultureInfo\CultureInfoAll.cs" />
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
@@ -114,7 +113,6 @@
     <Compile Include="NumberFormatInfo\NumberFormatInfoGetInstance.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoReadOnly.cs" />
     <Compile Include="NumberStyles\NumberStylesTests.cs" />
-    <Compile Include="PlatformDetection.cs" />
     <Compile Include="StringInfo\StringInfoCtor.cs" />
     <Compile Include="StringInfo\StringInfoEquals.cs" />
     <Compile Include="StringInfo\StringInfoGetNextTextElement.cs" />
@@ -132,13 +130,18 @@
     <Compile Include="TextInfo\TextInfoToString.cs" />
     <Compile Include="TextInfo\TextInfoToUpper.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.CultureInfo.cs" />
     <Compile Include="Performance\Perf.DateTimeCultureInfo.cs" />
     <Compile Include="Performance\Perf.NumberCultureInfo.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
+      <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -11,6 +11,7 @@ function GetCMakeVersions
 
 function GetCMakeInfo($regKey)
 {
+  # This no longer works for versions 3.5+
   try {
     $version = [System.Version] $regKey.PSChildName.Split(' ')[1]
   }
@@ -31,6 +32,11 @@ function LocateCMake
   $inPathPath = (get-command cmake.exe -ErrorAction SilentlyContinue).Path
   if ($inPathPath -ne $null) {
     return $inPathPath
+  }
+  # Check the default installation directory
+  $inDefaultDir = [System.IO.Path]::Combine(${Env:ProgramFiles(x86)}, "CMake\bin\cmake.exe")
+  if ([System.IO.File]::Exists($inDefaultDir)) {
+    return $inDefaultDir
   }
   # Let us hope that CMake keep using their current version scheme
   $validVersions = @()

@@ -62,7 +62,7 @@
 
   <!-- Import packaging props -->
   <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
-  
+
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" />
 
@@ -76,20 +76,25 @@
   <PropertyGroup>
     <ValidatePackageVersions>true</ValidatePackageVersions>
     <ProhibitFloatingDependencies>true</ProhibitFloatingDependencies>
+    <CoreFxExpectedPrerelease>rc3-23925-00</CoreFxExpectedPrerelease>
   </PropertyGroup>
 
   <ItemGroup>
-    <ValidationPattern Include="^(?i)((System\..%2A)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore.%2A)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..%2A)|(Microsoft\.VisualBasic))(?&lt;!TestData)$">
-      <ExpectedPrerelease>rc3-23925-00</ExpectedPrerelease>
+    <ValidationPattern Include="CoreFxVersions">
+      <IdentityRegex>^(?i)((System\..*)|(NETStandard\.Library)|(Microsoft\.CSharp)|(Microsoft\.NETCore.*)|(Microsoft\.TargetingPack\.Private\.(CoreCLR|NETNative))|(Microsoft\.Win32\..*)|(Microsoft\.VisualBasic))(?&lt;!TestData)$</IdentityRegex>
+      <ExpectedPrerelease>$(CoreFxExpectedPrerelease)</ExpectedPrerelease>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)Microsoft\.TargetingPack\.(NetFramework.%2A|Private\.WinRT)$">
+    <ValidationPattern Include="TargetingPackVersions">
+      <IdentityRegex>^(?i)Microsoft\.TargetingPack\.(NetFramework.*|Private\.WinRT)$</IdentityRegex>
       <ExpectedVersion>1.0.1</ExpectedVersion>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)xunit$">
+    <ValidationPattern Include="xUnitStableVersions">
+      <IdentityRegex>^(?i)xunit$</IdentityRegex>
       <ExpectedVersion>2.1.0</ExpectedVersion>
     </ValidationPattern>
-    <ValidationPattern Include="^(?i)xunit\.netcore\.extensions$">
-      <ExpectedVersion>1.0.0-prerelease-00123</ExpectedVersion>
+    <ValidationPattern Include="xUnitExtensionsVersions">
+      <IdentityRegex>^(?i)xunit\.netcore\.extensions$</IdentityRegex>
+      <ExpectedVersion>1.0.0-prerelease-00187</ExpectedVersion>
     </ValidationPattern>
   </ItemGroup>
 
@@ -381,14 +386,14 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
-  
+
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsRedistAssembly)'=='true'">
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50'">win8</NuGetRuntimeIdentifier>
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</NuGetRuntimeIdentifier>
-    
+
     <!-- workaround Dev14 issue with nuget targets -->
     <RuntimeIndentifier>$(NuGetRuntimeIdentifier)</RuntimeIndentifier>
   </PropertyGroup>

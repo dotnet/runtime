@@ -19,6 +19,7 @@ case $OSName in
     Darwin)
         OS=OSX
         __DOTNET_PKG=dotnet-osx-x64
+        ulimit -n 2048
         ;;
 
     Linux)

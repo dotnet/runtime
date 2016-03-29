@@ -108,8 +108,8 @@ namespace System.Net
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                name = CheckBadChars(name, isHeaderValue: false);
-                value = CheckBadChars(value, isHeaderValue: true);
+                name = CheckBadHeaderNameChars(name);
+                value = CheckBadHeaderValueChars(value);
 
                 InvalidateCachedArray();
                 EnsureInitialized();
@@ -134,85 +134,90 @@ namespace System.Net
 
         private static readonly char[] s_httpTrimCharacters = new char[] { (char)0x09, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20 };
 
-        // CheckBadChars - throws on invalid chars to be not found in header name/value
-        private static string CheckBadChars(string name, bool isHeaderValue)
+        /// <summary>
+        /// Throws on invalid header value chars.
+        /// </summary>
+        private static string CheckBadHeaderValueChars(string value)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(value))
             {
-                Debug.Assert(isHeaderValue, "empty name is invalid.");
-
-                // empty value is OK
+                // empty value is OK.
                 return string.Empty;
             }
 
-            if (isHeaderValue)
-            {
-                // VALUE check
-                // Trim spaces from both ends
-                name = name.Trim(s_httpTrimCharacters);
+            // Trim spaces from both ends.
+            value = value.Trim(s_httpTrimCharacters);
 
-                // First, check for correctly formed multi-line value
-                // Second, check for absence of CTL characters
-                int crlf = 0;
-                for (int i = 0; i < name.Length; ++i)
+            // First, check for correctly formed multi-line value.
+            // Second, check for absence of CTL characters.
+            int crlf = 0;
+            for (int i = 0; i < value.Length; ++i)
+            {
+                char c = (char)(0x000000ff & (uint)value[i]);
+                switch (crlf)
                 {
-                    char c = (char)(0x000000ff & (uint)name[i]);
-                    switch (crlf)
-                    {
-                        case 0:
-                            if (c == '\r')
-                            {
-                                crlf = 1;
-                            }
-                            else if (c == '\n')
-                            {
-                                // Technically this is bad HTTP, but we want to be permissive in what we accept.
-                                // It is important to note that it would be a breaking change to reject this.
-                                crlf = 2;
-                            }
-                            else if (c == 127 || (c < ' ' && c != '\t'))
-                            {
-                                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidControlChars, "value"));
-                            }
+                    case 0:
+                        if (c == '\r')
+                        {
+                            crlf = 1;
+                        }
+                        else if (c == '\n')
+                        {
+                            // Technically this is bad HTTP, but we want to be permissive in what we accept.
+                            // It is important to note that it would be a breaking change to reject this.
+                            crlf = 2;
+                        }
+                        else if (c == 127 || (c < ' ' && c != '\t'))
+                        {
+                            throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidControlChars, nameof(value)), nameof(value));
+                        }
+                        break;
+
+                    case 1:
+                        if (c == '\n')
+                        {
+                            crlf = 2;
                             break;
+                        }
+                        throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, nameof(value)), nameof(value));
 
-                        case 1:
-                            if (c == '\n')
-                            {
-                                crlf = 2;
-                                break;
-                            }
-                            throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, "value"));
-
-                        case 2:
-                            if (c == ' ' || c == '\t')
-                            {
-                                crlf = 0;
-                                break;
-                            }
-                            throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, "value"));
-                    }
-                }
-                if (crlf != 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, "value"));
+                    case 2:
+                        if (c == ' ' || c == '\t')
+                        {
+                            crlf = 0;
+                            break;
+                        }
+                        throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, nameof(value)), nameof(value));
                 }
             }
-            else
+
+            if (crlf != 0)
             {
-                // NAME check
-                // First, check for absence of separators and spaces
-                if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(name))
-                {
-                    throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, "name"));
-                }
-
-                // Second, check for non CTL ASCII-7 characters (32-126)
-                if (ContainsNonAsciiChars(name))
-                {
-                    throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidNonAsciiChars, "name"));
-                }
+                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidCRLFChars, nameof(value)), nameof(value));
             }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Throws on invalid header name chars.
+        /// </summary>
+        private static string CheckBadHeaderNameChars(string name)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(name));
+
+            // First, check for absence of separators and spaces.
+            if (HttpValidationHelpers.IsInvalidMethodOrHeaderString(name))
+            {
+                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, nameof(name)), nameof(name));
+            }
+
+            // Second, check for non CTL ASCII-7 characters (32-126).
+            if (ContainsNonAsciiChars(name))
+            {
+                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidNonAsciiChars, nameof(name)), nameof(name));
+            }
+
             return name;
         }
 
@@ -248,7 +253,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(name));
             }
 
-            name = CheckBadChars(name, isHeaderValue: false);
+            name = CheckBadHeaderNameChars(name);
 
             if (IsInitialized)
             {
