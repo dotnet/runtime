@@ -1454,6 +1454,9 @@ mono_load_remote_field_new_icall (MonoObject *this_obj, MonoClass *klass, MonoCl
 MonoObject *
 mono_load_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoError *error);
 
+gboolean
+mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, void* val, MonoError *error);
+
 #endif
 
 gpointer
