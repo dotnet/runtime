@@ -527,41 +527,32 @@ namespace System.Text.Tests
         [MemberData(nameof(CodePageInfo))]
         public static void TestCodepageEncoding(int codePage, string webName, string queryString)
         {
+            Encoding encoding;
             // There are two names that have duplicate associated CodePages. For those two names,
             // we have to test with the expectation that querying the name will always return the
             // same codepage.
             if (codePage != 20932 && codePage != 50222)
             {
-                Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(queryString);
-                Assert.NotNull(encoding);
-                Assert.Equal(codePage, encoding.CodePage);
+                encoding = CodePagesEncodingProvider.Instance.GetEncoding(queryString);
                 Assert.Equal(encoding, CodePagesEncodingProvider.Instance.GetEncoding(codePage));
-                Assert.Equal(webName, encoding.WebName);
                 Assert.Equal(encoding, CodePagesEncodingProvider.Instance.GetEncoding(webName));
-
-                // Small round-trip for ASCII alphanumeric range (some code pages use different punctuation!)
-                // Start with space.
-                string asciiPrintable = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-                char[] traveled = encoding.GetChars(encoding.GetBytes(asciiPrintable));
-                Assert.Equal(asciiPrintable.ToCharArray(), traveled);
             }
             else
             {
-                Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(codePage);
-                Assert.NotNull(encoding);
-                Assert.Equal(codePage, encoding.CodePage);
-                Assert.Equal(webName, encoding.WebName);
+                encoding = CodePagesEncodingProvider.Instance.GetEncoding(codePage);
                 Assert.NotEqual(encoding, CodePagesEncodingProvider.Instance.GetEncoding(queryString));
                 Assert.NotEqual(encoding, CodePagesEncodingProvider.Instance.GetEncoding(webName));
-
-                // Small round-trip for ASCII alphanumeric range (some code pages use different punctuation!)
-                // Start with space.
-                string asciiPrintable = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-                char[] traveled = encoding.GetChars(encoding.GetBytes(asciiPrintable));
-                Assert.Equal(asciiPrintable.ToCharArray(), traveled);
             }
+
+            Assert.NotNull(encoding);
+            Assert.Equal(codePage, encoding.CodePage);
+            Assert.Equal(webName, encoding.WebName);
+
+            // Small round-trip for ASCII alphanumeric range (some code pages use different punctuation!)
+            // Start with space.
+            string asciiPrintable = " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            char[] traveled = encoding.GetChars(encoding.GetBytes(asciiPrintable));
+            Assert.Equal(asciiPrintable.ToCharArray(), traveled);
         }
 
         [Theory]
