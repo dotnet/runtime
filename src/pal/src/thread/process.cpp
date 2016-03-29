@@ -1903,9 +1903,15 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 
     unsigned long long starttime;
 
-    // scanf format specifiers for the fields in the stat file are provided by 'man proc'.
-    int sscanfRet = sscanf(line, 
-        "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+    // According to `man proc`, the second field in the stat file is the filename of the executable,
+    // in parentheses. Tokenizing the stat file using spaces as separators breaks when that name
+    // has spaces in it, so we start using sscanf after skipping everything up to and including the
+    // last closing paren and the space after it.
+    char *scanStartPosition = strrchr(line, ')') + 2;
+
+    // All the format specifiers for the fields in the stat file are provided by 'man proc'.
+    int sscanfRet = sscanf(scanStartPosition, 
+        "%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
          &starttime);
 
     if (sscanfRet != 1)
