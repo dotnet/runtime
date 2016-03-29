@@ -34,6 +34,7 @@ void sgen_memgov_minor_collection_start (void);
 void sgen_memgov_minor_collection_end (void);
 
 void sgen_memgov_major_pre_sweep (void);
+void sgen_memgov_major_post_sweep (void);
 void sgen_memgov_major_collection_start (void);
 void sgen_memgov_major_collection_end (gboolean forced);
 
