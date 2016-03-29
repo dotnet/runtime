@@ -19,7 +19,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetStringComparerTests.cs" />
-    <Compile Include="PlatformDetection.cs" />
     <Compile Include="IdnMapping\IdnMappingIdnaConformanceTests.cs" />
     <Compile Include="IdnMapping\Data\Factory.cs" />
     <Compile Include="IdnMapping\Data\ConformanceIdnaTestResult.cs" />
@@ -31,6 +30,9 @@
     <Compile Include="IdnMapping\IdnMappingUseStd3AsciiRulesTests.cs" />
     <Compile Include="Normalization\StringNormalizationTests.cs" />
     <Compile Include="Normalization\NormalizationAll.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="IdnMapping\Data\Unicode_6_0\IdnaTest_6.txt" />

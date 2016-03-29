@@ -112,7 +112,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Initializes the filter passthrough.</summary>
             /// <param name="source">The source connected to this filter.</param>
             /// <param name="target">The target to which filtered messages should be passed.</param>
-            /// <param name="predicate">The predicate to run for each messsage.</param>
+            /// <param name="predicate">The predicate to run for each message.</param>
             internal FilteredLinkPropagator(ISourceBlock<T> source, ITargetBlock<T> target, Predicate<T> predicate)
             {
                 Contract.Requires(source != null, "Filtered link requires a source to filter on.");

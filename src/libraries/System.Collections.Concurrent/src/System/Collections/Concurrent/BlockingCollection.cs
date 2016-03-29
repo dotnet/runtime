@@ -1784,7 +1784,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
         {
             if (_isDisposed)
             {
-                throw new ObjectDisposedException("BlockingCollection", SR.BlockingCollection_Disposed);
+                throw new ObjectDisposedException(nameof(BlockingCollection<T>), SR.BlockingCollection_Disposed);
             }
         }
     }
