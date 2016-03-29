@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -33,7 +32,77 @@ namespace System.ComponentModel
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
+
+        /// <devdoc>
+        ///    <para>Gets a collection of properties for the type of array specified by the value parameter.</para>
+        /// </devdoc>
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        {
+            PropertyDescriptor[] props = null;
+
+            if (value.GetType().IsArray)
+            {
+                Array valueArray = (Array)value;
+                int length = valueArray.GetLength(0);
+                props = new PropertyDescriptor[length];
+
+                Type arrayType = value.GetType();
+                Type elementType = arrayType.GetElementType();
+
+                for (int i = 0; i < length; i++)
+                {
+                    props[i] = new ArrayPropertyDescriptor(arrayType, elementType, i);
+                }
+            }
+
+            return new PropertyDescriptorCollection(props);
+        }
+
+        /// <devdoc>
+        ///    <para>Gets a value indicating whether this object supports properties.</para>
+        /// </devdoc>
+        public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+        {
+            return true;
+        }
+
+        private class ArrayPropertyDescriptor : SimplePropertyDescriptor
+        {
+            private readonly int _index;
+
+            public ArrayPropertyDescriptor(Type arrayType, Type elementType, int index)
+                : base(arrayType, "[" + index + "]", elementType, null)
+            {
+                _index = index;
+            }
+
+            public override object GetValue(object instance)
+            {
+                if (instance is Array)
+                {
+                    Array array = (Array)instance;
+                    if (array.GetLength(0) > _index)
+                    {
+                        return array.GetValue(_index);
+                    }
+                }
+
+                return null;
+            }
+
+            public override void SetValue(object instance, object value)
+            {
+                if (instance is Array)
+                {
+                    Array array = (Array)instance;
+                    if (array.GetLength(0) > _index)
+                    {
+                        array.SetValue(value, _index);
+                    }
+
+                    OnValueChanged(instance, EventArgs.Empty);
+                }
+            }
+        }
     }
 }
-
-
