@@ -6676,6 +6676,15 @@ wrap_path (gchar * path)
 	return clean;
 }
 
+// Duplicate a char range and add it to a ptrarray, but only if it is nonempty
+static void
+ptr_array_add_range_if_nonempty(GPtrArray *args, gchar const *start, gchar const *end)
+{
+	ptrdiff_t len = end-start;
+	if (len > 0)
+		g_ptr_array_add (args, g_strndup (start, len));
+}
+
 static GPtrArray *
 mono_aot_split_options (const char *aot_options)
 {
@@ -6731,6 +6740,7 @@ mono_aot_split_options (const char *aot_options)
 
 	next:
 		aot_options++;
+	restart:
 		// If the next character is end of string, then process the last option.
 		if (*(aot_options) == '\0') {
 			end_of_string = TRUE;
@@ -6739,11 +6749,11 @@ mono_aot_split_options (const char *aot_options)
 		continue;
 
 	new_opt:
-		g_ptr_array_add (args, g_strndup (opt_start, aot_options - opt_start));
+		ptr_array_add_range_if_nonempty (args, opt_start, aot_options);
 		opt_start = ++aot_options;
 		if (end_of_string)
 			break;
-		goto next;
+		goto restart; // Check for null and continue loop
 	}
 
 	return args;
@@ -9550,7 +9560,6 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)
 #define AS_OPTIONS "-a64 -mppc64"
-#define LD_OPTIONS "-m elf64ppc"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
 #elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
@@ -9571,22 +9580,30 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_NAME "as"
 #endif
 
-#ifndef LD_OPTIONS
-#define LD_OPTIONS ""
+#if defined(sparc)
+#define LD_NAME "ld"
+#define LD_OPTIONS "-shared -G"
+#elif defined(__ppc__) && defined(TARGET_MACH)
+#define LD_NAME "gcc"
+#define LD_OPTIONS "-dynamiclib"
+#elif defined(TARGET_AMD64) && defined(TARGET_MACH)
+#define LD_NAME "clang"
+#define LD_OPTIONS "--shared"
+#elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
+#define LD_NAME "gcc"
+#define LD_OPTIONS "-shared"
+#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
+#define LD_NAME "clang"
+#define LD_OPTIONS "-m32 -dynamiclib"
+#elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)
+#define LD_NAME "gcc"
+#define LD_OPTIONS "--shared"
+#elif defined(TARGET_POWERPC64)
+#define LD_OPTIONS "-m elf64ppc"
 #endif
 
-#if defined(sparc)
-#define LD_NAME "ld -shared -G"
-#elif defined(__ppc__) && defined(TARGET_MACH)
-#define LD_NAME "gcc -dynamiclib"
-#elif defined(TARGET_AMD64) && defined(TARGET_MACH)
-#define LD_NAME "clang --shared"
-#elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
-#define LD_NAME "gcc -shared --dll"
-#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
-#define LD_NAME "clang -m32 -dynamiclib"
-#elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)
-#define LD_NAME "gcc --shared"
+#ifndef LD_OPTIONS
+#define LD_OPTIONS ""
 #endif
 
 	if (acfg->aot_opts.asm_only) {
@@ -9662,10 +9679,11 @@ compile_asm (MonoAotCompile *acfg)
 		ld_flags = g_strdup_printf ("%s %s", ld_flags, "-lstdc++");
 
 #ifdef LD_NAME
-	command = g_strdup_printf ("%s -o %s %s %s %s", LD_NAME,
+	command = g_strdup_printf ("%s%s %s -o %s %s %s %s", tool_prefix, LD_NAME, LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);
 #else
+	// Default (linux)
 	command = g_strdup_printf ("\"%sld\" %s -shared -o %s %s %s %s", tool_prefix, LD_OPTIONS,
 		wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
 		wrap_path (g_strdup_printf ("%s.o", acfg->tmpfname)), ld_flags);

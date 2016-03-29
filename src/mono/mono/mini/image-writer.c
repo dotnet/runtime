@@ -1762,8 +1762,14 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 		stype = "object";
 
 	asm_writer_emit_unset_mode (acfg);
+
 #if defined(TARGET_ASM_APPLE)
 
+#elif defined(TARGET_WIN32)
+	if (func)
+		fprintf (acfg->fp, "\t.def %s; .scl 2; .type 32; .endef\n", name);
+	else
+		fprintf (acfg->fp, "\t.data\n");
 #elif defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #else
@@ -1786,7 +1792,7 @@ asm_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 {
 	asm_writer_emit_unset_mode (acfg);
 
-#ifndef TARGET_ASM_APPLE
+#if !defined(TARGET_ASM_APPLE) && !defined(TARGET_WIN32)
 	fprintf (acfg->fp, "\t.local %s\n", name);
 #endif
 
@@ -1798,7 +1804,8 @@ asm_writer_emit_symbol_size (MonoImageWriter *acfg, const char *name, const char
 {
 	asm_writer_emit_unset_mode (acfg);
 
-#ifndef TARGET_ASM_APPLE
+
+#if !defined(TARGET_ASM_APPLE) && !defined(TARGET_WIN32)
 	fprintf (acfg->fp, "\t.size %s,%s-%s\n", name, end_label, name);
 #endif
 }

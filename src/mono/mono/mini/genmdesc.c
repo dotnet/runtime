@@ -54,6 +54,14 @@ static GHashTable *template_table;
 
 #define eat_whitespace(s) while (*(s) && isspace (*(s))) s++;
 
+// Per spec isalnum() expects input in the range 0-255
+// and can misbehave if you pass in a signed char.
+static int
+isalnum_char(char c)
+{
+	return isalnum ((unsigned char)c);
+}
+
 static int
 load_file (const char *name) {
 	FILE *f;
@@ -163,7 +171,7 @@ load_file (const char *name) {
 				OpDesc *tdesc;
 				p += 9;
 				tname = p;
-				while (*p && isalnum (*p)) ++p;
+				while (*p && isalnum_char (*p)) ++p;
 				*p++ = 0;
 				tdesc = (OpDesc *)g_hash_table_lookup (template_table, tname);
 				if (!tdesc)
@@ -181,7 +189,7 @@ load_file (const char *name) {
 					g_error ("Duplicated name tag in template %s at '%s' at line %d in %s\n", desc->name, p, line, name);
 				p += 5;
 				tname = p;
-				while (*p && isalnum (*p)) ++p;
+				while (*p && isalnum_char (*p)) ++p;
 				*p++ = 0;
 				if (g_hash_table_lookup (template_table, tname))
 					g_error ("Duplicated template %s at line %d in %s\n", tname, line, name);
@@ -220,7 +228,7 @@ init_table (void) {
 
 static void
 output_char (FILE *f, char c) {
-	if (isalnum (c))
+	if (isalnum_char (c))
 		fprintf (f, "%c", c);
 	else
 		fprintf (f, "\\x%x\" \"", (guint8)c);
