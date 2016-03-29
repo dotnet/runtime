@@ -79,8 +79,8 @@ namespace System.Globalization.Tests
 
                 Task.Run(() =>
                 {
-                    Assert.True(CultureInfo.CurrentCulture.Equals(jaCulture));
-                    Assert.True(CultureInfo.CurrentUICulture.Equals(jaCulture));
+                    Assert.Equal(CultureInfo.CurrentCulture, jaCulture);
+                    Assert.Equal(CultureInfo.CurrentUICulture, jaCulture);
                 }).Wait();
             }
             finally

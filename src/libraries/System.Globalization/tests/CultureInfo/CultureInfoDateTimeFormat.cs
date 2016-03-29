@@ -40,8 +40,8 @@ namespace System.Globalization.Tests
             {
                 CultureInfo.CurrentCulture = culture;
                 DateTime dt = new DateTime(2014, 3, 14, 3, 14, 0);
-                Assert.True(dt.ToString().Equals(dt.ToString(culture)));
-                Assert.True(dt.ToString().Equals(dt.ToString(culture.DateTimeFormat)));
+                Assert.Equal(dt.ToString(), dt.ToString(culture));
+                Assert.Equal(dt.ToString(), dt.ToString(culture.DateTimeFormat));
             }
             finally
             {
