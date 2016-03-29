@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,9 +12,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     public class DependencyContextTests
     {
         [Theory]
-        [InlineData("System.Banana.dll", "System.Banana")]
-        [InlineData("System.Banana.ni.dll", "System.Banana")]
-        [InlineData("FlibbidyFlob", "FlibbidyFlob")]
+        [InlineData("System.Collections.dll", "System.Collections")]
+        [InlineData("System.Collections.ni.dll", "System.Collections")]
+        [InlineData("mscorlib", "mscorlib")]
         public void GetRuntimeAssemblyNamesExtractsCorrectAssemblyName(string path, string expected)
         {
             var context = new DependencyContext(new TargetInfo(".NETStandard,Version=v1.3", string.Empty, string.Empty, true),
@@ -32,7 +33,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 runtimeGraph: new RuntimeFallbacks[] { });
 
             var assets = context.GetDefaultAssemblyNames();
-            assets.Should().BeEquivalentTo(expected);
+            assets.Should().OnlyContain(a => a.Name == expected);
         }
 
         [Fact]
@@ -41,7 +42,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = BuildTestContext();
 
             var assets = context.GetRuntimeAssemblyNames("win7-x64");
-            assets.Should().BeEquivalentTo("System.Banana");
+            assets.Should().OnlyContain(a => a.Name == "System.Collections");
         }
 
         [Fact]
@@ -50,7 +51,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = BuildTestContext();
 
             var assets = context.GetRuntimeAssemblyNames("win81-x64");
-            assets.Should().BeEquivalentTo("System.Banana");
+            assets.Should().OnlyContain(a => a.Name == "System.Collections");
         }
 
         [Fact]
@@ -103,9 +104,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 runtimeLibraries: new[] {
                     new RuntimeLibrary("package", "System.Banana", "1.0.0", "hash",
                         new [] {
-                            new RuntimeAssetGroup(string.Empty, Path.Combine("lib", "netstandard1.3", "System.Banana.dll")),
+                            new RuntimeAssetGroup(string.Empty, Path.Combine("lib", "netstandard1.3", "System.Collections.dll")),
                             new RuntimeAssetGroup("win10"),
-                            new RuntimeAssetGroup("win8", Path.Combine("runtimes", "win8", "lib", "netstandard1.3", "System.Banana.dll"))
+                            new RuntimeAssetGroup("win8", Path.Combine("runtimes", "win8", "lib", "netstandard1.3", "System.Collections.dll"))
                         },
                         new [] {
                             new RuntimeAssetGroup("rhel"),
