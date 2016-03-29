@@ -9,7 +9,7 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <devdoc>
-    /// TypeConverter to convert Nullable types to adn from strings or the underlying simple type.
+    /// TypeConverter to convert Nullable types to and from strings or the underlying simple type.
     /// </devdoc>
     public class NullableConverter : TypeConverter
     {
@@ -123,6 +123,148 @@ namespace System.ComponentModel
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
+        }
+
+        /// <include file='doc\NullableConverter.uex' path='docs/doc[@for="NullableConverter.CreateInstance"]/*' />
+        /// <devdoc>
+        /// </devdoc>
+        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                object instance = _simpleTypeConverter.CreateInstance(context, propertyValues);
+                return instance;
+            }
+
+            return base.CreateInstance(context, propertyValues);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether changing a value on this object requires a call to
+        ///        <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
+        ///        using the specified context.
+        ///    </para>
+        /// </devdoc>
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                return _simpleTypeConverter.GetCreateInstanceSupported(context);
+            }
+
+            return base.GetCreateInstanceSupported(context);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a collection of properties for the type of array specified by the value
+        ///        parameter using the specified context and attributes.
+        ///    </para>
+        /// </devdoc>
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                object unwrappedValue = value;
+                return _simpleTypeConverter.GetProperties(context, unwrappedValue, attributes);
+            }
+
+            return base.GetProperties(context, value, attributes);
+        }
+
+        /// <devdoc>
+        ///    <para>Gets a value indicating whether this object supports properties using the specified context.</para>
+        /// </devdoc>
+        public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                return _simpleTypeConverter.GetPropertiesSupported(context);
+            }
+
+            return base.GetPropertiesSupported(context);
+        }
+
+        /// <devdoc>
+        ///    <para>Gets a collection of standard values for the data type this type converter is designed for.</para>
+        /// </devdoc>
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                StandardValuesCollection values = _simpleTypeConverter.GetStandardValues(context);
+                if (GetStandardValuesSupported(context) && values != null)
+                {
+                    // Create a set of standard values around nullable instances.  
+                    object[] wrappedValues = new object[values.Count + 1];
+                    int idx = 0;
+
+                    wrappedValues[idx++] = null;
+                    foreach (object value in values)
+                    {
+                        wrappedValues[idx++] = value;
+                    }
+
+                    return new StandardValuesCollection(wrappedValues);
+                }
+            }
+
+            return base.GetStandardValues(context);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether the collection of standard values returned from
+        ///        <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
+        ///        list of possible values, using the specified context.
+        ///    </para>
+        /// </devdoc>
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                return _simpleTypeConverter.GetStandardValuesExclusive(context);
+            }
+
+            return base.GetStandardValuesExclusive(context);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether this object supports a standard set of values that can
+        ///        be picked from a list using the specified context.
+        ///    </para>
+        /// </devdoc>
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                return _simpleTypeConverter.GetStandardValuesSupported(context);
+            }
+
+            return base.GetStandardValuesSupported(context);
+        }
+
+        /// <devdoc>
+        ///    <para>Gets a value indicating whether the given value object is valid for this type.</para>
+        /// </devdoc>
+        public override bool IsValid(ITypeDescriptorContext context, object value)
+        {
+            if (_simpleTypeConverter != null)
+            {
+                object unwrappedValue = value;
+                if (unwrappedValue == null)
+                {
+                    return true; // null is valid for nullable.
+                }
+                else
+                {
+                    return _simpleTypeConverter.IsValid(context, unwrappedValue);
+                }
+            }
+
+            return base.IsValid(context, value);
         }
 
         /// <devdoc>

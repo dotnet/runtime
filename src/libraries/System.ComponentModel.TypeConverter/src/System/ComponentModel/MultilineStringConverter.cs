@@ -32,5 +32,22 @@ namespace System.ComponentModel
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
+
+        /// <devdoc>
+        /// Gets a collection of properties for the type of array specified by the value
+        /// parameter using the specified context and attributes.
+        /// </devdoc>
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        {
+            return null;
+        }
+
+        /// <devdoc>
+        /// Gets a value indicating whether this object supports properties.
+        /// </devdoc>
+        public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+        {
+            return false;
+        }
     }
 }

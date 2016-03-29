@@ -12,7 +12,8 @@ namespace System.ComponentModel
     /// </devdoc>
     public abstract class TypeListConverter : TypeConverter
     {
-        private Type[] _types;
+        private readonly Type[] _types;
+        private StandardValuesCollection _values;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
@@ -36,6 +37,23 @@ namespace System.ComponentModel
                 return true;
             }
             return base.CanConvertFrom(context, sourceType);
+        }
+
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether this converter can convert an object
+        ///        to the given destination type using the context.
+        ///    </para>
+        /// </devdoc>
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+#if FEATURE_INSTANCEDESCRIPTOR
+            if (destinationType == typeof(InstanceDescriptor))
+            {
+                return true;
+            }
+#endif
+            return base.CanConvertTo(context, destinationType);
         }
 
         /// <internalonly/>
@@ -83,6 +101,51 @@ namespace System.ComponentModel
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
+        /// <internalonly/>
+        /// <devdoc>
+        ///    <para>Gets a collection of standard values for the data type this validator is designed for.</para>
+        /// </devdoc>
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        {
+            if (_values == null)
+            {
+                object[] objTypes;
+
+                if (_types != null)
+                {
+                    objTypes = new object[_types.Length];
+                    Array.Copy(_types, objTypes, _types.Length);
+                }
+                else
+                {
+                    objTypes = null;
+                }
+
+                _values = new StandardValuesCollection(objTypes);
+            }
+            return _values;
+        }
+
+        /// <internalonly/>
+        /// <devdoc>
+        ///    <para>Gets a value indicating whether the list of standard values returned from
+        ///    <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list. </para>
+        /// </devdoc>
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+        {
+            return true;
+        }
+
+        /// <internalonly/>
+        /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether this object supports a standard set of values that can be
+        ///        picked from a list using the specified context.
+        ///    </para>
+        /// </devdoc>
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+        {
+            return true;
+        }
     }
 }
-
