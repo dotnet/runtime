@@ -8,7 +8,16 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private static readonly BidirectionalDictionary<Interop.SecurityStatus, SecurityStatusPalErrorCode> s_statusDictionary = new BidirectionalDictionary<Interop.SecurityStatus, SecurityStatusPalErrorCode>(39)
+        private const int StatusDictionarySize = 39;
+
+#if DEBUG
+        static SecurityStatusAdapterPal()
+        {
+            Debug.Assert(s_statusDictionary.Count == StatusDictionarySize, $"Expected size {StatusDictionarySize}, got size {s_statusDictionary.Count}");
+        }
+#endif
+
+        private static readonly BidirectionalDictionary<Interop.SecurityStatus, SecurityStatusPalErrorCode> s_statusDictionary = new BidirectionalDictionary<Interop.SecurityStatus, SecurityStatusPalErrorCode>(StatusDictionarySize)
         {
             { Interop.SecurityStatus.AlgorithmMismatch, SecurityStatusPalErrorCode.AlgorithmMismatch },
             { Interop.SecurityStatus.BadBinding, SecurityStatusPalErrorCode.BadBinding },

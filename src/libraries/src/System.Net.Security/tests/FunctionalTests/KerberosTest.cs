@@ -102,6 +102,22 @@ namespace System.Net.Security.Tests
         private readonly KDCSetup _fixture;
         private readonly ITestOutputHelper _output;
 
+        private void AssertClientPropertiesForTarget(NegotiateStream client, string target)
+        {
+            Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
+            Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
+            Assert.True(client.IsEncrypted, "client.IsEncrypted");
+            Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+            Assert.False(client.IsServer, "client.IsServer");
+            Assert.True(client.IsSigned, "client.IsSigned");
+            Assert.False(client.LeaveInnerStreamOpen, "client.LeaveInnerStreamOpen");
+
+            IIdentity serverIdentity = client.RemoteIdentity;
+            Assert.Equal("Kerberos", serverIdentity.AuthenticationType);
+            Assert.True(serverIdentity.IsAuthenticated, "serverIdentity.IsAuthenticated");
+            IdentityValidator.AssertHasName(serverIdentity, target);
+        }
+
         public KerberosTest(KDCSetup fixture, ITestOutputHelper output)
         {
             _fixture = fixture;
@@ -128,29 +144,17 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated, "client is not authenticated");
 
-                Task[] auth = new Task[2];
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(credential, target);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(credential, target),
+                    server.AuthenticateAsServerAsync()
+                };
 
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
-
-                // Expected Client property values:
-                Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
-                Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.True(client.IsEncrypted, "client.IsEncrypted");
-                Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                Assert.False(client.IsServer, "client.IsServer");
-                Assert.True(client.IsSigned, "client.IsSigned");
-                Assert.False(client.LeaveInnerStreamOpen, "client.LeaveInnerStreamOpen");
-
-                IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("Kerberos", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated, "serverIdentity.IsAuthenticated");
-                IdentityValidator.AssertHasName(serverIdentity, target);
+                AssertClientPropertiesForTarget(client, target);
             }
         }
 
@@ -173,29 +177,18 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated);
 
-                Task[] auth = new Task[2];
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}",TestConfiguration.HttpTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(credential, target);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(credential, target),
+                    server.AuthenticateAsServerAsync()
+                };
 
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
 
-                // Expected Client property values:
-                Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
-                Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.True(client.IsEncrypted, "client.IsEncrypted");
-                Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                Assert.False(client.IsServer, "client.IsServer");
-                Assert.True(client.IsSigned, "client.IsSigned");
-                Assert.False(client.LeaveInnerStreamOpen, "client.LeaveInnerStream");
-
-                IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("Kerberos", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated, "serverIdentity.IsAuthenticated");
-                IdentityValidator.AssertHasName(serverIdentity, target);
+                AssertClientPropertiesForTarget(client, target);
             }
         }
 
@@ -218,27 +211,16 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated);
 
-                Task[] auth = new Task[2];
                 NetworkCredential credential = new NetworkCredential(TestConfiguration.KerberosUser, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(credential, TestConfiguration.HostTarget);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(credential, TestConfiguration.HostTarget),
+                    server.AuthenticateAsServerAsync()
+                };
 
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
 
-                // Expected Client property values:
-                Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
-                Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.True(client.IsEncrypted, "client.IsEncrypted");
-                Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                Assert.False(client.IsServer, "client.IsServer");
-                Assert.True(client.IsSigned, "client.IsSigned");
-                Assert.False(client.LeaveInnerStreamOpen, "client.LeaveInnerStreamOpen");
-
-                IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("Kerberos", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated, "serverIdentity.IsAuthenticated");
-                IdentityValidator.AssertHasName(serverIdentity, TestConfiguration.HostTarget);
+                AssertClientPropertiesForTarget(client, TestConfiguration.HostTarget);
             }
         }
 
@@ -261,30 +243,19 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated, "client is not authenticated before AuthenticateAsClient call");
 
-                Task[] auth = new Task[2];
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 // Seed the default Kerberos cache with the TGT
                 UnixGssFakeNegotiateStream.GetDefaultKerberosCredentials(user, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, target);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, target),
+                    server.AuthenticateAsServerAsync()
+                };
 
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
 
-                // Expected Client property values:
-                Assert.True(client.IsAuthenticated, "client.IsAuthenticated");
-                Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.True(client.IsEncrypted, "client.IsEncrypted");
-                Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                Assert.False(client.IsServer, "client.IsServer");
-                Assert.True(client.IsSigned, "client.IsSigned");
-                Assert.False(client.LeaveInnerStreamOpen, "client.LeaveInnerStreamOpen");
-
-                IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("Kerberos", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated,"serverIdentity.IsAuthenticated");
-                IdentityValidator.AssertHasName(serverIdentity, target);
+                AssertClientPropertiesForTarget(client, target);
             }
         }
 
@@ -309,12 +280,13 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated, "client is not authenticated before AuthenticateAsClient call");
 
-                Task[] auth = new Task[2];
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(credential, target);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(credential, target),
+                    server.AuthenticateAsServerAsync()
+                };
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
 
@@ -352,22 +324,24 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated, "client is not authenticated before AuthenticateAsClient call");
 
-                Task[] auth = new Task[2];
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password);
-                auth[0] = client.AuthenticateAsClientAsync(credential, target);
-                auth[1] = server.AuthenticateAsServerAsync();
+                Task[] auth = new Task[] {
+                    client.AuthenticateAsClientAsync(credential, target),
+                    server.AuthenticateAsServerAsync()
+                };
                 bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
 
                 Task serverTask = server.PollMessageAsync(2);
-                Task[] msgTasks = new Task[3];
-                msgTasks[0] = client.WriteAsync(_firstMessage, 0, _firstMessage.Length).ContinueWith((t) =>
-                    client.WriteAsync(_secondMessage, 0, _secondMessage.Length)).Unwrap();
-                msgTasks[1] = ReadAllAsync(client, firstRecvBuffer, 0, firstRecvBuffer.Length).ContinueWith((t) =>
-                   ReadAllAsync(client, secondRecvBuffer, 0, secondRecvBuffer.Length)).Unwrap();
-                msgTasks[2] = serverTask;
+                Task[] msgTasks = new Task[] {
+                 client.WriteAsync(_firstMessage, 0, _firstMessage.Length).ContinueWith((t) =>
+                    client.WriteAsync(_secondMessage, 0, _secondMessage.Length)).Unwrap(),
+                 ReadAllAsync(client, firstRecvBuffer, 0, firstRecvBuffer.Length).ContinueWith((t) =>
+                   ReadAllAsync(client, secondRecvBuffer, 0, secondRecvBuffer.Length)).Unwrap(),
+                 serverTask
+                };
                 finished = Task.WaitAll(msgTasks, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Messages sent and received in the allotted time");
                 Assert.True(_firstMessage.SequenceEqual(firstRecvBuffer), "The first message received is as expected");
