@@ -66,7 +66,7 @@
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
-    <!--<Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.ReflectedTypeData.cs" />
