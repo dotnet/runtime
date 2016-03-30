@@ -81,6 +81,9 @@ static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixe
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
 #endif
 
+static gpointer
+mono_compile_method_icall (MonoMethod *method);
+
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
 {
@@ -194,6 +197,7 @@ mono_remoting_marshal_init (void)
 		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+		register_icall (mono_compile_method_icall, "mono_compile_method_icall", "ptr ptr", FALSE);
 		/* mono_load_remote_field_new_icall registered  by mini-runtime.c */
 		/* mono_store_remote_field_new_icall registered  by mini-runtime.c */
 
@@ -579,6 +583,15 @@ mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 	mono_mb_emit_icall (mb, mono_marshal_set_domain_by_id);
 }
 
+gpointer
+mono_compile_method_icall (MonoMethod *method)
+{
+	MonoError error;
+	gpointer result = mono_compile_method_checked (method, &error);
+	mono_error_set_pending_exception (&error);
+	return result;
+}
+
 /* mono_marshal_emit_load_domain_method ()
  * Loads into the stack a pointer to the code of the provided method for
  * the current domain.
@@ -590,7 +603,7 @@ mono_marshal_emit_load_domain_method (MonoMethodBuilder *mb, MonoMethod *method)
 	 * that compiles the method).
 	 */
 	mono_mb_emit_ptr (mb, method);
-	mono_mb_emit_icall (mb, mono_compile_method);
+	mono_mb_emit_icall (mb, mono_compile_method_icall);
 }
 #endif
 
@@ -1233,10 +1246,15 @@ mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTar
 G_GNUC_UNUSED static gpointer
 mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 {
+	MonoError error;
+	MonoMethod *marshal_method = NULL;
 	if (rp->target_domain_id != -1)
-		return mono_compile_method (mono_marshal_get_xappdomain_invoke (method));
+		marshal_method = mono_marshal_get_xappdomain_invoke (method);
 	else
-		return mono_compile_method (mono_marshal_get_remoting_invoke (method));
+		marshal_method = mono_marshal_get_remoting_invoke (method);
+	gpointer compiled_ptr = mono_compile_method_checked (marshal_method, &error);
+	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	return compiled_ptr;
 }
 
 MonoMethod *
