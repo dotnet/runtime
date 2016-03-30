@@ -1596,14 +1596,21 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d) {
         return u64;
     }
 
-    // This double cast to account for an ECMA spec hole.
-    // When converting from a double to an unsigned the ECMA
-    // spec states that a conforming implementation should 
-    // "truncate to zero." However that doesn't make much sense
-    // when the double in question is negative and the target
-    // is unsigned. gcc converts a negative double to zero when
-    // cast to an unsigned. To make gcc conform to MSVC behavior
-    // this cast is necessary.
-    u64 = UINT64(INT64(d));     
+#ifdef _TARGET_XARCH_
+
+    // While the Ecma spec does not specifically call this out,
+    // the case of conversion from negative double to unsigned integer is
+    // effectively an overflow and therefore the result is unspecified.
+    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
+    // unsigned value of the conversion to integer. Other compilers convert
+    // negative doubles to zero when the target is unsigned.
+    // To make the behavior consistent across OS's on TARGET_XARCH,
+    // this double cast is needed to conform MSVC behavior.
+
+    u64 = UINT64(INT64(d));
+#else
+    u64 = UINT64(d);
+#endif // _TARGET_XARCH_
+
     return u64;
 }
