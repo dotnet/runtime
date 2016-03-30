@@ -18,8 +18,6 @@
     <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Performance\DcsDeserializationTests.cs" />
-    <Compile Include="Performance\DcsSerializationTests.cs" />
     <Compile Include="Performance\XmlUTF8TextReaderTests.cs" />
     <Compile Include="Performance\PerformanceTestsCommon.cs" />
     <Compile Include="Performance\DcsPerformanceTest.cs" />
