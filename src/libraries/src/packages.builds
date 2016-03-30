@@ -7,10 +7,10 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Project Include="Native\pkg\**\*.builds">
+    <Project Include="Native\pkg\**\*.builds" Condition="'$(SkipNativePackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties);SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
     </Project>
-    <Project Include="*\pkg\*.builds">
+    <Project Include="*\pkg\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>
