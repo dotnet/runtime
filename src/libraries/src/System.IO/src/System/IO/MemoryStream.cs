@@ -48,7 +48,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
             }
 
-            _buffer = new byte[capacity];
+            _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
             _capacity = capacity;
             _expandable = true;
             _writable = true;
