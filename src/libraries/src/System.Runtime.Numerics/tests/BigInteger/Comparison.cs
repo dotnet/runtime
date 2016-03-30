@@ -186,7 +186,6 @@ namespace System.Numerics.Tests
             // (BigInteger UInt32.MaxValue, UInt32.MaxValue
             VerifyComparison((BigInteger)UInt32.MaxValue, UInt32.MaxValue, 0);
 
-
             //BigInteger vs. UInt64
             // One Larger (BigInteger), UInt64.MaxValue
             VerifyComparison((BigInteger)UInt64.MaxValue + 1, UInt64.MaxValue, 1);
@@ -196,6 +195,8 @@ namespace System.Numerics.Tests
 
             // Smaller BigInteger, UInt64.MaxValue
             VerifyComparison((BigInteger)Int16.MinValue - 1, UInt64.MaxValue, -1);
+            VerifyComparison((BigInteger)Int16.MaxValue - 1, UInt64.MaxValue, -1);
+            VerifyComparison((BigInteger)Int32.MaxValue + 1, UInt64.MaxValue, -1);
 
             // One Smaller (BigInteger), UInt64.MaxValue
             VerifyComparison((BigInteger)UInt64.MaxValue - 1, UInt64.MaxValue, -1);
@@ -553,6 +554,11 @@ namespace System.Numerics.Tests
                 Assert.Equal(x.GetHashCode(), ((BigInteger)y).GetHashCode());
                 Assert.Equal(x.ToString(), ((BigInteger)y).ToString());
             }
+            else
+            {
+                Assert.NotEqual(x.GetHashCode(), ((BigInteger)y).GetHashCode());
+                Assert.NotEqual(x.ToString(), ((BigInteger)y).ToString());
+            }
 
             Assert.Equal(x.GetHashCode(), x.GetHashCode());
             Assert.Equal(((BigInteger)y).GetHashCode(), ((BigInteger)y).GetHashCode());
@@ -604,6 +610,11 @@ namespace System.Numerics.Tests
             {
                 Assert.Equal(x.GetHashCode(), y.GetHashCode());
                 Assert.Equal(x.ToString(), y.ToString());
+            }
+            else
+            {
+                Assert.NotEqual(x.GetHashCode(), y.GetHashCode());
+                Assert.NotEqual(x.ToString(), y.ToString());
             }
 
             Assert.Equal(x.GetHashCode(), x.GetHashCode());
