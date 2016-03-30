@@ -8022,20 +8022,6 @@ ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage (guint32 code)
 	return message;
 }
 
-ICALL_EXPORT int
-ves_icall_System_StackFrame_GetILOffsetFromFile (MonoString *path, guint32 method_token, guint32 method_index, int native_offset)
-{
-	guint32 il_offset;
-	char *path_str = mono_string_to_utf8 (path);
-
-	if (!mono_seq_point_data_get_il_offset (path_str, method_token, method_index, native_offset, &il_offset))
-		il_offset = -1;
-
-	g_free (path_str);
-
-	return il_offset;
-}
-
 ICALL_EXPORT gpointer
 ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void)
 {
