@@ -528,7 +528,7 @@ worker_park (void)
 		if (interrupted)
 			goto done;
 
-		if (mono_coop_cond_timedwait (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next ((void **)rand_handle, 5 * 1000, 60 * 1000)) != 0)
+		if (mono_coop_cond_timedwait (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next (&rand_handle, 5 * 1000, 60 * 1000)) != 0)
 			timeout = TRUE;
 
 		mono_thread_info_uninstall_interrupt (&interrupted);
