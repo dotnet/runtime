@@ -9,12 +9,13 @@ usage()
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_packages_log=$working_tree_root/build-packages.log
-arguments="$@"
 
-echo -e "Running build-packages.sh $arguments" > $build_packages_log
+options="/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$build_packages_log"
+allargs="$@"
 
-# Parse arguments
-if [ "$arguments" == "-h" ] || [ "$arguments" == "--help" ]; then
+echo -e "Running build-packages.sh $allargs" > $build_packages_log
+
+if [ "$allargs" == "-h" ] || [ "$allargs" == "--help" ]; then
     usage
 fi
 
@@ -22,8 +23,8 @@ fi
 echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
-echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $arguments /nologo /v:minimal /flp:v=detailed;Append;LogFile=$build_packages_log" >> $build_packages_log
-$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $arguments /nologo /v:minimal "/flp:v=detailed;Append;LogFile=$build_packages_log"
+echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs" >> $build_packages_log
+$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/src/packages.builds $options $allargs
 
 
 if [ $? -ne 0 ]; then
