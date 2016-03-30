@@ -2074,10 +2074,11 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->cursor;
 		new_data = old_data + SAMPLE_EVENT_SIZE_IN_SLOTS (bt_data.count);
+		if (new_data > sbuf->buf_end)
+			return; /* Not enough room in buf to hold this event-- lost event */
 		data = (uintptr_t *)InterlockedCompareExchangePointer ((void * volatile*)&sbuf->cursor, new_data, old_data);
 	} while (data != old_data);
-	if (old_data >= sbuf->buf_end)
-		return; /* lost event */
+
 	old_data [0] = 1 | (sample_type << 16) | (bt_data.count << 8);
 	old_data [1] = thread_id ();
 	old_data [2] = elapsed;
