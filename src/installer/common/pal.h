@@ -99,6 +99,8 @@ namespace pal
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
 
+    inline string_t exe_suffix() { return _X(".exe"); }
+
     pal::string_t to_string(int value);
 
     bool getcwd(pal::string_t* recv);
@@ -138,6 +140,8 @@ namespace pal
     typedef void* dll_t;
     typedef void* proc_t;
 
+    inline string_t exe_suffix() { return _X(""); }
+
     pal::string_t to_string(int value);
 
     bool getcwd(pal::string_t* recv);
@@ -156,6 +160,7 @@ namespace pal
     inline void to_palstring(const char* str, pal::string_t* out) { out->assign(str); }
     inline void to_stdstring(const char_t* str, std::string* out) { out->assign(str); }
 #endif
+
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
