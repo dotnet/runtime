@@ -910,7 +910,7 @@ namespace System.Data.SqlClient
             }
             // does not require GC.KeepAlive(this) because of OnStateChange
 
-            var tdsInnerConnection = (InnerConnection as SqlInternalConnectionTds);
+            var tdsInnerConnection = (SqlInternalConnectionTds)InnerConnection;
             Debug.Assert(tdsInnerConnection.Parser != null, "Where's the parser?");
 
             if (!tdsInnerConnection.ConnectionOptions.Pooling)
