@@ -15,7 +15,6 @@ using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
-using Newtonsoft.Json;
 
 public static partial class DataContractJsonSerializerTests
 {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Xunit.Performance;
 using Xunit;
@@ -16,16 +17,16 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcsSerializationTest(int iterations, TestType testType, int testSize)
+        public void DcsSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, DcsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunSerializationPerformanceTest(numberOfRuns, testType, testSize, DcsSerializerFactory.GetInstance());
         }
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcsDeSerializationTest(int iterations, TestType testType, int testSize)
+        public void DcsDeSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, DcsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunDeserializationPerformanceTest(numberOfRuns, testType, testSize, DcsSerializerFactory.GetInstance());
         }
     }
 
@@ -33,19 +34,15 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
 
     #region DCS serializer wrapper
 
-    internal class DcsSerializerFactory : SerializerFactory
+    internal class DcsSerializerFactory : ISerializerFactory
     {
-        private static DcsSerializerFactory _instance = null;
+        private static readonly DcsSerializerFactory Instance = new DcsSerializerFactory();
         public static DcsSerializerFactory GetInstance()
         {
-            if (_instance == null)
-            {
-                _instance = new DcsSerializerFactory();
-            }
-            return _instance;
+            return Instance;
         }
 
-        public override IPerfTestSerializer GetSerializer()
+        public IPerfTestSerializer GetSerializer()
         {
             return new DcsSerializer();
         }
@@ -57,9 +54,8 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
 
         public void Deserialize(Stream stream)
         {
-            // Assumption: Deserialize() is always called after Init()
-            // Assumption: stream != null
-            stream.Position = 0;
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.ReadObject(stream);
         }
 
@@ -70,10 +66,9 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
 
         public void Serialize(object obj, Stream stream)
         {
-            // Assumption: Serialize() is always called after Init()
-            // Assumption: stream != null and stream position will be reset to 0 after this method
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.WriteObject(stream, obj);
-            stream.Position = 0;
         }
     }
 

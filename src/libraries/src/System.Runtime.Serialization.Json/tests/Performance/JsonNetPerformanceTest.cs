@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Xunit.Performance;
 using Newtonsoft.Json;
@@ -21,16 +22,16 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberDataJsonNet))]
-        public void JsonNetSerializationTest(int iterations, TestType testType, int testSize)
+        public void JsonNetSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, JsonNetSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunSerializationPerformanceTest(numberOfRuns, testType, testSize, JsonNetSerializerFactory.GetInstance());
         }
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberDataJsonNet))]
-        public void JsonNetDeSerializationTest(int iterations, TestType testType, int testSize)
+        public void JsonNetDeSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, JsonNetSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunDeserializationPerformanceTest(numberOfRuns, testType, testSize, JsonNetSerializerFactory.GetInstance());
         }
     }
 
@@ -38,19 +39,15 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
     #region Json.Net serializer wrapper
 
-    internal class JsonNetSerializerFactory : SerializerFactory
+    internal class JsonNetSerializerFactory : ISerializerFactory
     {
-        private static JsonNetSerializerFactory _instance = null;
+        private static readonly JsonNetSerializerFactory Instance = new JsonNetSerializerFactory();
         public static JsonNetSerializerFactory GetInstance()
         {
-            if (_instance == null)
-            {
-                _instance = new JsonNetSerializerFactory();
-            }
-            return _instance;
+            return Instance;
         }
 
-        public override IPerfTestSerializer GetSerializer()
+        public IPerfTestSerializer GetSerializer()
         {
             return new JsonNetSerializer();
         }
@@ -62,9 +59,8 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         public void Deserialize(Stream stream)
         {
-            // Assumption: Deserialize() is always called after Init()
-            // Assumption: stream != null
-            stream.Position = 0;
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             JsonReader reader = new JsonTextReader(new StreamReader(stream));
             _serializer.Deserialize(reader);
         }
@@ -76,12 +72,11 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         public void Serialize(object obj, Stream stream)
         {
-            // Assumption: Serialize() is always called after Init()
-            // Assumption: stream != null and stream position will be reset to 0 after this method
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             var writer = new StreamWriter(stream);
             _serializer.Serialize(writer, obj);
             writer.Flush();
-            stream.Position = 0;
         }
     }
 
