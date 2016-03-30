@@ -22,7 +22,7 @@ namespace System.ComponentModel
         /// <devdoc>
         /// An empty PropertyDescriptorCollection that can used instead of creating a new one with no items.
         /// </devdoc>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")] 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")]
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
         private IDictionary _cachedFoundProperties;
@@ -472,15 +472,6 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
-
-        /// <internalonly/>
         bool ICollection.IsSynchronized
         {
             get
@@ -508,12 +499,6 @@ namespace System.ComponentModel
                 throw new ArgumentException(nameof(value));
             }
             Add(newProp);
-        }
-
-        /// <internalonly/>
-        void IDictionary.Clear()
-        {
-            Clear();
         }
 
         /// <internalonly/>
@@ -665,21 +650,9 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        /// <internalonly/>
         int IList.Add(object value)
         {
             return Add((PropertyDescriptor)value);
-        }
-
-        /// <internalonly/>
-        void IList.Clear()
-        {
-            Clear();
         }
 
         /// <internalonly/>
@@ -722,12 +695,6 @@ namespace System.ComponentModel
         void IList.Remove(object value)
         {
             Remove((PropertyDescriptor)value);
-        }
-
-        /// <internalonly/>
-        void IList.RemoveAt(int index)
-        {
-            RemoveAt(index);
         }
 
         /// <internalonly/>
