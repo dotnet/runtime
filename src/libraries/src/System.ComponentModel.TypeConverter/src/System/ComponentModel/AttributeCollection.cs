@@ -364,15 +364,6 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
-
-        /// <internalonly/>
         bool ICollection.IsSynchronized
         {
             get
@@ -397,12 +388,5 @@ namespace System.ComponentModel
         {
             Array.Copy(Attributes, 0, array, index, Attributes.Length);
         }
-
-        /// <internalonly/>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
     }
 }
-

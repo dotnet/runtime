@@ -612,18 +612,6 @@ namespace System.ComponentModel
 
             /// <internalonly/>
             /// <devdoc>
-            /// Retrieves the count of objects in the collection.
-            /// </devdoc>
-            int ICollection.Count
-            {
-                get
-                {
-                    return Count;
-                }
-            }
-
-            /// <internalonly/>
-            /// <devdoc>
             /// Determines if this collection is synchronized. The ValidatorCollection is not synchronized for
             /// speed.  Also, since it is read-only, there is no need to synchronize it.
             /// </devdoc>
@@ -646,24 +634,6 @@ namespace System.ComponentModel
                 {
                     return null;
                 }
-            }
-
-            /// <internalonly/>
-            /// <devdoc>
-            /// Copies the contents of this collection to an array.
-            /// </devdoc>
-            void ICollection.CopyTo(Array array, int index)
-            {
-                CopyTo(array, index);
-            }
-
-            /// <internalonly/>
-            /// <devdoc>
-            /// Retrieves a new enumerator that can be used to iterate over the values in this collection.
-            /// </devdoc>
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
             }
         }
     }
