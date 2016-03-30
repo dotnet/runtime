@@ -23419,7 +23419,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_dbgrotarg_double\_dbgrotarg_double.
 WorkingDir=JIT\Methodical\explicit\rotate\_dbgrotarg_double
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_3970
 HostStyle=Any
 [_dbgrotarg_float.exe_3404]
 RelativePath=JIT\Methodical\explicit\rotate\_dbgrotarg_float\_dbgrotarg_float.exe
@@ -23587,7 +23587,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_double\_relrotarg_double.
 WorkingDir=JIT\Methodical\explicit\rotate\_relrotarg_double
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_3970
 HostStyle=Any
 [_relrotarg_float.exe_3428]
 RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_float\_relrotarg_float.exe
@@ -23650,7 +23650,7 @@ RelativePath=JIT\Methodical\flowgraph\bug619534\NonVirtualCall\NonVirtualCall.ex
 WorkingDir=JIT\Methodical\flowgraph\bug619534\NonVirtualCall
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_3971
 HostStyle=Any
 [twoEndFinallys.exe_3437]
 RelativePath=JIT\Methodical\flowgraph\bug619534\twoEndFinallys\twoEndFinallys.exe
@@ -24371,7 +24371,7 @@ RelativePath=JIT\Methodical\int64\arrays\_il_rellcs_long\_il_rellcs_long.exe
 WorkingDir=JIT\Methodical\int64\arrays\_il_rellcs_long
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS;ISSUE_3515
+Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3515;ISSUE_3704
 HostStyle=Any
 [_il_rellcs_ulong.exe_3540]
 RelativePath=JIT\Methodical\int64\arrays\_il_rellcs_ulong\_il_rellcs_ulong.exe
@@ -24392,7 +24392,7 @@ RelativePath=JIT\Methodical\int64\arrays\_rellcs_ulong\_rellcs_ulong.exe
 WorkingDir=JIT\Methodical\int64\arrays\_rellcs_ulong
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS;ISSUE_3515;ISSUE_3704
+Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3515;ISSUE_3704;ISSUE_3542
 HostStyle=Any
 [_speed_dbglcs_long.exe_3543]
 RelativePath=JIT\Methodical\int64\arrays\_speed_dbglcs_long\_speed_dbglcs_long.exe
@@ -37307,7 +37307,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b309042\OverwriteArray\Overwr
 WorkingDir=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b309042\OverwriteArray
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_3969
 HostStyle=Any
 [b309555.exe_5427]
 RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b309555\b309555\b309555.exe
@@ -37454,7 +37454,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b431011\b431011\b431011.exe
 WorkingDir=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b431011\b431011
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_3973
 HostStyle=Any
 [b441487.exe_5449]
 RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b441487\b441487\b441487.exe
@@ -39974,7 +39974,7 @@ RelativePath=Loader\NativeLibs\FromNativePaths\FromNativePaths.exe
 WorkingDir=Loader\NativeLibs\FromNativePaths
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_PASS;NATIVE_INTEROP
+Categories=Pri0;RT;EXPECTED_FAIL;NATIVE_INTEROP;ISSUE_3968
 HostStyle=Any
 [main.exe_5812]
 RelativePath=Loader\regressions\classloader\main\main.exe
