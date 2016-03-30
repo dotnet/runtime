@@ -462,19 +462,23 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private IList<ParameterExpression> GetVariables()
+        private IEnumerable<ParameterExpression> GetVariables() =>
+            MergedScopes == null ? GetVariables(Node) : GetVariablesIncludingMerged();
+
+        private IEnumerable<ParameterExpression> GetVariablesIncludingMerged()
         {
-            var vars = GetVariables(Node);
-            if (MergedScopes == null)
+            foreach (ParameterExpression param in GetVariables(Node))
             {
-                return vars;
+                yield return param;
             }
-            var list = new List<ParameterExpression>(vars);
+
             foreach (var scope in MergedScopes)
             {
-                list.AddRange(GetVariables(scope));
+                foreach (ParameterExpression param in scope.Variables)
+                {
+                    yield return param;
+                }
             }
-            return list;
         }
 
         private static IList<ParameterExpression> GetVariables(object scope)
