@@ -13,12 +13,12 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact] // [Issue(4020, "https://github.com/dotnet/corefx/issues/4020")]
-        public static void CheckBlockClosureVariableInitializationTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBlockClosureVariableInitializationTest(bool useInterpreter)
         {
             foreach (var kv in BlockClosureVariableInitialization())
             {
-                VerifyBlockClosureVariableInitialization(kv.Key, kv.Value);
+                VerifyBlockClosureVariableInitialization(kv.Key, kv.Value, useInterpreter);
             }
         }
 
@@ -104,19 +104,14 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyBlockClosureVariableInitialization(Expression e, object o)
+        private static void VerifyBlockClosureVariableInitialization(Expression e, object o, bool useInterpreter)
         {
             Expression<Func<object>> f =
                 Expression.Lambda<Func<object>>(
                     Expression.Convert(e, typeof(object)));
 
-            Func<object> c = f.Compile();
+            Func<object> c = f.Compile(useInterpreter);
             Assert.Equal(o, c());
-
-#if FEATURE_INTERPRET
-            Func<object> i = f.Compile(true);
-            Assert.Equal(o, i());
-#endif
         }
 
         #endregion
