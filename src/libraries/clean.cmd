@@ -1,9 +1,13 @@
 @if "%_echo%" neq "on" echo off
-setlocal
+setlocal EnableDelayedExpansion
 
 set cleanlog=%~dp0clean.log
 echo Running Clean.cmd %* > %cleanlog%
 
+set options=/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=%cleanlog%
+set unprocessedBuildArgs=
+set allargs=%*
+set thisArgs=
 set clean_successful=true
 
 if [%1] == [] (
@@ -24,31 +28,37 @@ if /I [%1] == [/?] goto Usage
 
 if /I [%1] == [/b] (
   set clean_targets=Clean;%clean_targets%
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
 if /I [%1] == [/p] (
   set clean_targets=CleanPackages;%clean_targets%
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
 if /I [%1] == [/c] (
   set clean_targets=CleanPackagesCache;%clean_targets%
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
 if /I [%1] == [/s] (
   set clean_src=true
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
 if /I [%1] == [/t] (
   set clean_tools=true
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
 if /I [%1] == [/e] (
   set clean_environment=true
+  set thisArgs=!thisArgs!%1
   goto Next
 )
 
@@ -58,11 +68,15 @@ if /I [%1] == [/all] (
   set clean_environment=
   set clean_targets=Clean;CleanPackages;CleanPackagesCache;
   set clean_all=true
-  goto Begin
+  set thisArgs=!thisArgs!%1
+  goto Next
 )
 
-echo Unrecognized argument '%1'
-goto Usage
+if [!thisArgs!]==[] (
+  set unprocessedBuildArgs=!allargs!
+) else (
+  call set unprocessedBuildArgs=%%allargs:*!thisArgs!=%%
+)
 
 :Next
 shift /1
@@ -72,7 +86,6 @@ goto Loop
 if /I [%clean_environment%] == [true] (
   call :CleanEnvironment
 )
-
 
 if /I [%clean_src%] == [true] (
   echo Cleaning src directory ...
@@ -86,8 +99,8 @@ if NOT "%clean_targets%" == "" (
   call %~dp0init-tools.cmd
   
   echo Running msbuild clean targets "%clean_targets:~0,-1%" ...
-  echo. >> %cleanlog% && echo msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog% >> %cleanlog%
-  call msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% /nologo /v:minimal /flp:v=detailed;Append;LogFile=%cleanlog%
+  echo. >> %cleanlog% && echo msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% !options! !unprocessedBuildArgs! >> %cleanlog%
+  call msbuild.exe %~dp0build.proj /t:%clean_targets:~0,-1% !options! !unprocessedBuildArgs!
   call :CheckErrorLevel
 )
 
