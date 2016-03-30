@@ -43,7 +43,6 @@ namespace System.Runtime.Loader.Tests
                 () => AssemblyLoadContext.GetAssemblyName(null));
         }
 
-        [ActiveIssue(7252, PlatformID.AnyUnix)]
         [Fact]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {            
@@ -57,7 +56,6 @@ namespace System.Runtime.Loader.Tests
             Assert.True(asm.DefinedTypes.Any(t => t.Name == "TestClass"));
         }       
 
-        [ActiveIssue(7252, PlatformID.AnyUnix)]
         [Fact]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
@@ -95,7 +93,6 @@ namespace System.Runtime.Loader.Tests
                 () => loadContext.LoadFromAssemblyName(asmName));
         }
 
-        [ActiveIssue(7252, PlatformID.AnyUnix)]
         [Fact]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
