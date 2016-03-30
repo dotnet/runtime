@@ -33,7 +33,7 @@ fi
 __PACKAGES_DIR=$__scriptpath/packages
 __TOOLRUNTIME_DIR=$__scriptpath/Tools
 __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
-__DOTNET_CMD=$__DOTNET_PATH/bin/dotnet
+__DOTNET_CMD=$__DOTNET_PATH/dotnet
 if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://www.myget.org/F/dotnet-buildtools/; fi
 __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
@@ -47,18 +47,18 @@ OSName=$(uname -s)
 case $OSName in
     Darwin)
         OS=OSX
-        __DOTNET_PKG=dotnet-osx-x64
+        __DOTNET_PKG=dotnet-dev-osx-x64
         ;;
 
     Linux)
         OS=Linux
-        __DOTNET_PKG=dotnet-ubuntu-x64
+        __DOTNET_PKG=dotnet-dev-ubuntu-x64
         ;;
 
     *)
         echo "Unsupported OS $OSName detected. Downloading ubuntu-x64 tools"
         OS=Linux
-        __DOTNET_PKG=dotnet-ubuntu-x64
+        __DOTNET_PKG=dotnet-dev-ubuntu-x64
         ;;
 esac
 
@@ -66,11 +66,11 @@ esac
 
 initDistroName $OS
 if [ "$__DistroName" == "centos" ]; then
-    __DOTNET_PKG=dotnet-centos-x64
+    __DOTNET_PKG=dotnet-dev-centos-x64
 fi
 
 if [ "$__DistroName" == "rhel" ]; then
-    __DOTNET_PKG=dotnet-centos-x64
+    __DOTNET_PKG=dotnet-dev-centos-x64
 fi
 
 __CLIDownloadURL=https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz
