@@ -3703,7 +3703,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	// Need to keep the assemblies around for as long as they are kept in the hashtable
 	// Nunit, for example, has a habit of unloading them before the coverage statistics are
 	// generated causing a crash. See https://bugzilla.xamarin.com/show_bug.cgi?id=39325
-	InterlockedIncrement(&assembly->ref_count);
+	mono_assembly_addref (assembly);
 
 	mono_os_mutex_lock (&coverage_mutex);
 	mono_conc_hashtable_insert (coverage_methods, method, method);

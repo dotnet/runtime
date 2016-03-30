@@ -774,7 +774,7 @@ gboolean
 mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2);
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream);
-void mono_assembly_addref       (MonoAssembly *assembly);
+MONO_API void mono_assembly_addref       (MonoAssembly *assembly);
 void mono_assembly_load_friends (MonoAssembly* ass);
 gboolean mono_assembly_has_skip_verification (MonoAssembly* ass);
 
