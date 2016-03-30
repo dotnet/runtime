@@ -20,8 +20,6 @@ namespace System.Net.Test.Common
         public const string SelfSignedCertRemoteServer = "https://self-signed.badssl.com/";
         public const string RevokedCertRemoteServer = "https://revoked.grc.com/";
 
-        public static string DelayResponseServer(int seconds) => $"http://httpbin.org/delay/{seconds}";
-
         private const string HttpScheme = "http";
         private const string HttpsScheme = "https";
 
