@@ -229,6 +229,16 @@ namespace System.Diagnostics
         }
 #endif
 
+        /// <summary>
+        /// Fires when a new DiagnosticSource becomes available.   
+        /// </summary>
+        /// <param name="SourceName"></param>
+        [Event(10, Keywords = Keywords.Events)]
+        private void NewDiagnosticListener(string SourceName)
+        {
+            WriteEvent(10, SourceName);
+        }
+
         #region private
 
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
@@ -522,6 +532,7 @@ namespace System.Diagnostics
                 {
                     if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
                     {
+                        _eventSource.NewDiagnosticListener(newListener.Name);
                         Predicate<string> eventNameFilterPredicate = null;
                         if (eventNameFilter != null)
                             eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
