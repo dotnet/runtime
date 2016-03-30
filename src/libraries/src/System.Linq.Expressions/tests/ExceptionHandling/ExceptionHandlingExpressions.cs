@@ -1,7 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -502,8 +503,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(3838)]
+        [InlineData(true)]
         public void FilterOnCatch(bool useInterpreter)
         {
             TryExpression tryExp = Expression.TryCatch(
@@ -513,6 +513,315 @@ namespace System.Linq.Expressions.Tests
                 Expression.Catch(typeof(TestException), Expression.Constant(3))
                 );
             Assert.Equal(2, Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter)());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void FilterOnCatchCompiled(bool useInterpreter)
+        {
+            FilterOnCatch(false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void FilterCanAccessException(bool useInterpreter)
+        {
+            ParameterExpression exception = Expression.Variable(typeof(TestException));
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(exception, Expression.Constant(1), Expression.Equal(Expression.Constant("This is not a drill."), Expression.Property(exception, "Message"))),
+                Expression.Catch(exception, Expression.Constant(2), Expression.Equal(Expression.Constant("This is a test exception"), Expression.Property(exception, "Message"))),
+                Expression.Catch(exception, Expression.Constant(3))
+                );
+            Assert.Equal(2, Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter)());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void FilterCanAccessExceptionCompiled(bool useInterpreter)
+        {
+            FilterCanAccessException(false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void FilterOverwiteExceptionVisibleToHandler(bool useInterpreter)
+        {
+            ParameterExpression exception = Expression.Variable(typeof(TestException));
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(bool)),
+                Expression.Catch(
+                    exception,
+                    Expression.ReferenceEqual(Expression.Constant(null), exception),
+                    Expression.Block(
+                        Expression.Assign(exception, Expression.Constant(null, typeof(TestException))),
+                        Expression.Constant(true)
+                        )
+                    )
+                );
+            Assert.True(Expression.Lambda<Func<bool>>(tryExp).Compile(useInterpreter)());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void FilterOverwiteExceptionVisibleToHandlerCompiler()
+        {
+            FilterOverwiteExceptionVisibleToHandler(false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void FilterOverwriteExceptionNotVisibleToNextFilterOrHandler(bool useInterpreter)
+        {
+            ParameterExpression exception = Expression.Variable(typeof(TestException));
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    exception,
+                    Expression.Constant(-1),
+                    Expression.Block(
+                        Expression.Assign(exception, Expression.Constant(null, typeof(TestException))),
+                        Expression.Constant(false)
+                        )
+                    ),
+                Expression.Catch(
+                    exception,
+                    Expression.Property(Expression.Property(exception, "Message"), "Length"),
+                    Expression.ReferenceNotEqual(exception, Expression.Constant(null))
+                )
+            );
+            Assert.Equal(24, Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter)());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void FilterOverwriteExceptionNotVisibleToNextFilterOrHandlerCompiler()
+        {
+            FilterOverwriteExceptionNotVisibleToNextFilterOrHandler(false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void FilterBeforeInnerFinally(bool useInterpreter)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            /*
+            Comparable to:
+
+            try
+            {
+                try
+                {
+                    sb.Append("A");
+                    throw new TestException();
+                }
+                finally
+                {
+                    sb.Append("B");
+                }
+            }
+            catch (TestException) when (sb.Append("C") != null)
+            {
+                sb.Append("D");
+            }
+
+            The filter should execute on the first pass, so the result should be "ACBD".
+            */
+
+            ConstantExpression builder = Expression.Constant(sb);
+            Type[] noTypes = Array.Empty<Type>();
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.TryFinally(
+                    Expression.Block(
+                        Expression.Call(builder, "Append", noTypes, Expression.Constant('A')),
+                        Expression.Throw(Expression.Constant(new TestException()), typeof(StringBuilder))
+                        ),
+                    Expression.Call(builder, "Append", noTypes, Expression.Constant('B'))
+                ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Call(builder, "Append", noTypes, Expression.Constant('D')),
+                    Expression.ReferenceNotEqual(Expression.Call(builder, "Append", noTypes, Expression.Constant('C')), Expression.Constant(null))
+                    )
+                );
+            Func<StringBuilder> func = Expression.Lambda<Func<StringBuilder>>(tryExp).Compile(useInterpreter);
+            Assert.Equal("ACBD", func().ToString());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void FilterBeforeInnerFinallyCompiled()
+        {
+            FilterBeforeInnerFinally(false);
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue(3838)]
+        public void FilterBeforeInnerFault(bool useInterpreter)
+        {
+            StringBuilder sb = new StringBuilder();
+            ConstantExpression builder = Expression.Constant(sb);
+            Type[] noTypes = Array.Empty<Type>();
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.TryFault(
+                    Expression.Block(
+                        Expression.Call(builder, "Append", noTypes, Expression.Constant('A')),
+                        Expression.Throw(Expression.Constant(new TestException()), typeof(StringBuilder))
+                        ),
+                    Expression.Call(builder, "Append", noTypes, Expression.Constant('B'))
+                ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Call(builder, "Append", noTypes, Expression.Constant('D')),
+                    Expression.ReferenceNotEqual(Expression.Call(builder, "Append", noTypes, Expression.Constant('C')), Expression.Constant(null))
+                    )
+                );
+            Func<StringBuilder> func = Expression.Lambda<Func<StringBuilder>>(tryExp).Compile(useInterpreter);
+            Assert.Equal("ACBD", func().ToString());
+        }
+
+
+        [Theory]
+        [InlineData(true)]
+        public void ExceptionThrownInFilter(bool useInterpreter)
+        {
+            // An exception in a filter should be eaten and the filter fail.
+
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(2),
+                    Expression.LessThan(
+                        Expression.Constant(3),
+                        Expression.Throw(Expression.Constant(new InvalidOperationException()), typeof(int))
+                        )
+                    ),
+                Expression.Catch(typeof(TestException), Expression.Constant(9))
+                );
+            Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
+            Assert.Equal(9, func());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void ExceptionThrownInFilterCompiled()
+        {
+            ExceptionThrownInFilter(false);
+        }
+
+        private bool MethodWithManyArguments(
+            int x, int y, int z,
+            int α, int β, int γ, int δ,
+            int klaatu, int barada, int nikto,
+            int anáil, int nathrach, int ortha, int bháis, int @is, int beatha, int @do, int chéal, int déanaimh,
+            bool returnBack)
+        {
+            return returnBack;
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void DeepExceptionFilter(bool useInterpreter)
+        {
+            // An expression where the deepest use of the stack is within filters.
+            MethodCallExpression deepFalse = Expression.Call(
+                Expression.Constant(this),
+                "MethodWithManyArguments",
+                new Type[0],
+                Expression.Constant(1),
+                Expression.Constant(2),
+                Expression.Constant(3),
+                Expression.Constant(4),
+                Expression.Constant(5),
+                Expression.Constant(6),
+                Expression.Constant(7),
+                Expression.Constant(8),
+                Expression.Constant(9),
+                Expression.Constant(10),
+                Expression.Constant(11),
+                Expression.Constant(12),
+                Expression.Constant(13),
+                Expression.Constant(14),
+                Expression.Constant(15),
+                Expression.Constant(16),
+                Expression.Constant(17),
+                Expression.Constant(18),
+                Expression.Constant(19),
+                Expression.Constant(false)
+                );
+            MethodCallExpression deepTrue = Expression.Call(
+                Expression.Constant(this),
+                "MethodWithManyArguments",
+                new Type[0],
+                Expression.Constant(1),
+                Expression.Constant(2),
+                Expression.Constant(3),
+                Expression.Constant(4),
+                Expression.Constant(5),
+                Expression.Constant(6),
+                Expression.Constant(7),
+                Expression.Constant(8),
+                Expression.Constant(9),
+                Expression.Constant(10),
+                Expression.Constant(11),
+                Expression.Constant(12),
+                Expression.Constant(13),
+                Expression.Constant(14),
+                Expression.Constant(15),
+                Expression.Constant(16),
+                Expression.Constant(17),
+                Expression.Constant(18),
+                Expression.Constant(19),
+                Expression.Constant(true)
+                );
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(typeof(TestException), Expression.Constant(1), deepFalse),
+                Expression.Catch(typeof(TestException), Expression.Constant(2), deepTrue)
+                );
+            Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
+            Assert.Equal(2, func());
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void DeepExceptionFilterCompiled()
+        {
+            DeepExceptionFilter(false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        public void JumpOutOfExceptionFilter(bool useInterpreter)
+        {
+            LabelTarget target = Expression.Label();
+            var tryExp = Expression.Lambda<Func<int>>(
+                Expression.TryCatch(
+                    Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                    Expression.Catch(
+                        typeof(TestException),
+                        Expression.Block(
+                            Expression.Label(target),
+                            Expression.Constant(0)
+                            ),
+                        Expression.Block(
+                            Expression.Goto(target),
+                            Expression.Constant(true)
+                            )
+                        )
+                    )
+                );
+            Assert.Throws<InvalidOperationException>(() => tryExp.Compile(useInterpreter));
+        }
+
+        [Fact]
+        [ActiveIssue(3838)]
+        public void JumpOutOfExceptionFilterCompiled()
+        {
+            JumpOutOfExceptionFilter(false);
         }
 
         [Fact]
