@@ -3376,6 +3376,10 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 			return FALSE;
 
 		type->data.klass = mono_class_from_mono_type (etype);
+
+		if (transient)
+			mono_metadata_free_type (etype);
+
 		g_assert (type->data.klass); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
