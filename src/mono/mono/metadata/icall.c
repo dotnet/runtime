@@ -1869,8 +1869,11 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return NULL;
 	}
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_field (cf);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	MonoObject * result = mono_field_get_value_object_checked (domain, cf, obj, &error);
 	mono_error_set_pending_exception (&error);
@@ -1891,8 +1894,11 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		return;
 	}
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_field (cf);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
+		mono_error_set_pending_exception (&error);
+		return;
+	}
 
 	type = mono_field_get_type_checked (cf, &error);
 	if (!mono_error_ok (&error)) {
@@ -3069,8 +3075,11 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 
 	*exc = NULL;
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_ensure_reflection_access_method (m);
+	if (mono_security_core_clr_enabled () &&
+	    !mono_security_core_clr_ensure_reflection_access_method (m, &error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (!mono_class_vtable_full (mono_object_domain (method), m->klass, &error)) {
@@ -6327,8 +6336,13 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	}
 
 	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_ensure_delegate_creation (method, throwOnBindFailure))
+		if (!mono_security_core_clr_ensure_delegate_creation (method, &error)) {
+			if (throwOnBindFailure)
+				mono_error_set_pending_exception (&error);
+			else
+				mono_error_cleanup (&error);
 			return NULL;
+		}
 	}
 
 	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);

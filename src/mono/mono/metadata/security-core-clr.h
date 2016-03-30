@@ -42,9 +42,11 @@ extern gboolean mono_security_core_clr_test;
 extern void mono_security_core_clr_check_inheritance (MonoClass *klass);
 extern void mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, MonoMethod *base);
 
-extern void mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field);
-extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method);
-extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure);
+extern gboolean
+mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field, MonoError *error);
+extern gboolean
+mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method, MonoError *error);
+extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, MonoError *error);
 extern MonoException* mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class);
 
 extern gboolean mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* accessed);
