@@ -28,6 +28,14 @@ namespace System.Net.Http
         /// <summary>Provides a multi handle and the associated processing for all requests on the handle.</summary>
         private sealed class MultiAgent
         {
+            /// <summary>
+            /// Amount of time in milliseconds to keep a multiagent worker alive when there's no work to be done.
+            /// Increasing this value makes it more likely that a worker will end up getting reused for subsequent
+            /// requests, saving on the costs associated with spinning up a new worker, but at the same time it
+            /// burns a thread for that period of time.
+            /// </summary>
+            private const int KeepAliveMilliseconds = 50;
+
             private static readonly Interop.Http.ReadWriteCallback s_receiveHeadersCallback = CurlReceiveHeadersCallback;
             private static readonly Interop.Http.ReadWriteCallback s_sendCallback = CurlSendCallback;
             private static readonly Interop.Http.SeekCallback s_seekCallback = CurlSeekCallback;
@@ -256,9 +264,25 @@ namespace System.Net.Http
                             HandleIncomingRequest(multiHandle, request);
                         }
 
-                        // If we have no active operations, we're done.
+                        // If we have no active operations, there's no work to do right now.
                         if (_activeOperations.Count == 0)
                         {
+                            // Setting up a mutiagent processing loop involves creating a new MultiAgent, creating a task
+                            // and a thread to process it, creating a new pipe, etc., which has non-trivial cost associated 
+                            // with it.  Thus, to avoid repeatedly spinning up and down these workers, we can keep this worker 
+                            // alive for a little while longer in case another request comes in within some reasonably small 
+                            // amount of time.  This helps with the case where a sequence of requests is made serially rather 
+                            // than in parallel, avoiding the likely case of spinning up a new multiagent for each.
+                            Interop.Sys.PollEvents triggered;
+                            Interop.Error pollRv = Interop.Sys.Poll(_wakeupRequestedPipeFd, Interop.Sys.PollEvents.POLLIN, KeepAliveMilliseconds, out triggered);
+                            if (pollRv == Interop.Error.SUCCESS && (triggered & Interop.Sys.PollEvents.POLLIN) != 0)
+                            {
+                                // Another request came in while we were waiting. Clear the pipe and loop around to continue processing.
+                                ReadFromWakeupPipeWhenKnownToContainData();
+                                continue;
+                            }
+
+                            // We're done.  Exit the multiagent.
                             return;
                         }
 
