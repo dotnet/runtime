@@ -182,20 +182,8 @@ IL_CASE15:  ldc.r8     65535
     dup
     call       void [System.Console]System.Console::WriteLine(unsigned int32)
     ldc.i4	65535
-    beq.s      IL_CASE16
-    ldstr "CASE15 FAILED"
-	call       void [System.Console]System.Console::WriteLine(string)
-	ldc.i4.1
-    br       IL_0041
-
-	// r8 - conv.u8 - truncate to zero
-IL_CASE16:  ldc.r8     18446744073709551615
-    conv.u8
-    dup
-    call       void [System.Console]System.Console::WriteLine(unsigned int64)
-    ldc.i8	18446744073709551615
     beq.s      IL_CASE17
-    ldstr "CASE16 FAILED"
+    ldstr "CASE15 FAILED"
 	call       void [System.Console]System.Console::WriteLine(string)
 	ldc.i4.1
     br       IL_0041

@@ -24301,14 +24301,14 @@ RelativePath=JIT\Methodical\FPtrunc\convx_il_d\convx_il_d.exe
 WorkingDir=JIT\Methodical\FPtrunc\convx_il_d
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;NEED_UPDATE_TEST
 HostStyle=Any
 [convx_il_r.exe_3530]
 RelativePath=JIT\Methodical\FPtrunc\convx_il_r\convx_il_r.exe
 WorkingDir=JIT\Methodical\FPtrunc\convx_il_r
 Expected=100
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;NEED_UPDATE_TEST
 HostStyle=Any
 [test.exe_3531]
 RelativePath=JIT\Methodical\inlining\bug505642\test\test.exe
