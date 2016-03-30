@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Compiler
         /// 
         /// Created lazily as we create hundreds of compiler scopes w/o merging scopes when compiling rules.
         /// </summary>
-        internal Set<object> MergedScopes;
+        internal HashSet<object> MergedScopes;
 
         /// <summary>
         /// The scope's hoisted locals, if any.
