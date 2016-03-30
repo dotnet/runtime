@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using Microsoft.Xunit.Performance;
@@ -17,16 +18,16 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void XsSerializationTest(int iterations, TestType testType, int testSize)
+        public void XsSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, XsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunSerializationPerformanceTest(numberOfRuns, testType, testSize, XsSerializerFactory.GetInstance());
         }
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void XsDeSerializationTest(int iterations, TestType testType, int testSize)
+        public void XsDeSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, XsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunDeserializationPerformanceTest(numberOfRuns, testType, testSize, XsSerializerFactory.GetInstance());
         }
     }
 
@@ -34,19 +35,15 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
     #region XmlSerializer wrapper
 
-    internal class XsSerializerFactory : SerializerFactory
+    internal class XsSerializerFactory : ISerializerFactory
     {
-        private static XsSerializerFactory _instance = null;
+        private static readonly XsSerializerFactory Instance = new XsSerializerFactory();
         public static XsSerializerFactory GetInstance()
         {
-            if (_instance == null)
-            {
-                _instance = new XsSerializerFactory();
-            }
-            return _instance;
+            return Instance;
         }
 
-        public override IPerfTestSerializer GetSerializer()
+        public IPerfTestSerializer GetSerializer()
         {
             return new XsSerializer();
         }
@@ -58,9 +55,8 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         public void Deserialize(Stream stream)
         {
-            // Assumption: Deserialize() is always called after Init()
-            // Assumption: stream != null
-            stream.Position = 0;
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.Deserialize(stream);
         }
 
@@ -71,10 +67,9 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
         public void Serialize(object obj, Stream stream)
         {
-            // Assumption: Serialize() is always called after Init()
-            // Assumption: stream != null and stream position will be reset to 0 after this method
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.Serialize(stream, obj);
-            stream.Position = 0;
         }
     }
 

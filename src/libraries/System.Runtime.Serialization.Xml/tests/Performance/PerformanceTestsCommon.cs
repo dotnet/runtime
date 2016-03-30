@@ -27,9 +27,9 @@ namespace System.Runtime.Serialization
         void Deserialize(Stream s);
     }
 
-    public abstract class SerializerFactory
+    public interface ISerializerFactory
     {
-        public abstract IPerfTestSerializer GetSerializer();
+        IPerfTestSerializer GetSerializer();
     }
 
     #endregion
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
 
         #region Methods to create object for serialization tests
 
-        public static SimpleTypeWihtMoreProperties CreateObject(int height, int parentId, int currentId, int collectionSize, int childListSize)
+        public static SimpleTypeWihtMoreProperties CreateSimpleTypeWihtMoreProperties(int height, int parentId, int currentId, int collectionSize, int childListSize)
         {
             int index = parentId * childListSize + (currentId + 1);
             var obj = new SimpleTypeWihtMoreProperties()
@@ -68,8 +68,8 @@ namespace System.Runtime.Serialization
                 IntProperty = index,
                 StringProperty = index + " string value",
                 EnumProperty = (MyEnum)(index % (Enum.GetNames(typeof(MyEnum)).Length)),
-                CollectionProperty = new List<string>(),
-                SimpleTypeList = new List<SimpleTypeWihtMoreProperties>()
+                CollectionProperty = new List<string>(collectionSize),
+                SimpleTypeList = new List<SimpleTypeWihtMoreProperties>(childListSize)
             };
             for (int i = 0; i < collectionSize; ++i)
             {
@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
             {
                 for (int i = 0; i < childListSize; ++i)
                 {
-                    obj.SimpleTypeList.Add(CreateObject(height - 1, index, i, collectionSize, childListSize));
+                    obj.SimpleTypeList.Add(CreateSimpleTypeWihtMoreProperties(height - 1, index, i, collectionSize, childListSize));
                 }
             }
             return obj;
@@ -90,14 +90,17 @@ namespace System.Runtime.Serialization
             byte[] obj = new byte[size];
             for (int i = 0; i < obj.Length; ++i)
             {
-                obj[i] = (byte)(i % 256);
+                unchecked
+                {
+                    obj[i] = (byte)i;
+                }
             }
             return obj;
         }
 
         public static Dictionary<int, string> CreateDictionaryOfIntString(int count)
         {
-            Dictionary<int, string> dictOfIntString = new Dictionary<int, string>();
+            Dictionary<int, string> dictOfIntString = new Dictionary<int, string>(count);
             for (int i = 0; i < count; ++i)
             {
                 dictOfIntString[i] = i.ToString();
@@ -129,7 +132,7 @@ namespace System.Runtime.Serialization
                     obj = CreateListOfInt(testSize);
                     break;
                 case TestType.SimpleType:
-                    obj = CreateObject(testSize, 0, -1, 7, 2);
+                    obj = CreateSimpleTypeWihtMoreProperties(testSize, 0, -1, 7, 2);
                     break;
                 case TestType.String:
                     obj = new string('k', testSize);
@@ -141,6 +144,8 @@ namespace System.Runtime.Serialization
                     xmlElement.InnerText = "Element innertext";
                     obj = xmlElement;
                     break;
+                default:
+                    throw new ArgumentException();
             }
             return obj;
         }
@@ -149,7 +154,7 @@ namespace System.Runtime.Serialization
 
         #region Methods to run serialization performance tests
 
-        public static void RunSerializationPerformanceTest(int iterations, TestType testType, int testSize, SerializerFactory serializerFactory)
+        public static void RunSerializationPerformanceTest(int numberOfRuns, TestType testType, int testSize, ISerializerFactory serializerFactory)
         {
             var obj = GetSerializationObject(testType, testSize);
 
@@ -162,16 +167,17 @@ namespace System.Runtime.Serialization
                 {
                     using (iteration.StartMeasurement())
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (int i = 0; i < numberOfRuns; i++)
                         {
                             serializer.Serialize(obj, stream);
+                            stream.Position = 0;
                         }
                     }
                 }
             }
         }
 
-        public static void RunDeSerializationPerformanceTest(int iterations, TestType testType, int testSize, SerializerFactory serializerFactory)
+        public static void RunDeserializationPerformanceTest(int numberOfRuns, TestType testType, int testSize, ISerializerFactory serializerFactory)
         {
             var obj = GetSerializationObject(testType, testSize);
 
@@ -181,13 +187,15 @@ namespace System.Runtime.Serialization
             using (var stream = new MemoryStream())
             {
                 serializer.Serialize(obj, stream);
+                stream.Position = 0;
                 foreach (var iteration in Benchmark.Iterations)
                 {
                     using (iteration.StartMeasurement())
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (int i = 0; i < numberOfRuns; i++)
                         {
                             serializer.Deserialize(stream);
+                            stream.Position = 0;
                         }
                     }
                 }

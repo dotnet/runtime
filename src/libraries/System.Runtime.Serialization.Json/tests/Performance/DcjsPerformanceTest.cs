@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Xunit.Performance;
 using Xunit;
@@ -20,16 +21,16 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcjsSerializationTest(int iterations, TestType testType, int testSize)
+        public void DcjsSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, DcjsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunSerializationPerformanceTest(numberOfRuns, testType, testSize, DcjsSerializerFactory.GetInstance());
         }
 
         [Benchmark]
         [MemberData(nameof(SerializeMemberData))]
-        public void DcjsDeSerializationTest(int iterations, TestType testType, int testSize)
+        public void DcjsDeSerializationTest(int numberOfRuns, TestType testType, int testSize)
         {
-            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, DcjsSerializerFactory.GetInstance());
+            PerformanceTestCommon.RunDeserializationPerformanceTest(numberOfRuns, testType, testSize, DcjsSerializerFactory.GetInstance());
         }
     }
 
@@ -37,19 +38,15 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
     #region DCJS serializer wrapper
 
-    internal class DcjsSerializerFactory : SerializerFactory
+    internal class DcjsSerializerFactory : ISerializerFactory
     {
-        private static DcjsSerializerFactory _instance = null;
+        private static readonly DcjsSerializerFactory _instance = new DcjsSerializerFactory();
         public static DcjsSerializerFactory GetInstance()
         {
-            if (_instance == null)
-            {
-                _instance = new DcjsSerializerFactory();
-            }
             return _instance;
         }
 
-        public override IPerfTestSerializer GetSerializer()
+        public IPerfTestSerializer GetSerializer()
         {
             return new DcjsSerializer();
         }
@@ -61,9 +58,8 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         public void Deserialize(Stream stream)
         {
-            // Assumption: Deserialize() is always called after Init()
-            // Assumption: stream != null
-            stream.Position = 0;
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.ReadObject(stream);
         }
 
@@ -74,10 +70,9 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
         public void Serialize(object obj, Stream stream)
         {
-            // Assumption: Serialize() is always called after Init()
-            // Assumption: stream != null and stream position will be reset to 0 after this method
+            Debug.Assert(_serializer != null);
+            Debug.Assert(stream != null);
             _serializer.WriteObject(stream, obj);
-            stream.Position = 0;
         }
     }
 
