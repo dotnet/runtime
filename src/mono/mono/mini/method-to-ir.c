@@ -8578,7 +8578,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	skip_dead_blocks = !dont_verify;
 	if (skip_dead_blocks) {
-		original_bb = bb = mono_basic_block_split (method, &cfg->error);
+		original_bb = bb = mono_basic_block_split (method, &cfg->error, header);
 		CHECK_CFG_ERROR;
 		g_assert (bb);
 	}

@@ -514,20 +514,11 @@ mono_basic_block_free (MonoSimpleBasicBlock *bb)
  * Return the list of basic blocks of method. Return NULL on failure and set @error.
 */
 MonoSimpleBasicBlock*
-mono_basic_block_split (MonoMethod *method, MonoError *error)
+mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *header)
 {
 	MonoError inner_error;
 	MonoSimpleBasicBlock *bb, *root;
 	const unsigned char *start, *end;
-	MonoMethodHeader *header = mono_method_get_header_checked (method, &inner_error);
-
-	mono_error_init (error);
-
-	if (!header) {
-		mono_error_set_not_verifiable (error, method, "Could not decode header due to %s", mono_error_get_message (&inner_error));
-		mono_error_cleanup (&inner_error);
-		return NULL;
-	}
 
 	start = header->code;
 	end = start + header->code_size;
@@ -553,11 +544,9 @@ mono_basic_block_split (MonoMethod *method, MonoError *error)
 	dump_bb_list (bb, &root, g_strdup_printf("AFTER LIVENESS %s", mono_method_full_name (method, TRUE)));
 #endif
 
-	mono_metadata_free_mh (header);
 	return bb;
 
 fail:
-	mono_metadata_free_mh (header);
 	mono_basic_block_free (bb);
 	return NULL;
 }

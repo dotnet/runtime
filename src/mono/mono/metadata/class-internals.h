@@ -517,7 +517,6 @@ struct _MonoMethodInflated {
 		MonoMethod method;
 		MonoMethodPInvoke pinvoke;
 	} method;
-	MonoMethodHeader *header;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
 	MonoImageSet *owner; /* The image set that the inflated method belongs to. */
