@@ -192,23 +192,25 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
     ldr R2, [r0, #(CONTEXT_Cpsr)]
     msr APSR, r2    
     
-    mov r12, r0 // ideally we would ldmia r0, {r0-r12, sp, lr, pc} here, but that isn't supported on new clang
-    add r12, CONTEXT_R0 // so we'll burn r12 as the IPC reg for now -- TODO: is this ok?
+    // Ideally, we would like to use `ldmia r0, {r0-r12, sp, lr, pc}` here,
+    // but clang 3.6 and later, as per ARM recommendation, disallows using
+    // Sp in the register list, and Pc and Lr simultaneously.
+    // So we are going to use the IPC register r12 to copy Sp, Lr and Pc
+    // which should be ok -- TODO: Is this really ok?
+    add r12, r0, CONTEXT_R0
     ldm r12, {r0-r11}
-    add r12, (CONTEXT_Sp - CONTEXT_R0)
-    ldr sp, [r12]
-    ldr lr, [r12, #(CONTEXT_Lr - CONTEXT_Sp)]
-    ldr pc, [r12, #(CONTEXT_Pc - CONTEXT_Sp)]
-    
+    ldr sp, [r12, #(CONTEXT_Sp - (CONTEXT_R0))]
+    ldr lr, [r12, #(CONTEXT_Lr - (CONTEXT_R0))]
+    ldr pc, [r12, #(CONTEXT_Pc - (CONTEXT_R0))]
+
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     
     ldr r2, [r0, #(CONTEXT_Cpsr)]
     msr APSR, r2    
     
-    add r0, CONTEXT_Sp
-    ldr sp, [r0]
-    ldr lr, [r0, #(CONTEXT_Lr - CONTEXT_Sp)]
-    ldr pc, [r0, #(CONTEXT_Pc - CONTEXT_Sp)]
+    ldr sp, [r0, #(CONTEXT_Sp)]
+    ldr lr, [r0, #(CONTEXT_Lr)]
+    ldr pc, [r0, #(CONTEXT_Pc)]
     
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ldr r2, [r0, #(CONTEXT_ContextFlags)]
