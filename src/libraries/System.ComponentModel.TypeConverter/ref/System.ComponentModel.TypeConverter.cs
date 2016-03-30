@@ -47,7 +47,7 @@ namespace System.ComponentModel
     {
         protected BaseNumberConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType) { return default(bool); }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type t) { return default(bool); }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { return default(bool); }
         public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) { return default(object); }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { return default(object); }
     }
@@ -351,7 +351,6 @@ namespace System.ComponentModel
         protected static System.Reflection.MethodInfo FindMethod(System.Type componentClass, string name, System.Type[] args, System.Type returnType, bool publicOnly) { return default(System.Reflection.MethodInfo); }
         public override int GetHashCode() { return default(int); }
         protected virtual object GetInvocationTarget(System.Type type, object instance) { return default(object); }
-        protected static object GetInvokee(System.Type componentClass, object component) { return default(object); }
         protected static System.ComponentModel.ISite GetSite(object component) { return default(System.ComponentModel.ISite); }
     }
     public partial class MultilineStringConverter : System.ComponentModel.TypeConverter
@@ -400,6 +399,7 @@ namespace System.ComponentModel
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(System.Attribute[] filter) { return default(System.ComponentModel.PropertyDescriptorCollection); }
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance) { return default(System.ComponentModel.PropertyDescriptorCollection); }
         public virtual System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance, System.Attribute[] filter) { return default(System.ComponentModel.PropertyDescriptorCollection); }
+        public virtual object GetEditor(System.Type editorBaseType) { return default(object);}
         public override int GetHashCode() { return default(int); }
         protected override object GetInvocationTarget(System.Type type, object instance) { return default(object); }
         protected System.Type GetTypeFromName(string typeName) { return default(System.Type); }
@@ -606,6 +606,7 @@ namespace System.ComponentModel
     }
     public sealed partial class TypeDescriptor
     {
+        internal TypeDescriptor() { }
         public static System.Type InterfaceType { get; }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(object instance, params System.Attribute[] attributes) { return default(System.ComponentModel.TypeDescriptionProvider); }
