@@ -19,8 +19,8 @@ namespace BasicEventSourceTests
         /// Validates that the EventProvider AppDomain.ProcessExit handler does not keep the EventProvider instance
         /// alive.
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // non-Windows EventSources don't have lifetime
         public void Test_EventSource_Lifetime()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
