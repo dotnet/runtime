@@ -12,6 +12,8 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayBoundsTests
     {
+        private const int MaxArraySize = 0X7FEFFFFF;
+
         private class BogusCollection<T> : IList<T>
         {
             public T this[int index]
@@ -94,165 +96,165 @@ namespace System.Linq.Expressions.Tests
 
         #region Byte sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyBoolArrayWithByteSize(size);
+                VerifyBoolArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyByteArrayWithByteSize(size);
+                VerifyByteArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyCharArrayWithByteSize(size);
+                VerifyCharArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyDecimalArrayWithByteSize(size);
+                VerifyDecimalArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyDoubleArrayWithByteSize(size);
+                VerifyDoubleArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyFloatArrayWithByteSize(size);
+                VerifyFloatArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyIntArrayWithByteSize(size);
+                VerifyIntArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyLongArrayWithByteSize(size);
+                VerifyLongArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyStructArrayWithByteSize(size);
+                VerifyStructArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifySByteArrayWithByteSize(size);
+                VerifySByteArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyStructWithStringArrayWithByteSize(size);
+                VerifyStructWithStringArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithByteSize(size);
+                VerifyStructWithStringAndValueArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyShortArrayWithByteSize(size);
+                VerifyShortArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithByteSize(size);
+                VerifyStructWithTwoValuesArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyStructWithValueArrayWithByteSize(size);
+                VerifyStructWithValueArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyUIntArrayWithByteSize(size);
+                VerifyUIntArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyULongArrayWithByteSize(size);
+                VerifyULongArrayWithByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithByteSize(bool useInterpreter)
         {
             foreach (byte size in new byte[] { 0, 1, byte.MaxValue })
             {
-                VerifyUShortArrayWithByteSize(size);
+                VerifyUShortArrayWithByteSize(size, useInterpreter);
             }
         }
 
@@ -260,165 +262,165 @@ namespace System.Linq.Expressions.Tests
 
         #region Int sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyBoolArrayWithIntSize(size);
+                VerifyBoolArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyByteArrayWithIntSize(size);
+                VerifyByteArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyCharArrayWithIntSize(size);
+                VerifyCharArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyDecimalArrayWithIntSize(size);
+                VerifyDecimalArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyDoubleArrayWithIntSize(size);
+                VerifyDoubleArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyFloatArrayWithIntSize(size);
+                VerifyFloatArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyIntArrayWithIntSize(size);
+                VerifyIntArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyLongArrayWithIntSize(size);
+                VerifyLongArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyStructArrayWithIntSize(size);
+                VerifyStructArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifySByteArrayWithIntSize(size);
+                VerifySByteArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyStructWithStringArrayWithIntSize(size);
+                VerifyStructWithStringArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithIntSize(size);
+                VerifyStructWithStringAndValueArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyShortArrayWithIntSize(size);
+                VerifyShortArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithIntSize(size);
+                VerifyStructWithTwoValuesArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyStructWithValueArrayWithIntSize(size);
+                VerifyStructWithValueArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyUIntArrayWithIntSize(size);
+                VerifyUIntArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyULongArrayWithIntSize(size);
+                VerifyULongArrayWithIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithIntSize(bool useInterpreter)
         {
             foreach (int size in new int[] { 0, 1, -1, int.MinValue, int.MaxValue })
             {
-                VerifyUShortArrayWithIntSize(size);
+                VerifyUShortArrayWithIntSize(size, useInterpreter);
             }
         }
 
@@ -426,165 +428,165 @@ namespace System.Linq.Expressions.Tests
 
         #region Long sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyBoolArrayWithLongSize(size);
+                VerifyBoolArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyByteArrayWithLongSize(size);
+                VerifyByteArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyCharArrayWithLongSize(size);
+                VerifyCharArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyDecimalArrayWithLongSize(size);
+                VerifyDecimalArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyDoubleArrayWithLongSize(size);
+                VerifyDoubleArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyFloatArrayWithLongSize(size);
+                VerifyFloatArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyIntArrayWithLongSize(size);
+                VerifyIntArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyLongArrayWithLongSize(size);
+                VerifyLongArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyStructArrayWithLongSize(size);
+                VerifyStructArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifySByteArrayWithLongSize(size);
+                VerifySByteArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyStructWithStringArrayWithLongSize(size);
+                VerifyStructWithStringArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithLongSize(size);
+                VerifyStructWithStringAndValueArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyShortArrayWithLongSize(size);
+                VerifyShortArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithLongSize(size);
+                VerifyStructWithTwoValuesArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyStructWithValueArrayWithLongSize(size);
+                VerifyStructWithValueArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyUIntArrayWithLongSize(size);
+                VerifyUIntArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyULongArrayWithLongSize(size);
+                VerifyULongArrayWithLongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithLongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithLongSize(bool useInterpreter)
         {
             foreach (long size in new long[] { 0, 1, -1, long.MinValue, long.MaxValue })
             {
-                VerifyUShortArrayWithLongSize(size);
+                VerifyUShortArrayWithLongSize(size, useInterpreter);
             }
         }
 
@@ -592,165 +594,165 @@ namespace System.Linq.Expressions.Tests
 
         #region SByte sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyBoolArrayWithSByteSize(size);
+                VerifyBoolArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyByteArrayWithSByteSize(size);
+                VerifyByteArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyCharArrayWithSByteSize(size);
+                VerifyCharArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyDecimalArrayWithSByteSize(size);
+                VerifyDecimalArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyDoubleArrayWithSByteSize(size);
+                VerifyDoubleArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyFloatArrayWithSByteSize(size);
+                VerifyFloatArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyIntArrayWithSByteSize(size);
+                VerifyIntArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyLongArrayWithSByteSize(size);
+                VerifyLongArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyStructArrayWithSByteSize(size);
+                VerifyStructArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifySByteArrayWithSByteSize(size);
+                VerifySByteArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyStructWithStringArrayWithSByteSize(size);
+                VerifyStructWithStringArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithSByteSize(size);
+                VerifyStructWithStringAndValueArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyShortArrayWithSByteSize(size);
+                VerifyShortArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithSByteSize(size);
+                VerifyStructWithTwoValuesArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyStructWithValueArrayWithSByteSize(size);
+                VerifyStructWithValueArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyUIntArrayWithSByteSize(size);
+                VerifyUIntArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyULongArrayWithSByteSize(size);
+                VerifyULongArrayWithSByteSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithSByteSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithSByteSize(bool useInterpreter)
         {
             foreach (sbyte size in new sbyte[] { 0, 1, -1, sbyte.MinValue, sbyte.MaxValue })
             {
-                VerifyUShortArrayWithSByteSize(size);
+                VerifyUShortArrayWithSByteSize(size, useInterpreter);
             }
         }
 
@@ -758,165 +760,165 @@ namespace System.Linq.Expressions.Tests
 
         #region Short sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyBoolArrayWithShortSize(size);
+                VerifyBoolArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyByteArrayWithShortSize(size);
+                VerifyByteArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyCharArrayWithShortSize(size);
+                VerifyCharArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyDecimalArrayWithShortSize(size);
+                VerifyDecimalArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyDoubleArrayWithShortSize(size);
+                VerifyDoubleArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyFloatArrayWithShortSize(size);
+                VerifyFloatArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyIntArrayWithShortSize(size);
+                VerifyIntArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyLongArrayWithShortSize(size);
+                VerifyLongArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyStructArrayWithShortSize(size);
+                VerifyStructArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifySByteArrayWithShortSize(size);
+                VerifySByteArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyStructWithStringArrayWithShortSize(size);
+                VerifyStructWithStringArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithShortSize(size);
+                VerifyStructWithStringAndValueArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyShortArrayWithShortSize(size);
+                VerifyShortArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithShortSize(size);
+                VerifyStructWithTwoValuesArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyStructWithValueArrayWithShortSize(size);
+                VerifyStructWithValueArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyUIntArrayWithShortSize(size);
+                VerifyUIntArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyULongArrayWithShortSize(size);
+                VerifyULongArrayWithShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithShortSize(bool useInterpreter)
         {
             foreach (short size in new short[] { 0, 1, -1, short.MinValue, short.MaxValue })
             {
-                VerifyUShortArrayWithShortSize(size);
+                VerifyUShortArrayWithShortSize(size, useInterpreter);
             }
         }
 
@@ -924,165 +926,165 @@ namespace System.Linq.Expressions.Tests
 
         #region UInt sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyBoolArrayWithUIntSize(size);
+                VerifyBoolArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyByteArrayWithUIntSize(size);
+                VerifyByteArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyCharArrayWithUIntSize(size);
+                VerifyCharArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyDecimalArrayWithUIntSize(size);
+                VerifyDecimalArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyDoubleArrayWithUIntSize(size);
+                VerifyDoubleArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyFloatArrayWithUIntSize(size);
+                VerifyFloatArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyIntArrayWithUIntSize(size);
+                VerifyIntArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyLongArrayWithUIntSize(size);
+                VerifyLongArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyStructArrayWithUIntSize(size);
+                VerifyStructArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifySByteArrayWithUIntSize(size);
+                VerifySByteArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyStructWithStringArrayWithUIntSize(size);
+                VerifyStructWithStringArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithUIntSize(size);
+                VerifyStructWithStringAndValueArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyShortArrayWithUIntSize(size);
+                VerifyShortArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithUIntSize(size);
+                VerifyStructWithTwoValuesArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyStructWithValueArrayWithUIntSize(size);
+                VerifyStructWithValueArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyUIntArrayWithUIntSize(size);
+                VerifyUIntArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyULongArrayWithUIntSize(size);
+                VerifyULongArrayWithUIntSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithUIntSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithUIntSize(bool useInterpreter)
         {
             foreach (uint size in new uint[] { 0, 1, uint.MaxValue })
             {
-                VerifyUShortArrayWithUIntSize(size);
+                VerifyUShortArrayWithUIntSize(size, useInterpreter);
             }
         }
 
@@ -1090,165 +1092,165 @@ namespace System.Linq.Expressions.Tests
 
         #region ULong sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyBoolArrayWithULongSize(size);
+                VerifyBoolArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyByteArrayWithULongSize(size);
+                VerifyByteArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyCharArrayWithULongSize(size);
+                VerifyCharArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyDecimalArrayWithULongSize(size);
+                VerifyDecimalArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyDoubleArrayWithULongSize(size);
+                VerifyDoubleArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyFloatArrayWithULongSize(size);
+                VerifyFloatArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyIntArrayWithULongSize(size);
+                VerifyIntArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyLongArrayWithULongSize(size);
+                VerifyLongArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyStructArrayWithULongSize(size);
+                VerifyStructArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifySByteArrayWithULongSize(size);
+                VerifySByteArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyStructWithStringArrayWithULongSize(size);
+                VerifyStructWithStringArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithULongSize(size);
+                VerifyStructWithStringAndValueArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyShortArrayWithULongSize(size);
+                VerifyShortArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithULongSize(size);
+                VerifyStructWithTwoValuesArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyStructWithValueArrayWithULongSize(size);
+                VerifyStructWithValueArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyUIntArrayWithULongSize(size);
+                VerifyUIntArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyULongArrayWithULongSize(size);
+                VerifyULongArrayWithULongSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithULongSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithULongSize(bool useInterpreter)
         {
             foreach (ulong size in new ulong[] { 0, 1, ulong.MaxValue })
             {
-                VerifyUShortArrayWithULongSize(size);
+                VerifyUShortArrayWithULongSize(size, useInterpreter);
             }
         }
 
@@ -1256,165 +1258,165 @@ namespace System.Linq.Expressions.Tests
 
         #region UShort sized arrays
 
-        [Fact]
-        public static void CheckBoolArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckBoolArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyBoolArrayWithUShortSize(size);
+                VerifyBoolArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckByteArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckByteArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyByteArrayWithUShortSize(size);
+                VerifyByteArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckCharArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckCharArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyCharArrayWithUShortSize(size);
+                VerifyCharArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDecimalArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDecimalArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyDecimalArrayWithUShortSize(size);
+                VerifyDecimalArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckDoubleArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckDoubleArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyDoubleArrayWithUShortSize(size);
+                VerifyDoubleArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckFloatArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckFloatArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyFloatArrayWithUShortSize(size);
+                VerifyFloatArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckIntArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckIntArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyIntArrayWithUShortSize(size);
+                VerifyIntArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckLongArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLongArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyLongArrayWithUShortSize(size);
+                VerifyLongArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyStructArrayWithUShortSize(size);
+                VerifyStructArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckSByteArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckSByteArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifySByteArrayWithUShortSize(size);
+                VerifySByteArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyStructWithStringArrayWithUShortSize(size);
+                VerifyStructWithStringArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithStringAndValueArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithStringAndValueArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyStructWithStringAndValueArrayWithUShortSize(size);
+                VerifyStructWithStringAndValueArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckShortArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckShortArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyShortArrayWithUShortSize(size);
+                VerifyShortArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithTwoValuesArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithTwoValuesArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyStructWithTwoValuesArrayWithUShortSize(size);
+                VerifyStructWithTwoValuesArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckStructWithValueArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckStructWithValueArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyStructWithValueArrayWithUShortSize(size);
+                VerifyStructWithValueArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUIntArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUIntArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyUIntArrayWithUShortSize(size);
+                VerifyUIntArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckULongArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckULongArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyULongArrayWithUShortSize(size);
+                VerifyULongArrayWithUShortSize(size, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void CheckUShortArrayWithUShortSize()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUShortArrayWithUShortSize(bool useInterpreter)
         {
             foreach (ushort size in new ushort[] { 0, 1, ushort.MaxValue })
             {
-                VerifyUShortArrayWithUShortSize(size);
+                VerifyUShortArrayWithUShortSize(size, useInterpreter);
             }
         }
 
@@ -1435,7 +1437,28 @@ namespace System.Linq.Expressions.Tests
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithByteSize(byte size)
+        private static void VerifyArrayGenerator<T>(Func<T[]> func, long size)
+        {
+            if ((ulong)size > int.MaxValue)
+            {
+                Assert.Throws<OverflowException>(() => func());
+            }
+            else if (size > MaxArraySize)
+            {
+                Assert.Throws<OutOfMemoryException>(() => func());
+            }
+            else
+            {
+                Assert.Equal(new T[size], func());
+            }
+        }
+
+        private static void VerifyArrayGenerator<T>(Func<T[]> func, ulong size)
+        {
+            VerifyArrayGenerator(func, (long)size);
+        }
+
+        private static void VerifyBoolArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -1443,51 +1466,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithByteSize(byte size)
+        private static void VerifyByteArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -1495,51 +1479,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithByteSize(byte size)
+        private static void VerifyCharArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -1547,51 +1492,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithByteSize(byte size)
+        private static void VerifyDecimalArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -1599,51 +1505,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithByteSize(byte size)
+        private static void VerifyDoubleArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -1651,51 +1518,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithByteSize(byte size)
+        private static void VerifyFloatArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -1703,51 +1531,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithByteSize(byte size)
+        private static void VerifyIntArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -1755,51 +1544,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithByteSize(byte size)
+        private static void VerifyLongArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -1807,51 +1557,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithByteSize(byte size)
+        private static void VerifyStructArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -1859,51 +1570,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithByteSize(byte size)
+        private static void VerifySByteArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -1911,51 +1583,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithByteSize(byte size)
+        private static void VerifyStructWithStringArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -1963,51 +1596,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithByteSize(byte size)
+        private static void VerifyStructWithStringAndValueArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -2015,51 +1609,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithByteSize(byte size)
+        private static void VerifyShortArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -2067,51 +1622,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithByteSize(byte size)
+        private static void VerifyStructWithTwoValuesArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -2119,51 +1635,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithByteSize(byte size)
+        private static void VerifyStructWithValueArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -2171,51 +1648,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithByteSize(byte size)
+        private static void VerifyUIntArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -2223,51 +1661,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithByteSize(byte size)
+        private static void VerifyULongArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -2275,51 +1674,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithByteSize(byte size)
+        private static void VerifyUShortArrayWithByteSize(byte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -2327,55 +1687,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(byte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithIntSize(int size)
+        private static void VerifyBoolArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -2383,51 +1704,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithIntSize(int size)
+        private static void VerifyByteArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -2435,51 +1717,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithIntSize(int size)
+        private static void VerifyCharArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -2487,51 +1730,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithIntSize(int size)
+        private static void VerifyDecimalArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -2539,51 +1743,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithIntSize(int size)
+        private static void VerifyDoubleArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -2591,51 +1756,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithIntSize(int size)
+        private static void VerifyFloatArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -2643,51 +1769,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithIntSize(int size)
+        private static void VerifyIntArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -2695,51 +1782,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithIntSize(int size)
+        private static void VerifyLongArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -2747,51 +1795,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithIntSize(int size)
+        private static void VerifyStructArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -2799,51 +1808,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithIntSize(int size)
+        private static void VerifySByteArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -2851,51 +1821,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithIntSize(int size)
+        private static void VerifyStructWithStringArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -2903,51 +1834,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithIntSize(int size)
+        private static void VerifyStructWithStringAndValueArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -2955,51 +1847,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithIntSize(int size)
+        private static void VerifyShortArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -3007,51 +1860,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithIntSize(int size)
+        private static void VerifyStructWithTwoValuesArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -3059,51 +1873,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithIntSize(int size)
+        private static void VerifyStructWithValueArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -3111,51 +1886,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithIntSize(int size)
+        private static void VerifyUIntArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -3163,51 +1899,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithIntSize(int size)
+        private static void VerifyULongArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -3215,51 +1912,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithIntSize(int size)
+        private static void VerifyUShortArrayWithIntSize(int size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -3267,55 +1925,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithLongSize(long size)
+        private static void VerifyBoolArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -3323,51 +1942,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithLongSize(long size)
+        private static void VerifyByteArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -3375,51 +1955,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithLongSize(long size)
+        private static void VerifyCharArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -3427,51 +1968,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithLongSize(long size)
+        private static void VerifyDecimalArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -3479,51 +1981,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithLongSize(long size)
+        private static void VerifyDoubleArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -3531,51 +1994,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithLongSize(long size)
+        private static void VerifyFloatArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -3583,51 +2007,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithLongSize(long size)
+        private static void VerifyIntArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -3635,51 +2020,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithLongSize(long size)
+        private static void VerifyLongArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -3687,51 +2033,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithLongSize(long size)
+        private static void VerifyStructArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -3739,51 +2046,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithLongSize(long size)
+        private static void VerifySByteArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -3791,51 +2059,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithLongSize(long size)
+        private static void VerifyStructWithStringArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -3843,51 +2072,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithLongSize(long size)
+        private static void VerifyStructWithStringAndValueArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -3895,51 +2085,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithLongSize(long size)
+        private static void VerifyShortArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -3947,51 +2098,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithLongSize(long size)
+        private static void VerifyStructWithTwoValuesArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -3999,51 +2111,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithLongSize(long size)
+        private static void VerifyStructWithValueArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -4051,51 +2124,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithLongSize(long size)
+        private static void VerifyUIntArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -4103,51 +2137,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithLongSize(long size)
+        private static void VerifyULongArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -4155,51 +2150,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithLongSize(long size)
+        private static void VerifyUShortArrayWithLongSize(long size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -4207,55 +2163,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithSByteSize(sbyte size)
+        private static void VerifyBoolArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -4263,51 +2180,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithSByteSize(sbyte size)
+        private static void VerifyByteArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -4315,51 +2193,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithSByteSize(sbyte size)
+        private static void VerifyCharArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -4367,51 +2206,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithSByteSize(sbyte size)
+        private static void VerifyDecimalArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -4419,51 +2219,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithSByteSize(sbyte size)
+        private static void VerifyDoubleArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -4471,51 +2232,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithSByteSize(sbyte size)
+        private static void VerifyFloatArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -4523,51 +2245,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithSByteSize(sbyte size)
+        private static void VerifyIntArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -4575,51 +2258,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithSByteSize(sbyte size)
+        private static void VerifyLongArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -4627,51 +2271,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithSByteSize(sbyte size)
+        private static void VerifyStructArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -4679,51 +2284,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithSByteSize(sbyte size)
+        private static void VerifySByteArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -4731,51 +2297,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithSByteSize(sbyte size)
+        private static void VerifyStructWithStringArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -4783,51 +2310,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithSByteSize(sbyte size)
+        private static void VerifyStructWithStringAndValueArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -4835,51 +2323,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithSByteSize(sbyte size)
+        private static void VerifyShortArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -4887,51 +2336,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithSByteSize(sbyte size)
+        private static void VerifyStructWithTwoValuesArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -4939,51 +2349,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithSByteSize(sbyte size)
+        private static void VerifyStructWithValueArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -4991,51 +2362,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithSByteSize(sbyte size)
+        private static void VerifyUIntArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -5043,51 +2375,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithSByteSize(sbyte size)
+        private static void VerifyULongArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -5095,51 +2388,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithSByteSize(sbyte size)
+        private static void VerifyUShortArrayWithSByteSize(sbyte size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -5147,55 +2401,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(sbyte))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithShortSize(short size)
+        private static void VerifyBoolArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -5203,51 +2418,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithShortSize(short size)
+        private static void VerifyByteArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -5255,51 +2431,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithShortSize(short size)
+        private static void VerifyCharArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -5307,51 +2444,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithShortSize(short size)
+        private static void VerifyDecimalArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -5359,51 +2457,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithShortSize(short size)
+        private static void VerifyDoubleArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -5411,51 +2470,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithShortSize(short size)
+        private static void VerifyFloatArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -5463,51 +2483,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithShortSize(short size)
+        private static void VerifyIntArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -5515,51 +2496,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithShortSize(short size)
+        private static void VerifyLongArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -5567,51 +2509,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithShortSize(short size)
+        private static void VerifyStructArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -5619,51 +2522,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithShortSize(short size)
+        private static void VerifySByteArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -5671,51 +2535,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithShortSize(short size)
+        private static void VerifyStructWithStringArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -5723,51 +2548,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithShortSize(short size)
+        private static void VerifyStructWithStringAndValueArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -5775,51 +2561,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithShortSize(short size)
+        private static void VerifyShortArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -5827,51 +2574,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithShortSize(short size)
+        private static void VerifyStructWithTwoValuesArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -5879,51 +2587,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithShortSize(short size)
+        private static void VerifyStructWithValueArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -5931,51 +2600,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithShortSize(short size)
+        private static void VerifyUIntArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -5983,51 +2613,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithShortSize(short size)
+        private static void VerifyULongArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -6035,51 +2626,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithShortSize(short size)
+        private static void VerifyUShortArrayWithShortSize(short size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -6087,55 +2639,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithUIntSize(uint size)
+        private static void VerifyBoolArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -6143,51 +2656,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithUIntSize(uint size)
+        private static void VerifyByteArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -6195,51 +2669,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithUIntSize(uint size)
+        private static void VerifyCharArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -6247,51 +2682,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithUIntSize(uint size)
+        private static void VerifyDecimalArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -6299,51 +2695,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithUIntSize(uint size)
+        private static void VerifyDoubleArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -6351,51 +2708,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithUIntSize(uint size)
+        private static void VerifyFloatArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -6403,51 +2721,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithUIntSize(uint size)
+        private static void VerifyIntArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -6455,51 +2734,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithUIntSize(uint size)
+        private static void VerifyLongArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -6507,51 +2747,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithUIntSize(uint size)
+        private static void VerifyStructArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -6559,51 +2760,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithUIntSize(uint size)
+        private static void VerifySByteArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -6611,51 +2773,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithUIntSize(uint size)
+        private static void VerifyStructWithStringArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -6663,51 +2786,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithUIntSize(uint size)
+        private static void VerifyStructWithStringAndValueArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -6715,51 +2799,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithUIntSize(uint size)
+        private static void VerifyShortArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -6767,51 +2812,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithUIntSize(uint size)
+        private static void VerifyStructWithTwoValuesArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -6819,51 +2825,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithUIntSize(uint size)
+        private static void VerifyStructWithValueArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -6871,51 +2838,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithUIntSize(uint size)
+        private static void VerifyUIntArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -6923,51 +2851,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithUIntSize(uint size)
+        private static void VerifyULongArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -6975,51 +2864,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithUIntSize(uint size)
+        private static void VerifyUShortArrayWithUIntSize(uint size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -7027,55 +2877,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithULongSize(ulong size)
+        private static void VerifyBoolArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -7083,51 +2894,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithULongSize(ulong size)
+        private static void VerifyByteArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -7135,51 +2907,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithULongSize(ulong size)
+        private static void VerifyCharArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -7187,51 +2920,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithULongSize(ulong size)
+        private static void VerifyDecimalArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -7239,51 +2933,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithULongSize(ulong size)
+        private static void VerifyDoubleArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -7291,51 +2946,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithULongSize(ulong size)
+        private static void VerifyFloatArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -7343,51 +2959,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithULongSize(ulong size)
+        private static void VerifyIntArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -7395,51 +2972,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithULongSize(ulong size)
+        private static void VerifyLongArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -7447,51 +2985,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithULongSize(ulong size)
+        private static void VerifyStructArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -7499,51 +2998,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithULongSize(ulong size)
+        private static void VerifySByteArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -7551,51 +3011,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithULongSize(ulong size)
+        private static void VerifyStructWithStringArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -7603,51 +3024,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithULongSize(ulong size)
+        private static void VerifyStructWithStringAndValueArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -7655,51 +3037,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithULongSize(ulong size)
+        private static void VerifyShortArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -7707,51 +3050,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithULongSize(ulong size)
+        private static void VerifyStructWithTwoValuesArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -7759,51 +3063,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithULongSize(ulong size)
+        private static void VerifyStructWithValueArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -7811,51 +3076,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithULongSize(ulong size)
+        private static void VerifyUIntArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -7863,51 +3089,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithULongSize(ulong size)
+        private static void VerifyULongArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -7915,51 +3102,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithULongSize(ulong size)
+        private static void VerifyUShortArrayWithULongSize(ulong size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -7967,55 +3115,16 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
 
         #region  verifiers
 
-        private static void VerifyBoolArrayWithUShortSize(ushort size)
+        private static void VerifyBoolArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<bool[]>> e =
@@ -8023,51 +3132,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(bool),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<bool[]> f = e.Compile();
+            Func<bool[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            bool[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            bool[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new bool[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyByteArrayWithUShortSize(ushort size)
+        private static void VerifyByteArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<byte[]>> e =
@@ -8075,51 +3145,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(byte),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<byte[]> f = e.Compile();
+            Func<byte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            byte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            byte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new byte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyCharArrayWithUShortSize(ushort size)
+        private static void VerifyCharArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<char[]>> e =
@@ -8127,51 +3158,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(char),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<char[]> f = e.Compile();
+            Func<char[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            char[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            char[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new char[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDecimalArrayWithUShortSize(ushort size)
+        private static void VerifyDecimalArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<decimal[]>> e =
@@ -8179,51 +3171,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(decimal),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<decimal[]> f = e.Compile();
+            Func<decimal[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            decimal[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            decimal[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new decimal[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyDoubleArrayWithUShortSize(ushort size)
+        private static void VerifyDoubleArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<double[]>> e =
@@ -8231,51 +3184,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(double),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<double[]> f = e.Compile();
+            Func<double[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            double[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            double[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new double[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyFloatArrayWithUShortSize(ushort size)
+        private static void VerifyFloatArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<float[]>> e =
@@ -8283,51 +3197,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(float),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<float[]> f = e.Compile();
+            Func<float[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            float[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            float[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new float[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyIntArrayWithUShortSize(ushort size)
+        private static void VerifyIntArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<int[]>> e =
@@ -8335,51 +3210,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(int),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<int[]> f = e.Compile();
+            Func<int[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            int[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            int[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new int[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyLongArrayWithUShortSize(ushort size)
+        private static void VerifyLongArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<long[]>> e =
@@ -8387,51 +3223,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(long),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<long[]> f = e.Compile();
+            Func<long[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            long[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            long[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new long[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructArrayWithUShortSize(ushort size)
+        private static void VerifyStructArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<S[]>> e =
@@ -8439,51 +3236,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(S),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<S[]> f = e.Compile();
+            Func<S[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            S[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            S[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new S[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifySByteArrayWithUShortSize(ushort size)
+        private static void VerifySByteArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<sbyte[]>> e =
@@ -8491,51 +3249,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(sbyte),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<sbyte[]> f = e.Compile();
+            Func<sbyte[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            sbyte[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            sbyte[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new sbyte[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringArrayWithUShortSize(ushort size)
+        private static void VerifyStructWithStringArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sc[]>> e =
@@ -8543,51 +3262,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sc),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sc[]> f = e.Compile();
+            Func<Sc[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sc[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sc[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sc[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithStringAndValueArrayWithUShortSize(ushort size)
+        private static void VerifyStructWithStringAndValueArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Scs[]>> e =
@@ -8595,51 +3275,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Scs),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Scs[]> f = e.Compile();
+            Func<Scs[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Scs[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Scs[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Scs[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyShortArrayWithUShortSize(ushort size)
+        private static void VerifyShortArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<short[]>> e =
@@ -8647,51 +3288,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(short),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<short[]> f = e.Compile();
+            Func<short[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            short[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            short[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new short[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithTwoValuesArrayWithUShortSize(ushort size)
+        private static void VerifyStructWithTwoValuesArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Sp[]>> e =
@@ -8699,51 +3301,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Sp),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Sp[]> f = e.Compile();
+            Func<Sp[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Sp[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Sp[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Sp[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyStructWithValueArrayWithUShortSize(ushort size)
+        private static void VerifyStructWithValueArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<Ss[]>> e =
@@ -8751,51 +3314,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(Ss),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<Ss[]> f = e.Compile();
+            Func<Ss[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            Ss[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            Ss[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new Ss[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUIntArrayWithUShortSize(ushort size)
+        private static void VerifyUIntArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<uint[]>> e =
@@ -8803,51 +3327,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(uint),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<uint[]> f = e.Compile();
+            Func<uint[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            uint[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            uint[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new uint[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyULongArrayWithUShortSize(ushort size)
+        private static void VerifyULongArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ulong[]>> e =
@@ -8855,51 +3340,12 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ulong),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ulong[]> f = e.Compile();
+            Func<ulong[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ulong[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ulong[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ulong[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
-        private static void VerifyUShortArrayWithUShortSize(ushort size)
+        private static void VerifyUShortArrayWithUShortSize(ushort size, bool useInterpreter)
         {
             // generate the expression
             Expression<Func<ushort[]>> e =
@@ -8907,48 +3353,9 @@ namespace System.Linq.Expressions.Tests
                     Expression.NewArrayBounds(typeof(ushort),
                         Expression.Constant(size, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
-            Func<ushort[]> f = e.Compile();
+            Func<ushort[]> f = e.Compile(useInterpreter);
 
-            // get the array
-            ushort[] result = null;
-            Exception creationEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                creationEx = ex;
-            }
-
-            // generate expected array
-            ushort[] expected = null;
-            Exception expectedEx = null;
-            try
-            {
-                expected = new ushort[(long)size];
-            }
-            catch (Exception ex)
-            {
-                expectedEx = ex;
-            }
-
-            // if one failed, verify the other did, too
-            if (creationEx != null || expectedEx != null)
-            {
-                Assert.NotNull(creationEx);
-                Assert.NotNull(expectedEx);
-                Assert.Equal(expectedEx.GetType(), creationEx.GetType());
-            }
-            else
-            {
-                // otherwise, verify the contents array
-                Assert.Equal(expected.Length, result.Length);
-                for (int i = 0; i < result.Length; i++)
-                {
-                    Assert.Equal(expected[i], result[i]);
-                }
-            }
+            VerifyArrayGenerator(f, size);
         }
 
         #endregion
