@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Globalization;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -16,6 +13,20 @@ using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
+    internal sealed class ExceptionFilter
+    {
+        public readonly int LabelIndex;
+        public readonly int StartIndex;
+        public readonly int EndIndex;
+
+        internal ExceptionFilter(int labelIndex, int start, int end)
+        {
+            LabelIndex = labelIndex;
+            StartIndex = start;
+            EndIndex = end;
+        }
+    }
+
     internal sealed class ExceptionHandler
     {
         public readonly Type ExceptionType;
@@ -24,12 +35,13 @@ namespace System.Linq.Expressions.Interpreter
         public readonly int LabelIndex;
         public readonly int HandlerStartIndex;
         public readonly int HandlerEndIndex;
+        public readonly ExceptionFilter Filter;
 
         internal TryCatchFinallyHandler Parent = null;
 
         public bool IsFault { get { return ExceptionType == null; } }
 
-        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType)
+        internal ExceptionHandler(int start, int end, int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter filter)
         {
             StartIndex = start;
             EndIndex = end;
@@ -37,6 +49,7 @@ namespace System.Linq.Expressions.Interpreter
             ExceptionType = exceptionType;
             HandlerStartIndex = handlerStartIndex;
             HandlerEndIndex = handlerEndIndex;
+            Filter = filter;
         }
 
         internal void SetParent(TryCatchFinallyHandler tryHandler)
@@ -148,28 +161,62 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        /// <summary>
-        /// Goto the index of the first instruction of the suitable catch block
-        /// </summary>
-        internal int GotoHandler(InterpretedFrame frame, object exception, out ExceptionHandler handler)
+        internal bool HasHandler(InterpretedFrame frame, ref Exception exception, out ExceptionHandler handler)
         {
-            Debug.Assert(_handlers != null, "we should have at least one handler if the method gets called");
-            handler = null;
-            for (int i = 0; i < _handlers.Length; i++)
+            frame.SaveTraceToException(exception);
+
+            if (IsCatchBlockExist)
             {
-                if (_handlers[i].Matches(exception.GetType()))
+                Type exceptionType = exception.GetType();
+                for (int i = 0; i != _handlers.Length; ++i)
                 {
-                    handler = _handlers[i];
-                    break;
+                    ExceptionHandler candidate = _handlers[i];
+                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref exception, candidate.Filter)))
+                    {
+                        handler = candidate;
+                        return true;
+                    }
                 }
             }
-            if (handler == null) { return 0; }
-            return frame.Goto(handler.LabelIndex, exception, gotoExceptionHandler: true);
+
+            handler = null;
+            return false;
+        }
+
+        internal bool FilterPasses(InterpretedFrame frame, ref Exception exception, ExceptionFilter filter)
+        {
+            Interpreter interpreter = frame.Interpreter;
+            Instruction[] instructions = interpreter.Instructions.Instructions;
+            int stackIndex = frame.StackIndex;
+            try
+            {
+                int index = interpreter._labels[filter.LabelIndex].Index;
+                frame.Push(exception);
+                while (index >= filter.StartIndex && index < filter.EndIndex)
+                {
+                    index += instructions[index].Run(frame);
+                }
+
+                if ((bool)frame.Pop())
+                {
+                    // If this is the handler that will be executed, then if the filter has assigned to the exception variable
+                    // that change should be visible to the handler. Otherwise, it should not.
+                    exception = (Exception)frame.Peek();
+                    return true;
+                }
+            }
+            catch
+            {
+                // Silently eating exceptions and returning false matches the CLR behavior.
+                // Restore stack depth first.
+                frame.StackIndex = stackIndex;
+            }
+            return false;
         }
     }
 
     /// <summary>
-    /// The re-throw instrcution will throw this exception
+    /// The re-throw instruction will throw this exception
     /// </summary>
     internal sealed class RethrowException : Exception
     {
@@ -2036,7 +2083,7 @@ namespace System.Linq.Expressions.Interpreter
                             _instructions.EmitLeaveFault(hasValue);
                             _instructions.MarkLabel(end);
 
-                            exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, null));
+                            exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, null, null));
                             enterTryInstr.SetTryHandler(new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex, exHandlers.ToArray()));
                             PopLabelBlock(LabelScopeKind.Try);
                             return;
@@ -2046,17 +2093,35 @@ namespace System.Linq.Expressions.Interpreter
 
                 foreach (var handler in node.Handlers)
                 {
-                    PushLabelBlock(LabelScopeKind.Catch);
-
-                    if (handler.Filter != null)
-                    {
-                        throw new PlatformNotSupportedException(SR.FilterBlockNotSupported);
-                    }
-
                     var parameter = handler.Variable ?? Expression.Parameter(handler.Test);
 
                     var local = _locals.DefineLocal(parameter, _instructions.Count);
                     _exceptionForRethrowStack.Push(parameter);
+
+                    ExceptionFilter filter = null;
+
+                    if (handler.Filter != null)
+                    {
+                        PushLabelBlock(LabelScopeKind.Filter);
+
+                        _instructions.EmitEnterExceptionFilter();
+
+                        // at this point the stack balance is prepared for the hidden exception variable:
+                        int filterLabel = _instructions.MarkRuntimeLabel();
+                        int filterStart = _instructions.Count;
+
+                        CompileSetVariable(parameter, true);
+                        Compile(handler.Filter);
+
+                        filter = new ExceptionFilter(filterLabel, filterStart, _instructions.Count);
+
+                        // keep the value of the body on the stack:
+                        _instructions.EmitLeaveExceptionFilter();
+
+                        PopLabelBlock(LabelScopeKind.Filter);
+                    }
+
+                    PushLabelBlock(LabelScopeKind.Catch);
 
                     // add a stack balancing nop instruction (exception handling pushes the current exception):
                     if (hasValue)
@@ -2080,7 +2145,7 @@ namespace System.Linq.Expressions.Interpreter
                     // keep the value of the body on the stack:
                     _instructions.EmitLeaveExceptionHandler(hasValue, gotoEnd);
 
-                    exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, handler.Test));
+                    exHandlers.Add(new ExceptionHandler(tryStart, tryEnd, handlerLabel, handlerStart, _instructions.Count, handler.Test, filter));
                     PopLabelBlock(LabelScopeKind.Catch);
 
                     _locals.UndefineLocal(local, _instructions.Count);
