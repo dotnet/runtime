@@ -482,17 +482,16 @@ namespace System.Linq.Expressions
             Type[] typeArgs = new Type[paramCount + 1];
             if (paramCount > 0)
             {
-                var set = new Set<ParameterExpression>(parameterList.Count);
+                var set = new HashSet<ParameterExpression>();
                 for (int i = 0; i < paramCount; i++)
                 {
                     var param = parameterList[i];
                     ContractUtils.RequiresNotNull(param, "parameter");
                     typeArgs[i] = param.IsByRef ? param.Type.MakeByRefType() : param.Type;
-                    if (set.Contains(param))
+                    if (!set.Add(param))
                     {
                         throw Error.DuplicateVariable(param);
                     }
-                    set.Add(param);
                 }
             }
             typeArgs[paramCount] = body.Type;
@@ -564,7 +563,7 @@ namespace System.Linq.Expressions
                 {
                     throw Error.IncorrectNumberOfLambdaDeclarationParameters();
                 }
-                var set = new Set<ParameterExpression>(pis.Length);
+                var set = new HashSet<ParameterExpression>();
                 for (int i = 0, n = pis.Length; i < n; i++)
                 {
                     ParameterExpression pex = parameters[i];
@@ -584,11 +583,10 @@ namespace System.Linq.Expressions
                     {
                         throw Error.ParameterExpressionNotValidAsDelegate(pex.Type, pType);
                     }
-                    if (set.Contains(pex))
+                    if (!set.Add(pex))
                     {
                         throw Error.DuplicateVariable(pex);
                     }
-                    set.Add(pex);
                 }
             }
             else if (parameters.Count > 0)

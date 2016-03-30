@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Compiler
 
         // The blocks where this label is defined. If it has more than one item,
         // the blocks can't be jumped to except from a child block
-        private readonly Set<LabelScopeInfo> _definitions = new Set<LabelScopeInfo>();
+        private readonly HashSet<LabelScopeInfo> _definitions = new HashSet<LabelScopeInfo>();
 
         // Blocks that jump to this block
         private readonly List<LabelScopeInfo> _references = new List<LabelScopeInfo>();

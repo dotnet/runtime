@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
             // A stack of variables that are defined in nested scopes. We search
             // this first when resolving a variable in case a nested scope shadows
             // one of our variable instances.
-            private readonly Stack<Set<ParameterExpression>> _shadowedVars = new Stack<Set<ParameterExpression>>();
+            private readonly Stack<HashSet<ParameterExpression>> _shadowedVars = new Stack<HashSet<ParameterExpression>>();
 
             internal ExpressionQuoter(HoistedLocals scope, object[] locals)
             {
@@ -66,7 +66,7 @@ namespace System.Runtime.CompilerServices
 
             protected internal override Expression VisitLambda<T>(Expression<T> node)
             {
-                _shadowedVars.Push(new Set<ParameterExpression>(node.Parameters));
+                _shadowedVars.Push(new HashSet<ParameterExpression>(node.Parameters));
                 Expression b = Visit(node.Body);
                 _shadowedVars.Pop();
                 if (b == node.Body)
@@ -80,7 +80,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (node.Variables.Count > 0)
                 {
-                    _shadowedVars.Push(new Set<ParameterExpression>(node.Variables));
+                    _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
                 var b = Visit(node.Expressions);
                 if (node.Variables.Count > 0)
@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (node.Variable != null)
                 {
-                    _shadowedVars.Push(new Set<ParameterExpression>(new[] { node.Variable }));
+                    _shadowedVars.Push(new HashSet<ParameterExpression>{ node.Variable });
                 }
                 Expression b = Visit(node.Body);
                 Expression f = Visit(node.Filter);
@@ -169,7 +169,7 @@ namespace System.Runtime.CompilerServices
             private IStrongBox GetBox(ParameterExpression variable)
             {
                 // Skip variables that are shadowed by a nested scope/lambda
-                foreach (Set<ParameterExpression> hidden in _shadowedVars)
+                foreach (HashSet<ParameterExpression> hidden in _shadowedVars)
                 {
                     if (hidden.Contains(variable))
                     {
