@@ -85,7 +85,10 @@ bool pal::getcwd(pal::string_t* recv)
 
 bool pal::load_library(const char_t* path, dll_t* dll)
 {
-    *dll = ::LoadLibraryW(path);
+    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR:
+    //   In portable apps, coreclr would come from another directory than the host,
+    //   so make sure coreclr dependencies can be resolved from coreclr.dll load dir.
+    *dll = ::LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load the dll from %s, HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
