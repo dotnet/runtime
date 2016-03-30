@@ -1,8 +1,39 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Serialization;
+using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.Xml.XmlSerializer.Tests.Performance
 {
+    #region XmlSerializer performance tests
+
+    public class XsPerformanceTest
+    {
+        public static IEnumerable<object[]> SerializeMemberData()
+        {
+            return PerformanceTestCommon.PerformanceMemberData();
+        }
+
+        [Benchmark]
+        [MemberData(nameof(SerializeMemberData))]
+        public void XsSerializationTest(int iterations, TestType testType, int testSize)
+        {
+            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, XsSerializerFactory.GetInstance());
+        }
+
+        [Benchmark]
+        [MemberData(nameof(SerializeMemberData))]
+        public void XsDeSerializationTest(int iterations, TestType testType, int testSize)
+        {
+            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, XsSerializerFactory.GetInstance());
+        }
+    }
+
+    #endregion
+
+    #region XmlSerializer wrapper
+
     internal class XsSerializerFactory : SerializerFactory
     {
         private static XsSerializerFactory _instance = null;
@@ -15,15 +46,9 @@ namespace System.Xml.XmlSerializer.Tests.Performance
             return _instance;
         }
 
-        public override IPerfTestSerializer GetSerializer(SerializerType serializerType)
+        public override IPerfTestSerializer GetSerializer()
         {
-            switch (serializerType)
-            {
-                case SerializerType.XmlSerializer:
-                    return new XsSerializer();
-                default:
-                    throw new NotImplementedException();
-            }
+            return new XsSerializer();
         }
     }
 
@@ -52,4 +77,6 @@ namespace System.Xml.XmlSerializer.Tests.Performance
             stream.Position = 0;
         }
     }
+
+    #endregion
 }

@@ -1,7 +1,38 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.Runtime.Serialization.Xml.Tests.Performance
 {
+    #region DCS performance tests
+
+    public class DcsPerformanceTest
+    {
+        public static IEnumerable<object[]> SerializeMemberData()
+        {
+            return PerformanceTestCommon.PerformanceMemberData();
+        }
+
+        [Benchmark]
+        [MemberData(nameof(SerializeMemberData))]
+        public void DcsSerializationTest(int iterations, TestType testType, int testSize)
+        {
+            PerformanceTestCommon.RunSerializationPerformanceTest(iterations, testType, testSize, DcsSerializerFactory.GetInstance());
+        }
+
+        [Benchmark]
+        [MemberData(nameof(SerializeMemberData))]
+        public void DcsDeSerializationTest(int iterations, TestType testType, int testSize)
+        {
+            PerformanceTestCommon.RunDeSerializationPerformanceTest(iterations, testType, testSize, DcsSerializerFactory.GetInstance());
+        }
+    }
+
+    #endregion
+
+    #region DCS serializer wrapper
+
     internal class DcsSerializerFactory : SerializerFactory
     {
         private static DcsSerializerFactory _instance = null;
@@ -14,15 +45,9 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
             return _instance;
         }
 
-        public override IPerfTestSerializer GetSerializer(SerializerType serializerType)
+        public override IPerfTestSerializer GetSerializer()
         {
-            switch (serializerType)
-            {
-                case SerializerType.DataContractSerializer:
-                    return new DcsSerializer();
-                default:
-                    throw new NotImplementedException();
-            }
+            return new DcsSerializer();
         }
     }
 
@@ -51,4 +76,6 @@ namespace System.Runtime.Serialization.Xml.Tests.Performance
             stream.Position = 0;
         }
     }
+
+    #endregion
 }

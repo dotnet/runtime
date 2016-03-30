@@ -9,14 +9,6 @@ namespace System.Runtime.Serialization
 {
     #region Performance tests configuration types
 
-    public enum SerializerType
-    {
-        DataContractSerializer,
-        DataContractJsonSerializer,
-        XmlSerializer,
-        JsonNet
-    }
-
     public enum TestType
     {
         SimpleType,
@@ -37,7 +29,7 @@ namespace System.Runtime.Serialization
 
     public abstract class SerializerFactory
     {
-        public abstract IPerfTestSerializer GetSerializer(SerializerType serializerType);
+        public abstract IPerfTestSerializer GetSerializer();
     }
 
     #endregion
@@ -47,21 +39,21 @@ namespace System.Runtime.Serialization
 
         #region Performance test configuration
 
-        public static IEnumerable<object[]> PerformanceMemberData(SerializerType serializerType)
+        public static IEnumerable<object[]> PerformanceMemberData()
         {
-            yield return new object[] { 100, TestType.ByteArray, 1024, serializerType };
-            yield return new object[] { 5, TestType.ByteArray, 1024 * 1024, serializerType };
-            yield return new object[] { 10000, TestType.String, 128, serializerType };
-            yield return new object[] { 10000, TestType.String, 1024, serializerType };
-            yield return new object[] { 1000, TestType.ListOfInt, 128, serializerType };
-            yield return new object[] { 1000, TestType.ListOfInt, 1024, serializerType };
-            yield return new object[] { 1, TestType.ListOfInt, 1024 * 1024, serializerType };
-            yield return new object[] { 1000, TestType.Dictionary, 128, serializerType };
-            yield return new object[] { 100, TestType.Dictionary, 1024, serializerType };
-            yield return new object[] { 10, TestType.SimpleType, 1, serializerType };
-            yield return new object[] { 1, TestType.SimpleType, 15, serializerType };
-            yield return new object[] { 10000, TestType.ISerializable, -1, serializerType };
-            yield return new object[] { 10000, TestType.XmlElement, -1, serializerType };
+            yield return new object[] { 100, TestType.ByteArray, 1024 };
+            yield return new object[] { 5, TestType.ByteArray, 1024 * 1024 };
+            yield return new object[] { 10000, TestType.String, 128 };
+            yield return new object[] { 10000, TestType.String, 1024 };
+            yield return new object[] { 1000, TestType.ListOfInt, 128 };
+            yield return new object[] { 1000, TestType.ListOfInt, 1024 };
+            yield return new object[] { 1, TestType.ListOfInt, 1024 * 1024 };
+            yield return new object[] { 1000, TestType.Dictionary, 128 };
+            yield return new object[] { 100, TestType.Dictionary, 1024 };
+            yield return new object[] { 10, TestType.SimpleType, 1 };
+            yield return new object[] { 1, TestType.SimpleType, 15 };
+            yield return new object[] { 10000, TestType.ISerializable, -1 };
+            yield return new object[] { 10000, TestType.XmlElement, -1 };
         }
 
         #endregion
@@ -157,11 +149,11 @@ namespace System.Runtime.Serialization
 
         #region Methods to run serialization performance tests
 
-        public static void RunSerializationPerformanceTest(int iterations, SerializerType serializerType, TestType testType, int testSize, SerializerFactory serializerFactory)
+        public static void RunSerializationPerformanceTest(int iterations, TestType testType, int testSize, SerializerFactory serializerFactory)
         {
             var obj = GetSerializationObject(testType, testSize);
 
-            var serializer = serializerFactory.GetSerializer(serializerType);
+            var serializer = serializerFactory.GetSerializer();
             serializer.Init(obj);
 
             using (var stream = new MemoryStream())
@@ -179,11 +171,11 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public static void RunDeSerializationPerformanceTest(int iterations, SerializerType serializerType, TestType testType, int testSize, SerializerFactory serializerFactory)
+        public static void RunDeSerializationPerformanceTest(int iterations, TestType testType, int testSize, SerializerFactory serializerFactory)
         {
             var obj = GetSerializationObject(testType, testSize);
 
-            var serializer = serializerFactory.GetSerializer(serializerType);
+            var serializer = serializerFactory.GetSerializer();
             serializer.Init(obj);
 
             using (var stream = new MemoryStream())
