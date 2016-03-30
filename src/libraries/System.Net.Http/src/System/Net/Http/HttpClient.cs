@@ -58,7 +58,7 @@ namespace System.Net.Http
                 CheckBaseAddress(value, "value");
                 CheckDisposedOrStarted();
 
-                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.UriBaseAddress(this, _baseAddress.ToString());
+                if (HttpEventSource.Log.IsEnabled()) HttpEventSource.UriBaseAddress(this, value != null ? value.ToString() : string.Empty);
 
                 _baseAddress = value;
             }
