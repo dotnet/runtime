@@ -34,6 +34,12 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
+        }
+
+        [Fact]
         public void CurrentUICulture()
         {
             // Run all tests in one method to avoid multi-threading issues
@@ -56,6 +62,12 @@ namespace System.Globalization.Tests
                 CultureInfo.CurrentUICulture = defaultUICulture;
             }
             Assert.Equal(CultureInfo.CurrentUICulture, defaultUICulture);
+        }
+
+        [Fact]
+        public void CurrentUICulture_Set_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
         }
     }
 }

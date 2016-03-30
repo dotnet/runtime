@@ -26,5 +26,18 @@ namespace System.Globalization.Tests
             CultureInfo readOnlyCulture = CultureInfo.ReadOnly(culture);
             Assert.True(readOnlyCulture.IsReadOnly);
         }
+
+        [Fact]
+        public void ReadOnly_ReadOnlyCulture_ReturnsSameReference()
+        {
+            CultureInfo readOnlyCulture = CultureInfo.ReadOnly(new CultureInfo("en-US"));
+            Assert.Same(readOnlyCulture, CultureInfo.ReadOnly(readOnlyCulture));
+        }
+
+        [Fact]
+        public void ReadOnly_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("ci", () => CultureInfo.ReadOnly(null));
+        }
     }
 }
