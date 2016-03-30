@@ -30,7 +30,10 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="i_array_merge-ia64.il" />
+    <Compile Condition="'$(Platform)' ==   'x64'" Include="i_array_merge-ia64.il" />
+    <Compile Condition="'$(Platform)' == 'arm64'" Include="i_array_merge-ia64.il" />
+    <Compile Condition="'$(Platform)' ==   'x86'" Include="i_array_merge-i386.il" />
+    <Compile Condition="'$(Platform)' ==   'arm'" Include="i_array_merge-i386.il" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
