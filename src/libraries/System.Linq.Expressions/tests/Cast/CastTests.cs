@@ -276,14 +276,14 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckUnsignedEnumInObjectCastEnum(bool useInterpreter)
         {
-            foreach (Eu value in new[] { Eu.Bagahi, Eu.Laca, Eu.Bachahé, (Eu)uint.MaxValue })
+            foreach (Eu value in new[] { Eu.Bagahi, Eu.Laca, Eu.Bachahe, (Eu)uint.MaxValue })
                 VerifyUnsignedEnumInObjectCastEnum(value, useInterpreter);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckUnsignedEnumCastEnum(bool useInterpreter)
         {
-            foreach (Eu value in new[] { Eu.Bagahi, Eu.Laca, Eu.Bachahé, (Eu)uint.MaxValue })
+            foreach (Eu value in new[] { Eu.Bagahi, Eu.Laca, Eu.Bachahe, (Eu)uint.MaxValue })
                 VerifyUnsignedEnumCastEnum(value, useInterpreter);
         }
 
