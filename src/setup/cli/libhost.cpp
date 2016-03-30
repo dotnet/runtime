@@ -36,7 +36,7 @@ host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal
         p_own_dir->assign(own_dir);
     }
 
-    pal::string_t own_dll_filename = strip_file_ext(own_name) + _X(".dll");
+    pal::string_t own_dll_filename = get_executable(own_name) + _X(".dll");
     pal::string_t own_dll = own_dir;
     append_path(&own_dll, own_dll_filename.c_str());
     trace::info(_X("Own DLL path=[%s]"), own_dll.c_str());
