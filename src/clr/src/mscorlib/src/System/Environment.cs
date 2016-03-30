@@ -1307,19 +1307,6 @@ namespace System {
             return m_resHelper.GetResourceString(key);
         }
 
-        // #threadCultureInfo
-        // Currently in silverlight, CurrentCulture and CurrentUICulture are isolated 
-        // within an AppDomain. This is in contrast to the desktop, in which cultures 
-        // leak across AppDomain boundaries with the thread. 
-        // 
-        // Note that mscorlib transitions to the default domain to perform resource 
-        // lookup. This causes problems for the silverlight changes: since culture isn't
-        // passed, resource string lookup won't necessarily use the culture of the thread 
-        // originating the request. To get around that problem, we pass the CultureInfo 
-        // so that the ResourceManager GetString(x, cultureInfo) overload can be used. 
-        // We first perform the same check as in CultureInfo to make sure it's safe to 
-        // let the CultureInfo travel across AppDomains. 
-
         [System.Security.SecuritySafeCritical]  // auto-generated
         internal static String GetResourceString(String key) {
 #if FEATURE_CORECLR
