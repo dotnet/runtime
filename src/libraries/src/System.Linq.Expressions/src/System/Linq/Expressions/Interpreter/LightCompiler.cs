@@ -1187,7 +1187,7 @@ namespace System.Linq.Expressions.Interpreter
             if (typeTo.GetTypeInfo().IsEnum)
             {
                 _instructions.Emit(NullCheckInstruction.Instance);
-                _instructions.EmitCastToEnum(typeTo);
+                _instructions.EmitCastReferenceToEnum(typeTo);
                 return;
             }
 
