@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Tests
     {
         Bagahi,
         Laca,
-        Bachahé
+        Bachahe
     }
 
     public struct S : IEquatable<S>
