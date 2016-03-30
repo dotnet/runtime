@@ -320,7 +320,7 @@ mono_get_corlib_version (void)
 	if (! (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 		return -1;
 	value = mono_field_get_value_object_checked (mono_domain_get (), field, NULL, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_assert_ok (&error);
 	return *(gint32*)((gchar*)value + sizeof (MonoObject));
 }
 
@@ -435,13 +435,18 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new_checked (mono_domain_get (), klass, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto fail;
 	setup->configuration_file = configuration_file != NULL ? mono_string_new (mono_domain_get (), configuration_file) : NULL;
 
 	ad = mono_domain_create_appdomain_internal (friendly_name, setup, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error))
+		goto fail;
 
 	return mono_domain_from_appdomain (ad);
+fail:
+	mono_error_cleanup (&error);
+	return NULL;
 }
 
 /**
@@ -938,23 +943,20 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-#ifdef DISABLE_APPDOMAINS
-	mono_set_pending_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
-	return NULL;
-#else
 	MonoError error;
+	MonoAppDomain *ad = NULL;
+#ifdef DISABLE_APPDOMAINS
+	mono_error_set_not_supported (&error, "AppDomain creation is not supported on this runtime.");
+#else
 	char *fname;
-	MonoAppDomain *ad;
 
 	fname = mono_string_to_utf8 (friendly_name);
 	ad = mono_domain_create_appdomain_internal (fname, setup, &error);
 
 	g_free (fname);
-
-	mono_error_raise_exception (&error);
-
-	return ad;
 #endif
+	mono_error_set_pending_exception (&error);
+	return ad;
 }
 
 MonoArray *
@@ -1057,18 +1059,13 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *req
 
 	/* FIXME: We invoke managed code here, so there is a potential for deadlocks */
 	str = mono_string_new (domain, aname_str);
+	g_free (aname_str);
 	if (!str) {
-		g_free (aname_str);
 		return NULL;
 	}
 
 	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly, &error);
-	if (!mono_error_ok (&error)) {
-		g_free (aname_str);
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
-	}
-
-	g_free (aname_str);
+	mono_error_cleanup (&error);
 
 	if (assembly)
 		return assembly->assembly;
@@ -1163,7 +1160,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	*params = ref_assembly;
 
 	mono_runtime_invoke_checked (assembly_load_method, domain->domain, params, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	mono_error_cleanup (&error);
 }
 
 /*
@@ -2309,7 +2306,7 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid)
 		MonoError error;
 		MonoString *res = NULL;
 		res = mono_string_new_utf16_checked (mono_domain_get (), process_guid, sizeof(process_guid)/2, &error);
-		mono_error_raise_exception (&error);
+		mono_error_set_pending_exception (&error);
 		return res;
 	}
 	memcpy (process_guid, mono_string_chars(newguid), sizeof(process_guid));
@@ -2430,9 +2427,17 @@ unload_thread_main (void *arg)
 	/* Have to attach to the runtime so shutdown can wait for this thread */
 	/* Force it to be attached to avoid racing during shutdown. */
 	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error)) {
+		data->failure_reason = g_strdup (mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		goto failure;
+	}
 	mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "Domain unloader"), TRUE, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
+	if (!is_ok (&error)) {
+		data->failure_reason = g_strdup (mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		goto failure;
+	}
 
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 
