@@ -29,7 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="*.cs" />  
-    <Compile Include="..\common\Assertion.cs" />   
+    <Compile Include="..\..\common\Assertion.cs" />   
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -38,7 +38,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj">
+    <ProjectReference Include="..\..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj">
       <Project>{c8c0dc74-fac4-45b1-81fe-70c4808366e0}</Project>
       <Name>CoreCLRTestLibrary</Name>
     </ProjectReference>
