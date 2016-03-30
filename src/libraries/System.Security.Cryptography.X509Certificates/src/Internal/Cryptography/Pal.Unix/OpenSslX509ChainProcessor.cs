@@ -697,7 +697,10 @@ namespace Internal.Cryptography.Pal
                         Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
                         int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
 
-                        if (errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+                        // We don't report "OK" as an error.
+                        // For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
+                        if (errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK &&
+                            errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID)
                         {
                             while (Errors.Count <= errorDepth)
                             {
