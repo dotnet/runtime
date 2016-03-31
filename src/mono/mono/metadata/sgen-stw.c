@@ -24,6 +24,7 @@
 #include "sgen/sgen-client.h"
 #include "metadata/sgen-bridge-internals.h"
 #include "metadata/gc-internals.h"
+#include "utils/mono-threads.h"
 
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
@@ -409,11 +410,7 @@ sgen_unified_suspend_stop_world (void)
 		mono_threads_wait_pending_operations ();
 
 		if (sleep_duration < 0) {
-#ifdef HOST_WIN32
-			SwitchToThread ();
-#else
-			sched_yield ();
-#endif
+			mono_thread_info_yield ();
 			sleep_duration = 0;
 		} else {
 			g_usleep (sleep_duration);
