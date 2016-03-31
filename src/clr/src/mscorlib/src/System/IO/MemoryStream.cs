@@ -65,7 +65,7 @@ namespace System.IO {
             }
             Contract.EndContractBlock();
 
-            _buffer = new byte[capacity];
+            _buffer = capacity != 0 ? new byte[capacity] : EmptyArray<byte>.Value;
             _capacity = capacity;
             _expandable = true;
             _writable = true;
