@@ -7667,6 +7667,16 @@ int CodeGenInterface::genSPtoFPdelta()
 {
     int delta;
 
+#ifdef PLATFORM_UNIX
+
+    // We require frame chaining on Unix to support native tool unwinding (such as
+    // unwinding by the native debugger). We have a CLR-only extension to the
+    // unwind codes (UWOP_SET_FPREG_LARGE) to support SP->FP offsets larger than 240.
+    // If Unix ever supports EnC, the RSP == RBP assumption will have to be reevaluated.
+    delta = genTotalFrameSize();
+
+#else // !PLATFORM_UNIX
+
     // As per Amd64 ABI, RBP offset from initial RSP can be between 0 and 240 if
     // RBP needs to be reported in unwind codes.  This case would arise for methods
     // with localloc.
@@ -7690,6 +7700,8 @@ int CodeGenInterface::genSPtoFPdelta()
     {
         delta = genTotalFrameSize();
     }
+
+#endif // !PLATFORM_UNIX
 
     return delta;
 }

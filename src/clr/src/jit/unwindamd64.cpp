@@ -380,17 +380,41 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 
     assert(func->unwindHeader.Version == 1); // Can't call this before unwindBegProlog
     assert(func->unwindHeader.CountOfUnwindCodes == 0); // Can't call this after unwindReserve
-    assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
-    UNWIND_CODE * code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
-    code->CodeOffset = (BYTE)cbProlog;
-    code->UnwindOp = UWOP_SET_FPREG;
-    code->OpInfo = 0;
+
     func->unwindHeader.FrameRegister = (BYTE)reg;
-    assert(offset <= 240);
-    assert(offset % 16 == 0);
-    func->unwindHeader.FrameOffset = offset / 16;
+
+#ifdef PLATFORM_UNIX
+    if (offset > 240)
+    {
+        // On Unix only, we have a CLR-only extension to the AMD64 unwind codes: UWOP_SET_FPREG_LARGE.
+        // It has a 32-bit offset (scaled). You must set UNWIND_INFO.FrameOffset to 15. The 32-bit
+        // offset follows in 2 UNWIND_CODE fields.
+
+        assert(func->unwindCodeSlot > (sizeof(UNWIND_CODE) + sizeof(ULONG)));
+        ULONG* codedSize = (ULONG*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(ULONG)];
+        assert(offset % 16 == 0);
+        *codedSize = offset / 16;
+
+        UNWIND_CODE* code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code->CodeOffset = (BYTE)cbProlog;
+        code->OpInfo = 0;
+        code->UnwindOp = UWOP_SET_FPREG_LARGE;
+        func->unwindHeader.FrameOffset = 15;
+    }
+    else
+#endif // PLATFORM_UNIX
+    {
+        assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
+        UNWIND_CODE* code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
+        code->CodeOffset = (BYTE)cbProlog;
+        code->OpInfo = 0;
+        code->UnwindOp = UWOP_SET_FPREG;
+        assert(offset <= 240);
+        assert(offset % 16 == 0);
+        func->unwindHeader.FrameOffset = offset / 16;
+    }
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -545,6 +569,7 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
 
     for (unsigned i = 0; i < pHeader->CountOfUnwindCodes; i++)
     {
+        unsigned offset;
         const UNWIND_CODE * const pCode = &(pHeader->UnwindCode[i]);
         switch (pCode->UnwindOp) 
         {
@@ -587,6 +612,26 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
             printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG (%u)       OpInfo: Unused (%u)\n",
                 pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
             break;
+
+#ifdef PLATFORM_UNIX
+
+        case UWOP_SET_FPREG_LARGE:
+            printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG_LARGE (%u) OpInfo: Unused (%u)\n",
+                pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
+            i++;
+            offset = *(ULONG*)&(pHeader->UnwindCode[i]);
+            i++;
+            printf("      Scaled Offset: %u * 16 = %u = 0x%08X\n",
+                    offset,
+                    offset * 16,
+                    offset * 16);
+            if ((offset & 0xF0000000) != 0)
+            {
+                printf("      Illegal unscaled offset: too large\n");
+            }
+            break;
+
+#endif // PLATFORM_UNIX
 
         case UWOP_SAVE_NONVOL:
             printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL (%u)     OpInfo: %s (%u)\n",
