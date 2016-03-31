@@ -1279,26 +1279,6 @@ ves_icall_System_Reflection_Emit_CustomAttributeBuilder_GetBlob (MonoReflectionA
 }
 
 static gboolean
-get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
-{
-	MonoMethod **dest = (MonoMethod **)data;
-
-	/* skip unmanaged frames */
-	if (!managed)
-		return FALSE;
-
-	if (m == *dest) {
-		*dest = NULL;
-		return FALSE;
-	}
-	if (!(*dest)) {
-		*dest = m;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static gboolean
 get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
 	MonoMethod **dest = (MonoMethod **)data;
