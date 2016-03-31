@@ -10074,17 +10074,8 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		return mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", "");
 	}
 	default: {
-		MonoLoaderError *error;
-		MonoException *ex;
-		
-		error = mono_loader_get_last_error ();
-		if (error != NULL){
-			ex = mono_loader_error_prepare_exception (error);
-			return ex;
-		}
-		
 		/* TODO - handle other class related failures */
-		return NULL;
+		return mono_get_exception_execution_engine ("Unknown class failure");
 	}
 	}
 }

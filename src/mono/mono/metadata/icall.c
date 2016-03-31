@@ -3858,8 +3858,7 @@ loader_error:
 	if (mono_class_has_failure (klass)) {
 		*ex = mono_class_get_exception_for_failure (klass);
 	} else {
-		*ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-		mono_loader_clear_error ();
+		*ex = mono_get_exception_execution_engine ("Unknown error");
 	}
 	return NULL;
 }
@@ -4508,20 +4507,9 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		if (throwOnError)
 			e = mono_get_exception_type_load (name, NULL);
 
-		if (mono_loader_get_last_error () && mono_defaults.generic_ilist_class)
-			e = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-
-		mono_loader_clear_error ();
-
 		if (e != NULL)
 			mono_set_pending_exception (e);
 		return NULL;
-	} else if (mono_loader_get_last_error ()) {
-		if (throwOnError) {
-			mono_set_pending_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-			return NULL;
-		}
-		mono_loader_clear_error ();
 	}
 
 	if (type->type == MONO_TYPE_CLASS) {
@@ -7983,12 +7971,7 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 		return NULL;
 	}
 
-	if (mono_loader_get_last_error ()) {
-		mono_set_pending_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-		return NULL;
-	} else {
-		return res;
-	}
+	return res;
 }
 
 ICALL_EXPORT MonoArray*
