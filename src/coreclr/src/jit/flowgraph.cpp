@@ -17467,10 +17467,17 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
                                            SpecialCodeKind  kind,
                                            unsigned         stkDepth)
 {
-    /* For debuggable code, genJumpToThrowHlpBlk() will generate the 'throw'
-       code inline. It has to be kept consistent with fgAddCodeRef() */
+    // Record that the code will call a THROW_HELPER
+    // so on Windows Amd64 we can allocate the 4 outgoing
+    // arg slots on the stack frame if there are no other calls.
+    compUsesThrowHelper = true;
+
+    // For debuggable code, genJumpToThrowHlpBlk() will generate the 'throw'
+    // code inline. It has to be kept consistent with fgAddCodeRef()
     if (opts.compDbgCode)
-        return NULL;
+    {
+        return nullptr;
+    }
 
     const static
     BBjumpKinds jumpKinds[] =

@@ -7353,6 +7353,8 @@ public :
 #endif // !LEGACY_BACKEND
     bool                compRationalIRForm;
 
+    bool                compUsesThrowHelper;            // There is a call to a THOROW_HELPER for the compiled method.
+
     bool                compGeneratingProlog;
     bool                compGeneratingEpilog;
     bool                compNeedsGSSecurityCookie;      // There is an unsafe buffer (or localloc) on the stack.
