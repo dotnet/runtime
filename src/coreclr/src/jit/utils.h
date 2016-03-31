@@ -432,7 +432,7 @@ class AssemblyNamesList2
 {
     struct AssemblyName
     {
-        LPUTF8          m_assemblyName;
+        char*           m_assemblyName;
         AssemblyName*   m_next;
     };
 
@@ -447,7 +447,7 @@ public:
     ~AssemblyNamesList2();
 
     // Return 'true' if 'assemblyName' (in UTF-8 format) is in the stored list of assembly names.
-    bool IsInList(LPCUTF8 assemblyName);
+    bool IsInList(const char* assemblyName);
 
     // Return 'true' if the assembly name list is empty.
     bool IsEmpty()
