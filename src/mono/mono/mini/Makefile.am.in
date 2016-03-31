@@ -438,7 +438,6 @@ common_sources = \
 	mini-trampolines.c  	\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
-	mini-generic-sharing-gsharedvt.c	\
 	simd-methods.h		\
 	tasklets.c		\
 	tasklets.h		\
