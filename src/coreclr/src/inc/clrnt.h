@@ -816,7 +816,24 @@ typedef enum _UNWIND_OP_CODES {
     UWOP_SPARE_CODE,
     UWOP_SAVE_XMM128,
     UWOP_SAVE_XMM128_FAR,
-    UWOP_PUSH_MACHFRAME
+    UWOP_PUSH_MACHFRAME,
+
+#ifdef PLATFORM_UNIX
+    // UWOP_SET_FPREG_LARGE is a CLR Unix-only extension to the Windows AMD64 unwind codes.
+    // It is not part of the standard Windows AMD64 unwind codes specification.
+    // UWOP_SET_FPREG allows for a maximum of a 240 byte offset between RSP and the
+    // frame pointer, when the frame pointer is established. UWOP_SET_FPREG_LARGE
+    // has a 32-bit range scaled by 16. When UWOP_SET_FPREG_LARGE is used,
+    // UNWIND_INFO.FrameRegister must be set to the frame pointer register, and
+    // UNWIND_INFO.FrameOffset must be set to 15 (its maximum value). UWOP_SET_FPREG_LARGE
+    // is followed by two UNWIND_CODEs that are combined to form a 32-bit offset (the same
+    // as UWOP_SAVE_NONVOL_FAR). This offset is then scaled by 16. The result must be less
+    // than 2^32 (that is, the top 4 bits of the unscaled 32-bit number must be zero). This
+    // result is used as the frame pointer register offset from RSP at the time the frame pointer
+    // is established. Either UWOP_SET_FPREG or UWOP_SET_FPREG_LARGE can be used, but not both.
+
+    UWOP_SET_FPREG_LARGE,
+#endif // PLATFORM_UNIX
 } UNWIND_OP_CODES, *PUNWIND_OP_CODES;
 
 static const UCHAR UnwindOpExtraSlotTable[] = {
@@ -830,7 +847,11 @@ static const UCHAR UnwindOpExtraSlotTable[] = {
     2,          // UWOP_SPARE_CODE      // previously 64-bit UWOP_SAVE_XMM_FAR
     1,          // UWOP_SAVE_XMM128
     2,          // UWOP_SAVE_XMM128_FAR
-    0           // UWOP_PUSH_MACHFRAME
+    0,          // UWOP_PUSH_MACHFRAME
+
+#ifdef PLATFORM_UNIX
+    2,          // UWOP_SET_FPREG_LARGE
+#endif // PLATFORM_UNIX
 };
 
 //
