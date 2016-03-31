@@ -132,7 +132,7 @@ namespace System.Runtime.Versioning
             identifier = identifier.Trim();
             if (identifier.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "identifier"), nameof(identifier));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(identifier)), nameof(identifier));
             }
             if (version == null)
             {
@@ -173,7 +173,7 @@ namespace System.Runtime.Versioning
             }
             if (frameworkName.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, "frameworkName"), nameof(frameworkName));
+                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
             }
 
             string[] components = frameworkName.Split(c_componentSeparator);
@@ -203,16 +203,17 @@ namespace System.Runtime.Versioning
             for (int i = 1; i < components.Length; i++)
             {
                 // Get the key/value pair separated by '='
-                string[] keyValuePair = components[i].Split(c_keyValueSeparator);
+                string component = components[i];
+                int separatorIndex = component.IndexOf(c_keyValueSeparator);
 
-                if (keyValuePair.Length != 2)
+                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(c_keyValueSeparator))
                 {
                     throw new ArgumentException(SR.Argument_FrameworkNameInvalid, nameof(frameworkName));
                 }
 
                 // Get the key and value, trimming any whitespace
-                string key = keyValuePair[0].Trim();
-                string value = keyValuePair[1].Trim();
+                string key = component.Substring(0, separatorIndex).Trim();
+                string value = component.Substring(separatorIndex + 1).Trim();
 
                 //
                 // 2) Parse the required "Version" key value
