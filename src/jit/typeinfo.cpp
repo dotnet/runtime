@@ -217,7 +217,7 @@ BOOL         typeInfo::tiCompatibleWith          (COMP_HANDLE CompHnd,
         return tiCompatibleWithByRef(CompHnd, child, parent);
     }
 #ifdef _TARGET_64BIT_
-    // In WIN64 we have precise representation for native int, so these rules
+    // On 64-bit targets we have precise representation for native int, so these rules
     // represent the fact that the ECMA spec permits the implicit conversion 
     // between an int32 and a native int.
     else if (parent.IsType(TI_INT) && typeInfo::AreEquivalent(nativeInt(), child))
@@ -348,7 +348,7 @@ BOOL         typeInfo::tiMergeToCommonParent     (COMP_HANDLE CompHnd, typeInfo 
         return tiCompatibleWithByRef(CompHnd, *pSrc, *pDest);
     }
 #ifdef _TARGET_64BIT_
-    // In WIN64 we have precise representation for native int, so these rules
+    // On 64-bit targets we have precise representation for native int, so these rules
     // represent the fact that the ECMA spec permits the implicit conversion 
     // between an int32 and a native int.
     else if (typeInfo::AreEquivalent(*pDest, typeInfo::nativeInt()) && pSrc->IsType(TI_INT))

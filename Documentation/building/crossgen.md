@@ -42,11 +42,12 @@ Then, run one of the following two commands (first command for Windows, second c
 To create native images for other assemblies, the command line is slightly more complex:
 
     .\crossgen.exe /Platform_Assemblies_Paths "path1;path2;..." assemblyName.dll
-    ./crossgen /Platform_Assemblies_Paths "path1;path2;..." assemblyName.dll
+    ./crossgen /Platform_Assemblies_Paths "path1:path2:..." assemblyName.dll
     
 The /Platform_Assemblies_Paths is used to specify the location of all the dependencies of the input assembly.
 You should use full paths for this locations. Relative paths do not always work.
-If there are multiple paths, separate them with semicolons (`;`). On non-Windows platforms, be sure to enclose the path list in quotes to protect the semicolons from the shell.
+If there are multiple paths, separate them with semicolons (`;`) on Windows, or colons (`:`) on non-Windows platforms.
+It is generally a good idea to enclose the path list in quotes to protect any special characters from the shell.
 
 Using native images
 -------------------

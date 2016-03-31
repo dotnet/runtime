@@ -1834,6 +1834,24 @@ UNATIVE_OFFSET      emitter::emitInsSizeSV(instrDesc* id, int var, int dsp, int 
 
 /*****************************************************************************/
 
+static bool baseRegisterRequiresSibByte(regNumber base)
+{
+#ifdef _TARGET_AMD64_
+    return base == REG_ESP || base == REG_R12;
+#else
+    return base == REG_ESP;
+#endif
+}
+
+static bool baseRegisterRequiresDisplacement(regNumber base)
+{
+#ifdef _TARGET_AMD64_
+    return base == REG_EBP || base == REG_R13;
+#else
+    return base == REG_EBP;
+#endif
+}
+
 UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
 {
     emitAttr   attrSize  = id->idOpSize();
@@ -1937,11 +1955,8 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
     {
         /* The address is of the form "[reg+disp]" */
 
-        switch (reg)
+        if (reg == REG_NA)
         {
-
-        case REG_NA:
-
             /* The address is of the form "[disp]" */
 
             size += sizeof(INT32);
@@ -1954,18 +1969,19 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
             }
 #endif
             return size;
+        }
 
-        case REG_EBP: AMD64_ONLY(case REG_R13:)
-            break;
-
-        case REG_ESP: AMD64_ONLY(case REG_R12:)
+        // If the base register is ESP (or R12 on 64-bit systems), a SIB byte must be used.
+        if (baseRegisterRequiresSibByte(reg))
+        {
             size++;
+        }
 
-            __fallthrough;
-
-        default:
-            if  (dspIsZero)
-                return size;
+        // If the base register is EBP (or R13 on 64-bit systems), a displacement is required.
+        // Otherwise, the displacement can be elided if it is zero.
+        if (dspIsZero && !baseRegisterRequiresDisplacement(reg))
+        {
+            return size;
         }
 
         /* Does the offset fit in a byte? */
@@ -1991,7 +2007,7 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
             {
                 /* The address is "[reg + {2/4/8} * rgx + icon]" */
 
-                if  (dspIsZero && reg != REG_EBP AMD64_ONLY( && reg != REG_R13))
+                if  (dspIsZero && !baseRegisterRequiresDisplacement(reg))
                 {
                     /* The address is "[reg + {2/4/8} * rgx]" */
 
@@ -2015,8 +2031,7 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
         }
         else
         {
-            if  (dspIsZero && ((reg == REG_EBP) AMD64_ONLY( || (reg == REG_R13)))
-                           && ((rgx != REG_EBP)  AMD64_ONLY( && (rgx != REG_R13))))
+            if  (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx))
             {
                 /* Swap reg and rgx, such that reg is not EBP/R13 */
                 regNumber tmp = reg;
@@ -2026,7 +2041,7 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
 
             /* The address is "[reg+rgx+dsp]" */
 
-            if  (dspIsZero && reg != REG_EBP AMD64_ONLY( && reg != REG_R13))
+            if  (dspIsZero && !baseRegisterRequiresDisplacement(reg))
             {
                 /* This is [reg+rgx]" */
 
@@ -7682,7 +7697,10 @@ BYTE*       emitter::emitOutputAM(BYTE* dst, instrDesc* id, size_t code, CnsVal*
 
             __fallthrough;
 
-        case EA_4BYTE: AMD64_ONLY(case EA_8BYTE:)
+        case EA_4BYTE:
+#ifdef _TARGET_AMD64_
+        case EA_8BYTE:
+#endif
 
             /* Set the 'w' bit to get the large version */
 
