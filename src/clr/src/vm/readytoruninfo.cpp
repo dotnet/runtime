@@ -429,8 +429,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS);
     if (pRuntimeFunctionsDir != NULL)
     {
-        m_pRuntimeFunctions = (RUNTIME_FUNCTION *)pLayout->GetDirectoryData(pRuntimeFunctionsDir);
-        m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(RUNTIME_FUNCTION);
+        m_pRuntimeFunctions = (T_RUNTIME_FUNCTION *)pLayout->GetDirectoryData(pRuntimeFunctionsDir);
+        m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(T_RUNTIME_FUNCTION);
     }
     else
     {
