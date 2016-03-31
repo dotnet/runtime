@@ -1064,7 +1064,7 @@ mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field, Mo
 	return TRUE;
 }
 
-void
+gboolean
 mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method, MonoError *error)
 {
 	mono_error_init (error);
