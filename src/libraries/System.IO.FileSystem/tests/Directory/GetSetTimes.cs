@@ -24,6 +24,10 @@ namespace System.IO.Tests
                 yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                     ((path, time) => Directory.SetCreationTimeUtc(path, time)),
                     ((path) => Directory.GetCreationTimeUtc(path)),
+                    DateTimeKind.Unspecified);
+                yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                    ((path, time) => Directory.SetCreationTimeUtc(path, time)),
+                    ((path) => Directory.GetCreationTimeUtc(path)),
                     DateTimeKind.Utc);
             }
             yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
@@ -33,11 +37,19 @@ namespace System.IO.Tests
             yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                 ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
                 ((path) => Directory.GetLastAccessTimeUtc(path)),
+                DateTimeKind.Unspecified);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastAccessTimeUtc(path, time)),
+                ((path) => Directory.GetLastAccessTimeUtc(path)),
                 DateTimeKind.Utc);
             yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                 ((path, time) => Directory.SetLastWriteTime(path, time)),
                 ((path) => Directory.GetLastWriteTime(path)),
                 DateTimeKind.Local);
+            yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
+                ((path, time) => Directory.SetLastWriteTimeUtc(path, time)),
+                ((path) => Directory.GetLastWriteTimeUtc(path)),
+                DateTimeKind.Unspecified);
             yield return Tuple.Create<SetTime, GetTime, DateTimeKind>(
                 ((path, time) => Directory.SetLastWriteTimeUtc(path, time)),
                 ((path) => Directory.GetLastWriteTimeUtc(path)),
@@ -76,7 +88,17 @@ namespace System.IO.Tests
                 var result = tuple.Item2(testDir.FullName);
                 Assert.Equal(dt, result);
                 Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
-                Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
+
+                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+                // ToUniversalTime treats it as local.
+                if (tuple.Item3 == DateTimeKind.Unspecified)
+                {
+                    Assert.Equal(dt, result.ToUniversalTime());
+                }
+                else
+                {
+                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
+                }
             });
         }
 

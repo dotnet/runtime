@@ -284,7 +284,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void WindowsSearchPatternQuestionMarks()
+        public virtual void WindowsSearchPatternQuestionMarks()
         {
             string testDir1Str = GetTestFileName();
             DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
