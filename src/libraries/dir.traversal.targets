@@ -23,6 +23,9 @@
         <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
+        <AdditionalProperties Condition="'%(Project.InputOSGroup)' != ''">InputOSGroup=%(Project.InputOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
         <!-- If a project isn't setting the OSGroup via metadata then undefine it so that the globally set OSGroup doesn't override empty OSGroup -->
         <UndefineProperties Condition="'%(Project.OSGroup)'==''">%(Project.UndefineProperties);OSGroup</UndefineProperties>
       </Project>

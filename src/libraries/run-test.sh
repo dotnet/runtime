@@ -83,7 +83,6 @@ esac
 # Misc defaults
 TestSelection=".*"
 TestsFailed=0
-OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$ConfigurationGroup/TestOverlay/"
 
 create_test_overlay()
 {
@@ -163,8 +162,16 @@ runtest()
 
   if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
   then
-    echo "error: Did not find corresponding test dll for $testProject at $dirName/$testDllName"
-    exit 1
+    dirName="$AnyOsTestDir/$fileNameWithoutExtension/dnxcore50"
+    if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
+    then
+      dirName="$UnixTestDir/$fileNameWithoutExtension/dnxcore50"
+      if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
+      then
+        echo "error: Did not find corresponding test dll for $testProject"
+        exit 1
+      fi
+    fi
   fi
 
   copy_test_overlay $dirName
@@ -302,6 +309,10 @@ do
     esac
     shift
 done
+
+OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$ConfigurationGroup/TestOverlay/"
+AnyOsTestDir="$ProjectRoot/bin/tests/AnyOS.AnyCPU.$ConfigurationGroup"
+UnixTestDir="$ProjectRoot/bin/tests/Unix.AnyCPU.$ConfigurationGroup"
 
 # Compute paths to the binaries if they haven't already been computed
 
