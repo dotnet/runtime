@@ -92,6 +92,10 @@ public:
 
             if (g_coreclrDirectory != NULL)
             {
+                // Load the DAC module first explicitly because SOS and DBI
+                // have implicit references to the DAC's PAL.
+                LoadModule(services, MAKEDLLNAME_A("mscordaccore"));
+
                 m_sosHandle = LoadModule(services, MAKEDLLNAME_A("sos"));
             }
         }
