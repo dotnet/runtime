@@ -152,7 +152,7 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
     <DelaySign>false</DelaySign>
   </PropertyGroup>
 
