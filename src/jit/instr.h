@@ -246,8 +246,12 @@ DECLARE_TYPED_ENUM(emitAttr,unsigned)
                 EA_32BYTE        = 0x020,
                 EA_SIZE_MASK     = 0x03F,
 
-                EA_PTRSIZE       = NOT_WIN64(EA_4BYTE)
-                                   WIN64_ONLY(EA_8BYTE),
+#ifdef _TARGET_64BIT_
+                EA_PTRSIZE       = EA_8BYTE,
+#else
+                EA_PTRSIZE       = EA_4BYTE,
+#endif
+
                 EA_OFFSET_FLG    = 0x040,
                 EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
                 EA_GCREF_FLG     = 0x080,
