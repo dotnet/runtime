@@ -450,6 +450,8 @@ branchList.each { branchName ->
         
         // Set a periodic trigger
         Utilities.addPeriodicTrigger(newJob, '@daily')
+
+        Utilities.addPrivatePermissions(job)
     }
 }
 
