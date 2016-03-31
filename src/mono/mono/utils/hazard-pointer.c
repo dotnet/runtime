@@ -42,6 +42,7 @@ typedef struct {
 
 static volatile int hazard_table_size = 0;
 static MonoThreadHazardPointers * volatile hazard_table = NULL;
+static MonoHazardFreeQueueSizeCallback queue_size_cb;
 
 /*
  * Each entry is either 0 or 1, indicating whether that overflow small
@@ -351,8 +352,18 @@ mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
 	InterlockedIncrement (&hazardous_pointer_count);
 
 	mono_lock_free_array_queue_push (&delayed_free_queue, &item);
+
+	guint32 queue_size = delayed_free_queue.num_used_entries;
+	if (queue_size && queue_size_cb)
+		queue_size_cb (queue_size);
 }
 
+
+void
+mono_hazard_pointer_install_free_queue_size_callback (MonoHazardFreeQueueSizeCallback cb)
+{
+	queue_size_cb = cb;
+}
 
 void
 mono_thread_hazardous_try_free_all (void)

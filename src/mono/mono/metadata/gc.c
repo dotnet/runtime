@@ -39,6 +39,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-coop-semaphore.h>
+#include <mono/utils/hazard-pointer.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -638,6 +639,41 @@ mono_gc_finalize_notify (void)
 	mono_coop_sem_post (&finalizer_sem);
 }
 
+/*
+This is the number of entries allowed in the hazard free queue before
+we explicitly cycle the finalizer thread to trigger pumping the queue.
+
+It was picked empirically by running the corlib test suite in a stress
+scenario where all hazard entries are queued.
+
+In this extreme scenario we double the number of times we cycle the finalizer
+thread compared to just GC calls.
+
+Entries are usually in the order of 100's of bytes each, so we're limiting
+floating garbage to be in the order of a dozen kb.
+*/
+static gboolean finalizer_thread_pulsed;
+#define HAZARD_QUEUE_OVERFLOW_SIZE 20
+
+static void
+hazard_free_queue_is_too_big (size_t size)
+{
+	if (size < HAZARD_QUEUE_OVERFLOW_SIZE)
+		return;
+
+	if (finalizer_thread_pulsed || InterlockedCompareExchange (&finalizer_thread_pulsed, TRUE, FALSE))
+		return;
+
+	mono_gc_finalize_notify ();
+}
+
+static void
+hazard_free_queue_pump (void)
+{
+	mono_thread_hazardous_try_free_all ();
+	finalizer_thread_pulsed = FALSE;
+}
+
 #ifdef HAVE_BOEHM_GC
 
 static void
@@ -713,6 +749,9 @@ finalizer_thread (gpointer unused)
 {
 	gboolean wait = TRUE;
 
+	/* Register a hazard free queue pump callback */
+	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);
+
 	while (!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
@@ -757,7 +796,7 @@ finalizer_thread (gpointer unused)
 
 		reference_queue_proccess_all ();
 
-		mono_thread_hazardous_try_free_all ();
+		hazard_free_queue_pump ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
 		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0) {
