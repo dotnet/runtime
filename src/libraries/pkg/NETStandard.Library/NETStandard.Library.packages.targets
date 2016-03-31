@@ -31,6 +31,10 @@
     <Package Include="System.Runtime.InteropServices" />
     <Package Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Package Include="System.Runtime.Numerics" />
+    <Package Include="System.Security.Cryptography.Algorithms" />
+    <Package Include="System.Security.Cryptography.Encoding" />
+    <Package Include="System.Security.Cryptography.Primitives" />
+    <Package Include="System.Security.Cryptography.X509Certificates" />
     <Package Include="System.Text.Encoding" />
     <Package Include="System.Text.Encoding.Extensions" />
     <Package Include="System.Text.RegularExpressions" />

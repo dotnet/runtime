@@ -80,13 +80,16 @@ namespace System.Net.Http
         public HttpClientHandler() { }
         public bool AllowAutoRedirect { get { return default(bool); } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { return default(System.Net.DecompressionMethods); } set { } }
+        public bool CheckCertificateRevocationList { get { return default(bool); } set { } }
         public System.Net.Http.ClientCertificateOption ClientCertificateOptions { get { return default(System.Net.Http.ClientCertificateOption); } set { } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { return default(System.Security.Cryptography.X509Certificates.X509CertificateCollection); } }
         public System.Net.CookieContainer CookieContainer { get { return default(System.Net.CookieContainer); } set { } }
         public System.Net.ICredentials Credentials { get { return default(System.Net.ICredentials); } set { } }
         public int MaxAutomaticRedirections { get { return default(int); } set { } }
         public long MaxRequestContentBufferSize { get { return default(long); } set { } }
         public bool PreAuthenticate { get { return default(bool); } set { } }
         public System.Net.IWebProxy Proxy { get { return default(System.Net.IWebProxy); } set { } }
+        public System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.X509Certificates.X509Chain, System.Net.Security.SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get { return default(System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.X509Certificates.X509Chain, System.Net.Security.SslPolicyErrors, bool>); } set { } }
         public virtual bool SupportsAutomaticDecompression { get { return default(bool); } }
         public virtual bool SupportsProxy { get { return default(bool); } }
         public virtual bool SupportsRedirectConfiguration { get { return default(bool); } }
