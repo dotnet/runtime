@@ -89,7 +89,7 @@ bool runtime_config_t::ensure_parsed()
     catch (const web::json::json_exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
-        trace::error(_X("A JSON parsing exception occurred: %s"), jes.c_str());
+        trace::info(_X("A JSON parsing exception occurred: %s"), jes.c_str());
         return false;
     }
     return true;
