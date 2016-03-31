@@ -83,6 +83,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void SubDirectoryIsParentDirectory_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(Path.Combine(TestDirectory, "..")));
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory + "/path").CreateSubdirectory("../../path2"));
+        }
+
+        [Fact]
         public void ValidPathWithTrailingSlash()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

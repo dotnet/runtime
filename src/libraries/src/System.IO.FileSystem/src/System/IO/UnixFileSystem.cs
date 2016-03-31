@@ -592,7 +592,7 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath);
+            Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath, isDirectory:true);
         }
 
         public override FileAttributes GetAttributes(string fullPath)

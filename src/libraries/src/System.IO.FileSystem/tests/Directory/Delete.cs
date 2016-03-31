@@ -230,5 +230,17 @@ namespace System.IO.Tests
             Delete(testDir.FullName + Path.DirectorySeparatorChar, true);
             Assert.False(testDir.Exists);
         }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void RecursiveDelete_ShouldThrowIOExceptionIfContainedFileInUse()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            using (File.Create(Path.Combine(testDir.FullName, GetTestFileName())))
+            {
+                Assert.Throws<IOException>(() => Delete(testDir.FullName, true));
+            }
+            Assert.True(testDir.Exists);
+        }
     }
 }
