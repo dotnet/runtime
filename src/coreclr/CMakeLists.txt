@@ -166,15 +166,23 @@ else()
       if (STRIP STREQUAL "STRIP-NOTFOUND")
           message(FATAL_ERROR "strip not found")
       endif()
-
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
+    elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
       # Ensure that objcopy is present
-      find_program(OBJCOPY objcopy)
+      if(DEFINED ENV{CROSSCOMPILE})
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+          find_program(OBJCOPY arm-linux-gnueabihf-objcopy)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+          find_program(OBJCOPY aarch64-linux-gnu-objcopy)
+        else()
+          clr_unknown_arch()
+        endif()
+      else()
+        find_program(OBJCOPY objcopy)
+      endif()
       if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND")
           message(FATAL_ERROR "objcopy not found")
       endif()
-    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    endif ()
 endif(WIN32)
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -287,7 +295,7 @@ function(strip_symbols targetName outputFilename)
           COMMAND ${STRIP} -u -r ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
-      else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
         set(strip_destination_file ${strip_source_file}.dbg)
 
         add_custom_command(

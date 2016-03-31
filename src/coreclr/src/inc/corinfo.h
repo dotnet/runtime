@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 35ef98ab-fd22-4ccc-8ddb-b1156a7d94f3 */
-    0x35ef98ab,
-    0xfd22,
-    0x4ccc,
-    { 0x8d, 0xdb, 0xb1, 0x15, 0x6a, 0x7d, 0x94, 0xf3 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 27626524-7315-4ed0-b74e-a0e4579883bb */
+    0x27626524, 
+    0x7315, 
+    0x4ed0, 
+    { 0xb7, 0x4e, 0xa0, 0xe4, 0x57, 0x98, 0x83, 0xbb }
 };
 
 #else
@@ -2389,6 +2389,14 @@ public:
             CorInfoHelpFunc          id,
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
+
+#if COR_JIT_EE_VERSION > 460
+    virtual void getReadyToRunDelegateCtorHelper(
+            CORINFO_RESOLVED_TOKEN * pTargetMethod,
+            CORINFO_CLASS_HANDLE     delegateType,
+            CORINFO_CONST_LOOKUP *   pLookup
+            ) = 0;
+#endif
 
     virtual const char* getHelperName(
             CorInfoHelpFunc

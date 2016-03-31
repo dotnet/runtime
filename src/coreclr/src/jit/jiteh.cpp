@@ -1323,7 +1323,7 @@ void                Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     if (compHndBBtabCount == 0)
     {
         // No more entries remaining.
-        INDEBUG(compHndBBtab = (EHblkDsc *)DEAD_BEEF;)
+        INDEBUG(compHndBBtab = (EHblkDsc *)INVALID_POINTER_VALUE;)
     }
     else
     {

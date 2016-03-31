@@ -75,6 +75,11 @@ void GcInfoDumper::FreePointerRecords (LivePointerRecord *pRecords)
     }
 }
 
+//This function tries to find the address of the managed object in the registers of the current function's context, 
+//failing which it checks if it is present in the stack of the current function. IF it finds one it reports appropriately
+//
+//For Amd64, this additionally tries to probe in the stack for  the caller.
+//This behavior largely seems to be present for legacy x64 jit and is not likely to be used anywhere else
 BOOL GcInfoDumper::ReportPointerRecord (
         UINT32 CodeOffset,
         BOOL fLive,
@@ -146,7 +151,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
         { FIELD_OFFSET(T_CONTEXT, Sp) },
         { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, R7) },
 #elif defined(_TARGET_ARM64_)
-//ARM64TODO: Verify the correctness of the following for ARM64
 #undef REG
 #define REG(reg, field) { FIELD_OFFSET(Arm64VolatileContextPointer, field) }
         REG(x0, X0),
@@ -167,7 +171,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x15, X15),
         REG(x16, X16),
         REG(x17, X17),
-       { FIELD_OFFSET(T_CONTEXT, X18) },
 #undef REG
 #define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(x19, X19),
@@ -180,11 +183,14 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x26, X26),
         REG(x27, X27),
         REG(x28, X28),
+        REG(Fp,  Fp),
+        REG(Lr,  Lr),
         { FIELD_OFFSET(T_CONTEXT, Sp) },
-        { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, Lr) },
+#undef REG
+#else
+PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this platform.") 
 #endif
 
-#undef REG
     };
 
     const UINT nCONTEXTRegisters = sizeof(rgRegisters)/sizeof(rgRegisters[0]);
@@ -199,13 +205,12 @@ BOOL GcInfoDumper::ReportPointerRecord (
     iSPRegister = (FIELD_OFFSET(CONTEXT, Rsp) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONGLONG);
 #elif defined(_TARGET_ARM64_)
     iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, X0)) / sizeof(ULONGLONG);
-    UINT iBFRegister = m_StackBaseRegister;
 #elif defined(_TARGET_ARM_)
     iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, R0)) / sizeof(ULONG);
     UINT iBFRegister = m_StackBaseRegister;
 #endif
 
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     BYTE* pContext = (BYTE*)&(pRD->volatileCurrContextPointers);
 #else
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
@@ -254,6 +259,25 @@ BOOL GcInfoDumper::ReportPointerRecord (
             {
                 break;
             }
+#elif defined (_TARGET_ARM64_)
+
+            if (ctx == 1)
+            {
+                if (iReg < 18 )   // skip volatile registers for second context
+                {
+                    continue;
+                }
+
+                if (iReg == 30)
+                {
+                    iEncodedReg = iSPRegister;
+                }
+            }
+
+            if (ctx == 0 && iReg > 17)
+            {
+                break;
+            }
 #endif
             {
                 _ASSERTE(iReg < nCONTEXTRegisters);
@@ -271,6 +295,13 @@ BOOL GcInfoDumper::ReportPointerRecord (
                 {
                     pReg = *(SIZE_T**)((BYTE*)pRD->pCurrentContextPointers + rgRegisters[iEncodedReg].cbContextOffset);
                 }
+
+#elif defined(_TARGET_ARM64_)
+                pReg = *(SIZE_T**)(pContext + rgRegisters[iReg].cbContextOffset);
+                if (iEncodedReg == iSPRegister)
+                {
+                    pReg = (SIZE_T*)((BYTE*)pRD->pCurrentContext + rgRegisters[iEncodedReg].cbContextOffset);
+                }
 #else
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #endif 
@@ -286,7 +317,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
             if (ptr == (SIZE_T)pReg)
             {
                 // Make sure the register is in the current frame.
-#ifndef _TARGET_ARM_
+#if defined(_TARGET_AMD64_) 
                 if (0 != ctx)
                 {
                     m_Error = REPORTED_REGISTER_IN_CALLERS_FRAME;
@@ -338,10 +369,14 @@ BOOL GcInfoDumper::ReportPointerRecord (
                 GcStackSlotBase base;
                 if (iSPRegister == iEncodedReg)
                 {
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+                    base = GC_SP_REL;
+#else
                     if (0 == ctx)
                         base = GC_SP_REL;
                     else
                         base = GC_CALLER_SP_REL;
+#endif //defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) 
                 }
                 else
                 {
@@ -363,7 +398,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
             }
         }
 
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
         pContext = (BYTE*)pRD->pCurrentContextPointers;
 #else
         pContext = (BYTE*)pRD->pCallerContext;
@@ -542,6 +577,34 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
     }
     /// Set R12
     *(ppVolatileReg+4) = &regdisp.pCurrentContext->R0+12;
+
+#elif defined(_TARGET_ARM64_)
+    FILL_REGS(pCurrentContext->X0, 33);
+    FILL_REGS(pCallerContext->X0, 33);
+
+    regdisp.pCurrentContextPointers = &regdisp.ctxPtrsOne;
+    regdisp.pCallerContextPointers = &regdisp.ctxPtrsTwo;
+    
+    ULONG64 **ppCurrentReg = &regdisp.pCurrentContextPointers->X19;
+    ULONG64 **ppCallerReg  = &regdisp.pCallerContextPointers->X19;
+    
+    for (iReg = 0; iReg < 11; iReg++)
+    {
+        *(ppCurrentReg + iReg) = &regdisp.pCurrentContext->X19 + iReg;
+        *(ppCallerReg  + iReg) = &regdisp.pCallerContext->X19 + iReg;
+    }
+    
+    /// Set Lr
+    *(ppCurrentReg + 11) = &regdisp.pCurrentContext->Lr;
+    *(ppCallerReg +  11) = &regdisp.pCallerContext->Lr;
+
+    ULONG64 **ppVolatileReg = &regdisp.volatileCurrContextPointers.X0;
+    for (iReg = 0; iReg < 18; iReg++)
+    {
+        *(ppVolatileReg+iReg) = &regdisp.pCurrentContext->X0 + iReg;
+    }
+#else
+PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.") 
 #endif
 
 #undef FILL_REGS

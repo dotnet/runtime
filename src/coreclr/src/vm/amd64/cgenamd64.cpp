@@ -799,7 +799,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 //  we use this function to get at these offsets
 //
 DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PRUNTIME_FUNCTION   pFunctionEntry,
+                               PT_RUNTIME_FUNCTION pFunctionEntry,
                                int                 offsetNum /* = 1*/)
 {
     CONTRACTL

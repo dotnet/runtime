@@ -103,9 +103,9 @@ typedef struct _ARM64_VFP_STATE
 // Macros for accessing memory. These can be overridden if other code
 // (in particular the debugger) needs to use them.
 
-#define MEMORY_READ_BYTE(params, addr)       (*(const BYTE *)(addr))
-#define MEMORY_READ_DWORD(params, addr)      (*(const DWORD *)(addr))
-#define MEMORY_READ_QWORD(params, addr)      (*(const UINT64 *)(addr))
+#define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
+#define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
+#define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
 typedef struct _ARM64_UNWIND_PARAMS
 {
@@ -1597,7 +1597,7 @@ RtlVirtualUnwind(
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
     IN ULONG64 ControlPc,
-    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
     IN OUT PCONTEXT ContextRecord,
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,

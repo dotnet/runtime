@@ -7,15 +7,8 @@
   <Target Name="GenerateCompilerResponseFile">
     <Message Text="Generating module name response file: $(IntermediateOutputPath)\moduleName.rsp" />
 
-    <!-- When Roslyn is NOT enabled, we need to set the module name for mscorlib -->
-    <WriteLinesToFile Condition="'$(UseRoslynCompiler)'!='true'"
-                      File="$(IntermediateOutputPath)\moduleName.rsp"
-                      Lines="/test:moduleName=CommonLanguageRuntimeLibrary"
-                      Overwrite="true" />
-
-    <!-- When Roslyn is enabled we need to set the runtimemetadataversion -->
-    <WriteLinesToFile Condition="'$(UseRoslynCompiler)'=='true'"
-                      File="$(IntermediateOutputPath)\moduleName.rsp"
+    <!-- We need to set the runtimemetadataversion -->
+    <WriteLinesToFile File="$(IntermediateOutputPath)\moduleName.rsp"
                       Lines="/runtimemetadataversion:v4.0.30319"
                       Overwrite="true" />
 
