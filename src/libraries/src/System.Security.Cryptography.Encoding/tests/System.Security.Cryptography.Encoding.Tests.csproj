@@ -25,7 +25,7 @@
     <Compile Include="DerEncoderTests.cs" />
     <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
-    <Compile Include="OidCollection.cs" />
+    <Compile Include="OidCollectionTests.cs" />
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
       <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
     </Compile>
