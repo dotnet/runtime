@@ -177,25 +177,25 @@ namespace System.Net.Http
             Debug.Assert(stream != null);
             try
             {
-                // Write start boundary
+                // Write start boundary.
                 await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf).ConfigureAwait(false);
 
-                // Write each nested content
+                // Write each nested content.
                 var output = new StringBuilder();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
                     output.Clear();
                     HttpContent content = _nestedContent[contentIndex];
 
-                    // Add divider
-                    if (contentIndex != 0) // Write divider for all but the first content
+                    // Add divider.
+                    if (contentIndex != 0) // Write divider for all but the first content.
                     {
                         output.Append(CrLf + "--"); // const strings
                         output.Append(_boundary);
                         output.Append(CrLf);
                     }
 
-                    // Add headers
+                    // Add headers.
                     foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
                     {
                         output.Append(headerPair.Key);
@@ -211,17 +211,20 @@ namespace System.Net.Http
                     }
                     output.Append(CrLf); // Extra CRLF to end headers (even if there are no headers).
 
-                    // Write divider, headers, and content
+                    // Write divider, headers, and content.
                     await EncodeStringToStreamAsync(stream, output.ToString()).ConfigureAwait(false);
                     await content.CopyToAsync(stream).ConfigureAwait(false);
                 }
 
-                // Write footer boundary
+                // Write footer boundary.
                 await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(SerializeToStreamAsync), ex);
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Exception(NetEventSource.ComponentType.Http, this, nameof(SerializeToStreamAsync), ex);
+                }
                 throw;
             }
         }
