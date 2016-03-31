@@ -1053,7 +1053,7 @@ combinedScenarios.each { scenario ->
 
                                     // Debug runs take too long to run.
                                     if (lowerConfiguration != "debug") {
-                                       buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
                                     }
                                     
                                     // Add archival.  No xunit results for arm64 windows
