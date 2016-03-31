@@ -1286,7 +1286,7 @@ namespace System.Linq.Expressions
         {
             if (ContainsWhiteSpace(name))
             {
-                // if name has whitespaces in it, quote it
+                // if name has whitespace in it, quote it
                 return QuoteName(name);
             }
             else

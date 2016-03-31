@@ -1021,7 +1021,7 @@ namespace System.Linq.Expressions
             return new InvalidOperationException(Strings.MustRewriteChildToSameType(p0, p1, p2));
         }
         /// <summary>
-        /// InvalidOperationException with message like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// InvalidOperationException with message like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is intentional, override '{1}' and change it to allow this rewrite."
         /// </summary>
         internal static Exception MustRewriteWithoutMethod(object p0, object p1)
         {
@@ -1043,11 +1043,11 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogenous AppDomain."
+        /// InvalidOperationException with message like "Dynamic operations can only be performed in homogeneous AppDomain."
         /// </summary>
-        internal static Exception HomogenousAppDomainRequired()
+        internal static Exception HomogeneousAppDomainRequired()
         {
-            return new InvalidOperationException(Strings.HomogenousAppDomainRequired);
+            return new InvalidOperationException(Strings.HomogeneousAppDomainRequired);
         }
         /// <summary>
         /// ArgumentException with message like "Test value of type '{0}' cannot be used for the comparison method parameter of type '{1}'"

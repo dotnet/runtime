@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (argumentCount >= MaxHelpers)
             {
-                // no delegate for this size, fallback to reflection invoke
+                // no delegate for this size, fall back to reflection invoke
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
 
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             catch (NotSupportedException)
             {
-                // if Delegate.CreateDelegate can't handle the method fallback to 
+                // if Delegate.CreateDelegate can't handle the method fall back to 
                 // the slow reflection version.  For example this can happen w/ 
                 // a generic method defined on an interface and implemented on a class or 
                 // a virtual generic method.
@@ -267,7 +267,7 @@ namespace System.Linq.Expressions.Interpreter
         #endregion
 
         /// <summary>
-        /// If the target of invokation happens to be a delegate
+        /// If the target of invocation happens to be a delegate
         /// over enclosed instance lightLambda, return that instance. 
         /// We can interpret LightLambdas directly.
         /// </summary>

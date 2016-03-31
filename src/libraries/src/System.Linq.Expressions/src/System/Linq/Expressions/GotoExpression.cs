@@ -379,7 +379,7 @@ namespace System.Linq.Expressions
             {
                 if (!TypeUtils.AreReferenceAssignable(expectedType, value.Type))
                 {
-                    // C# autoquotes return values, so we'll do that here
+                    // C# auto-quotes return values, so we'll do that here
                     if (!TryQuote(expectedType, ref value))
                     {
                         throw Error.ExpressionTypeDoesNotMatchLabel(value.Type, expectedType);

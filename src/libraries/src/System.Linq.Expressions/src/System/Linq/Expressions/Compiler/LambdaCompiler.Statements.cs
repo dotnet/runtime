@@ -232,7 +232,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         /// <summary>
-        /// Gets the common test test value type of the SwitchExpression.
+        /// Gets the common test value type of the SwitchExpression.
         /// </summary>
         private static Type GetTestValueType(SwitchExpression node)
         {

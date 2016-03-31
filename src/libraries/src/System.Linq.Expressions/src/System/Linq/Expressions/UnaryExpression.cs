@@ -506,7 +506,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"></see> that has the <see cref="P:Expression.NodeType"></see> property equal to <see cref="P:ExpressionType.Negate"></see> and the <see cref="P:UnaryExpression.Operand"></see> and <see cref="P:UnaryExpression.Method"></see> properties set to the specified value.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="expression"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when <paramref name="method"/> is not null and the method it represents returns void, is not static (Shared in Visual Basic), or does not take exactly one argument.</exception>
-        /// <exception cref="InvalidOperationException">Thown when <paramref name="method"/> is null and the unary minus operator is not defined for expression.Type or expression.Type (or its corresponding non-nullable type if it is a nullable value type) is not assignable to the argument type of the method represented by method.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when <paramref name="method"/> is null and the unary minus operator is not defined for expression.Type or expression.Type (or its corresponding non-nullable type if it is a nullable value type) is not assignable to the argument type of the method represented by method.</exception>
         public static UnaryExpression Negate(Expression expression, MethodInfo method)
         {
             RequiresCanRead(expression, nameof(expression));
@@ -527,7 +527,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">An <see cref="Expression"></see> to set the <see cref="UnaryExpression.Operand"></see> property equal to.</param>
         /// <returns>A <see cref="UnaryExpression"></see> that has the <see cref="Expression.NodeType"></see> property equal to <see cref="ExpressionType.UnaryPlus"></see> and the <see cref="UnaryExpression.Operand"></see> property set to the specified value.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="expression"/> is null.</exception>
-        /// <exception cref="InvalidOperationException">Thown when the unary minus operator is not defined for expression.Type.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the unary minus operator is not defined for expression.Type.</exception>
         public static UnaryExpression UnaryPlus(Expression expression)
         {
             return UnaryPlus(expression, null);
@@ -541,7 +541,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"></see> that has the <see cref="Expression.NodeType"></see> property equal to <see cref="ExpressionType.UnaryPlus"></see> and the <see cref="UnaryExpression.Operand"></see> and <see cref="UnaryExpression.Method"></see>property set to the specified value.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="expression"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when <paramref name="method"/> is not null and the method it represents returns void, is not static (Shared in Visual Basic), or does not take exactly one argument.</exception>
-        /// <exception cref="InvalidOperationException">Thown when <paramref name="method"/> is null and the unary minus operator is not defined for expression.Type or expression.Type (or its corresponding non-nullable type if it is a nullable value type) is not assignable to the argument type of the method represented by method.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when <paramref name="method"/> is null and the unary minus operator is not defined for expression.Type or expression.Type (or its corresponding non-nullable type if it is a nullable value type) is not assignable to the argument type of the method represented by method.</exception>
         public static UnaryExpression UnaryPlus(Expression expression, MethodInfo method)
         {
             RequiresCanRead(expression, nameof(expression));

@@ -520,7 +520,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             // If _pendingContinuation == -1 then we were getting into the finally block because an exception was thrown
             //      in this case we need to set the stack depth
-            // Else we were getting into this finnaly block from a 'Goto' jump, and the stack depth is alreayd set properly
+            // Else we were getting into this finally block from a 'Goto' jump, and the stack depth is already set properly
             if (!frame.IsJumpHappened())
             {
                 frame.SetStackDepth(GetLabel(frame).StackDepth);
@@ -553,7 +553,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.PopPendingContinuation();
 
             // If _pendingContinuation == -1 then we were getting into the finally block because an exception was thrown
-            // In this case we just return 1, and the the real instruction index will be calculated by GotoHandler later
+            // In this case we just return 1, and the real instruction index will be calculated by GotoHandler later
             if (!frame.IsJumpHappened()) { return 1; }
             // jump to goto target or to the next finally:
             return frame.YieldToPendingContinuation();

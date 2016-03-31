@@ -211,6 +211,7 @@ namespace System.Linq.Expressions.Interpreter
                 // Restore stack depth first.
                 frame.StackIndex = stackIndex;
             }
+
             return false;
         }
     }
@@ -1556,8 +1557,8 @@ namespace System.Linq.Expressions.Interpreter
                             CompileIntSwitchExpression<System.Int32>(node);
                             return;
 
-                        // the following cases are uncomon,
-                        // so to avoid numerous unecessary generic
+                        // the following cases are uncommon,
+                        // so to avoid numerous unnecessary generic
                         // instantiations of Dictionary<K, V> and related types
                         // in AOT scenarios, we will just use "object" as the key
                         // NOTE: this does not actually result in any
@@ -1871,7 +1872,7 @@ namespace System.Linq.Expressions.Interpreter
                     return true;
                 case ExpressionType.Switch:
                     PushLabelBlock(LabelScopeKind.Switch);
-                    // Define labels inside of the switch cases so theyare in
+                    // Define labels inside of the switch cases so they are in
                     // scope for the whole switch. This allows "goto case" and
                     // "goto default" to be considered as local jumps.
                     var @switch = (SwitchExpression)node;
