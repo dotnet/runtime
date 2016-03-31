@@ -415,8 +415,12 @@ typedef struct _LogBuffer LogBuffer;
  * be done to the format.
  */
 
+// Pending data to be written to the log, for a single thread.
+// Threads periodically flush their own LogBuffers by calling safe_send
 struct _LogBuffer {
+	// Next (older) LogBuffer in processing queue
 	LogBuffer *next;
+
 	uint64_t time_base;
 	uint64_t last_time;
 	uintptr_t ptr_base;
@@ -424,11 +428,19 @@ struct _LogBuffer {
 	uintptr_t last_method;
 	uintptr_t obj_base;
 	uintptr_t thread_id;
-	unsigned char* data_end;
-	unsigned char* data;
 	int locked;
-	int size;
 	int call_depth;
+
+	// Bytes allocated for this LogBuffer
+	int size;
+
+	// Start of currently unused space in buffer
+	unsigned char* cursor;
+
+	// Pointer to start-of-structure-plus-size (for convenience)
+	unsigned char* buf_end;
+
+	// Start of data in buffer. Contents follow "buffer format" described above.
 	unsigned char buf [1];
 };
 
@@ -440,12 +452,38 @@ ign_res (int G_GNUC_UNUSED unused, ...)
 #define ENTER_LOG(lb,str) if ((lb)->locked) {ign_res (write(2, str, strlen(str))); ign_res (write(2, "\n", 1));return;} else {(lb)->locked++;}
 #define EXIT_LOG(lb) (lb)->locked--;
 
+// Shared queue of sample snapshots taken at signal time.
+// The queue is written into by signal handlers for all threads;
+// the helper thread later unqueues and writes into its own LogBuffer.
 typedef struct _StatBuffer StatBuffer;
 struct _StatBuffer {
+	// Next (older) StatBuffer in processing queue
 	StatBuffer *next;
+
+	// Bytes allocated for this StatBuffer
 	uintptr_t size;
-	uintptr_t *data_end;
-	uintptr_t *data;
+
+	// Start of currently unused space in buffer
+	uintptr_t *cursor;
+
+	// Pointer to start-of-structure-plus-size (for convenience)
+	uintptr_t *buf_end;
+
+	// Start of data in buffer.
+	// Data consists of a series of sample packets consisting of:
+	// 1 ptrword: Metadata
+	//    Low 8 bits: COUNT, the count of native stack frames in this sample (currently always 1)
+	//    Next 8 bits: MBT_COUNT, the count of managed stacks in this sample
+	//    Next 8 bits: TYPE. See "sampling sources" enum in proflog.h. Usually SAMPLE_CYCLES (1)
+	// 1 ptrword: Thread ID
+	// 1 ptrword: Timestamp
+	// COUNT ptrwords: Native stack frames
+	//   Each word is an IP (first is IP where the signal did the interruption)
+	// MBT_COUNT * 4 ptrwords: Managed stack frames (AsyncFrameInfo, repacked)
+	//    Word 1: MonoMethod ptr
+	//    Word 2: MonoDomain ptr
+	//    Word 3: Base address of method
+	//    Word 4: Offset within method
 	uintptr_t buf [1];
 };
 
@@ -536,8 +574,8 @@ create_stat_buffer (void)
 {
 	StatBuffer* buf = (StatBuffer *)alloc_buffer (BUFFER_SIZE);
 	buf->size = BUFFER_SIZE;
-	buf->data_end = (uintptr_t*)((unsigned char*)buf + buf->size);
-	buf->data = buf->buf;
+	buf->buf_end = (uintptr_t*)((unsigned char*)buf + buf->size);
+	buf->cursor = buf->buf;
 	return buf;
 }
 
@@ -548,8 +586,8 @@ create_buffer (void)
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
-	buf->data_end = (unsigned char*)buf + buf->size;
-	buf->data = buf->buf;
+	buf->buf_end = (unsigned char*)buf + buf->size;
+	buf->cursor = buf->buf;
 	return buf;
 }
 
@@ -572,7 +610,7 @@ init_thread (void)
 static LogBuffer *
 ensure_logbuf_inner (LogBuffer *old, int bytes)
 {
-	if (old && old->data + bytes + 100 < old->data_end)
+	if (old && old->cursor + bytes + 100 < old->buf_end)
 		return old;
 
 	LogBuffer *new_ = (LogBuffer *)create_buffer ();
@@ -603,16 +641,16 @@ ensure_logbuf (int bytes)
 static void
 emit_byte (LogBuffer *logbuffer, int value)
 {
-	logbuffer->data [0] = value;
-	logbuffer->data++;
-	assert (logbuffer->data <= logbuffer->data_end);
+	logbuffer->cursor [0] = value;
+	logbuffer->cursor++;
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
 emit_value (LogBuffer *logbuffer, int value)
 {
-	encode_uleb128 (value, logbuffer->data, &logbuffer->data);
-	assert (logbuffer->data <= logbuffer->data_end);
+	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -623,25 +661,25 @@ emit_time (LogBuffer *logbuffer, uint64_t value)
 	//	printf ("time went backwards\n");
 	//if (tdiff > 1000000)
 	//	printf ("large time offset: %llu\n", tdiff);
-	encode_uleb128 (tdiff, logbuffer->data, &logbuffer->data);
+	encode_uleb128 (tdiff, logbuffer->cursor, &logbuffer->cursor);
 	/*if (tdiff != decode_uleb128 (p, &p))
 		printf ("incorrect encoding: %llu\n", tdiff);*/
 	logbuffer->last_time = value;
-	assert (logbuffer->data <= logbuffer->data_end);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
 emit_svalue (LogBuffer *logbuffer, int64_t value)
 {
-	encode_sleb128 (value, logbuffer->data, &logbuffer->data);
-	assert (logbuffer->data <= logbuffer->data_end);
+	encode_sleb128 (value, logbuffer->cursor, &logbuffer->cursor);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
 emit_uvalue (LogBuffer *logbuffer, uint64_t value)
 {
-	encode_uleb128 (value, logbuffer->data, &logbuffer->data);
-	assert (logbuffer->data <= logbuffer->data_end);
+	encode_uleb128 (value, logbuffer->cursor, &logbuffer->cursor);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -650,7 +688,7 @@ emit_ptr (LogBuffer *logbuffer, void *ptr)
 	if (!logbuffer->ptr_base)
 		logbuffer->ptr_base = (uintptr_t)ptr;
 	emit_svalue (logbuffer, (intptr_t)ptr - logbuffer->ptr_base);
-	assert (logbuffer->data <= logbuffer->data_end);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -660,9 +698,9 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 		logbuffer->method_base = (intptr_t)method;
 		logbuffer->last_method = (intptr_t)method;
 	}
-	encode_sleb128 ((intptr_t)((char*)method - (char*)logbuffer->last_method), logbuffer->data, &logbuffer->data);
+	encode_sleb128 ((intptr_t)((char*)method - (char*)logbuffer->last_method), logbuffer->cursor, &logbuffer->cursor);
 	logbuffer->last_method = (intptr_t)method;
-	assert (logbuffer->data <= logbuffer->data_end);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 /*
@@ -754,7 +792,7 @@ emit_obj (LogBuffer *logbuffer, void *ptr)
 	if (!logbuffer->obj_base)
 		logbuffer->obj_base = (uintptr_t)ptr >> 3;
 	emit_svalue (logbuffer, ((uintptr_t)ptr >> 3) - logbuffer->obj_base);
-	assert (logbuffer->data <= logbuffer->data_end);
+	assert (logbuffer->cursor <= logbuffer->buf_end);
 }
 
 static void
@@ -864,7 +902,7 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 	if (buf->next)
 		dump_buffer (profiler, buf->next);
 	p = write_int32 (p, BUF_ID);
-	p = write_int32 (p, buf->data - buf->buf);
+	p = write_int32 (p, buf->cursor - buf->buf);
 	p = write_int64 (p, buf->time_base);
 	p = write_int64 (p, buf->ptr_base);
 	p = write_int64 (p, buf->obj_base);
@@ -873,11 +911,11 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 #if defined (HAVE_SYS_ZLIB)
 	if (profiler->gzfile) {
 		gzwrite (profiler->gzfile, hbuf, p - hbuf);
-		gzwrite (profiler->gzfile, buf->buf, buf->data - buf->buf);
+		gzwrite (profiler->gzfile, buf->buf, buf->cursor - buf->buf);
 	} else {
 #endif
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
-		fwrite (buf->buf, buf->data - buf->buf, 1, profiler->file);
+		fwrite (buf->buf, buf->cursor - buf->buf, 1, profiler->file);
 		fflush (profiler->file);
 #if defined (HAVE_SYS_ZLIB)
 	}
@@ -1093,7 +1131,7 @@ emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 	emit_value (logbuffer, 0); /* flags */
 	emit_value (logbuffer, data->count);
 	//if (*p != data.count) {
-	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->data); exit(0);}
+	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->cursor); exit(0);}
 	while (data->count) {
 		emit_method_as_ptr (prof, logbuffer, data->methods [--data->count]);
 	}
@@ -1306,8 +1344,8 @@ image_loaded (MonoProfiler *prof, MonoImage *image, int result)
 	emit_byte (logbuffer, TYPE_IMAGE);
 	emit_ptr (logbuffer, image);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	//printf ("loaded image %p (%s)\n", image, name);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
@@ -1336,8 +1374,8 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 	emit_byte (logbuffer, TYPE_IMAGE);
 	emit_ptr (logbuffer, image);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
@@ -1370,8 +1408,8 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	EXIT_LOG (logbuffer);
 
 	mono_free (name);
@@ -1403,8 +1441,8 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	EXIT_LOG (logbuffer);
 
 	mono_free (name);
@@ -1448,8 +1486,8 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	emit_ptr (logbuffer, klass);
 	emit_ptr (logbuffer, image);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	//printf ("loaded class %p (%s)\n", klass, name);
 	if (runtime_inited)
 		mono_free (name);
@@ -1491,8 +1529,8 @@ class_unloaded (MonoProfiler *prof, MonoClass *klass)
 	emit_ptr (logbuffer, klass);
 	emit_ptr (logbuffer, image);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	EXIT_LOG (logbuffer);
 
 	if (runtime_inited)
@@ -1623,8 +1661,8 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 	emit_ptr (logbuffer, buffer);
 	emit_value (logbuffer, size);
 	if (name) {
-		memcpy (logbuffer->data, name, nlen);
-		logbuffer->data += nlen;
+		memcpy (logbuffer->cursor, name, nlen);
+		logbuffer->cursor += nlen;
 	}
 	EXIT_LOG (logbuffer);
 	process_requests (prof);
@@ -1851,8 +1889,8 @@ domain_name (MonoProfiler *prof, MonoDomain *domain, const char *name)
 	emit_byte (logbuffer, TYPE_DOMAIN);
 	emit_ptr (logbuffer, (void*)(uintptr_t) mono_domain_get_id (domain));
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, nlen);
-	logbuffer->data += nlen;
+	memcpy (logbuffer->cursor, name, nlen);
+	logbuffer->cursor += nlen;
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
@@ -1938,8 +1976,8 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 	emit_byte (logbuffer, TYPE_THREAD);
 	emit_ptr (logbuffer, (void*)tid);
 	emit_value (logbuffer, 0); /* flags */
-	memcpy (logbuffer->data, name, len);
-	logbuffer->data += len;
+	memcpy (logbuffer->cursor, name, len);
+	logbuffer->cursor += len;
 	EXIT_LOG (logbuffer);
 
 	if (logbuffer->next)
@@ -2009,13 +2047,13 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	if (!sbuf)
 		return;
 	/* flush the buffer at 1 second intervals */
-	if (sbuf->data > sbuf->buf && (elapsed - sbuf->buf [2]) > 100000) {
+	if (sbuf->cursor > sbuf->buf && (elapsed - sbuf->buf [2]) > 100000) {
 		timedout = 1;
 	}
 	/* overflow: 400 slots is a big enough number to reduce the chance of losing this event if many
 	 * threads hit this same spot at the same time
 	 */
-	if (timedout || (sbuf->data + 400 >= sbuf->data_end)) {
+	if (timedout || (sbuf->cursor + 400 >= sbuf->buf_end)) {
 		StatBuffer *oldsb, *foundsb;
 		sbuf = create_stat_buffer ();
 		do {
@@ -2034,11 +2072,11 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		}
 	}
 	do {
-		old_data = sbuf->data;
+		old_data = sbuf->cursor;
 		new_data = old_data + SAMPLE_EVENT_SIZE_IN_SLOTS (bt_data.count);
-		data = (uintptr_t *)InterlockedCompareExchangePointer ((void * volatile*)&sbuf->data, new_data, old_data);
+		data = (uintptr_t *)InterlockedCompareExchangePointer ((void * volatile*)&sbuf->cursor, new_data, old_data);
 	} while (data != old_data);
-	if (old_data >= sbuf->data_end)
+	if (old_data >= sbuf->buf_end)
 		return; /* lost event */
 	old_data [0] = 1 | (sample_type << 16) | (bt_data.count << 8);
 	old_data [1] = thread_id ();
@@ -2129,8 +2167,8 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 	emit_svalue (logbuffer, load_addr);
 	emit_uvalue (logbuffer, offset);
 	emit_uvalue (logbuffer, size);
-	memcpy (logbuffer->data, filename, len);
-	logbuffer->data += len;
+	memcpy (logbuffer->cursor, filename, len);
+	logbuffer->cursor += len;
 }
 #endif
 
@@ -2149,8 +2187,8 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_USYM);
 	emit_ptr (logbuffer, (void*)value);
 	emit_value (logbuffer, size);
-	memcpy (logbuffer->data, name, len);
-	logbuffer->data += len;
+	memcpy (logbuffer->cursor, name, len);
+	logbuffer->cursor += len;
 }
 
 /* ELF code crashes on some systems. */
@@ -2414,11 +2452,11 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 
 	g_ptr_array_set_size (prof->sorted_sample_events, 0);
 
-	for (uintptr_t *sample = sbuf->buf; sample < sbuf->data;) {
+	for (uintptr_t *sample = sbuf->buf; sample < sbuf->cursor;) {
 		int count = sample [0] & 0xff;
 		int mbt_count = (sample [0] & 0xff00) >> 8;
 
-		if (sample + SAMPLE_EVENT_SIZE_IN_SLOTS (mbt_count) > sbuf->data)
+		if (sample + SAMPLE_EVENT_SIZE_IN_SLOTS (mbt_count) > sbuf->cursor)
 			break;
 
 		g_ptr_array_add (prof->sorted_sample_events, sample);
@@ -2442,6 +2480,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 			void *address = (void*)managed_sample_base [i * 4 + 2];
 
 			if (!method) {
+				g_assert (domain);
 				MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *)address);
 
 				if (ji)
@@ -4251,8 +4290,8 @@ writer_thread (void *arg)
 				emit_ptr (method_buffer, cstart);
 				emit_value (method_buffer, csize);
 
-				memcpy (method_buffer->data, name, nlen);
-				method_buffer->data += nlen;
+				memcpy (method_buffer->cursor, name, nlen);
+				method_buffer->cursor += nlen;
 
 				mono_free (name);
 				free (info);
