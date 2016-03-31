@@ -34,9 +34,6 @@
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />
     <Compile Include="System\Security\Cryptography\OidEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\OidGroup.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
-      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'net46'">
     <Compile Include="Internal\Cryptography\AsnFormatter.Windows.cs" />
