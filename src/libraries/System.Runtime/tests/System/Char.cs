@@ -652,7 +652,7 @@ public static class CharTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSurrogatePair("abc", 4));
 
-        Assert.False(char.IsSurrogatePair("abc", 2)); // index + 1 < s.length always returns false.
+        Assert.False(char.IsSurrogatePair("abc", 2)); // index + 1 == s.length always returns false.
     }
 
     [Fact]
