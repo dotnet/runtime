@@ -23,49 +23,20 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void SetToNonExistentDirectory_ThrowsDirectoryNotFoundException()
+        {
+            Assert.Throws<DirectoryNotFoundException>(() => Directory.SetCurrentDirectory(GetTestFilePath()));
+        }
+
+        [Fact]
         public void SetToValidOtherDirectory()
         {
             RemoteInvoke(() =>
             {
-                string currentDirectory = Directory.GetCurrentDirectory();
-                try
+                Directory.SetCurrentDirectory(TestDirectory);
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    Directory.SetCurrentDirectory(TestDirectory);
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
-                    }
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(currentDirectory);
-                }
-                Assert.Equal(currentDirectory, Directory.GetCurrentDirectory());
-                return SuccessExitCode;
-            }).Dispose();
-        }
-
-        [Fact]
-        public void SetToNonExistentDirectory_ThrowsDirectoryNotFoundException()
-        {
-            RemoteInvoke(() =>
-            {
-                string currentDirectory = Directory.GetCurrentDirectory();
-                try
-                {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Assert.Throws<DirectoryNotFoundException>(() => Directory.SetCurrentDirectory(GetTestFilePath()));
-                    }
-                    else
-                    {
-                        Assert.Throws<FileNotFoundException>(() => Directory.SetCurrentDirectory(GetTestFilePath()));
-                    }
-                    Assert.Equal(currentDirectory, Directory.GetCurrentDirectory());
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(currentDirectory);
+                    Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
                 return SuccessExitCode;
             }).Dispose();
