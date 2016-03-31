@@ -1501,7 +1501,7 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind(
     __in ULONG HandlerType,
     __in ULONG ImageBase,
     __in ULONG ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
     __in OUT PCONTEXT ContextRecord,
     __out PVOID *HandlerData,
     __out PULONG EstablisherFrame,

@@ -6676,8 +6676,8 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     CONTEXT   ctx;
 
     // Unwind back to our caller in managed code
-    static PRUNTIME_FUNCTION my_pdata;
-    static ULONG_PTR         my_imagebase;
+    static PT_RUNTIME_FUNCTION my_pdata;
+    static ULONG_PTR           my_imagebase;
 
     ctx.ContextFlags = CONTEXT_ALL;
     RtlCaptureContext(&ctx);
@@ -7035,7 +7035,7 @@ void InitJitHelperLogging()
                     hlpFuncCount->count = 0;
 #ifdef _TARGET_AMD64_
                     ULONGLONG           uImageBase;
-                    PRUNTIME_FUNCTION   pFunctionEntry;            
+                    PT_RUNTIME_FUNCTION   pFunctionEntry;            
                     pFunctionEntry  = RtlLookupFunctionEntry((ULONGLONG)hlpFunc->pfnHelper, &uImageBase, NULL);
 
                     if (pFunctionEntry != NULL)
@@ -7080,7 +7080,7 @@ void InitJitHelperLogging()
 
 #ifdef _TARGET_AMD64_
                     ULONGLONG           uImageBase;
-                    PRUNTIME_FUNCTION   pFunctionEntry;            
+                    PT_RUNTIME_FUNCTION   pFunctionEntry;            
                     pFunctionEntry  = RtlLookupFunctionEntry((ULONGLONG)hlpFunc->pfnHelper, &uImageBase, NULL);
 
                     if (pFunctionEntry != NULL)

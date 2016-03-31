@@ -147,7 +147,7 @@ RtlVirtualUnwind (
           IN ULONG HandlerType,
           IN ULONG64 ImageBase,
           IN ULONG64 ControlPc,
-          IN PRUNTIME_FUNCTION FunctionEntry,
+          IN PT_RUNTIME_FUNCTION FunctionEntry,
           IN OUT PCONTEXT ContextRecord,
           OUT PVOID *HandlerData,
           OUT PULONG64 EstablisherFrame,
@@ -183,7 +183,7 @@ RtlVirtualUnwind_Worker (
           IN ULONG HandlerType,
           IN ULONG64 ImageBase,
           IN ULONG64 ControlPc,
-          IN PRUNTIME_FUNCTION FunctionEntry,
+          IN PT_RUNTIME_FUNCTION FunctionEntry,
           IN OUT PCONTEXT ContextRecord,
           OUT PVOID *HandlerData,
           OUT PULONG64 EstablisherFrame,
@@ -430,7 +430,7 @@ RtlVirtualUnwind_Worker (
         // as well as a single byte representation of the Function code so that tests to make sure
         // that we're out of the prologue will not fail. 
     
-        RUNTIME_FUNCTION FakeFunctionEntry;
+        T_RUNTIME_FUNCTION FakeFunctionEntry;
 
         //
         // The buffer contains 4 sections

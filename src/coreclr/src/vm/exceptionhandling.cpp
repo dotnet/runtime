@@ -5350,7 +5350,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
 #endif // _TARGET_ARM_ || _TARGET_ARM64_
 
-    INDEBUG(pDispatcherContext->FunctionEntry = (PRUNTIME_FUNCTION)INVALID_POINTER_CD);
+    INDEBUG(pDispatcherContext->FunctionEntry = (PT_RUNTIME_FUNCTION)INVALID_POINTER_CD);
     INDEBUG(pDispatcherContext->ImageBase     = INVALID_POINTER_CD);
 
     pDispatcherContext->FunctionEntry = RtlLookupFunctionEntry(pDispatcherContext->ControlPc,
@@ -5358,7 +5358,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
                                                                NULL
                                                                );
 
-    _ASSERTE(((PRUNTIME_FUNCTION)INVALID_POINTER_CD) != pDispatcherContext->FunctionEntry);
+    _ASSERTE(((PT_RUNTIME_FUNCTION)INVALID_POINTER_CD) != pDispatcherContext->FunctionEntry);
     _ASSERTE(INVALID_POINTER_CD != pDispatcherContext->ImageBase);
 
     //

@@ -5081,6 +5081,9 @@ void DacDbiInterfaceImpl::Hijack(
     // (The hijack function already has the context)
     _ASSERTE((pOriginalContext == NULL) == (cbSizeContext == 0));
     _ASSERTE(EHijackReason::IsValid(reason));
+#ifdef PLATFORM_UNIX
+    _ASSERTE(!"Not supported on this platform");
+#endif
 
     //
     // If we hijack a thread which might not be managed we can set vmThread = NULL
