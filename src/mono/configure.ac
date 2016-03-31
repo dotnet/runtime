@@ -929,10 +929,8 @@ if test x$has_extension_module != xno ; then
 	AC_MSG_NOTICE([Enabling mono extension module.])
 fi
 
-AC_ARG_ENABLE(gsharedvt, [  --enable-gsharedvt Enable generic valuetype sharing], enable_gsharedvt=$enableval, enable_gsharedvt=no)
-if test x$enable_gsharedvt = xyes; then
-	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharedvt])
-fi
+# Deprecated
+AC_ARG_ENABLE(gsharedvt, [  --enable-gsharedvt Enable generic valuetype sharing (Deprecated)], enable_gsharedvt=$enableval, enable_gsharedvt=no)
 
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
@@ -4063,10 +4061,6 @@ fi
 
     if test x$has_extension_module != xno; then
         echo "EXTENSION_MODULE = 1" >> $srcdir/$mcsdir/build/config.make
-    fi
-
-    if test x$enable_gsharedvt = xno; then
-        echo "MONO_DISABLE_GSHAREDVT = 1" >> $srcdir/$mcsdir/build/config.make
     fi
     
     echo "DEFAULT_PROFILE = $default_profile" >> $srcdir/$mcsdir/build/config.make
