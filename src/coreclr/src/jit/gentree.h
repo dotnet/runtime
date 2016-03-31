@@ -247,7 +247,7 @@ struct GenTreeArgList;
 
 /*****************************************************************************/
 
-#ifndef _WIN64
+#ifndef _HOST_64BIT_
 #include <pshpack4.h>
 #endif
 
@@ -3748,7 +3748,7 @@ inline var_types& GenTree::CastToType()  { return this->gtCast.gtCastType; }
 
 /*****************************************************************************/
 
-#ifndef _WIN64
+#ifndef _HOST_64BIT_
 #include <poppack.h>
 #endif
 
