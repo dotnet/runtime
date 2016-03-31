@@ -179,6 +179,11 @@
 #error Unsupported or unset target architecture
 #endif
 
+// Include the AMD64 unwind codes when appropriate.
+#if defined(_TARGET_AMD64_)
+#include "win64unwind.h"
+#endif
+
 // Macros for defining strongly-typed enums. Use as follows:
 //
 // DECLARE_TYPED_ENUM(FooEnum,BYTE)
