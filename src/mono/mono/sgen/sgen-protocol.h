@@ -154,7 +154,7 @@ enum {
 void binary_protocol_init (const char *filename, long long limit);
 gboolean binary_protocol_is_enabled (void);
 
-void binary_protocol_flush_buffers (gboolean force);
+gboolean binary_protocol_flush_buffers (gboolean force);
 
 #define BEGIN_PROTOCOL_ENTRY0(method) \
 	void method (void);
