@@ -3638,7 +3638,7 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
         LOG((LF_STUBS, LL_INFO1000000, "pc %p, sp %p\n", ControlPc, GetSP(&ctx)));
 
         ULONG64 ImageBase;
-        RUNTIME_FUNCTION *pFunctionEntry = RtlLookupFunctionEntry(
+        T_RUNTIME_FUNCTION *pFunctionEntry = RtlLookupFunctionEntry(
                 ControlPc,
                 &ImageBase,
                 NULL);

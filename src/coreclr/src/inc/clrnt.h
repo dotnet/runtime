@@ -762,7 +762,7 @@ typedef enum _FUNCTION_TABLE_TYPE {
 
 typedef struct _DYNAMIC_FUNCTION_TABLE {
     LIST_ENTRY Links;
-    PRUNTIME_FUNCTION FunctionTable;
+    PT_RUNTIME_FUNCTION FunctionTable;
     LARGE_INTEGER TimeStamp;
     
 #ifdef _TARGET_ARM_
@@ -796,7 +796,7 @@ typedef struct _DYNAMIC_FUNCTION_TABLE {
 
 #define RUNTIME_FUNCTION__GetUnwindInfoAddress(prf) (prf)->UnwindData
 #define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address) do { (prf)->UnwindData = (address); } while (0)
-#define OFFSETOF__RUNTIME_FUNCTION__UnwindInfoAddress offsetof(RUNTIME_FUNCTION, UnwindData)
+#define OFFSETOF__RUNTIME_FUNCTION__UnwindInfoAddress offsetof(T_RUNTIME_FUNCTION, UnwindData)
 
 
 //
@@ -893,7 +893,7 @@ PEXCEPTION_ROUTINE
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
     IN ULONG64 ControlPc,
-    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
     IN OUT PCONTEXT ContextRecord,
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
@@ -908,7 +908,7 @@ RtlVirtualUnwind_Unsafe(
     IN ULONG HandlerType,
     IN ULONG64 ImageBase,
     IN ULONG64 ControlPc,
-    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
     IN OUT PCONTEXT ContextRecord,
     OUT PVOID *HandlerData,
     OUT PULONG64 EstablisherFrame,
@@ -951,7 +951,7 @@ typedef struct _DISPATCHER_CONTEXT {
 FORCEINLINE
 ULONG
 RtlpGetFunctionEndAddress (
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
     __in ULONG ImageBase
     )
 {
@@ -1011,6 +1011,7 @@ RtlVirtualUnwind (
 #endif // _TARGET_ARM_
 
 #ifdef _TARGET_ARM64_
+#include "daccess.h"
 
 #define UNW_FLAG_NHANDLER               0x0             /* any handler */
 #define UNW_FLAG_EHANDLER               0x1             /* filter handler */
@@ -1031,7 +1032,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        FunctionLength = *(ULONG64*)(ImageBase + FunctionLength) & 0x3ffff;
+        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
     
     return FunctionEntry->BeginAddress + 4 * FunctionLength;

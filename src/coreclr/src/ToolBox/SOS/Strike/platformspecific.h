@@ -47,6 +47,10 @@ struct DT_UNICODE_STRING
 #define IMAGE_FILE_MACHINE_ARMNT             0x01c4  // ARM Thumb-2 Little-Endian 
 #endif
 
+#ifndef IMAGE_FILE_MACHINE_ARM64
+#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
+#endif
+
 #ifdef _TARGET_WIN64_
 typedef ULONG DT_GDI_HANDLE_BUFFER[DT_GDI_HANDLE_BUFFER_SIZE64];
 #else
