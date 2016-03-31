@@ -34,6 +34,9 @@ namespace System.IO.Tests
             RemoteInvoke(() =>
             {
                 Directory.SetCurrentDirectory(TestDirectory);
+                // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
+                // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
+                // path that followed the symlink.
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
