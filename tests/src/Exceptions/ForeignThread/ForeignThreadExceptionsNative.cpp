@@ -9,16 +9,11 @@
  #include <thread>
 #pragma warning(pop)
 
-
-#if defined _WIN32
-  #define DLL_EXPORT __declspec(dllexport)
-#else
-  #if __GNUC__ >= 4
-    #define DLL_EXPORT __attribute__ ((visibility ("default")))
-  #else
-    #define DLL_EXPORT
-  #endif
-#endif //_WIN32
+// Work around typedef redefinition: platformdefines.h defines error_t
+// as unsigned while it's defined as int in errno.h.
+#define error_t error_t_ignore
+#include "platformdefines.h"
+#undef error_t
 
 typedef void (*PFNACTION1)();
 
