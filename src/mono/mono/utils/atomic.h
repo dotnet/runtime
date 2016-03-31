@@ -22,10 +22,6 @@ F/MonoDroid( 1568): shared runtime initialization error: Cannot load library: re
 Apple targets have historically being problematic, xcode 4.6 would miscompile the intrinsic.
 */
 
-#if defined (__arm__) && defined (HAVE_ARMV7)
-#define HAVE_64BIT_CMPXCHG_FALLBACK /* See atomic.c in this directory. */
-#endif
-
 /* On Windows, we always use the functions provided by the Windows API. */
 #if defined(__WIN32__) || defined(_WIN32)
 

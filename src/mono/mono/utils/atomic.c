@@ -503,7 +503,7 @@ InterlockedCompareExchange64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	return __sync_val_compare_and_swap (dest, comp, exch);
 }
 
-#elif defined (HAVE_64BIT_CMPXCHG_FALLBACK)
+#elif defined (__arm__) && defined (HAVE_ARMV7) && (defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_ANDROID))
 
 #if defined (TARGET_IOS) || defined (TARGET_WATCHOS)
 
