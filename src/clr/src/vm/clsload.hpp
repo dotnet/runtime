@@ -87,18 +87,24 @@ public:
 
     const HashedTypeEntry& SetClassHashBasedEntryValue(EEClassHashEntry_t * pClassHashEntry)
     {
+        LIMITED_METHOD_CONTRACT;
+
         m_EntryType = EntryType::IsHashedClassEntry;
         m_pClassHashEntry = dac_cast<PTR_EEClassHashEntry>(pClassHashEntry);
         return *this;
     }
     EEClassHashEntry_t * GetClassHashBasedEntryValue()
     {
+        LIMITED_METHOD_CONTRACT;
+
         _ASSERT(m_EntryType == EntryType::IsHashedClassEntry);
         return m_pClassHashEntry;
     }
 
     const HashedTypeEntry& SetTokenBasedEntryValue(mdTypeDef typeToken, Module * pModule)
     {
+        LIMITED_METHOD_CONTRACT;
+
         m_EntryType = EntryType::IsHashedTokenEntry;
         m_TokenAndModulePair.m_TypeToken = typeToken;
         m_TokenAndModulePair.m_pModule = pModule;
@@ -106,6 +112,8 @@ public:
     }
     const TokenTypeEntry& GetTokenBasedEntryValue()
     {
+        LIMITED_METHOD_CONTRACT;
+        
         _ASSERT(m_EntryType == EntryType::IsHashedTokenEntry);
         return m_TokenAndModulePair;
     }

@@ -165,7 +165,7 @@ $packages = @(
     "Microsoft.DotNet.RyuJit"
 )
 
-$packageVersion = "1.0.6-prerelease"
+$packageVersion = "1.0.7-prerelease"
 if ($buildNumber)
 {
     $packageVersion = $packageVersion + "-" + $buildNumber

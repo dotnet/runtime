@@ -13912,7 +13912,7 @@ void                Compiler::fgMorphStmts(BasicBlock * block,
 #endif
 
 #ifdef DEBUG
-    compCurBB = (BasicBlock*)DEAD_BEEF;
+    compCurBB = (BasicBlock*)INVALID_POINTER_VALUE;
 #endif
 
     // Reset this back so that it doesn't leak out impacting other blocks
