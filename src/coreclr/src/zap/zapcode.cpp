@@ -1291,7 +1291,7 @@ ZapGCInfo * ZapGCInfoTable::GetGCInfo(PVOID pBlob, SIZE_T cbBlob)
 
 void ZapUnwindInfo::Save(ZapWriter * pZapWriter)
 {
-    RUNTIME_FUNCTION runtimeFunction;
+    T_RUNTIME_FUNCTION runtimeFunction;
 
 #if defined(_TARGET_ARM_)
     RUNTIME_FUNCTION__SetBeginAddress(&runtimeFunction, GetStartAddress());

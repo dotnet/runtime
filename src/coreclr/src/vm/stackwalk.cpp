@@ -596,7 +596,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     
 #if !defined(DACCESS_COMPILE)
     UINT_PTR            uImageBase;
-    PRUNTIME_FUNCTION   pFunctionEntry;
+    PT_RUNTIME_FUNCTION pFunctionEntry;
 
     if (pCodeInfo == NULL)
     {
@@ -623,7 +623,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
 #if defined(_DEBUG) && !defined(FEATURE_PAL)
         UINT_PTR            uImageBaseFromOS;
-        PRUNTIME_FUNCTION   pFunctionEntryFromOS;
+        PT_RUNTIME_FUNCTION pFunctionEntryFromOS;
 
         pFunctionEntryFromOS  = RtlLookupFunctionEntry(uControlPc,
                                                        ARM_ONLY((DWORD*))(&uImageBaseFromOS),
@@ -679,7 +679,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 #if defined(_DEBUG) && !defined(FEATURE_PAL)
     UINT_PTR uImageBase;
 
-    PRUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
+    PT_RUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
                                                                 ARM_ONLY((DWORD*))(&uImageBase),
                                                                 NULL);
 
@@ -708,7 +708,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
 // static
 PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CONTEXT_POINTERS* pContextPointers, 
-    PRUNTIME_FUNCTION pFunctionEntry, UINT_PTR uImageBase)
+    PT_RUNTIME_FUNCTION pFunctionEntry, UINT_PTR uImageBase)
 {
     CONTRACTL
     {

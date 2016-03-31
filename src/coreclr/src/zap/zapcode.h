@@ -427,7 +427,7 @@ public:
 
     virtual DWORD GetSize()
     {
-        return sizeof(RUNTIME_FUNCTION);
+        return sizeof(T_RUNTIME_FUNCTION);
     }
 
     virtual ZapNodeType GetType()

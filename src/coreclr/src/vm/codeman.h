@@ -141,7 +141,7 @@ public:
 
 #ifdef WIN64EXCEPTIONS
     DWORD               nUnwindInfos;
-    RUNTIME_FUNCTION    unwindInfos[0];
+    T_RUNTIME_FUNCTION  unwindInfos[0];
 #endif // WIN64EXCEPTIONS
 
 public:
@@ -304,7 +304,7 @@ public:
         SUPPORTS_DAC;
         _ASSERTE(iUnwindInfo < GetNumberOfUnwindInfos());
         return dac_cast<PTR_RUNTIME_FUNCTION>(
-            PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos) + iUnwindInfo * sizeof(RUNTIME_FUNCTION));
+            PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos) + iUnwindInfo * sizeof(T_RUNTIME_FUNCTION));
     }
 #endif // WIN64EXCEPTIONS
 
@@ -531,12 +531,12 @@ public:
     // All public functions are thread-safe.
 
     // These are wrapper functions over the UnwindInfoTable functions that are specific to JIT compile code
-    static void PublishUnwindInfoForMethod(TADDR baseAddress, RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
+    static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
     // These are used by the stublinker and the high-level method functions above
-    static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
+    static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, T_RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
     // By default this publishing is off, this routine turns it on (and optionally publishes existing methods)
@@ -556,7 +556,7 @@ private:
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
     ULONG_PTR           iRangeEnd;        // End of memory described by this table
-    RUNTIME_FUNCTION*   pTable;           // The actual list of method unwind info, sorted by address
+    T_RUNTIME_FUNCTION* pTable;           // The actual list of method unwind info, sorted by address
     ULONG               cTableCurCount;   
     ULONG               cTableMaxCount; 
     int                 cDeletedEntries;    // Number of slots we removed. 

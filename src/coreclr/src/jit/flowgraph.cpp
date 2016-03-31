@@ -2344,7 +2344,7 @@ void Compiler::fgDfsInvPostOrder()
 
     assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
-    // Call the recursive helper.
+    // Call the flowgraph DFS traversal helper.
     unsigned postIndex = 1;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -2410,33 +2410,79 @@ BlockSet_ValRet_T   Compiler::fgDomFindStartNodes()
     return startNodes;
 }
 
-/** A simple DFS traversal of the flow graph.
-  * It computes both preorder and postorder numbering.
-  */
+//------------------------------------------------------------------------
+// fgDfsInvPostOrderHelper: Helper to assign post-order numbers to blocks.
+//
+// Arguments:
+//    block   - The starting entry block
+//    visited - The set of visited blocks
+//    count   - Pointer to the Dfs counter
+//
+// Notes:
+//    Compute a non-recursive DFS traversal of the flow graph using an
+//    evaluation stack to assign post-order numbers.
+
 void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, unsigned* count)
 {
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
 
+    // Allocate a local stack to hold the DFS traversal actions necessary
+    // to compute pre/post-ordering of the control flowgraph.
+    ArrayStack<DfsBlockEntry> stack(this);
+
+    // Push the first block on the stack to seed the traversal.
+    stack.Push(DfsBlockEntry(DSS_Pre, block));
     // Flag the node we just visited to avoid backtracking.
     BlockSetOps::AddElemD(this, visited, block->bbNum);
 
-    unsigned cSucc = block->NumSucc(this);
-    for (unsigned j = 0; j < cSucc; ++j)
+    // The search is terminated once all the actions have been processed.
+    while (stack.Height() != 0)
     {
-        BasicBlock* succ = block->GetSucc(j, this);
-        // If this is a node we haven't seen before, go ahead and recurse
-        if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
+        DfsBlockEntry current = stack.Pop();
+        BasicBlock*   currentBlock = current.dfsBlock;
+
+        if (current.dfsStackState == DSS_Pre)
         {
-            fgDfsInvPostOrderHelper(succ, visited, count);
+            // This is a pre-visit that corresponds to the first time the
+            // node is encountered in the spanning tree and receives pre-order
+            // numberings. By pushing the post-action on the stack here we
+            // are guaranteed to only process it after all of its successors
+            // pre and post actions are processed.
+            stack.Push(DfsBlockEntry(DSS_Post, currentBlock));
+
+            unsigned cSucc = currentBlock->NumSucc(this);
+            for (unsigned j = 0; j < cSucc; ++j)
+            {
+                BasicBlock* succ = currentBlock->GetSucc(j, this);
+
+                // If this is a node we haven't seen before, go ahead and process
+                if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
+                {
+                    // Push a pre-visit action for this successor onto the stack and
+                    // mark it as visited in case this block has multiple successors
+                    // to the same node (multi-graph).
+                    stack.Push(DfsBlockEntry(DSS_Pre, succ));
+                    BlockSetOps::AddElemD(this, visited, succ->bbNum);
+                }
+            }
+        }
+        else
+        {
+            // This is a post-visit that corresponds to the last time the
+            // node is visited in the spanning tree and only happens after
+            // all descendents in the spanning tree have had pre and post
+            // actions applied.
+
+            assert(current.dfsStackState == DSS_Post);
+
+            unsigned invCount = fgBBcount - *count + 1;
+            assert(1 <= invCount && invCount <= fgBBNumMax);
+            fgBBInvPostOrder[invCount] = currentBlock;
+            currentBlock->bbDfsNum = invCount;
+            ++(*count);
         }
     }
-
-    unsigned invCount = fgBBcount - *count + 1;
-    assert(1 <= invCount && invCount <= fgBBNumMax);
-    fgBBInvPostOrder[invCount] = block;
-    block->bbDfsNum = invCount;
-    ++(*count);
 }
 
 void Compiler::fgComputeDoms()
@@ -2701,7 +2747,7 @@ void Compiler::fgBuildDomTree()
             }
             else
             {
-                // Otherwise, we do a DFS on the tree.
+                // Otherwise, we do a DFS traversal of the dominator tree.
                 fgTraverseDomTree(i, domTree, &preNum, &postNum);
             }
         }
@@ -2788,6 +2834,20 @@ void Compiler::fgDispDomTree(BasicBlockList** domTree)
 }
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// fgTraverseDomTree: Assign pre/post-order numbers to the dominator tree.
+//
+// Arguments:
+//    bbNum   - The basic block number of the starting block
+//    domTree - The dominator tree (as child block lists)
+//    preNum  - Pointer to the pre-number counter
+//    postNum - Pointer to the post-number counter
+//
+// Notes:
+//    Runs a non-recursive DFS traversal of the dominator tree using an
+//    evaluation stack to assign pre-order and post-order numbers.
+//    These numberings are used to provide constant time lookup for
+//    ancestor/descendent tests between pairs of nodes in the tree.
 
 void Compiler::fgTraverseDomTree(unsigned         bbNum,
                                  BasicBlockList** domTree,
@@ -2804,12 +2864,60 @@ void Compiler::fgTraverseDomTree(unsigned         bbNum,
         // values must be zero.
         noway_assert(fgDomTreePostOrder[bbNum] == 0);
 
-        fgDomTreePreOrder[bbNum] = (*preNum)++;
-        for (BasicBlockList* current = domTree[bbNum]; current != nullptr; current = current->next)
+        // Allocate a local stack to hold the Dfs traversal actions necessary
+        // to compute pre/post-ordering of the dominator tree.
+        ArrayStack<DfsNumEntry> stack(this);
+
+        // Push the first entry number on the stack to seed the traversal.
+        stack.Push(DfsNumEntry(DSS_Pre, bbNum));
+
+        // The search is terminated once all the actions have been processed.
+        while (stack.Height() != 0)
         {
-            fgTraverseDomTree(current->block->bbNum, domTree, preNum, postNum);
+            DfsNumEntry current = stack.Pop();
+            unsigned    currentNum = current.dfsNum;
+
+            if (current.dfsStackState == DSS_Pre)
+            {
+                // This pre-visit action corresponds to the first time the
+                // node is encountered during the spanning traversal.
+                noway_assert(fgDomTreePreOrder[currentNum] == 0);
+                noway_assert(fgDomTreePostOrder[currentNum] == 0);
+
+                // Assign the preorder number on the first visit.
+                fgDomTreePreOrder[currentNum] = (*preNum)++;
+
+                // Push this nodes post-action on the stack such that all successors
+                // pre-order visits occur before this nodes post-action. We will assign
+                // its post-order numbers when we pop off the stack.
+                stack.Push(DfsNumEntry(DSS_Post, currentNum));
+
+                // For each child in the dominator tree process its pre-actions.
+                for (BasicBlockList* child = domTree[currentNum]; child != nullptr; child = child->next)
+                {
+                    unsigned childNum = child->block->bbNum;
+
+                    // This is a tree so never could have been visited
+                    assert(fgDomTreePreOrder[childNum] == 0);
+
+                    // Push the successor in the dominator tree for pre-actions.
+                    stack.Push(DfsNumEntry(DSS_Pre, childNum));
+                }
+            }
+            else
+            {
+                // This post-visit action corresponds to the last time the node
+                // is encountered and only after all descendents in the spanning
+                // tree have had pre and post-order numbers assigned.
+
+                assert(current.dfsStackState == DSS_Post);
+                assert(fgDomTreePreOrder[currentNum] != 0);
+                assert(fgDomTreePostOrder[currentNum] == 0);
+
+                // Now assign this nodes post-order number.
+                fgDomTreePostOrder[currentNum] = (*postNum)++;
+            }
         }
-        fgDomTreePostOrder[bbNum] = (*postNum)++;
     }
 }
 
@@ -6924,7 +7032,12 @@ GenTreePtr    Compiler::fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_C
                 helperArgs->gtOp.gtOp2 = gtNewArgList(call->gtCall.gtCallArgs->gtOp.gtOp1);
 
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
-                call->gtCall.gtEntryPoint = targetMethod->gtFptrVal.gtDelegateCtor;
+#if COR_JIT_EE_VERSION > 460
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken, clsHnd, &call->gtCall.gtEntryPoint);
+#else
+                info.compCompHnd->getReadyToRunHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken,
+                    CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &call->gtCall.gtEntryPoint);
+#endif
             }
         }
         else
@@ -17354,10 +17467,17 @@ BasicBlock*         Compiler::fgAddCodeRef(BasicBlock*      srcBlk,
                                            SpecialCodeKind  kind,
                                            unsigned         stkDepth)
 {
-    /* For debuggable code, genJumpToThrowHlpBlk() will generate the 'throw'
-       code inline. It has to be kept consistent with fgAddCodeRef() */
+    // Record that the code will call a THROW_HELPER
+    // so on Windows Amd64 we can allocate the 4 outgoing
+    // arg slots on the stack frame if there are no other calls.
+    compUsesThrowHelper = true;
+
+    // For debuggable code, genJumpToThrowHlpBlk() will generate the 'throw'
+    // code inline. It has to be kept consistent with fgAddCodeRef()
     if (opts.compDbgCode)
-        return NULL;
+    {
+        return nullptr;
+    }
 
     const static
     BBjumpKinds jumpKinds[] =
