@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
@@ -37,10 +41,10 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
     internal class XsSerializerFactory : ISerializerFactory
     {
-        private static readonly XsSerializerFactory Instance = new XsSerializerFactory();
+        private static readonly XsSerializerFactory s_instance = new XsSerializerFactory();
         public static XsSerializerFactory GetInstance()
         {
-            return Instance;
+            return s_instance;
         }
 
         public IPerfTestSerializer GetSerializer()
