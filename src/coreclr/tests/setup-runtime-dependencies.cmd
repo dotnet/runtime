@@ -12,7 +12,7 @@ REM ===
 REM =========================================================================================
 
 set __OutputDir=
-set __Arch=
+set __Arch= 
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -24,7 +24,7 @@ if /i "%1" == "-h"    goto Usage
 if /i "%1" == "/help" goto Usage
 if /i "%1" == "-help" goto Usage
 
-if /i "%1" == "/arch"             (set __Arch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/arch"             (set __Arch=%2&shift&shift&goto Arg_Loop) 
 if /i "%1" == "/outputdir"        (set __OutputDir=%2&shift&shift&goto Arg_Loop)
 
 echo Invalid command-line argument: %1
@@ -33,8 +33,7 @@ goto Usage
 :ArgsDone
 
 if not defined __OutputDir goto Usage
-if not defined __Arch goto Usage
-
+if not defined __Arch goto Usage 
 
 REM =========================================================================================
 REM ===
@@ -43,7 +42,7 @@ REM ===
 REM =========================================================================================
 
 set __DotNetToolDir=%__ThisScriptPath%..\Tools
-set __DotNetCmd=%__DotNetToolDir%\dotnetcli\bin\dotnet.exe
+set __DotNetCmd=%__DotNetToolDir%\dotnetcli\dotnet.exe 
 set __PackageDir=%__ThisScriptPath%..\Packages
 set __TmpDir=%Temp%\coreclr_gcstress_%RANDOM%
 
@@ -92,6 +91,13 @@ call %DOTNETCMD%
 if errorlevel 1 goto Fail
 REM Get downloaded dll path
 FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s ^| findstr /R "runtime.win[0-9]*-%__Arch%"') DO set __LibPath=%%i
+if not exist "%__LibPath%" (
+    echo Failed to locate the downloaded library: %__LibPath%
+    goto Fail
+)
+
+REM Get downloaded dll path
+FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s') DO set __LibPath=%%i
 if not exist "%__LibPath%" (
     echo Failed to locate the downloaded library: %__LibPath%
     goto Fail

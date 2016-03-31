@@ -312,6 +312,17 @@ private:
         CORINFO_METHOD_HANDLE m_method;
     };
 
+    template<typename T>
+    static bool isInvalidHandle(const T handle)
+    {
+        static_assert(std::is_same<T, CORINFO_CLASS_HANDLE>::value || std::is_same<T, CORINFO_METHOD_HANDLE>::value, "");
+#ifdef _HOST_64BIT_
+        return handle == reinterpret_cast<T>(0xcccccccccccccccc);
+#else
+        return handle == reinterpret_cast<T>(0xcccccccc);
+#endif
+    }
+
 public:
     typeInfo():m_flags(TI_ERROR) 
     {
@@ -345,7 +356,7 @@ public:
     typeInfo(ti_types tiType, CORINFO_CLASS_HANDLE cls, bool typeVar = false) 
     {
         assert(tiType == TI_STRUCT || tiType == TI_REF);
-        assert(cls != 0 && cls != CORINFO_CLASS_HANDLE(NOT_WIN64(0xcccccccc) WIN64_ONLY(0xcccccccccccccccc)));
+        assert(cls != 0 && !isInvalidHandle(cls));
         m_flags = tiType;
         if (typeVar) 
             m_flags |= TI_FLAG_GENERIC_TYPE_VAR;
@@ -354,8 +365,7 @@ public:
 
     typeInfo(CORINFO_METHOD_HANDLE method)
     {
-        assert(method != 0 && method != CORINFO_METHOD_HANDLE(NOT_WIN64(0xcccccccc)
-                                                              WIN64_ONLY(0xcccccccccccccccc)));
+        assert(method != 0 && !isInvalidHandle(method));
         m_flags = TI_METHOD;
         m_method = method;
     }

@@ -463,6 +463,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #endif // LEGACY_BACKEND
 
   #define REGSIZE_BYTES            4       // number of bytes in one register
+  #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
   #define CODE_ALIGN               1       // code alignment requirement
   #define STACK_ALIGN              4       // stack alignment requirement
@@ -767,12 +768,16 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
 #endif // !ETW_EBP_FRAMED
 
 #ifdef UNIX_AMD64_ABI
+  #define MIN_ARG_AREA_FOR_CALL   0       // Minimum required outgoing argument space for a call.
+
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_RDI|RBM_RSI|RBM_EDX|RBM_ECX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (0)
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5|RBM_XMM6|RBM_XMM7| \
                                    RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
 #else // !UNIX_AMD64_ABI
+#define MIN_ARG_AREA_FOR_CALL     (4 * REGSIZE_BYTES)       // Minimum required outgoing argument space for a call.
+
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (RBM_XMM6|RBM_XMM7|RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
@@ -1156,6 +1161,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define TINY_REGNUM_BITS         4       // number of bits we will use for a tiny instr desc (may not use float)
   #define REGMASK_BITS             64      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            4       // number of bytes in one register
+  #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
   #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              8       // stack alignment requirement
@@ -1471,6 +1477,8 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
+
+  #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
   #define CODE_ALIGN               4       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement

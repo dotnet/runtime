@@ -1110,6 +1110,50 @@ struct flowList
     {}
 };
 
+// This enum represents a pre/post-visit action state to emulate a depth-first
+// spanning tree traversal of a tree or graph.
+enum DfsStackState
+{
+    DSS_Invalid,      // The initialized, invalid error state
+    DSS_Pre,          // The DFS pre-order (first visit) traversal state
+    DSS_Post          // The DFS post-order (last visit) traversal state
+};
+
+// These structs represents an entry in a stack used to emulate a non-recursive
+// depth-first spanning tree traversal of a graph. The entry contains either a
+// block pointer or a block number depending on which is more useful.
+struct DfsBlockEntry
+{
+    DfsStackState       dfsStackState;  // The pre/post traversal action for this entry
+    BasicBlock*         dfsBlock;       // The corresponding block for the action
+
+    DfsBlockEntry()
+        : dfsStackState(DSS_Invalid)
+        , dfsBlock(nullptr)
+    {}
+
+    DfsBlockEntry(DfsStackState state, BasicBlock* basicBlock)
+        : dfsStackState(state)
+        , dfsBlock(basicBlock)
+    {}
+};
+
+struct DfsNumEntry
+{
+    DfsStackState       dfsStackState;  // The pre/post traversal action for this entry
+    unsigned            dfsNum;         // The corresponding block number for the action
+
+    DfsNumEntry()
+        : dfsStackState(DSS_Invalid)
+        , dfsNum(0)
+    {}
+
+    DfsNumEntry(DfsStackState state, unsigned bbNum)
+        : dfsStackState(state)
+        , dfsNum(bbNum)
+    {}
+};
+
 /*****************************************************************************/
 
 extern  BasicBlock*     __cdecl verAllocBasicBlock();

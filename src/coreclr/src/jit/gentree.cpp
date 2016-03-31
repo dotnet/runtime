@@ -5954,7 +5954,7 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
 
 #ifdef FEATURE_READYTORUN_COMPILER
             copy->gtFptrVal.gtEntryPoint = tree->gtFptrVal.gtEntryPoint;
-            copy->gtFptrVal.gtDelegateCtor = tree->gtFptrVal.gtDelegateCtor;
+            copy->gtFptrVal.gtLdftnResolvedToken = tree->gtFptrVal.gtLdftnResolvedToken;
 #endif
             goto DONE;
 

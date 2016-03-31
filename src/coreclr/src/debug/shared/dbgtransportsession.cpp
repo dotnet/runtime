@@ -1126,6 +1126,34 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
 #endif
 
 #ifndef RIGHT_SIDE_COMPILE
+
+#ifdef FEATURE_PAL
+__attribute__((noinline))
+__attribute__((optnone))
+static void 
+ProbeMemory(__in_ecount(cbBuffer) volatile PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
+{
+    // Need an throw in this function to fool the C++ runtime into handling the 
+    // possible h/w exception below.
+    if (pbBuffer == NULL)
+    {
+        throw PAL_SEHException();
+    }
+
+    // Simple one byte at a time probing
+    while (cbBuffer > 0)
+    {
+        volatile BYTE read = *pbBuffer;
+        if (fWriteAccess)
+        {
+            *pbBuffer = read;
+        }
+        ++pbBuffer;
+        --cbBuffer;
+    }
+}
+#endif // FEATURE_PAL
+
 // Check read and optionally write memory access to the specified range of bytes. Used to check
 // ReadProcessMemory and WriteProcessMemory requests.
 HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuffer, DWORD cbBuffer, bool fWriteAccess)
@@ -1138,7 +1166,6 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
 
     // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc 
     // that's why on Unix we can't rely on in to detect invalid memory reads  
-    // TODO: We need to find and use appropriate memory map API on other operating systems. 
 #ifndef FEATURE_PAL
     do 
     {
@@ -1179,11 +1206,24 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         }
     }
     while (cbBuffer > 0);
+#else
+    try
+    {
+        // Need to explicit h/w exception holder so to catch them in ProbeMemory
+        CatchHardwareExceptionHolder __catchHardwareException;
+
+        ProbeMemory(pbBuffer, cbBuffer, fWriteAccess);
+    }
+    catch(...)
+    {
+        return HRESULT_FROM_WIN32(ERROR_INVALID_ADDRESS);
+    }
 #endif
 
     // The specified region has passed all of our checks.
     return S_OK;
 }
+
 #endif // !RIGHT_SIDE_COMPILE
 
 // Initialize all session state to correct starting values. Used during Init() and on the LS when we
