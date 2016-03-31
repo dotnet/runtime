@@ -60,7 +60,6 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the 
         /// </summary>
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_BadEventSource_MismatchedIds()
         {

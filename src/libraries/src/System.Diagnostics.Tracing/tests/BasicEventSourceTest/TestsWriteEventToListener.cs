@@ -15,7 +15,6 @@ namespace BasicEventSourceTests
 {
     public class TestsWriteEventToListener
     {
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ArgsBasicTypes()
         {
@@ -160,7 +159,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ArgsCornerCases()
         {
@@ -216,7 +214,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_InvalidCalls()
         {
@@ -239,7 +236,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ToChannel_Coverage()
         {
@@ -314,7 +310,6 @@ namespace BasicEventSourceTests
 
 #endif // USE_ETW
 
-        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ZeroKwds()
         {
