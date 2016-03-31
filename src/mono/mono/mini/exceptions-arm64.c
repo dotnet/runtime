@@ -354,6 +354,7 @@ mono_arch_exceptions_init (void)
 void
 mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow)
 {
+	MonoError error;
 	MonoContext ctx;
 	MonoObject *exc = NULL;
 	guint32 ex_token_index, ex_token;
@@ -375,11 +376,12 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 	memcpy (&(ctx.fregs [ARMREG_D8]), fp_regs, sizeof (double) * 8);
 	ctx.pc = pc;
 
-	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, &error)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
+	mono_error_assert_ok (&error);
 
 	mono_handle_exception (&ctx, exc);
 
