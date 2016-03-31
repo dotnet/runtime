@@ -51,7 +51,7 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
                                            __out_ecount(cbBuffer) PVOID   pBuffer,
                                                                   DWORD   cbBuffer)
 {
-    if (cbBuffer < sizeof(RUNTIME_FUNCTION))
+    if (cbBuffer < sizeof(T_RUNTIME_FUNCTION))
     {
         return E_INVALIDARG;
     }

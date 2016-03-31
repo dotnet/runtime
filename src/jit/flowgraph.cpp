@@ -6924,7 +6924,12 @@ GenTreePtr    Compiler::fgOptimizeDelegateConstructor(GenTreePtr call, CORINFO_C
                 helperArgs->gtOp.gtOp2 = gtNewArgList(call->gtCall.gtCallArgs->gtOp.gtOp1);
 
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
-                call->gtCall.gtEntryPoint = targetMethod->gtFptrVal.gtDelegateCtor;
+#if COR_JIT_EE_VERSION > 460
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken, clsHnd, &call->gtCall.gtEntryPoint);
+#else
+                info.compCompHnd->getReadyToRunHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken,
+                    CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &call->gtCall.gtEntryPoint);
+#endif
             }
         }
         else
