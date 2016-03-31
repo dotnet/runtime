@@ -101,25 +101,12 @@ public static class Adams
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-    private static bool TestBench()
+    private static void TestBench()
     {
         for (int l = 1; l <= Iterations; l++)
         {
             Bench();
         }
-        
-        bool result = true;
-        // Note: we can't check xn or yn better because of the precision
-        // with which original results are given 
-        result &= System.Math.Abs(g_xn_base - g_xn) <= 1.5e-7;
-        result &= System.Math.Abs(g_yn_base - g_yn) <= 1.5e-7;
-        result &= System.Math.Abs(g_dn) <= 2.5e-9;
-        // Actual error is much bigger than base error;
-        // this is likely due to the fact that the original program was written in Fortran
-        // and was running on a mainframe with a non-IEEE floating point arithmetic
-        // (it's still beyond the published precision of yn)
-        result &= System.Math.Abs(g_en) <= 5.5e-8;
-        return result;
     }
 
 #if XUNIT_PERF
@@ -136,6 +123,7 @@ public static class Adams
     }
 #endif // XUNIT_PERF
 
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static int Main(string[] argv)
     {
         if (argv.Length > 0)
@@ -144,9 +132,20 @@ public static class Adams
         }
 
         Stopwatch sw = Stopwatch.StartNew();
-        bool result = TestBench();
+        TestBench();
         sw.Stop();
 
+        bool result = true;
+        // Note: we can't check xn or yn better because of the precision
+        // with which original results are given 
+        result &= System.Math.Abs(g_xn_base - g_xn) <= 1.5e-7;
+        result &= System.Math.Abs(g_yn_base - g_yn) <= 1.5e-7;
+        result &= System.Math.Abs(g_dn) <= 2.5e-9;
+        // Actual error is much bigger than base error;
+        // this is likely due to the fact that the original program was written in Fortran
+        // and was running on a mainframe with a non-IEEE floating point arithmetic
+        // (it's still beyond the published precision of yn)
+        result &= System.Math.Abs(g_en) <= 5.5e-8;
         Console.WriteLine(result ? "Passed" : "Failed");
 
         Console.WriteLine(" BASE.....P1 1/4 (ADAMS-MOULTON), XN = {0}", g_xn_base);
