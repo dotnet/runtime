@@ -2,7 +2,7 @@
 #define __MONO_ERROR_INTERNALS_H__
 
 #include "mono/utils/mono-compiler.h"
-#include "mono/metadata/object-internals.h"
+#include "mono/metadata/class-internals.h"
 
 /*Keep in sync with MonoError*/
 typedef struct {
@@ -113,9 +113,6 @@ mono_error_convert_to_exception (MonoError *error);
 
 void
 mono_error_raise_exception (MonoError *error);
-
-void
-mono_loader_set_error_from_mono_error (MonoError *oerror);
 
 void
 mono_error_move (MonoError *dest, MonoError *src);

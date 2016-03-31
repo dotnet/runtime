@@ -12,9 +12,7 @@
 #include "mono-error-internals.h"
 
 #include <mono/metadata/exception.h>
-#include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 
 #define set_error_messagev() do { \
@@ -409,35 +407,6 @@ mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 	mono_error_prepare (error);
 	error->error_code = MONO_ERROR_EXCEPTION_INSTANCE;
 	error->exn.instance_handle = mono_gchandle_new (exc ? &exc->object : NULL, FALSE);
-}
-
-void
-mono_loader_set_error_from_mono_error (MonoError *oerror)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-
-	switch (error->error_code) {
-	case MONO_ERROR_MISSING_METHOD:
-		mono_loader_set_error_method_load (get_type_name (error), error->member_name);
-		break;
-	case MONO_ERROR_MISSING_FIELD:
-		mono_loader_set_error_field_load (error->exn.klass, error->member_name);
-		break;
-	case MONO_ERROR_TYPE_LOAD:
-		mono_loader_set_error_type_load (get_type_name (error), get_assembly_name (error));
-		break;
-	case MONO_ERROR_FILE_NOT_FOUND:
-		/* XXX can't recover if it's ref only or not */
-		mono_loader_set_error_assembly_load (get_assembly_name (error), FALSE);
-		break;
-	case MONO_ERROR_BAD_IMAGE:
-		mono_loader_set_error_bad_image (g_strdup (error->full_message));
-		break;
-	case MONO_ERROR_EXCEPTION_INSTANCE:
-		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error"));
-	default:
-		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", error->full_message));
-	}
 }
 
 void
