@@ -63,15 +63,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.True(valid, "Chain should build validly now");
                 Assert.Equal(initialErrorCount, chain.ChainStatus.Length);
-
-                // Rewind one second, the CRL is not "not yet valid"
-                chain.ChainPolicy.VerificationTime = chain.ChainPolicy.VerificationTime.Subtract(TimeSpan.FromSeconds(1));
-
-                valid = chain.Build(microsoftDotComIssuer);
-                Assert.False(valid, "Chain should not build validly, CRL is not yet valid");
-
-                Assert.Equal(initialErrorCount + 1, chain.ChainStatus.Length);
-                Assert.Equal(X509ChainStatusFlags.RevocationStatusUnknown, chain.ChainStatus[0].Status);
             }
         }
 
