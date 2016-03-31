@@ -33,8 +33,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NameNeedNotBeCSharpValid()
         {
-            ParameterExpression param = Expression.Parameter(typeof(int), "a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
-            Assert.Equal("a name with charcters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", param.Name);
+            ParameterExpression param = Expression.Parameter(typeof(int), "a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.");
+            Assert.Equal("a name with characters not allowed in C# <, >, !, =, \0, \uFFFF, &c.", param.Name);
         }
 
         [Fact]

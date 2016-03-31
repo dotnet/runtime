@@ -195,7 +195,7 @@ namespace System.Linq.Expressions.Compiler
                     return true;
                 case ExpressionType.Switch:
                     PushLabelBlock(LabelScopeKind.Switch);
-                    // Define labels inside of the switch cases so theyare in
+                    // Define labels inside of the switch cases so they are in
                     // scope for the whole switch. This allows "goto case" and
                     // "goto default" to be considered as local jumps.
                     var @switch = (SwitchExpression)node;

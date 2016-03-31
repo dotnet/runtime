@@ -299,7 +299,7 @@ namespace System.Linq.Expressions
                 ValidateSwitchCaseType(defaultBody, customType, resultType, nameof(defaultBody));
             }
 
-            // if we have a non-boolean userdefined equals, we don't want it.
+            // if we have a non-boolean user-defined equals, we don't want it.
             if (comparison != null && comparison.ReturnType != typeof(bool))
             {
                 throw Error.EqualityMustReturnBoolean(comparison);

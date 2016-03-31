@@ -1365,7 +1365,7 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is is intentional, override '{1}' and change it to allow this rewrite."
+        /// A string like "Rewritten expression calls operator method '{0}', but the original node had no operator method. If this is intentional, override '{1}' and change it to allow this rewrite."
         /// </summary>
         internal static string MustRewriteWithoutMethod(object p0, object p1)
         {
@@ -1389,13 +1389,13 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// A string like "Dynamic operations can only be performed in homogenous AppDomain."
+        /// A string like "Dynamic operations can only be performed in homogeneous AppDomain."
         /// </summary>
-        internal static string HomogenousAppDomainRequired
+        internal static string HomogeneousAppDomainRequired
         {
             get
             {
-                return SR.HomogenousAppDomainRequired;
+                return SR.HomogeneousAppDomainRequired;
             }
         }
 
