@@ -38,9 +38,9 @@ namespace System.Net.Http
             set { _curlHandler.ClientCertificateOptions = value; }
         }
 
-        public X509Certificate2Collection ClientCertificates => _curlHandler.ClientCertificates;
+        public X509CertificateCollection ClientCertificates => _curlHandler.ClientCertificates;
 
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
             get { return _curlHandler.ServerCertificateValidationCallback; }
             set { _curlHandler.ServerCertificateValidationCallback = value; }
