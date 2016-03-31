@@ -12,23 +12,19 @@ namespace System.Text.Tests
         private const int MinStringLength = 2;
         private const int MaxStringLength = 260;
 
-        private const char MinASCIIChar = (char)0x0;
-        private const char MaxASCIIChar = (char)0x7f;
-
         private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
 
         public static IEnumerable<object[]> GetBytes_TestData()
         {
             yield return new object[] { string.Empty, 0, 0, new byte[0], 0 };
 
-            string randomString = s_randomDataGenerator.GetString(-55, false, MinStringLength, MaxStringLength);
-            int randomIndex = s_randomDataGenerator.GetInt32(-55) % randomString.Length;
-            int randomCount = s_randomDataGenerator.GetInt32(-55) % (randomString.Length - randomIndex) + 1;
-            int minLength = new ASCIIEncoding().GetByteCount(randomString.Substring(randomIndex, randomCount));
-            int randomBytesLength = minLength + s_randomDataGenerator.GetInt32(-55) % (short.MaxValue - minLength);
-            byte[] bytes = new byte[randomBytesLength];
-            int randomByteIndex = s_randomDataGenerator.GetInt32(-55) % (bytes.Length - minLength + 1);
-            yield return new object[] { randomString, randomIndex, randomCount, bytes, randomByteIndex };
+            string testString = "Hello World";
+            yield return new object[] { testString, 0, testString.Length, new byte[testString.Length], 0 };
+            yield return new object[] { testString, 0, testString.Length, new byte[testString.Length + 1], 1 };
+            yield return new object[] { testString, 4, 5, new byte[5], 0 };
+
+            string unicodeString = "a\u1234\u2345b";
+            yield return new object[] { unicodeString, 0, unicodeString.Length, new byte[unicodeString.Length], 0 };
         }
         
         [Theory]
@@ -45,7 +41,7 @@ namespace System.Text.Tests
                 else
                 {
                     // Verify the fallback character for non-ASCII chars
-                    expectedBytes[i] = 63;
+                    expectedBytes[i] = (byte)'?';
                 }
             }
             EncodingHelpers.GetBytes(new ASCIIEncoding(), source, index, count, bytes, byteIndex, expectedBytes);

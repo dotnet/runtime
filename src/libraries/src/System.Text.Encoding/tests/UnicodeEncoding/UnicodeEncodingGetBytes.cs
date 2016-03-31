@@ -19,7 +19,13 @@ namespace System.Text.Tests
             yield return new object[] { testString, 0, 0, new byte[20], 20, new byte[0] };
             yield return new object[] { testString, testString.Length, 0, new byte[20], 20, new byte[0] };
 
+            byte[] allBytes = new byte[256];
+            for (int i = 0; i <= byte.MaxValue; i++)
+            {
+                allBytes[i] = (byte)i;
+            }
             yield return new object[] { string.Empty, 0, 0, new byte[0], 0, new byte[0] };
+            yield return new object[] { string.Empty, 0, 0, allBytes, 0, new byte[0] };
         }
 
         [Theory]

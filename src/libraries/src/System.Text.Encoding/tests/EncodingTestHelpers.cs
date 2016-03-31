@@ -67,7 +67,7 @@ namespace System.Text.Tests
             }
             for (int i = byteIndex + byteCount; i < bytes.Length; i++)
             {
-                // Chars outside the range should be ignored
+                // Bytes outside the range should be ignored
                 Assert.Equal(originalBytes[i], bytes[i]);
             }
         }
@@ -93,7 +93,7 @@ namespace System.Text.Tests
                 char[] resultBasic = encoding.GetChars(bytes);
                 VerifyGetChars(resultBasic, 0, resultBasic.Length, originalChars, expectedChars);
             }
-            // Use GetChars(byte[], int int)
+            // Use GetChars(byte[], int, int)
             char[] resultAdvanced = encoding.GetChars(bytes, byteIndex, byteCount);
             VerifyGetChars(resultAdvanced, 0, resultAdvanced.Length, originalChars, expectedChars);
 
