@@ -87,7 +87,7 @@ fi
 # This script must be located in coreclr/tests.
 scriptDir=$(cd "$(dirname "$0")"; pwd -P)
 dotnetToolsDir=$scriptDir/../Tools
-dotnetCmd=${dotnetToolsDir}/dotnetcli/bin/dotnet
+dotnetCmd=${dotnetToolsDir}/dotnetcli/dotnet
 packageDir=${scriptDir}/../packages
 jsonFilePath=${tmpDirPath}/project.json
 
@@ -109,10 +109,17 @@ if [ ! -e $libInstallDir ]; then
     mkdir -p $libInstallDir
 fi
 
+# Query runtime Id
+rid=`$dotnetCmd --info | grep 'RID:' | sed 's/^ *RID: *//g'`  
+if [ -z "$rid" ]; then
+    exit_with_error 1 "Failed to query runtime Id"
+fi    
+
 # Write dependency information to project.json
+packageName='runtime.'$rid'.Microsoft.NETCore.CoreDisTools'
 echo {  \
     \"dependencies\": { \
-    \"Microsoft.NETCore.CoreDisTools\": \"1.0.0-prerelease-00001\" \
+    \"$packageName\": \"1.0.0-prerelease-00001\" \
     }, \
     \"frameworks\": { \"dnxcore50\": { } } \
     } > $jsonFilePath
@@ -126,7 +133,7 @@ then
 fi
 
 # Get library path
-libPath=`find $packageDir | grep -m 1 libcoredistools`
+libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
 if [ ! -e $libPath ]; then
     exit_with_error 1 'Failed to locate the downloaded library'
 fi
