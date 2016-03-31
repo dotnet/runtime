@@ -3,6 +3,7 @@
  * require hazard pointers.
  *
  * (C) Copyright 2011 Xamarin Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 /*

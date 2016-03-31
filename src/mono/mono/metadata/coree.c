@@ -5,6 +5,7 @@
  *   Kornel Pal <http://www.kornelpal.hu/>
  *
  * Copyright (C) 2008 Kornel Pal
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

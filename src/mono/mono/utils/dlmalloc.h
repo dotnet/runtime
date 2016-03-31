@@ -52,9 +52,21 @@ extern "C" {
 #define dlindependent_comalloc independent_comalloc
 #endif /* USE_DL_PREFIX */
 
-#ifdef ENABLE_EXTENSION_MODULE
-#include "../../../mono-extensions/mono/utils/dlmalloc.h"
-#endif
+#define dlcalloc               mono_dlcalloc
+#define dlfree                 mono_dlfree
+#define dlmalloc               mono_dlmalloc
+#define dlmemalign             mono_dlmemalign
+#define dlrealloc              mono_dlrealloc
+#define dlvalloc               mono_dlvalloc
+#define dlpvalloc              mono_dlpvalloc
+#define dlmallinfo             mono_dlmallinfo
+#define dlmallopt              mono_dlmallopt
+#define dlmalloc_trim          mono_dlmalloc_trim
+#define dlmalloc_stats         mono_dlmalloc_stats
+#define dlmalloc_usable_size   mono_dlmalloc_usable_size
+#define dlmalloc_footprint     mono_dlmalloc_footprint
+#define dlindependent_calloc   mono_dlindependent_calloc
+#define dlindependent_comalloc mono_dlindependent_comalloc
 
 /*
   malloc(size_t n)

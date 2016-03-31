@@ -5,6 +5,8 @@
  * Authors: Jeffrey Stedfast <fejj@ximian.com>
  *
  * Copyright 2002 Ximian, Inc. (www.ximian.com)
+ *
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_OS_MUTEX_H__

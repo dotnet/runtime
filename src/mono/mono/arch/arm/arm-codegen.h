@@ -3,6 +3,7 @@
  * Copyright (c) 2002-2003 Sergey Chaban <serge@wildwestsoftware.com>
  * Copyright 2005-2011 Novell Inc
  * Copyright 2011 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 

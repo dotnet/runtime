@@ -8,6 +8,7 @@
  * Copyright 2003-2008 Ximian, Inc.
  *
  * See LICENSE for licensing information.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
 #include <signal.h>

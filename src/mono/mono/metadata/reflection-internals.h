@@ -1,5 +1,6 @@
 /* 
  * Copyright 2014 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #ifndef __MONO_METADATA_REFLECTION_INTERNALS_H__
 #define __MONO_METADATA_REFLECTION_INTERNALS_H__

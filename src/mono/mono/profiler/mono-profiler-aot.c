@@ -9,6 +9,7 @@
  * The AOT compiler can load these files during compilation.
  * Currently, only the order in which methods were compiled is saved, 
  * allowing more efficient function ordering in the AOT files.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

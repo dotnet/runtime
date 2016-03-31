@@ -1,3 +1,4 @@
+
 /*
  * mini-runtime.c: Runtime code for the JIT
  *
@@ -8,6 +9,7 @@
  * Copyright 2002-2003 Ximian, Inc.
  * Copyright 2003-2010 Novell, Inc.
  * Copyright 2011-2015 Xamarin, Inc (http://www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>
@@ -2390,7 +2392,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
-#ifndef ENABLE_GSHAREDVT
+#ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
 			g_assert_not_reached ();
 #endif
 			info->gsharedvt_invoke = TRUE;

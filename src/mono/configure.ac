@@ -934,11 +934,6 @@ if test x$enable_gsharedvt = xyes; then
 	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharedvt])
 fi
 
-AC_ARG_ENABLE(native-types, [  --enable-native-types Enable native types], enable_native_types=$enableval, enable_native_types=no)
-if test x$enable_native_types = xyes; then
-	AC_DEFINE(MONO_NATIVE_TYPES,1,[native types])
-fi
-
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_COMPILE_IFELSE([
 	AC_LANG_SOURCE([[

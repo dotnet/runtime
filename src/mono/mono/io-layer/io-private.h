@@ -6,6 +6,7 @@
  *
  * (C) 2002 Ximian, Inc.
  * Copyright 2011 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef _WAPI_IO_PRIVATE_H_

@@ -2,6 +2,7 @@
  * mini-arm-tls.S: tls getters and setters for arm platforms
  *
  * Copyright 2015 Xamarin, Inc.
+	 * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

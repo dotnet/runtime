@@ -5,6 +5,7 @@
  *  - Ludovic Henry <ludovic@xamarin.com>
  *
  * Copyright 2015 Xamarin, Inc. (www.xamarin.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

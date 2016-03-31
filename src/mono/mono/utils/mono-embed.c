@@ -10,6 +10,7 @@
  * Copyright 2001-2004 Ximian, Inc.
  * Copyright 2004-2010 Novell, Inc.
  *
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "config.h"
 #include "mono/utils/mono-dl.h"

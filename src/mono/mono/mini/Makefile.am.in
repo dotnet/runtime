@@ -304,13 +304,18 @@ x86_sources = \
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
-	tramp-x86.c
+	tramp-x86.c	\
+	mini-x86-gsharedvt.c	\
+	tramp-x86-gsharedvt.c
 
 amd64_sources = \
 	mini-amd64.c		\
 	mini-amd64.h		\
 	exceptions-amd64.c	\
-	tramp-amd64.c
+	tramp-amd64.c	\
+	mini-amd64-gsharedvt.c	\
+	mini-amd64-gsharedvt.h	\
+	tramp-amd64-gsharedvt.c
 
 ppc_sources = \
 	mini-ppc.c		\
@@ -324,13 +329,17 @@ arm_sources = \
 	mini-arm.h		\
 	mini-arm-tls.h		\
 	exceptions-arm.c	\
-	tramp-arm.c
+	tramp-arm.c	\
+	mini-arm-gsharedvt.c	\
+	tramp-arm-gsharedvt.c
 
 arm64_sources = \
 	mini-arm64.c		\
 	mini-arm64.h		\
 	exceptions-arm64.c	\
-	tramp-arm64.c
+	tramp-arm64.c	\
+	mini-arm64-gsharedvt.c	\
+	tramp-arm64-gsharedvt.c
 
 mips_sources = \
 	mini-mips.c		\
@@ -425,9 +434,11 @@ common_sources = \
 	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\
+	mini-exceptions-native-unwinder.c	\
 	mini-trampolines.c  	\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
+	mini-generic-sharing-gsharedvt.c	\
 	simd-methods.h		\
 	tasklets.c		\
 	tasklets.h		\

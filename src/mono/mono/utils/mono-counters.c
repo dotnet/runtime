@@ -1,6 +1,7 @@
 /*
  * Copyright 2006-2010 Novell
  * Copyright 2011 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <stdlib.h>

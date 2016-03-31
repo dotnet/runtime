@@ -265,6 +265,49 @@ typedef struct {
 	guint8 buffer [256];
 } DynCallArgs;
 
+typedef enum {
+	ArgInIReg,
+	ArgInFloatSSEReg,
+	ArgInDoubleSSEReg,
+	ArgOnStack,
+	ArgValuetypeInReg,
+	ArgValuetypeAddrInIReg,
+	/* gsharedvt argument passed by addr */
+	ArgGSharedVtInReg,
+	ArgGSharedVtOnStack,
+	ArgNone /* only in pair_storage */
+} ArgStorage;
+
+typedef struct {
+	gint16 offset;
+	gint8  reg;
+	ArgStorage storage : 8;
+	gboolean is_gsharedvt_return_value : 1;
+
+	/* Only if storage == ArgValuetypeInReg */
+	ArgStorage pair_storage [2];
+	gint8 pair_regs [2];
+	/* The size of each pair (bytes) */
+	int pair_size [2];
+	int nregs;
+	/* Only if storage == ArgOnStack */
+	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
+} ArgInfo;
+
+typedef struct {
+	int nargs;
+	guint32 stack_usage;
+	guint32 reg_usage;
+	guint32 freg_usage;
+	gboolean need_stack_align;
+	/* The index of the vret arg in the argument list */
+	int vret_arg_index;
+	ArgInfo ret;
+	ArgInfo sig_cookie;
+	ArgInfo args [1];
+} CallInfo;
+
+
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->gregs [AMD64_RAX] = (gsize)exc; } while (0)
 #define MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG(ctx, sel) do { (ctx)->gregs [AMD64_RDX] = (gsize)(sel); } while (0)
 
@@ -379,7 +422,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK 1
-#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
@@ -394,6 +436,11 @@ typedef struct {
 #if defined(TARGET_OSX) || defined(__linux__)
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
 #endif
+
+#if !defined (TARGET_WIN32)
+#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
+#endif
+
 
 #if defined(TARGET_APPLETVOS)
 /* No signals */
@@ -459,6 +506,8 @@ void mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, 
 
 #define MONO_ARCH_HAVE_UNWIND_TABLE 1
 #endif
+
+CallInfo* mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
 #endif /* __MONO_MINI_AMD64_H__ */  
 

@@ -2,6 +2,7 @@
  * Copyright 2002-2003 Ximian Inc
  * Copyright 2003-2011 Novell Inc
  * Copyright 2011 Xamarin Inc
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #ifndef __MONO_MINI_H__
 #define __MONO_MINI_H__
@@ -3009,6 +3010,10 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 gboolean
 mini_class_is_generic_sharable (MonoClass *klass);
 
+
+gboolean
+mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars, gboolean allow_partial);
+
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst);
 
@@ -3188,5 +3193,11 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #else
 #define ARCH_VARARG_ICALLS 0
 #endif
+
+/*
+ * Native unwinder integration
+ */
+void mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
+
 
 #endif /* __MONO_MINI_H__ */

@@ -6,6 +6,7 @@
  *	Dick Porter (dick@ximian.com)
  *
  * Copyright (C) 2006 Novell, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef _WAPI_IO_PORTABILITY_H_

@@ -2,6 +2,7 @@
  * Time utility functions.
  * Author: Paolo Molaro (<lupus@ximian.com>)
  * Copyright (C) 2008 Novell, Inc.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>

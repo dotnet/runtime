@@ -9,6 +9,7 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  *
  * See LICENSE for licensing information.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
 #include <signal.h>

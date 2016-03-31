@@ -5,6 +5,7 @@
  *	Rodrigo Kumpera (kumpera@gmail.com)
  *
  * Copyright (c) 2011 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_MONO_MACHINE_H__

@@ -4,7 +4,7 @@
 // (C) 2009-2011 Novell, Inc.
 // Copyright 2011-2015 Xamarin, Inc (http://www.xamarin.com)
 //
-
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 // Mono's internal header files are not C++ clean, so avoid including them if 
 // possible

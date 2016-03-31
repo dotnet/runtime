@@ -8,6 +8,7 @@
    Copyright (C)  2007-2008 Andreas Faerber
 
    for testing do the following: ./test | as -o test.o
+   Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 
 #ifndef __MONO_PPC_CODEGEN_H__

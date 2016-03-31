@@ -5,6 +5,7 @@
  *  Marek Habersack <grendel@twistedcode.net>
  *
  * Copyright 2016 Xamarin, Inc (http://xamarin.com/)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __IO_TRACE_H

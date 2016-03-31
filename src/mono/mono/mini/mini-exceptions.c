@@ -8,6 +8,7 @@
  * Copyright 2001-2003 Ximian, Inc.
  * Copyright 2003-2008 Novell, Inc.
  * Copyright 2011 Xamarin Inc (http://www.xamarin.com).
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include <config.h>
@@ -75,10 +76,6 @@
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
-#endif
-
-#ifdef ENABLE_EXTENSION_MODULE
-#include "../../../mono-extensions/mono/mini/mini-exceptions.c"
 #endif
 
 #ifndef MONO_ARCH_CONTEXT_DEF
@@ -2400,8 +2397,8 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 	}
 #endif
  }
-#elif defined (ENABLE_EXTENSION_MODULE)
-	mono_extension_handle_native_sigsegv (ctx, info);
+#else
+	mono_exception_native_unwind (ctx, info);
 #endif
 
 	/*

@@ -5,6 +5,7 @@
  *	Sebastien Pouliot  <sebastien@ximian.com>
  *
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifdef HAVE_CONFIG_H
