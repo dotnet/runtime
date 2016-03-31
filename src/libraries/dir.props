@@ -85,6 +85,8 @@
 
   <!-- Test runtime -->
   <PropertyGroup>
+    <TestRuntimeProjectJson Condition="'$(TestRuntimeProjectJson)' == '' And '$(TargetGroup)' == 'net46'">$(SourceDir)Common/test-runtime/net46/project.json</TestRuntimeProjectJson>
+    <TestRuntimeProjectLockJson Condition="'$(TestRuntimeProjectLockJson)' == '' And '$(TargetGroup)' == 'net46'">$(SourceDir)Common/test-runtime/net46/project.lock.json</TestRuntimeProjectLockJson>
     <TestRuntimeProjectJson Condition="'$(TestRuntimeProjectJson)' == ''">$(SourceDir)Common/test-runtime/project.json</TestRuntimeProjectJson>
     <TestRuntimeProjectLockJson Condition="'$(TestRuntimeProjectLockJson)' == ''">$(SourceDir)Common/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
   </PropertyGroup>
