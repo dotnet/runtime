@@ -38,6 +38,14 @@
       <TargetPath>tools</TargetPath>
     </File>
 
+    <!-- prevent accidental inclusion in AOT projects. -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)-aot/lib/netstandard1.0</TargetPath>
+    </File>
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)-aot/native</TargetPath>
+    </File>
+
     <!-- No reference: don't permit reference to the implementation from lib -->
     <File Include="$(PlaceholderFile)">
       <TargetPath>ref/netstandard1.0</TargetPath>
