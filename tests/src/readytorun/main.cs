@@ -40,6 +40,15 @@ class InheritingFromGrowingBase : GrowingBase
     public int x;
 }
 
+
+static class OpenClosedDelegateExtension
+{
+    public static string OpenClosedDelegateTarget(this string x, string foo)
+    {
+        return x + ", " + foo;
+    }
+}
+
 class Program
 {
     static void TestVirtualMethodCalls()
@@ -335,6 +344,18 @@ class Program
         Assert.AreEqual(o.ChildByte, (byte)67);
     }
 
+    static void TestOpenClosedDelegate()
+    {
+        // This test is verifying the the fixups for open vs. closed delegate created against the same target
+        // method are encoded correctly.
+
+        Func<string, string, object> idOpen = OpenClosedDelegateExtension.OpenClosedDelegateTarget;
+        Assert.AreEqual(idOpen("World", "foo"), "World, foo");
+
+        Func<string, object> idClosed = "World".OpenClosedDelegateTarget;
+        Assert.AreEqual(idClosed("hey"), "World, hey");
+    }
+
     static void RunAllTests()
     {
         TestVirtualMethodCalls();
@@ -380,6 +401,8 @@ class Program
         TestCastClassCSE();
 
         TestRangeCheckElimination();
+
+        TestOpenClosedDelegate();
     }
 
     static int Main()
