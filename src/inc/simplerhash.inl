@@ -2,22 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-// 
-
-// 
-
-//
-// ==--==
-
 #ifndef _SIMPLERHASHTABLE_INL_
 #define _SIMPLERHASHTABLE_INL_
-
-// Many SimplerHashTable functions do not throw on their own, but may propagate an exception
-// from Hash, Equals, or GetKey.
-#define NOTHROW_UNLESS_BEHAVIOR_THROWS     if (Behavior::s_NoThrow) NOTHROW; else THROWS
-
-void DECLSPEC_NORETURN ThrowOutOfMemory();
 
 // To implement magic-number divide with a 32-bit magic number,
 // multiply by the magic number, take the top 64 bits, and shift that
@@ -49,8 +35,6 @@ SimplerHashTable<Key,KeyFuncs,Value,Behavior>::SimplerHashTable(IAllocator* allo
     m_tableCount(0),
     m_tableMax(0)
 {
-    LIMITED_METHOD_CONTRACT;
-
     assert(m_alloc != nullptr);
 
 #ifndef __GNUC__ // these crash GCC
@@ -62,78 +46,42 @@ SimplerHashTable<Key,KeyFuncs,Value,Behavior>::SimplerHashTable(IAllocator* allo
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 SimplerHashTable<Key,KeyFuncs,Value,Behavior>::~SimplerHashTable()
 {
-    LIMITED_METHOD_CONTRACT;
-
     RemoveAll();
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void * SimplerHashTable<Key,KeyFuncs,Value,Behavior>::operator new(size_t sz, IAllocator * alloc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
     return alloc->Alloc(sz);
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void * SimplerHashTable<Key,KeyFuncs,Value,Behavior>::operator new[](size_t sz, IAllocator * alloc)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
     return alloc->Alloc(sz);
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::operator delete(void * p, IAllocator * alloc)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
     alloc->Free(p);
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::operator delete[](void * p, IAllocator * alloc)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
     alloc->Free(p);
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetCount() const 
 {
-    LIMITED_METHOD_CONTRACT;
-
     return m_tableCount;
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Lookup(Key key, Value* pVal) const
 {
-    CONTRACTL
-    {
-        NOTHROW_UNLESS_BEHAVIOR_THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     Node* pN = FindNode(key);
 
     if (pN != NULL)
@@ -153,14 +101,6 @@ bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Lookup(Key key, Value* pVal)
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 Value *SimplerHashTable<Key,KeyFuncs,Value,Behavior>::LookupPointer(Key key) const
 {
-    CONTRACTL
-    {
-        NOTHROW_UNLESS_BEHAVIOR_THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     Node* pN = FindNode(key);
 
     if (pN != NULL)
@@ -173,38 +113,28 @@ template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 typename SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Node*
 SimplerHashTable<Key,KeyFuncs,Value,Behavior>::FindNode(Key k) const
 {
-    CONTRACT(Node*)
-    {
-        NOTHROW_UNLESS_BEHAVIOR_THROWS;
-        GC_NOTRIGGER;
-        POSTCONDITION(RETVAL == NULL || KeyFuncs::Equals(k, RETVAL->m_key));
-    }
-    CONTRACT_END;
-
     if (m_tableSizeInfo.prime == 0)
-        RETURN NULL;
+        return NULL;
 
     unsigned index = GetIndexForKey(k);
 
     Node* pN = m_table[index];
-    if (pN == NULL) RETURN NULL;
+    if (pN == NULL)
+        return NULL;
+
     // Otherwise...
     while (pN != NULL && !KeyFuncs::Equals(k, pN->m_key))
         pN = pN->m_next;
+
+    assert(pN == NULL || KeyFuncs::Equals(k, pN->m_key));
+
     // If pN != NULL, it's the node for the key, else the key isn't mapped.
-    RETURN pN;    
+    return pN;
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetIndexForKey(Key k) const
 {
-    CONTRACTL
-    {
-        NOTHROW_UNLESS_BEHAVIOR_THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
     unsigned hash = KeyFuncs::GetHashCode(k);
     
     unsigned index = magicNumberRem(hash, m_tableSizeInfo);
@@ -215,14 +145,6 @@ unsigned SimplerHashTable<Key,KeyFuncs,Value,Behavior>::GetIndexForKey(Key k) co
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Set(Key k, Value v)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     CheckGrowth();
 
     assert(m_tableSizeInfo.prime != 0);
@@ -251,14 +173,6 @@ bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Set(Key k, Value v)
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Remove(Key k)
 {
-    CONTRACTL
-    {
-        NOTHROW_UNLESS_BEHAVIOR_THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     unsigned index = GetIndexForKey(k);
 
     Node* pN = m_table[index];
@@ -281,38 +195,9 @@ bool SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Remove(Key k)
     }
 }
 
-// TBD
-template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
-void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Remove(KeyIterator& i)
-{
-#if 0
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-        PRECONDITION(s_supports_remove);
-        PRECONDITION(!(IsNull(*i)));
-        PRECONDITION(!(IsDeleted(*i)));
-    }
-    CONTRACT_END;
-
-    RemoveElement(m_table, m_tableSize, (element_t*)&(*i));
-#endif
-    return;
-}
-
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::RemoveAll()
 {
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACT_END;
-
     for (unsigned i = 0; i < m_tableSizeInfo.prime; i++)
     {
         for (Node* pN = m_table[i]; pN != NULL; )
@@ -329,14 +214,12 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::RemoveAll()
     m_tableCount = 0;
     m_tableMax = 0;
 
-    RETURN;
+    return;
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 typename SimplerHashTable<Key,KeyFuncs,Value,Behavior>::KeyIterator SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Begin() const
 {
-    LIMITED_METHOD_CONTRACT;
-
     KeyIterator i(this, TRUE);
     return i;
 }
@@ -344,22 +227,12 @@ typename SimplerHashTable<Key,KeyFuncs,Value,Behavior>::KeyIterator SimplerHashT
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 typename SimplerHashTable<Key,KeyFuncs,Value,Behavior>::KeyIterator SimplerHashTable<Key,KeyFuncs,Value,Behavior>::End() const
 {
-    LIMITED_METHOD_CONTRACT;
-
     return KeyIterator(this, FALSE);
 }
 
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::CheckGrowth()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     if (m_tableCount == m_tableMax)
     {
         Grow();
@@ -369,14 +242,6 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::CheckGrowth()
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Grow()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-    }
-    CONTRACTL_END;
-
     unsigned newSize = (unsigned) (m_tableCount 
                                    * Behavior::s_growth_factor_numerator / Behavior::s_growth_factor_denominator
                                    * Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator);
@@ -385,7 +250,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Grow()
 
     // handle potential overflow
     if (newSize < m_tableCount)
-        ThrowOutOfMemory();
+        Behavior::NoMemory();
 
     Reallocate(newSize);
 }
@@ -393,15 +258,7 @@ void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Grow()
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 void SimplerHashTable<Key,KeyFuncs,Value,Behavior>::Reallocate(unsigned newTableSize)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INSTANCE_CHECK;
-        PRECONDITION(newTableSize >= 
-                     (GetCount() * Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator));
-    }
-    CONTRACTL_END;
+    assert(newTableSize >= (GetCount() * Behavior::s_density_factor_denominator / Behavior::s_density_factor_numerator));
 
     // Allocation size must be a prime number.  This is necessary so that hashes uniformly
     // distribute to all indices, and so that chaining will visit all indices in the hash table.
@@ -481,20 +338,13 @@ SELECTANY const PrimeInfo primeInfo[] =
 template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 PrimeInfo SimplerHashTable<Key,KeyFuncs,Value,Behavior>::NextPrime(unsigned number)
 {
-    CONTRACT(PrimeInfo)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
     for (int i = 0; i < (int) (sizeof(primeInfo) / sizeof(primeInfo[0])); i++) {
         if (primeInfo[i].prime >= number)
-            RETURN primeInfo[i];
+            return primeInfo[i];
     }
 
     // overflow
-    ThrowOutOfMemory();
+    Behavior::NoMemory();
 }
 
 #endif // _SIMPLERHASHTABLE_INL_
