@@ -432,7 +432,7 @@ public:
             {
                 DWORD nextBit;
                 BOOL hasBit;
-#ifdef _WIN64
+#ifdef _HOST_64BIT_
                 static_assert_no_msg(sizeof(size_t) == 8);
                 hasBit = BitScanForward64(&nextBit, m_bits);
 #else

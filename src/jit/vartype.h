@@ -37,7 +37,7 @@ END_DECLARE_TYPED_ENUM(var_types,BYTE)
  * platform
  */
 
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
 #define TYP_I_IMPL          TYP_LONG
 #define TYP_U_IMPL          TYP_ULONG
 #define TYPE_REF_IIM        TYPE_REF_LNG
