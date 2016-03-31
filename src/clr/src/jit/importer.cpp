@@ -1663,10 +1663,8 @@ GenTreePtr Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
         if (opts.IsReadyToRun())
         {
             op1->gtFptrVal.gtEntryPoint = pCallInfo->codePointerLookup.constLookup;
-
-            // In almost all cases, we are going to create the delegate out of the function pointer. While we are here,
-            // get the pointer to the optimized delegate helper. Only one of the two is going to be embedded into the code.
-            info.compCompHnd->getReadyToRunHelper(pResolvedToken, CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &op1->gtFptrVal.gtDelegateCtor);
+            op1->gtFptrVal.gtLdftnResolvedToken = new(this, CMK_Unknown) CORINFO_RESOLVED_TOKEN;
+            *op1->gtFptrVal.gtLdftnResolvedToken = *pResolvedToken;
         }
         else
             op1->gtFptrVal.gtEntryPoint.addr = nullptr;
