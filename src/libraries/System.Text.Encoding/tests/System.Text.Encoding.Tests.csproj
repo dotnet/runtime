@@ -21,6 +21,7 @@
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetCharCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetChars.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetPreamble.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetEncoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxCharCount.cs" />
