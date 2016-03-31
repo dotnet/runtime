@@ -170,7 +170,7 @@ UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo)
         {
             cbUnwindInfo += sizeof(UNWIND_CODE);
         }
-        cbUnwindInfo += sizeof(RUNTIME_FUNCTION);
+        cbUnwindInfo += sizeof(T_RUNTIME_FUNCTION);
     }
     return reinterpret_cast<UNWIND_INFO *>(DacInstantiateTypeByAddress(taUnwindInfo, cbUnwindInfo, true));
 }
@@ -325,7 +325,7 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
     __in ULONG HandlerType,
     __in ULONG64 ImageBase,
     __in ULONG64 ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
     __in OUT PCONTEXT ContextRecord,
     __out PVOID *HandlerData,
     __out PULONG64 EstablisherFrame,
