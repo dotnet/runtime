@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
 using Xunit;
 
 public static unsafe class NullableTests
@@ -51,7 +50,6 @@ public static unsafe class NullableTests
     {
         Type t = o.GetType();
         Assert.IsNotType<Nullable<int>>(t);
-
         Assert.Equal(t, typeof(int));
     }
 
@@ -74,6 +72,12 @@ public static unsafe class NullableTests
         Assert.Null(u);
 
         return;
+    }
+
+    [Fact]
+    public static void TestGetUnderlyingType_NullTypeThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>("nullableType", () => Nullable.GetUnderlyingType((Type)null));
     }
 
     [Fact]
