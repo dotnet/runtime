@@ -62,7 +62,8 @@ namespace System.Tests
                     object converted = ((IConvertible)testValue).ToType(input[0].GetType(), null);
                     Assert.NotSame(testValue, converted);
                 }
-                catch (Exception) { }
+                catch (InvalidCastException) { }
+                catch (OverflowException) { }
             });
         }
 
