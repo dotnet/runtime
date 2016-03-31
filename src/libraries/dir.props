@@ -73,6 +73,11 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" />
 
+  <!-- Enable the analyzers for this repo -->
+  <PropertyGroup>
+    <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
+  </PropertyGroup>
+
   <!-- Test runtime -->
   <PropertyGroup>
     <TestRuntimeProjectJson Condition="'$(TestRuntimeProjectJson)' == ''">$(SourceDir)Common/test-runtime/project.json</TestRuntimeProjectJson>
