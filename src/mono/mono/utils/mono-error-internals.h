@@ -105,9 +105,6 @@ mono_error_set_not_supported (MonoError *error, const char *msg_format, ...);
 void
 mono_error_set_exception_instance (MonoError *error, MonoException *exc);
 
-void
-mono_error_set_from_loader_error (MonoError *error);
-
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);
 

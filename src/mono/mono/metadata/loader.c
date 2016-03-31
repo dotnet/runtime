@@ -599,10 +599,8 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 			*retklass = k;
 		field = mono_class_get_field (k, token);
 		if (!field) {
-			if (mono_loader_get_last_error ())
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
+			mono_loader_assert_no_error ();
+			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
 		}
 	}
 
@@ -1165,10 +1163,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_free (msig);
 		msig = g_string_free (s, FALSE);
 
-		if (mono_loader_get_last_error ()) /* FIXME find_method and mono_method_search_in_array_class can leak a loader error */
-			mono_error_set_from_loader_error (error);
-		else
-			mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
+		mono_loader_assert_no_error ();
+		mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
 
 		g_free (msig);
 	}

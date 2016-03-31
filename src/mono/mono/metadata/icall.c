@@ -4171,8 +4171,7 @@ loader_error:
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
-		mono_error_set_from_loader_error (&error);
-		mono_loader_clear_error ();
+		mono_loader_assert_no_error ();
 	}
 
 failure:
@@ -4315,8 +4314,7 @@ loader_error:
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
 	} else {
-		mono_error_set_from_loader_error (&error);
-		mono_loader_clear_error ();
+		mono_loader_assert_no_error ();
 	}
 
 failure:

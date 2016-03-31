@@ -286,13 +286,9 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
 	if (!res && mono_error_ok (error)) {
-		if (mono_loader_get_last_error ()) { /*FIXME plug the above to not leak errors*/
-			mono_error_set_from_loader_error (error);
-		} else {
-			char *name = mono_class_name_from_token (image, type_token);
-			char *assembly = mono_assembly_name_from_token (image, type_token);
-			mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
-		}
+		char *name = mono_class_name_from_token (image, type_token);
+		char *assembly = mono_assembly_name_from_token (image, type_token);
+		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
 	}
 	mono_loader_assert_no_error ();
 	return res;

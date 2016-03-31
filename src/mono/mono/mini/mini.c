@@ -1230,18 +1230,6 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 
 	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility, is_fulltrust);
 
-	if (mono_loader_get_last_error ()) {
-		if (fail_compile) {
-			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-			mono_error_set_from_loader_error (&cfg->error);
-		} else {
-			mono_loader_clear_error ();
-		}
-		if (res)
-			mono_free_verify_list (res);
-		return TRUE;
-	}
-
 	if (res) { 
 		for (tmp = res; tmp; tmp = tmp->next) {
 			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
