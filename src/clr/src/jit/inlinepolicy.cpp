@@ -690,7 +690,7 @@ void LegacyPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // Inline appears to be unprofitable
         JITLOG_THIS(m_RootCompiler,
                     (LL_INFO100000,
-                     "Native estimate for function size exceedsn threshold"
+                     "Native estimate for function size exceeds threshold"
                      " for inlining %g > %g (multiplier = %g)\n",
                      m_CalleeNativeSizeEstimate / sizeDescaler,
                      threshold / sizeDescaler,
@@ -959,6 +959,11 @@ void RandomPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
+#ifdef _MSC_VER
+// Disable warning about new array member initialization behavior
+#pragma warning( disable : 4351 )
+#endif
+
 //------------------------------------------------------------------------
 // DiscretionaryPolicy: construct a new DiscretionaryPolicy
 //
@@ -972,8 +977,37 @@ DiscretionaryPolicy::DiscretionaryPolicy(Compiler* compiler, bool isPrejitRoot)
     , m_BlockCount(0)
     , m_Maxstack(0)
     , m_ArgCount(0)
+    , m_ArgType()
+    , m_ArgSize()
     , m_LocalCount(0)
     , m_ReturnType(CORINFO_TYPE_UNDEF)
+    , m_ReturnSize(0)
+    , m_ArgAccessCount(0)
+    , m_LocalAccessCount(0)
+    , m_IntConstantCount(0)
+    , m_FloatConstantCount(0)
+    , m_IntLoadCount(0)
+    , m_FloatLoadCount(0)
+    , m_IntStoreCount(0)
+    , m_FloatStoreCount(0)
+    , m_SimpleMathCount(0)
+    , m_ComplexMathCount(0)
+    , m_OverflowMathCount(0)
+    , m_IntArrayLoadCount(0)
+    , m_FloatArrayLoadCount(0)
+    , m_RefArrayLoadCount(0)
+    , m_StructArrayLoadCount(0)
+    , m_IntArrayStoreCount(0)
+    , m_FloatArrayStoreCount(0)
+    , m_RefArrayStoreCount(0)
+    , m_StructArrayStoreCount(0)
+    , m_StructOperationCount(0)
+    , m_ObjectModelCount(0)
+    , m_FieldLoadCount(0)
+    , m_FieldStoreCount(0)
+    , m_StaticFieldLoadCount(0)
+    , m_StaticFieldStoreCount(0)
+    , m_LoadAddressCount(0)
     , m_ThrowCount(0)
     , m_CallCount(0)
 {
@@ -993,9 +1027,11 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
     {
     case InlineObservation::CALLEE_LOOKS_LIKE_WRAPPER:
         m_LooksLikeWrapperMethod = value;
+        break;
 
     case InlineObservation::CALLEE_ARG_FEEDS_CONSTANT_TEST:
         m_ArgFeedsConstantTest = value;
+        break;
 
     case InlineObservation::CALLEE_ARG_FEEDS_RANGE_CHECK:
         m_ArgFeedsRangeCheck = value;
@@ -1003,6 +1039,7 @@ void DiscretionaryPolicy::NoteBool(InlineObservation obs, bool value)
 
     default:
         LegacyPolicy::NoteBool(obs, value);
+        break;
     }
 }
 
@@ -1041,22 +1078,10 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
 
     case InlineObservation::CALLEE_OPCODE:
         {
+            // This tries to do a rough binning of opcodes based 
+            // on similarity of impact on codegen.
             OPCODE opcode = static_cast<OPCODE>(value);
-            switch (opcode)
-            {
-            case CEE_THROW:
-            case CEE_RETHROW:
-                m_ThrowCount++;
-                break;
-            case CEE_CALL:
-            case CEE_CALLI:
-            case CEE_CALLVIRT:
-                m_CallCount++;
-                break;
-            default:
-                break;
-            }
-
+            ComputeOpcodeBin(opcode);
             LegacyPolicy::NoteInt(obs, value);
             break;
         }
@@ -1077,6 +1102,264 @@ void DiscretionaryPolicy::NoteInt(InlineObservation obs, int value)
         // Delegate remainder to the LegacyPolicy.
         LegacyPolicy::NoteInt(obs, value);
         break;
+    }
+}
+
+//------------------------------------------------------------------------
+// ComputeOpcodeBin: simple histogramming of opcodes based on presumably
+// similar codegen impact.
+//
+// Arguments:
+//    opcode - an MSIL opcode from the callee
+
+void DiscretionaryPolicy::ComputeOpcodeBin(OPCODE opcode)
+{
+    switch (opcode)
+    {
+        case CEE_LDARG_0:
+        case CEE_LDARG_1:
+        case CEE_LDARG_2:
+        case CEE_LDARG_3:
+        case CEE_LDARG_S:
+        case CEE_LDARG:
+        case CEE_STARG_S:
+        case CEE_STARG:
+            m_ArgAccessCount++;
+            break;
+
+        case CEE_LDLOC_0:
+        case CEE_LDLOC_1:
+        case CEE_LDLOC_2:
+        case CEE_LDLOC_3:
+        case CEE_LDLOC_S:
+        case CEE_STLOC_0:
+        case CEE_STLOC_1:
+        case CEE_STLOC_2:
+        case CEE_STLOC_3:
+        case CEE_STLOC_S:
+        case CEE_LDLOC:
+        case CEE_STLOC:
+            m_LocalAccessCount++;
+            break;
+
+        case CEE_LDNULL:
+        case CEE_LDC_I4_M1:
+        case CEE_LDC_I4_0:
+        case CEE_LDC_I4_1:
+        case CEE_LDC_I4_2:
+        case CEE_LDC_I4_3:
+        case CEE_LDC_I4_4:
+        case CEE_LDC_I4_5:
+        case CEE_LDC_I4_6:
+        case CEE_LDC_I4_7:
+        case CEE_LDC_I4_8:
+        case CEE_LDC_I4_S:
+            m_IntConstantCount++;
+            break;
+
+        case CEE_LDC_R4:
+        case CEE_LDC_R8:
+            m_FloatConstantCount++;
+            break;
+
+        case CEE_LDIND_I1:
+        case CEE_LDIND_U1:
+        case CEE_LDIND_I2:
+        case CEE_LDIND_U2:
+        case CEE_LDIND_I4:
+        case CEE_LDIND_U4:
+        case CEE_LDIND_I8:
+        case CEE_LDIND_I:
+            m_IntLoadCount++;
+            break;
+
+        case CEE_LDIND_R4:
+        case CEE_LDIND_R8:
+            m_FloatLoadCount++;
+            break;
+
+        case CEE_STIND_I1:
+        case CEE_STIND_I2:
+        case CEE_STIND_I4:
+        case CEE_STIND_I8:
+        case CEE_STIND_I:
+            m_IntStoreCount++;
+            break;
+
+        case CEE_STIND_R4:
+        case CEE_STIND_R8:
+            m_FloatStoreCount++;
+            break;
+
+        case CEE_SUB:
+        case CEE_AND:
+        case CEE_OR:
+        case CEE_XOR:
+        case CEE_SHL:
+        case CEE_SHR:
+        case CEE_SHR_UN:
+        case CEE_NEG:
+        case CEE_NOT:
+        case CEE_CONV_I1:
+        case CEE_CONV_I2:
+        case CEE_CONV_I4:
+        case CEE_CONV_I8:
+        case CEE_CONV_U4:
+        case CEE_CONV_U8:
+        case CEE_CONV_U2:
+        case CEE_CONV_U1:
+        case CEE_CONV_I:
+        case CEE_CONV_U:
+            m_SimpleMathCount++;
+            break;
+
+        case CEE_MUL:
+        case CEE_DIV:
+        case CEE_DIV_UN:
+        case CEE_REM:
+        case CEE_REM_UN:
+        case CEE_CONV_R4:
+        case CEE_CONV_R8:
+        case CEE_CONV_R_UN:
+            m_ComplexMathCount++;
+            break;
+
+        case CEE_CONV_OVF_I1_UN:
+        case CEE_CONV_OVF_I2_UN:
+        case CEE_CONV_OVF_I4_UN:
+        case CEE_CONV_OVF_I8_UN:
+        case CEE_CONV_OVF_U1_UN:
+        case CEE_CONV_OVF_U2_UN:
+        case CEE_CONV_OVF_U4_UN:
+        case CEE_CONV_OVF_U8_UN:
+        case CEE_CONV_OVF_I_UN:
+        case CEE_CONV_OVF_U_UN:
+        case CEE_CONV_OVF_I1:
+        case CEE_CONV_OVF_U1:
+        case CEE_CONV_OVF_I2:
+        case CEE_CONV_OVF_U2:
+        case CEE_CONV_OVF_I4:
+        case CEE_CONV_OVF_U4:
+        case CEE_CONV_OVF_I8:
+        case CEE_CONV_OVF_U8:
+        case CEE_ADD_OVF:
+        case CEE_ADD_OVF_UN:
+        case CEE_MUL_OVF:
+        case CEE_MUL_OVF_UN:
+        case CEE_SUB_OVF:
+        case CEE_SUB_OVF_UN:
+        case CEE_CKFINITE:
+            m_OverflowMathCount++;
+            break;
+
+        case CEE_LDELEM_I1:
+        case CEE_LDELEM_U1:
+        case CEE_LDELEM_I2:
+        case CEE_LDELEM_U2:
+        case CEE_LDELEM_I4:
+        case CEE_LDELEM_U4:
+        case CEE_LDELEM_I8:
+        case CEE_LDELEM_I:
+            m_IntArrayLoadCount++;
+            break;
+
+        case CEE_LDELEM_R4:
+        case CEE_LDELEM_R8:
+            m_FloatArrayLoadCount++;
+            break;
+
+        case CEE_LDELEM_REF:
+            m_RefArrayLoadCount++;
+            break;
+
+        case CEE_LDELEM:
+            m_StructArrayLoadCount++;
+            break;
+
+        case CEE_STELEM_I:
+        case CEE_STELEM_I1:
+        case CEE_STELEM_I2:
+        case CEE_STELEM_I4:
+        case CEE_STELEM_I8:
+            m_IntArrayStoreCount++;
+            break;
+
+        case CEE_STELEM_R4:
+        case CEE_STELEM_R8:
+            m_FloatArrayStoreCount++;
+            break;
+
+        case CEE_STELEM_REF:
+            m_RefArrayStoreCount++;
+            break;
+
+        case CEE_STELEM:
+            m_StructArrayStoreCount++;
+            break;
+
+        case CEE_CPOBJ:
+        case CEE_LDOBJ:
+        case CEE_CPBLK:
+        case CEE_INITBLK:
+        case CEE_STOBJ:
+            m_StructOperationCount++;
+            break;
+
+        case CEE_CASTCLASS:
+        case CEE_ISINST:
+        case CEE_UNBOX:
+        case CEE_BOX:
+        case CEE_UNBOX_ANY:
+        case CEE_LDFTN:
+        case CEE_LDVIRTFTN:
+        case CEE_SIZEOF:
+            m_ObjectModelCount++;
+            break;
+
+        case CEE_LDFLD:
+        case CEE_LDLEN:
+        case CEE_REFANYTYPE:
+        case CEE_REFANYVAL:
+            m_FieldLoadCount++;
+            break;
+
+        case CEE_STFLD:
+            m_FieldStoreCount++;
+            break;
+
+        case CEE_LDSFLD:
+            m_StaticFieldLoadCount++;
+            break;
+        
+        case CEE_STSFLD:
+            m_StaticFieldStoreCount++;
+            break;
+
+        case CEE_LDELEMA:
+        case CEE_LDSFLDA:
+        case CEE_LDFLDA:
+        case CEE_LDSTR:
+        case CEE_LDARGA:
+        case CEE_LDLOCA:
+            m_LoadAddressCount++;
+            break;
+
+        case CEE_CALL:
+        case CEE_CALLI:
+        case CEE_CALLVIRT:
+        case CEE_NEWOBJ:
+        case CEE_NEWARR:
+        case CEE_JMP:
+            m_CallCount++;
+            break;
+
+        case CEE_THROW:
+        case CEE_RETHROW:
+            m_ThrowCount++;
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -1113,11 +1396,93 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     }
 
     // Make some additional observations
-    m_ArgCount = methodInfo->args.numArgs;
-    m_LocalCount = methodInfo->locals.numArgs;
-    m_ReturnType = methodInfo->args.retType;
 
-    // delegate to LegacyPolicy for now
+    CORINFO_SIG_INFO& locals = methodInfo->locals;
+    m_LocalCount = locals.numArgs;
+
+    CORINFO_SIG_INFO& args = methodInfo->args;
+    const unsigned argCount = args.numArgs;
+    m_ArgCount = argCount;
+
+    const unsigned pointerSize = sizeof(void*);
+    unsigned i = 0;
+
+    // Implicit arguments
+
+    const bool hasThis = args.hasThis();
+
+    if (hasThis)
+    {
+        m_ArgType[i] = CORINFO_TYPE_CLASS;
+        m_ArgSize[i] = pointerSize;
+        i++;
+        m_ArgCount++;
+    }
+
+    const bool hasTypeArg = args.hasTypeArg();
+
+    if (hasTypeArg)
+    {
+        m_ArgType[i] = CORINFO_TYPE_NATIVEINT;
+        m_ArgSize[i] = pointerSize;
+        i++;
+        m_ArgCount++;
+    }
+
+    // Explicit arguments
+
+    unsigned j = 0;
+    CORINFO_ARG_LIST_HANDLE argListHandle = args.args;
+    COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+
+    while ((i < MAX_ARGS) && (j < argCount))
+    {
+        CORINFO_CLASS_HANDLE classHandle;
+        CorInfoType type = strip(comp->getArgType(&args, argListHandle, &classHandle));
+
+        m_ArgType[i] = type;
+
+        if (type == CORINFO_TYPE_VALUECLASS)
+        {
+            assert(classHandle != nullptr);
+            m_ArgSize[i] = roundUp(comp->getClassSize(classHandle), pointerSize);
+        }
+        else
+        {
+            m_ArgSize[i] = pointerSize;
+        }
+
+        argListHandle = comp->getArgNext(argListHandle);
+        i++;
+        j++;
+    }
+
+    while (i < MAX_ARGS)
+    {
+        m_ArgType[i] = CORINFO_TYPE_UNDEF;
+        m_ArgSize[i] = 0;
+        i++;
+    }
+
+    // Return Type
+
+    m_ReturnType = args.retType;
+
+    if (m_ReturnType == CORINFO_TYPE_VALUECLASS)
+    {
+        assert(args.retTypeClass != nullptr);
+        m_ReturnSize = roundUp(comp->getClassSize(args.retTypeClass), pointerSize);
+    }
+    else if (m_ReturnType == CORINFO_TYPE_VOID)
+    {
+        m_ReturnSize = 0;
+    }
+    else 
+    {
+        m_ReturnSize = pointerSize;
+    }
+
+    // Delegate to LegacyPolicy for the rest
     LegacyPolicy::DetermineProfitability(methodInfo);
 }
 
@@ -1138,8 +1503,46 @@ void DiscretionaryPolicy::DumpSchema(FILE* file) const
     fprintf(file, ",BlockCount");
     fprintf(file, ",Maxstack");
     fprintf(file, ",ArgCount");
+
+    for (unsigned i = 0; i < MAX_ARGS; i++)
+    {
+        fprintf(file, ",Arg%uType", i);
+    }
+
+    for (unsigned i = 0; i < MAX_ARGS; i++)
+    {
+        fprintf(file, ",Arg%uSize", i);
+    }
+
     fprintf(file, ",LocalCount");
     fprintf(file, ",ReturnType");
+    fprintf(file, ",ReturnSize");
+    fprintf(file, ",ArgAccessCount");
+    fprintf(file, ",LocalAccessCount");
+    fprintf(file, ",IntConstantCount");
+    fprintf(file, ",FloatConstantCount");
+    fprintf(file, ",IntLoadCount");
+    fprintf(file, ",FloatLoadCount");
+    fprintf(file, ",IntStoreCount");
+    fprintf(file, ",FloatStoreCount");
+    fprintf(file, ",SimpleMathCount");
+    fprintf(file, ",ComplexMathCount");
+    fprintf(file, ",OverflowMathCount");
+    fprintf(file, ",IntArrayLoadCount");
+    fprintf(file, ",FloatArrayLoadCount");
+    fprintf(file, ",RefArrayLoadCount");
+    fprintf(file, ",StructArrayLoadCount");
+    fprintf(file, ",IntArrayStoreCount");
+    fprintf(file, ",FloatArrayStoreCount");
+    fprintf(file, ",RefArrayStoreCount");
+    fprintf(file, ",StructArrayStoreCount");
+    fprintf(file, ",StructOperationCount");
+    fprintf(file, ",ObjectModelCount");
+    fprintf(file, ",FieldLoadCount");
+    fprintf(file, ",FieldStoreCount");
+    fprintf(file, ",StaticFieldLoadCount");
+    fprintf(file, ",StaticFieldStoreCount");
+    fprintf(file, ",LoadAddressCount");
     fprintf(file, ",ThrowCount");
     fprintf(file, ",CallCount");
     fprintf(file, ",IsForceInline");
@@ -1172,8 +1575,46 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_BlockCount);
     fprintf(file, ",%u", m_Maxstack);
     fprintf(file, ",%u", m_ArgCount);
+
+    for (unsigned i = 0; i < MAX_ARGS; i++)
+    {
+        fprintf(file, ",%u", m_ArgType[i]);
+    }
+
+    for (unsigned i = 0; i < MAX_ARGS; i++)
+    {
+        fprintf(file, ",%u", (unsigned) m_ArgSize[i]);
+    }
+
     fprintf(file, ",%u", m_LocalCount);
     fprintf(file, ",%u", m_ReturnType);
+    fprintf(file, ",%u", (unsigned) m_ReturnSize);
+    fprintf(file, ",%u", m_ArgAccessCount);
+    fprintf(file, ",%u", m_LocalAccessCount);
+    fprintf(file, ",%u", m_IntConstantCount);
+    fprintf(file, ",%u", m_FloatConstantCount);
+    fprintf(file, ",%u", m_IntLoadCount);
+    fprintf(file, ",%u", m_FloatLoadCount);
+    fprintf(file, ",%u", m_IntStoreCount);
+    fprintf(file, ",%u", m_FloatStoreCount);
+    fprintf(file, ",%u", m_SimpleMathCount);
+    fprintf(file, ",%u", m_ComplexMathCount);
+    fprintf(file, ",%u", m_OverflowMathCount);
+    fprintf(file, ",%u", m_IntArrayLoadCount);
+    fprintf(file, ",%u", m_FloatArrayLoadCount);
+    fprintf(file, ",%u", m_RefArrayLoadCount);
+    fprintf(file, ",%u", m_StructArrayLoadCount);
+    fprintf(file, ",%u", m_IntArrayStoreCount);
+    fprintf(file, ",%u", m_FloatArrayStoreCount);
+    fprintf(file, ",%u", m_RefArrayStoreCount);
+    fprintf(file, ",%u", m_StructArrayStoreCount);
+    fprintf(file, ",%u", m_StructOperationCount);
+    fprintf(file, ",%u", m_ObjectModelCount);
+    fprintf(file, ",%u", m_FieldLoadCount);
+    fprintf(file, ",%u", m_FieldStoreCount);
+    fprintf(file, ",%u", m_StaticFieldLoadCount);
+    fprintf(file, ",%u", m_StaticFieldStoreCount);
+    fprintf(file, ",%u", m_LoadAddressCount);
     fprintf(file, ",%u", m_ThrowCount);
     fprintf(file, ",%u", m_CallCount);
     fprintf(file, ",%u", m_IsForceInline ? 1 : 0);
