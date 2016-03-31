@@ -183,7 +183,7 @@ branchList.each { branchName ->
             // Set the machine affinity.
             Utilities.setMachineAffinity(newJob, os)
             // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
+            Utilities.addStandardOptions(newJob, isPR)
 
             // Set up appropriate triggers.  PR on demand, otherwise nightly
             if (isPR) {
@@ -451,7 +451,7 @@ branchList.each { branchName ->
         // Set a periodic trigger
         Utilities.addPeriodicTrigger(newJob, '@daily')
 
-        Utilities.addPrivatePermissions(job)
+        Utilities.addPrivatePermissions(newJob)
     }
 }
 
