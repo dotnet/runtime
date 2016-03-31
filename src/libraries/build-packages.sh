@@ -9,8 +9,10 @@ usage()
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 build_packages_log=$working_tree_root/build-packages.log
+binclashlog=$working_tree_root/binclash.log
+binclashloggerdll=$working_tree_root/Tools/Microsoft.DotNet.Build.Tasks.dll
 
-options="/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$build_packages_log"
+options="/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$build_packages_log /l:BinClashLogger,$binclashloggerdll;LogFile=$binclashlog"
 allargs="$@"
 
 echo -e "Running build-packages.sh $allargs" > $build_packages_log
