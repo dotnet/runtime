@@ -182,7 +182,7 @@ check_consistency_callback (GCObject *obj, size_t size, void *dummy)
  * Assumes the world is stopped.
  */
 void
-sgen_check_consistency (void)
+sgen_check_remset_consistency (void)
 {
 	// Need to add more checks
 

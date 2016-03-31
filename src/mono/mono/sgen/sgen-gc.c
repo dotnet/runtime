@@ -214,8 +214,8 @@ guint32 verify_before_allocs = 0;
 guint32 collect_before_allocs = 0;
 /* If set, do a whole heap check before each collection */
 static gboolean whole_heap_check_before_collection = FALSE;
-/* If set, do a heap consistency check before each minor collection */
-static gboolean consistency_check_at_minor_collection = FALSE;
+/* If set, do a remset consistency check at various opportunities */
+static gboolean remset_consistency_checks = FALSE;
 /* If set, do a mod union consistency check before each finishing collection pause */
 static gboolean mod_union_consistency_check = FALSE;
 /* If set, check whether mark bits are consistent after major collections */
@@ -1549,8 +1549,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 		sgen_clear_nursery_fragments ();
 		sgen_check_whole_heap (finish_up_concurrent_mark);
 	}
-	if (consistency_check_at_minor_collection)
-		sgen_check_consistency ();
 
 	sgen_process_fin_stage_entries ();
 
@@ -1566,6 +1564,9 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	pin_objects_in_nursery (FALSE, ctx);
 	sgen_pinning_trim_queue_to_section (nursery_section);
+
+	if (remset_consistency_checks)
+		sgen_check_remset_consistency ();
 
 	TV_GETTIME (atv);
 	time_minor_pinning += TV_ELAPSED (btv, atv);
@@ -1605,6 +1606,13 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 		sgen_pinning_setup_section (nursery_section);
 	}
 
+	/*
+	 * This is the latest point at which we can do this check, because
+	 * sgen_build_nursery_fragments() unpins nursery objects again.
+	 */
+	if (remset_consistency_checks)
+		sgen_check_remset_consistency ();
+
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
@@ -1622,7 +1630,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	time_minor_fragment_creation += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Fragment creation: %lld usecs, %lu bytes available", (long long)TV_ELAPSED (atv, btv), (unsigned long)fragment_total);
 
-	if (consistency_check_at_minor_collection)
+	if (remset_consistency_checks)
 		sgen_check_major_refs ();
 
 	major_collector.finish_nursery_collection ();
@@ -1794,6 +1802,13 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	if (old_next_pin_slot)
 		*old_next_pin_slot = sgen_get_pinned_count ();
+
+	/*
+	 * We don't actually pin when starting a concurrent collection, so the remset
+	 * consistency check won't work.
+	 */
+	if (remset_consistency_checks && mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
+		sgen_check_remset_consistency ();
 
 	TV_GETTIME (btv);
 	time_major_pinning += TV_ELAPSED (atv, btv);
@@ -3031,8 +3046,8 @@ sgen_gc_init (void)
 				collect_before_allocs = atoi (arg);
 			} else if (!strcmp (opt, "verify-before-collections")) {
 				whole_heap_check_before_collection = TRUE;
-			} else if (!strcmp (opt, "check-at-minor-collections")) {
-				consistency_check_at_minor_collection = TRUE;
+			} else if (!strcmp (opt, "check-remset-consistency")) {
+				remset_consistency_checks = TRUE;
 				nursery_clear_policy = CLEAR_AT_GC;
 			} else if (!strcmp (opt, "mod-union-consistency-check")) {
 				if (!major_collector.is_concurrent) {
@@ -3098,7 +3113,7 @@ sgen_gc_init (void)
 				fprintf (stderr, "Valid <option>s are:\n");
 				fprintf (stderr, "  collect-before-allocs[=<n>]\n");
 				fprintf (stderr, "  verify-before-allocs[=<n>]\n");
-				fprintf (stderr, "  check-at-minor-collections\n");
+				fprintf (stderr, "  check-remset-consistency\n");
 				fprintf (stderr, "  check-mark-bits\n");
 				fprintf (stderr, "  check-nursery-pinned\n");
 				fprintf (stderr, "  verify-before-collections\n");
