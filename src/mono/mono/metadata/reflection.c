@@ -10428,10 +10428,10 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 	return_val_if_nok (error, NULL);
 	if (cinfo) {
 		result = mono_custom_attrs_construct_by_type (cinfo, attr_klass, error);
-		if (!result)
-			return NULL;
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
+		if (!result)
+			return NULL;
 	} else {
 		mono_loader_assert_no_error ();
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
@@ -10495,9 +10495,9 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 	return_val_if_nok (error, NULL);
 	if (cinfo) {
 		result = mono_custom_attrs_data_construct (cinfo, error);
-		return_val_if_nok (error, NULL);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
+		return_val_if_nok (error, NULL);
 	} else
 		result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, 0);
 
