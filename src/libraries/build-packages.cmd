@@ -2,9 +2,11 @@
 setlocal EnableDelayedExpansion
 
 set packagesLog=build-packages.log
+set binclashLoggerDll=%~dp0Tools\net45\Microsoft.DotNet.Build.Tasks.dll
+set binclashlog=%~dp0binclash.log
 echo Running build-packages.cmd %* > %packagesLog%
 
-set options=/nologo /maxcpucount /v:minimal /clp:Summary /nodeReuse:false /flp:v=detailed;Append;LogFile=%packagesLog%
+set options=/nologo /maxcpucount /v:minimal /clp:Summary /nodeReuse:false /flp:v=detailed;Append;LogFile=%packagesLog% /l:BinClashLogger,%binclashLoggerDll%;LogFile=%binclashlog%
 set allargs=%*
 
 if /I [%1] == [/?] goto Usage
