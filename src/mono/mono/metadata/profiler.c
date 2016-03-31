@@ -23,6 +23,7 @@
 #include "mono/metadata/mono-config-dirs.h"
 #include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-dl.h"
+#include <mono/utils/mono-logger-internals.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1167,10 +1168,13 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 	char *err;
 	void *iter;
 
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Attempting to load profiler %s from %s (desc %s)", libname, directory, desc);
+
 	iter = NULL;
 	err = NULL;
 	while ((path = mono_dl_build_path (directory, libname, &iter))) {
 		pmodule = mono_dl_open (path, MONO_DL_LAZY, &err);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Attempting to load profiler: %s %ssuccessful, err: %s", path, pmodule?"":"not ", err);
 		g_free (path);
 		g_free (err);
 		if (pmodule)
@@ -1249,7 +1253,10 @@ mono_profiler_load (const char *desc)
 		}
 		if (!load_embedded_profiler (desc, mname)) {
 			libname = g_strdup_printf ("mono-profiler-%s", mname);
-			if (mono_config_get_assemblies_dir ())
+			char *profiler_lib_dir = getenv ("MONO_PROFILER_LIB_DIR");
+			if (profiler_lib_dir)
+				res = load_profiler_from_directory (profiler_lib_dir, libname, desc);
+			if (!res && mono_config_get_assemblies_dir ())
 				res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
 			if (!res)
 				res = load_profiler_from_directory (NULL, libname, desc);

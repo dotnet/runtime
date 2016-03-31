@@ -15,8 +15,7 @@ my $minibuilddir = $builddir . "/mono/mini";
 
 # Setup the execution environment
 # for the profiler module
-append_path ("LD_LIBRARY_PATH", $profbuilddir . "/.libs");
-append_path ("DYLD_LIBRARY_PATH", $profbuilddir . "/.libs");
+append_path ("MONO_PROFILER_LIB_DIR", $profbuilddir . "/.libs");
 append_path ("DYLD_LIBRARY_PATH", $minibuilddir . "/.libs");
 # for mprof-report
 append_path ("PATH", $profbuilddir);
