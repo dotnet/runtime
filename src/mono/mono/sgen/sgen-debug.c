@@ -197,6 +197,8 @@ sgen_check_remset_consistency (void)
 
 	SGEN_LOG (1, "Heap consistency check done.");
 
+	if (missing_remsets)
+		binary_protocol_flush_buffers (TRUE);
 	if (!binary_protocol_is_enabled ())
 		g_assert (!missing_remsets);
 }
