@@ -9315,7 +9315,7 @@ void NativeImageDumper::DumpReadyToRun()
     if (pRuntimeFunctionsDir != NULL)
     {
         m_pRuntimeFunctions = dac_cast<PTR_RUNTIME_FUNCTION>(m_decoder.GetDirectoryData(pRuntimeFunctionsDir));
-        m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(RUNTIME_FUNCTION);
+        m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(T_RUNTIME_FUNCTION);
     }
     else
     {

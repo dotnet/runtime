@@ -42,12 +42,27 @@ PCSTR GetRegName (UINT32 regnum)
     
     return "???";
 #elif defined(_TARGET_ARM64_)
-    if (regnum > 28)
-        return "???";
 
     static CHAR szRegName[16];
-    _snprintf_s(szRegName, _countof(szRegName), sizeof(szRegName), "X%u", regnum);
-    return szRegName;
+    if (regnum < 29)
+    {
+        _snprintf_s(szRegName, _countof(szRegName), sizeof(szRegName), "X%u", regnum);
+        return szRegName;
+    }
+    else if(regnum == 29)
+    {
+        return "Fp";
+    }
+    else if(regnum == 30)
+    {
+        return "Lr";
+    }
+    else if(regnum == 31)
+    {
+        return "Sp";
+    }
+    
+    return "???";
 #elif defined(_TARGET_ARM_)
     if (regnum > 128)
         return "???";
