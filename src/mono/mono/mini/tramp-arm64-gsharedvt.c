@@ -91,10 +91,18 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 			case GSHAREDVT_ARG_BYREF_TO_BYREF:
 				g_assert_not_reached ();
 				break;
+			case GSHAREDVT_ARG_BYVAL_TO_BYREF:
+				src_slot = src & 0x3f;
+				src_ptr = caller + src_slot + src_offset;
+				callee [dst] = src_ptr;
+				break;
 			default:
 				NOT_IMPLEMENTED;
 				break;
 			}
+
+			if (arg_marshal == GSHAREDVT_ARG_BYVAL_TO_BYREF)
+				continue;
 
 			switch (arg_size) {
 			case GSHAREDVT_ARG_SIZE_I1:
