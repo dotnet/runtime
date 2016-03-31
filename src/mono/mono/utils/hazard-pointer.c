@@ -43,6 +43,7 @@ typedef struct {
 
 static volatile int hazard_table_size = 0;
 static MonoThreadHazardPointers * volatile hazard_table = NULL;
+static MonoHazardFreeQueueSizeCallback queue_size_cb;
 
 /*
  * Each entry is either 0 or 1, indicating whether that overflow small
@@ -306,29 +307,63 @@ try_free_delayed_free_item (HazardFreeContext context)
 	return TRUE;
 }
 
-void
-mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-                                     HazardFreeLocking locking, HazardFreeContext context)
+/**
+ * mono_thread_hazardous_try_free:
+ * @p: the pointer to free
+ * @free_func: the function that can free the pointer
+ *
+ * If @p is not a hazardous pointer it will be immediately freed by calling @free_func.
+ * Otherwise it will be queued for later.
+ *
+ * Use this function if @free_func can ALWAYS be called in the context where this function is being called.
+ *
+ * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
+ * See mono_thread_hazardous_try_free_some for when it's appropriate.
+ *
+ * Return: TRUE if @p was free or FALSE if it was queued.
+ */
+gboolean
+mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func)
 {
-	int i;
-
-	/* First try to free a few entries in the delayed free
-	   table. */
-	for (i = 0; i < 3; ++i)
-		try_free_delayed_free_item (context);
-
-	/* Now see if the pointer we're freeing is hazardous.  If it
-	   isn't, free it.  Otherwise put it in the delay list. */
-	if ((context == HAZARD_FREE_ASYNC_CTX && locking == HAZARD_FREE_MAY_LOCK) ||
-	    is_pointer_hazardous (p)) {
-		DelayedFreeItem item = { p, free_func, locking };
-
-		++hazardous_pointer_count;
-
-		mono_lock_free_array_queue_push (&delayed_free_queue, &item);
-	} else {
+	if (!is_pointer_hazardous (p)) {
 		free_func (p);
+		return TRUE;
+	} else {
+		mono_thread_hazardous_queue_free (p, free_func);
+		return FALSE;
 	}
+}
+
+/**
+ * mono_thread_hazardous_queue_free:
+ * @p: the pointer to free
+ * @free_func: the function that can free the pointer
+ *
+ * Queue @p to be freed later. @p will be freed once the hazard free queue is pumped.
+ *
+ * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
+ * See mono_thread_hazardous_try_free_some for when it's appropriate.
+ *
+ */
+void
+mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)
+{
+	DelayedFreeItem item = { p, free_func, HAZARD_FREE_MAY_LOCK };
+
+	InterlockedIncrement (&hazardous_pointer_count);
+
+	mono_lock_free_array_queue_push (&delayed_free_queue, &item);
+
+	guint32 queue_size = delayed_free_queue.num_used_entries;
+	if (queue_size && queue_size_cb)
+		queue_size_cb (queue_size);
+}
+
+
+void
+mono_hazard_pointer_install_free_queue_size_callback (MonoHazardFreeQueueSizeCallback cb)
+{
+	queue_size_cb = cb;
 }
 
 void

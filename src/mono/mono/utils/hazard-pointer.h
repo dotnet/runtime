@@ -29,8 +29,9 @@ typedef enum {
 	HAZARD_FREE_ASYNC_CTX,
 } HazardFreeContext;
 
-void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-                                          HazardFreeLocking locking, HazardFreeContext context);
+gboolean mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func);
+void mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func);
+
 void mono_thread_hazardous_try_free_all (void);
 void mono_thread_hazardous_try_free_some (void);
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);
@@ -57,6 +58,9 @@ int mono_thread_small_id_alloc (void);
 
 int mono_hazard_pointer_save_for_signal_handler (void);
 void mono_hazard_pointer_restore_for_signal_handler (int small_id);
+
+typedef void (*MonoHazardFreeQueueSizeCallback)(size_t size);
+void mono_hazard_pointer_install_free_queue_size_callback (MonoHazardFreeQueueSizeCallback cb);
 
 void mono_thread_smr_init (void);
 void mono_thread_smr_cleanup (void);
