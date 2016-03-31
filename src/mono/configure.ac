@@ -3319,6 +3319,12 @@ AC_ARG_WITH([libgdiplus],
 
 # default install location
 libgdiplus_install_loc=libgdiplus${libsuffix}
+case "$host" in
+    *-*-*linux*)
+    libgdiplus_install_loc=libgdiplus${libsuffix}.0
+    ;;
+esac
+
 case $with_libgdiplus in
     no|installed)
     libgdiplus_loc=
