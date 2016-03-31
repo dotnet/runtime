@@ -1234,20 +1234,6 @@ mono_loader_lock_if_inited (void);
 void
 mono_loader_unlock_if_inited (void);
 
-void
-mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_only);
-
-void
-mono_loader_set_error_type_load (const char *class_name, const char *assembly_name);
-
-void
-mono_loader_set_error_method_load (const char *class_name, const char *member_name);
-
-void
-mono_loader_set_error_field_load (MonoClass *klass, const char *member_name);
-void
-mono_loader_set_error_bad_image (char *msg);
-
 MonoException *
 mono_loader_error_prepare_exception (MonoLoaderError *error);
 
