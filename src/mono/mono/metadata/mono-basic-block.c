@@ -517,7 +517,6 @@ mono_basic_block_free (MonoSimpleBasicBlock *bb)
 MonoSimpleBasicBlock*
 mono_basic_block_split (MonoMethod *method, MonoError *error, MonoMethodHeader *header)
 {
-	MonoError inner_error;
 	MonoSimpleBasicBlock *bb, *root;
 	const unsigned char *start, *end;
 

@@ -2770,7 +2770,6 @@ mono_metadata_clean_for_image (MonoImage *image)
 static void
 free_inflated_method (MonoMethodInflated *imethod)
 {
-	int i;
 	MonoMethod *method = (MonoMethod*)imethod;
 
 	if (method->signature)
