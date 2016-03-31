@@ -18,10 +18,10 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NativeName_TestData))]
-        public void EnglishName(string name, string expected)
+        public void NativeName(string name, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(name);
-            Assert.Equal(expected, myTestCulture.EnglishName);
+            Assert.Equal(expected, myTestCulture.NativeName);
         }
     }
 }
