@@ -40,10 +40,10 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
     internal class DcjsSerializerFactory : ISerializerFactory
     {
-        private static readonly DcjsSerializerFactory _instance = new DcjsSerializerFactory();
+        private static readonly DcjsSerializerFactory s_instance = new DcjsSerializerFactory();
         public static DcjsSerializerFactory GetInstance()
         {
-            return _instance;
+            return s_instance;
         }
 
         public IPerfTestSerializer GetSerializer()

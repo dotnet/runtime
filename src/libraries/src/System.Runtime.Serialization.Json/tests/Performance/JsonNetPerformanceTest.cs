@@ -41,10 +41,10 @@ namespace System.Runtime.Serialization.Json.Tests.Performance
 
     internal class JsonNetSerializerFactory : ISerializerFactory
     {
-        private static readonly JsonNetSerializerFactory Instance = new JsonNetSerializerFactory();
+        private static readonly JsonNetSerializerFactory s_instance = new JsonNetSerializerFactory();
         public static JsonNetSerializerFactory GetInstance()
         {
-            return Instance;
+            return s_instance;
         }
 
         public IPerfTestSerializer GetSerializer()
