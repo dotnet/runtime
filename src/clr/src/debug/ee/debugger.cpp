@@ -983,6 +983,7 @@ Debugger::Debugger()
 
     m_fShutdownMode = false;
     m_fDisabled = false;
+    m_rgHijackFunction = NULL;
 
 #ifdef _DEBUG
     InitDebugEventCounting();
@@ -17006,6 +17007,7 @@ Debugger::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     DAC_ENUM_VTHIS();
     SUPPORTS_DAC;
+    _ASSERTE(m_rgHijackFunction != NULL);
 
     if ( flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

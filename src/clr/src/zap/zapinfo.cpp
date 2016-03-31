@@ -2667,7 +2667,7 @@ CORINFO_METHOD_HANDLE ZapInfo::GetDelegateCtor(CORINFO_METHOD_HANDLE   methHnd,
                                                CORINFO_METHOD_HANDLE   targetMethodHnd,
                                                DelegateCtorArgs *      pCtorData)
 {
-    // For ReadyToRun, this optimization is done via ZapInfo::getReadyToRunHelper
+    // For ReadyToRun, this optimization is done via ZapInfo::getReadyToRunDelegateCtorHelper
     if (IsReadyToRunCompilation())
         return methHnd;
 
@@ -3410,11 +3410,6 @@ void ZapInfo::getReadyToRunHelper(
         }
         break;
 
-    case CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
-        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DELEGATE_CTOR | fAtypicalCallsite), pResolvedToken->hMethod, pResolvedToken);
-        break;
-
     default:
         _ASSERTE(false);
         ThrowHR(E_NOTIMPL);
@@ -3422,6 +3417,21 @@ void ZapInfo::getReadyToRunHelper(
 
     pLookup->accessType = IAT_PVALUE;
     pLookup->addr = pImport;
+#endif
+}
+
+void ZapInfo::getReadyToRunDelegateCtorHelper(
+        CORINFO_RESOLVED_TOKEN * pTargetMethod,
+        CORINFO_CLASS_HANDLE     delegateType,
+        CORINFO_CONST_LOOKUP *   pLookup
+        )
+{
+#ifdef FEATURE_READYTORUN_COMPILER
+    _ASSERTE(IsReadyToRunCompilation());
+
+    pLookup->accessType = IAT_PVALUE;
+    pLookup->addr = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DELEGATE_CTOR), pTargetMethod->hMethod, pTargetMethod, delegateType);
 #endif
 }
 

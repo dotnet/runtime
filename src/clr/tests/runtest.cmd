@@ -286,15 +286,12 @@ if defined __TestEnv call %__TestEnv%
 if defined COMPlus_GCStress set __Result=true
 endlocal & set __IsGCTest=%__Result%
 if "%__IsGCTest%"=="true" (
-@echo on
     tests\setup-runtime-dependencies.cmd /arch %__BuildArch% /outputdir %CORE_ROOT%
     if errorlevel 1 (
         echo Failed to donwload runtime packages
         exit /b 1
     )
 )
-
-exit /b 0
 
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 

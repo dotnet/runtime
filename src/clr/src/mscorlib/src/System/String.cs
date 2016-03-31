@@ -386,19 +386,19 @@ namespace System {
 
                 while (length >= 12)
                 {
-                    if (*(long*)a     != *(long*)b) return false;
-                    if (*(long*)(a+4) != *(long*)(b+4)) return false;
-                    if (*(long*)(a+8) != *(long*)(b+8)) return false;
+                    if (*(long*)a != *(long*)b) goto ReturnFalse;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto ReturnFalse;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto ReturnFalse;
                     length -= 12; a += 12; b += 12;
                 }
 #else
                 while (length >= 10)
                 {
-                    if (*(int*)a != *(int*)b) return false;
-                    if (*(int*)(a+2) != *(int*)(b+2)) return false;
-                    if (*(int*)(a+4) != *(int*)(b+4)) return false;
-                    if (*(int*)(a+6) != *(int*)(b+6)) return false;
-                    if (*(int*)(a+8) != *(int*)(b+8)) return false;
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    if (*(int*)(a + 2) != *(int*)(b + 2)) goto ReturnFalse;
+                    if (*(int*)(a + 4) != *(int*)(b + 4)) goto ReturnFalse;
+                    if (*(int*)(a + 6) != *(int*)(b + 6)) goto ReturnFalse;
+                    if (*(int*)(a + 8) != *(int*)(b + 8)) goto ReturnFalse;
                     length -= 10; a += 10; b += 10;
                 }
 #endif
@@ -409,11 +409,14 @@ namespace System {
                 // the zero terminator.
                 while (length > 0) 
                 {
-                    if (*(int*)a != *(int*)b) break;
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
                     length -= 2; a += 2; b += 2;
                 }
 
-                return (length <= 0);
+                return true;
+
+                ReturnFalse:
+                return false;
             }
         }
 
@@ -662,12 +665,9 @@ namespace System {
                 return true;
             }
 
-            if ((Object)a==null || (Object)b==null) {
+            if ((Object)a == null || (Object)b == null || a.Length != b.Length) {
                 return false;
             }
-
-            if (a.Length != b.Length)
-                return false;
 
             return EqualsHelper(a, b);
         }

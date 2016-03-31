@@ -247,7 +247,7 @@ struct GenTreeArgList;
 
 /*****************************************************************************/
 
-#ifndef _WIN64
+#ifndef _HOST_64BIT_
 #include <pshpack4.h>
 #endif
 
@@ -2547,7 +2547,7 @@ struct GenTreeFptrVal: public GenTree
 
 #ifdef FEATURE_READYTORUN_COMPILER
     CORINFO_CONST_LOOKUP gtEntryPoint;
-    CORINFO_CONST_LOOKUP gtDelegateCtor;
+    CORINFO_RESOLVED_TOKEN* gtLdftnResolvedToken;
 #endif
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : 
@@ -3748,7 +3748,7 @@ inline var_types& GenTree::CastToType()  { return this->gtCast.gtCastType; }
 
 /*****************************************************************************/
 
-#ifndef _WIN64
+#ifndef _HOST_64BIT_
 #include <poppack.h>
 #endif
 

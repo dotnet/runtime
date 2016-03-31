@@ -655,7 +655,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                             return exceptionCode;
                         }
                     }
-                    // fall through
+                    return EXCEPTION_ACCESS_VIOLATION;
                 }
 #endif
                 default:

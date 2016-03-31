@@ -305,11 +305,13 @@ DWORD GetDefaultMaxLimitWorkerThreads(DWORD minLimit)
 
 DWORD GetForceMinWorkerThreadsValue()
 {
+    WRAPPER_NO_CONTRACT;
     return Configuration::GetKnobDWORDValue(W("System.Threading.ThreadPool.MinThreads"), CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads);
 }
 
 DWORD GetForceMaxWorkerThreadsValue()
 {
+    WRAPPER_NO_CONTRACT;
     return Configuration::GetKnobDWORDValue(W("System.Threading.ThreadPool.MaxThreads"), CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads);
 }
 
