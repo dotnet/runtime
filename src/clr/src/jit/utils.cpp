@@ -1468,7 +1468,7 @@ AssemblyNamesList2::~AssemblyNamesList2()
     }
 }
 
-bool AssemblyNamesList2::IsInList(LPCUTF8 assemblyName)
+bool AssemblyNamesList2::IsInList(const char* assemblyName)
 {
     for (AssemblyName* pName = m_pNames; pName != nullptr; pName = pName->m_next)
     {
