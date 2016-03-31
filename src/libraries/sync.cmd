@@ -1,8 +1,13 @@
 @if "%_echo%" neq "on" echo off
-setlocal
+setlocal EnableDelayedExpansion
 
 set synclog=sync.log
 echo Running Sync.cmd %* > %synclog%
+
+set options=/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=%synclog%
+set unprocessedBuildArgs=
+set allargs=%*
+set thisArgs=
 
 if [%1]==[] (
   set src=true
@@ -20,16 +25,21 @@ if /I [%1]==[/?] goto Usage
 
 if /I [%1] == [/p] (
     set packages=true
+    set thisArgs=!thisArgs!%1
     goto Next
 )
 
 if /I [%1] == [/s] (
     set src=true
+    set thisArgs=!thisArgs!%1
     goto Next
 )
 
-echo Unrecognized argument '%1'
-goto Usage
+if [!thisArgs!]==[] (
+  set unprocessedBuildArgs=!allargs!
+) else (
+  call set unprocessedBuildArgs=%%allargs:*!thisArgs!=%%
+)
 
 :Next
 shift /1
@@ -51,8 +61,9 @@ if [%src%] == [true] (
 
 if [%packages%] == [true] (
   echo Restoring all packages ...
-  echo msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=detailed;Append;LogFile=%synclog% >> %synclog%
-  call msbuild.exe %~dp0build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=detailed;Append;LogFile=%synclog%
+  set options=!options! /t:BatchRestorePackages /p:RestoreDuringBuild=true
+  echo msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs! >> %synclog%
+  call msbuild.exe %~dp0build.proj !options! !unprocessedBuildArgs!
   if NOT [%ERRORLEVEL%]==[0] (
     echo ERROR: An error occurred while syncing packages, see %synclog% for more details. There may have been networking problems so please try again in a few minutes.
     exit /b

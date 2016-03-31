@@ -15,10 +15,12 @@ usage()
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 sync_log=$working_tree_root/sync.log
 
-# Parse arguments
+options="/nologo /v:minimal /clp:Summary /flp:v=detailed;Append;LogFile=$sync_log"
+unprocessedBuildArgs=
 
 echo "Running sync.sh $*" > $sync_log
 
+# Parse arguments
 if [ $# == 0 ]; then
     sync_packages=true
     sync_src=true
@@ -38,10 +40,7 @@ do
         sync_src=true
         ;;
         *)
-        echo "Unrecognized argument '$opt'"
-        echo "Use 'sync -h' for help."
-        exit 1
-        ;;
+        unprocessedBuildArgs="$unprocessedBuildArgs $1"
     esac
     shift
 done
@@ -60,9 +59,10 @@ if [ "$sync_src" == true ]; then
 fi
 
 if [ "$sync_packages" == true ]; then
+    options="$options /t:BatchRestorePackages /p:RestoreDuringBuild=true"
     echo "Restoring all packages..."
-    echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true /flp:v=detailed;Append;LogFile=$sync_log" >> $sync_log
-    $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj /t:BatchRestorePackages /nologo /v:minimal /p:RestoreDuringBuild=true "/flp:v=detailed;Append;LogFile=$sync_log"
+    echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs" >> $sync_log
+    $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs
     if [ $? -ne 0 ]
     then
         echo -e "\nPackage restored failed. Aborting sync." >> $sync_log
