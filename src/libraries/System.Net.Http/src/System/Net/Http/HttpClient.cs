@@ -20,8 +20,6 @@ namespace System.Net.Http
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
         private const HttpCompletionOption defaultCompletionOption = HttpCompletionOption.ResponseContentRead;
 
-        private static readonly Task<string> s_emptyStringTask = Task.FromResult(string.Empty);
-        private static readonly Task<byte[]> s_emptyByteArrayTask = Task.FromResult(Array.Empty<byte>());
         private static readonly Task<Stream> s_nullStreamTask = Task.FromResult(Stream.Null);
 
         private volatile bool _operationStarted;
@@ -139,7 +137,7 @@ namespace System.Net.Http
         {
             return GetContentAsync(
                 GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadAsStringAsync() : s_emptyStringTask);
+                content => content != null ? content.ReadBufferedContentAsString() : string.Empty);
         }
 
         public Task<byte[]> GetByteArrayAsync(string requestUri)
@@ -151,7 +149,7 @@ namespace System.Net.Http
         {
             return GetContentAsync(
                 GetAsync(requestUri, HttpCompletionOption.ResponseContentRead), 
-                content => content != null ? content.ReadAsByteArrayAsync() : s_emptyByteArrayTask);
+                content => content != null ? content.ReadBufferedContentAsByteArray() : Array.Empty<byte>());
         }
 
 
@@ -167,6 +165,13 @@ namespace System.Net.Http
             return GetContentAsync(
                 GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead), 
                 content => content != null ? content.ReadAsStreamAsync() : s_nullStreamTask);
+        }
+
+        private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, T> readAs)
+        {
+            HttpResponseMessage response = await getTask.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            return readAs(response.Content);
         }
 
         private async Task<T> GetContentAsync<T>(Task<HttpResponseMessage> getTask, Func<HttpContent, Task<T>> readAsAsync)
