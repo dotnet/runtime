@@ -97,7 +97,6 @@ GENERATE_GET_CLASS_WITH_CACHE (variant,    System, Variant)
 
 static GENERATE_GET_CLASS_WITH_CACHE (interface_type_attribute, System.Runtime.InteropServices, InterfaceTypeAttribute)
 static GENERATE_GET_CLASS_WITH_CACHE (guid_attribute, System.Runtime.InteropServices, GuidAttribute)
-static GENERATE_GET_CLASS_WITH_CACHE (com_visible_attribute, System.Runtime.InteropServices, ComVisibleAttribute)
 
 /* Upon creation of a CCW, only allocate a weak handle and set the
  * reference count to 0. If the unmanaged client code decides to addref and
