@@ -34,20 +34,12 @@ namespace System.Text.Tests
         [MemberData(nameof(GetChars_TestData))]
         public void GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            int result = new ASCIIEncoding().GetChars(bytes, byteIndex, byteCount, chars, charIndex);
-            VerifyGetChars(bytes, byteIndex, byteCount, chars, charIndex, result);
-        }
-
-        private void VerifyGetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, int result)
-        {
-            Assert.Equal(result, byteCount);
-
-            // Assume that the character array has enough capacity to accommodate the resulting characters
-            // i current index of byte array, j current index of character array
-            for (int byteEnd = byteIndex + byteCount, i = byteIndex, j = charIndex; i < byteEnd; i++, j++)
+            char[] expectedChars = new char[byteCount];
+            for (int i = 0; i < byteCount; i++)
             {
-                Assert.Equal(bytes[i], (byte)chars[j]);
+                expectedChars[i] = (char)bytes[i + byteIndex]; 
             }
+            EncodingHelpers.GetChars(new ASCIIEncoding(), bytes, byteIndex, byteCount, chars, charIndex, expectedChars);
         }
     }
 }

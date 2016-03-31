@@ -35,44 +35,20 @@ namespace System.Text.Tests
         [MemberData(nameof(GetBytes_TestData))]
         public void GetBytes(string source, int index, int count, byte[] bytes, int byteIndex)
         {
-            // Use GetBytes(string, int, int, byte[], int)
-            byte[] stringBytes = (byte[])bytes.Clone();
-            int stringResult = new ASCIIEncoding().GetBytes(source, index, count, stringBytes, byteIndex);
-            VerifyGetBytes(source, index, count, stringBytes, byteIndex, stringResult);
-
-            // Use GetBytes(char[], int, int, byte[], int)
-            byte[] charArrayBytes = (byte[])bytes.Clone();
-            int charArrayResult = new ASCIIEncoding().GetBytes(source, index, count, charArrayBytes, byteIndex);
-            VerifyGetBytes(source, index, count, charArrayBytes, byteIndex, charArrayResult);
-        }
-
-        private void VerifyGetBytes(string source, int charIndex, int count, byte[] bytes, int byteIndex, int result)
-        {
-            if (source.Length == 0)
+            byte[] expectedBytes = new byte[count];
+            for (int i = 0; i < expectedBytes.Length; i++)
             {
-                Assert.Equal(0, result);
-                return;
-            }
-
-            int currentCharIndex;
-            int currentByteIndex;
-            int charEndIndex = charIndex + count - 1;
-
-            for (currentCharIndex = charIndex, currentByteIndex = byteIndex; currentCharIndex <= charEndIndex; ++currentCharIndex)
-            {
-                if (source[currentCharIndex] <= MaxASCIIChar && source[currentCharIndex] >= MinASCIIChar)
+                if (source[i] >= 0x0 && source[i] <= 0x7f)
                 {
-                    // Verify normal ASCII encoding character
-                    Assert.Equal(source[currentCharIndex], (char)bytes[currentByteIndex]);
-                    ++currentByteIndex;
+                    expectedBytes[i] = (byte)source[i + index];
                 }
                 else
                 {
-                    // Verify ASCII encoder replacement fallback
-                    ++currentByteIndex;
+                    // Verify the fallback character for non-ASCII chars
+                    expectedBytes[i] = 63;
                 }
             }
-            Assert.Equal(currentByteIndex - byteIndex, result);
+            EncodingHelpers.GetBytes(new ASCIIEncoding(), source, index, count, bytes, byteIndex, expectedBytes);
         }
     }
 }

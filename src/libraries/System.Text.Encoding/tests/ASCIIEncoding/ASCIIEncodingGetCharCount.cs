@@ -28,11 +28,7 @@ namespace System.Text.Tests
         [MemberData(nameof(GetCharCount_TestData))]
         public void GetCharCount(byte[] bytes, int index, int count, int expected)
         {
-            if (index == 0 && count == bytes.Length)
-            {
-                Assert.Equal(expected, new ASCIIEncoding().GetCharCount(bytes));
-            }
-            Assert.Equal(expected, new ASCIIEncoding().GetCharCount(bytes, index, count));
+            EncodingHelpers.GetCharCount(new ASCIIEncoding(), bytes, index, count, expected);
         }
     }
 }
