@@ -22,7 +22,6 @@
 #define NOMINMAX
 #include <windows.h>
 
-#define HOST_EXE_NAME L"corehost.exe"
 #define xerr std::wcerr
 #define xout std::wcout
 #define DIR_SEPARATOR L'\\'
