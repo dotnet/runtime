@@ -87,9 +87,9 @@ namespace System.Linq.Expressions.Tests
 
     public enum Eu : uint
     {
-        Bagahi,
-        Laca,
-        Bachahe
+        Foo,
+        Bar,
+        Baz
     }
 
     public struct S : IEquatable<S>
