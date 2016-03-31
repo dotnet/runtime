@@ -1634,7 +1634,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (node.DefaultBody != null)
             {
-                Compile(node.DefaultBody);
+                Compile(node.DefaultBody, !hasValue);
             }
             else
             {
@@ -1656,7 +1656,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-                Compile(switchCase.Body);
+                Compile(switchCase.Body, !hasValue);
 
                 if (i < node.Cases.Count - 1)
                 {
@@ -1681,7 +1681,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (node.DefaultBody != null)
             {
-                Compile(node.DefaultBody);
+                Compile(node.DefaultBody, !hasValue);
             }
             else
             {
@@ -1710,7 +1710,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-                Compile(switchCase.Body);
+                Compile(switchCase.Body, !hasValue);
 
                 if (i < node.Cases.Count - 1)
                 {

@@ -481,7 +481,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("defaultBody", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant("Foo"), null));
         }
 
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void MismatchingAllowedIfExplicitlyVoidIntgralValueType(bool useInterpreter)
         {
             Expression.Lambda<Action>(
@@ -496,13 +496,7 @@ namespace System.Linq.Expressions.Tests
                 ).Compile(useInterpreter)();
         }
 
-        [Fact, ActiveIssue(7397)]
-        public void MismatchingAllowedIfExplicitlyVoidIntgralValueTypeInterpreter()
-        {
-            MismatchingAllowedIfExplicitlyVoidIntgralValueType(true);
-        }
-
-        [Theory, InlineData(false)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void MismatchingAllowedIfExplicitlyVoidStringValueType(bool useInterpreter)
         {
             Expression.Lambda<Action>(
@@ -515,12 +509,6 @@ namespace System.Linq.Expressions.Tests
                     Expression.SwitchCase(Expression.Constant(DateTime.MinValue), Expression.Constant("Foo"))
                     )
                 ).Compile(useInterpreter)();
-        }
-
-        [Fact, ActiveIssue(7397)]
-        public void MismatchingAllowedIfExplicitlyVoidStringValueTypeInterpreter()
-        {
-            MismatchingAllowedIfExplicitlyVoidStringValueType(true);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
