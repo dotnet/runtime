@@ -93,6 +93,8 @@ enum {
 	TYPE_END
 };
 
+// Sampling sources
+// Unless you have compiled with --enable-perf-events, only SAMPLE_CYCLES is available
 enum {
 	SAMPLE_CYCLES = 1,
 	SAMPLE_INSTRUCTIONS,
