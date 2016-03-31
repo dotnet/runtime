@@ -59,7 +59,7 @@ if [ "$sync_src" == true ]; then
 fi
 
 if [ "$sync_packages" == true ]; then
-    $options="$options /t:BatchRestorePackages /p:RestoreDuringBuild=true"
+    options="$options /t:BatchRestorePackages /p:RestoreDuringBuild=true"
     echo "Restoring all packages..."
     echo -e "\n$working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs" >> $sync_log
     $working_tree_root/Tools/corerun $working_tree_root/Tools/MSBuild.exe $working_tree_root/build.proj $options $unprocessedBuildArgs
