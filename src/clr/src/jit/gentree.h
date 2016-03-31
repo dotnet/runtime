@@ -2547,7 +2547,7 @@ struct GenTreeFptrVal: public GenTree
 
 #ifdef FEATURE_READYTORUN_COMPILER
     CORINFO_CONST_LOOKUP gtEntryPoint;
-    CORINFO_CONST_LOOKUP gtDelegateCtor;
+    CORINFO_RESOLVED_TOKEN* gtLdftnResolvedToken;
 #endif
 
     GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth) : 

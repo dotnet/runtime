@@ -53,7 +53,7 @@ typedef struct _FakeHpRealCodeHdr
     LPVOID              phdrJitGCInfo;  // changed from BYTE*
     LPVOID              hdrMDesc;       // changed from MethodDesc*
     DWORD               nUnwindInfos;
-    RUNTIME_FUNCTION    unwindInfos[0];
+    T_RUNTIME_FUNCTION  unwindInfos[0];
 } FakeRealCodeHeader;
 
 typedef struct _FakeHpCodeHdr
@@ -75,7 +75,7 @@ struct FakeStubUnwindInfoHeaderSuffix
 struct FakeStubUnwindInfoHeader
 {
     FakeStubUnwindInfoHeader *pNext;
-    RUNTIME_FUNCTION FunctionEntry;
+    T_RUNTIME_FUNCTION FunctionEntry;
     UNWIND_INFO UnwindInfo;  // variable length
 };
 
@@ -200,7 +200,7 @@ static_assert_no_msg(   FAKEDYNFNTABLE_STUB
 
 BOOL WINAPI             DllMain(HINSTANCE hDLL, DWORD dwReason, LPVOID pReserved);
 //NTSTATUS                OutOfProcessFindHeader(HANDLE hProcess, DWORD_PTR pMapIn, DWORD_PTR addr, DWORD_PTR &codeHead);
-extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PRUNTIME_FUNCTION* ppFunctions);
+extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);
 
 
 // OutOfProcessFunctionTableCallbackEx is like the standard OS-defined OutOfProcessFunctionTableCallback, but rather 
@@ -209,7 +209,7 @@ extern "C" NTSTATUS     OutOfProcessFunctionTableCallback(IN HANDLE hProcess, IN
 // pUserContext is passed directly to fpReadMemory, and the semantics of all other ReadMemoryFunction arguments (and return value) are 
 // the same as those for kernel32!ReadProcessMemory.
 typedef BOOL (ReadMemoryFunction)(PVOID pUserContext, LPCVOID lpBaseAddress, PVOID lpBuffer, SIZE_T nSize, SIZE_T* lpNumberOfBytesRead);
-extern "C" NTSTATUS     OutOfProcessFunctionTableCallbackEx(IN ReadMemoryFunction fpReadMemory, IN PVOID pUserContext, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PRUNTIME_FUNCTION* ppFunctions);
+extern "C" NTSTATUS     OutOfProcessFunctionTableCallbackEx(IN ReadMemoryFunction fpReadMemory, IN PVOID pUserContext, IN PVOID TableAddress, OUT PULONG pnEntries, OUT PT_RUNTIME_FUNCTION* ppFunctions);
 
 #endif // CHECK_DUPLICATED_STRUCT_LAYOUTS
 
