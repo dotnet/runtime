@@ -78,6 +78,9 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Environment.cs" />
     <Compile Include="Performance\Perf.Path.cs" />

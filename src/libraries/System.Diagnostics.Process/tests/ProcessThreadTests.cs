@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestStartAddressProperty()
         {
             Process p = Process.GetCurrentProcess();
