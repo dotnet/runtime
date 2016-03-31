@@ -572,71 +572,6 @@ static DwarfBasicType basic_types [] = {
 #define LINE_BASE -5
 #define LINE_RANGE 14
 
-/* Subsections of the .debug_line section */
-#define LINE_SUBSECTION_HEADER 1
-#define LINE_SUBSECTION_INCLUDES 2
-#define LINE_SUBSECTION_FILES 3
-#define LINE_SUBSECTION_DATA 4
-#define LINE_SUBSECTION_END 5
-
-static int
-emit_line_number_file_name (MonoDwarfWriter *w, const char *name,
-							gint64 last_mod_time, gint64 file_size)
-{
-	int index;
-	int dir_index;
-	char *basename = NULL;
-
-	if (!w->file_to_index)
-		w->file_to_index = g_hash_table_new (g_str_hash, g_str_equal);
-
-	index = GPOINTER_TO_UINT (g_hash_table_lookup (w->file_to_index, name));
-	if (index > 0)
-		return index;
-
-	if (g_path_is_absolute (name)) {
-		char *dir = g_path_get_dirname (name);
-
-		if (!w->dir_to_index)
-			w->dir_to_index = g_hash_table_new (g_str_hash, g_str_equal);
-
-		dir_index = GPOINTER_TO_UINT (g_hash_table_lookup (w->dir_to_index, dir));
-		if (dir_index == 0) {
-			emit_section_change (w, ".debug_line", LINE_SUBSECTION_INCLUDES);
-			emit_string (w, dir);
-
-			dir_index = ++ w->line_number_dir_index;
-			g_hash_table_insert (w->dir_to_index, g_strdup (dir), GUINT_TO_POINTER (dir_index));
-		}
-
-		g_free (dir);
-
-		basename = g_path_get_basename (name);
-	} else {
-		dir_index = 0;
-	}
-
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_FILES);
-
-	if (basename)
-		emit_string (w, basename);
-	else
-		emit_string (w, name);
-	emit_uleb128 (w, dir_index);
-	emit_byte (w, 0);
-	emit_byte (w, 0);
-
-	emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
-
-	if (basename)
-		g_free (basename);
-
-	index = ++ w->line_number_file_index;
-	g_hash_table_insert (w->file_to_index, g_strdup (name), GUINT_TO_POINTER (index));
-
-	return index;
-}
-
 static int
 get_line_number_file_name (MonoDwarfWriter *w, const char *name)
 {
@@ -1658,7 +1593,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		addr_diff = i - prev_native_offset;
 
 		if (first) {	
-			emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
+			emit_section_change (w, ".debug_line", 0);
 
 			emit_byte (w, 0);
 			emit_byte (w, sizeof (gpointer) + 1);
@@ -1732,7 +1667,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 		il_to_line = g_new0 (int, header->code_size);
 
-		emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
+		emit_section_change (w, ".debug_line", 0);
 		emit_byte (w, 0);
 		emit_byte (w, sizeof (gpointer) + 1);
 		emit_byte (w, DW_LNE_set_address);

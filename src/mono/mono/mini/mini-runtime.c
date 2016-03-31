@@ -3065,13 +3065,13 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 }
 #endif
 
-static void
+static G_GNUC_UNUSED void
 no_imt_trampoline (void)
 {
 	g_assert_not_reached ();
 }
 
-static void
+static G_GNUC_UNUSED void
 no_vcall_trampoline (void)
 {
 	g_assert_not_reached ();
