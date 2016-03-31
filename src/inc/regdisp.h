@@ -104,6 +104,7 @@ typedef struct _Arm64VolatileContextPointer
             PDWORD64 X15;
             PDWORD64 X16;
             PDWORD64 X17;
+            //X18 is reserved by OS, in userspace it represents TEB
         };
         PDWORD64 X[18];
     };

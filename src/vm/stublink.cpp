@@ -1476,7 +1476,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize)
     //
     // Fill in the RUNTIME_FUNCTION struct for this prologue.
     //
-    RUNTIME_FUNCTION *pCurFunction = &pUnwindInfoHeader->FunctionEntry;
+    PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
     _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
 
     S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
@@ -1499,7 +1499,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize)
     //
     UNWIND_INFO *pUnwindInfo = &pUnwindInfoHeader->UnwindInfo;
 
-    RUNTIME_FUNCTION *pCurFunction = &pUnwindInfoHeader->FunctionEntry;
+    PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
     _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
 
     S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);

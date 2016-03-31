@@ -349,7 +349,7 @@ protected:
         {
             if (m_nUnwindSlots == 0) return 0;
 
-            return sizeof(RUNTIME_FUNCTION) + offsetof(UNWIND_INFO, UnwindCode) + m_nUnwindSlots * sizeof(UNWIND_CODE);
+            return sizeof(T_RUNTIME_FUNCTION) + offsetof(UNWIND_INFO, UnwindCode) + m_nUnwindSlots * sizeof(UNWIND_CODE);
         }
 #endif // _TARGET_AMD64_
 
@@ -359,7 +359,7 @@ protected:
         // epilog.
 private:
         // Reserve fixed size block that's big enough to fit any unwind info we can have
-        static const int c_nUnwindInfoSize = sizeof(RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
+        static const int c_nUnwindInfoSize = sizeof(T_RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
 
         //
         // Returns total UnwindInfoSize, including RUNTIME_FUNCTION entry
@@ -377,7 +377,7 @@ private:
 
 private:
         // Reserve fixed size block that's big enough to fit any unwind info we can have
-        static const int c_nUnwindInfoSize = sizeof(RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
+        static const int c_nUnwindInfoSize = sizeof(T_RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
         UINT UnwindInfoSize(UINT codeSize)
         {
             if (!m_fProlog) return 0;

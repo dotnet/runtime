@@ -507,7 +507,7 @@ struct HijackArgs
 #ifndef DACCESS_COMPILE
 
 DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PRUNTIME_FUNCTION   pFunctionEntry,
+                               PT_RUNTIME_FUNCTION   pFunctionEntry,
                                int                 offsetNum = 1);
 
 #endif // DACCESS_COMPILE
