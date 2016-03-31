@@ -26,7 +26,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>("options", () => CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, ~FileOptions.None));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection)+"."+nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.Encrypted)]
