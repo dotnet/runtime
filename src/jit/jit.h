@@ -90,6 +90,10 @@
   #error Unsupported or unset host architecture
 #endif
 
+#if defined(_HOST_AMD64_) || defined(_HOST_ARM64_)
+  #define _HOST_64BIT_
+#endif
+
 #if defined(_TARGET_X86_)
   #if defined(_TARGET_ARM_)
     #error Cannot define both _TARGET_X86_ and _TARGET_ARM_
@@ -786,8 +790,11 @@ extern  int                     jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                                               void *            inlineInfoPtr
                                               );
 
-const size_t DEAD_BEEF =    NOT_WIN64(0xDEADBEEF)
-                            WIN64_ONLY(0xDEADBEEFDEADBEEF);
+#ifdef _HOST_64BIT_
+const size_t INVALID_POINTER_VALUE = 0xFEEDFACEABADF00D;
+#else
+const size_t INVALID_POINTER_VALUE = 0xFEEDFACE;
+#endif
 
 // Constants for making sure size_t fit into smaller types.
 const size_t MAX_USHORT_SIZE_T = static_cast<size_t>(static_cast<unsigned short>(-1));

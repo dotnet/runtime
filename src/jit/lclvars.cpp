@@ -3363,15 +3363,20 @@ void Compiler::lvaAllocOutgoingArgSpace()
         lvaTable[lvaOutgoingArgSpaceVar].lvRefCnt     = 1;
         lvaTable[lvaOutgoingArgSpaceVar].lvRefCntWtd  = BB_UNITY_WEIGHT;
 
-#if defined(PROFILING_SUPPORTED) && defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No 4 slots for outgoing params on System V.
-        // If we are generating profiling Enter/Leave/TailCall hooks, make sure
-        // that outgoing arg space size is minimum 4 slots.  This will ensure
-        // that even methods without any calls will have 4-slot outgoing arg area.
-        if (compIsProfilerHookNeeded() && (lvaOutgoingArgSpaceSize == 0))
+        if (lvaOutgoingArgSpaceSize == 0)
         {
-            lvaOutgoingArgSpaceSize = 4 * REGSIZE_BYTES;            
+            if (compUsesThrowHelper || compIsProfilerHookNeeded())
+            {
+                // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
+                // 1. there are calls to THROW_HEPLPER methods.
+                // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
+                //    that even methods without any calls will have outgoing arg area space allocated.
+                //
+                // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for 
+                // the outgoing arg space if the method makes any calls.
+                lvaOutgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
+            }
         }
-#endif // PROFILING_SUPPORTED && _TARGET_AMD64_ && !UNIX_AMD64_ABI
     }
 
     noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount &&

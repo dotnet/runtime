@@ -87,7 +87,7 @@ fi
 # This script must be located in coreclr/tests.
 scriptDir=$(cd "$(dirname "$0")"; pwd -P)
 dotnetToolsDir=$scriptDir/../Tools
-dotnetCmd=${dotnetToolsDir}/dotnetcli/bin/dotnet
+dotnetCmd=${dotnetToolsDir}/dotnetcli/dotnet
 packageDir=${scriptDir}/../packages
 jsonFilePath=${tmpDirPath}/project.json
 
@@ -110,7 +110,7 @@ if [ ! -e $libInstallDir ]; then
 fi
 
 # Query runtime Id
-rid=`$dotnetCmd --version | grep 'Runtime Id:' | sed 's/^ *Runtime Id: *//g'`    
+rid=`$dotnetCmd --info | grep 'RID:' | sed 's/^ *RID: *//g'`  
 if [ -z "$rid" ]; then
     exit_with_error 1 "Failed to query runtime Id"
 fi    
