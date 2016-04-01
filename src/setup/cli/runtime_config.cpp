@@ -91,6 +91,11 @@ bool runtime_config_t::ensure_parsed()
         return false;
     }
 
+    if (skip_utf8_bom(&file))
+    {
+        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), m_path.c_str());
+    }
+
     try
     {
         const auto root = json_value::parse(file);
@@ -104,7 +109,7 @@ bool runtime_config_t::ensure_parsed()
     catch (const web::json::json_exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
-        trace::info(_X("A JSON parsing exception occurred: %s"), jes.c_str());
+        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), m_path.c_str(), jes.c_str());
         return false;
     }
     return true;

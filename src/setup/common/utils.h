@@ -26,4 +26,5 @@ bool parse_known_args(
     const std::vector<pal::string_t>& known_opts,
     std::unordered_map<pal::string_t, pal::string_t>* opts,
     int* num_args);
+bool skip_utf8_bom(pal::ifstream_t* stream);
 #endif
