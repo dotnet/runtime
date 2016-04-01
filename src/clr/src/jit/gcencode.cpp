@@ -3282,8 +3282,8 @@ void                GCInfo::gcFindPtrsInFrame(const void* infoBlock,
 #include "simplerhash.h"
 
 // Do explicit instantiation.
-template class SimplerHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId, DefaultSimplerHashBehavior>;
-template class SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, DefaultSimplerHashBehavior>;
+template class SimplerHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
+template class SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, JitSimplerHashBehavior>;
 
 #ifdef DEBUG
 
