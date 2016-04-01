@@ -156,18 +156,34 @@ const pal::char_t* get_arch()
 #endif
 }
 
+pal::string_t get_last_known_arg(
+    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
+    const pal::string_t& opt_key,
+    const pal::string_t& de_fault)
+{
+    if (opts.count(opt_key))
+    {
+        const auto& val = opts.find(opt_key)->second;
+        return val[val.size() - 1];
+    }
+    return de_fault;
+}
+
 bool parse_known_args(
     const int argc,
     const pal::char_t* argv[],
     const std::vector<pal::string_t>& known_opts,
-    std::unordered_map<pal::string_t, pal::string_t>* opts,
+    // Although multimap would provide this functionality the order of kv, values are
+    // not preserved in C++ < C++0x
+    std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
     int* num_args)
 {
     int arg_i = *num_args;
     while (arg_i < argc)
     {
         pal::string_t arg = argv[arg_i];
-        if (std::find(known_opts.begin(), known_opts.end(), pal::to_lower(arg)) == known_opts.end())
+        pal::string_t arg_lower = pal::to_lower(arg);
+        if (std::find(known_opts.begin(), known_opts.end(), arg_lower) == known_opts.end())
         {
             // Unknown argument.
             break;
@@ -180,7 +196,7 @@ bool parse_known_args(
         }
 
         trace::verbose(_X("Parsed known arg %s = %s"), arg.c_str(), argv[arg_i + 1]);
-        (*opts)[arg] = argv[arg_i + 1];
+        (*opts)[arg_lower].push_back(argv[arg_i + 1]);
 
         // Increment for both the option and its value.
         arg_i += 2;

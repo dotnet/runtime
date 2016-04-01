@@ -20,11 +20,15 @@ bool library_exists_in_dir(const pal::string_t& lib_dir, const pal::string_t& li
 bool coreclr_exists_in_dir(const pal::string_t& candidate);
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl);
 const pal::char_t* get_arch();
+pal::string_t get_last_known_arg(
+    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
+    const pal::string_t& opt_key,
+    const pal::string_t& de_fault);
 bool parse_known_args(
     const int argc,
     const pal::char_t* argv[],
     const std::vector<pal::string_t>& known_opts,
-    std::unordered_map<pal::string_t, pal::string_t>* opts,
+    std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
     int* num_args);
 bool skip_utf8_bom(pal::ifstream_t* stream);
 #endif

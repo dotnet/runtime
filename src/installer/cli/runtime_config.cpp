@@ -8,9 +8,10 @@
 #include "runtime_config.h"
 #include <cassert>
 
-runtime_config_t::runtime_config_t(const pal::string_t& path)
+runtime_config_t::runtime_config_t(const pal::string_t& path, const pal::string_t& dev_path)
     : m_fx_roll_fwd(true)
     , m_path(path)
+    , m_dev_path(dev_path)
     , m_portable(false)
 {
     m_valid = ensure_parsed();
@@ -19,6 +20,8 @@ runtime_config_t::runtime_config_t(const pal::string_t& path)
 
 bool runtime_config_t::parse_opts(const json_value& opts)
 {
+    // Note: both runtime_config and dev_runtime_config call into the function.
+    // runtime_config will override whatever dev_runtime_config populated.
     if (opts.is_null())
     {
         return true;
@@ -43,14 +46,14 @@ bool runtime_config_t::parse_opts(const json_value& opts)
     {
         if (probe_paths->second.is_string())
         {
-            m_probe_paths.push_back(probe_paths->second.as_string());
+            m_probe_paths.insert(m_probe_paths.begin(), probe_paths->second.as_string());
         }
         else
         {
             const auto& arr = probe_paths->second.as_array();
-            for (const auto& str : arr)
+            for (auto iter = arr.rbegin(); iter != arr.rend(); iter++)
             {
-                m_probe_paths.push_back(str.as_string());
+                m_probe_paths.push_front(iter->as_string());
             }
         }
     }
@@ -75,8 +78,59 @@ bool runtime_config_t::parse_opts(const json_value& opts)
     return true;
 }
 
+bool runtime_config_t::ensure_dev_config_parsed()
+{
+    trace::verbose(_X("Attempting to read dev runtime config: %s"), m_dev_path.c_str());
+
+    pal::string_t retval;
+    if (!pal::file_exists(m_dev_path))
+    {
+        // Not existing is not an error.
+        return true;
+    }
+
+    // Set dev mode default values, if the file exists.
+    m_fx_roll_fwd = false;
+
+    pal::ifstream_t file(m_dev_path);
+    if (!file.good())
+    {
+        trace::verbose(_X("File stream not good %s"), m_dev_path.c_str());
+        return false;
+    }
+
+    if (skip_utf8_bom(&file))
+    {
+        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), m_dev_path.c_str());
+    }
+    
+    try
+    {
+        const auto root = json_value::parse(file);
+        const auto& json = root.as_object();
+        const auto iter = json.find(_X("runtimeOptions"));
+        if (iter != json.end())
+        {
+            parse_opts(iter->second);
+        }
+    }
+    catch (const web::json::json_exception& je)
+    {
+        pal::string_t jes = pal::to_palstring(je.what());
+        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), m_dev_path.c_str(), jes.c_str());
+        return false;
+    }
+    return true;
+}
+
 bool runtime_config_t::ensure_parsed()
 {
+    trace::verbose(_X("Attempting to read runtime config: %s"), m_path.c_str());
+    if (!ensure_dev_config_parsed())
+    {
+        trace::verbose(_X("Did not successfully parse the runtimeconfig.dev.json"));
+    }
+
     pal::string_t retval;
     if (!pal::file_exists(m_path))
     {
@@ -138,7 +192,7 @@ bool runtime_config_t::get_portable() const
     return m_portable;
 }
 
-const std::vector<pal::string_t>& runtime_config_t::get_probe_paths() const
+const std::list<pal::string_t>& runtime_config_t::get_probe_paths() const
 {
     return m_probe_paths;
 }

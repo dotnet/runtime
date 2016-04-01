@@ -207,11 +207,6 @@ void deps_resolver_t::setup_probe_config(
     {
         // Additional paths
         bool roll_fwd = config.get_fx_roll_fwd();
-        if (m_package_cache == probe)
-        {
-            // FIXME: For now, no roll forward for nuget cache. This should come from config runtimeconfig.dev.json.
-            roll_fwd = false;
-        }
         m_probes.push_back(probe_config_t::additional(probe, roll_fwd));
     }
 
@@ -238,17 +233,6 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
         else
         {
             iter = m_additional_probes.erase(iter);
-        }
-    }
-    // FIXME: Remove nuget support with runtimeconfig.dev.json
-    // and setup roll forward to come from the config in setup_probe_config
-    if (m_additional_probes.empty())
-    {
-        // FIXME: Remove this function call entirely including the functiond definition.
-        (void)pal::get_default_packages_directory(&m_package_cache);
-        if (pal::directory_exists(m_package_cache))
-        {
-            m_additional_probes.push_back(m_package_cache);
         }
     }
 }
