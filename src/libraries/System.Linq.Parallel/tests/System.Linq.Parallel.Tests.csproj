@@ -40,7 +40,7 @@
     <Compile Include="Helpers\Labeled.cs" />
     <Compile Include="Helpers\KeyValuePair.cs" />
     <Compile Include="Helpers\Sources.cs" />
-    <Compile Include="Helpers\StrictPartitioner.cs" />
+    <Compile Include="Helpers\CustomPartitioners.cs" />
     <Compile Include="Helpers\UnorderedSources.cs" />
     <Compile Include="QueryOperators\AggregateTests.cs" />
     <Compile Include="QueryOperators\AllTests.cs" />

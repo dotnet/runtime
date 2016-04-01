@@ -17,6 +17,19 @@ namespace System.Linq.Parallel.Tests
             {
                 yield return results;
             }
+
+            // A source with data explicitly created out of order
+            foreach (int count in counts)
+            {
+                int[] data = Enumerable.Range(0, count).ToArray();
+                for (int i = 0; i < count / 2; i += 2)
+                {
+                    int tmp = data[i];
+                    data[i] = data[count - i - 1];
+                    data[count - i - 1] = tmp;
+                }
+                yield return new object[] { new Labeled<ParallelQuery<int>>("Out-of-order input", data.AsParallel()), count, min(count) };
+            }
         }
 
         //
@@ -297,7 +310,14 @@ namespace System.Linq.Parallel.Tests
             Assert.Null(labeled.Item.Min(x => (float?)x));
             Assert.Null(labeled.Item.Min(x => (double?)x));
             Assert.Null(labeled.Item.Min(x => (decimal?)x));
+
             Assert.Null(labeled.Item.Min(x => new object()));
+
+            Assert.Null(labeled.Item.Select(x => (int?)x).Min());
+            Assert.Null(labeled.Item.Select(x => (long?)x).Min());
+            Assert.Null(labeled.Item.Select(x => (float?)x).Min());
+            Assert.Null(labeled.Item.Select(x => (double?)x).Min());
+            Assert.Null(labeled.Item.Select(x => (decimal?)x).Min());
         }
 
         [Theory]
@@ -310,6 +330,12 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (double)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (decimal)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => new NotComparable(x)));
+
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (long)i).Min());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (float)i).Min());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (double)i).Min());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (decimal)i).Min());
+
         }
 
         [Fact]

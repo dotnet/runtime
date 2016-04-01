@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -153,16 +154,64 @@ namespace System.Linq.Parallel.Tests
             Assert.False(enumerator.MoveNext());
         }
 
-        [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        public static void ImmediateDispose(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void GetEnumerator_LargeQuery_PauseAfterOpening()
         {
-            // Regression test for an issue causing ODE if a queryEnumerator is disposed before moveNext is called.
-            ParallelQuery<int> query = labeled.Item;
+            using (IEnumerator<int> e = Enumerable.Range(0, 8192).AsParallel().SkipWhile(i => true).GetEnumerator())
+            {
+                e.MoveNext();
+                Task.Delay(100).Wait(); // verify nothing goes haywire when the internal buffer is allowed to fill
+                while (e.MoveNext()) ;
+                Assert.False(e.MoveNext());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2 }, MemberType = typeof(UnorderedSources))]
+        public static void GetEnumerator_DisposeBeforeFirstMoveNext(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            IEnumerator<int> e = labeled.Item.Select(i => i).GetEnumerator();
+            e.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => e.MoveNext());
+        }
+
+        [Theory]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1, 2 }, MemberType = typeof(UnorderedSources))]
+        public static void GetEnumerator_DisposeAfterMoveNext(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            IEnumerator<int> e = labeled.Item.Select(i => i).GetEnumerator();
+            e.MoveNext();
+            e.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => e.MoveNext());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetEnumerator_DisposeAsynchronously(bool synchronousMerge)
+        {
+            IEnumerable<int> effectivelyInfiniteSource = Enumerable.Range(0, int.MaxValue);
+
+            var query = effectivelyInfiniteSource.AsParallel().Select(i => i);
+            if (synchronousMerge)
+            {
+                query = query.WithMergeOptions(ParallelMergeOptions.FullyBuffered);
+            }
+
             IEnumerator<int> enumerator = query.GetEnumerator();
-            Assert.NotNull(enumerator);
-            enumerator.Dispose();
+
+            Task.Delay(10).ContinueWith(_ => enumerator.Dispose(),
+                CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+            Exception e = Assert.ThrowsAny<Exception>(() =>
+            {
+                for (int i = 0; i < int.MaxValue; i++)
+                    enumerator.MoveNext();
+            });
+            Assert.True(
+                e is OperationCanceledException || // if the dispose happens to occur during the opening of the query, after the sync dispose check
+                e is ObjectDisposedException, // all other cases
+                $"Expected an OCE or ODE, got {e.GetType()}");
         }
     }
 }
