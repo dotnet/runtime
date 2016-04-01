@@ -1,18 +1,19 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#include "deps_entry.h"
 #include "deps_format.h"
 #include "utils.h"
 #include "trace.h"
-#include <unordered_set>
 #include <tuple>
 #include <array>
 #include <iterator>
 #include <cassert>
 #include <functional>
 
-const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_json_t::s_known_asset_types = {
-    _X("runtime"), _X("resources"), _X("native") };
+const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_entry_t::s_known_asset_types = {
+    _X("runtime"), _X("resources"), _X("native")
+};
 
 const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
 {
@@ -27,7 +28,7 @@ const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
 void deps_json_t::reconcile_libraries_with_targets(
     const json_value& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
-    const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int)>& get_rel_paths_by_asset_type_fn)
+    const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int, bool*)>& get_rel_paths_by_asset_type_fn)
 {
     const auto& libraries = json.at(_X("libraries")).as_object();
     for (const auto& library : libraries)
@@ -50,9 +51,10 @@ void deps_json_t::reconcile_libraries_with_targets(
         const pal::string_t& hash = properties.at(_X("sha512")).as_string();
         bool serviceable = properties.at(_X("serviceable")).as_bool();
 
-        for (int i = 0; i < s_known_asset_types.size(); ++i)
+        for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
-            for (const auto& rel_path : get_rel_paths_by_asset_type_fn(library.first, i))
+            bool rid_specific = false;
+            for (const auto& rel_path : get_rel_paths_by_asset_type_fn(library.first, i, &rid_specific))
             {
                 bool ni_dll = false;
                 auto asset_name = get_filename_without_ext(rel_path);
@@ -69,9 +71,10 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_type = _X("package");
                 entry.library_hash = hash;
                 entry.asset_name = asset_name;
-                entry.asset_type = s_known_asset_types[i];
+                entry.asset_type = (deps_entry_t::asset_types) i;
                 entry.relative_path = rel_path;
                 entry.is_serviceable = serviceable;
+                entry.is_rid_specific = rid_specific;
 
                 // TODO: Deps file does not follow spec. It uses '\\', should use '/'
                 replace_char(&entry.relative_path, _X('\\'), _X('/'));
@@ -84,7 +87,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                         [deps_entry_t::asset_types::runtime].size() - 1;
                 }
 
-                trace::info(_X("Added %s %s deps entry [%d] [%s, %s, %s]"), s_known_asset_types[i], entry.asset_name.c_str(), m_deps_entries[i].size() - 1, entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+                trace::info(_X("Added %s %s deps entry [%d] [%s, %s, %s]"), deps_entry_t::s_known_asset_types[i], entry.asset_name.c_str(), m_deps_entries[i].size() - 1, entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
                 
                 if (i == deps_entry_t::asset_types::native &&
                     entry.asset_name == LIBCORECLR_FILENAME)
@@ -124,9 +127,9 @@ pal::string_t get_own_rid()
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
     pal::string_t host_rid = get_own_rid();
-    for (auto& package : *portable_assets)
+    for (auto& package : portable_assets->libs)
     {
-        pal::string_t matched_rid = package.second.count(host_rid) ? host_rid : _X("");
+        pal::string_t matched_rid = package.second.rid_assets.count(host_rid) ? host_rid : _X("");
         if (matched_rid.empty())
         {
             if (rid_fallback_graph.count(host_rid) == 0)
@@ -136,7 +139,7 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
             }
             const auto& fallback_rids = rid_fallback_graph.find(host_rid)->second;
             auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&package](const pal::string_t& rid) {
-                return package.second.count(rid);
+                return package.second.rid_assets.count(rid);
             });
             if (iter != fallback_rids.end())
             {
@@ -146,15 +149,15 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
 
         if (matched_rid.empty())
         {
-            package.second.clear();
+            package.second.rid_assets.clear();
         }
 
-        for (auto iter = package.second.begin(); iter != package.second.end(); /* */)
+        for (auto iter = package.second.rid_assets.begin(); iter != package.second.rid_assets.end(); /* */)
         {
             if (iter->first != matched_rid)
             {
                 trace::verbose(_X("Chose %s, so removing rid (%s) specific assets for package %s"), matched_rid.c_str(), iter->first.c_str(), package.first.c_str());
-                iter = package.second.erase(iter);
+                iter = package.second.rid_assets.erase(iter);
             }
             else
             {
@@ -182,12 +185,12 @@ bool deps_json_t::process_runtime_targets(const json_value& json, const pal::str
         for (const auto& file : files)
         {
             const auto& type = file.second.at(_X("assetType")).as_string();
-            for (int i = 0; i < s_known_asset_types.size(); ++i)
+            for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
             {
-                if (pal::strcasecmp(type.c_str(), s_known_asset_types[i]) == 0)
+                if (pal::strcasecmp(type.c_str(), deps_entry_t::s_known_asset_types[i]) == 0)
                 {
                     const auto& rid = file.second.at(_X("rid")).as_string();
-                    assets[package.first][rid][i].push_back(file.first);
+                    assets.libs[package.first].rid_assets[rid].by_type[i].vec.push_back(file.first);
                 }
             }
         }
@@ -208,15 +211,15 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
     {
         // if (package.second.at(_X("type")).as_string() != _X("package")) continue;
         const auto& asset_types = package.second.as_object();
-        for (int i = 0; i < s_known_asset_types.size(); ++i)
+        for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
-            auto iter = asset_types.find(s_known_asset_types[i]);
+            auto iter = asset_types.find(deps_entry_t::s_known_asset_types[i]);
             if (iter != asset_types.end())
             {
                 for (const auto& file : iter->second.as_object())
                 {
-                    trace::info(_X("Adding %s asset %s from %s"), s_known_asset_types[i], file.first.c_str(), package.first.c_str());
-                    assets[package.first][i].push_back(file.first);
+                    trace::info(_X("Adding %s asset %s from %s"), deps_entry_t::s_known_asset_types[i], file.first.c_str(), package.first.c_str());
+                    assets.libs[package.first].by_type[i].vec.push_back(file.first);
                 }
             }
         }
@@ -226,40 +229,41 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
 
 bool deps_json_t::load_portable(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
 {
-    rid_specific_assets_t rid_assets;
-    if (!process_runtime_targets(json, target_name, rid_fallback_graph, &rid_assets))
+    if (!process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets))
     {
         return false;
     }
 
-    deps_assets_t non_rid_assets;
-    if (!process_targets(json, target_name, &non_rid_assets))
+    if (!process_targets(json, target_name, &m_assets))
     {
         return false;
     }
 
-    auto package_exists = [&rid_assets, &non_rid_assets](const pal::string_t& package) -> bool {
-        return rid_assets.count(package) || non_rid_assets.count(package);
+    auto package_exists = [&](const pal::string_t& package) -> bool {
+        return m_rid_assets.libs.count(package) || m_assets.libs.count(package);
     };
 
-    std::vector<pal::string_t> empty;
-    auto get_relpaths = [&rid_assets, &non_rid_assets, &empty](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
+    const std::vector<pal::string_t> empty;
+    auto get_relpaths = [&](const pal::string_t& package, int type_index, bool* rid_specific) -> const std::vector<pal::string_t>& {
+
+        *rid_specific = false;
 
         // Is there any rid specific assets for this type ("native" or "runtime" or "resources")
-        if (rid_assets.count(package) && !rid_assets[package].empty())
+        if (m_rid_assets.libs.count(package) && !m_rid_assets.libs[package].rid_assets.empty())
         {
-            const auto& assets_by_type = rid_assets[package].begin()->second[type_index];
+            const auto& assets_by_type = m_rid_assets.libs[package].rid_assets.begin()->second.by_type[type_index].vec;
             if (!assets_by_type.empty())
             {
+                *rid_specific = true;
                 return assets_by_type;
             }
 
-            trace::verbose(_X("There were no rid specific %s asset for %s"), deps_json_t::s_known_asset_types[type_index], package.c_str());
+            trace::verbose(_X("There were no rid specific %s asset for %s"), deps_entry_t::s_known_asset_types[type_index], package.c_str());
         }
 
-        if (non_rid_assets.count(package))
+        if (m_assets.libs.count(package))
         {
-            return non_rid_assets[package][type_index];
+            return m_assets.libs[package].by_type[type_index].vec;
         }
 
         return empty;
@@ -272,19 +276,18 @@ bool deps_json_t::load_portable(const json_value& json, const pal::string_t& tar
 
 bool deps_json_t::load_standalone(const json_value& json, const pal::string_t& target_name)
 {
-    deps_assets_t assets;
-
-    if (!process_targets(json, target_name, &assets))
+    if (!process_targets(json, target_name, &m_assets))
     {
         return false;
     }
 
-    auto package_exists = [&assets](const pal::string_t& package) -> bool {
-        return assets.count(package);
+    auto package_exists = [&](const pal::string_t& package) -> bool {
+        return m_assets.libs.count(package);
     };
 
-    auto get_relpaths = [&assets](const pal::string_t& package, int type_index) -> const std::vector<pal::string_t>& {
-        return assets[package][type_index];
+    auto get_relpaths = [&](const pal::string_t& package, int type_index, bool* rid_specific) -> const std::vector<pal::string_t>& {
+        *rid_specific = false;
+        return m_assets.libs[package].by_type[type_index].vec;
     };
 
     reconcile_libraries_with_targets(json, package_exists, get_relpaths);
@@ -318,6 +321,24 @@ bool deps_json_t::load_standalone(const json_value& json, const pal::string_t& t
         trace::verbose(_X("}"));
     }
     return true;
+}
+
+bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
+{
+    pal::string_t pv = name;
+    pv.push_back(_X('/'));
+    pv.append(ver);
+    
+    auto iter = m_rid_assets.libs.find(pv);
+    if (iter != m_rid_assets.libs.end())
+    {
+        if (!iter->second.rid_assets.empty())
+        {
+            return true;
+        }
+    }
+    
+    return m_assets.libs.count(pv);
 }
 
 // -----------------------------------------------------------------------------

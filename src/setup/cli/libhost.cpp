@@ -56,3 +56,36 @@ host_mode_t detect_operating_mode(const int argc, const pal::char_t* argv[], pal
     }
 }
 
+void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str, bool only_production)
+{
+    pal::string_t path = cur_dir;
+
+    if (trace::is_enabled())
+    {
+        pal::string_t start_str = start_ver.as_str();
+        trace::verbose(_X("Reading roll forward candidates in dir [%s] for version [%s]"), path.c_str(), start_str.c_str());
+    }
+
+    pal::string_t maj_min_star = pal::to_string(start_ver.get_major()) + _X(".") + pal::to_string(start_ver.get_minor()) + _X("*");
+
+    std::vector<pal::string_t> list;
+    pal::readdir(path, maj_min_star, &list);
+
+    fx_ver_t max_ver = start_ver;
+    fx_ver_t ver(-1, -1, -1);
+    for (const auto& str : list)
+    {
+        trace::verbose(_X("Considering roll forward candidate version [%s]"), str.c_str());
+        if (fx_ver_t::parse(str, &ver, only_production))
+        {
+            max_ver = std::max(ver, max_ver);
+        }
+    }
+    max_str->assign(max_ver.as_str());
+
+    if (trace::is_enabled())
+    {
+        pal::string_t start_str = start_ver.as_str();
+        trace::verbose(_X("Roll forwarded [%s] -> [%s] in [%s]"), start_str.c_str(), max_str->c_str(), path.c_str());
+    }
+}
