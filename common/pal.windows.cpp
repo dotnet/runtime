@@ -123,18 +123,6 @@ void pal::unload_library(dll_t library)
     // No-op. On windows, we pin the library, so it can't be unloaded.
 }
 
-bool pal::get_default_packages_directory(string_t* recv)
-{
-    recv->clear();
-    if (!pal::getenv(_X("USERPROFILE"), recv))
-    {
-        return false;
-    }
-    append_path(recv, _X(".nuget"));
-    append_path(recv, _X("packages"));
-    return true;
-}
-
 bool pal::get_default_extensions_directory(string_t* recv)
 {
     recv->clear();
