@@ -1429,7 +1429,6 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 		if (throwOnError)
 			e = mono_get_exception_type_load (name, NULL);
 
-		mono_loader_clear_error ();
 		if (e) {
 			mono_set_pending_exception (e);
 			return NULL;
@@ -3753,8 +3752,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 	/* An optimization for calls made from Delegate:CreateDelegate () */
 	if (klass->delegate && name && !strcmp (name, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
 		method = mono_get_delegate_invoke (klass);
-		if (mono_loader_get_last_error ())
-			goto loader_error;
+		g_assert (method);
 
 		g_ptr_array_add (array, method);
 		return array;
@@ -3762,7 +3760,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	if (is_generic_parameter (&klass->byval_arg))
@@ -3778,7 +3776,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;		
 
 	iter = NULL;
@@ -3838,8 +3836,7 @@ loader_error:
 	if (mono_class_has_failure (klass)) {
 		*ex = mono_class_get_exception_for_failure (klass);
 	} else {
-		*ex = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-		mono_loader_clear_error ();
+		*ex = mono_get_exception_execution_engine ("Unknown error");
 	}
 	return NULL;
 }
@@ -4077,7 +4074,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	iter = NULL;
@@ -4150,9 +4147,6 @@ handle_parent:
 loader_error:
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
-	} else {
-		mono_error_set_from_loader_error (&error);
-		mono_loader_clear_error ();
 	}
 
 failure:
@@ -4211,7 +4205,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	iter = NULL;
@@ -4294,9 +4288,6 @@ handle_parent:
 loader_error:
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_exception_instance (&error, mono_class_get_exception_for_failure (klass));
-	} else {
-		mono_error_set_from_loader_error (&error);
-		mono_loader_clear_error ();
 	}
 
 failure:
@@ -4490,20 +4481,9 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		if (throwOnError)
 			e = mono_get_exception_type_load (name, NULL);
 
-		if (mono_loader_get_last_error () && mono_defaults.generic_ilist_class)
-			e = mono_loader_error_prepare_exception (mono_loader_get_last_error ());
-
-		mono_loader_clear_error ();
-
 		if (e != NULL)
 			mono_set_pending_exception (e);
 		return NULL;
-	} else if (mono_loader_get_last_error ()) {
-		if (throwOnError) {
-			mono_set_pending_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-			return NULL;
-		}
-		mono_loader_clear_error ();
 	}
 
 	if (type->type == MONO_TYPE_CLASS) {
@@ -4513,7 +4493,6 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		if (throwOnError && mono_class_has_failure (klass)) {
 			/* report SecurityException (or others) that occured when loading the assembly */
 			MonoException *exc = mono_class_get_exception_for_failure (klass);
-			mono_loader_clear_error ();
 			mono_set_pending_exception (exc);
 			return NULL;
 		}
@@ -5539,7 +5518,6 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 	for (i = 1; i < tdef->rows; ++i) {
 		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i + 1)) {
 			klass = mono_class_get_checked (image, (i + 1) | MONO_TOKEN_TYPE_DEF, error);
-			mono_loader_assert_no_error (); /* Plug any leaks */
 			
 			if (klass) {
 				rt = mono_type_get_object_checked (domain, &klass->byval_arg, error);
@@ -5641,8 +5619,6 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 		MonoArray *exl = NULL;
 		int j, length = g_list_length (list) + ex_count;
 
-		mono_loader_clear_error ();
-
 		exl = mono_array_new (domain, mono_defaults.exception_class, length);
 		/* Types for which mono_class_get_checked () succeeded */
 		for (i = 0, tmp = list; tmp; i++, tmp = tmp->next) {
@@ -5666,7 +5642,6 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 			mono_error_set_pending_exception (&error);
 			return NULL;
 		}
-		mono_loader_clear_error ();
 		mono_set_pending_exception (exc);
 		return NULL;
 	}
@@ -7965,12 +7940,7 @@ custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
 		return NULL;
 	}
 
-	if (mono_loader_get_last_error ()) {
-		mono_set_pending_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
-		return NULL;
-	} else {
-		return res;
-	}
+	return res;
 }
 
 ICALL_EXPORT MonoArray*

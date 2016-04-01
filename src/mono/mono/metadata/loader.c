@@ -68,11 +68,6 @@ static guint32 methods_size;
 static guint32 signatures_size;
 
 /*
- * This TLS variable contains the last type load error encountered by the loader.
- */
-MonoNativeTlsKey loader_error_thread_id;
-
-/*
  * This TLS variable holds how many times the current thread has acquired the loader 
  * lock.
  */
@@ -103,7 +98,6 @@ mono_loader_init ()
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
-		mono_native_tls_alloc (&loader_error_thread_id, NULL);
 		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
 
 		mono_counters_init ();
@@ -125,287 +119,11 @@ mono_loader_cleanup (void)
 {
 	dllmap_cleanup ();
 
-	mono_native_tls_free (loader_error_thread_id);
 	mono_native_tls_free (loader_lock_nest_id);
 
 	mono_coop_mutex_destroy (&loader_mutex);
 	mono_os_mutex_destroy (&global_loader_data_mutex);
 	loader_lock_inited = FALSE;	
-}
-
-/*
- * Handling of type load errors should be done as follows:
- *
- *   If something could not be loaded, the loader should call one of the
- * mono_loader_set_error_XXX functions ()
- * with the appropriate arguments, then return NULL to report the failure. The error 
- * should be propagated until it reaches code which can throw managed exceptions. At that
- * point, an exception should be thrown based on the information returned by
- * mono_loader_get_last_error (). Then the error should be cleared by calling 
- * mono_loader_clear_error ().
- */
-
-static void
-set_loader_error (MonoLoaderError *error)
-{
-	mono_loader_clear_error ();
-	mono_native_tls_set_value (loader_error_thread_id, error);
-}
-
-/**
- * mono_loader_set_error_assembly_load:
- *
- * Set the loader error for this thread. 
- */
-void
-mono_loader_set_error_assembly_load (const char *assembly_name, gboolean ref_only)
-{
-	MonoLoaderError *error;
-
-	if (mono_loader_get_last_error ()) 
-		return;
-
-	error = g_new0 (MonoLoaderError, 1);
-	error->exception_type = MONO_EXCEPTION_FILE_NOT_FOUND;
-	error->assembly_name = g_strdup (assembly_name);
-	error->ref_only = ref_only;
-
-	/* 
-	 * This is not strictly needed, but some (most) of the loader code still
-	 * can't deal with load errors, and this message is more helpful than an
-	 * assert.
-	 */
-	if (ref_only)
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", assembly_name);
-	else
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY, "Could not load file or assembly '%s' or one of its dependencies.", assembly_name);
-
-	set_loader_error (error);
-}
-
-/**
- * mono_loader_set_error_type_load:
- *
- * Set the loader error for this thread. 
- */
-void
-mono_loader_set_error_type_load (const char *class_name, const char *assembly_name)
-{
-	MonoLoaderError *error;
-
-	if (mono_loader_get_last_error ()) 
-		return;
-
-	error = g_new0 (MonoLoaderError, 1);
-	error->exception_type = MONO_EXCEPTION_TYPE_LOAD;
-	error->class_name = g_strdup (class_name);
-	error->assembly_name = g_strdup (assembly_name);
-
-	/* 
-	 * This is not strictly needed, but some (most) of the loader code still
-	 * can't deal with load errors, and this message is more helpful than an
-	 * assert.
-	 */
-	mono_trace_warning (MONO_TRACE_TYPE, "The class %s could not be loaded, used in %s", class_name, assembly_name);
-
-	set_loader_error (error);
-}
-
-/*
- * mono_loader_set_error_method_load:
- *
- *   Set the loader error for this thread. MEMBER_NAME should point to a string
- * inside metadata.
- */
-void
-mono_loader_set_error_method_load (const char *class_name, const char *member_name)
-{
-	MonoLoaderError *error;
-
-	/* FIXME: Store the signature as well */
-	if (mono_loader_get_last_error ())
-		return;
-
-	error = g_new0 (MonoLoaderError, 1);
-	error->exception_type = MONO_EXCEPTION_MISSING_METHOD;
-	error->class_name = g_strdup (class_name);
-	error->member_name = member_name;
-
-	set_loader_error (error);
-}
-
-/*
- * mono_loader_set_error_field_load:
- *
- * Set the loader error for this thread. MEMBER_NAME should point to a string
- * inside metadata.
- */
-void
-mono_loader_set_error_field_load (MonoClass *klass, const char *member_name)
-{
-	MonoLoaderError *error;
-
-	/* FIXME: Store the signature as well */
-	if (mono_loader_get_last_error ())
-		return;
-
-	error = g_new0 (MonoLoaderError, 1);
-	error->exception_type = MONO_EXCEPTION_MISSING_FIELD;
-	error->klass = klass;
-	error->member_name = member_name;
-
-	set_loader_error (error);
-}
-
-/*
- * mono_loader_set_error_bad_image:
- *
- * Set the loader error for this thread. 
- */
-void
-mono_loader_set_error_bad_image (char *msg)
-{
-	MonoLoaderError *error;
-
-	if (mono_loader_get_last_error ())
-		return;
-
-	error = g_new0 (MonoLoaderError, 1);
-	error->exception_type = MONO_EXCEPTION_BAD_IMAGE;
-	error->msg = msg;
-
-	set_loader_error (error);
-}	
-
-
-/*
- * mono_loader_get_last_error:
- *
- *   Returns information about the last type load exception encountered by the loader, or
- * NULL. After use, the exception should be cleared by calling mono_loader_clear_error.
- */
-MonoLoaderError*
-mono_loader_get_last_error (void)
-{
-	return (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
-}
-
-void
-mono_loader_assert_no_error (void)
-{
-	MonoLoaderError *error = mono_loader_get_last_error ();
-
-	if (error) {
-		g_print ("Unhandled loader error: %x, %s %s %s\n", error->exception_type, error->msg, error->assembly_name, error->class_name);
-		g_assert_not_reached ();
-	}
-}
-
-/**
- * mono_loader_clear_error:
- *
- * Disposes any loader error messages on this thread
- */
-void
-mono_loader_clear_error (void)
-{
-	MonoLoaderError *ex = (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
-
-	if (ex) {
-		g_free (ex->class_name);
-		g_free (ex->assembly_name);
-		g_free (ex->msg);
-		g_free (ex);
-
-		mono_native_tls_set_value (loader_error_thread_id, NULL);
-	}
-}
-
-/**
- * mono_loader_error_prepare_exception:
- * @error: The MonoLoaderError to turn into an exception
- *
- * This turns a MonoLoaderError into an exception that can be thrown
- * and resets the Mono Loader Error state during this process.
- *
- */
-MonoException *
-mono_loader_error_prepare_exception (MonoLoaderError *error)
-{
-	MonoException *ex = NULL;
-
-	switch (error->exception_type) {
-	case MONO_EXCEPTION_TYPE_LOAD: {
-		char *cname = g_strdup (error->class_name);
-		char *aname = g_strdup (error->assembly_name);
-		MonoString *class_name;
-		
-		mono_loader_clear_error ();
-		
-		class_name = mono_string_new (mono_domain_get (), cname);
-
-		ex = mono_get_exception_type_load (class_name, aname);
-		g_free (cname);
-		g_free (aname);
-		break;
-        }
-	case MONO_EXCEPTION_MISSING_METHOD: {
-		char *cname = g_strdup (error->class_name);
-		char *aname = g_strdup (error->member_name);
-		
-		mono_loader_clear_error ();
-		ex = mono_get_exception_missing_method (cname, aname);
-		g_free (cname);
-		g_free (aname);
-		break;
-	}
-		
-	case MONO_EXCEPTION_MISSING_FIELD: {
-		char *class_name;
-		char *cmembername = g_strdup (error->member_name);
-		if (error->klass)
-			class_name = mono_type_get_full_name (error->klass);
-		else
-			class_name = g_strdup ("");
-
-		mono_loader_clear_error ();
-		
-		ex = mono_get_exception_missing_field (class_name, cmembername);
-		g_free (class_name);
-		g_free (cmembername);
-		break;
-        }
-	
-	case MONO_EXCEPTION_FILE_NOT_FOUND: {
-		char *msg;
-		char *filename;
-
-		if (error->ref_only)
-			msg = g_strdup_printf ("Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.", error->assembly_name);
-		else
-			msg = g_strdup_printf ("Could not load file or assembly '%s' or one of its dependencies.", error->assembly_name);
-		filename = g_strdup (error->assembly_name);
-		/* Has to call this before calling anything which might call mono_class_init () */
-		mono_loader_clear_error ();
-		ex = mono_get_exception_file_not_found2 (msg, mono_string_new (mono_domain_get (), filename));
-		g_free (msg);
-		g_free (filename);
-		break;
-	}
-
-	case MONO_EXCEPTION_BAD_IMAGE: {
-		char *msg = g_strdup (error->msg);
-		mono_loader_clear_error ();
-		ex = mono_get_exception_bad_image_format (msg);
-		g_free (msg);
-		break;
-	}
-
-	default:
-		g_assert_not_reached ();
-	}
-
-	return ex;
 }
 
 /*
@@ -529,7 +247,6 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 
 	if (!field) {
-		mono_loader_assert_no_error ();
 		mono_error_set_field_load (error, klass, fname, "Could not find field '%s'", fname);
 	}
 
@@ -583,7 +300,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
 		field = field_from_memberref (image, token, retklass, context, error);
-		mono_loader_assert_no_error ();
 	} else {
 		type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
 		if (!type) {
@@ -599,10 +315,7 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 			*retklass = k;
 		field = mono_class_get_field (k, token);
 		if (!field) {
-			if (mono_loader_get_last_error ())
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
+			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
 		}
 	}
 
@@ -612,7 +325,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		mono_image_unlock (image);
 	}
 
-	mono_loader_assert_no_error ();
 	return field;
 }
 
@@ -1165,19 +877,14 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_free (msig);
 		msig = g_string_free (s, FALSE);
 
-		if (mono_loader_get_last_error ()) /* FIXME find_method and mono_method_search_in_array_class can leak a loader error */
-			mono_error_set_from_loader_error (error);
-		else
-			mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
+		mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
 
 		g_free (msig);
 	}
 
-	mono_loader_assert_no_error ();
 	return method;
 
 fail:
-	mono_loader_assert_no_error ();
 	g_assert (!mono_error_ok (error));
 	return NULL;
 }
@@ -1243,7 +950,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	new_context.method_inst = inst;
 
 	method = mono_class_inflate_generic_method_full_checked (method, klass, &new_context, error);
-	mono_loader_assert_no_error ();
 	return method;
 }
 
@@ -1882,7 +1588,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, error);
 		mono_error_assert_ok (error);
-		mono_loader_assert_no_error ();
 
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {
@@ -1953,7 +1658,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	 */
 	if (*sig & 0x10) {
 		generic_container = mono_metadata_load_generic_params (image, token, container);
-		mono_loader_assert_no_error (); /* FIXME don't swallow this error. */
 	}
 	if (generic_container) {
 		result->is_generic = TRUE;
@@ -1988,7 +1692,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
  	if (generic_container)
  		mono_method_set_generic_container (result, generic_container);
 
-	mono_loader_assert_no_error ();
 	return result;
 }
 

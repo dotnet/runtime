@@ -9702,11 +9702,6 @@ mono_reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method,
 	if (!mono_error_ok (&error))
 		goto leave;
 
-	if (mono_loader_get_last_error ()) {
-		mono_error_set_from_loader_error (&error);
-		goto leave;
-	}
-
 	if (!typedargs || !namedargs)
 		goto leave;
 
@@ -10433,7 +10428,6 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!result)
 			return NULL;
 	} else {
-		mono_loader_assert_no_error ();
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 
@@ -10500,9 +10494,6 @@ mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error
 		return_val_if_nok (error, NULL);
 	} else
 		result = mono_array_new (mono_domain_get (), mono_defaults.customattribute_data_class, 0);
-
-	if (mono_loader_get_last_error ())
-		mono_error_set_from_loader_error (error);
 
 	return result;
 }

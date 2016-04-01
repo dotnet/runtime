@@ -12,9 +12,7 @@
 #include "mono-error-internals.h"
 
 #include <mono/metadata/exception.h>
-#include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 
 #define set_error_messagev() do { \
@@ -409,112 +407,6 @@ mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 	mono_error_prepare (error);
 	error->error_code = MONO_ERROR_EXCEPTION_INSTANCE;
 	error->exn.instance_handle = mono_gchandle_new (exc ? &exc->object : NULL, FALSE);
-}
-
-void
-mono_error_set_from_loader_error (MonoError *oerror)
-{
-	MonoLoaderError *loader_error = mono_loader_get_last_error ();
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	gboolean dup_strings = TRUE;
-
-	mono_error_prepare (error);
-
-	if (!loader_error) {
-		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from an empty loader-error");
-		return;
-	}
-
-	switch (loader_error->exception_type) {
-	case MONO_EXCEPTION_NONE:
-		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from a non-error loader-error");
-		break;
-
-	case MONO_EXCEPTION_INVALID_PROGRAM:
-		mono_error_set_generic_error (oerror, "System", "InvalidProgramException", "Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_UNVERIFIABLE_IL:
-		mono_error_set_generic_error (oerror, "System.Security", "VerificationException", "Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_MISSING_METHOD:
-		error->error_code = MONO_ERROR_MISSING_METHOD;
-		mono_error_set_type_name (oerror, loader_error->class_name);
-		mono_error_set_member_name (oerror, loader_error->member_name);
-		error->full_message = g_strdup ("Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_MISSING_FIELD:
-		mono_error_set_field_load (oerror, loader_error->klass, loader_error->member_name, "Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_TYPE_LOAD:
-		mono_error_set_type_load_name (oerror, g_strdup (loader_error->class_name), g_strdup (loader_error->assembly_name), "Failed for unknown reasons.");
-		dup_strings = FALSE;
-		break;
-	
-	case MONO_EXCEPTION_FILE_NOT_FOUND:
-		mono_error_set_assembly_load_simple (oerror, loader_error->assembly_name, loader_error->ref_only);
-		break;
-
-	case MONO_EXCEPTION_METHOD_ACCESS:
-		mono_error_set_generic_error (oerror, "System", "MethodAccessException", "Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_FIELD_ACCESS:
-		mono_error_set_generic_error (oerror, "System", "FieldAccessException", "Failed for unknown reasons.");
-		break;
-
-	case MONO_EXCEPTION_OBJECT_SUPPLIED:
-	case MONO_EXCEPTION_GENERIC_SHARING_FAILED:
-		mono_error_set_execution_engine (oerror, "Runtime tried to produce a mono-error from JIT internal error %d", loader_error->exception_type);
-		break;
-
-	case MONO_EXCEPTION_BAD_IMAGE:
-		mono_error_set_bad_image_name (oerror, "<unknown>", "%s", loader_error->msg);
-		break;
-
-	case MONO_EXCEPTION_OUT_OF_MEMORY:
-		mono_error_set_out_of_memory (oerror, "Failed for unknown reasons.");
-		break;
-
-	default:
-		mono_error_set_execution_engine (oerror, "Runtime tried to produce an unknown loader-error %d", loader_error->exception_type);
-		break;
-	}
-
-	mono_error_dup_strings (oerror, dup_strings);
-	mono_loader_clear_error ();
-}
-
-void
-mono_loader_set_error_from_mono_error (MonoError *oerror)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-
-	switch (error->error_code) {
-	case MONO_ERROR_MISSING_METHOD:
-		mono_loader_set_error_method_load (get_type_name (error), error->member_name);
-		break;
-	case MONO_ERROR_MISSING_FIELD:
-		mono_loader_set_error_field_load (error->exn.klass, error->member_name);
-		break;
-	case MONO_ERROR_TYPE_LOAD:
-		mono_loader_set_error_type_load (get_type_name (error), get_assembly_name (error));
-		break;
-	case MONO_ERROR_FILE_NOT_FOUND:
-		/* XXX can't recover if it's ref only or not */
-		mono_loader_set_error_assembly_load (get_assembly_name (error), FALSE);
-		break;
-	case MONO_ERROR_BAD_IMAGE:
-		mono_loader_set_error_bad_image (g_strdup (error->full_message));
-		break;
-	case MONO_ERROR_EXCEPTION_INSTANCE:
-		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error"));
-	default:
-		mono_loader_set_error_bad_image (g_strdup_printf ("Non translatable error: %s", error->full_message));
-	}
 }
 
 void

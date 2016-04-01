@@ -7548,8 +7548,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_timer);
 
-	mono_loader_clear_error ();
-
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (gshared failure): %s (%s)\n", mono_method_get_full_name (method), cfg->exception_message);

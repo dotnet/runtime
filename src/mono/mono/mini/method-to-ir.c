@@ -7261,7 +7261,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		if (cfg->verbose_level > 2)
 			printf ("INLINE ABORTED %s (cost %d)\n", mono_method_full_name (cmethod, TRUE), costs);
 		cfg->exception_type = MONO_EXCEPTION_NONE;
-		mono_loader_clear_error ();
 
 		/* This gets rid of the newly added bblocks */
 		cfg->cbb = prev_cbb;
