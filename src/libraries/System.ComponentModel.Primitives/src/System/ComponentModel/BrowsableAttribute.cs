@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       a property browsing window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class BrowsableAttribute : ComponentModelAttribute
+    public sealed class BrowsableAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -83,7 +83,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }

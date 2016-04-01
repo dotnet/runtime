@@ -263,19 +263,19 @@ namespace System.ComponentModel.Tests
         private class TestAttribute5b : TestAttribute5a { }
         private class TestAttribute6 : Attribute { }
 
-        private class TestAttributeWithDefaultMethodTrue : ComponentModelAttribute
+        private class TestAttributeWithDefaultMethodTrue : Attribute, IIsDefaultAttribute
         {
-            public override bool IsDefaultAttribute()
+            bool IIsDefaultAttribute.IsDefaultAttribute()
             {
                 return true;
             }
         }
 
-        private class TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue : ComponentModelAttribute
+        private class TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue : Attribute, IIsDefaultAttribute
         {
             public static readonly TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue Default = new TestAttributeWithDefaultFieldAndDefaultAttributeMethodTrue();
 
-            public override bool IsDefaultAttribute()
+            bool IIsDefaultAttribute.IsDefaultAttribute()
             {
                 return true;
             }

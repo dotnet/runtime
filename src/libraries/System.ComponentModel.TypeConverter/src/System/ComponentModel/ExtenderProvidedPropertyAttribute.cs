@@ -12,7 +12,7 @@ namespace System.ComponentModel
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ExtenderProvidedPropertyAttribute : ComponentModelAttribute
+    public sealed class ExtenderProvidedPropertyAttribute : Attribute, IIsDefaultAttribute
     {
         private PropertyDescriptor _extenderProperty;
         private IExtenderProvider _provider;
@@ -90,7 +90,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return _receiverType == null;
         }

@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///    <para> Specifies how a designer refreshes when the property value is changed.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class RefreshPropertiesAttribute : ComponentModelAttribute
+    public sealed class RefreshPropertiesAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -89,7 +89,7 @@ namespace System.ComponentModel
         /// <devdoc>
         ///    <para>Gets a value indicating whether the current attribute is the default.</para>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }

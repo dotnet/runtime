@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       properties window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ParenthesizePropertyNameAttribute : ComponentModelAttribute
+    public sealed class ParenthesizePropertyNameAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         /// <devdoc>
         /// <para>Gets a value indicating whether this attribute is set to <see langword='true'/> by default.</para>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }

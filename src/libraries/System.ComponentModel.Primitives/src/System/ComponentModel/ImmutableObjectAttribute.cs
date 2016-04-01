@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///  Specifies that a object has no sub properties that are editable.
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ImmutableObjectAttribute : ComponentModelAttribute
+    public sealed class ImmutableObjectAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///  Specifies that a object has no sub properties that are editable.
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }

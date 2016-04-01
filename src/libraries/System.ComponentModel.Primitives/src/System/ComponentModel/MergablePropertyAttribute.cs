@@ -10,7 +10,7 @@ namespace System.ComponentModel
     ///       other objects in a properties window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class MergablePropertyAttribute : ComponentModelAttribute
+    public sealed class MergablePropertyAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -92,7 +92,7 @@ namespace System.ComponentModel
         /// <devdoc>
         /// </devdoc>
         /// <internalonly/>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
