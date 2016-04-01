@@ -2,106 +2,103 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Xunit;
 
-namespace Tests.ExpressionCompiler.Unary
+namespace System.Linq.Expressions.Tests
 {
     public static class UnaryConvertTests
     {
         #region Test methods
 
-        [Fact]
-        public static void ConvertBoxingTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertBoxingTest(bool useInterpreter)
         {
             foreach (var e in ConvertBoxing())
             {
-                VerifyUnaryConvert(e);
+                VerifyUnaryConvert(e, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void ConvertUnboxingTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertUnboxingTest(bool useInterpreter)
         {
             foreach (var e in ConvertUnboxing())
             {
-                VerifyUnaryConvert(e);
+                VerifyUnaryConvert(e, useInterpreter);
             }
         }
 
-        [Fact]
-        public static void ConvertUnboxingInvalidCastTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertUnboxingInvalidCastTest(bool useInterpreter)
         {
             foreach (var e in ConvertUnboxingInvalidCast())
             {
-                VerifyUnaryConvertThrows<InvalidCastException>(e);
+                VerifyUnaryConvertThrows<InvalidCastException>(e, useInterpreter);
             }
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void CheckUnaryConvertBooleanToNumericTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryConvertBooleanToNumericTest(bool useInterpreter)
         {
             foreach (var kv in ConvertBooleanToNumeric())
             {
-                VerifyUnaryConvert(kv.Key, kv.Value);
+                VerifyUnaryConvert(kv.Key, kv.Value, useInterpreter);
             }
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void ConvertNullToNonNullableValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertNullToNonNullableValueTest(bool useInterpreter)
         {
             foreach (var e in ConvertNullToNonNullableValue())
             {
-                VerifyUnaryConvertThrows<NullReferenceException>(e);
+                VerifyUnaryConvertThrows<NullReferenceException>(e, useInterpreter);
             }
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void ConvertNullToNullableValueTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertNullToNullableValueTest(bool useInterpreter)
         {
             foreach (var e in ConvertNullToNullableValue())
             {
-                VerifyUnaryConvert(e, null);
+                VerifyUnaryConvert(e, null, useInterpreter);
             }
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void ConvertUnderlyingTypeToEnumTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertUnderlyingTypeToEnumTypeTest(bool useInterpreter)
         {
             var enumValue = DayOfWeek.Monday;
             var value = (int)enumValue;
 
             foreach (var o in new[] { Expression.Constant(value, typeof(int)), Expression.Constant(value, typeof(ValueType)), Expression.Constant(value, typeof(object)) })
             {
-                VerifyUnaryConvert(Expression.Convert(o, typeof(DayOfWeek)), enumValue);
+                VerifyUnaryConvert(Expression.Convert(o, typeof(DayOfWeek)), enumValue, useInterpreter);
             }
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void ConvertUnderlyingTypeToNullableEnumTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertUnderlyingTypeToNullableEnumTypeTest(bool useInterpreter)
         {
             var enumValue = DayOfWeek.Monday;
             var value = (int)enumValue;
 
             var cInt = Expression.Constant(value, typeof(int));
-            VerifyUnaryConvert(Expression.Convert(cInt, typeof(DayOfWeek?)), enumValue);
+            VerifyUnaryConvert(Expression.Convert(cInt, typeof(DayOfWeek?)), enumValue, useInterpreter);
 
             var cObj = Expression.Constant(value, typeof(object));
-            VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(cObj, typeof(DayOfWeek?)));
+            VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(cObj, typeof(DayOfWeek?)), useInterpreter);
         }
 
-        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
-        public static void ConvertArrayToIncompatibleTypeTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ConvertArrayToIncompatibleTypeTest(bool useInterpreter)
         {
             var arr = new object[] { "bar" };
 
             foreach (var t in new[] { typeof(string[]), typeof(IEnumerable<char>[]) })
             {
-                VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(Expression.Constant(arr), t));
+                VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(Expression.Constant(arr), t), useInterpreter);
             }
         }
 
@@ -339,52 +336,35 @@ namespace Tests.ExpressionCompiler.Unary
 
         #region Test verifiers
 
-        private static void VerifyUnaryConvert(Expression e, object o)
+        private static void VerifyUnaryConvert(Expression e, object o, bool useInterpreter)
         {
             Expression<Func<object>> f =
                 Expression.Lambda<Func<object>>(
                     Expression.Convert(e, typeof(object)));
 
-            Func<object> c = f.Compile();
+            Func<object> c = f.Compile(useInterpreter);
             Assert.Equal(o, c());
-
-#if FEATURE_INTERPRET
-            Func<object> i = f.Compile(true);
-            Assert.Equal(o, i());
-#endif
         }
 
-        private static void VerifyUnaryConvertThrows<T>(Expression e)
+        private static void VerifyUnaryConvertThrows<T>(Expression e, bool useInterpreter)
             where T : Exception
         {
             Expression<Func<object>> f =
                 Expression.Lambda<Func<object>>(
                     Expression.Convert(e, typeof(object)));
 
-            Func<object> c = f.Compile();
+            Func<object> c = f.Compile(useInterpreter);
             Assert.Throws<T>(() => c());
-
-#if FEATURE_INTERPRET
-            Func<object> i = f.Compile(true);
-            Assert.Throws<T>(() => i());
-#endif
         }
 
-        private static void VerifyUnaryConvert(Expression e)
+        private static void VerifyUnaryConvert(Expression e, bool useInterpreter)
         {
             Expression<Func<object>> f =
                 Expression.Lambda<Func<object>>(
                     Expression.Convert(e, typeof(object)));
 
-            Func<object> c = f.Compile();
-            object co = c(); // should not throw
-
-#if FEATURE_INTERPRET
-            Func<object> i = f.Compile(true);
-            object io = i(); // should not throw
-
-            Assert.Equal(io, co);
-#endif
+            Func<object> c = f.Compile(useInterpreter);
+            c(); // should not throw
         }
 
         #endregion
