@@ -11265,29 +11265,10 @@ bool                Compiler::gtTreeHasSideEffects(GenTreePtr tree,
             //
             if (tree->gtCall.gtCallType == CT_HELPER)
             {
-                // If this node is a helper call we may not care about the side-effects
-                //
-                if (gtNodeHasSideEffects(tree, flags))
-                    return true;
-                
-                // We can remove this Helper call, but there still could be 
-                // a GTF_CALL side-effect in the arguments that we may need to keep 
-                // 
-                GenTreePtr args;
-                for (args = tree->gtCall.gtCallArgs; args; args = args->gtOp.gtOp2)
-                {
-                    assert(args->IsList());                  
-
-                    if (gtTreeHasSideEffects(args->Current(), flags))
-                        return true;
-                }
-                for (args = tree->gtCall.gtCallLateArgs; args; args = args->gtOp.gtOp2)
-                {
-                    assert(args->IsList());
-                    if (gtTreeHasSideEffects(args->Current(), flags))
-                        return true;
-                }
-                return false;
+                // If this node is a helper call we may not care about the side-effects.
+                // Note that gtNodeHasSideEffects checks the side effects of the helper itself
+                // as well as the side effects of its arguments.
+                return gtNodeHasSideEffects(tree, flags);
             }
         }
         else if (tree->OperGet() == GT_INTRINSIC)
