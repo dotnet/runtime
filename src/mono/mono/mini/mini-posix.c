@@ -644,7 +644,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	 * nanoseconds).
 	 */
 	do {
-		diff = (gint64) ns_abs - (gint64) clock_get_time_ns (mode);
+		diff = (gint64) ns_abs - (gint64) clock_get_time_ns ();
 
 		if (diff <= 0)
 			break;
