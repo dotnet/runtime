@@ -6435,8 +6435,10 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	} else {
 		if (target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (target))
 			method = mono_object_get_virtual_method (target, method);
-		func = mono_create_ftnptr (mono_domain_get (),
-			mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE));
+		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, &error);
+		if (mono_error_set_pending_exception (&error))
+			return NULL;
+		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
 
 	mono_delegate_ctor_with_method (delegate, target, func, method);

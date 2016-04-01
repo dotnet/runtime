@@ -628,16 +628,14 @@ mono_compile_method (MonoMethod *method)
 }
 
 gpointer
-mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
+mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error)
 {
-	MonoError error;
 	gpointer res;
 
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	res = callbacks.create_jump_trampoline (domain, method, add_sync_wrapper, &error);
-	if (!mono_error_ok (&error))
-		mono_error_raise_exception (&error); /* FIXME: Don't raise here */
+	mono_error_init (error);
+	res = callbacks.create_jump_trampoline (domain, method, add_sync_wrapper, error);
 	return res;
 }
 
