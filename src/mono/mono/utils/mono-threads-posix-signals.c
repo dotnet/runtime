@@ -36,8 +36,8 @@ static sigset_t suspend_ack_signal_mask;
 //Can't avoid the circular dep on this. Will be gone pretty soon
 extern int mono_gc_get_suspend_signal (void);
 
-static int
-signal_search_alternative (int min_signal)
+int
+mono_threads_posix_signal_search_alternative (int min_signal)
 {
 #if !defined (SIGRTMIN)
 	g_error ("signal search only works with RTMIN");
@@ -88,7 +88,7 @@ suspend_signal_get (void)
 #else
 	static int suspend_signum = -1;
 	if (suspend_signum == -1)
-		suspend_signum = signal_search_alternative (-1);
+		suspend_signum = mono_threads_posix_signal_search_alternative (-1);
 	return suspend_signum;
 #endif /* SIGRTMIN */
 }
@@ -107,7 +107,7 @@ restart_signal_get (void)
 #else
 	static int resume_signum = -1;
 	if (resume_signum == -1)
-		resume_signum = signal_search_alternative (suspend_signal_get () + 1);
+		resume_signum = mono_threads_posix_signal_search_alternative (suspend_signal_get () + 1);
 	return resume_signum;
 #endif /* SIGRTMIN */
 }
@@ -127,7 +127,7 @@ abort_signal_get (void)
 #else
 	static int abort_signum = -1;
 	if (abort_signum == -1)
-		abort_signum = signal_search_alternative (restart_signal_get () + 1);
+		abort_signum = mono_threads_posix_signal_search_alternative (restart_signal_get () + 1);
 	return abort_signum;
 #endif /* SIGRTMIN */
 }

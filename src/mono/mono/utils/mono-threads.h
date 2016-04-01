@@ -164,13 +164,6 @@ enum {
 	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
-/*
- * This enum tells which async thread service corresponds to which bit.
- */
-typedef enum {
-	MONO_SERVICE_REQUEST_SAMPLE = 1,
-} MonoAsyncJob;
-
 typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
 
 typedef struct {
@@ -240,12 +233,6 @@ typedef struct {
 	/* IO layer handle for this thread */
 	/* Set when the thread is started, or in _wapi_thread_duplicate () */
 	HANDLE handle;
-
-	/* Asynchronous service request. This flag is meant to be consumed by the multiplexing signal handlers to discover what sort of work they need to do.
-	 * Use the mono_threads_add_async_job and mono_threads_consume_async_jobs APIs to modify this flag.
-	 * In the future the signaling should be part of the API, but for now, it's only for massaging the bits.
-	 */
-	volatile gint32 service_requests;
 
 	void *jit_data;
 
@@ -465,17 +452,6 @@ mono_threads_get_max_stack_size (void);
 
 HANDLE
 mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
-
-/*
-This is the async job submission/consumption API.
-XXX: This is a PROVISIONAL API only meant to be used by the statistical profiler.
-If you want to use/extend it anywhere else, understand that you'll have to do some API design work to better fit this puppy.
-*/
-gboolean
-mono_threads_add_async_job (THREAD_INFO_TYPE *info, MonoAsyncJob job);
-
-MonoAsyncJob
-mono_threads_consume_async_jobs (void);
 
 MONO_API void
 mono_threads_attach_tools_thread (void);

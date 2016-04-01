@@ -14,6 +14,9 @@ typedef enum {
 	MONO_THREADS_POSIX_INIT_SIGNALS_ABORT,
 } MonoThreadPosixInitSignals;
 
+int
+mono_threads_posix_signal_search_alternative (int min_signal);
+
 void
 mono_threads_posix_init_signals (MonoThreadPosixInitSignals signals);
 

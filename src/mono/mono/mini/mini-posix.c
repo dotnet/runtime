@@ -27,7 +27,7 @@
 #include <sys/syscall.h>
 #endif
 #include <errno.h>
-
+#include <sched.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
@@ -59,6 +59,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-threads-posix-signals.h>
 
 #include "mini.h"
 #include <string.h>
@@ -68,6 +69,12 @@
 #include "debugger-agent.h"
 
 #include "jit-icalls.h"
+
+#ifdef PLATFORM_MACOSX
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <mach/clock.h>
+#endif
 
 #if defined(__native_client__) || defined(HOST_WATCHOS)
 
@@ -235,21 +242,11 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 #define FULL_STAT_PROFILER_BACKTRACE 0
 #endif
 
-#ifdef SIGPROF
+#if (defined (USE_POSIX_BACKEND) && defined (SIGRTMIN)) || defined (SIGPROF)
+#define HAVE_PROFILER_SIGNAL
+#endif
 
-static int profiling_signal_in_use;
-
-#if defined(__ia64__) || defined(__sparc__) || defined(sparc)
-
-MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
-{
-	if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
-		return;
-
-	NOT_IMPLEMENTED;
-}
-
-#else
+#ifdef HAVE_PROFILER_SIGNAL
 
 static void
 per_thread_profiler_hit (void *ctx)
@@ -325,7 +322,7 @@ per_thread_profiler_hit (void *ctx)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
+MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 {
 	int old_errno = errno;
 	int hp_save_index;
@@ -339,18 +336,6 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 
 	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
-	/* If we can't consume a profiling request it means we're the initiator. */
-	if (!(mono_threads_consume_async_jobs () & MONO_SERVICE_REQUEST_SAMPLE)) {
-		FOREACH_THREAD_SAFE (info) {
-			if (mono_thread_info_get_tid (info) == mono_native_thread_id_get () ||
-			    !mono_thread_info_is_live (info))
-				continue;
-
-			mono_threads_add_async_job (info, MONO_SERVICE_REQUEST_SAMPLE);
-			mono_threads_pthread_kill (info, profiling_signal_in_use);
-		} FOREACH_THREAD_SAFE_END
-	}
-
 	mono_thread_info_set_is_async_context (TRUE);
 	per_thread_profiler_hit (ctx);
 	mono_thread_info_set_is_async_context (FALSE);
@@ -361,7 +346,6 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
-#endif
 #endif
 
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
@@ -522,122 +506,272 @@ mono_runtime_cleanup_handlers (void)
 	free_saved_signal_handlers ();
 }
 
-#ifdef HAVE_LINUX_RTC_H
-#include <linux/rtc.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-static int rtc_fd = -1;
+#ifdef HAVE_PROFILER_SIGNAL
 
-static int
-enable_rtc_timer (gboolean enable)
+#ifdef PLATFORM_MACOSX
+
+static clock_serv_t sampling_clock_service;
+
+static void
+clock_init (void)
 {
-	int flags;
-	flags = fcntl (rtc_fd, F_GETFL);
-	if (flags < 0) {
-		perror ("getflags");
-		return 0;
-	}
-	if (enable)
-		flags |= FASYNC;
-	else
-		flags &= ~FASYNC;
-	if (fcntl (rtc_fd, F_SETFL, flags) == -1) {
-		perror ("setflags");
-		return 0;
-	}
-	return 1;
+	kern_return_t ret;
+
+	if ((ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock_service)) != KERN_SUCCESS)
+		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
 }
+
+static void
+clock_cleanup (void)
+{
+	kern_return_t ret;
+
+	if ((ret = mach_port_deallocate (mach_task_self (), sampling_clock_service)) != KERN_SUCCESS)
+		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
+}
+
+static guint64
+clock_get_time_ns (void)
+{
+	kern_return_t ret;
+	mach_timespec_t mach_ts;
+
+	if ((ret = clock_get_time (sampling_clock_service, &mach_ts)) != KERN_SUCCESS)
+		g_error ("%s: clock_get_time () returned %d", __func__, ret);
+
+	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
+}
+
+static void
+clock_sleep_ns_abs (guint64 ns_abs)
+{
+	kern_return_t ret;
+	mach_timespec_t then, remain_unused;
+
+	then.tv_sec = ns_abs / 1000000000;
+	then.tv_nsec = ns_abs % 1000000000;
+
+	do {
+		ret = clock_sleep (sampling_clock_service, TIME_ABSOLUTE, then, &remain_unused);
+
+		if (ret != KERN_SUCCESS && ret != KERN_ABORTED)
+			g_error ("%s: clock_sleep () returned %d", __func__, ret);
+	} while (ret == KERN_ABORTED);
+}
+
+#else
+
+clockid_t sampling_posix_clock;
+
+static void
+clock_init (void)
+{
+	switch (mono_profiler_get_sampling_mode ()) {
+	case MONO_PROFILER_STAT_MODE_PROCESS:
+#ifdef HAVE_CLOCK_NANOSLEEP
+		/*
+		 * If we don't have clock_nanosleep (), measuring the process time
+		 * makes very little sense as we can only use nanosleep () to sleep on
+		 * real time.
+		 */
+		sampling_posix_clock = CLOCK_PROCESS_CPUTIME_ID;
+		break;
 #endif
+	case MONO_PROFILER_STAT_MODE_REAL: sampling_posix_clock = CLOCK_MONOTONIC; break;
+	default: g_assert_not_reached (); break;
+	}
+}
+
+static void
+clock_cleanup (void)
+{
+}
+
+static guint64
+clock_get_time_ns (void)
+{
+	struct timespec ts;
+
+	if (clock_gettime (sampling_posix_clock, &ts) == -1)
+		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
+
+	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+}
+
+static void
+clock_sleep_ns_abs (guint64 ns_abs)
+{
+#ifdef HAVE_CLOCK_NANOSLEEP
+	int ret;
+	struct timespec then;
+
+	then.tv_sec = ns_abs / 1000000000;
+	then.tv_nsec = ns_abs % 1000000000;
+
+	do {
+		ret = clock_nanosleep (sampling_posix_clock, TIMER_ABSTIME, &then, NULL);
+
+		if (ret != 0 && ret != EINTR)
+			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
+	} while (ret == EINTR);
+#else
+	int ret;
+	gint64 diff;
+	struct timespec req;
+
+	/*
+	 * What follows is a crude attempt at emulating clock_nanosleep () on OSs
+	 * which don't provide it (e.g. FreeBSD).
+	 *
+	 * The problem with nanosleep () is that if it is interrupted by a signal,
+	 * time will drift as a result of having to restart the call after the
+	 * signal handler has finished. For this reason, we avoid using the rem
+	 * argument of nanosleep (). Instead, before every nanosleep () call, we
+	 * check if enough time has passed to satisfy the sleep request. If yes, we
+	 * simply return. If not, we calculate the difference and do another sleep.
+	 *
+	 * This should reduce the amount of drift that happens because we account
+	 * for the time spent executing the signal handler, which nanosleep () is
+	 * not guaranteed to do for the rem argument.
+	 *
+	 * The downside to this approach is that it is slightly expensive: We have
+	 * to make an extra system call to retrieve the current time whenever we're
+	 * going to restart a nanosleep () call. This is unlikely to be a problem
+	 * in practice since the sampling thread won't be receiving many signals in
+	 * the first place (it's a tools thread, so no STW), and because typical
+	 * sleep periods for the thread are many orders of magnitude bigger than
+	 * the time it takes to actually perform that system call (just a few
+	 * nanoseconds).
+	 */
+	do {
+		diff = (gint64) ns_abs - (gint64) clock_get_time_ns (mode);
+
+		if (diff <= 0)
+			break;
+
+		req.tv_sec = diff / 1000000000;
+		req.tv_nsec = diff % 1000000000;
+
+		if ((ret = nanosleep (&req, NULL)) == -1 && errno != EINTR)
+			g_error ("%s: nanosleep () returned -1, errno = %d", __func__, errno);
+	} while (ret == -1);
+#endif
+}
+
+#endif
+
+static int profiler_signal;
+static MonoNativeThreadId sampling_thread;
+static volatile gint32 sampling_thread_running;
+
+static mono_native_thread_return_t
+sampling_thread_func (void *data)
+{
+	mono_threads_attach_tools_thread ();
+
+	gint64 rate = 1000000000 / mono_profiler_get_sampling_rate ();
+
+	int old_policy;
+	struct sched_param old_sched;
+	pthread_getschedparam (pthread_self (), &old_policy, &old_sched);
+
+	/*
+	 * Attempt to switch the thread to real time scheduling. This will not
+	 * necessarily work on all OSs; for example, most Linux systems will give
+	 * us EPERM here unless configured to allow this.
+	 *
+	 * TODO: This does not work on Mac (and maybe some other OSs). On Mac, we
+	 * have to use the Mach thread policy routines to switch to real-time
+	 * scheduling. This is quite tricky as we need to specify how often we'll
+	 * be doing work (easy), the normal processing time needed (also easy),
+	 * and the maximum amount of processing time needed (hard). This is
+	 * further complicated by the fact that if we misbehave and take too long
+	 * to do our work, the kernel may knock us back down to the normal thread
+	 * scheduling policy without telling us.
+	 */
+	struct sched_param sched = { .sched_priority = sched_get_priority_max (SCHED_FIFO) };
+	pthread_setschedparam (pthread_self (), SCHED_FIFO, &sched);
+
+	clock_init ();
+
+	guint64 sleep = clock_get_time_ns ();
+
+	while (InterlockedRead (&sampling_thread_running)) {
+		sleep += rate;
+
+		FOREACH_THREAD_SAFE (info) {
+			/* info should never be this thread as we're a tools thread. */
+			g_assert (mono_thread_info_get_tid (info) != mono_native_thread_id_get ());
+
+			mono_threads_pthread_kill (info, profiler_signal);
+		} FOREACH_THREAD_SAFE_END
+
+		clock_sleep_ns_abs (sleep);
+	}
+
+	clock_cleanup ();
+
+	pthread_setschedparam (pthread_self (), old_policy, &old_sched);
+
+	mono_thread_info_detach ();
+
+	return NULL;
+}
 
 void
 mono_runtime_shutdown_stat_profiler (void)
 {
-#ifdef HAVE_LINUX_RTC_H
-	if (rtc_fd >= 0)
-		enable_rtc_timer (FALSE);
-#endif
-}
+	InterlockedWrite (&sampling_thread_running, 0);
+	pthread_join (sampling_thread, NULL);
 
-#ifdef ITIMER_PROF
-static int
-get_itimer_mode (void)
-{
-	switch (mono_profiler_get_sampling_mode ()) {
-	case MONO_PROFILER_STAT_MODE_PROCESS: return ITIMER_PROF;
-	case MONO_PROFILER_STAT_MODE_REAL: return ITIMER_REAL;
-	}
-	g_assert_not_reached ();
-	return 0;
+	/*
+	 * We can't safely remove the signal handler because we have no guarantee
+	 * that all pending signals have been delivered at this point. This should
+	 * not really be a problem anyway.
+	 */
+	//remove_signal_handler (profiler_signal);
 }
-
-static int
-get_itimer_signal (void)
-{
-	switch (mono_profiler_get_sampling_mode ()) {
-	case MONO_PROFILER_STAT_MODE_PROCESS: return SIGPROF;
-	case MONO_PROFILER_STAT_MODE_REAL: return SIGALRM;
-	}
-	g_assert_not_reached ();
-	return 0;
-}
-#endif
 
 void
 mono_runtime_setup_stat_profiler (void)
 {
-#ifdef ITIMER_PROF
-	struct itimerval itval;
-	static int inited = 0;
-#ifdef HAVE_LINUX_RTC_H
-	const char *rtc_freq;
-	if (!inited && (rtc_freq = g_getenv ("MONO_RTC"))) {
-		int freq = 0;
-		inited = 1;
-		if (*rtc_freq)
-			freq = atoi (rtc_freq);
-		if (!freq)
-			freq = 1024;
-		rtc_fd = open ("/dev/rtc", O_RDONLY);
-		if (rtc_fd == -1) {
-			perror ("open /dev/rtc");
-			return;
-		}
-		profiling_signal_in_use = SIGPROF;
-		add_signal_handler (profiling_signal_in_use, sigprof_signal_handler, SA_RESTART);
-		if (ioctl (rtc_fd, RTC_IRQP_SET, freq) == -1) {
-			perror ("set rtc freq");
-			return;
-		}
-		if (ioctl (rtc_fd, RTC_PIE_ON, 0) == -1) {
-			perror ("start rtc");
-			return;
-		}
-		if (fcntl (rtc_fd, F_SETSIG, SIGPROF) == -1) {
-			perror ("setsig");
-			return;
-		}
-		if (fcntl (rtc_fd, F_SETOWN, getpid ()) == -1) {
-			perror ("setown");
-			return;
-		}
-		enable_rtc_timer (TRUE);
-		return;
-	}
-	if (rtc_fd >= 0)
-		return;
+	/*
+	 * Use a real-time signal when possible. This gives us roughly a 99% signal
+	 * delivery rate in all cases. On the other hand, using a regular signal
+	 * tends to result in awful delivery rates when the application is heavily
+	 * loaded.
+	 *
+	 * TODO: On Mac, we should explore using the Mach thread suspend/resume
+	 * functions and doing the stack walk from the sampling thread. This would
+	 * get us a 100% sampling rate. However, this may interfere with the GC's
+	 * STW logic. Could perhaps be solved by taking the suspend lock.
+	 */
+#if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN)
+	/* Just take the first real-time signal we can get. */
+	profiler_signal = mono_threads_posix_signal_search_alternative (-1);
+#else
+	profiler_signal = SIGPROF;
 #endif
 
-	itval.it_interval.tv_usec = (1000000 / mono_profiler_get_sampling_rate ()) - 1;
-	itval.it_interval.tv_sec = 0;
-	itval.it_value = itval.it_interval;
-	if (inited)
-		return;
-	inited = 1;
-	profiling_signal_in_use = get_itimer_signal ();
-	add_signal_handler (profiling_signal_in_use, sigprof_signal_handler, SA_RESTART);
-	setitimer (get_itimer_mode (), &itval, NULL);
-#endif
+	add_signal_handler (profiler_signal, profiler_signal_handler, SA_RESTART);
+
+	InterlockedWrite (&sampling_thread_running, 1);
+	mono_native_thread_create (&sampling_thread, sampling_thread_func, NULL);
 }
+
+#else
+
+void
+mono_runtime_shutdown_stat_profiler (void)
+{
+}
+
+void
+mono_runtime_setup_stat_profiler (void)
+{
+}
+
+#endif
 
 #if !defined(PLATFORM_MACOSX)
 pid_t
