@@ -226,10 +226,150 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
     return !retval.empty();
 }
 
+int muxer_usage()
+{
+    trace::error(_X("Usage: dotnet [--help | app.dll]"));
+    return StatusCode::InvalidArgFailure;
+}
+
+int fx_muxer_t::parse_args_and_execute(const pal::string_t& own_dir, int argoff, int argc, const pal::char_t* argv[], bool exec_mode, bool* is_an_app)
+{
+    *is_an_app = true;
+
+    std::vector<pal::string_t> known_opts = { _X("--additionalprobingpath") };
+    if (exec_mode)
+    {
+        known_opts.push_back(_X("--depsfile"));
+    }
+
+    // Parse the known muxer arguments if any.
+    int num_parsed = 0;
+    std::unordered_map<pal::string_t, std::vector<pal::string_t>> opts;
+    if (!parse_known_args(argc - argoff, &argv[argoff], known_opts, &opts, &num_parsed))
+    {
+        trace::error(_X("Failed to parse supported arguments."));
+        return InvalidArgFailure;
+    }
+    int cur_i = argoff + num_parsed;
+    if (cur_i >= argc)
+    {
+        return muxer_usage();
+    }
+
+    pal::string_t app_candidate = argv[cur_i];
+    bool is_app_runnable = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
+
+    // If exec mode is on, then check we have a dll at this point
+    if (exec_mode)
+    {
+        if (!is_app_runnable)
+        {
+            trace::error(_X("dotnet exec needs a dll to execute. Try dotnet [--help]"));
+            return InvalidArgFailure;
+        }
+    }
+    // For non-exec, there is CLI invocation or app.dll execution after known args.
+    else
+    {
+        // Test if we have a real dll at this point.
+        if (!is_app_runnable)
+        {
+            // No we don't have a dll, this must be routed to the CLI.
+            *is_an_app = false;
+            return Success;
+        }
+    }
+
+    // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] dll [args] -> dotnet dll [args]
+
+    std::vector<const pal::char_t*> vec_argv;
+    const pal::char_t** new_argv = argv;
+    int new_argc = argc;
+    if (cur_i != 1)
+    {
+        vec_argv.resize(argc - cur_i + 1, 0); // +1 for dotnet
+        memcpy(vec_argv.data() + 1, argv + cur_i, (argc - cur_i) * sizeof(pal::char_t*));
+        vec_argv[0] = argv[0];
+        new_argv = vec_argv.data();
+        new_argc = vec_argv.size();
+    }
+
+    pal::string_t opts_deps_file = _X("--depsfile");
+    pal::string_t opts_probe_path = _X("--additionalprobingpath");
+    pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
+    std::vector<pal::string_t> probe_paths = opts.count(opts_probe_path) ? opts[opts_probe_path] : std::vector<pal::string_t>();
+
+    trace::verbose(_X("Current argv is %s"), app_candidate.c_str());
+
+    pal::string_t app_or_deps = deps_file.empty() ? app_candidate : deps_file;
+    pal::string_t no_json = app_candidate;
+    pal::string_t dev_config_file;
+    auto config_file = get_runtime_config_from_file(no_json, &dev_config_file);
+    runtime_config_t config(config_file, dev_config_file);
+    for (const auto& path : config.get_probe_paths())
+    {
+        probe_paths.push_back(path);
+    }
+
+    if (!config.is_valid())
+    {
+        trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), config.get_path().c_str(), config.get_dev_path().c_str());
+        return StatusCode::InvalidConfigFile;
+    }
+    if (!deps_file.empty() && !pal::file_exists(deps_file))
+    {
+        trace::error(_X("Deps file [%s] specified but doesn't exist"), deps_file.c_str());
+        return StatusCode::InvalidArgFailure;
+    }
+
+    if (config.get_portable())
+    {
+        trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
+        pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
+        corehost_init_t init(deps_file, probe_paths, fx_dir, host_mode_t::muxer, &config);
+        return execute_app(fx_dir, &init, new_argc, new_argv);
+    }
+    else
+    {
+        trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
+        pal::string_t impl_dir = get_directory(app_or_deps);
+        if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_paths.empty() && !deps_file.empty())
+        {
+            bool found = false;
+            pal::string_t candidate = impl_dir;
+            deps_json_t deps_json(false, deps_file);
+            for (const auto& probe_path : probe_paths)
+            {
+                trace::verbose(_X("Considering %s for hostpolicy library"), probe_path.c_str());
+                if (deps_json.is_valid() &&
+                    deps_json.has_hostpolicy_entry() &&
+                    deps_json.get_hostpolicy_entry().to_full_path(probe_path, &candidate))
+                {
+                    found = true; // candidate contains the right path.
+                    break;
+                }
+            }
+            if (!found)
+            {
+                trace::error(_X("Policy library either not found in deps [%s] or not found in %d probe paths."), deps_file.c_str(), probe_paths.size());
+                return StatusCode::CoreHostLibMissingFailure;
+            }
+            impl_dir = get_directory(candidate);
+        }
+        corehost_init_t init(deps_file, probe_paths, _X(""), host_mode_t::muxer, &config);
+        return execute_app(impl_dir, &init, new_argc, new_argv);
+    }
+}
+
 /* static */
 int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 {
     trace::verbose(_X("--- Executing in muxer mode..."));
+
+    if (argc <= 1)
+    {
+        return muxer_usage();
+    }
 
     pal::string_t own_path;
 
@@ -239,163 +379,43 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
         trace::error(_X("Failed to locate current executable"));
         return StatusCode::LibHostCurExeFindFailure;
     }
-
     auto own_dir = get_directory(own_path);
 
-    if (argc <= 1)
+    bool is_an_app = false;
+    if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
     {
-        trace::error(_X("Usage: dotnet [--help | app.dll]"));
-        return StatusCode::InvalidArgFailure;
+        return parse_args_and_execute(own_dir, 2, argc, argv, true, &is_an_app); // arg offset 2 for dotnet, exec
     }
-    if (ends_with(argv[1], _X(".dll"), false))
+
+    int result = parse_args_and_execute(own_dir, 1, argc, argv, false, &is_an_app); // arg offset 1 for dotnet
+    if (is_an_app)
     {
-        pal::string_t app_path = argv[1];
-
-        if (!pal::realpath(&app_path))
-        {
-            trace::error(_X("Could not resolve app's full path [%s]"), app_path.c_str());
-            return StatusCode::LibHostExecModeFailure;
-        }
-
-        auto config_file = get_runtime_config_from_file(app_path);
-        runtime_config_t config(config_file);
-        if (!config.is_valid())
-        {
-            trace::error(_X("Invalid runtimeconfig.json [%s]"), config.get_path().c_str());
-            return StatusCode::InvalidConfigFile;
-        }
-        if (config.get_portable())
-        {
-            trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
-            pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
-            corehost_init_t init(_X(""), config.get_probe_paths(), fx_dir, host_mode_t::muxer, &config);
-            return execute_app(fx_dir, &init, argc, argv);
-        }
-        else
-        {
-            trace::verbose(_X("Executing as a standlone app as per config file [%s]"), config_file.c_str());
-            corehost_init_t init(_X(""), config.get_probe_paths(), _X(""), host_mode_t::muxer, &config);
-            return execute_app(get_directory(app_path), &init, argc, argv);
-        }
+        return result;
     }
-    else
+
+    // Could not execute as an app, try the CLI SDK dotnet.dll
+    pal::string_t sdk_dotnet;
+    if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
-        if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
-        {
-            std::vector<pal::string_t> known_opts = { _X("--depsfile"), _X("--additionalprobingpath") };
-
-            trace::verbose(_X("Exec mode, parsing known args"));
-            int num_args = 0;
-            std::unordered_map<pal::string_t, pal::string_t> opts;
-            if (!parse_known_args(argc - 2, &argv[2], known_opts, &opts, &num_args))
-            {
-                trace::error(_X("Failed to parse known arguments."));
-                return InvalidArgFailure;
-            }
-            int cur_i = 2 + num_args;
-            if (cur_i >= argc)
-            {
-                trace::error(_X("Parsed known args, but need more arguments."));
-                return InvalidArgFailure;
-            }
-
-            // Transform dotnet exec [--additionalprobingpath path] [--depsfile file] dll [args] -> dotnet dll [args]
-
-            std::vector<const pal::char_t*> new_argv(argc - cur_i + 1); // +1 for dotnet
-            memcpy(new_argv.data() + 1, argv + cur_i, (argc - cur_i) * sizeof(pal::char_t*));
-            new_argv[0] = argv[0];
-
-            pal::string_t opts_deps_file = _X("--depsfile");
-            pal::string_t opts_probe_path = _X("--additionalprobingpath");
-            pal::string_t deps_file = opts.count(opts_deps_file) ? opts[opts_deps_file] : _X("");
-            pal::string_t probe_path = opts.count(opts_probe_path) ? opts[opts_probe_path] : _X("");
-
-            trace::verbose(_X("Current argv is %s"), argv[cur_i]);
-
-            pal::string_t app_or_deps = deps_file.empty() ? argv[cur_i] : deps_file;
-            pal::string_t no_json = argv[cur_i];
-            auto config_file = get_runtime_config_from_file(no_json);
-            runtime_config_t config(config_file);
-            if (!config.is_valid())
-            {
-                trace::error(_X("Invalid runtimeconfig.json [%s]"), config.get_path().c_str());
-                return StatusCode::InvalidConfigFile;
-            }
-            if (!deps_file.empty() && !pal::file_exists(deps_file))
-            {
-                trace::error(_X("Deps file [%s] specified but doesn't exist"), deps_file.c_str());
-                return StatusCode::InvalidArgFailure;
-            }
-            std::vector<pal::string_t> probe_paths = { probe_path };
-            if (config.get_portable())
-            {
-                trace::verbose(_X("Executing as a portable app as per config file [%s]"), config_file.c_str());
-                pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
-                corehost_init_t init(deps_file, probe_paths, fx_dir, host_mode_t::muxer, &config);
-                return execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
-            }
-            else
-            {
-                trace::verbose(_X("Executing as a standalone app as per config file [%s]"), config_file.c_str());
-                pal::string_t impl_dir = get_directory(app_or_deps);
-                if (!library_exists_in_dir(impl_dir, LIBHOSTPOLICY_NAME, nullptr) && !probe_path.empty() && !deps_file.empty())
-                {
-                    deps_json_t deps_json(false, deps_file);
-                    pal::string_t candidate = impl_dir;
-                    if (!deps_json.has_hostpolicy_entry() ||
-                        !deps_json.get_hostpolicy_entry().to_full_path(probe_path, &candidate))
-                    {
-                        trace::error(_X("Policy library either not found in deps [%s] or not found in [%s]"), deps_file.c_str(), probe_path.c_str());
-                        return StatusCode::CoreHostLibMissingFailure;
-                    }
-                    impl_dir = get_directory(candidate);
-                }
-                corehost_init_t init(deps_file, probe_paths, _X(""), host_mode_t::muxer, &config);
-                return execute_app(impl_dir, &init, new_argv.size(), new_argv.data());
-            }
-        }
-        else
-        {
-            pal::string_t sdk_dotnet;
-            if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
-            {
-                trace::error(_X("Could not resolve SDK directory from [%s]"), own_dir.c_str());
-                return StatusCode::LibHostSdkFindFailure;
-            }
-            append_path(&sdk_dotnet, _X("dotnet.dll"));
-
-            if (!pal::file_exists(sdk_dotnet))
-            {
-                trace::error(_X("Could not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
-                return StatusCode::LibHostSdkFindFailure;
-            }
-
-            // Transform dotnet [command] [args] -> dotnet [dotnet.dll] [command] [args]
-
-            std::vector<const pal::char_t*> new_argv(argc + 1);
-            memcpy(&new_argv.data()[2], argv + 1, (argc - 1) * sizeof(pal::char_t*));
-            new_argv[0] = argv[0];
-            new_argv[1] = sdk_dotnet.c_str();
-
-            trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
-
-            auto config_file = get_runtime_config_from_file(sdk_dotnet);
-            runtime_config_t config(config_file);
-
-            if (config.get_portable())
-            {
-                trace::verbose(_X("Executing dotnet.dll as a portable app as per config file [%s]"), config_file.c_str());
-                pal::string_t fx_dir = resolve_fx_dir(own_dir, &config);
-                corehost_init_t init(_X(""), std::vector<pal::string_t>(), fx_dir, host_mode_t::muxer, &config);
-                return execute_app(fx_dir, &init, new_argv.size(), new_argv.data());
-            }
-            else
-            {
-                trace::verbose(_X("Executing dotnet.dll as a standalone app as per config file [%s]"), config_file.c_str());
-                corehost_init_t init(_X(""), std::vector<pal::string_t>(), _X(""), host_mode_t::muxer, &config);
-                return execute_app(get_directory(sdk_dotnet), &init, new_argv.size(), new_argv.data());
-            }
-        }
+        trace::error(_X("Could not resolve SDK directory from [%s]"), own_dir.c_str());
+        return StatusCode::LibHostSdkFindFailure;
     }
+    append_path(&sdk_dotnet, _X("dotnet.dll"));
+
+    if (!pal::file_exists(sdk_dotnet))
+    {
+        trace::error(_X("Could not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        return StatusCode::LibHostSdkFindFailure;
+    }
+
+    // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
+
+    std::vector<const pal::char_t*> new_argv(argc + 1);
+    memcpy(&new_argv.data()[2], argv + 1, (argc - 1) * sizeof(pal::char_t*));
+    new_argv[0] = argv[0];
+    new_argv[1] = sdk_dotnet.c_str();
+
+    trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
+    return parse_args_and_execute(own_dir, 1, new_argv.size(), new_argv.data(), false, &is_an_app);
 }
 

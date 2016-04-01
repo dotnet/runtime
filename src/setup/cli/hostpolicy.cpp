@@ -240,13 +240,16 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     }
     else
     {
-        auto config_path = get_runtime_config_from_file(args.managed_application);
-        runtime_config_t config(config_path);
+        pal::string_t dev_config_file;
+        auto config_path = get_runtime_config_from_file(args.managed_application, &dev_config_file);
+        runtime_config_t config(config_path, dev_config_file);
         if (!config.is_valid())
         {
-            trace::error(_X("Invalid runtimeconfig.json [%s]"), config.get_path().c_str());
+            trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), config.get_path().c_str(), config.get_dev_path().c_str());
             return StatusCode::InvalidConfigFile;
         }
+        // TODO: This is ugly. The whole runtime config/probe paths business should all be resolved by and come from the hostfxr.cpp.
+        args.probe_paths.insert(args.probe_paths.end(), config.get_probe_paths().begin(), config.get_probe_paths().end());
         return run(g_init, config, args);
     }
 }

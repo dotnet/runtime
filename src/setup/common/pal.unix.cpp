@@ -112,28 +112,6 @@ bool pal::is_path_rooted(const pal::string_t& path)
     return path.front() == '/';
 }
 
-bool pal::get_default_packages_directory(pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t dir;
-    if (!pal::getenv("HOME", &dir))
-    {
-        struct passwd* pw = getpwuid(getuid());
-        if (pw && pw->pw_dir)
-        {
-            dir.assign(pw->pw_dir);
-        }
-    }
-    if (dir.empty())
-    {
-        return false;
-    }
-    append_path(&dir, _X(".nuget"));
-    append_path(&dir, _X("packages"));
-    recv->assign(dir);
-    return true;
-}
-
 bool pal::get_default_extensions_directory(string_t* recv)
 {
     recv->clear();
