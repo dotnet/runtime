@@ -341,6 +341,11 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
         return false;
     }
 
+    if (skip_utf8_bom(&file))
+    {
+        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), deps_path.c_str());
+    }
+
     try
     {
         const auto json = json_value::parse(file);
@@ -355,8 +360,10 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
 
         return (portable) ? load_portable(json, name, rid_fallback_graph) : load_standalone(json, name);
     }
-    catch (...)
+    catch (const web::json::json_exception& je)
     {
+        pal::string_t jes = pal::to_palstring(je.what());
+        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), deps_path.c_str(), jes.c_str());
         return false;
     }
 }
