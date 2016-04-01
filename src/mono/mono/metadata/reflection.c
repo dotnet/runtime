@@ -9531,9 +9531,13 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			}
 
 
-			mono_property_set_value (prop, attr, pparams, NULL);
+			mono_property_set_value_checked (prop, attr, pparams, error);
 			if (!type_is_reference (prop_type))
 				g_free (pparams [0]);
+			if (!is_ok (error)) {
+				g_free (name);
+				goto fail;
+			}
 		}
 		g_free (name);
 	}

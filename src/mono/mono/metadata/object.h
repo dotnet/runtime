@@ -315,6 +315,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject *
 mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 

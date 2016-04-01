@@ -1606,6 +1606,9 @@ mono_vtable_get_static_field_data (MonoVTable *vt);
 MonoObject *
 mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, MonoObject *obj, MonoError *error);
 
+gboolean
+mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error);
+
 char *
 mono_string_to_utf8_ignore (MonoString *s);
 

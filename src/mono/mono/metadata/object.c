@@ -3654,8 +3654,35 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 	if (exc && *exc == NULL && !mono_error_ok (&error)) {
 		*exc = (MonoObject*) mono_error_convert_to_exception (&error);
 	} else {
-		mono_error_raise_exception (&error); /* FIXME don't raise here */
+		mono_error_cleanup (&error);
 	}
+}
+
+/**
+ * mono_property_set_value_checked:
+ * @prop: MonoProperty to set
+ * @obj: instance object on which to act
+ * @params: parameters to pass to the propery
+ * @error: set on error
+ *
+ * Invokes the property's set method with the given arguments on the
+ * object instance obj (or NULL for static properties). 
+ * 
+ * Returns: TRUE on success.  On failure returns FALSE and sets @error.
+ * If an exception is thrown, it will be caught and returned via @error.
+ */
+gboolean
+mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoObject *exc;
+
+	mono_error_init (error);
+	do_runtime_invoke (prop->set, obj, params, &exc, error);
+	if (exc != NULL && is_ok (error))
+		mono_error_set_exception_instance (error, (MonoException*)exc);
+	return is_ok (error);
 }
 
 /**
