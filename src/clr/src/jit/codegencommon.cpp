@@ -7619,7 +7619,22 @@ void CodeGen::genPrologPadForReJit()
 
 #ifdef _TARGET_XARCH_
     if (!(compiler->opts.eeFlags & CORJIT_FLG_PROF_REJIT_NOPS))
+    {
         return;
+    }
+
+#if FEATURE_EH_FUNCLETS
+
+    // No need to generate pad (nops) for funclets.
+    // When compiling the main function (and not a funclet)
+    // the value of funCurrentFunc->funKind is equal to FUNC_ROOT.
+    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
+    {
+        return;
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
     unsigned size = getEmitter()->emitGetPrologOffsetEstimate();
     if (size < 5)
     {
