@@ -16457,5 +16457,26 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        private class PerverselyNamedMembers
+        {
+            public readonly uint Field;
+
+            public PerverselyNamedMembers(uint value)
+            {
+                Field = value;
+            }
+
+            public static uint op_Implicit()
+            {
+                return 0x8BADF00D;
+            }
+        }
+
+        [Fact]
+        public static void ExplicitOpImplicit()
+        {
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(Expression.Constant(new PerverselyNamedMembers(0)), typeof(uint)));
+        }
     }
 }
