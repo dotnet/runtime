@@ -3773,8 +3773,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 	/* An optimization for calls made from Delegate:CreateDelegate () */
 	if (klass->delegate && name && !strcmp (name, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
 		method = mono_get_delegate_invoke (klass);
-		if (mono_loader_get_last_error ())
-			goto loader_error;
+		g_assert (method);
 
 		g_ptr_array_add (array, method);
 		return array;
@@ -3782,7 +3781,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	if (is_generic_parameter (&klass->byval_arg))
@@ -3798,7 +3797,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;		
 
 	iter = NULL;
@@ -4096,7 +4095,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	iter = NULL;
@@ -4229,7 +4228,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, g
 handle_parent:
 	mono_class_setup_methods (klass);
 	mono_class_setup_vtable (klass);
-	if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+	if (mono_class_has_failure (klass))
 		goto loader_error;
 
 	iter = NULL;

@@ -5189,7 +5189,7 @@ mono_class_init (MonoClass *klass)
 	else
 		if (!klass->size_inited){
 			mono_class_setup_fields (klass);
-			if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+			if (mono_class_has_failure (klass))
 				goto leave;
 		}
 				
@@ -5298,8 +5298,6 @@ mono_class_init (MonoClass *klass)
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto leave;
 		}
-		if (mono_loader_get_last_error ())
-			goto leave;
 		if (!klass->parent->vtable_size) {
 			/* FIXME: Get rid of this somehow */
 			mono_class_setup_vtable (klass->parent);
@@ -5307,8 +5305,6 @@ mono_class_init (MonoClass *klass)
 				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				goto leave;
 			}
-			if (mono_loader_get_last_error ())
-				goto leave;
 		}
 		first_iface_slot = klass->parent->vtable_size;
 		if (mono_class_need_stelemref_method (klass))
@@ -5320,13 +5316,6 @@ mono_class_init (MonoClass *klass)
 
 	if (mono_security_core_clr_enabled ())
 		mono_security_core_clr_check_inheritance (klass);
-
-	if (mono_loader_get_last_error ()) {
-		if (!mono_class_has_failure (klass)) {
-			set_failure_from_loader_error (klass, mono_loader_get_last_error ());
-		}
-		mono_loader_clear_error ();
-	}
 
 	if (klass->generic_class && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Invalid generic instantiation"));
@@ -5376,7 +5365,7 @@ mono_class_has_finalizer (MonoClass *klass)
 				 * ignores overrides.
 				 */
 				mono_class_setup_vtable (klass);
-				if (mono_class_has_failure (klass) || mono_loader_get_last_error ())
+				if (mono_class_has_failure (klass))
 					cmethod = NULL;
 				else
 					cmethod = klass->vtable [finalize_slot];

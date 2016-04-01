@@ -487,14 +487,14 @@ verify_image_file (const char *fname)
 			continue;
 		}
 		mono_class_init (klass);
-		if (mono_class_has_failure (klass) || mono_loader_get_last_error ()) {
+		if (mono_class_has_failure (klass)) {
 			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, klass->name_space, klass->name);
 			mono_loader_clear_error ();
 			++count;
 		}
 
 		mono_class_setup_vtable (klass);
-		if (mono_class_has_failure (klass) || mono_loader_get_last_error ()) {
+		if (mono_class_has_failure (klass)) {
 			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, klass->name_space, klass->name);
 			mono_loader_clear_error ();
 			++count;

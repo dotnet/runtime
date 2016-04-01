@@ -1234,9 +1234,6 @@ mono_loader_lock_if_inited (void);
 void
 mono_loader_unlock_if_inited (void);
 
-MonoLoaderError *
-mono_loader_get_last_error (void);
-
 void
 mono_loader_clear_error    (void);
 

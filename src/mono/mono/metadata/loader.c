@@ -133,22 +133,10 @@ mono_loader_cleanup (void)
 	loader_lock_inited = FALSE;	
 }
 
-/*
- * mono_loader_get_last_error:
- *
- *   Returns information about the last type load exception encountered by the loader, or
- * NULL. After use, the exception should be cleared by calling mono_loader_clear_error.
- */
-MonoLoaderError*
-mono_loader_get_last_error (void)
-{
-	return (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
-}
-
 void
 mono_loader_assert_no_error (void)
 {
-	MonoLoaderError *error = mono_loader_get_last_error ();
+	MonoLoaderError *error = NULL;
 
 	if (error) {
 		g_print ("Unhandled loader error: %x, %s %s %s\n", error->exception_type, error->msg, error->assembly_name, error->class_name);
