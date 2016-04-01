@@ -12,6 +12,7 @@
 
 namespace SingLink {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class SingLinkGen
     {
@@ -72,17 +73,26 @@ namespace SingLink {
             Console.WriteLine(retVal);
             return ( retVal == iRep*iObj);
         }
-
+        
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        void Create(int iObj) {
+            Mv_Sing = new SingLink(iObj);
+        }
+        
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        void Delete() {
+            Mv_Sing = null;
+            GC.Collect();
+        }
 
         public int SetLink(int iRep, int iObj)
         {
             for(int i=0; i<iRep; i++)
             {
-                Mv_Sing = new SingLink(iObj);
+                Create(iObj);
                 //Console.WriteLine("after number {0} singlink is set: {1}", i, GC.GetTotalMemory(false) );
 
-                Mv_Sing = null;
-                GC.Collect();
+                Delete();
                 GC.WaitForPendingFinalizers();
 
             }
@@ -147,3 +157,4 @@ namespace SingLink {
         }
     }
 }
+
