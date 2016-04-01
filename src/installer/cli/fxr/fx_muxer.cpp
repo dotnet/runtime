@@ -83,6 +83,11 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
         return retval;
     }
 
+    if (skip_utf8_bom(&file))
+    {
+        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), global_json.c_str());
+    }
+
     try
     {
         const auto root = json_value::parse(file);
@@ -106,7 +111,7 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     catch (const web::json::json_exception& je)
     {
         pal::string_t jes = pal::to_palstring(je.what());
-        trace::info(_X("A JSON parsing exception occurred: %s"), jes.c_str());
+        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), global_json.c_str(), jes.c_str());
     }
     trace::verbose(_X("CLI version is [%s] in global json file [%s]"), retval.c_str(), global_json.c_str());
     return retval;
