@@ -157,6 +157,8 @@ branchList.each { branchName ->
 	                batchFile("PowerShell -command \"\"C:\\Packer\\unpacker.ps1 .\\bin\\build.pack .\\bin > .\\bin\\unpacker.log\"\"")
 	                // Run the tests
 	                batchFile("run-test.cmd .\\bin\\tests\\Windows_NT.AnyCPU.${configurationGroup}")
+                    // Run the tests
+                    batchFile("run-test.cmd .\\bin\\tests\\AnyOS.AnyCPU.${configurationGroup}")
             	}
 
             	parameters {
