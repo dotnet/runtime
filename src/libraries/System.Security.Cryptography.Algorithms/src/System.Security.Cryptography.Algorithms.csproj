@@ -77,11 +77,16 @@
     <Compile Include="System\Security\Cryptography\RNGCryptoServiceProvider.Windows.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Windows.cs" />
-    <Compile Include="Internal\Cryptography\CngCipher.cs" />
+    <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipherBCrypt.cs">
+      <Link>Internal\Cryptography\BasicSymmetricCipherBCrypt.cs</Link>
+    </Compile>
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\AesBCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\AesBCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
@@ -127,6 +132,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
+      <Link>Common\Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs">
       <Link>Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs</Link>

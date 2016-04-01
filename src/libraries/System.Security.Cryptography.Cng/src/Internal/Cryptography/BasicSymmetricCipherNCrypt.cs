@@ -14,7 +14,7 @@ using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace Internal.Cryptography
 {
-    internal sealed class BasicSymmetricCipherCng : BasicSymmetricCipher
+    internal sealed class BasicSymmetricCipherNCrypt : BasicSymmetricCipher
     {
         //
         // The first parameter is a delegate that instantiates a CngKey rather than a CngKey itself. That's because CngKeys are stateful objects
@@ -22,7 +22,7 @@ namespace Internal.Cryptography
         //
         // The delegate must instantiate a new CngKey, based on a new underlying NCryptKeyHandle, each time is called.
         //
-        public BasicSymmetricCipherCng(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[] iv, bool encrypting)
+        public BasicSymmetricCipherNCrypt(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[] iv, bool encrypting)
             : base(iv, blockSizeInBytes)
         {
             _encrypting = encrypting;
