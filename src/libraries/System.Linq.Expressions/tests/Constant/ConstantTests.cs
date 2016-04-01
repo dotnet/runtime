@@ -763,5 +763,18 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        [Fact]
+        public static void InvalidTypeValueType()
+        {
+            // implicit cast, but not reference assignable.
+            Assert.Throws<ArgumentException>(() => Expression.Constant(0, typeof(long)));
+        }
+
+        [Fact]
+        public static void InvalidTypeReferenceType()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Constant("hello", typeof(Expression)));
+        }
     }
 }
