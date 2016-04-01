@@ -180,6 +180,30 @@ namespace System.Threading.Tasks.Tests
             tokenSource.Dispose(); //Repeat calls to Dispose should be ok.
         }
 
+        [Fact]
+        public static void TokenSourceDispose_Negative()
+        {
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            CancellationToken token = tokenSource.Token;
+
+            CancellationTokenRegistration preDisposeRegistration = token.Register(() => { });
+
+            //WaitHandle and Dispose
+            tokenSource.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>  token.WaitHandle);
+
+            Assert.Throws<ObjectDisposedException>(() =>tokenSource.Token);
+
+            //shouldn't throw
+            token.Register(() => { });
+
+            // Allow ctr.Dispose() to succeed when the backing cts has already been disposed.
+            preDisposeRegistration.Dispose();
+
+            //shouldn't throw
+            CancellationTokenSource.CreateLinkedTokenSource(new[] { token, token });
+        }
+
         /// <summary>
         /// Test passive signalling.
         /// 
