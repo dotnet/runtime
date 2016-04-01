@@ -507,21 +507,19 @@ namespace System.Dynamic.Utils
         {
             foreach (MethodInfo mi in methods)
             {
-                if (mi.Name != "op_Implicit" && (implicitOnly || mi.Name != "op_Explicit"))
+                if (
+                    (mi.Name == "op_Implicit" || (!implicitOnly && mi.Name == "op_Explicit"))
+                    && AreEquivalent(mi.ReturnType, typeTo)
+                    )
                 {
-                    continue;
+                    ParameterInfo[] pis = mi.GetParametersCached();
+                    if (pis.Length == 1 && AreEquivalent(pis[0].ParameterType, typeFrom))
+                    {
+                        return mi;
+                    }
                 }
-                if (!TypeUtils.AreEquivalent(mi.ReturnType, typeTo))
-                {
-                    continue;
-                }
-                ParameterInfo[] pis = mi.GetParametersCached();
-                if (!TypeUtils.AreEquivalent(pis[0].ParameterType, typeFrom))
-                {
-                    continue;
-                }
-                return mi;
             }
+
             return null;
         }
 
