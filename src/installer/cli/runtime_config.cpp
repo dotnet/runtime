@@ -38,6 +38,29 @@ bool runtime_config_t::parse_opts(const json_value& opts)
         }
     }
 
+    auto probe_paths = opts_obj.find(_X("additionalProbingPaths"));
+    if (probe_paths != opts_obj.end())
+    {
+        if (probe_paths->second.is_string())
+        {
+            m_probe_paths.push_back(probe_paths->second.as_string());
+        }
+        else
+        {
+            const auto& arr = probe_paths->second.as_array();
+            for (const auto& str : arr)
+            {
+                m_probe_paths.push_back(str.as_string());
+            }
+        }
+    }
+
+    auto roll_fwd = opts_obj.find(_X("applyPatches"));
+    if (roll_fwd != opts_obj.end())
+    {
+        m_fx_roll_fwd = roll_fwd->second.as_bool();
+    }
+
     auto framework =  opts_obj.find(_X("framework"));
     if (framework == opts_obj.end())
     {
@@ -49,14 +72,6 @@ bool runtime_config_t::parse_opts(const json_value& opts)
     const auto& fx_obj = framework->second.as_object();
     m_fx_name = fx_obj.at(_X("name")).as_string();
     m_fx_ver = fx_obj.at(_X("version")).as_string();
-
-    auto value = fx_obj.find(_X("rollForward"));
-    if (value == fx_obj.end())
-    {
-        return true;
-    }
-
-    m_fx_roll_fwd = value->second.as_bool();
     return true;
 }
 
@@ -116,6 +131,11 @@ bool runtime_config_t::get_fx_roll_fwd() const
 bool runtime_config_t::get_portable() const
 {
     return m_portable;
+}
+
+const std::vector<pal::string_t>& runtime_config_t::get_probe_paths() const
+{
+    return m_probe_paths;
 }
 
 void runtime_config_t::config_kv(std::vector<std::string>* keys, std::vector<std::string>* values) const
