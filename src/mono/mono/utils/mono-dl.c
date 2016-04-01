@@ -402,28 +402,35 @@ mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 	if (binl != -1) {
 		char *base;
 		char *resolvedname, *name;
+		char *baseparent = NULL;
 		buf [binl] = 0;
 		resolvedname = mono_path_resolve_symlinks (buf);
 		base = g_path_get_dirname (resolvedname);
 		name = g_strdup_printf ("%s/.libs", base);
 		runtime_lib = try_load (lib_name, name, flags, error_msg);
 		g_free (name);
+		if (!runtime_lib)
+			baseparent = g_path_get_dirname (base);
 		if (!runtime_lib) {
-			char *newbase = g_path_get_dirname (base);
-			name = g_strdup_printf ("%s/lib", newbase);
+			name = g_strdup_printf ("%s/lib", baseparent);
 			runtime_lib = try_load (lib_name, name, flags, error_msg);
 			g_free (name);
 		}
 #ifdef __MACH__
 		if (!runtime_lib) {
-			char *newbase = g_path_get_dirname (base);
-			name = g_strdup_printf ("%s/Libraries", newbase);
+			name = g_strdup_printf ("%s/Libraries", baseparent);
 			runtime_lib = try_load (lib_name, name, flags, error_msg);
 			g_free (name);
 		}
 #endif
+		if (!runtime_lib) {
+			name = g_strdup_printf ("%s/profiler/.libs", baseparent);
+			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			g_free (name);
+		}
 		g_free (base);
 		g_free (resolvedname);
+		g_free (baseparent);
 	}
 	if (!runtime_lib)
 		runtime_lib = try_load (lib_name, NULL, flags, error_msg);
