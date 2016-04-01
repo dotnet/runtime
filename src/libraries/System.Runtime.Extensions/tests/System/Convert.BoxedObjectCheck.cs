@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -9,33 +10,70 @@ namespace System.Tests
 {
     public class ConvertBoxedObjectCheckTests
     {
-        [Fact]
-        public static void ChangeTypeIdentity()
+        public static IEnumerable<object[]> DefaultToTypeValues()
         {
-            object[] testValues =
-            {
-            true, false,
-            Byte.MinValue, Byte.MaxValue,
-            SByte.MinValue,SByte.MaxValue, (SByte)0,
-            Int16.MinValue, Int16.MaxValue, (Int16)0,
-            UInt16.MinValue, UInt16.MaxValue,
-            Int32.MinValue, Int32.MaxValue, (Int32)0,
-            UInt32.MinValue, UInt32.MaxValue,
-            Int64.MinValue, Int64.MaxValue, (Int64)0,
-            UInt64.MinValue, UInt64.MaxValue,
-            Char.MinValue, Char.MaxValue, (Char)0,
-            Double.MinValue, Double.MaxValue, (Double)0,
-            Single.MinValue, Single.MaxValue, (Single)0,
-            Decimal.MinValue, Decimal.MaxValue, (Decimal)0,
-            DateTime.MinValue, DateTime.Now, DateTime.MaxValue
-        };
+            yield return new object[] { true };
+            yield return new object[] { false };
+            yield return new object[] { Byte.MinValue };
+            yield return new object[] { Byte.MaxValue };
+            yield return new object[] { SByte.MinValue };
+            yield return new object[] { SByte.MaxValue };
+            yield return new object[] { (SByte)0 };
+            yield return new object[] { Int16.MinValue };
+            yield return new object[] { Int16.MaxValue };
+            yield return new object[] { (Int16)0 };
+            yield return new object[] { UInt16.MinValue };
+            yield return new object[] { UInt16.MaxValue };
+            yield return new object[] { Int32.MinValue };
+            yield return new object[] { Int32.MaxValue };
+            yield return new object[] { (Int32)0 };
+            yield return new object[] { UInt32.MinValue };
+            yield return new object[] { UInt32.MaxValue };
+            yield return new object[] { Int64.MinValue };
+            yield return new object[] { Int64.MaxValue };
+            yield return new object[] { (Int64)0 };
+            yield return new object[] { UInt64.MinValue };
+            yield return new object[] { UInt64.MaxValue };
+            yield return new object[] { Char.MinValue };
+            yield return new object[] { Char.MaxValue };
+            yield return new object[] { (Char)0 };
+            yield return new object[] { Double.MinValue };
+            yield return new object[] { Double.MaxValue };
+            yield return new object[] { (Double)0 };
+            yield return new object[] { Single.MinValue };
+            yield return new object[] { Single.MaxValue };
+            yield return new object[] { (Single)0 };
+            yield return new object[] { Decimal.MinValue };
+            yield return new object[] { Decimal.MaxValue };
+            yield return new object[] { (Decimal)0 };
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.Now };
+            yield return new object[] { DateTime.MaxValue };
+        }
 
-            foreach (object obj in testValues)
+        [Theory]
+        [MemberData(nameof(DefaultToTypeValues))]
+        public static void TestConvertedCopies(object testValue)
+        {
+            Assert.All(DefaultToTypeValues(), input =>
             {
-                object copy = GetBoxedCopy(obj);
-                Assert.NotSame(obj, copy);
-                Assert.Equal(obj, copy);
-            }
+                try
+                {
+                    object converted = ((IConvertible)testValue).ToType(input[0].GetType(), null);
+                    Assert.NotSame(testValue, converted);
+                }
+                catch (InvalidCastException) { }
+                catch (OverflowException) { }
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultToTypeValues))]
+        public static void ChangeTypeIdentity(object testValue)
+        {
+            object copy = GetBoxedCopy(testValue);
+            Assert.NotSame(testValue, copy);
+            Assert.Equal(testValue, copy);
         }
 
         public static object GetBoxedCopy(object obj)

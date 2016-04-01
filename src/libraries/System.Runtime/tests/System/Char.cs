@@ -192,6 +192,10 @@ public static class CharTests
         Assert.Equal(Char.GetNumericValue("9", 0), 9);
         Assert.Equal(Char.GetNumericValue("Test 7", 5), 7);
         Assert.Equal(Char.GetNumericValue("T", 0), -1);
+
+        Assert.Throws<ArgumentNullException>(() => char.GetNumericValue(null, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsControl("abc", 4));
     }
 
     [Fact]
@@ -641,6 +645,14 @@ public static class CharTests
         foreach (char hs in s_highSurrogates)
             foreach (char ls in s_nonSurrogates)
                 Assert.False(Char.IsSurrogatePair(hs.ToString() + ls, 0));
+
+        Assert.Throws<ArgumentNullException>(() => char.IsSurrogatePair(null, 0));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSurrogatePair("abc", -1));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => char.IsSurrogatePair("abc", 4));
+
+        Assert.False(char.IsSurrogatePair("abc", 2)); // index + 1 == s.length always returns false.
     }
 
     [Fact]
