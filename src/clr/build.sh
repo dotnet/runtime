@@ -65,6 +65,7 @@ clean()
     rm -rf "$__TestIntermediatesDir"
 
     rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
+    rm -rf "$__ProjectRoot/Tools"
 }
 
 # Check the system to ensure the right prereqs are in place
