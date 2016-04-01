@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -125,18 +124,30 @@ namespace System.Linq.Parallel.Tests
             LastOrDefault_NoMatch(labeled, count, position);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void Last_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void Last_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Last(x => { canceler(); return true; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.LastOrDefault(x => { canceler(); return true; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Last());
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Last(x => true));
+        [Fact]
+        public static void Last_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Last(x => { canceler(); return true; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.LastOrDefault(x => { canceler(); return false; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Last(x => { canceler(); return true; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.LastOrDefault(x => { canceler(); return false; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).LastOrDefault());
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).LastOrDefault(x => true));
+        [Fact]
+        public static void Last_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.Last());
+            AssertThrows.AlreadyCanceled(source => source.Last(x => true));
+
+            AssertThrows.AlreadyCanceled(source => source.LastOrDefault());
+            AssertThrows.AlreadyCanceled(source => source.LastOrDefault(x => true));
         }
 
         [Theory]

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -334,27 +333,76 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(0, query.Sum(x => (decimal?)null));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 2 }, MemberType = typeof(UnorderedSources))]
-        public static void Sum_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void Sum_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (int?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (int?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (long)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (long?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (long)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (long?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (float)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (float?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (float)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (float?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (double)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (double?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (double)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (double?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal?)x; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (decimal)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Sum(x => (decimal?)x));
+        [Fact]
+        public static void Sum_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (int?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (long)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (long?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (float)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (float?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (double)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (double?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (int?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (long)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (long?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (float)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (float?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (double)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (double?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Sum(x => { canceler(); return (decimal?)x; }));
+        }
+
+        [Fact]
+        public static void Sum_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => x));
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (int?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (long)x));
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (long?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (float)x));
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (float?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (double)x));
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (double?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (decimal)x));
+            AssertThrows.AlreadyCanceled(source => source.Sum(x => (decimal?)x));
         }
 
         [Theory]

@@ -22,12 +22,16 @@
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
     <Compile Include="Combinatorial\CancellationParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\FailingParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\LabeledOperation.cs" />
     <Compile Include="Combinatorial\ParallelQueryCombinationTests.cs" />
     <Compile Include="Combinatorial\SourcesAndOperators.cs" />
     <Compile Include="Combinatorial\UnorderedParallelQueryCombinationTests.cs" />
+    <Compile Include="Helpers\AssertThrows.cs" />
     <Compile Include="Helpers\Comparers.cs" />
     <Compile Include="Helpers\DeliberateTestException.cs" />
     <Compile Include="Helpers\Enumerables.cs" />

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -75,15 +74,24 @@ namespace System.Linq.Parallel.Tests
             Contains_OneMatching(labeled, count, position);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void Contains_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void Contains_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Contains(-1, new CancelingEqualityComparer<int>(canceler)));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Contains(0));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Contains(0, EqualityComparer<int>.Default));
+        [Fact]
+        public static void Contains_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Contains(-1, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Contains(-1, new CancelingEqualityComparer<int>(canceler)));
+        }
+
+        [Fact]
+        public static void Contains_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.Contains(0));
+            AssertThrows.AlreadyCanceled(source => source.Contains(0, EqualityComparer<int>.Default));
         }
 
         [Theory]
