@@ -232,6 +232,7 @@ typedef struct {
 typedef struct {
 	int nargs;
 	int gr, fr, stack_usage;
+	gboolean pinvoke;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];

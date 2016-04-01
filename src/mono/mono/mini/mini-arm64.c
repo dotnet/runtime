@@ -1165,10 +1165,10 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	int field_offsets [16];
 	guint32 align;
 
-	size = mini_type_stack_size_full (t, &align, FALSE);
+	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
 
-	nregs = size / 8;
+	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
 		/*
 		 * The struct might include nested float structs aligned at 8,
@@ -1318,6 +1318,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
 	cinfo->nargs = n;
+	cinfo->pinvoke = sig->pinvoke;
 
 	/* Return value */
 	add_param (cinfo, &cinfo->ret, sig->ret);
