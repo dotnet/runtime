@@ -97,9 +97,9 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *code, *buf, *tramp;
+	guint8 *code, *buf, *tramp, *labels [16];
 	int i, buf_len, imm;
-	int frame_size, offset, gregs_offset, num_fregs, fregs_offset, arg_offset, lmf_offset;
+	int frame_size, offset, gregs_offset, num_fregs, fregs_offset, arg_offset, lmf_offset, res_offset;
 	guint64 gregs_regset;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
@@ -127,6 +127,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += num_fregs * 8;
 	/* arg */
 	arg_offset = offset;
+	offset += 8;
+	/* result */
+	res_offset = offset;
 	offset += 8;
 	/* LMF */
 	lmf_offset = offset;
@@ -222,6 +225,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	arm_blrx (code, ARMREG_IP0);
 
+	/* Save the result */
+	arm_strx (code, ARMREG_R0, ARMREG_FP, res_offset);
+
 	/* Restore LMF */
 	/* Similar to emit_restore_lmf () */
 	/* Clobbers ip0/ip1 */
@@ -234,8 +240,19 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* *lmf_addr = previous_lmf */
 	arm_strx (code, ARMREG_IP1, ARMREG_IP0, 0);
 
-	/* Save the result to ip1 */
-	arm_movx (code, ARMREG_IP1, ARMREG_R0);
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	if (aot) {
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint_noraise");
+	} else {
+		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_thread_force_interruption_checkpoint_noraise);
+	}
+	arm_blrx (code, ARMREG_IP0);
+	/* Check whenever there is an exception to be thrown */
+	labels [0] = code;
+	arm_cbnzx (code, ARMREG_R0, 0);
+
+	/* Normal case */
 
 	/* Restore gregs */
 	/* Only have to load the argument regs (r0..r8) and the rgctx reg */
@@ -243,6 +260,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Restore fregs */
 	for (i = 0; i < num_fregs; ++i)
 		arm_ldrfpx (code, i, ARMREG_FP, fregs_offset + (i * 8));
+
+	/* Load the result */
+	arm_ldrx (code, ARMREG_IP1, ARMREG_FP, res_offset);
 
 	/* These trampolines return a value */
 	if (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
@@ -255,6 +275,29 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		arm_retx (code, ARMREG_LR);
 	else
 		arm_brx (code, ARMREG_IP1);
+
+	/* Exception case */
+	mono_arm_patch (labels [0], code, MONO_R_ARM64_CBZ);
+
+	/*
+	 * We have an exception we want to throw in the caller's frame, so pop
+	 * the trampoline frame and throw from the caller.
+	 */
+	code = mono_arm_emit_destroy_frame (code, frame_size, ((1 << ARMREG_IP0)));
+	/* We are in the parent frame, the exception is in x0 */
+	/*
+	 * EH is initialized after trampolines, so get the address of the variable
+	 * which contains throw_exception, and load it from there.
+	 */
+	if (aot) {
+		/* Not really a jit icall */
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "throw_exception_addr");
+	} else {
+		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_get_throw_exception_addr ());
+	}
+	arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, 0);
+	/* lr contains the return address, the trampoline will use it as the throw site */
+	arm_brx (code, ARMREG_IP0);
 
 	g_assert ((code - buf) < buf_len);
 	mono_arch_flush_icache (buf, code - buf);
