@@ -8,13 +8,20 @@ namespace System.Globalization.Tests
 {
     public class CultureInfoCalendar
     {
-        [Theory]
-        [InlineData("en-US", typeof(GregorianCalendar))]
-        [InlineData("th-TH", typeof(ThaiBuddhistCalendar))]
-        public void Calendar(string locale, Type expected)
+        [Fact]
+        public void Calendar_Get_InvariantInfo()
         {
-            CultureInfo cultureInfo = new CultureInfo(locale);
-            Assert.IsType(expected, cultureInfo.Calendar);
+            CultureInfo cultureInfo = CultureInfo.InvariantCulture;
+            Assert.IsType(typeof(GregorianCalendar), cultureInfo.Calendar);
+            Assert.Same(cultureInfo.Calendar, cultureInfo.Calendar);
+        }
+        
+        [Fact]
+        public void OptionalCalendars_Get_InvariantInfo()
+        {
+            CultureInfo cultureInfo = CultureInfo.InvariantCulture;
+            Assert.Equal(1, cultureInfo.OptionalCalendars.Length);
+            Assert.IsType(typeof(GregorianCalendar), cultureInfo.OptionalCalendars[0]);
         }
     }
 }
