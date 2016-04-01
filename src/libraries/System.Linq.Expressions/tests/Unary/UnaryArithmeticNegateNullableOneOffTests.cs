@@ -9,8 +9,8 @@ namespace System.Linq.Expressions.Tests
 {
     public static class UnaryArithmeticNegateNullableOneOffTests
     {
-        [Fact] //[WorkItem(3197, "https://github.com/dotnet/corefx/issues/3197")]
-        public static void UnaryArithmeticNegateNullableStackBalance()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void UnaryArithmeticNegateNullableStackBalance(bool useInterpreter)
         {
             var e = Expression.Lambda<Func<decimal?>>(
                 Expression.Negate(
@@ -20,7 +20,7 @@ namespace System.Linq.Expressions.Tests
                 )
             );
 
-            var f = e.Compile();
+            var f = e.Compile(useInterpreter);
 
             Assert.True(f() == 1.0m);
         }

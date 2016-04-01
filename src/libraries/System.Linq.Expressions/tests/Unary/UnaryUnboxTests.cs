@@ -12,20 +12,20 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact] //[WorkItem(4021, "https://github.com/dotnet/corefx/issues/4021")]
-        public static void CheckUnaryUnboxTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckUnaryUnboxTest(bool useInterpreter)
         {
-            VerifyUnbox(42, typeof(int), false);
-            VerifyUnbox(42, typeof(int?), false);
-            VerifyUnbox(null, typeof(int?), false);
-            VerifyUnbox(null, typeof(int), true);
+            VerifyUnbox(42, typeof(int), false, useInterpreter);
+            VerifyUnbox(42, typeof(int?), false, useInterpreter);
+            VerifyUnbox(null, typeof(int?), false, useInterpreter);
+            VerifyUnbox(null, typeof(int), true, useInterpreter);
         }
 
         #endregion
 
         #region Test verifiers
 
-        private static void VerifyUnbox(object value, Type type, bool shouldThrow)
+        private static void VerifyUnbox(object value, Type type, bool shouldThrow, bool useInterpreter)
         {
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Tests
                         typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<object> f = e.Compile();
+            Func<object> f = e.Compile(useInterpreter);
 
             if (shouldThrow)
             {
