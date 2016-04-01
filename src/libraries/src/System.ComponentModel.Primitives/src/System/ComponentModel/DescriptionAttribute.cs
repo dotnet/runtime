@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       or event.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public class DescriptionAttribute : ComponentModelAttribute
+    public class DescriptionAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DescriptionAttribute'/> , which is an
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
