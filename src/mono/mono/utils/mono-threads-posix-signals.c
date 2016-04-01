@@ -160,10 +160,10 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	MonoThreadInfo *current = mono_thread_info_current ();
 	gboolean ret;
 
-	THREADS_SUSPEND_DEBUG ("SIGNAL HANDLER FOR %p [%p]\n", current, (void*)current->native_handle);
+	THREADS_SUSPEND_DEBUG ("SIGNAL HANDLER FOR %p [%p]\n", mono_thread_info_get_tid (current), (void*)current->native_handle);
 	if (current->syscall_break_signal) {
 		current->syscall_break_signal = FALSE;
-		THREADS_SUSPEND_DEBUG ("\tsyscall break for %p\n", current);
+		THREADS_SUSPEND_DEBUG ("\tsyscall break for %p\n", mono_thread_info_get_tid (current));
 		mono_threads_notify_initiator_of_abort (current);
 		goto done;
 	}
@@ -171,7 +171,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	/* Have we raced with self suspend? */
 	if (!mono_threads_transition_finish_async_suspend (current)) {
 		current->suspend_can_continue = TRUE;
-		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", current);
+		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", mono_thread_info_get_tid (current));
 		goto done;
 	}
 
@@ -182,7 +182,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	/* This thread is doomed, all we can do is give up and let the suspender recover. */
 	if (!ret) {
-		THREADS_SUSPEND_DEBUG ("\tThread is dying, failed to capture state %p\n", current);
+		THREADS_SUSPEND_DEBUG ("\tThread is dying, failed to capture state %p\n", mono_thread_info_get_tid (current));
 		mono_threads_transition_async_suspend_compensation (current);
 
 		/* We're done suspending */
