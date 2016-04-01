@@ -721,16 +721,6 @@ typedef struct {
 	gboolean no_raise;
 } MonoJitICallInfo;
 
-typedef struct {
-	guint8 exception_type;
-	char *class_name; /* If kind == TYPE */
-	char *assembly_name; /* If kind == TYPE or ASSEMBLY */
-	MonoClass *klass; /* If kind != TYPE */
-	const char *member_name; /* If kind != TYPE */
-	gboolean ref_only; /* If kind == ASSEMBLY */
-	char *msg; /* If kind == BAD_IMAGE */
-} MonoLoaderError;
-
 void
 mono_class_setup_supertypes (MonoClass *klass);
 
@@ -1233,12 +1223,6 @@ mono_loader_lock_if_inited (void);
 
 void
 mono_loader_unlock_if_inited (void);
-
-void
-mono_loader_clear_error    (void);
-
-void
-mono_loader_assert_no_error (void);
 
 void
 mono_reflection_init       (void);

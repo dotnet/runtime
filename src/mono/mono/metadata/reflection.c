@@ -10428,7 +10428,6 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
-		mono_loader_assert_no_error ();
 		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 

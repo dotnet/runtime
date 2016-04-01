@@ -68,11 +68,6 @@ static guint32 methods_size;
 static guint32 signatures_size;
 
 /*
- * This TLS variable contains the last type load error encountered by the loader.
- */
-MonoNativeTlsKey loader_error_thread_id;
-
-/*
  * This TLS variable holds how many times the current thread has acquired the loader 
  * lock.
  */
@@ -103,7 +98,6 @@ mono_loader_init ()
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
-		mono_native_tls_alloc (&loader_error_thread_id, NULL);
 		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
 
 		mono_counters_init ();
@@ -125,43 +119,11 @@ mono_loader_cleanup (void)
 {
 	dllmap_cleanup ();
 
-	mono_native_tls_free (loader_error_thread_id);
 	mono_native_tls_free (loader_lock_nest_id);
 
 	mono_coop_mutex_destroy (&loader_mutex);
 	mono_os_mutex_destroy (&global_loader_data_mutex);
 	loader_lock_inited = FALSE;	
-}
-
-void
-mono_loader_assert_no_error (void)
-{
-	MonoLoaderError *error = NULL;
-
-	if (error) {
-		g_print ("Unhandled loader error: %x, %s %s %s\n", error->exception_type, error->msg, error->assembly_name, error->class_name);
-		g_assert_not_reached ();
-	}
-}
-
-/**
- * mono_loader_clear_error:
- *
- * Disposes any loader error messages on this thread
- */
-void
-mono_loader_clear_error (void)
-{
-	MonoLoaderError *ex = (MonoLoaderError*)mono_native_tls_get_value (loader_error_thread_id);
-
-	if (ex) {
-		g_free (ex->class_name);
-		g_free (ex->assembly_name);
-		g_free (ex->msg);
-		g_free (ex);
-
-		mono_native_tls_set_value (loader_error_thread_id, NULL);
-	}
 }
 
 /*
@@ -285,7 +247,6 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	field = mono_class_get_field_from_name_full (klass, fname, sig_type);
 
 	if (!field) {
-		mono_loader_assert_no_error ();
 		mono_error_set_field_load (error, klass, fname, "Could not find field '%s'", fname);
 	}
 
@@ -339,7 +300,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
 		field = field_from_memberref (image, token, retklass, context, error);
-		mono_loader_assert_no_error ();
 	} else {
 		type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
 		if (!type) {
@@ -355,7 +315,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 			*retklass = k;
 		field = mono_class_get_field (k, token);
 		if (!field) {
-			mono_loader_assert_no_error ();
 			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
 		}
 	}
@@ -366,7 +325,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		mono_image_unlock (image);
 	}
 
-	mono_loader_assert_no_error ();
 	return field;
 }
 
@@ -919,17 +877,14 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_free (msig);
 		msig = g_string_free (s, FALSE);
 
-		mono_loader_assert_no_error ();
 		mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
 
 		g_free (msig);
 	}
 
-	mono_loader_assert_no_error ();
 	return method;
 
 fail:
-	mono_loader_assert_no_error ();
 	g_assert (!mono_error_ok (error));
 	return NULL;
 }
@@ -995,7 +950,6 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	new_context.method_inst = inst;
 
 	method = mono_class_inflate_generic_method_full_checked (method, klass, &new_context, error);
-	mono_loader_assert_no_error ();
 	return method;
 }
 
@@ -1634,7 +1588,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, error);
 		mono_error_assert_ok (error);
-		mono_loader_assert_no_error ();
 
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {
@@ -1705,7 +1658,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	 */
 	if (*sig & 0x10) {
 		generic_container = mono_metadata_load_generic_params (image, token, container);
-		mono_loader_assert_no_error (); /* FIXME don't swallow this error. */
 	}
 	if (generic_container) {
 		result->is_generic = TRUE;
@@ -1740,7 +1692,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
  	if (generic_container)
  		mono_method_set_generic_container (result, generic_container);
 
-	mono_loader_assert_no_error ();
 	return result;
 }
 

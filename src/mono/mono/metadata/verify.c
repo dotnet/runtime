@@ -890,7 +890,6 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
-		mono_loader_clear_error ();
 		return FALSE;
 	}
 
@@ -1023,7 +1022,6 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 
 	if (!type) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load type from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
-		mono_loader_clear_error ();
 		return NULL;
 	}
 

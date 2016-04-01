@@ -290,7 +290,6 @@ done:
 		char *assembly = mono_assembly_name_from_token (image, type_token);
 		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
 	}
-	mono_loader_assert_no_error ();
 	return res;
 }
 
@@ -1347,7 +1346,6 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 	mono_error_set_type_load_class (error, klass, "Could not find base type");
 
 fail:
-	mono_loader_assert_no_error ();
 	return NULL;
 }
 
@@ -5031,59 +5029,6 @@ concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 	return s;
 }
 
-static void
-set_failure_from_loader_error (MonoClass *klass, MonoLoaderError *error)
-{
-	gpointer exception_data = NULL;
-
-	switch (error->exception_type) {
-	case MONO_EXCEPTION_TYPE_LOAD:
-		exception_data = concat_two_strings_with_zero (klass->image, error->class_name, error->assembly_name);
-		break;
-
-	case MONO_EXCEPTION_MISSING_METHOD:
-		exception_data = concat_two_strings_with_zero (klass->image, error->class_name, error->member_name);
-		break;
-
-	case MONO_EXCEPTION_MISSING_FIELD: {
-		const char *name_space = error->klass->name_space ? error->klass->name_space : NULL;
-		const char *class_name;
-
-		if (name_space)
-			class_name = g_strdup_printf ("%s.%s", name_space, error->klass->name);
-		else
-			class_name = error->klass->name;
-
-		exception_data = concat_two_strings_with_zero (klass->image, class_name, error->member_name);
-		
-		if (name_space)
-			g_free ((void*)class_name);
-		break;
-	}
-
-	case MONO_EXCEPTION_FILE_NOT_FOUND: {
-		const char *msg;
-
-		if (error->ref_only)
-			msg = "Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.";
-		else
-			msg = "Could not load file or assembly '%s' or one of its dependencies.";
-
-		exception_data = concat_two_strings_with_zero (klass->image, msg, error->assembly_name);
-		break;
-	}
-
-	case MONO_EXCEPTION_BAD_IMAGE:
-		exception_data = error->msg;
-		break;
-
-	default :
-		g_assert_not_reached ();
-	}
-
-	mono_class_set_failure (klass, error->exception_type, exception_data);
-}
-
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -5750,7 +5695,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > tt->rows) {
 		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
-		mono_loader_assert_no_error ();
 		return NULL;
 	}
 
@@ -5758,7 +5702,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 	if ((klass = (MonoClass *)mono_internal_hash_table_lookup (&image->class_cache, GUINT_TO_POINTER (type_token)))) {
 		mono_loader_unlock ();
-		mono_loader_assert_no_error ();
 		return klass;
 	}
 
@@ -5848,7 +5791,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
-			mono_loader_assert_no_error ();
 			return NULL;
 		}
 	}
@@ -5920,7 +5862,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup (mono_error_get_message (error)));
 			mono_loader_unlock ();
 			mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
-			mono_loader_assert_no_error ();
 			return NULL;
 		}
 		klass->cast_class = klass->element_class = mono_class_from_mono_type (enum_basetype);
@@ -5935,7 +5876,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load generic parameter constrains due to %s", mono_error_get_message (error)));
 		mono_loader_unlock ();
 		mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
-		mono_loader_assert_no_error ();
 		return NULL;
 	}
 
@@ -5947,7 +5887,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	mono_loader_unlock ();
 
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
-	mono_loader_assert_no_error ();
 
 	return klass;
 
@@ -5955,7 +5894,6 @@ parent_failure:
 	mono_class_setup_mono_type (klass);
 	mono_loader_unlock ();
 	mono_profiler_class_loaded (klass, MONO_PROFILE_FAILED);
-	mono_loader_assert_no_error ();
 	return NULL;
 }
 
@@ -6620,7 +6558,6 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
 		MonoType *inflated = inflate_generic_type (NULL, t, context, error);
 
 		if (!mono_error_ok (error)) {
-			mono_loader_assert_no_error ();
 			return NULL;
 		}
 
@@ -7503,7 +7440,6 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 		MonoClass *klass = mono_class_get_checked (image, type_token, error);
 
 		if (!klass) {
-			mono_loader_assert_no_error ();
 			return NULL;
 		}
 
@@ -7514,7 +7450,6 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated, error);
 
 	if (!type) {
-		mono_loader_assert_no_error ();
 		return NULL;
 	}
 
