@@ -56,7 +56,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportX509PemFile()
         {
             var collection = new X509Certificate2Collection();
@@ -84,7 +83,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7DerFile_Empty()
         {
             var collection = new X509Certificate2Collection();
@@ -94,7 +92,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7PemFile_Empty()
         {
             var collection = new X509Certificate2Collection();
@@ -122,7 +119,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7DerFile_Single()
         {
             var collection = new X509Certificate2Collection();
@@ -132,7 +128,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7PemFile_Single()
         {
             var collection = new X509Certificate2Collection();
@@ -160,7 +155,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7DerFile_Chain()
         {
             var collection = new X509Certificate2Collection();
@@ -170,7 +164,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2635)]
         public static void ImportPkcs7PemFile_Chain()
         {
             var collection = new X509Certificate2Collection();
