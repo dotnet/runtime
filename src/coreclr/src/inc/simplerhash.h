@@ -42,7 +42,7 @@
 //                                              probably preferable to call Reallocate on initialization rather
 //                                              than override his from the default traits. (7)
 //
-// NoMemory()                                   Called when the has table is unable to grow due to potential
+// NoMemory()                                   Called when the hash table is unable to grow due to potential
 //                                              overflow or the lack of a sufficiently large prime.
 
 void DECLSPEC_NORETURN ThrowOutOfMemory();
