@@ -294,7 +294,28 @@ public:
     }
 };
 
-typedef SimplerHashTable< const BitArray *, LiveStateFuncs, UINT32, DefaultSimplerHashBehavior > LiveStateHashTable;
+class GcInfoNoMemoryException
+{
+};
+
+class GcInfoHashBehavior
+{
+public:
+    static const unsigned s_growth_factor_numerator = 3;
+    static const unsigned s_growth_factor_denominator = 2;
+
+    static const unsigned s_density_factor_numerator = 3;
+    static const unsigned s_density_factor_denominator = 4;
+
+    static const unsigned s_minimum_allocation = 7;
+
+    inline static void DECLSPEC_NORETURN NoMemory()
+    {
+        throw GcInfoNoMemoryException();
+    }
+};
+
+typedef SimplerHashTable<const BitArray *, LiveStateFuncs, UINT32, GcInfoHashBehavior> LiveStateHashTable;
 
 #ifdef MEASURE_GCINFO
 // Fi = fully-interruptible; we count any method that has one or more interruptible ranges
@@ -412,7 +433,8 @@ inline BOOL IsEssential(EE_ILEXCEPTION_CLAUSE *pClause)
 GcInfoEncoder::GcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,
             CORINFO_METHOD_INFO*        pMethodInfo,
-            IAllocator*                 pJitAllocator
+            IAllocator*                 pJitAllocator,
+            NoMemoryFunction            pNoMem
             )
     :   m_Info1( pJitAllocator ),
         m_Info2( pJitAllocator ),
@@ -430,10 +452,12 @@ GcInfoEncoder::GcInfoEncoder(
     _ASSERTE( pCorJitInfo != NULL );
     _ASSERTE( pMethodInfo != NULL );
     _ASSERTE( pJitAllocator != NULL );
+    _ASSERTE( pNoMem != NULL );
 
     m_pCorJitInfo = pCorJitInfo;
     m_pMethodInfo = pMethodInfo;
     m_pAllocator = pJitAllocator;
+    m_pNoMem = pNoMem;
 
 #ifdef _DEBUG
     CORINFO_METHOD_HANDLE methodHandle = pMethodInfo->ftn;
@@ -1773,13 +1797,44 @@ void GcInfoEncoder::Build()
         // Create a hash table for storing the locations of the live sets
         LiveStateHashTable hashMap(m_pAllocator);
 
-        for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
+        bool outOfMemory = false;
+        try
         {
-            if(pCurrent->CodeOffset > callSite)
+            for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                // Time to record the call site
+                if(pCurrent->CodeOffset > callSite)
+                {
+                    // Time to record the call site
 
-                // Add it to the table if it doesn't exist
+                    // Add it to the table if it doesn't exist
+                    UINT32 liveStateOffset = 0;
+                    if (!hashMap.Lookup(&liveState, &liveStateOffset))
+                    {
+                        BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
+                        *newLiveState = liveState;
+                        hashMap.Set(newLiveState, (UINT32)(-1));
+                    }
+
+
+                    if(++callSiteIndex == m_NumCallSites)
+                        break;
+                
+                    callSite = m_pCallSites[callSiteIndex];
+                }
+                else
+                {
+                    UINT32 slotIndex = pCurrent->SlotId;
+                    BYTE becomesLive = pCurrent->BecomesLive;
+                    _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
+                            || (!liveState.ReadBit(slotIndex) && becomesLive));
+                    liveState.WriteBit(slotIndex, becomesLive);
+                    pCurrent++;
+                }
+            }
+
+            // Check for call sites at offsets past the last transition
+            if (callSiteIndex < m_NumCallSites)
+            {
                 UINT32 liveStateOffset = 0;
                 if (!hashMap.Lookup(&liveState, &liveStateOffset))
                 {
@@ -1787,34 +1842,16 @@ void GcInfoEncoder::Build()
                     *newLiveState = liveState;
                     hashMap.Set(newLiveState, (UINT32)(-1));
                 }
-
-
-                if(++callSiteIndex == m_NumCallSites)
-                    break;
-            
-                callSite = m_pCallSites[callSiteIndex];
-            }
-            else
-            {
-                UINT32 slotIndex = pCurrent->SlotId;
-                BYTE becomesLive = pCurrent->BecomesLive;
-                _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
-                        || (!liveState.ReadBit(slotIndex) && becomesLive));
-                liveState.WriteBit(slotIndex, becomesLive);
-                pCurrent++;
             }
         }
-
-        // Check for call sites at offsets past the last transition
-        if (callSiteIndex < m_NumCallSites)
+        catch (GcInfoNoMemoryException& e)
         {
-            UINT32 liveStateOffset = 0;
-            if (!hashMap.Lookup(&liveState, &liveStateOffset))
-            {
-                BitArray * newLiveState = new (m_pAllocator->Alloc(sizeof(BitArray))) BitArray(m_pAllocator, size_tCount);
-                *newLiveState = liveState;
-                hashMap.Set(newLiveState, (UINT32)(-1));
-            }
+            outOfMemory = true;
+        }
+
+        if (outOfMemory)
+        {
+            m_pNoMem();
         }
 
         // Figure out the largest offset, and total size of the sets

@@ -69,8 +69,8 @@ struct SizeTKeyFuncs: SmallPrimitiveKeyFuncs<T>
 };
 #endif // _HOST_64BIT_
 
-typedef SimplerHashTable<size_t, SizeTKeyFuncs<size_t>, CORINFO_METHOD_HANDLE, DefaultSimplerHashBehavior> AddrToMethodHandleMap;
-typedef SimplerHashTable<size_t, SizeTKeyFuncs<size_t>, size_t, DefaultSimplerHashBehavior> AddrToAddrMap;
+typedef SimplerHashTable<size_t, SizeTKeyFuncs<size_t>, CORINFO_METHOD_HANDLE, JitSimplerHashBehavior> AddrToMethodHandleMap;
+typedef SimplerHashTable<size_t, SizeTKeyFuncs<size_t>, size_t, JitSimplerHashBehavior> AddrToAddrMap;
 
 class Compiler;
 

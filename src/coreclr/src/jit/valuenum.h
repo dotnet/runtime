@@ -92,10 +92,10 @@ public:
     //         This class has two purposes - to abstract the implementation and to validate the ValueNums
     //         being stored or retrieved.
     template <class fromType, class keyfuncs=LargePrimitiveKeyFuncs<fromType>> 
-        class VNMap : public SimplerHashTable<fromType, keyfuncs, ValueNum, DefaultSimplerHashBehavior>
+        class VNMap : public SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>
     {
     public:
-        VNMap(IAllocator* alloc) : SimplerHashTable<fromType, keyfuncs, ValueNum, DefaultSimplerHashBehavior>(alloc) {}
+        VNMap(IAllocator* alloc) : SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>(alloc) {}
         ~VNMap()
         {
             ~VNMap<fromType, keyfuncs>::SimplerHashTable();
@@ -104,11 +104,11 @@ public:
         bool Set(fromType k, ValueNum val)
         {
             assert(val != RecursiveVN);
-            return SimplerHashTable<fromType, keyfuncs, ValueNum, DefaultSimplerHashBehavior>::Set(k, val);
+            return SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>::Set(k, val);
         }
         bool Lookup(fromType k, ValueNum* pVal = NULL) const
         {
-            bool result = SimplerHashTable<fromType, keyfuncs, ValueNum, DefaultSimplerHashBehavior>::Lookup(k, pVal);
+            bool result = SimplerHashTable<fromType, keyfuncs, ValueNum, JitSimplerHashBehavior>::Lookup(k, pVal);
             assert(!result || *pVal != RecursiveVN);
             return result;
         }
