@@ -15,7 +15,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
@@ -58,6 +57,8 @@
     <Compile Include="System\ComponentModel\ICustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <!--<Compile Include="System\ComponentModel\IListSource.cs" />-->
+    <!--<Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />-->
+    <!--<Compile Include="System\InvariantComparer.cs" />-->
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
     <!--<Compile Include="System\ComponentModel\ITypedList.cs" />-->
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
@@ -67,11 +68,12 @@
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
+    <!--<Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />-->
+    <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.cs" />
+    <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.ReflectedTypeData.cs" />
     <Compile Include="System\ComponentModel\RefreshEventArgs.cs" />
     <Compile Include="System\ComponentModel\RefreshEventHandler.cs" />
-    <Compile Include="System\ComponentModel\ReflectTypeDescriptionProvider.ReflectedTypeData.cs" />
-    <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\SByteConverter.cs" />
     <Compile Include="System\ComponentModel\SingleConverter.cs" />
     <Compile Include="System\ComponentModel\StringConverter.cs" />
@@ -107,4 +109,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
-
