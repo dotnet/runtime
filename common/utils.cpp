@@ -191,3 +191,30 @@ bool parse_known_args(
     return true;
 }
 
+// Try to match 0xEF 0xBB 0xBF byte sequence (no endianness here.)
+bool skip_utf8_bom(pal::ifstream_t* stream)
+{
+    if (stream->eof() || !stream->good())
+    {
+        return false;
+    }
+
+    int peeked = stream->peek();
+    if (peeked == EOF || ((peeked & 0xFF) != 0xEF))
+    {
+        return false;
+    }
+
+    unsigned char bytes[3];
+    stream->read((char*) bytes, 3);
+    if ((stream->gcount() < 3) ||
+            (bytes[1] != 0xBB) || 
+            (bytes[2] != 0xBF))
+    {
+        // Reset to 0 if returning false.
+        stream->seekg(0, stream->beg);
+        return false;
+    }
+
+    return true;
+}

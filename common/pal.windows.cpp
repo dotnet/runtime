@@ -259,8 +259,12 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
     string_t search_string(path);
     append_path(&search_string, pattern.c_str());
 
-    WIN32_FIND_DATAW data;
-    auto handle = ::FindFirstFileW(search_string.c_str(), &data);
+    WIN32_FIND_DATAW data = { 0 };
+    auto handle = ::FindFirstFileExW(search_string.c_str(), FindExInfoStandard, &data, FindExSearchNameMatch, NULL, 0);
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
     do
     {
         string_t filepath(data.cFileName);
