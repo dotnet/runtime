@@ -187,6 +187,11 @@ public class TupleTests
                 Assert.True(Tuple.Equals(other.Tuple));
                 Assert.Equal(Tuple.GetHashCode(), other.Tuple.GetHashCode());
             }
+            else
+            {
+                Assert.False(Tuple.Equals(other.Tuple));
+                Assert.NotEqual(Tuple.GetHashCode(), other.Tuple.GetHashCode());
+            }
 
             if (expectStructuallyEqual)
             {
@@ -195,8 +200,16 @@ public class TupleTests
                 Assert.True(equatable.Equals(other.Tuple, TestEqualityComparer.Instance));
                 Assert.Equal(equatable.GetHashCode(TestEqualityComparer.Instance), otherEquatable.GetHashCode(TestEqualityComparer.Instance));
             }
+            else
+            {
+                var equatable = ((IStructuralEquatable)Tuple);
+                var otherEquatable = ((IStructuralEquatable)other.Tuple);
+                Assert.False(equatable.Equals(other.Tuple, TestEqualityComparer.Instance));
+                Assert.NotEqual(equatable.GetHashCode(TestEqualityComparer.Instance), otherEquatable.GetHashCode(TestEqualityComparer.Instance));
+            }
 
             Assert.False(Tuple.Equals(null));
+            Assert.False(((IStructuralEquatable)Tuple).Equals(null));
         }
 
         public void TestCompareTo(TupleTestDriver<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> other, int expectedResult, int expectedStructuralResult)
@@ -291,49 +304,63 @@ public class TupleTests
     [Fact]
     public static void TestEquals_GetHashCode()
     {
-        TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan> tupleDriverA, tupleDriverB, tupleDriverC;
+        TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan> tupleDriverA, tupleDriverB, tupleDriverC, tupleDriverD;
         //Tuple-1
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MaxValue);
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MaxValue);
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MinValue);
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MaxValue, int.MaxValue);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-2
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MinValue, int.MaxValue);
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MinValue, int.MaxValue);
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>(short.MinValue, int.MinValue);
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), long.MinValue);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-3
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)0, (int)0, long.MaxValue);
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)0, (int)0, long.MaxValue);
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), long.MinValue);
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "this");
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-4
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "This");
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "This");
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)1, (int)1, long.MinValue, "this");
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)0, (int)0, (long)1, "IS", 'a');
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-5
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-1), (int)(-1), (long)0, "is", 'A');
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)0, (int)0, (long)1, "IS", 'a');
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10, (int)100, (long)1, "testing", 'Z', Single.MinValue);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-6
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10, (int)100, (long)1, "testing", 'Z', Single.MaxValue);
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10, (int)100, (long)1, "testing", 'Z', Single.MaxValue);
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10, (int)100, (long)1, "testing", 'Z', Single.MinValue);
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-101), (int)(-1001), (long)(-2), "tuples", ' ', Single.MinValue, (Double)0.0);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
         //Tuple-7
         tupleDriverA = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-100), (int)(-1000), (long)(-1), "Tuples", ' ', Single.MinValue, Double.MaxValue);
         tupleDriverB = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-100), (int)(-1000), (long)(-1), "Tuples", ' ', Single.MinValue, Double.MaxValue);
         tupleDriverC = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)(-101), (int)(-1001), (long)(-2), "tuples", ' ', Single.MinValue, (Double)0.0);
+        tupleDriverD = new TupleTestDriver<short, int, long, string, Char, Single, Double, DateTime, Tuple<bool, object>, TimeSpan>((short)10001, (int)1000001, (long)10000001, "2008?7?3?", '1', (Single)0.0002, (Double)0.0000002, DateTime.Now.AddMilliseconds(1));
         tupleDriverA.TestEquals_GetHashCode(tupleDriverB, true, true);
         tupleDriverA.TestEquals_GetHashCode(tupleDriverC, false, false);
+        tupleDriverA.TestEquals_GetHashCode(tupleDriverD, false, false);
 
         object myObj = new object();
         //Tuple-10

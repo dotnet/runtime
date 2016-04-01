@@ -1228,7 +1228,7 @@ public static class StringTests
         Assert.Equal(expected, s.Insert(startIndex, value));
     }
 
-    [InlineData]
+    [Fact]
     public static void TestInsert_Invalid()
     {
         Assert.Throws<ArgumentNullException>("value", () => "Hello".Insert(0, null)); // Value is null
