@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
@@ -17,9 +17,8 @@ namespace Internal.Cryptography
         /// <summary>
         /// Configures the core to use plaintext keys (to be auto-generated when first needed.)
         /// </summary>
-        public CngSymmetricAlgorithmCore(string algorithm, ICngSymmetricAlgorithm outer)
+        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer)
         {
-            _algorithm = algorithm;
             _outer = outer;
 
             _keyName = null; // Setting _keyName to null signifies that this object is based on a plaintext key, not a stored CNG key.
@@ -30,14 +29,13 @@ namespace Internal.Cryptography
         /// <summary>
         /// Constructs the core to use a stored CNG key. 
         /// </summary>
-        public CngSymmetricAlgorithmCore(string algorithm, ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
+        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
             if (keyName == null)
                 throw new ArgumentNullException(nameof(keyName));
             if (provider == null)
                 throw new ArgumentNullException(nameof(provider));
 
-            _algorithm = algorithm;
             _outer = outer;
 
             _keyName = keyName;
@@ -47,6 +45,8 @@ namespace Internal.Cryptography
             using (CngKey cngKey = ProduceCngKey())
             {
                 CngAlgorithm actualAlgorithm = cngKey.Algorithm;
+                string algorithm = _outer.GetNCryptAlgorithmIdentifier();
+
                 if (algorithm != actualAlgorithm.Algorithm)
                     throw new CryptographicException(SR.Format(SR.Cryptography_CngKeyWrongAlgorithm, actualAlgorithm.Algorithm, algorithm));
 
@@ -67,7 +67,7 @@ namespace Internal.Cryptography
             {
                 using (CngKey cngKey = ProduceCngKey())
                 {
-                    return cngKey.GetSymmetricKeyDataIfExportable(_algorithm);
+                    return cngKey.GetSymmetricKeyDataIfExportable(_outer.GetNCryptAlgorithmIdentifier());
                 }
             }
         }
@@ -122,7 +122,12 @@ namespace Internal.Cryptography
 
         private ICryptoTransform CreateCryptoTransform(bool encrypting)
         {
-            return CreateCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
+            if (KeyInPlainText)
+            {
+                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting);
+            }
+
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting);
         }
 
         private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
@@ -142,33 +147,43 @@ namespace Internal.Cryptography
             if (rgbIV != null && rgbIV.Length != _outer.BlockSize.BitSizeToByteSize())
                 throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
 
-            if (rgbIV == null && _outer.Mode != CipherMode.ECB)
-                throw new CryptographicException(SR.Cryptography_MissingIV);
+            // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
+            // is correct, and detached from the input parameter.
+            byte[] iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
 
-            string algorithm = _algorithm;
-            return CreateCryptoTransformCore(() => key.ToCngKey(algorithm), rgbIV.CloneByteArray(), encrypting);
+            return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
         }
 
-        private ICryptoTransform CreateCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
+        private ICryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[] iv, bool encrypting)
+        {
+            int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
+            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle();
+
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(
+                algorithmModeHandle,
+                _outer.Mode,
+                blockSizeInBytes,
+                key,
+                iv,
+                encrypting);
+
+            return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
+        }
+
+        private ICryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[] iv, bool encrypting)
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCng(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(cngKeyFactory, _outer.Mode, blockSizeInBytes, iv, encrypting);
             return UniversalCryptoTransform.Create(_outer.Padding, cipher, encrypting);
         }
 
         private CngKey ProduceCngKey()
         {
-            if (KeyInPlainText)
-            {
-                byte[] key = _outer.BaseKey;
-                return key.ToCngKey(_algorithm);
-            }
-            else
-            {
-                return CngKey.Open(_keyName, _provider, _optionOptions);
-            }
+            Debug.Assert(!KeyInPlainText);
+
+            return CngKey.Open(_keyName, _provider, _optionOptions);
         }
 
         private bool KeyInPlainText
@@ -176,7 +191,6 @@ namespace Internal.Cryptography
             get { return _keyName == null; }
         }
 
-        private readonly string _algorithm;
         private readonly ICngSymmetricAlgorithm _outer;
 
         // If using a stored CNG key, these fields provide the CngKey.Open() parameters. If using a plaintext key, _keyName is set to null.
