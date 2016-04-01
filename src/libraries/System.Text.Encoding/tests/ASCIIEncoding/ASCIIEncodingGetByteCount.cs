@@ -28,13 +28,7 @@ namespace System.Text.Tests
         [MemberData(nameof(GetByteCount_TestData))]
         private void GetByteCount(string chars, int index, int count, int expected)
         {
-            char[] charArray = chars.ToCharArray();
-            if (index == 0 && count == chars.Length)
-            {
-                Assert.Equal(expected, new ASCIIEncoding().GetByteCount(chars));
-                Assert.Equal(expected, new ASCIIEncoding().GetByteCount(charArray));
-            }
-            Assert.Equal(expected, new ASCIIEncoding().GetByteCount(charArray, index, count));
+            EncodingHelpers.GetByteCount(new ASCIIEncoding(), chars, index, count, expected);
         }
     }
 }
