@@ -979,7 +979,7 @@ ves_icall_string_alloc (int length)
 {
 	MonoError error;
 	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, &error);
-	mono_error_raise_exception (&error);
+	mono_error_set_pending_exception (&error);
 
 	return str;
 }

@@ -1924,12 +1924,9 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 }
 
 static MonoObject*
-int_to_object (MonoDomain *domain, int val)
+int_to_object (MonoDomain *domain, int val, MonoError *error)
 {
-	MonoError error;
-	MonoObject *result = mono_value_box_checked (domain, mono_get_int32_class (), &val, &error);
-	mono_error_raise_exception (&error); /* FIXME don't raise here */
-	return result;
+	return mono_value_box_checked (domain, mono_get_int32_class (), &val, error);
 }
 
 void
@@ -1976,7 +1973,8 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		return;
 	}
 	if (ret == -2) {
-		*obj_val = int_to_object (domain, 0);
+		*obj_val = int_to_object (domain, 0, &error);
+		mono_error_set_pending_exception (&error);
 		return;
 	}
 
@@ -2037,11 +2035,13 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		break;
 	case SocketOptionName_DontLinger:
 		/* construct a bool int in val - true if linger is off */
-		obj = int_to_object (domain, !linger.l_onoff);
+		obj = int_to_object (domain, !linger.l_onoff, &error);
+		mono_error_set_pending_exception (&error);
 		break;
 	case SocketOptionName_SendTimeout:
 	case SocketOptionName_ReceiveTimeout:
-		obj = int_to_object (domain, time_ms);
+		obj = int_to_object (domain, time_ms, &error);
+		mono_error_set_pending_exception (&error);
 		break;
 
 #ifdef SO_PEERCRED
@@ -2087,7 +2087,8 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 		if (level == SocketOptionLevel_Socket && name == SocketOptionName_ExclusiveAddressUse)
 			val = val ? 0 : 1;
 #endif
-		obj = int_to_object (domain, val);
+		obj = int_to_object (domain, val, &error);
+		mono_error_set_pending_exception (&error);
 	}
 
 	*obj_val = obj;
