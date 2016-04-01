@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
@@ -9,6 +10,35 @@ namespace System.Linq.Parallel.Tests
 {
     public class ToLookupTests
     {
+        [Theory]
+        [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
+        public static void ILookup_MembersBehaveCorrectly(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            int NonExistentKey = count * 2;
+            ILookup<int, int> lookup = labeled.Item.ToLookup(x => x);
+
+            // Count
+            Assert.Equal(count, lookup.Count);
+
+            // Contains
+            Assert.All(lookup, group => lookup.Contains(group.Key));
+            Assert.False(lookup.Contains(NonExistentKey));
+
+            // Indexer
+            Assert.All(lookup, group => Assert.Equal(group, lookup[group.Key]));
+            Assert.Equal(Enumerable.Empty<int>(), lookup[NonExistentKey]);
+
+            // GetEnumerator
+            IEnumerator e1 = ((IEnumerable)lookup).GetEnumerator();
+            IEnumerator<IGrouping<int, int>> e2 = lookup.GetEnumerator();
+            while (e1.MoveNext())
+            {
+                e2.MoveNext();
+                Assert.Equal(((IGrouping<int,int>)e1.Current).Key, e2.Current.Key);
+            }
+            Assert.False(e2.MoveNext());
+        }
+
         [Theory]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
         public static void ToLookup(Labeled<ParallelQuery<int>> labeled, int count)
