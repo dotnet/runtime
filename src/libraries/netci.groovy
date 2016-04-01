@@ -182,8 +182,8 @@ branchList.each { branchName ->
                     """)
             }
 
-            // Set the machine affinity.
-            Utilities.setMachineAffinity(newJob, os)
+            // Set the machine affinity to windows_nt, since git fails on Nano.
+            Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, getFullBranchName(branchName))
 
