@@ -194,9 +194,6 @@ namespace System.Data.SqlClient
             ThrowUnsupportedIfKeywordSet(KEY.Context_Connection);
             ThrowUnsupportedIfKeywordSet(KEY.Enlist);
             ThrowUnsupportedIfKeywordSet(KEY.TransactionBinding);
-#if MANAGED_SNI
-            ThrowUnsupportedIfKeywordSet(KEY.Integrated_Security);
-#endif
 
             // Network Library has its own special error message
             if (ContainsKey(KEY.Network_Library))
@@ -205,6 +202,12 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
+#if MANAGED_SNI
+            if(_integratedSecurity)
+            {
+                throw SQL.UnsupportedKeyword(KEY.Integrated_Security);
+            }
+#endif
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
             _persistSecurityInfo = ConvertValueToBoolean(KEY.Persist_Security_Info, DEFAULT.Persist_Security_Info);
