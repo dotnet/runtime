@@ -4363,7 +4363,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_MISSING_FIELD:
 	case MONO_EXCEPTION_MISSING_METHOD:
 	case MONO_EXCEPTION_FILE_NOT_FOUND:
-	case MONO_EXCEPTION_BAD_IMAGE: {
+	case MONO_EXCEPTION_BAD_IMAGE:
+	case MONO_EXCEPTION_INVALID_PROGRAM: {
 		/* Throw a type load exception if needed */
 		if (cfg->exception_ptr) {
 			ex = mono_class_get_exception_for_failure ((MonoClass *)cfg->exception_ptr);
@@ -4378,6 +4379,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.IO", "FileNotFoundException", cfg->exception_message);
 			else if (cfg->exception_type == MONO_EXCEPTION_BAD_IMAGE)
 				ex = mono_get_exception_bad_image_format (cfg->exception_message);
+			else if (cfg->exception_type == MONO_EXCEPTION_INVALID_PROGRAM)
+				ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", cfg->exception_message);
 			else
 				g_assert_not_reached ();
 		}
