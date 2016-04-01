@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -45,14 +44,10 @@ namespace System.Linq.Parallel.Tests
             ToList(labeled, count);
         }
 
-        [Theory]
-        [MemberData(nameof(Sources.Ranges), new[] { 1 }, MemberType = typeof(Sources))]
-        public static void ToList_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void ToList_OperationCanceledException_PreCanceled()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
-
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToList());
+            AssertThrows.AlreadyCanceled(source => source.ToList());
         }
 
         [Fact]

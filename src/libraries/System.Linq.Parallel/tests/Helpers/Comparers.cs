@@ -54,6 +54,28 @@ namespace System.Linq.Parallel.Tests
         }
     }
 
+    internal sealed class CancelingEqualityComparer<T> : IEqualityComparer<T>
+    {
+        private readonly Action _canceler;
+
+        public CancelingEqualityComparer(Action canceler)
+        {
+            _canceler = canceler;
+        }
+
+        public bool Equals(T x, T y)
+        {
+            _canceler();
+            return EqualityComparer<T>.Default.Equals(x, y);
+        }
+
+        public int GetHashCode(T obj)
+        {
+            _canceler();
+            return obj.GetHashCode();
+        }
+    }
+
     internal class ReverseComparer : IComparer<int>
     {
         public static readonly ReverseComparer Instance = new ReverseComparer();
@@ -87,6 +109,22 @@ namespace System.Linq.Parallel.Tests
             return direction == 0 ? 0 :
                 direction > 0 ? int.MaxValue :
                 int.MinValue;
+        }
+    }
+
+    internal sealed class CancelingComparer : IComparer<int>
+    {
+        private readonly Action _canceler;
+
+        public CancelingComparer(Action canceler)
+        {
+            _canceler = canceler;
+        }
+
+        public int Compare(int x, int y)
+        {
+            _canceler();
+            return Comparer<int>.Default.Compare(x, y);
         }
     }
 

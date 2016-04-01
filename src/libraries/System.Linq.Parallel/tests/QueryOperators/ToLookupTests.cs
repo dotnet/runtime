@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -211,18 +210,30 @@ namespace System.Linq.Parallel.Tests
             ToLookup_DuplicateKeys_ElementSelector_CustomComparator(labeled, count);
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void ToLookup_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void ToDictionary_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, EqualityComparer<int>.Default));
+        [Fact]
+        public static void ToLookup_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.ToLookup(x => x, new CancelingEqualityComparer<int>(canceler)));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.ToLookup(x => x, y => y, new CancelingEqualityComparer<int>(canceler)));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, y => y));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).ToLookup(x => x, y => y, EqualityComparer<int>.Default));
+        [Fact]
+        public static void ToLookup_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x));
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, EqualityComparer<int>.Default));
+
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, y => y));
+            AssertThrows.AlreadyCanceled(source => source.ToLookup(x => x, y => y, EqualityComparer<int>.Default));
         }
 
         [Theory]

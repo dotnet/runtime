@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -280,29 +279,78 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => new NotComparable(x)));
         }
 
-        [Theory]
-        [MemberData(nameof(UnorderedSources.Ranges), new[] { 1 }, MemberType = typeof(UnorderedSources))]
-        public static void Max_OperationCanceledException_PreCanceled(Labeled<ParallelQuery<int>> labeled, int count)
+        [Fact]
+        public static void Max_OperationCanceledException()
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (int?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (int?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (long)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (long?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (long)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (long?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (float)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (float?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (float)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (float?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (double)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (double?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (double)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (double?)x));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal)x; }));
+            AssertThrows.EventuallyCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal?)x; }));
+        }
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal)x));
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal?)x));
+        [Fact]
+        public static void Max_AggregateException_Wraps_OperationCanceledException()
+        {
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (int?)x; }));
 
-            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => new NotComparable(x)));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (long)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (long?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (float)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (float?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (double)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (double?)x; }));
+
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal)x; }));
+            AssertThrows.OtherTokenCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (int?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (long)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (long?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (float)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (float?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (double)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (double?)x; }));
+
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal)x; }));
+            AssertThrows.SameTokenNotCanceled((source, canceler) => source.Max(x => { canceler(); return (decimal?)x; }));
+        }
+
+        [Fact]
+        public static void Max_OperationCanceledException_PreCanceled()
+        {
+            AssertThrows.AlreadyCanceled(source => source.Max(x => x));
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (int?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (long)x));
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (long?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (float)x));
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (float?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (double)x));
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (double?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (decimal)x));
+            AssertThrows.AlreadyCanceled(source => source.Max(x => (decimal?)x));
+
+            AssertThrows.AlreadyCanceled(source => source.Max(x => new NotComparable(x)));
         }
 
         [Theory]

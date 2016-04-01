@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
@@ -35,12 +34,6 @@ namespace System.Linq.Parallel.Tests
         {
             AggregateException ae = Assert.Throws<AggregateException>(query);
             Assert.All(ae.InnerExceptions, e => Assert.IsType<T>(e));
-        }
-
-        public static void AssertIsCanceled(CancellationTokenSource source, Action query)
-        {
-            OperationCanceledException oce = Assert.Throws<OperationCanceledException>(query);
-            Assert.Equal(source.Token, oce.CancellationToken);
         }
 
         public static void Enumerate<T>(this IEnumerable<T> e)
