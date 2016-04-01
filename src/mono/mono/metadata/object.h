@@ -319,6 +319,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 

@@ -1609,6 +1609,9 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 gboolean
 mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error);
 
+MonoObject*
+mono_property_get_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error);
+
 char *
 mono_string_to_utf8_ignore (MonoString *s);
 
