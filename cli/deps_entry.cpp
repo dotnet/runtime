@@ -7,19 +7,7 @@
 #include "trace.h"
 
 
-// -----------------------------------------------------------------------------
-// Given a "base" directory, yield the relative path of this file in the package
-// layout.
-//
-// Parameters:
-//    base - The base directory to look for the relative path of this entry
-//    str  - If the method returns true, contains the file path for this deps
-//           entry relative to the "base" directory
-//
-// Returns:
-//    If the file exists in the path relative to the "base" directory.
-//
-bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str) const
+bool deps_entry_t::to_path(const pal::string_t& base, bool look_in_base, pal::string_t* str) const
 {
     pal::string_t& candidate = *str;
 
@@ -44,19 +32,53 @@ bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str) co
         pal_relative_path.length() + 3);
 
     candidate.assign(base);
-    append_path(&candidate, pal_relative_path.c_str());
+    pal::string_t sub_path = look_in_base ? get_filename(pal_relative_path) : pal_relative_path;
+    append_path(&candidate, sub_path.c_str());
 
     bool exists = pal::file_exists(candidate);
+    const pal::char_t* query_type = look_in_base ? _X("Local") : _X("Relative");
     if (!exists)
     {
-        trace::verbose(_X("Relative path query did not exist %s"), candidate.c_str());
+        trace::verbose(_X("    %s path query did not exist %s"), query_type, candidate.c_str());
         candidate.clear();
     }
     else
     {
-        trace::verbose(_X("Relative path query exists %s"), candidate.c_str());
+        trace::verbose(_X("    %s path query exists %s"), query_type, candidate.c_str());
     }
     return exists;
+}
+
+// -----------------------------------------------------------------------------
+// Given a "base" directory, yield the local path of this file
+//
+// Parameters:
+//    base - The base directory to look for the relative path of this entry
+//    str  - If the method returns true, contains the file path for this deps
+//           entry relative to the "base" directory
+//
+// Returns:
+//    If the file exists in the path relative to the "base" directory.
+//
+bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str) const
+{
+    return to_path(base, true, str);
+}
+// -----------------------------------------------------------------------------
+// Given a "base" directory, yield the relative path of this file in the package
+// layout.
+//
+// Parameters:
+//    base - The base directory to look for the relative path of this entry
+//    str  - If the method returns true, contains the file path for this deps
+//           entry relative to the "base" directory
+//
+// Returns:
+//    If the file exists in the path relative to the "base" directory.
+//
+bool deps_entry_t::to_rel_path(const pal::string_t& base, pal::string_t* str) const
+{
+    return to_path(base, false, str);
 }
 
 // -----------------------------------------------------------------------------

@@ -163,11 +163,13 @@ namespace pal
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
+    void readdir(const string_t& path, const string_t& pattern, std::vector<pal::string_t>* list);
     void readdir(const string_t& path, std::vector<pal::string_t>* list);
 
     bool get_own_executable_path(string_t* recv);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_packages_directory(string_t* recv);
+    bool get_default_extensions_directory(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
     int xtoi(const char_t* input);
