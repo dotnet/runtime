@@ -46,7 +46,6 @@
     <None Include="project.json" />
     <ProjectReference Include="../../System.Runtime.InteropServices.PInvoke/src/System.Runtime.InteropServices.PInvoke.csproj">
       <Private>false</Private>
-      <TargetGroup Condition="'$(TargetGroup)' == 'net462'">net46</TargetGroup>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
