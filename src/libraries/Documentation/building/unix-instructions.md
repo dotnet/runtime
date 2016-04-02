@@ -10,7 +10,7 @@ cd corefx
 ```
 
 ### `build.sh` Usage
- `./build.sh [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform]`
+ `./build.sh [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y] [platform] [cross] [skiptests] [cmakeargs]`
 
 **Example:**
 
@@ -19,16 +19,20 @@ cd corefx
 **Options:**
 
 ```bash
-    managed            # optional argument to build the managed code
-    native             # optional argument to build the native code
+managed            # optional argument to build the managed code
+native             # optional argument to build the native code
 
-    # The following arguments affect native builds only:
+# The following arguments affect native builds only:
 
-    BuildArch          # build architecture (x64, x86, arm, arm64)
-    BuildType          # build configuration type (Debug, Release)
-    clean              # optional argument to force a clean build
-    verbose            # optional argument to enable verbose build output
-    clangx.y           # optional argument to build using clang version x.y
+BuildArch          # build architecture (x64, x86, arm, arm64)
+BuildType          # build configuration type (Debug, Release)
+clean              # optional argument to force a clean build
+verbose            # optional argument to enable verbose build output
+clangx.y           # optional argument to build using clang version x.y
+platform           # OS to compile for (FreeBSD, Linux, NetBSD, OSX, Windows)
+cross              # optional argument to signify cross compilation, uses ROOTFS_DIR environment variable if set
+skiptests          # skip the tests in the './bin/*/*Tests/' subdirectory
+cmakeargs          # user-settable additional arguments passed to CMake
 ```
 
 ### Prerequisites
@@ -39,6 +43,7 @@ cd corefx
 * clang
 * llvm
 * lldb
+* cmake
 
 > Note: These instructions have been validated on:
 * Ubuntu 15.04, 14.04, and 12.04
