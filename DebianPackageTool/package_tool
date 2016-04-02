@@ -152,6 +152,7 @@ package_all(){
     package_absolute_placement
     package_samples
     package_docs
+    package_debian
 }
 
 generate_all(){
@@ -213,6 +214,12 @@ package_docs(){
     if [[ -d "$INPUT_DOCS_DIR" ]]; then
         mkdir -p $DOCS_DIR
         cp -a $INPUT_DOCS_DIR/. $DOCS_DIR
+    fi
+}
+
+package_debian(){
+    if [[ -d "$ABSOLUTE_PLACEMENT_DIR" ]]; then
+        cp "$ABSOLUTE_PLACEMENT_DIR/postinst" $DEBIAN_DIR/postinst
     fi
 }
 
