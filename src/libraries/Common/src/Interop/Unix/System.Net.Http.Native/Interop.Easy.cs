@@ -85,6 +85,7 @@ internal static partial class Interop
         // Curl options are of the format <type base> + <n>
         private const int CurlOptionLongBase = 0;
         private const int CurlOptionObjectPointBase = 10000;
+        private const int CurlOptionOffTBase = 30000;
 
         // Enum for constants defined for the enum CURLoption in curl.h
         internal enum CURLoption
@@ -119,6 +120,9 @@ internal static partial class Interop
             CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
             CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
             CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+
+            CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
+            CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
         }
 
         internal enum ReadWriteFunction

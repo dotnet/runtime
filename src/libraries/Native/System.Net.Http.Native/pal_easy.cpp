@@ -38,6 +38,9 @@ static_assert(PAL_CURLOPT_COPYPOSTFIELDS == CURLOPT_COPYPOSTFIELDS, "");
 static_assert(PAL_CURLOPT_USERNAME == CURLOPT_USERNAME, "");
 static_assert(PAL_CURLOPT_PASSWORD == CURLOPT_PASSWORD, "");
 
+static_assert(PAL_CURLOPT_INFILESIZE_LARGE == CURLOPT_INFILESIZE_LARGE, "");
+static_assert(PAL_CURLOPT_POSTFIELDSIZE_LARGE == CURLOPT_POSTFIELDSIZE_LARGE, "");
+
 static_assert(PAL_CURLE_OK == CURLE_OK, "");
 static_assert(PAL_CURLE_UNSUPPORTED_PROTOCOL == CURLE_UNSUPPORTED_PROTOCOL, "");
 static_assert(PAL_CURLE_FAILED_INIT == CURLE_FAILED_INIT, "");
@@ -115,7 +118,19 @@ extern "C" int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption o
 
 extern "C" int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
 {
-    return curl_easy_setopt(handle, ConvertOption(option), value);
+    CURLoption curlOpt = ConvertOption(option);
+
+    // The HttpNative_EasySetOptionLong entrypoint is used for both curl_easy_setopt(..., long) and
+    // curl_easy_setopt(..., curl_off_t).  As they'll likely be different sizes on 32-bit platforms, 
+    // we map anything >= CurlOptionOffTBase to use curl_off_t.
+    if (option >= CurlOptionOffTBase)
+    {
+        return curl_easy_setopt(handle, curlOpt, static_cast<curl_off_t>(value));
+    }
+    else
+    {
+        return curl_easy_setopt(handle, curlOpt, static_cast<long>(value));
+    }
 }
 
 extern "C" int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)
