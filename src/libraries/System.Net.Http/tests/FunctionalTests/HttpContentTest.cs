@@ -574,7 +574,7 @@ namespace System.Net.Http.Functional.Tests
                     throw _customException;
                 }
 
-                return Task.Factory.StartNew(() =>
+                return Task.Run(() =>
                 {
                     CheckThrow();
                     return stream.WriteAsync(_mockData, 0, _mockData.Length);
