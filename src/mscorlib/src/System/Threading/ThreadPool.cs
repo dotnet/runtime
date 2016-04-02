@@ -29,14 +29,12 @@
 namespace System.Threading
 {
     using System.Security;
-    using System.Runtime.Remoting;
     using System.Security.Permissions;
     using System;
     using Microsoft.Win32;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
@@ -46,17 +44,17 @@ namespace System.Threading
     {
         //Per-appDomain quantum (in ms) for which the thread keeps processing
         //requests in the current domain.
-        public static uint tpQuantum = 30U;
+        public const uint TP_QUANTUM = 30U;
 
-        public static int processorCount = Environment.ProcessorCount;
+        public static readonly int processorCount = Environment.ProcessorCount;
 
-        public static bool tpHosted = ThreadPool.IsThreadPoolHosted(); 
+        public static readonly bool tpHosted = ThreadPool.IsThreadPoolHosted(); 
 
         public static volatile bool vmTpInitialized;
         public static bool enableWorkerTracking;
 
         [SecurityCritical]
-        public static ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
+        public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
 
         [System.Security.SecuritySafeCritical] // static constructors should be safe to call
         static ThreadPoolGlobals()
@@ -546,7 +544,7 @@ namespace System.Threading
         internal volatile QueueSegment queueTail;
         internal bool loggingEnabled;
 
-        internal static SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16);
+        internal static readonly SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16);
 
         private volatile int numOutstandingThreadRequests = 0;
       
@@ -708,7 +706,7 @@ namespace System.Threading
         {
             var workQueue = ThreadPoolGlobals.workQueue;
             //
-            // The clock is ticking!  We have ThreadPoolGlobals.tpQuantum milliseconds to get some work done, and then
+            // The clock is ticking!  We have ThreadPoolGlobals.TP_QUANTUM milliseconds to get some work done, and then
             // we need to return to the VM.
             //
             int quantumStartTime = Environment.TickCount;
@@ -742,7 +740,7 @@ namespace System.Threading
                 //
                 // Loop until our quantum expires.
                 //
-                while ((Environment.TickCount - quantumStartTime) < ThreadPoolGlobals.tpQuantum)
+                while ((Environment.TickCount - quantumStartTime) < ThreadPoolGlobals.TP_QUANTUM)
                 {
                     //
                     // Dequeue and EnsureThreadRequested must be protected from ThreadAbortException.  
