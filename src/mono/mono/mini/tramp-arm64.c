@@ -507,6 +507,54 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	return buf;
 }
 
+static gpointer
+handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	return jit_tls->handler_block_return_address;
+}
+
+gpointer
+mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	int tramp_size = 64;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (!aot);
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = NULL;
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD, NULL, NULL);
+
+	/*
+	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
+	*/
+
+	/*
+	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
+	 */
+	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)handler_block_trampoline_helper);
+	/* Set it as the return address so the trampoline will return to it */
+	arm_movx (code, ARMREG_LR, ARMREG_IP0);
+
+	/* Call the trampoline */
+	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
+	arm_brx (code, ARMREG_IP0);
+
+	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
+	g_assert (code - buf <= tramp_size);
+
+	*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
 /*
  * mono_arch_create_sdb_trampoline:
  *
