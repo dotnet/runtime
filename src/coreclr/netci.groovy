@@ -255,6 +255,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         }
                         break
                     case 'arm':
+                        Utilities.addGithubPushTrigger(job)
                     case 'arm64':
                         Utilities.addGithubPushTrigger(job)
                         break
@@ -725,8 +726,15 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             assert scenario == 'default'
             switch (os) {
                 case 'Ubuntu':
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
-                    break
+                    switch(architecture) {
+                        case "arm":
+                            // Removing the regex will cause this to run on each PR.
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                            break
+                        case "arm64":
+                           Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+                           break
+                    }
                 case 'Windows_NT':
                     // Set up a private trigger
                     Utilities.addPrivateGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
@@ -1045,7 +1053,7 @@ combinedScenarios.each { scenario ->
 
                                     // Debug runs take too long to run.
                                     if (lowerConfiguration != "debug") {
-                                       buildCommands += "C:\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
+                                       buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
                                     }
                                     
                                     // Add archival.  No xunit results for arm64 windows
@@ -1107,7 +1115,7 @@ combinedScenarios.each { scenario ->
                                         // Build and text corefx
                                         buildCommands += "rm -rf \$WORKSPACE/fx_home; mkdir \$WORKSPACE/fx_home"
                                         buildCommands += setEnvVar
-                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked"  
+                                        buildCommands += "cd fx; export HOME=\$WORKSPACE/fx_home; ./build.sh /p:ConfigurationGroup=Release /p:BUILDTOOLS_OVERRIDE_RUNTIME=\$WORKSPACE/clr/bin/Product/Linux.x64.Checked /p:Outerloop=true /p:TestWithLocalLibraries=true"  
 
                                         // Archive and process test result
                                         Utilities.addArchival(newJob, "fx/bin/tests/**/testResults.xml")
