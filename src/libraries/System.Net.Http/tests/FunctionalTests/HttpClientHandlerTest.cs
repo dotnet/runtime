@@ -805,8 +805,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.False(responseContent.Contains(ContentString), "Response should not contain the content string");
-                Assert.False(responseContent.Contains("Content-Length"), "Response should not contain Content-Length");
+                Assert.DoesNotContain(ContentString, responseContent);
+                Assert.DoesNotContain("Content-Length", responseContent);
             }
         }
 
