@@ -11,7 +11,7 @@
     "System.Text.RegularExpressions": "4.0.12-rc3-23931-00",
     "System.Threading.Tasks": "4.0.11-rc3-23931-00",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00187"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00231-07"
   },
   "frameworks": {
     "dnxcore50": {
