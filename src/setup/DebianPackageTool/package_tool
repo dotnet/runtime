@@ -152,7 +152,9 @@ package_all(){
     package_absolute_placement
     package_samples
     package_docs
-    package_debian
+    if [[ $PACKAGE_NAME == "dotnet-dev-"* ]]; then
+        package_debian
+    fi
 }
 
 generate_all(){
