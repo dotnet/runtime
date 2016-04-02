@@ -526,12 +526,14 @@ sgen_ptr_is_in_los (char *ptr, char **start)
 {
 	LOSObject *obj;
 
-	*start = NULL;
+	if (start)
+		*start = NULL;
 	for (obj = los_object_list; obj; obj = obj->next) {
 		char *end = (char*)obj->data + sgen_los_object_size (obj);
 
 		if (ptr >= (char*)obj->data && ptr < end) {
-			*start = (char*)obj->data;
+			if (start)
+				*start = (char*)obj->data;
 			return TRUE;
 		}
 	}
