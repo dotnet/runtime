@@ -232,15 +232,16 @@ namespace System.Net.Http
                     {
                         // Tell libcurl how much data we expect to send.
                         SetCurlOption(lengthOption, contentLength);
-                        return;
                     }
-
-                    // Similarly, tell libcurl how much data we expect to send.  However,
-                    // as the amount is larger than a 32-bit value, switch to the "_LARGE"
-                    // equivalent libcurl options.
-                    SetCurlOption(
-                        lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
-                        contentLength);
+                    else
+                    {
+                        // Similarly, tell libcurl how much data we expect to send.  However,
+                        // as the amount is larger than a 32-bit value, switch to the "_LARGE"
+                        // equivalent libcurl options.
+                        SetCurlOption(
+                            lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
+                            contentLength);
+                    }
                     return;
                 }
 
