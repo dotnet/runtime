@@ -185,10 +185,6 @@ DECL_OFFSET(MonoLMF, eip)
 DECL_OFFSET(MonoContext, gregs)
 DECL_OFFSET(MonoContext, fregs)
 
-#ifdef TARGET_WIN32
-DECL_OFFSET(MonoLMF, lmf_addr)
-#endif
-
 DECL_OFFSET(MonoLMF, rsp)
 DECL_OFFSET(MonoLMF, rbp)
 DECL_OFFSET(MonoLMF, rip)
