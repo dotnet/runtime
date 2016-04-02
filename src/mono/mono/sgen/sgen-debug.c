@@ -429,15 +429,15 @@ missing_remset_spew (char *obj, char **slot)
 FIXME Flag missing remsets due to pinning as non fatal
 */
 #undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(char**)ptr) {	\
+#define HANDLE_PTR(ptr,obj)	do {					\
+		if (*(char**)ptr) {					\
 			if (!is_valid_object_pointer (*(char**)ptr)) {	\
-				bad_pointer_spew ((char*)obj, (char**)ptr);	\
-			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) {	\
-				if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup (*(ptr)) && (!allow_missing_pinned || !SGEN_OBJECT_IS_PINNED (*(ptr)))) \
-			        missing_remset_spew ((char*)obj, (char**)ptr);	\
-			}	\
-        } \
+				bad_pointer_spew ((char*)obj, (char**)ptr); \
+			} else if (!sgen_ptr_in_nursery (obj) && sgen_ptr_in_nursery ((char*)*ptr)) { \
+				if (!allow_missing_pinned && !SGEN_OBJECT_IS_PINNED (*(ptr)) && !sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup (*(ptr))) \
+					missing_remset_spew ((char*)obj, (char**)ptr); \
+			}						\
+		}							\
 	} while (0)
 
 static void

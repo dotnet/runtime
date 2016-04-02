@@ -1971,6 +1971,9 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	reset_heap_boundaries ();
 	sgen_update_heap_boundaries ((mword)sgen_get_nursery_start (), (mword)sgen_get_nursery_end ());
 
+	if (whole_heap_check_before_collection)
+		sgen_check_whole_heap (FALSE);
+
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
@@ -2169,9 +2172,6 @@ major_finish_concurrent_collection (gboolean forced)
 	init_gray_queue (&gc_thread_gray_queue, FALSE);
 	major_finish_collection (&gc_thread_gray_queue, "finishing", FALSE, -1, forced);
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
-
-	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap (FALSE);
 
 	TV_GETTIME (total_end);
 	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end) - TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv);
