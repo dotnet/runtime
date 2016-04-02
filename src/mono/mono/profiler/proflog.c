@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include "../mini/jit.h"
+#include "../metadata/metadata-internals.h"
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
@@ -3772,6 +3773,11 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 	assembly = mono_image_get_assembly (image);
 
+	// Need to keep the assemblies around for as long as they are kept in the hashtable
+	// Nunit, for example, has a habit of unloading them before the coverage statistics are
+	// generated causing a crash. See https://bugzilla.xamarin.com/show_bug.cgi?id=39325
+	mono_assembly_addref (assembly);
+
 	mono_os_mutex_lock (&coverage_mutex);
 	mono_conc_hashtable_insert (coverage_methods, method, method);
 	mono_conc_hashtable_insert (coverage_assemblies, assembly, assembly);
@@ -3914,6 +3920,13 @@ coverage_init (MonoProfiler *prof)
 }
 
 static void
+unref_coverage_assemblies (gpointer key, gpointer value, gpointer userdata)
+{
+	MonoAssembly *assembly = (MonoAssembly *)value;
+	mono_assembly_close (assembly);
+}
+
+static void
 log_shutdown (MonoProfiler *prof)
 {
 	void *res;
@@ -3962,6 +3975,10 @@ log_shutdown (MonoProfiler *prof)
 	mono_os_mutex_destroy (&prof->method_table_mutex);
 
 	if (coverage_initialized) {
+		mono_os_mutex_lock (&coverage_mutex);
+		mono_conc_hashtable_foreach (coverage_assemblies, unref_coverage_assemblies, prof);
+		mono_os_mutex_unlock (&coverage_mutex);
+
 		mono_conc_hashtable_destroy (coverage_methods);
 		mono_conc_hashtable_destroy (coverage_assemblies);
 		mono_conc_hashtable_destroy (coverage_classes);
