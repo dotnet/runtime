@@ -641,9 +641,10 @@ namespace System.Net.Http
                             response.Content.Headers.Clear();
 
                             easy._isRedirect = easy._handler.AutomaticRedirection &&
-                                         (response.StatusCode == HttpStatusCode.Redirect ||
-                                         response.StatusCode == HttpStatusCode.RedirectKeepVerb ||
-                                         response.StatusCode == HttpStatusCode.RedirectMethod);
+                                (response.StatusCode == HttpStatusCode.Moved ||           // 301
+                                 response.StatusCode == HttpStatusCode.Redirect ||        // 302
+                                 response.StatusCode == HttpStatusCode.RedirectMethod ||  // 303
+                                 response.StatusCode == HttpStatusCode.RedirectKeepVerb); // 307
                         }
                         else
                         {
