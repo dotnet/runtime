@@ -1,0 +1,3 @@
+<!-- This Pinvoke is allowed on windows, however the dll is built as AnyCPU -->
+<!-- To remove the error consider building only for windows or remove the Pinvoke dependency -->
+api-ms-win-core-file-l1-1-0.dll!ReadFile

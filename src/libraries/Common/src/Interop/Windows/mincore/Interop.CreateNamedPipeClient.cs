@@ -11,7 +11,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreFile_L1, EntryPoint = "CreateFile", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
+        [DllImport(Libraries.CoreFile_L1, EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern SafePipeHandle CreateNamedPipeClient(
             string lpFileName,
             int dwDesiredAccess,
