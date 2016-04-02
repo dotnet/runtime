@@ -1120,8 +1120,7 @@ arm64_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp
 	/* Similar to the specific trampolines, but use the rgctx reg instead of ip1 */
 
 	/* Load argument from first GOT slot */
-	g_assert (MONO_ARCH_RGCTX_REG == 27);
-	arm64_emit_load_got_slot (acfg, ARMREG_R27, offset);
+	arm64_emit_load_got_slot (acfg, MONO_ARCH_RGCTX_REG, offset);
 	/* Load generic trampoline address from second GOT slot */
 	arm64_emit_load_got_slot (acfg, ARMREG_R16, offset + 1);
 	fprintf (acfg->fp, "br x16\n");
