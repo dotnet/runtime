@@ -4164,7 +4164,8 @@ print_jit_stats (void)
 void
 mini_cleanup (MonoDomain *domain)
 {
-	mono_runtime_shutdown_stat_profiler ();
+	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
+		mono_runtime_shutdown_stat_profiler ();
 
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();

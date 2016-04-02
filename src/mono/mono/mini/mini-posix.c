@@ -722,8 +722,7 @@ void
 mono_runtime_shutdown_stat_profiler (void)
 {
 	InterlockedWrite (&sampling_thread_running, 0);
-	if (sampling_thread)
-		pthread_join (sampling_thread, NULL);
+	pthread_join (sampling_thread, NULL);
 
 	/*
 	 * We can't safely remove the signal handler because we have no guarantee
