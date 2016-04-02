@@ -56,6 +56,7 @@ if /i "%1" == "TestEnv"             (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "sequential"          (set __BuildSequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"            (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"  (set __GenerateLayoutOnly=1&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
+if /i "%1" == "PerfTests"           (set __PerfTests=true&set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -148,7 +149,7 @@ REM These log files are created automatically by the test run process. Q: what d
 set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
 set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
 
-
+if "%__PerfTests%"=="true" goto RunPerfTests
 if "%__SkipWrapperGeneration%"=="true" goto SkipWrapperGeneration
 
 set __BuildLogRootName=Tests_XunitWrapper
@@ -191,6 +192,22 @@ if errorlevel 1 (
     exit /b 1
 )
 
+if not defined __PerfTests goto :SkipRunPerfTests
+
+:RunPerfTests 
+echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%  
+echo %__MsgPrefix%Starting the test run ...  
+
+set __BuildLogRootName=PerfTestRunResults  
+echo Running perf tests  
+call :msbuild "%__ProjectFilesDir%\runtest.proj" /t:RunPerfTests /clp:showcommandline  
+
+if errorlevel 1 (  
+   echo Test Run failed. Refer to the following:  
+   echo     Html report: %__TestRunHtmlLog%  
+)  
+
+:SkipRunPerfTests
 
 REM =========================================================================================
 REM ===
