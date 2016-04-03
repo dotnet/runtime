@@ -121,6 +121,8 @@ SERIAL_COPY_OBJECT_FROM_OBJ (GCObject **obj_slot, SgenGrayQueue *queue)
 		SGEN_ASSERT (9, sgen_obj_get_descriptor (forwarded),  "forwarded object %p has no gc descriptor", forwarded);
 		SGEN_LOG (9, " (already forwarded to %p)", forwarded);
 		HEAVY_STAT (++stat_nursery_copy_object_failed_forwarded);
+		/* See comment on STORE_STORE_FENCE below. */
+		STORE_STORE_FENCE;
 		SGEN_UPDATE_REFERENCE (obj_slot, forwarded);
 #ifndef SGEN_SIMPLE_NURSERY
 		if (G_UNLIKELY (sgen_ptr_in_nursery (forwarded) && !sgen_ptr_in_nursery (obj_slot) && !SGEN_OBJECT_IS_CEMENTED (forwarded)))
@@ -187,6 +189,17 @@ SERIAL_COPY_OBJECT_FROM_OBJ (GCObject **obj_slot, SgenGrayQueue *queue)
 	HEAVY_STAT (++stat_objects_copied_nursery);
 
 	copy = copy_object_no_checks (obj, queue);
+	/*
+	 * If an object is evacuated to the major heap and a reference to it, from the major
+	 * heap, updated, the concurrent major collector might follow that reference and
+	 * scan the new major object.  To make sure the object contents are seen by the
+	 * major collector we need this write barrier, so that the reference is seen after
+	 * the object.
+	 *
+	 * FIXME: This is only required if there's a concurrent major collection running,
+	 * but we can't conditionally compile on that at the moment.
+	 */
+	STORE_STORE_FENCE;
 	SGEN_UPDATE_REFERENCE (obj_slot, copy);
 #ifndef SGEN_SIMPLE_NURSERY
 	if (G_UNLIKELY (sgen_ptr_in_nursery (copy) && !sgen_ptr_in_nursery (obj_slot) && !SGEN_OBJECT_IS_CEMENTED (copy)))

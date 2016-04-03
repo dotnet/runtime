@@ -18,6 +18,7 @@
 #include "mono/sgen/sgen-protocol.h"
 #include "mono/sgen/sgen-layout-stats.h"
 #include "mono/sgen/sgen-client.h"
+#include "mono/utils/mono-memory-model.h"
 
 static inline GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
