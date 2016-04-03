@@ -1,9 +1,6 @@
 @if "%_echo%" neq "on" echo off
 setlocal
 
-REM Workaround https://github.com/dotnet/coreclr/issues/2153
-set ComPlus_ReadyToRun=0
-
 set INIT_TOOLS_LOG=%~dp0init-tools.log
 if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0packages\
 if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
