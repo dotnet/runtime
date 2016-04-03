@@ -120,7 +120,7 @@
     <Compile Include="Catalog\ExpressionCatalog.Unary.cs" />
     <Compile Include="Catalog\ExpressionCatalog.Unary.Generated.cs" />
     <Compile Include="Catalog\ReflectionExtensions.cs" />
-    <Compile Include="Conditional\ConditionalOneOffTests.cs" />
+    <Compile Include="Conditional\ConditionalTests.cs" />
     <Compile Include="Constant\ConstantArrayTests.cs" />
     <Compile Include="Constant\ConstantNullableTests.cs" />
     <Compile Include="Constant\ConstantTests.cs" />
