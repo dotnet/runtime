@@ -12,106 +12,106 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableByteTest(bool useInterpreter)
         {
             byte?[] values = new byte?[] { null, 0, 1, byte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableByte(values[i], values[j]);
+                    VerifyBitwiseOrNullableByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableIntTest(bool useInterpreter)
         {
             int?[] values = new int?[] { null, 0, 1, -1, int.MinValue, int.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableInt(values[i], values[j]);
+                    VerifyBitwiseOrNullableInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableLongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableLongTest(bool useInterpreter)
         {
             long?[] values = new long?[] { null, 0, 1, -1, long.MinValue, long.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableLong(values[i], values[j]);
+                    VerifyBitwiseOrNullableLong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableSByteTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableSByteTest(bool useInterpreter)
         {
             sbyte?[] values = new sbyte?[] { null, 0, 1, -1, sbyte.MinValue, sbyte.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableSByte(values[i], values[j]);
+                    VerifyBitwiseOrNullableSByte(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableShortTest(bool useInterpreter)
         {
             short?[] values = new short?[] { null, 0, 1, -1, short.MinValue, short.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableShort(values[i], values[j]);
+                    VerifyBitwiseOrNullableShort(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableUIntTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableUIntTest(bool useInterpreter)
         {
             uint?[] values = new uint?[] { null, 0, 1, uint.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableUInt(values[i], values[j]);
+                    VerifyBitwiseOrNullableUInt(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableULongTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableULongTest(bool useInterpreter)
         {
             ulong?[] values = new ulong?[] { null, 0, 1, ulong.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableULong(values[i], values[j]);
+                    VerifyBitwiseOrNullableULong(values[i], values[j], useInterpreter);
                 }
             }
         }
 
-        [Fact]
-        public static void CheckLiftedBitwiseOrNullableUShortTest()
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CheckLiftedBitwiseOrNullableUShortTest(bool useInterpreter)
         {
             ushort?[] values = new ushort?[] { null, 0, 1, ushort.MaxValue };
             for (int i = 0; i < values.Length; i++)
             {
                 for (int j = 0; j < values.Length; j++)
                 {
-                    VerifyBitwiseOrNullableUShort(values[i], values[j]);
+                    VerifyBitwiseOrNullableUShort(values[i], values[j], useInterpreter);
                 }
             }
         }
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Tests
 
         #region Test verifiers
 
-        private static void VerifyBitwiseOrNullableByte(byte? a, byte? b)
+        private static void VerifyBitwiseOrNullableByte(byte? a, byte? b, bool useInterpreter)
         {
             Expression<Func<byte?>> e =
                 Expression.Lambda<Func<byte?>>(
@@ -172,43 +172,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(byte?)),
                         Expression.Constant(b, typeof(byte?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableByte")));
-            Func<byte?> f = e.Compile();
+            Func<byte?> f = e.Compile(useInterpreter);
 
-            byte? result = default(byte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            byte? expected = default(byte);
-            Exception csEx = null;
-            try
-            {
-                expected = (byte?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableInt(int? a, int? b)
+        private static void VerifyBitwiseOrNullableInt(int? a, int? b, bool useInterpreter)
         {
             Expression<Func<int?>> e =
                 Expression.Lambda<Func<int?>>(
@@ -216,43 +185,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(int?)),
                         Expression.Constant(b, typeof(int?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableInt")));
-            Func<int?> f = e.Compile();
+            Func<int?> f = e.Compile(useInterpreter);
 
-            int? result = default(int);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            int? expected = default(int);
-            Exception csEx = null;
-            try
-            {
-                expected = (int?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableLong(long? a, long? b)
+        private static void VerifyBitwiseOrNullableLong(long? a, long? b, bool useInterpreter)
         {
             Expression<Func<long?>> e =
                 Expression.Lambda<Func<long?>>(
@@ -260,43 +198,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(long?)),
                         Expression.Constant(b, typeof(long?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableLong")));
-            Func<long?> f = e.Compile();
+            Func<long?> f = e.Compile(useInterpreter);
 
-            long? result = default(long);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            long? expected = default(long);
-            Exception csEx = null;
-            try
-            {
-                expected = (long?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableSByte(sbyte? a, sbyte? b)
+        private static void VerifyBitwiseOrNullableSByte(sbyte? a, sbyte? b, bool useInterpreter)
         {
             Expression<Func<sbyte?>> e =
                 Expression.Lambda<Func<sbyte?>>(
@@ -304,43 +211,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(sbyte?)),
                         Expression.Constant(b, typeof(sbyte?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableSByte")));
-            Func<sbyte?> f = e.Compile();
+            Func<sbyte?> f = e.Compile(useInterpreter);
 
-            sbyte? result = default(sbyte);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            sbyte? expected = default(sbyte);
-            Exception csEx = null;
-            try
-            {
-                expected = (sbyte?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableShort(short? a, short? b)
+        private static void VerifyBitwiseOrNullableShort(short? a, short? b, bool useInterpreter)
         {
             Expression<Func<short?>> e =
                 Expression.Lambda<Func<short?>>(
@@ -348,43 +224,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(short?)),
                         Expression.Constant(b, typeof(short?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableShort")));
-            Func<short?> f = e.Compile();
+            Func<short?> f = e.Compile(useInterpreter);
 
-            short? result = default(short);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            short? expected = default(short);
-            Exception csEx = null;
-            try
-            {
-                expected = (short?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableUInt(uint? a, uint? b)
+        private static void VerifyBitwiseOrNullableUInt(uint? a, uint? b, bool useInterpreter)
         {
             Expression<Func<uint?>> e =
                 Expression.Lambda<Func<uint?>>(
@@ -392,43 +237,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(uint?)),
                         Expression.Constant(b, typeof(uint?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableUInt")));
-            Func<uint?> f = e.Compile();
+            Func<uint?> f = e.Compile(useInterpreter);
 
-            uint? result = default(uint);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            uint? expected = default(uint);
-            Exception csEx = null;
-            try
-            {
-                expected = (uint?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableULong(ulong? a, ulong? b)
+        private static void VerifyBitwiseOrNullableULong(ulong? a, ulong? b, bool useInterpreter)
         {
             Expression<Func<ulong?>> e =
                 Expression.Lambda<Func<ulong?>>(
@@ -436,43 +250,12 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ulong?)),
                         Expression.Constant(b, typeof(ulong?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableULong")));
-            Func<ulong?> f = e.Compile();
+            Func<ulong?> f = e.Compile(useInterpreter);
 
-            ulong? result = default(ulong);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ulong? expected = default(ulong);
-            Exception csEx = null;
-            try
-            {
-                expected = (ulong?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
-        private static void VerifyBitwiseOrNullableUShort(ushort? a, ushort? b)
+        private static void VerifyBitwiseOrNullableUShort(ushort? a, ushort? b, bool useInterpreter)
         {
             Expression<Func<ushort?>> e =
                 Expression.Lambda<Func<ushort?>>(
@@ -480,40 +263,9 @@ namespace System.Linq.Expressions.Tests
                         Expression.Constant(a, typeof(ushort?)),
                         Expression.Constant(b, typeof(ushort?)),
                         typeof(LiftedBitwiseOrNullableTests).GetTypeInfo().GetDeclaredMethod("OrNullableUShort")));
-            Func<ushort?> f = e.Compile();
+            Func<ushort?> f = e.Compile(useInterpreter);
 
-            ushort? result = default(ushort);
-            Exception fEx = null;
-            try
-            {
-                result = f();
-            }
-            catch (Exception ex)
-            {
-                fEx = ex;
-            }
-
-            ushort? expected = default(ushort);
-            Exception csEx = null;
-            try
-            {
-                expected = (ushort?)(a | b);
-            }
-            catch (Exception ex)
-            {
-                csEx = ex;
-            }
-
-            if (fEx != null || csEx != null)
-            {
-                Assert.NotNull(fEx);
-                Assert.NotNull(csEx);
-                Assert.Equal(csEx.GetType(), fEx.GetType());
-            }
-            else
-            {
-                Assert.Equal(expected, result);
-            }
+            Assert.Equal(a | b, f());
         }
 
         #endregion
