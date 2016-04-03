@@ -275,6 +275,8 @@ typedef enum {
 	/* gsharedvt argument passed by addr */
 	ArgGSharedVtInReg,
 	ArgGSharedVtOnStack,
+	/* Variable sized gsharedvt argument passed/returned by addr */
+	ArgGsharedvtVariableInReg,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -282,7 +284,6 @@ typedef struct {
 	gint16 offset;
 	gint8  reg;
 	ArgStorage storage : 8;
-	gboolean is_gsharedvt_return_value : 1;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
@@ -300,6 +301,7 @@ typedef struct {
 	guint32 reg_usage;
 	guint32 freg_usage;
 	gboolean need_stack_align;
+	gboolean gsharedvt;
 	/* The index of the vret arg in the argument list */
 	int vret_arg_index;
 	ArgInfo ret;

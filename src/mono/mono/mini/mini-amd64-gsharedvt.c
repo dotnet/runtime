@@ -274,7 +274,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	DEBUG_AMD64_GSHAREDVT_PRINT ("source sig: (%s) return (%s)\n", mono_signature_get_desc (caller_sig, FALSE), mono_type_full_name (mono_signature_get_return_type (caller_sig))); // Leak
 	DEBUG_AMD64_GSHAREDVT_PRINT ("dest sig: (%s) return (%s)\n", mono_signature_get_desc (callee_sig, FALSE), mono_type_full_name (mono_signature_get_return_type (callee_sig)));
 
-	if (gcinfo->ret.is_gsharedvt_return_value) {
+	if (gcinfo->ret.storage == ArgGsharedvtVariableInReg) {
 		/*
 		 * The return type is gsharedvt
 		 */
@@ -357,7 +357,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
 		/* Both the caller and the callee pass the vtype ret address in r8 */
-		g_assert (cinfo->ret.storage == gcinfo->ret.storage);
+		g_assert (gcinfo->ret.storage == ArgValuetypeAddrInIReg || gcinfo->ret.storage == ArgGsharedvtVariableInReg);
 		add_to_map (map, map_reg (cinfo->ret.reg), map_reg (cinfo->ret.reg));
 	}
 
@@ -370,7 +370,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	info->calli = calli;
 
 	if (var_ret) {
-		g_assert (gcinfo->ret.is_gsharedvt_return_value);
+		g_assert (gcinfo->ret.storage == ArgGsharedvtVariableInReg);
 		info->vret_arg_reg = map_reg (gcinfo->ret.reg);
 		DEBUG_AMD64_GSHAREDVT_PRINT ("mapping vreg_arg_reg to %d in reg %s\n", info->vret_arg_reg, mono_arch_regname (gcinfo->ret.reg));
 	} else {
