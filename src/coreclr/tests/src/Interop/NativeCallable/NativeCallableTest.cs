@@ -14,53 +14,60 @@ public class Program
 {
     public static class NativeMethods
     {
-        [DllImport("user32.dll")]
-        public static extern int EnumWindows(IntPtr enumProc, IntPtr lParam);
+        [DllImport("NativeCallableDll")]
+        public static extern int CallManagedAdd(IntPtr callbackProc, int n);
     }
 
+    private delegate int IntNativeMethodInvoker();    
     private delegate void NativeMethodInvoker();
-    static EventWaitHandle waitHandle = new AutoResetEvent(false);
 
     public static int Main()
     {
+        int ret;
         //NegativeTest_NonBlittable();
-        TestNativeCallableValid();
+        ret = TestNativeCallableValid();
+        if (ret != 100)
+            return ret;
         //NegativeTest_ViaDelegate();
         //NegativeTest_ViaLdftn();
         return 100;
     }
 
-    public static void TestNativeCallableValid()
+    public static int TestNativeCallableValid()
     {
         /*
            void TestNativeCallable()
            {
                    .locals init ([0] native int ptr)
                    IL_0000:  nop  
-                   IL_0002:  ldftn      int32 CallbackMethod(native int,native int)
+                   IL_0002:  ldftn      int32 CallbackMethod(int32)
 
                    IL_0012:  stloc.0
                    IL_0013:  ldloc.0
-                   IL_0014:  ldsfld     native int [mscorlib]System.IntPtr::Zero
-                   IL_0019:  call       bool NativeMethods::EnumWindows(native int,
-                                                                                      native int)
+                   IL_0014:  ldc.i4     100
+                   IL_0019:  call       bool NativeMethods::CallNativeAdd(native int, int)
                    IL_001e:  pop
                    IL_001f:  ret
              }
            */
-        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallable", null, null, typeof(Program).Module);
+        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallable", typeof(int), null, typeof(Program).Module);
         ILGenerator il = testNativeCallable.GetILGenerator();
         il.DeclareLocal(typeof(IntPtr));
         il.Emit(OpCodes.Nop);
-        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod("CallbackMethod"));
+
+        // Get native function pointer of the callback
+        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod("ManagedAddCallback"));
         il.Emit(OpCodes.Stloc_0);
         il.Emit(OpCodes.Ldloc_0);
-        il.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField("Zero"));
-        il.Emit(OpCodes.Call, typeof(NativeMethods).GetMethod("EnumWindows"));
-        il.Emit(OpCodes.Pop);
+
+        // return 111+100
+        il.Emit(OpCodes.Ldc_I4, 111);
+        il.Emit(OpCodes.Call, typeof(NativeMethods).GetMethod("CallManagedAdd"));
         il.Emit(OpCodes.Ret);
-        NativeMethodInvoker testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
-        testNativeMethod();
+        IntNativeMethodInvoker testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+        if (testNativeMethod() != 211)
+            return 0;
+        return 100;
     }
 
     public static void NegativeTest_ViaDelegate()
@@ -68,8 +75,8 @@ public class Program
         // Try invoking method directly 
         try
         {
-            Func<IntPtr, IntPtr, int> invoker = CallbackMethod;
-            invoker(IntPtr.Zero, IntPtr.Zero);
+            Func<int, int> invoker = ManagedAddCallback;
+            invoker(0);
         }
         catch (Exception)
         {
@@ -134,10 +141,9 @@ public class Program
     }
 
     [NativeCallable]
-    public static int CallbackMethod(IntPtr hWnd, IntPtr lParam)
+    public static int ManagedAddCallback(int n)
     {
-        waitHandle.Set();
-        return 1;
+        return n + 100;
     }
 
     [NativeCallable]
