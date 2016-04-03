@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-// TODO: Once we upgrade to C# 6, remove all of these and simply import the Http class.
 using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
 using CURLINFO = Interop.Http.CURLINFO;
