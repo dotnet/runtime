@@ -85,7 +85,7 @@ namespace System.Net.Http
                 if (!UseCookies)
                 {
                     throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_invalid_enable_first, "UseCookies", "true"));
+                        SR.net_http_invalid_enable_first, nameof(UseCookies), "true"));
                 }
                 CheckDisposedOrStarted();
                 cookieContainer = value;
@@ -158,7 +158,7 @@ namespace System.Net.Http
                 if (value != PreAuthenticate)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, "PreAuthenticate"));
+                        SR.net_http_value_not_supported, value, nameof(PreAuthenticate)));
                 }
                 CheckDisposedOrStarted();
             }
@@ -218,7 +218,7 @@ namespace System.Net.Http
                 else
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, "Credentials"));
+                        SR.net_http_value_not_supported, value, nameof(Credentials)));
                 }
             }
         }
@@ -242,7 +242,7 @@ namespace System.Net.Http
                 if (value != MaxAutomaticRedirections)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, "MaxAutomaticRedirections"));
+                        SR.net_http_value_not_supported, value, nameof(MaxAutomaticRedirections)));
                 }
                 CheckDisposedOrStarted();
             }
@@ -259,7 +259,7 @@ namespace System.Net.Http
                 if (value > MaxRequestContentBufferSize)
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, "MaxRequestContentBufferSize"));
+                        SR.net_http_value_not_supported, value, nameof(MaxRequestContentBufferSize)));
                 }
                 CheckDisposedOrStarted();
             }
