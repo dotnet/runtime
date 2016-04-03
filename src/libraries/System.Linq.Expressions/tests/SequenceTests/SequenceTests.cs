@@ -3229,16 +3229,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void Conditional(bool useInterpreter)
-        {
-            Expression<Func<int, int, int>> f = (x, y) => x > 5 ? x : y;
-            var d = f.Compile(useInterpreter);
-            Assert.Equal(7, d(7, 4));
-            Assert.Equal(6, d(3, 6));
-        }
-
-        [Theory]
-        [ClassData(typeof(CompilationTypes))]
         public static void MultiDimensionalArrayAccess(bool useInterpreter)
         {
             Expression<Func<int, int, int[,], int>> f = (x, y, a) => a[x, y];
