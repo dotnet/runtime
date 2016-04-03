@@ -10,11 +10,10 @@ namespace System.Runtime.Serialization
 
     public static class XmlSerializableServices
     {
-        internal static readonly string ReadNodesMethodName = "ReadNodes";
         public static XmlNode[] ReadNodes(XmlReader xmlReader)
         {
             if (xmlReader == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlReader));
             XmlDocument doc = new XmlDocument();
             List<XmlNode> nodeList = new List<XmlNode>();
             if (xmlReader.MoveToFirstAttribute())
@@ -54,11 +53,10 @@ namespace System.Runtime.Serialization
                                    xmlReader.LocalName != "xmlns";
         }
 
-        internal static string WriteNodesMethodName = "WriteNodes";
         public static void WriteNodes(XmlWriter xmlWriter, XmlNode[] nodes)
         {
             if (xmlWriter == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlWriter");
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlWriter));
             if (nodes != null)
                 for (int i = 0; i < nodes.Length; i++)
                     if (nodes[i] != null)
