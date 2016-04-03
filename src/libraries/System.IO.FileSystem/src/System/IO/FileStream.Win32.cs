@@ -26,7 +26,5 @@ namespace System.IO
             if (fullPath.StartsWith("\\\\.\\", StringComparison.Ordinal))
                 throw new ArgumentException(SR.Arg_DevicesNotSupported, paramName);
         }
-
-        private static readonly char[] s_additionalInvalidChars = new[] { '?', '*' };
     }
 }
