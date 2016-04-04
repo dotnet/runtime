@@ -3,8 +3,8 @@
     "System.Runtime": "4.0.0",
     "System.IO": "4.0.0",
     "System.Runtime.Handles": "4.0.0",
-    "System.Security.Cryptography.Algorithms": "4.1.0-rc3-23931-00",
-    "System.Security.Cryptography.Primitives": "4.0.0-rc3-23931-00"
+    "System.Security.Cryptography.Algorithms": "4.1.0-rc3-24004-00",
+    "System.Security.Cryptography.Primitives": "4.0.0-rc3-24004-00"
   },
   "frameworks": {
     "netstandard1.4": {

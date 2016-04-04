@@ -2,8 +2,8 @@
   "frameworks": {
     "netstandard1.5": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
-        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-23931-00"
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
+        "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc3-24004-00"
       },
       "imports": [
         "dotnet5.6"
@@ -11,8 +11,8 @@
     },
     "netcore50": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-24004-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",
@@ -33,8 +33,8 @@
         "netcore50"
       ],
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
-        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
+        "Microsoft.TargetingPack.Private.NETNative": "1.0.0-rc3-24004-00",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
         "System.Diagnostics.Tools": "4.0.0",

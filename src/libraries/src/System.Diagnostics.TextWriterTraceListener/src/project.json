@@ -2,9 +2,9 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
         "System.Diagnostics.Tools": "4.0.0",
-        "System.Diagnostics.TraceSource": "4.0.0-rc3-23931-00",
+        "System.Diagnostics.TraceSource": "4.0.0-rc3-24004-00",
         "System.Globalization": "4.0.10",
         "System.IO": "4.0.10",
         "System.Resources.ResourceManager": "4.0.0",
