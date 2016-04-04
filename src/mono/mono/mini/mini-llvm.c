@@ -3148,7 +3148,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean is_virtual, calli, preserveall;
 	LLVMBuilderRef builder = *builder_ref;
 
-	if (call->signature->call_convention != MONO_CALL_DEFAULT) {
+	if ((call->signature->call_convention != MONO_CALL_DEFAULT) && !((call->signature->call_convention == MONO_CALL_C) && ctx->llvm_only)) {
 		set_failure (ctx, "non-default callconv");
 		return;
 	}
