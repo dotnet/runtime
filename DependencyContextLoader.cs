@@ -16,13 +16,13 @@ namespace Microsoft.Extensions.DependencyModel
         private readonly string _entryPointDepsLocation;
         private readonly string _runtimeDepsLocation;
         private readonly IFileSystem _fileSystem;
-        private readonly IDependencyContextReader _jsonReader;
+        private readonly Func<IDependencyContextReader> _jsonReaderFactory;
 
         public DependencyContextLoader() : this(
             DependencyContextPaths.Current.Application,
             DependencyContextPaths.Current.SharedRuntime,
             FileSystemWrapper.Default,
-            new DependencyContextJsonReader())
+            () => new DependencyContextJsonReader())
         {
         }
 
@@ -30,12 +30,12 @@ namespace Microsoft.Extensions.DependencyModel
             string entryPointDepsLocation,
             string runtimeDepsLocation,
             IFileSystem fileSystem,
-            IDependencyContextReader jsonReader)
+            Func<IDependencyContextReader> jsonReaderFactory)
         {
             _entryPointDepsLocation = entryPointDepsLocation;
             _runtimeDepsLocation = runtimeDepsLocation;
             _fileSystem = fileSystem;
-            _jsonReader = jsonReader;
+            _jsonReaderFactory = jsonReaderFactory;
         }
 
         public static DependencyContextLoader Default { get; } = new DependencyContextLoader();
@@ -58,61 +58,63 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             DependencyContext context = null;
-
-            if (IsEntryAssembly(assembly))
+            using (var reader = _jsonReaderFactory())
             {
-                context = LoadEntryAssemblyContext();
-            }
-
-            if (context == null)
-            {
-                context = LoadAssemblyContext(assembly);
-            }
-
-            if (context?.Target.IsPortable == true)
-            {
-                var runtimeContext = LoadRuntimeContext();
-                if (runtimeContext != null)
+                if (IsEntryAssembly(assembly))
                 {
-                    context = context.Merge(runtimeContext);
+                    context = LoadEntryAssemblyContext(reader);
+                }
+
+                if (context == null)
+                {
+                    context = LoadAssemblyContext(assembly, reader);
+                }
+
+                if (context?.Target.IsPortable == true)
+                {
+                    var runtimeContext = LoadRuntimeContext(reader);
+                    if (runtimeContext != null)
+                    {
+                        context = context.Merge(runtimeContext);
+                    }
                 }
             }
             return context;
         }
 
-        private DependencyContext LoadEntryAssemblyContext()
+        private DependencyContext LoadEntryAssemblyContext(IDependencyContextReader reader)
         {
             if (!string.IsNullOrEmpty(_entryPointDepsLocation))
             {
                 Debug.Assert(File.Exists(_entryPointDepsLocation));
                 using (var stream = _fileSystem.File.OpenRead(_entryPointDepsLocation))
                 {
-                    return _jsonReader.Read(stream);
+                    return reader.Read(stream);
                 }
             }
             return null;
         }
 
-        private DependencyContext LoadRuntimeContext()
+        private DependencyContext LoadRuntimeContext(IDependencyContextReader reader)
         {
             if (!string.IsNullOrEmpty(_runtimeDepsLocation))
             {
                 Debug.Assert(File.Exists(_runtimeDepsLocation));
                 using (var stream = _fileSystem.File.OpenRead(_runtimeDepsLocation))
                 {
-                    return _jsonReader.Read(stream);
+                    return reader.Read(stream);
                 }
             }
             return null;
         }
 
-        private DependencyContext LoadAssemblyContext(Assembly assembly)
+        private DependencyContext LoadAssemblyContext(Assembly assembly, IDependencyContextReader reader)
         {
             using (var stream = GetResourceStream(assembly, assembly.GetName().Name + DepsJsonExtension))
             {
                 if (stream != null)
                 {
-                    return _jsonReader.Read(stream);
+                    return reader.Read(stream);
                 }
             }
 
@@ -121,7 +123,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 using (var stream = _fileSystem.File.OpenRead(depsJsonFile))
                 {
-                    return _jsonReader.Read(stream);
+                    return reader.Read(stream);
                 }
             }
 
