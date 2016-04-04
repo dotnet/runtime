@@ -1819,7 +1819,7 @@ unsigned   Compiler::lvaGetFieldLocal(LclVarDsc *  varDsc, unsigned int fldOffse
         }
     }
 
-    noway_assert(!"Cannot find field local.");
+    // This is the not-found error return path, the caller should check for BAD_VAR_NUM
     return BAD_VAR_NUM;
 }
 
@@ -2770,9 +2770,9 @@ void                LclVarDsc::lvaDisqualifyVar()
 #endif // ASSERTION_PROP
 
 #ifndef LEGACY_BACKEND
-/********************************************************************************** 
- * Get type of a variable when passed as an argument.
- */
+/**********************************************************************************
+* Get type of a variable when passed as an argument.
+*/
 var_types           LclVarDsc::lvaArgType()
 {
     var_types type = TypeGet();
@@ -2782,29 +2782,33 @@ var_types           LclVarDsc::lvaArgType()
     {
         switch (lvExactSize)
         {
-           case 1: type = TYP_BYTE;  break;
-           case 2: type = TYP_SHORT; break;
-           case 4: type = TYP_INT;   break;
-           case 8:
-              switch (*lvGcLayout)
-              {
-                 case TYPE_GC_NONE:
-                    type = TYP_I_IMPL;
-                    break;
-                 case TYPE_GC_REF:
-                    type = TYP_REF;
-                    break;
-                 case TYPE_GC_BYREF:
-                    type = TYP_BYREF;
-                    break;
-                 default:
-                    unreached();
-              }
-              break;
+        case 1: type = TYP_BYTE;  break;
+        case 2: type = TYP_SHORT; break;
+        case 4: type = TYP_INT;   break;
+        case 8:
+            switch (*lvGcLayout)
+            {
+            case TYPE_GC_NONE:
+                type = TYP_I_IMPL;
+                break;
 
-           default:
-               type = TYP_BYREF;
-               break;
+            case TYPE_GC_REF:
+                type = TYP_REF;
+                break;
+
+            case TYPE_GC_BYREF:
+                type = TYP_BYREF;
+                break;
+
+            default:
+                unreached();
+            }
+            break;
+
+        default:
+            type = TYP_BYREF;
+            break;
+
         }
     }
 #else
