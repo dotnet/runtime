@@ -47,13 +47,13 @@ namespace System.Net.Http
         // when no auth type is specified, e.g. when a NetworkCredential is provided directly
         // to the handler.  As such, we have two different sets of auth types that we use
         // for when the supplied creds are a cache vs not.
-        private readonly static KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypesCredentialCache = new KeyValuePair<string, CURLAUTH>[] {
+        private static readonly KeyValuePair<string,CURLAUTH>[] s_orderedAuthTypesCredentialCache = new KeyValuePair<string, CURLAUTH>[] {
             new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
             new KeyValuePair<string,CURLAUTH>("NTLM", CURLAUTH.NTLM), // only available when credentials supplied via a credential cache
             new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
             new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
         };
-        private readonly static KeyValuePair<string, CURLAUTH>[] s_orderedAuthTypesICredential = new KeyValuePair<string, CURLAUTH>[] {
+        private static readonly KeyValuePair<string, CURLAUTH>[] s_orderedAuthTypesICredential = new KeyValuePair<string, CURLAUTH>[] {
             new KeyValuePair<string,CURLAUTH>("Negotiate", CURLAUTH.Negotiate),
             new KeyValuePair<string,CURLAUTH>("Digest", CURLAUTH.Digest),
             new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
@@ -62,14 +62,14 @@ namespace System.Net.Http
         // Max timeout value used by WinHttp handler, so mapping to that here.
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
-        private readonly static char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
-        private readonly static bool s_supportsAutomaticDecompression;
-        private readonly static bool s_supportsSSL;
-        private readonly static bool s_supportsHttp2Multiplexing;
+        private static readonly char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
+        private static readonly bool s_supportsAutomaticDecompression;
+        private static readonly bool s_supportsSSL;
+        private static readonly bool s_supportsHttp2Multiplexing;
         private static string s_curlVersionDescription;
         private static string s_curlSslVersionDescription;
 
-        private readonly static DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
+        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
         private readonly MultiAgent _agent = new MultiAgent();
         private volatile bool _anyOperationStarted;
@@ -118,11 +118,7 @@ namespace System.Net.Http
 
         internal bool AutomaticRedirection
         {
-            get
-            {
-                return _automaticRedirection;
-            }
-
+            get { return _automaticRedirection; }
             set
             {
                 CheckDisposedOrStarted();
@@ -130,29 +126,13 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsProxy
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal bool SupportsProxy => true;
 
-        internal bool SupportsRedirectConfiguration
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal bool SupportsRedirectConfiguration => true;
 
         internal bool UseProxy
         {
-            get
-            {
-                return _useProxy;
-            }
-
+            get { return _useProxy; }
             set
             {
                 CheckDisposedOrStarted();
@@ -162,11 +142,7 @@ namespace System.Net.Http
 
         internal IWebProxy Proxy
         {
-            get
-            {
-                return _proxy;
-            }
-
+            get { return _proxy; }
             set
             {
                 CheckDisposedOrStarted();
@@ -176,24 +152,13 @@ namespace System.Net.Http
         
         internal ICredentials Credentials
         {
-            get
-            {
-                return _serverCredentials;
-            }
-
-            set
-            {
-                _serverCredentials = value;
-            }
+            get { return _serverCredentials; }
+            set { _serverCredentials = value; }
         }
 
         internal ClientCertificateOption ClientCertificateOptions
         {
-            get
-            {
-                return _clientCertificateOption;
-            }
-
+            get { return _clientCertificateOption; }
             set
             {
                 CheckDisposedOrStarted();
@@ -216,7 +181,7 @@ namespace System.Net.Http
             }
         }
 
-        public bool CheckCertificateRevocationList
+        internal bool CheckCertificateRevocationList
         {
             get { return _checkCertificateRevocationList; }
             set
@@ -226,12 +191,9 @@ namespace System.Net.Http
             }
         }
 
-        public SslProtocols SslProtocols
+        internal SslProtocols SslProtocols
         {
-            get
-            {
-                return _sslProtocols;
-            }
+            get { return _sslProtocols; }
             set
             {
                 SecurityProtocol.ThrowOnNotAllowed(value, allowNone: false);
@@ -240,21 +202,11 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsAutomaticDecompression
-        {
-            get
-            {
-                return s_supportsAutomaticDecompression;
-            }
-        }
+        internal bool SupportsAutomaticDecompression => s_supportsAutomaticDecompression;
 
         internal DecompressionMethods AutomaticDecompression
         {
-            get
-            {
-                return _automaticDecompression;
-            }
-
+            get { return _automaticDecompression; }
             set
             {
                 CheckDisposedOrStarted();
@@ -264,10 +216,7 @@ namespace System.Net.Http
 
         internal bool PreAuthenticate
         {
-            get
-            {
-                return _preAuthenticate;
-            }
+            get { return _preAuthenticate; }
             set
             {
                 CheckDisposedOrStarted();
@@ -281,11 +230,7 @@ namespace System.Net.Http
 
         internal bool UseCookie
         {
-            get
-            {
-                return _useCookie;
-            }
-
+            get { return _useCookie; }
             set
             {               
                 CheckDisposedOrStarted();
@@ -295,11 +240,7 @@ namespace System.Net.Http
 
         internal CookieContainer CookieContainer
         {
-            get
-            {
-                return _cookieContainer;
-            }
-
+            get { return _cookieContainer; }
             set
             {
                 CheckDisposedOrStarted();
@@ -309,10 +250,7 @@ namespace System.Net.Http
 
         public TimeSpan ConnectTimeout
         {
-            get
-            {
-                return _connectTimeout;
-            }
+            get { return _connectTimeout; }
             set
             {
                 if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
@@ -327,11 +265,7 @@ namespace System.Net.Http
 
         internal int MaxAutomaticRedirections
         {
-            get
-            {
-                return _maxAutomaticRedirections;
-            }
-
+            get { return _maxAutomaticRedirections; }
             set
             {
                 if (value <= 0)
@@ -352,13 +286,8 @@ nameof(value),
         /// </summary>
         internal bool UseDefaultCredentials
         {
-            get
-            {
-                return false;
-            }
-            set
-            {
-            }
+            get { return false; }
+            set { }
         }
         #endregion
 
@@ -790,4 +719,3 @@ nameof(value),
         #endregion
     }
 }
-
