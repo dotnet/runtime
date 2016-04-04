@@ -32,7 +32,7 @@ namespace System.Data
             {
                 throw ADP.ArgumentOutOfRange("lcid");
             }
-            return s_cachedEncodings.GetOrAdd(lcid, GetDetailsInternal);
+            return s_cachedEncodings.GetOrAdd(lcid, id => GetDetailsInternal(id));
         }
 
         internal static Encoding GetEncodingForLcid(int lcid)
