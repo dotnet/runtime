@@ -6490,6 +6490,7 @@ public:
 
 typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
 typedef BOOL (PALAPI *PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION)(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
+typedef VOID (PALAPI *PTERMINATION_REQUEST_HANDLER)();
 typedef DWORD (PALAPI *PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
@@ -6511,6 +6512,12 @@ PALAPI
 PAL_ThrowExceptionFromContext(
     IN CONTEXT* context,
     IN PAL_SEHException* ex);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetTerminationRequestHandler(
+    IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
 //
 // This holder is used to indicate that a hardware
