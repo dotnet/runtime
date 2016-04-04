@@ -268,6 +268,9 @@ REM === Start the build steps
 REM ===
 REM =========================================================================================
 
+:: Generate _version.h
+if exist "%__RootBinDir%\obj\_version.h" del "%__RootBinDir%\obj\_version.h"
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" /t:GenerateVersionHeader /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" /p:GenerateVersionHeader=true
 if defined __MscorlibOnly goto PerformMScorlibBuild
 
 if defined __SkipNativeBuild (
