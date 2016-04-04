@@ -2118,13 +2118,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByVal()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByVal");
-        MarshalStructAsParam_AsSeqByVal(StructID.InnerSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
+        //MarshalStructAsParam_AsSeqByVal(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByVal(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.NumberSequentialId);
-        MarshalStructAsParam_AsSeqByVal(StructID.S3Id);
-        MarshalStructAsParam_AsSeqByVal(StructID.S5Id);
+#if _BUG_MARSHALSTRUCTSEQ
+        //MarshalStructAsParam_AsSeqByVal(StructID.S3Id);
+        //MarshalStructAsParam_AsSeqByVal(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByVal(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByVal(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByVal(StructID.S8Id);
@@ -2137,13 +2141,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByRef()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByRef");
-        MarshalStructAsParam_AsSeqByRef(StructID.InnerSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
+        //MarshalStructAsParam_AsSeqByRef(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByRef(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByRef(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByRef(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByRef(StructID.NumberSequentialId);
-        MarshalStructAsParam_AsSeqByRef(StructID.S3Id);
-        MarshalStructAsParam_AsSeqByRef(StructID.S5Id);
+#if _BUG_MARSHALSTRUCTSEQ
+        //MarshalStructAsParam_AsSeqByRef(StructID.S3Id);
+        //MarshalStructAsParam_AsSeqByRef(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByRef(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByRef(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByRef(StructID.S8Id);
@@ -2156,13 +2164,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByValIn()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByValIn");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValIn(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByValIn(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByValIn(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByValIn(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByValIn(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValIn(StructID.S3Id);
         MarshalStructAsParam_AsSeqByValIn(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByValIn(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByValIn(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByValIn(StructID.S8Id);
@@ -2175,13 +2187,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByRefIn()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByRefIn");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefIn(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByRefIn(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefIn(StructID.S3Id);
         MarshalStructAsParam_AsSeqByRefIn(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByRefIn(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByRefIn(StructID.S8Id);
@@ -2194,13 +2210,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByValOut()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByValOut");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValOut(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByValOut(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByValOut(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByValOut(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByValOut(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValOut(StructID.S3Id);
         MarshalStructAsParam_AsSeqByValOut(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByValOut(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByValOut(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByValOut(StructID.S8Id);
@@ -2213,13 +2233,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByRefOut()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByRefOut");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefOut(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByRefOut(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByRefOut(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByRefOut(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByRefOut(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefOut(StructID.S3Id);
         MarshalStructAsParam_AsSeqByRefOut(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByRefOut(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByRefOut(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByRefOut(StructID.S8Id);
@@ -2232,13 +2256,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByValInOut()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByValInOut");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValInOut(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByValInOut(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByValInOut(StructID.S3Id);
         MarshalStructAsParam_AsSeqByValInOut(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByValInOut(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByValInOut(StructID.S8Id);
@@ -2251,13 +2279,17 @@ public class Managed
     private static void RunMarshalSeqStructAsParamByRefInOut()
     {
         Console.WriteLine("\nVerify marshal sequential layout struct as param as ByRefInOut");
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefInOut(StructID.InnerSequentialId);
+#endif
         MarshalStructAsParam_AsSeqByRefInOut(StructID.InnerArraySequentialId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.CharSetAnsiSequentialId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.CharSetUnicodeSequentialId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.NumberSequentialId);
+#if _BUG_MARSHALSTRUCTSEQ
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S3Id);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S5Id);
+#endif
         MarshalStructAsParam_AsSeqByRefInOut(StructID.StringStructSequentialAnsiId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.StringStructSequentialUnicodeId);
         MarshalStructAsParam_AsSeqByRefInOut(StructID.S8Id);
