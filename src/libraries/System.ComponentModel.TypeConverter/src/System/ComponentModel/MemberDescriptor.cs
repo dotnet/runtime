@@ -263,11 +263,7 @@ namespace System.ComponentModel
             get
             {
                 DisplayNameAttribute displayNameAttr = Attributes[typeof(DisplayNameAttribute)] as DisplayNameAttribute;
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
-#else
-                if (displayNameAttr == null)
-#endif
                 {
                     return _displayName;
                 }

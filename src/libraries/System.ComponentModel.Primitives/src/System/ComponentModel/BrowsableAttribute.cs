@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       a property browsing window.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class BrowsableAttribute : Attribute
+    public sealed class BrowsableAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -80,14 +80,12 @@ namespace System.ComponentModel
             return _browsable.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

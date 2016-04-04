@@ -8,7 +8,7 @@ namespace System.ComponentModel
     ///  Specifies that a object has no sub properties that are editable.
     /// </devdoc>
     [AttributeUsage(AttributeTargets.All)]
-    public sealed class ImmutableObjectAttribute : Attribute
+    public sealed class ImmutableObjectAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///  Specifies that a object has no sub properties that are editable.
@@ -78,14 +78,12 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <internalonly/>
         /// <devdoc>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
-#endif
     }
 }
