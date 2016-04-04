@@ -1073,8 +1073,8 @@ namespace System.Net.Http.Functional.Tests
             foreach (bool wrapCredsInCache in new[] { true, false })
             {
                 yield return new object[] { CredentialCache.DefaultCredentials, wrapCredsInCache };
-                yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
-                yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("user:name", "password"), wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("username", "password", "dom:\\ain"), wrapCredsInCache };
             }
         }
         #endregion
