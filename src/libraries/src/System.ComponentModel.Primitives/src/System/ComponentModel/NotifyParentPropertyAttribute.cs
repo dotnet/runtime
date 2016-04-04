@@ -11,7 +11,7 @@ namespace System.ComponentModel
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.Property)]
-    public sealed class NotifyParentPropertyAttribute : Attribute
+    public sealed class NotifyParentPropertyAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -89,16 +89,14 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         ///    <para>
         ///       Gets whether this attribute is <see langword='true'/> by default.
         ///    </para>
         /// </devdoc>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

@@ -114,11 +114,7 @@ namespace System.ComponentModel
                 string name = base.DisplayName;
 
                 DisplayNameAttribute displayNameAttr = Attributes[typeof(DisplayNameAttribute)] as DisplayNameAttribute;
-#if FEATURE_ATTRIBUTE_ISDEFAULTATTRIBUTE
                 if (displayNameAttr == null || displayNameAttr.IsDefaultAttribute())
-#else
-                if (displayNameAttr == null)
-#endif
                 {
                     ISite site = GetSite(_provider);
                     if (site != null)

@@ -15,11 +15,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45_Release|AnyCPU'" />
-  
   <ItemGroup Condition="'$(TargetGroup)'==''">
     <Compile Include="System\ComponentModel\BrowsableAttribute.cs" />
     <Compile Include="System\ComponentModel\CategoryAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
+    <Compile Include="System\ComponentModel\ComponentModelExtensions.cs" />
     <Compile Include="System\ComponentModel\DescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\DisplayNameAttribute.cs" />
     <Compile Include="System\ComponentModel\IComponent.cs" />

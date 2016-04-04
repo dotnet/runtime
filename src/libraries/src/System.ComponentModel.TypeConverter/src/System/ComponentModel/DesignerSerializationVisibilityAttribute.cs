@@ -11,7 +11,7 @@ namespace System.ComponentModel
     ///    </para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Event)]
-    public sealed class DesignerSerializationVisibilityAttribute : Attribute
+    public sealed class DesignerSerializationVisibilityAttribute : Attribute, IIsDefaultAttribute
     {
         /// <devdoc>
         ///    <para>
@@ -99,14 +99,12 @@ namespace System.ComponentModel
             return base.GetHashCode();
         }
 
-#if FEATURE_ISDEFAULTATTRIBUTE
         /// <devdoc>
         /// </devdoc>
         /// <internalonly/>
-        public override bool IsDefaultAttribute()
+        bool IIsDefaultAttribute.IsDefaultAttribute()
         {
             return this.Equals(Default);
         }
-#endif
     }
 }

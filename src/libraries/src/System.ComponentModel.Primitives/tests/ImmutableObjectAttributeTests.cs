@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Primitives.Tests
@@ -28,6 +29,21 @@ namespace System.ComponentModel.Primitives.Tests
             var attribute = new ImmutableObjectAttribute(value);
 
             Assert.Equal(value, attribute.Immutable);
+        }
+
+        [Theory]
+        [MemberData(nameof(ImmutableAttributesData))]
+        public void NameTests(ImmutableObjectAttribute attribute, bool isImmutable, bool isDefault)
+        {
+            Assert.Equal(isImmutable, attribute.Immutable);
+            Assert.Equal(isDefault, attribute.IsDefaultAttribute());
+        }
+
+        private static IEnumerable<object[]> ImmutableAttributesData()
+        {
+            yield return new object[] { ImmutableObjectAttribute.Default, false, true };
+            yield return new object[] { new ImmutableObjectAttribute(true), true, false };
+            yield return new object[] { new ImmutableObjectAttribute(false), false, true };
         }
     }
 }
