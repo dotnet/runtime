@@ -11,9 +11,8 @@
     <AssemblyName>System.Runtime.Serialization.Xml.Tests</AssemblyName>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <UseProjectReferences>true</UseProjectReferences>
   </PropertyGroup>
-  <PropertyGroup Condition="!$(UseProjectReferences)" >
+  <PropertyGroup Condition="'$(UseContractReferences)' == 'true'" >
     <ProjectJson>Performance/project.json</ProjectJson>
     <ProjectLockJson>Performance/project.lock.json</ProjectLockJson>
   </PropertyGroup>
@@ -36,7 +35,7 @@
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="$(UseProjectReferences)">
+  <ItemGroup Condition="'$(UseContractReferences)' == ''">
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
