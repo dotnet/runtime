@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -82,6 +83,12 @@ namespace System.Net.Http
         {
             get { return _curlHandler.CheckCertificateRevocationList; }
             set { _curlHandler.CheckCertificateRevocationList = value; }
+        }
+
+        public SslProtocols SslProtocols
+        {
+            get { return _curlHandler.SslProtocols; }
+            set { _curlHandler.SslProtocols = value; }
         }
 
         public DecompressionMethods AutomaticDecompression

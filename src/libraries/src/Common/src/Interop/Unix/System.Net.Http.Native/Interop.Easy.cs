@@ -144,7 +144,10 @@ internal static partial class Interop
         // Enum for constants defined for CURL_SSLVERSION
         internal enum CurlSslVersion
         {
-            CURL_SSLVERSION_TLSv1 = 1, /* TLS 1.x */
+            CURL_SSLVERSION_TLSv1 = 1,   /* TLS 1.x */
+            CURL_SSLVERSION_TLSv1_0 = 4, /* TLS 1.0 */
+            CURL_SSLVERSION_TLSv1_1 = 5, /* TLS 1.1 */
+            CURL_SSLVERSION_TLSv1_2 = 6, /* TLS 1.2 */
         };
 
         // Enum for constants defined for the enum CURLINFO in curl.h

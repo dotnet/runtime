@@ -56,6 +56,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
+    <Compile Include="HttpClientHandlerTest.SslProtocols.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Http.csproj">

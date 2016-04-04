@@ -421,6 +421,18 @@ check_cxx_source_compiles(
     "
     HAVE_CURLPIPE_MULTIPLEX)
 
+check_cxx_source_compiles(
+    "
+    #include <curl/curl.h>
+    int main() 
+    { 
+        int i = CURL_SSLVERSION_TLSv1_0;
+        i = CURL_SSLVERSION_TLSv1_1;
+        i = CURL_SSLVERSION_TLSv1_2;
+    }
+    "
+    HAVE_CURL_SSLVERSION_TLSv1_012)
+
 check_include_files(
     GSS/GSS.h
     HAVE_GSSFW_HEADERS)
