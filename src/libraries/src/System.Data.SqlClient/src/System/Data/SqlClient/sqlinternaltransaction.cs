@@ -404,7 +404,7 @@ namespace System.Data.SqlClient
             // transaction name.  NOTE: for simplicity it is possible to give all save point names
             // the same name, and ROLLBACK will simply rollback to the most recent save point with the
             // save point name.
-            if (ADP.IsEmpty(transactionName))
+            if (string.IsNullOrEmpty(transactionName))
                 throw SQL.NullEmptyTransactionName();
 
             try
@@ -431,7 +431,7 @@ namespace System.Data.SqlClient
             // SAVE TRANSACTION MUST HAVE AN ARGUMENT!!!  Save Transaction without an arg throws an
             // exception from the server.  So, an overload for SaveTransaction without an arg doesn't make
             // sense to have.  Save Transaction does not affect the transaction level.
-            if (ADP.IsEmpty(savePointName))
+            if (string.IsNullOrEmpty(savePointName))
                 throw SQL.NullEmptyTransactionName();
 
             try

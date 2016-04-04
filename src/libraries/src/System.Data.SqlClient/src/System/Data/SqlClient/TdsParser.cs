@@ -1261,15 +1261,15 @@ namespace System.Data.SqlClient
             //
 
 #if MANAGED_SNI
-            Debug.Assert(!ADP.IsEmpty(errorMessage) || sniError.sniError != 0, "Empty error message received from SNI");
+            Debug.Assert(!string.IsNullOrEmpty(errorMessage) || sniError.sniError != 0, "Empty error message received from SNI");
 #else
-            Debug.Assert(!ADP.IsEmpty(errorMessage), "Empty error message received from SNI");
+            Debug.Assert(!string.IsNullOrEmpty(errorMessage), "Empty error message received from SNI");
 #endif
 
             string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
             string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", (int)sniError.provider);
             string providerName = SR.GetResourceString(providerRid, providerRid);
-            Debug.Assert(!ADP.IsEmpty(providerName), String.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
+            Debug.Assert(!string.IsNullOrEmpty(providerName), String.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
             uint win32ErrorCode = sniError.nativeError;
 
             if (sniError.sniError == 0)
@@ -2994,7 +2994,7 @@ namespace System.Data.SqlClient
 
             // Fail if SSE UserInstance and we have not received this info.
             if (_connHandler.ConnectionOptions.UserInstance &&
-                ADP.IsEmpty(_connHandler.InstanceName))
+                string.IsNullOrEmpty(_connHandler.InstanceName))
             {
                 stateObj.AddError(new SqlError(0, 0, TdsEnums.FATAL_ERROR_CLASS, Server, SQLMessage.UserInstanceFailure(), "", 0));
                 ThrowExceptionAndWarning(stateObj);
@@ -6342,8 +6342,8 @@ namespace System.Data.SqlClient
 
         private void SSPIError(string error, string procedure)
         {
-            Debug.Assert(!ADP.IsEmpty(procedure), "TdsParser.SSPIError called with an empty or null procedure string");
-            Debug.Assert(!ADP.IsEmpty(error), "TdsParser.SSPIError called with an empty or null error string");
+            Debug.Assert(!string.IsNullOrEmpty(procedure), "TdsParser.SSPIError called with an empty or null procedure string");
+            Debug.Assert(!string.IsNullOrEmpty(error), "TdsParser.SSPIError called with an empty or null error string");
 
             _physicalStateObj.AddError(new SqlError(0, (byte)0x00, (byte)TdsEnums.MIN_ERROR_CLASS, _server, error, procedure, 0));
             ThrowExceptionAndWarning(_physicalStateObj);
@@ -6781,7 +6781,7 @@ namespace System.Data.SqlClient
                             }
                             else
                             {
-                                Debug.Assert(!ADP.IsEmpty(rpcext.rpcName), "must have an RPC name");
+                                Debug.Assert(!string.IsNullOrEmpty(rpcext.rpcName), "must have an RPC name");
                                 tempLen = rpcext.rpcName.Length;
                                 WriteShort(tempLen, stateObj);
                                 WriteString(rpcext.rpcName, tempLen, 0, stateObj);
@@ -7261,7 +7261,7 @@ namespace System.Data.SqlClient
         {
             // paramLen
             // paramName
-            if (!ADP.IsEmpty(parameterName))
+            if (!string.IsNullOrEmpty(parameterName))
             {
                 Debug.Assert(parameterName.Length <= 0xff, "parameter name can only be 255 bytes, shouldn't get to TdsParser!");
                 int tempLen = parameterName.Length & 0xff;
@@ -7494,8 +7494,8 @@ namespace System.Data.SqlClient
                 case SqlDbType.Xml:
                     stateObj.WriteByte(TdsEnums.SQLXMLTYPE);
                     // Is there a schema
-                    if (ADP.IsEmpty(metaData.TypeSpecificNamePart1) && ADP.IsEmpty(metaData.TypeSpecificNamePart2) &&
-                            ADP.IsEmpty(metaData.TypeSpecificNamePart3))
+                    if (string.IsNullOrEmpty(metaData.TypeSpecificNamePart1) && string.IsNullOrEmpty(metaData.TypeSpecificNamePart2) &&
+                            string.IsNullOrEmpty(metaData.TypeSpecificNamePart3))
                     {
                         stateObj.WriteByte(0);  // schema not present
                     }

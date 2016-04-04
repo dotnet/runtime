@@ -310,12 +310,12 @@ namespace System.Data.SqlClient
             }
 
 
-            if (true == _userInstance && !ADP.IsEmpty(_failoverPartner))
+            if (true == _userInstance && !string.IsNullOrEmpty(_failoverPartner))
             {
                 throw SQL.UserInstanceFailoverNotCompatible();
             }
 
-            if (ADP.IsEmpty(typeSystemVersionString))
+            if (string.IsNullOrEmpty(typeSystemVersionString))
             {
                 typeSystemVersionString = DbConnectionStringDefaults.TypeSystemVersion;
             }

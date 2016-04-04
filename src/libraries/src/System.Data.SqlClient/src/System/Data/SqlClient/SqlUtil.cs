@@ -933,7 +933,7 @@ namespace System.Data.SqlClient
         /// <returns>escapes the name with [], also escapes the last close bracket with double-bracket</returns>
         static internal string EscapeIdentifier(string name)
         {
-            Debug.Assert(!ADP.IsEmpty(name), "null or empty identifiers are not allowed");
+            Debug.Assert(!string.IsNullOrEmpty(name), "null or empty identifiers are not allowed");
             return "[" + name.Replace("]", "]]") + "]";
         }
 
@@ -943,7 +943,7 @@ namespace System.Data.SqlClient
         static internal void EscapeIdentifier(StringBuilder builder, string name)
         {
             Debug.Assert(builder != null, "builder cannot be null");
-            Debug.Assert(!ADP.IsEmpty(name), "null or empty identifiers are not allowed");
+            Debug.Assert(!string.IsNullOrEmpty(name), "null or empty identifiers are not allowed");
 
             builder.Append("[");
             builder.Append(name.Replace("]", "]]"));

@@ -166,7 +166,7 @@ namespace System.Data.SqlClient
 
             exception.Data.Add("HelpLink.ProdName", "Microsoft SQL Server");
 
-            if (!ADP.IsEmpty(serverVersion))
+            if (!string.IsNullOrEmpty(serverVersion))
             {
                 exception.Data.Add("HelpLink.ProdVer", serverVersion);
             }
