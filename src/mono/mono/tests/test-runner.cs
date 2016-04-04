@@ -261,7 +261,10 @@ public class TestRunner
 
 						output.Write ("timed out");
 
-						p.Kill ();
+						try {
+							p.Kill ();
+						} catch {
+						}
 					} else if (p.ExitCode != expectedExitCode) {
 						var end = DateTime.UtcNow;
 
