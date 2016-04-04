@@ -51,7 +51,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact, PlatformSpecific(PlatformID.Windows)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestBasePriorityOnWindows()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
