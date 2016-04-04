@@ -351,7 +351,7 @@ namespace System.Data.SqlClient
                 typeSpecificNamePart2 = this.XmlSchemaCollectionOwningSchema;
                 typeSpecificNamePart3 = this.XmlSchemaCollectionName;
             }
-            else if (SqlDbType.Udt == mt.SqlDbType || (SqlDbType.Structured == mt.SqlDbType && !ADP.IsEmpty(this.TypeName)))
+            else if (SqlDbType.Udt == mt.SqlDbType || (SqlDbType.Structured == mt.SqlDbType && !string.IsNullOrEmpty(this.TypeName)))
             {
                 // Split the input name. The type name is specified as single 3 part name.
                 // NOTE: ParseTypeName throws if format is incorrect
@@ -385,9 +385,9 @@ namespace System.Data.SqlClient
                     throw ADP.ArgumentOutOfRange("names");
                 }
 
-                if ((!ADP.IsEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
-                    || (!ADP.IsEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
-                    || (!ADP.IsEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
+                if ((!string.IsNullOrEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
+                    || (!string.IsNullOrEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
+                    || (!string.IsNullOrEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
                 {
                     throw ADP.ArgumentOutOfRange("names");
                 }
@@ -450,7 +450,7 @@ namespace System.Data.SqlClient
             }
             set
             {
-                if (ADP.IsEmpty(value) || (value.Length < TdsEnums.MAX_PARAMETER_NAME_LENGTH)
+                if (string.IsNullOrEmpty(value) || (value.Length < TdsEnums.MAX_PARAMETER_NAME_LENGTH)
                     || (('@' == value[0]) && (value.Length <= TdsEnums.MAX_PARAMETER_NAME_LENGTH)))
                 {
                     if (_parameterName != value)
@@ -1396,7 +1396,7 @@ namespace System.Data.SqlClient
             // Validate structured-type-specific details.
             if (metaType.SqlDbType == SqlDbType.Structured)
             {
-                if (!isCommandProc && ADP.IsEmpty(TypeName))
+                if (!isCommandProc && string.IsNullOrEmpty(TypeName))
                     throw SQL.MustSetTypeNameForParam(metaType.TypeName, this.ParameterName);
 
                 if (ParameterDirection.Input != this.Direction)
@@ -1409,7 +1409,7 @@ namespace System.Data.SqlClient
                     throw SQL.DBNullNotSupportedForTVPValues(this.ParameterName);
                 }
             }
-            else if (!ADP.IsEmpty(TypeName))
+            else if (!string.IsNullOrEmpty(TypeName))
             {
                 throw SQL.UnexpectedTypeNameForNonStructParams(this.ParameterName);
             }

@@ -133,7 +133,7 @@ namespace System.Data.ProviderBase
         protected DbConnectionOptions FindConnectionOptions(DbConnectionPoolKey key)
         {
             Debug.Assert(key != null, "key cannot be null");
-            if (!ADP.IsEmpty(key.ConnectionString))
+            if (!string.IsNullOrEmpty(key.ConnectionString))
             {
                 DbConnectionPoolGroup connectionPoolGroup;
                 Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
@@ -354,7 +354,7 @@ namespace System.Data.ProviderBase
 
         internal DbConnectionPoolGroup GetConnectionPoolGroup(DbConnectionPoolKey key, DbConnectionPoolGroupOptions poolOptions, ref DbConnectionOptions userConnectionOptions)
         {
-            if (ADP.IsEmpty(key.ConnectionString))
+            if (string.IsNullOrEmpty(key.ConnectionString))
             {
                 return (DbConnectionPoolGroup)null;
             }

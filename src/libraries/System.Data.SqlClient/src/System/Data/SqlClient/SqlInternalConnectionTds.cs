@@ -977,7 +977,7 @@ namespace System.Data.SqlClient
 
             _timeoutErrorInternal.SetInternalSourceType(useFailoverPartner ? SqlConnectionInternalSourceType.Failover : SqlConnectionInternalSourceType.Principle);
 
-            bool hasFailoverPartner = !ADP.IsEmpty(failoverPartner);
+            bool hasFailoverPartner = !string.IsNullOrEmpty(failoverPartner);
 
             // Open the connection and Login
             try
@@ -1792,7 +1792,7 @@ namespace System.Data.SqlClient
             // when using the Dbnetlib dll.  If the protocol is not specified, the netlib will
             // try all protocols in the order listed in the Client Network Utility.  Connect will
             // then fail if all protocols fail.
-            if (!ADP.IsEmpty(protocol))
+            if (!string.IsNullOrEmpty(protocol))
             {
                 ExtendedServerName = protocol + ":" + serverName;
             }

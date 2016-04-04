@@ -2310,7 +2310,7 @@ namespace System.Data.SqlClient
             if (null != _transaction && _activeConnection != _transaction.Connection)
                 throw ADP.TransactionConnectionMismatch();
 
-            if (ADP.IsEmpty(this.CommandText))
+            if (string.IsNullOrEmpty(this.CommandText))
                 throw ADP.CommandTextRequired(method);
         }
 
@@ -2837,7 +2837,7 @@ namespace System.Data.SqlClient
                 else if (mt.SqlDbType == SqlDbType.Structured)
                 {
                     string typeName = sqlParam.TypeName;
-                    if (ADP.IsEmpty(typeName))
+                    if (string.IsNullOrEmpty(typeName))
                     {
                         throw SQL.MustSetTypeNameForParam(mt.TypeName, sqlParam.ParameterNameFixed);
                     }
