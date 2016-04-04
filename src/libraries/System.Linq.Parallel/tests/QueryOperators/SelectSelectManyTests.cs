@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
@@ -200,6 +201,21 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<bool>)null).Select((x, index) => x));
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().Select((Func<bool, bool>)null));
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Empty<bool>().Select((Func<bool, int, bool>)null));
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void Select_OrderablePartitionerWithOutOfOrderInputs_AsOrdered_CorrectOrder(bool keysOrderedInEachPartition, bool keysNormalized)
+        {
+            var range = new RangeOrderablePartitioner(0, 1024, keysOrderedInEachPartition, keysNormalized);
+            int next = 0;
+            foreach (int i in range.AsParallel().AsOrdered().Select(i => i))
+            {
+                Assert.Equal(next++, i);
+            }
         }
 
         //

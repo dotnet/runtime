@@ -17,6 +17,19 @@ namespace System.Linq.Parallel.Tests
             {
                 yield return results;
             }
+
+            // A source with data explicitly created out of order
+            foreach (int count in counts)
+            {
+                int[] data = Enumerable.Range(0, count).ToArray();
+                for (int i = 0; i < count / 2; i += 2)
+                {
+                    int tmp = data[i];
+                    data[i] = data[count - i - 1];
+                    data[count - i - 1] = tmp;
+                }
+                yield return new object[] { new Labeled<ParallelQuery<int>>("Out-of-order input", data.AsParallel()), count, max(count) };
+            }
         }
 
         //
@@ -264,7 +277,14 @@ namespace System.Linq.Parallel.Tests
             Assert.Null(labeled.Item.Max(x => (float?)x));
             Assert.Null(labeled.Item.Max(x => (double?)x));
             Assert.Null(labeled.Item.Max(x => (decimal?)x));
+
             Assert.Null(labeled.Item.Max(x => new object()));
+
+            Assert.Null(labeled.Item.Select(x => (int?)x).Max());
+            Assert.Null(labeled.Item.Select(x => (long?)x).Max());
+            Assert.Null(labeled.Item.Select(x => (float?)x).Max());
+            Assert.Null(labeled.Item.Select(x => (double?)x).Max());
+            Assert.Null(labeled.Item.Select(x => (decimal?)x).Max());
         }
 
         [Theory]
@@ -277,6 +297,11 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (double)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (decimal)x));
             Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => new NotComparable(x)));
+
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (long)i).Max());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (float)i).Max());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (double)i).Max());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Select(i => (decimal)i).Max());
         }
 
         [Fact]
