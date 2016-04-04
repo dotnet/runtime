@@ -72,6 +72,7 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
+static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 
 static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
@@ -91,7 +92,7 @@ struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
-
+struct sigaction g_previous_sigterm;
 
 /* public function definitions ************************************************/
 
@@ -131,6 +132,7 @@ BOOL SEHInitializeSignals()
     handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
     handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
     handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
+    handle_signal(SIGTERM, sigterm_handler, &g_previous_sigterm);
 
 #ifdef INJECT_ACTIVATION_SIGNAL
     handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, NULL);
@@ -178,6 +180,7 @@ void SEHCleanupSignals()
     restore_signal(SIGSEGV, &g_previous_sigsegv);
     restore_signal(SIGINT, &g_previous_sigint);
     restore_signal(SIGQUIT, &g_previous_sigquit);
+    restore_signal(SIGTERM, &g_previous_sigterm);
 }
 
 /* internal function definitions **********************************************/
@@ -382,6 +385,35 @@ static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
     // Restore the original or default handler and resend signal
     restore_signal(code, &g_previous_sigquit);
     kill(gPID, code);
+}
+
+/*++
+Function :
+    sigterm_handler
+
+    handle SIGTERM signal
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+
+    (no return value)
+--*/
+static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
+{
+    if (PALIsInitialized())
+    {
+        // g_pSynchronizationManager shouldn't be null if PAL is initialized.
+        _ASSERTE(g_pSynchronizationManager != nullptr);
+
+        g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
+    }
+    else
+    {
+        if (g_previous_sigterm.sa_sigaction != NULL)
+        {
+            g_previous_sigterm.sa_sigaction(code, siginfo, context);
+        }
+    }
 }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
