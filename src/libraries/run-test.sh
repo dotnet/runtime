@@ -89,12 +89,12 @@ create_test_overlay()
   local mscorlibLocation="$MscorlibBins/mscorlib.dll"
 
   # Make the overlay
-    
+
   rm -rf $OverlayDir
   mkdir -p $OverlayDir
-  
+
   local LowerConfigurationGroup="$(echo $ConfigurationGroup | awk '{print tolower($0)}')"
- 
+
   # Copy the CoreCLR native binaries
   if [ ! -d $CoreClrBins ]
   then
@@ -102,16 +102,16 @@ create_test_overlay()
 	exit 1
   fi
   cp -r $CoreClrBins/* $OverlayDir
-  
+
   # Then the mscorlib from the upstream build.
-  # TODO When the mscorlib flavors get properly changed then 
+  # TODO When the mscorlib flavors get properly changed then
   if [ ! -f $mscorlibLocation ]
   then
 	echo "error: Mscorlib not found at $mscorlibLocation"
 	exit 1
   fi
   cp -r $mscorlibLocation $OverlayDir
-  
+
   # Then the native CoreFX binaries
   if [ ! -d $CoreFxNativeBins ]
   then
@@ -141,9 +141,9 @@ runtest()
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
     exit 0
   fi
-  
+
   # Check for project restrictions
-  
+
   if [[ ! $testProject =~ $TestSelection ]]; then
     echo "Skipping $testProject"
     exit 0
@@ -186,7 +186,7 @@ runtest()
   fi
 
   chmod +x ./corerun
-  
+
   # Invoke xunit
 
   echo
