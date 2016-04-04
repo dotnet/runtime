@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
-    "System.Linq.Expressions": "4.0.11-rc3-23931-00",
-    "System.ObjectModel": "4.0.12-rc3-23931-00",
-    "System.Runtime.Handles": "4.0.1-rc3-23931-00",
-    "System.Text.RegularExpressions": "4.0.12-rc3-23931-00",
-    "System.Threading.Tasks": "4.0.11-rc3-23931-00",
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
+    "System.Linq.Expressions": "4.0.11-rc3-24004-00",
+    "System.ObjectModel": "4.0.12-rc3-24004-00",
+    "System.Runtime.Handles": "4.0.1-rc3-24004-00",
+    "System.Text.RegularExpressions": "4.0.12-rc3-24004-00",
+    "System.Threading.Tasks": "4.0.11-rc3-24004-00",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-00231-07"
   },

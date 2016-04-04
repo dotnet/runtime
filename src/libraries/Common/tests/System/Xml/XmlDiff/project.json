@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
-    "System.Collections": "4.0.11-rc3-23931-00",
-    "System.Diagnostics.Debug": "4.0.11-rc3-23931-00",
-    "System.IO": "4.1.0-rc3-23931-00",
-    "System.Runtime": "4.1.0-rc3-23931-00",
-    "System.Xml.ReaderWriter": "4.0.11-rc3-23931-00"
+    "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
+    "System.Collections": "4.0.11-rc3-24004-00",
+    "System.Diagnostics.Debug": "4.0.11-rc3-24004-00",
+    "System.IO": "4.1.0-rc3-24004-00",
+    "System.Runtime": "4.1.0-rc3-24004-00",
+    "System.Xml.ReaderWriter": "4.0.11-rc3-24004-00"
   },
   "frameworks": {
     "dnxcore50": {}
