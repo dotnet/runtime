@@ -48,6 +48,7 @@ RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_bu
 MINI_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXECUTABLE)
 
+CSC = $(mcs_topdir)/class/lib/build/mcs.exe
 MCS = CSC_SDK_PATH_DISABLED= $(MINI_RUNTIME) $(CSC) -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll
 ILASM = $(MINI_RUNTIME) $(CLASS)/ilasm.exe
 
