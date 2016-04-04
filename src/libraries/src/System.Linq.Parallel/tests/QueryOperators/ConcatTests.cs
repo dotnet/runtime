@@ -135,5 +135,16 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<int>)null).Concat(ParallelEnumerable.Range(0, 1)));
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).Concat(null));
         }
+
+        [Fact]
+        public static void Concat_UnionSources_PrematureMerges()
+        {
+            const int ElementCount = 2048;
+            ParallelQuery<int> leftQuery = ParallelEnumerable.Range(0, ElementCount / 4).Union(ParallelEnumerable.Range(ElementCount / 4, ElementCount / 4));
+            ParallelQuery<int> rightQuery = ParallelEnumerable.Range(2 * ElementCount / 4, ElementCount / 4).Union(ParallelEnumerable.Range(3 * ElementCount / 4, ElementCount / 4));
+
+            var results = new HashSet<int>(leftQuery.Concat(rightQuery));
+            Assert.Equal(ElementCount, results.Count);
+        }
     }
 }

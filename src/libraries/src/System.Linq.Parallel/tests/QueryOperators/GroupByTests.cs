@@ -456,5 +456,24 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupBy(i => i, (Func<int, int>)null, (i, j) => i, EqualityComparer<int>.Default));
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Range(0, 1).GroupBy(i => i, i => i, (Func<int, IEnumerable<int>, int>)null, EqualityComparer<int>.Default));
         }
+
+        [Fact]
+        public static void GroupBy_LargeGroup_ForceInternalArrayToGrow()
+        {
+            const int Key = 42;
+            const int LargeSize = 8192; // larger than GrowingArray's internal default array size
+
+            IGrouping<int, int>[] result = ParallelEnumerable
+                .Range(0, LargeSize)
+                .AsOrdered()
+                .GroupBy(i => Key)
+                .ToArray();
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Length);
+
+            Assert.Equal(Key, result[0].Key);
+            Assert.Equal(LargeSize, result[0].Count());
+        }
     }
 }

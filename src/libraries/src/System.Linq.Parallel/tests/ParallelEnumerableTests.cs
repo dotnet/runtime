@@ -198,6 +198,17 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(count, counted);
         }
 
+        [Theory]
+        [MemberData(nameof(RepeatData))]
+        public static void Repeat_Select<T>(T element, int count)
+        {
+            ParallelQuery<T> query = ParallelEnumerable.Repeat(element, count).Select(i => i);
+
+            int counted = 0;
+            Assert.All(query, e => { counted++; Assert.Equal(element, e); });
+            Assert.Equal(count, counted);
+        }
+
         [Fact]
         public static void Repeat_Exception()
         {
@@ -207,6 +218,30 @@ namespace System.Linq.Parallel.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => ParallelEnumerable.Repeat((decimal)8, -8));
             Assert.Throws<ArgumentOutOfRangeException>(() => ParallelEnumerable.Repeat("fail", -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => ParallelEnumerable.Repeat((string)null, -1));
+        }
+
+        [Fact]
+        public static void Repeat_Reset()
+        {
+            const int Value = 42;
+            const int Iterations = 3;
+
+            ParallelQuery<int> q = ParallelEnumerable.Repeat(Value, Iterations);
+
+            IEnumerator<int> e = q.GetEnumerator();
+            for (int i = 0; i < 2; i++)
+            {
+                int count = 0;
+                while (e.MoveNext())
+                {
+                    Assert.Equal(Value, e.Current);
+                    count++;
+                }
+                Assert.False(e.MoveNext());
+                Assert.Equal(Iterations, count);
+
+                e.Reset();
+            }
         }
 
         //
