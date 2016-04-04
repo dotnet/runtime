@@ -83,6 +83,7 @@ namespace System.Net.Http
                 // Configure the handle
                 SetUrl();
                 SetMultithreading();
+                SetTimeouts();
                 SetRedirection();
                 SetVerb();
                 SetVersion();
@@ -193,6 +194,14 @@ namespace System.Net.Http
             private void SetMultithreading()
             {
                 SetCurlOption(CURLoption.CURLOPT_NOSIGNAL, 1L);
+            }
+
+            private void SetTimeouts()
+            {
+                // Set timeout limit on the connect phase
+                SetCurlOption(CURLoption.CURLOPT_CONNECTTIMEOUT_MS, _handler.ConnectTimeout == Timeout.InfiniteTimeSpan ? 
+                    int.MaxValue : 
+                    Math.Max(1, (long)_handler.ConnectTimeout.TotalMilliseconds));
             }
 
             private void SetRedirection()
