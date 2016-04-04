@@ -27,9 +27,6 @@ namespace System.Net.Http
             {
                 Debug.Assert(clientCertOption == ClientCertificateOption.Automatic || clientCertOption == ClientCertificateOption.Manual);
 
-                // Disable SSLv2/SSLv3, allow TLSv1.*
-                easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSLVERSION, (long)Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1);
-
                 // Create a client certificate provider if client certs may be used.
                 X509Certificate2Collection clientCertificates = easy._handler._clientCertificates;
                 ClientCertificateProvider certProvider =
@@ -65,6 +62,8 @@ namespace System.Net.Http
                             // We don't change the SSL_VERIFYPEER setting, as setting it to 0 will cause
                             // SSL and libcurl to ignore the result of the server callback.
                         }
+
+                        // The allowed SSL protocols will be set in the configuration callback.
                         break;
 
                     case CURLcode.CURLE_UNKNOWN_OPTION: // Curl 7.38 and prior
@@ -81,6 +80,10 @@ namespace System.Net.Http
                             throw new PlatformNotSupportedException(
                                 SR.Format(SR.net_http_unix_invalid_certcallback_option, CurlVersionDescription, CurlSslVersionDescription));
                         }
+
+                        // Since there won't be a callback to configure the allowed SSL protocols, configure them here.
+                        SetSslVersion(easy);
+
                         break;
 
                     default:
@@ -89,8 +92,59 @@ namespace System.Net.Http
                 }
             }
 
+            private static void SetSslVersion(EasyRequest easy, IntPtr sslCtx = default(IntPtr))
+            {
+                // Get the requested protocols.
+                System.Security.Authentication.SslProtocols protocols = easy._handler.SslProtocols;
+
+                // We explicitly disallow choosing SSL2/3. Make sure they were filtered out.
+                Debug.Assert((protocols & ~SecurityProtocol.AllowedSecurityProtocols) == 0, 
+                    "Disallowed protocols should have been filtered out.");
+
+                // libcurl supports options for either enabling all of the TLS1.* protocols or enabling 
+                // just one of them; it doesn't currently support enabling two of the three, e.g. you can't 
+                // pick TLS1.1 and TLS1.2 but not TLS1.0, but you can select just TLS1.2.
+                Interop.Http.CurlSslVersion curlSslVersion;
+                switch (protocols)
+                {
+                    case System.Security.Authentication.SslProtocols.Tls:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_0;
+                        break;
+                    case System.Security.Authentication.SslProtocols.Tls11:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_1;
+                        break;
+                    case System.Security.Authentication.SslProtocols.Tls12:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_2;
+                        break;
+
+                    case System.Security.Authentication.SslProtocols.Tls | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls12:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1;
+                        break;
+
+                    default:
+                        throw new NotSupportedException(SR.net_securityprotocolnotsupported);
+                }
+
+                try
+                {
+                    easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSLVERSION, (long)curlSslVersion);
+                }
+                catch (CurlException e) when (e.HResult == (int)CURLcode.CURLE_UNKNOWN_OPTION)
+                {
+                    throw new NotSupportedException(SR.net_securityprotocolnotsupported, e);
+                }
+            }
+
             private static CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer)
             {
+                // Configure the SSL protocols allowed.
+                EasyRequest easy;
+                if (!TryGetEasyRequest(curl, out easy))
+                {
+                    return CURLcode.CURLE_ABORTED_BY_CALLBACK;
+                }
+                Interop.Ssl.SetProtocolOptions(sslCtx, easy._handler.SslProtocols);
+
                 // Configure the SSL server certificate verification callback.
                 Interop.Ssl.SslCtxSetCertVerifyCallback(sslCtx, s_sslVerifyCallback, curl);
 

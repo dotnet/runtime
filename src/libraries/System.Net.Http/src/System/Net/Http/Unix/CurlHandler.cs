@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,6 +86,7 @@ namespace System.Net.Http
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
         private bool _checkCertificateRevocationList;
+        private SslProtocols _sslProtocols = SecurityProtocol.DefaultSecurityProtocols;
 
         private object LockObject { get { return _agent; } }
 
@@ -217,6 +219,20 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _checkCertificateRevocationList = value;
+            }
+        }
+
+        public SslProtocols SslProtocols
+        {
+            get
+            {
+                return _sslProtocols;
+            }
+            set
+            {
+                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: false);
+                CheckDisposedOrStarted();
+                _sslProtocols = value;
             }
         }
 

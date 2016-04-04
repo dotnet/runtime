@@ -59,7 +59,9 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                Ssl.SetProtocolOptions(innerContext, protocols);
+                // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
+                // create the handle, it's rooted by the using, no one else has a reference to it, etc.
+                Ssl.SetProtocolOptions(innerContext.DangerousGetHandle(), protocols);
 
                 // The logic in SafeSslHandle.Disconnect is simple because we are doing a quiet
                 // shutdown (we aren't negotiating for session close to enable later session
