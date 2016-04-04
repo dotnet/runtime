@@ -3,17 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 public sealed class CollectTest {
-
+    private LargeObject lo;
     private int numTests = 0;
     public uint size = 0;
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void CreateLargeObject() {
+        lo = new LargeObject(size, true);
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void DestroyLargeObject() {
+        lo = null;
+    }
 
     private bool collectLargeObject(int gen) {
         numTests++;
-        LargeObject lo;
         try {
-            lo = new LargeObject(size, true);
+            CreateLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
             return false;
@@ -22,7 +32,8 @@ public sealed class CollectTest {
             Console.WriteLine(e);
             return false;
         }
-        lo = null;
+        
+        DestroyLargeObject();
         GC.Collect(gen);
         GC.WaitForPendingFinalizers();
         GC.Collect(gen);
