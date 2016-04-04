@@ -71,7 +71,7 @@ namespace System.Net.Http
 
         private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
-        private readonly MultiAgent _agent = new MultiAgent();
+        private readonly MultiAgent _agent;
         private volatile bool _anyOperationStarted;
         private volatile bool _disposed;
 
@@ -87,6 +87,7 @@ namespace System.Net.Http
         private TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
+        private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
         private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
@@ -110,6 +111,11 @@ namespace System.Net.Http
             {
                 EventSourceTrace($"libcurl: {CurlVersionDescription} {CurlSslVersionDescription} {features}");
             }
+        }
+
+        public CurlHandler()
+        {
+            _agent = new MultiAgent(this);
         }
 
         #region Properties
@@ -292,6 +298,35 @@ nameof(value),
 
                 CheckDisposedOrStarted();
                 _maxAutomaticRedirections = value;
+            }
+        }
+
+        public int MaxConnectionsPerServer
+        {
+            get
+            {
+                return _maxConnectionsPerServer;
+            }
+            set
+            {
+                if (value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
+                }
+
+                // Make sure the libcurl version we're using supports the option, by setting the value
+                // on a temporary multi handle.
+                using (Interop.Http.SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate())
+                {
+                    CURLMcode result = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, value);
+                    if (result != CURLMcode.CURLM_OK)
+                    {
+                        throw new PlatformNotSupportedException(CurlException.GetCurlErrorString((int)result, isMulti: true));
+                    }
+                }
+
+                CheckDisposedOrStarted();
+                _maxConnectionsPerServer = value;
             }
         }
 

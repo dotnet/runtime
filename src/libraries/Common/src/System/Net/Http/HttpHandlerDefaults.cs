@@ -10,6 +10,7 @@ namespace System.Net.Http
     internal static class HttpHandlerDefaults
     {
         public const int DefaultMaxAutomaticRedirections = 50;
+        public const int DefaultMaxConnectionsPerServer = int.MaxValue;
         public const DecompressionMethods DefaultAutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         public const bool DefaultAutomaticRedirection = true;
         public const bool DefaultUseCookies = true;
