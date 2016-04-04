@@ -55,6 +55,16 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { return default(bool); }
         public override int GetHashCode() { return default(int); }
     }
+    public partial class DesignOnlyAttribute : System.Attribute
+    {
+        public static readonly DesignOnlyAttribute Default;
+        public static readonly DesignOnlyAttribute No;
+        public static readonly DesignOnlyAttribute Yes;
+        public DesignOnlyAttribute(bool isDesignOnly) { }
+        public bool IsDesignOnly { get; }
+        public override bool Equals(object obj) { return default(bool); }
+        public override int GetHashCode() { return default(int); }
+    }
     public partial class DisplayNameAttribute : System.Attribute
     {
         public static readonly System.ComponentModel.DisplayNameAttribute Default;
