@@ -62,7 +62,18 @@ namespace System.Text.RegularExpressions
             }
             set
             {
-                _caps = (Dictionary<int, int>)value;
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _caps = value as Dictionary<int, int>;
+                if (_caps == null)
+                {
+                    _caps = new Dictionary<int, int>(value.Count);
+                    foreach (DictionaryEntry entry in value)
+                    {
+                        _caps.Add((int)entry.Key, (int)entry.Value);
+                    }
+                }
             }
         }
 
@@ -74,7 +85,18 @@ namespace System.Text.RegularExpressions
             }
             set
             {
-                _capnames = (Dictionary<string, int>)value;
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                _capnames = value as Dictionary<string, int>;
+                if (_capnames == null)
+                {
+                    _capnames = new Dictionary<string, int>(value.Count);
+                    foreach (DictionaryEntry entry in value)
+                    {
+                        _capnames.Add((string)entry.Key, (int)entry.Value);
+                    }
+                }
             }
         }
 

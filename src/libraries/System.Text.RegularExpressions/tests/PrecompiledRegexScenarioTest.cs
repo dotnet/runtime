@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using RegexTestNamespace;
 using Xunit;
+using System.Collections.Generic;
 
 namespace System.Text.RegularExpressionsTests
 {
@@ -16,6 +17,8 @@ namespace System.Text.RegularExpressionsTests
             Assert.Equal(1, testClass.Matches(text).Count);
             Assert.Equal(1, testClass.Match(text).Groups[0].Captures.Count);
             Assert.Equal(text, testClass.Match(text).Groups[0].Value);
+            Assert.Equal(new int[] { 0, 1, 2}, testClass.GetGroupNumbers());
+            Assert.Equal(new string[] { "0", "1", "output" }, testClass.GetGroupNames());
         }
     }
 }
@@ -26,18 +29,30 @@ namespace RegexTestNamespace
     {
         public RegexTestClass()
         {
-            this.pattern = @".*\B(SUCCESS)\B.*";
-            this.roptions = RegexOptions.IgnoreCase;
-            this.internalMatchTimeout = TimeSpan.FromMinutes(1);
-            this.factory = new RegexFactoryTestClass();
-            this.capsize = 2;
+            pattern = ".*\\B(\\d+)(?<output>SUCCESS)\\B.*";
+            roptions = RegexOptions.IgnoreCase;
+            internalMatchTimeout = TimeSpan.FromTicks(-10000L);
+            factory = new RegexFactoryTestClass();
+            Caps = new Dictionary<int, int>();
+            Caps.Add(0, 0);
+            Caps.Add(1, 1);
+            Caps.Add(2, 2);
+            CapNames = new Dictionary<string, int>();
+            CapNames.Add("0", 0);
+            CapNames.Add("1", 1);
+            CapNames.Add("output", 2);
+            capslist = new string[3];
+            capslist[0] = "0";
+            capslist[1] = "1";
+            capslist[2] = "output";
+            capsize = 3;
             base.InitializeReferences();
         }
 
         public RegexTestClass(TimeSpan timeSpan) : this()
         {
             Regex.ValidateMatchTimeout(timeSpan);
-            this.internalMatchTimeout = timeSpan;
+            internalMatchTimeout = timeSpan;
         }
     }
 
@@ -94,21 +109,37 @@ namespace RegexTestNamespace
                     runstack[--num3] = num;
                     runtrack[--num2] = 1;
                     this.CheckTimeout();
-                    if (7 <= runtextend - num && char.ToLower(runtext[num]) == 's' && char.ToLower(runtext[num + 1]) == 'u' && char.ToLower(runtext[num + 2]) == 'c' && char.ToLower(runtext[num + 3]) == 'c' && char.ToLower(runtext[num + 4]) == 'e' && char.ToLower(runtext[num + 5]) == 's' && char.ToLower(runtext[num + 6]) == 's')
+                    if (1 <= runtextend - num)
                     {
-                        num += 7;
-                        this.CheckTimeout();
-                        num4 = runstack[num3++];
-                        this.Capture(1, num4, num);
-                        runtrack[--num2] = num4;
-                        runtrack[--num2] = 3;
-                        this.CheckTimeout();
-                        if (!this.IsBoundary(num, runtextbeg, runtextend))
+                        num++;
+                        num4 = 1;
+                        while (RegexRunner.CharInClass(char.ToLower(runtext[num - num4--]), "\0\0\u0001\t"))
                         {
-                            break;
+                            if (num4 <= 0)
+                            {
+                                this.CheckTimeout();
+                                num4 = (num5 = runtextend - num) + 1;
+                                while (--num4 > 0)
+                                {
+                                    if (!RegexRunner.CharInClass(char.ToLower(runtext[num++]), "\0\0\u0001\t"))
+                                    {
+                                        num--;
+                                        break;
+                                    }
+                                }
+                                if (num5 > num4)
+                                {
+                                    runtrack[--num2] = num5 - num4 - 1;
+                                    runtrack[--num2] = num - 1;
+                                    runtrack[--num2] = 3;
+                                    goto IL_204;
+                                }
+                                goto IL_204;
+                            }
                         }
                     }
                 }
+                IL_441:
                 while (true)
                 {
                     this.runtrackpos = num2;
@@ -125,18 +156,20 @@ namespace RegexTestNamespace
                             num3++;
                             continue;
                         case 2:
-                            goto IL_39A;
+                            goto IL_4C7;
                         case 3:
+                            goto IL_51D;
+                        case 4:
                             this.CheckTimeout();
                             runstack[--num3] = runtrack[num2++];
                             this.Uncapture();
                             continue;
-                        case 4:
-                            goto IL_415;
+                        case 5:
+                            goto IL_598;
                     }
-                    goto IL_371;
+                    goto IL_49E;
                 }
-                IL_39A:
+                IL_4C7:
                 this.CheckTimeout();
                 num = runtrack[num2++];
                 num4 = runtrack[num2++];
@@ -145,7 +178,45 @@ namespace RegexTestNamespace
                     runtrack[--num2] = num4 - 1;
                     runtrack[--num2] = num - 1;
                     runtrack[--num2] = 2;
+                    continue;
                 }
+                continue;
+                IL_51D:
+                this.CheckTimeout();
+                num = runtrack[num2++];
+                num4 = runtrack[num2++];
+                if (num4 > 0)
+                {
+                    runtrack[--num2] = num4 - 1;
+                    runtrack[--num2] = num - 1;
+                    runtrack[--num2] = 3;
+                }
+                IL_204:
+                this.CheckTimeout();
+                num4 = runstack[num3++];
+                this.Capture(1, num4, num);
+                runtrack[--num2] = num4;
+                runtrack[--num2] = 4;
+                this.CheckTimeout();
+                runstack[--num3] = num;
+                runtrack[--num2] = 1;
+                this.CheckTimeout();
+                if (7 > runtextend - num || char.ToLower(runtext[num]) != 's' || char.ToLower(runtext[num + 1]) != 'u' || char.ToLower(runtext[num + 2]) != 'c' || char.ToLower(runtext[num + 3]) != 'c' || char.ToLower(runtext[num + 4]) != 'e' || char.ToLower(runtext[num + 5]) != 's' || char.ToLower(runtext[num + 6]) != 's')
+                {
+                    goto IL_441;
+                }
+                num += 7;
+                this.CheckTimeout();
+                num4 = runstack[num3++];
+                this.Capture(2, num4, num);
+                runtrack[--num2] = num4;
+                runtrack[--num2] = 4;
+                this.CheckTimeout();
+                if (!this.IsBoundary(num, runtextbeg, runtextend))
+                {
+                    break;
+                }
+                goto IL_441;
             }
             this.CheckTimeout();
             num4 = (num5 = runtextend - num) + 1;
@@ -161,23 +232,23 @@ namespace RegexTestNamespace
             {
                 runtrack[--num2] = num5 - num4 - 1;
                 runtrack[--num2] = num - 1;
-                runtrack[--num2] = 4;
+                runtrack[--num2] = 5;
             }
-            IL_2D3:
+            IL_3FC:
             this.CheckTimeout();
             num4 = runstack[num3++];
             this.Capture(0, num4, num);
             runtrack[--num2] = num4;
-            runtrack[num2 - 1] = 3;
-            IL_309:
+            runtrack[num2 - 1] = 4;
+            IL_432:
             this.CheckTimeout();
             this.runtextpos = num;
             return;
-            IL_371:
+            IL_49E:
             this.CheckTimeout();
             num = runtrack[num2++];
-            goto IL_309;
-            IL_415:
+            goto IL_432;
+            IL_598:
             this.CheckTimeout();
             num = runtrack[num2++];
             num4 = runtrack[num2++];
@@ -185,10 +256,10 @@ namespace RegexTestNamespace
             {
                 runtrack[--num2] = num4 - 1;
                 runtrack[--num2] = num - 1;
-                runtrack[--num2] = 4;
-                goto IL_2D3;
+                runtrack[--num2] = 5;
+                goto IL_3FC;
             }
-            goto IL_2D3;
+            goto IL_3FC;
         }
 
         protected override bool FindFirstChar()
@@ -201,7 +272,7 @@ namespace RegexTestNamespace
                 do
                 {
                     num2--;
-                    if (RegexRunner.CharInClass(char.ToLower(runtext[num++]), "\0\u0003\0\0\n\v"))
+                    if (RegexRunner.CharInClass(char.ToLower(runtext[num++]), "\0\u0003\u0001\0\n\v\t"))
                     {
                         goto IL_63;
                     }
@@ -221,7 +292,7 @@ namespace RegexTestNamespace
 
         protected override void InitTrackCount()
         {
-            this.runtrackcount = 7;
+            this.runtrackcount = 10;
         }
     }
 }
