@@ -293,7 +293,7 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 ## List of .NET CoreFx APIs and their associated .NET Platform Standard version
 
 ### Legend
-- `major.minor.build` - API version `major.minor.build` is supported in this `NETStandard` version.  e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference the System.Runtime package, you'd get the 4.0.20 API version.  If you target .NET Platform Standard version 1.5, you'd get the 4.1.0 API version.
+- `major.minor.build` - API version `major.minor.build` is supported in this `NETStandard` version.  e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference the System.Runtime package, you'd get the 4.0.20 API version.  If you target .NET Platform Standard version 1.5, you'd get the 4.1.0 API version.  Note that the API version is different from the package version.  Package versions are greater than or equal to the highgest API version contained within.  The package version represents the maximum API version plus any bugfixes to the library since that API version was introduced.
 - (empty cell) - Contract is not supported by this version of `NETStandard`.
 
 <!-- begin NetStandardSupportTable -->
