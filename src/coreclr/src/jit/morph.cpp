@@ -2932,7 +2932,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         unsigned argAlign = 1;
 
 #ifdef _TARGET_ARM_
-
         var_types hfaType = GetHfaType(argx);
         bool isHfaArg = varTypeIsFloating(hfaType);
 #endif // _TARGET_ARM_
@@ -4067,7 +4066,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                     arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
                 if (fgEntryPtr->structDesc.passedInRegisters)
                 {
-                    if (fgEntryPtr->structDesc.eightByteCount == 1) 
+                    if (fgEntryPtr->structDesc.eightByteCount == 1)
                     {
                         // Change the type and below the code will change the LclVar to a LCL_FLD
                         type = GetTypeFromClassificationAndSizes(fgEntryPtr->structDesc.eightByteClassifications[0], fgEntryPtr->structDesc.eightByteSizes[0]);
@@ -4084,6 +4083,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                                 fgEntryPtr->structDesc.eightByteSizes[1]),
                             lclCommon->gtLclNum,
                             fgEntryPtr->structDesc.eightByteOffsets[1]);
+                        // Note this should actually be: secondNode = gtNewArgList(newLclField)
                         GenTreeArgList* secondNode = gtNewListNode(newLclField, nullptr);
                         secondNode->gtType = originalType; // Preserve the type. It is a special case.
                         newLclField->gtFieldSeq = FieldSeqStore::NotAField();
@@ -11054,7 +11054,7 @@ CM_ADD_OP:
                 }
 
                 // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                // ot if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
+                // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
                 // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
                 //
                 if (temp->OperGet() == GT_LCL_FLD)
@@ -15255,7 +15255,7 @@ void                Compiler::fgPromoteStructs()
                 {
                     if (structPromotionInfo.fieldCnt != 1)
                     {
-                        JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam are true and #fields = %d.\n",
+                        JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = %d.\n",
                                 lclNum, structPromotionInfo.fieldCnt);
                         continue;
                     }
@@ -15333,6 +15333,7 @@ Compiler::fgWalkResult      Compiler::fgMorphStructField(GenTreePtr tree, fgWalk
                         // Promoted struct
                         unsigned fldOffset     = tree->gtField.gtFldOffset;
                         unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                        noway_assert(fieldLclIndex != BAD_VAR_NUM);
 
                         tree->SetOper(GT_LCL_VAR);
                         tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
@@ -15434,6 +15435,7 @@ Compiler::fgWalkResult      Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkD
         if (fldOffset != BAD_VAR_NUM)
         {
             fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+            noway_assert(fieldLclIndex != BAD_VAR_NUM);
             fldVarDsc = &lvaTable[fieldLclIndex];
         }
 
