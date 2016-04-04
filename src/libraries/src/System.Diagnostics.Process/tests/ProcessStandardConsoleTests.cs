@@ -12,7 +12,7 @@ namespace System.Diagnostics.Tests
     {
         private const int s_ConsoleEncoding = 437;
 
-        [ConditionalFact(nameof(PlatformDetection)+"."+nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>
