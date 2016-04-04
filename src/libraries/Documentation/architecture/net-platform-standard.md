@@ -52,28 +52,28 @@ Each platform has it own rules for how it anchors certain assemblies. In .NET Fr
 
 In general, class libraries which target a lower .NET Platform Standard version, like 1.0, can be loaded by the largest number of existing platforms, but will have access to a smaller set of APIs. On the other hand, class libraries which target a higher .NET Platform Standard version, like 1.3, can be loaded by a smaller number of newer platforms, but will have access to a larger, more recent set of APIs.
 
-| Target Platform Name | Alias |  |  |  |  |  |
-| :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
-|.NET Platform Standard | netstandard | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
-|.NET Framework|net|&rarr;|&rarr;|&rarr;|&rarr;|4.6.x|
-|||&rarr;|&rarr;|&rarr;|4.6||
-|||&rarr;|&rarr;|4.5.2||
-|||&rarr;|&rarr;|4.5.1||
-|||&rarr;|4.5|||
-|Universal Windows Platform|uap|&rarr;|&rarr;|&rarr;|10.0|
-|Windows|win|&rarr;|&rarr;|8.1||
-|||&rarr;|8.0|||
-|Windows Phone|wpa|&rarr;|&rarr;|8.1||
-|||&rarr;|8.0|||
-|Windows Phone Silverlight|wp|8.1||||
-|||8.0||||
-|DNX Core|dnxcore|&rarr;|&rarr;|&rarr;|&rarr;|5.0|
-|Mono/Xamarin Platforms||&rarr;|&rarr;|&rarr;|&rarr;|*|
-|Mono||&rarr;|&rarr;|*|||
+| Target Platform Name | Alias |  |  |  |  |  | |
+| :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
+|.NET Platform Standard | netstandard | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 |
+|.NET Core|netcoreapp|&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|1.0|
+|.NET Framework|net|&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|4.6.2|
+|||&rarr;|&rarr;|&rarr;|&rarr;|4.6.1||
+|||&rarr;|&rarr;|&rarr;|4.6|||
+|||&rarr;|&rarr;|4.5.2||||
+|||&rarr;|&rarr;|4.5.1||||
+|||&rarr;|4.5|||||
+|Universal Windows Platform|uap|&rarr;|&rarr;|&rarr;|&rarr;|10.0||
+|Windows|win|&rarr;|&rarr;|8.1||||
+|||&rarr;|8.0|||||
+|Windows Phone|wpa|&rarr;|&rarr;|8.1||||
+|Windows Phone Silverlight|wp|8.1||||||
+|||8.0||||||
+|Mono/Xamarin Platforms||&rarr;|&rarr;|&rarr;|&rarr;|&rarr;|*|
+|Mono||&rarr;|&rarr;|*|||||
 
 ### Observations
 
-- If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, Universal Windows Platform 10 (UWP), DNX Core 5.0 and Mono/Xamarin platforms. 
+- If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, .NET Core, Universal Windows Platform 10 (UWP), and Mono/Xamarin platforms.
 - If a library targets .NET Platform Standard version 1.3, it can consume libraries from all previous .NET Platform Standard versions (1.2, 1.1, 1.0).
 - The earliest .NET Framework to support a .NET Platform Standard version is .NET Framework 4.5. This is because the new portable API surface area (aka **System.Runtime** based surface area) that is used as the foundation for the .NET Platform Standard only became available in that version of .NET Framework. Targeting .NET Framework <= 4.0 requires multi-targeting.
 - Each .NET Platform Standard version enables more API surface, which means it's available on fewer platforms. As the platforms update, their newer versions jump up into newer .NET Platform Standard versions.
@@ -110,27 +110,26 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 
 | .NET Platform Standard version | NuGet identifier |
 | ---------| --------------- |
-| 1.0 - 1.4 | netstandard1.0 - netstandard1.4 |
+| 1.0 - 1.5 | netstandard1.0 - netstandard1.5 |
 
 ### Specific platform mapping
 
 | Platform | NuGet identifier |
 | ---------| --------------- |
 | .NET Framework 2.0 - 4.6 | net20 - net46 |
-|.NET Micro Framework | netmf |
+| .NET Core | netcoreapp |
+| .NET Micro Framework | netmf |
 | Windows 8 | win8, netcore45 |
 | Windows 8.1 | win8, netcore451 |
 | Windows Phone Silverlight (8, 8.1) | wp8, wp81 |
 | Windows Phone 8.1 | wpa8.1 |
 | Universal Windows Platform 10 | uap10, netcore50 |
-| DNX on .NET Framework 4.5.1 - 4.6 | dnx451 - dnx46 |
-| DNX on .NET Core 5.0 | dnxcore50  |
 | Silverlight 4, 5 | sl4, sl5 |
 | MonoAndroid | monoandroid |
 | MonoTouch | monotouch |
 | MonoMac | monomac |
 | Xamarin iOS | xamarinios |
-| Xamarin PlayStation 3 | xamarinpsthree | 
+| Xamarin PlayStation 3 | xamarinpsthree |
 | Xamarin PlayStation 4 | xamarinpsfour |
 | Xamarin PlayStation Vita | xamarinpsvita |
 | Xamarin Watch OS | xamarinwatchos |
@@ -144,6 +143,8 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 | ---------| --------------- |
 | ASP.NET 5.0 on .NET Framework | aspnet50 |
 | ASP.NET 5.0 on .NET Core | aspnetcore50 |
+| DNX on .NET Framework 4.5.1 - 4.6 | dnx451 - dnx46 |
+| DNX on .NET Core 5.0 | dnxcore50  |
 | Windows 8 | winrt |
 
 ### Package authoring
@@ -289,136 +290,150 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 |System.Reflection.Extensions|
 |System.Resources.ResourceManager|
 
-## List of .NET CoreFx APIs and their associated .NET Platform Standard version (tentative)
+## List of .NET CoreFx APIs and their associated .NET Platform Standard version
 
-### Legend 
-- `X` - API appeared in specific .NET Platform Standard version
-- `←` - API version determined by nearest `X` e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference Microsoft.CSharp, you'd get the 1.0 API version.
+### Legend
+- `major.minor.build` - API version `major.minor.build` is supported in this `NETStandard` version.  e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference the System.Runtime package, you'd get the 4.0.20 API version.  If you target .NET Platform Standard version 1.5, you'd get the 4.1.0 API version.  Note that the API version is different from the package version.  Package versions are greater than or equal to the highgest API version contained within.  The package version represents the maximum API version plus any bugfixes to the library since that API version was introduced.
+- (empty cell) - Contract is not supported by this version of `NETStandard`.
 
-| Contract | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
-| -------- | --- | --- | --- | --- | --- |
-| Microsoft.CSharp | X | &larr; | &larr; | &larr; | &larr; |
-| Microsoft.VisualBasic |  | X | &larr; | &larr; | &larr; |
-| Microsoft.Win32.Primitives |  |  |  | X | &larr; |
-| Microsoft.Win32.Registry |  |  |  | X | &larr; |
-| Microsoft.Win32.Registry.AccessControl |  |  |  | X | &larr; |
-| System.AppContext |  |  |  | X | &larr; |
-| System.Collections | X | &larr; | &larr; | X | &larr; |
-| System.Collections.Concurrent |  | X | &larr; | X | &larr; |
-| System.Collections.NonGeneric |  |  |  | X | &larr; |
-| System.Collections.Specialized |  |  |  | X | &larr; |
-| System.ComponentModel | X | &larr; | &larr; | &larr; | &larr; |
-| System.ComponentModel.Annotations |  | X | &larr; | X | &larr; |
-| System.ComponentModel.EventBasedAsync | X | &larr; | &larr; | X | &larr; |
-| System.ComponentModel.Primitives |  |  |  | X | &larr; |
-| System.ComponentModel.TypeConverter |  |  |  | X | &larr; |
-| System.Console |  |  |  | X | &larr; |
-| System.Data.Common |  |  |  | X | &larr; |
-| System.Data.SqlClient |  |  |  | X | &larr; |
-| System.Diagnostics.Contracts | X | &larr; | &larr; | &larr; | &larr; |
-| System.Diagnostics.Debug | X | &larr; | &larr; | X | &larr; |
-| System.Diagnostics.FileVersionInfo |  |  |  | X | &larr; |
-| System.Diagnostics.Process |  |  |  | X | X |
-| System.Diagnostics.StackTrace |  |  |  | X | &larr; |
-| System.Diagnostics.TextWriterTraceListener |  |  |  | X | &larr; |
-| System.Diagnostics.Tools | X | &larr; | &larr; | &larr; | &larr; |
-| System.Diagnostics.TraceSource |  |  |  | X | &larr; |
-| System.Diagnostics.Tracing |  | X | X | X | &larr; |
-| System.Dynamic.Runtime | X | &larr; | &larr; | X | &larr; |
-| System.Globalization | X | &larr; | &larr; | X | &larr; |
-| System.Globalization.Calendars |  |  |  | X | &larr; |
-| System.Globalization.Extensions |  |  |  | X | &larr; |
-| System.IO | X | &larr; | &larr; | X | &larr; |
-| System.IO.Compression |  | X | &larr; | X | &larr; |
-| System.IO.Compression.ZipFile |  |  |  | X | &larr; |
-| System.IO.FileSystem |  |  |  | X | &larr; |
-| System.IO.FileSystem.AccessControl |  |  |  | X | &larr; |
-| System.IO.FileSystem.DriveInfo |  |  |  | X | &larr; |
-| System.IO.FileSystem.Primitives |  |  |  | X | &larr; |
-| System.IO.FileSystem.Watcher |  |  |  | X | &larr; |
-| System.IO.IsolatedStorage | X | &larr; | &larr; | &larr; | &larr; |
-| System.IO.MemoryMappedFiles |  |  |  | X | &larr; |
-| System.IO.Pipes |  |  |  | X | &larr; |
-| System.IO.UnmanagedMemoryStream |  |  |  | X | &larr; |
-| System.Linq | X | &larr; | &larr; | &larr; | &larr; |
-| System.Linq.Expressions | X | &larr; | &larr; | X | &larr; |
-| System.Linq.Parallel |  | X | &larr; | &larr; | &larr; |
-| System.Linq.Queryable | X | &larr; | &larr; | &larr; | &larr; |
-| System.Net.Http |  | X | &larr; | &larr; | &larr; |
-| System.Net.Http.Rtc |  | X | &larr; | &larr; | &larr; |
-| System.Net.Http.WinHttpHandler |  |  |  | X | &larr; |
-| System.Net.NameResolution |  |  |  | X | &larr; |
-| System.Net.NetworkInformation | X | &larr; | &larr; | X | &larr; |
-| System.Net.Ping |  |  |  | X | &larr; |
-| System.Net.Primitives | X | X | &larr; | X | &larr; |
-| System.Net.Requests | X | X | &larr; | X | &larr; |
-| System.Net.Security |  |  |  | X | &larr; |
-| System.Net.Sockets |  |  |  | X | X |
-| System.Net.WebHeaderCollection |  |  |  | X | &larr; |
-| System.Net.WebSockets |  |  |  | X | &larr; |
-| System.Net.WebSockets.Client |  |  |  | X | &larr; |
-| System.Numerics.Vectors |  |  |  | X | &larr; |
-| System.ObjectModel | X | &larr; | &larr; | X | &larr; |
-| System.Reflection | X | &larr; | &larr; | X | &larr; |
-| System.Reflection.Context |  | X | &larr; | &larr; | &larr; |
-| System.Reflection.DispatchProxy |  |  |  | X | &larr; |
-| System.Reflection.Emit |  | X | &larr; | &larr; | &larr; |
-| System.Reflection.Emit.ILGeneration | X | &larr; | &larr; | &larr; | &larr; |
-| System.Reflection.Emit.Lightweight | X | &larr; | &larr; | &larr; | &larr; |
-| System.Reflection.Extensions | X | &larr; | &larr; | &larr; | &larr; |
-| System.Reflection.Primitives | X | &larr; | &larr; | &larr; | &larr; |
-| System.Reflection.TypeExtensions |  |  |  | X | &larr; |
-| System.Resources.ReaderWriter |  |  |  | X | &larr; |
-| System.Resources.ResourceManager | X | &larr; | &larr; | &larr; | &larr; |
-| System.Runtime | X | &larr; | X | X | &larr; |
-| System.Runtime.CompilerServices.VisualC |  |  |  | X | &larr; |
-| System.Runtime.Extensions | X | &larr; | &larr; | X | &larr; |
-| System.Runtime.Handles |  |  |  | X | &larr; |
-| System.Runtime.InteropServices |  | X | X | X | &larr; |
-| System.Runtime.InteropServices.RuntimeInformation |  | X | &larr; | &larr; | &larr; |
-| System.Runtime.InteropServices.WindowsRuntime | X | &larr; | &larr; | &larr; | &larr; |
-| System.Runtime.Loader | X | &larr; | &larr; | &larr; | &larr; |
-| System.Runtime.Numerics |  | X | &larr; | &larr; | &larr; |
-| System.Runtime.Serialization.Json | X | &larr; | &larr; | &larr; | &larr; |
-| System.Runtime.Serialization.Primitives | X | &larr; | &larr; | X | &larr; |
-| System.Runtime.Serialization.Xml | X | &larr; | &larr; | X | &larr; |
-| System.Runtime.WindowsRuntime | X | &larr; | X | &larr; | &larr; |
-| System.Runtime.WindowsRuntime.UI.Xaml |  | X | &larr; | &larr; | &larr; |
-| System.Security.AccessControl |  |  |  | X | &larr; |
-| System.Security.Claims |  |  |  | X | &larr; |
-| System.Security.Cryptography.Algorithms |  |  |  | X | &larr; |
-| System.Security.Cryptography.Cng |  |  |  | X | &larr; |
-| System.Security.Cryptography.Csp |  |  |  | X | &larr; |
-| System.Security.Cryptography.Encoding |  |  |  | X | &larr; |
-| System.Security.Cryptography.OpenSsl |  |  |  | X | &larr; |
-| System.Security.Cryptography.Primitives |  |  |  | X | &larr; |
-| System.Security.Cryptography.X509Certificates |  |  |  | X | &larr; |
-| System.Security.Principal | X | &larr; | &larr; | &larr; | &larr; |
-| System.Security.Principal.Windows |  |  |  | X | &larr; |
-| System.ServiceModel.Duplex |  | X | &larr; | &larr; | &larr; |
-| System.ServiceModel.Http | X | X | &larr; | X | &larr; |
-| System.ServiceModel.NetTcp |  | X | &larr; | X | &larr; |
-| System.ServiceModel.Primitives | X | X | &larr; | X | &larr; |
-| System.ServiceModel.Security | X | X | &larr; | &larr; | &larr; |
-| System.ServiceProcess.ServiceController |  |  |  | X | &larr; |
-| System.Text.Encoding | X | &larr; | &larr; | X | &larr; |
-| System.Text.Encoding.CodePages |  |  |  | X | &larr; |
-| System.Text.Encoding.Extensions | X | &larr; | &larr; | X | &larr; |
-| System.Text.RegularExpressions | X | &larr; | &larr; | X | &larr; |
-| System.Threading | X | &larr; | &larr; | X | &larr; |
-| System.Threading.AccessControl |  |  |  | X | &larr; |
-| System.Threading.Overlapped |  |  |  | X | &larr; |
-| System.Threading.Tasks | X | &larr; | &larr; | X | &larr; |
-| System.Threading.Tasks.Parallel |  | X | &larr; | &larr; | &larr; |
-| System.Threading.Thread |  |  |  | X | &larr; |
-| System.Threading.ThreadPool |  |  |  | X | &larr; |
-| System.Threading.Timer |  |  | X | &larr; | &larr; |
-| System.Xml.ReaderWriter | X | &larr; | &larr; | X | &larr; |
-| System.Xml.XDocument | X | &larr; | &larr; | X | &larr; |
-| System.Xml.XmlDocument |  |  |  | X | &larr; |
-| System.Xml.XmlSerializer | X | &larr; | &larr; | X | &larr; |
-| System.Xml.XPath |  |  |  | X | &larr; |
-| System.Xml.XPath.XDocument |  |  |  | X | &larr; |
-| System.Xml.XPath.XmlDocument |  |  |  | X | &larr; |
+<!-- begin NetStandardSupportTable -->
 
+| Contract | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 |
+| -------- | --- | --- | --- | --- | --- | ---
+| Microsoft.CSharp | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| Microsoft.VisualBasic |  | 10.0.0 | 10.0.0 | 10.0.0 | 10.0.0 | 10.0.0 |
+| Microsoft.Win32.Primitives |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| Microsoft.Win32.Registry |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| Microsoft.Win32.Registry.AccessControl |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.AppContext |  |  |  | 4.0.0 | 4.0.0 | 4.1.0 |
+| System.Buffers |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Collections | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Collections.Concurrent |  | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Collections.Immutable | 1.2.0 | 1.2.0 | 1.2.0 | 1.2.0 | 1.2.0 | 1.2.0 |
+| System.Collections.NonGeneric |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Collections.Specialized |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ComponentModel | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ComponentModel.Annotations |  | 4.0.0 | 4.0.0 | 4.0.10 | 4.1.0 | 4.1.0 |
+| System.ComponentModel.EventBasedAsync | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.ComponentModel.Primitives | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ComponentModel.TypeConverter | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Console |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Data.Common | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Data.SqlClient |  | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.Diagnostics.Contracts | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.Debug | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Diagnostics.DiagnosticSource |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.FileVersionInfo |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.Process |  |  |  | 4.0.0 | 4.1.0 | 4.1.0 |
+| System.Diagnostics.StackTrace |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.TextWriterTraceListener |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.Tools | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.TraceSource |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Diagnostics.Tracing |  | 4.0.0 | 4.0.10 | 4.0.20 | 4.0.20 | 4.1.0 |
+| System.Drawing.Primitives |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Dynamic.Runtime | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Globalization | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Globalization.Calendars |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Globalization.Extensions |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.1.0 |
+| System.IO.Compression |  | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.IO.Compression.ZipFile |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.FileSystem |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.FileSystem.AccessControl |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.FileSystem.DriveInfo |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.FileSystem.Primitives |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.FileSystem.Watcher |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.IsolatedStorage |  |  |  |  | 4.0.0 | 4.0.0 |
+| System.IO.MemoryMappedFiles |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.Packaging |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.Pipes |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.IO.UnmanagedMemoryStream |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Linq | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.1.0 |
+| System.Linq.Expressions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Linq.Parallel |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Linq.Queryable | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.Http |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.Http.Rtc |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.Http.WinHttpHandler |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.NameResolution |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.NetworkInformation | 4.0.0 | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.Net.Ping |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.Primitives | 3.9.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Net.Requests | 3.9.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Net.Security |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.Sockets |  |  |  | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.Net.WebHeaderCollection |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.WebSockets |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Net.WebSockets.Client |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Numerics.Vectors |  | 4.1.0 | 4.1.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.ObjectModel | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Reflection | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.1.0 |
+| System.Reflection.Context |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.DispatchProxy |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.Emit |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.Emit.ILGeneration | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.Extensions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.Metadata |  | 1.3.0 | 1.3.0 | 1.3.0 | 1.3.0 | 1.3.0 |
+| System.Reflection.Primitives | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Reflection.TypeExtensions |  |  |  | 4.0.0 | 4.0.0 | 4.1.0 |
+| System.Resources.Reader | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Resources.ReaderWriter |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Resources.ResourceManager | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Resources.Writer |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.20 | 4.0.20 | 4.1.0 |
+| System.Runtime.CompilerServices.VisualC |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.Extensions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.1.0 |
+| System.Runtime.Handles |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.InteropServices |  | 4.0.0 | 4.0.10 | 4.0.20 | 4.0.20 | 4.1.0 |
+| System.Runtime.InteropServices.PInvoke |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.InteropServices.RuntimeInformation |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.InteropServices.WindowsRuntime | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.Loader |  |  |  |  |  | 4.0.0 |
+| System.Runtime.Numerics |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.Serialization.Json | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Runtime.Serialization.Primitives | 4.0.0 | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.Runtime.Serialization.Xml | 4.0.0 | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.Runtime.WindowsRuntime | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Runtime.WindowsRuntime.UI.Xaml |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.AccessControl |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Claims |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.Algorithms |  |  |  | 4.0.0 | 4.1.0 | 4.1.0 |
+| System.Security.Cryptography.Cng |  |  |  | 4.0.0 | 4.1.0 | 4.1.0 |
+| System.Security.Cryptography.Csp |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.Encoding |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.OpenSsl |  |  |  |  | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.Primitives |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.ProtectedData |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Cryptography.X509Certificates |  |  |  | 4.0.0 | 4.1.0 | 4.1.0 |
+| System.Security.Principal | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Security.Principal.Windows |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ServiceModel.Duplex |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ServiceModel.Http | 3.9.0 | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.ServiceModel.NetTcp |  | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.ServiceModel.Primitives | 3.9.0 | 4.0.0 | 4.0.0 | 4.1.0 | 4.1.0 | 4.1.0 |
+| System.ServiceModel.Security | 3.9.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.ServiceProcess.ServiceController |  |  |  |  | 4.1.0 | 4.1.0 |
+| System.Text.Encoding | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Text.Encoding.CodePages |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Text.Encoding.Extensions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Text.Encodings.Web | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Text.RegularExpressions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Threading | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Threading.AccessControl |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.Overlapped |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.Tasks | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Threading.Tasks.Dataflow | 4.6.0 | 4.6.0 | 4.6.0 | 4.6.0 | 4.6.0 | 4.6.0 |
+| System.Threading.Tasks.Extensions | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.Tasks.Parallel |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.Thread |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.ThreadPool |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Threading.Timer |  |  | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Xml.ReaderWriter | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Xml.XDocument | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Xml.XmlDocument |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Xml.XmlSerializer | 4.0.0 | 4.0.0 | 4.0.0 | 4.0.10 | 4.0.10 | 4.0.10 |
+| System.Xml.XPath |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Xml.XPath.XDocument |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+| System.Xml.XPath.XmlDocument |  |  |  | 4.0.0 | 4.0.0 | 4.0.0 |
+<!-- end NetStandardSupportTable -->
 
