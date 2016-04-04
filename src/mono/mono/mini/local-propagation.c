@@ -42,7 +42,6 @@ mono_bitset_mp_new_noinit (MonoMemPool *mp,  guint32 max_size)
 	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
 }
 
-#if SIZEOF_REGISTER == 8
 struct magic_unsigned {
 	guint32 magic_number;
 	gboolean addition;
@@ -141,7 +140,6 @@ compute_magic_signed (gint32 divisor) {
 	mag.shift = p - 32;
 	return mag;
 }
-#endif
 
 static gboolean
 mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
@@ -152,10 +150,14 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 	 * platforms we emulate long multiplication, driving the
 	 * performance back down.
 	 */
-#if SIZEOF_REGISTER == 8
 	switch (ins->opcode) {
 		case OP_IDIV_UN_IMM: {
-			guint32 tmp_regl, dividend_reg;
+			guint32 tmp_regl;
+#if SIZEOF_REGISTER == 8
+			guint32 dividend_reg;
+#else
+			guint32 tmp_regi;
+#endif
 			struct magic_unsigned mag;
 			int power2 = mono_is_power_of_two (ins->inst_imm);
 
@@ -176,6 +178,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			 */
 			mag = compute_magic_unsigned (ins->inst_imm);
 			tmp_regl = alloc_lreg (cfg);
+#if SIZEOF_REGISTER == 8
 			dividend_reg = alloc_lreg (cfg);
 			MONO_EMIT_NEW_I8CONST (cfg, tmp_regl, mag.magic_number);
 			MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, dividend_reg, ins->sreg1);
@@ -187,14 +190,34 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			} else {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, ins->dreg, tmp_regl, 32 + mag.shift);
 			}
+#else
+			tmp_regi = alloc_ireg (cfg);
+			MONO_EMIT_NEW_ICONST (cfg, tmp_regi, mag.magic_number);
+			MONO_EMIT_NEW_BIALU (cfg, OP_BIGMUL_UN, tmp_regl, ins->sreg1, tmp_regi);
+			/* Long shifts below will be decomposed during cprop */
+			if (mag.addition) {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, tmp_regl, tmp_regl, 32);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, MONO_LVREG_LS (tmp_regl), MONO_LVREG_LS (tmp_regl), ins->sreg1);
+				/* MONO_LVREG_MS (tmp_reg) is 0, save in it the carry */
+				MONO_EMIT_NEW_BIALU (cfg, OP_IADC, MONO_LVREG_MS (tmp_regl), MONO_LVREG_MS (tmp_regl), MONO_LVREG_MS (tmp_regl));
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, tmp_regl, tmp_regl, mag.shift);
+			} else {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, tmp_regl, tmp_regl, 32 + mag.shift);
+			}
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, MONO_LVREG_LS (tmp_regl));
+#endif
 			mono_jit_stats.optimized_divisions++;
 			break;
 		}
 		case OP_IDIV_IMM: {
-			guint32 tmp_regl, dividend_reg;
+			guint32 tmp_regl;
+#if SIZEOF_REGISTER == 8
+			guint32 dividend_reg;
+#else
+			guint32 tmp_regi;
+#endif
 			struct magic_signed mag;
 			int power2 = mono_is_power_of_two (ins->inst_imm);
-
 			/* The decomposition doesn't handle exception throwing */
 			if (ins->inst_imm == 0 || ins->inst_imm == -1)
 				break;
@@ -220,6 +243,7 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			 */
 			mag = compute_magic_signed (ins->inst_imm);
 			tmp_regl = alloc_lreg (cfg);
+#if SIZEOF_REGISTER == 8
 			dividend_reg = alloc_lreg (cfg);
 			MONO_EMIT_NEW_I8CONST (cfg, tmp_regl, mag.magic_number);
 			MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, dividend_reg, ins->sreg1);
@@ -237,11 +261,29 @@ mono_strength_reduction_division (MonoCompile *cfg, MonoInst *ins)
 			}
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_UN_IMM, ins->dreg, tmp_regl, SIZEOF_REGISTER * 8 - 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_LADD, ins->dreg, ins->dreg, tmp_regl);
+#else
+			tmp_regi = alloc_ireg (cfg);
+			MONO_EMIT_NEW_ICONST (cfg, tmp_regi, mag.magic_number);
+			MONO_EMIT_NEW_BIALU (cfg, OP_BIGMUL, tmp_regl, ins->sreg1, tmp_regi);
+			if ((ins->inst_imm > 0 && mag.magic_number < 0) || (ins->inst_imm < 0 && mag.magic_number > 0)) {
+				if (ins->inst_imm > 0 && mag.magic_number < 0) {
+					/* Opposite sign, cannot overflow */
+					MONO_EMIT_NEW_BIALU (cfg, OP_IADD, tmp_regi, MONO_LVREG_MS (tmp_regl), ins->sreg1);
+				} else if (ins->inst_imm < 0 && mag.magic_number > 0) {
+					/* Same sign, cannot overflow */
+					MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, tmp_regi, MONO_LVREG_MS (tmp_regl), ins->sreg1);
+				}
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, tmp_regi, tmp_regi, mag.shift);
+			} else {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, tmp_regi, MONO_LVREG_MS (tmp_regl), mag.shift);
+			}
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, tmp_regi, SIZEOF_REGISTER * 8 - 1);
+			MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg, ins->dreg, tmp_regi);
+#endif
 			mono_jit_stats.optimized_divisions++;
 			break;
 		}
 	}
-#endif
 	return allocated_vregs;
 }
 
