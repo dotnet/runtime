@@ -13,9 +13,11 @@ namespace System
     public static class PlatformDetection
     {
         public static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static bool IsWindows7 { get; } =  IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
+        public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsNotWindowsNanoServer { get; } = (IsWindows && GetWindowsVersion() == 10 &&
+                File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
 
@@ -44,7 +46,7 @@ namespace System
             IdVersionPair ret = new IdVersionPair();
             ret.Id = "";
             ret.VersionId = "";
-            
+
             if (File.Exists("/etc/os-release"))
             {
                 foreach (string line in File.ReadLines("/etc/os-release"))
@@ -88,7 +90,7 @@ namespace System
 
             return -1;
         }
-    
+
         private static int GetWindowsMinorVersion()
         {
             if (IsWindows)
