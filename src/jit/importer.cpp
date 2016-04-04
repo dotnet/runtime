@@ -2144,7 +2144,7 @@ void                Compiler::impSpillLclRefs(ssize_t lclNum)
            live on entry to the handler.
            Just spill 'em all without considering the liveness */
 
-        bool xcptnCaught = compCurBB->hasTryIndex() &&
+        bool xcptnCaught = ehBlockHasExnFlowDsc(compCurBB) &&
                            (tree->gtFlags & (GTF_CALL | GTF_EXCEPT));
 
         /* Skip the tree if it doesn't have an affected reference,

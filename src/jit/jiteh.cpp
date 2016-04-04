@@ -431,6 +431,40 @@ bool                Compiler::bbInTryRegions(unsigned regionIndex, BasicBlock * 
     return (tryIndex == regionIndex);
 }
 
+//------------------------------------------------------------------------
+// bbInExnFlowRegions:
+//     Check to see if an exception raised in the given block could be
+//     handled by the given region (possibly after inner regions).
+//
+// Arguments:
+//    regionIndex - Check if this region can handle exceptions from 'blk'
+//    blk - Consider exceptions raised from this block
+//
+// Return Value:
+//    true - The region with index 'regionIndex' can handle exceptions from 'blk'
+//    false - The region with index 'regionIndex' can't handle exceptions from 'blk'
+//            
+// Notes:
+//    For this check, a funclet is considered to be in the region it was
+//    extracted from.
+
+bool                Compiler::bbInExnFlowRegions(unsigned regionIndex, BasicBlock * blk)
+{
+    assert(regionIndex < EHblkDsc::NO_ENCLOSING_INDEX);
+    EHblkDsc* ExnFlowRegion = ehGetBlockExnFlowDsc(blk);
+    unsigned tryIndex = (ExnFlowRegion == nullptr ? EHblkDsc::NO_ENCLOSING_INDEX : ehGetIndex(ExnFlowRegion));
+
+    // Loop outward until we find an enclosing try that is the same as the one
+    // we are looking for or an outer/later one
+    while (tryIndex < regionIndex)
+    {
+        tryIndex = ehGetEnclosingTryIndex(tryIndex);
+    }
+
+    // Now we have the index of 2 try bodies, either they match or not!
+    return (tryIndex == regionIndex);
+}
+
 /*
    Given a block, check to see if it is in the handler block of the EH descriptor.
    For this check, a funclet is considered to be in the region it was extracted from.
@@ -637,6 +671,69 @@ bool            Compiler::ehIsBlockEHLast(BasicBlock* block)
            (ehIsBlockHndLast(block) != nullptr);
 }
 
+//------------------------------------------------------------------------
+// ehGetBlockExnFlowDsc:
+//     Get the EH descriptor for the most nested region (if any) that may
+//     handle exceptions raised in the given block
+//
+// Arguments:
+//    block - Consider exceptions raised from this block
+//
+// Return Value:
+//    nullptr - The given block's exceptions propagate to caller
+//    non-null - This region is the innermost handler for exceptions raised in
+//               the given block
+
+EHblkDsc*       Compiler::ehGetBlockExnFlowDsc(BasicBlock* block)
+{
+    EHblkDsc* hndDesc = ehGetBlockHndDsc(block);
+
+    if ((hndDesc != nullptr) && hndDesc->InFilterRegionBBRange(block))
+    {
+        // If an exception is thrown in a filter (or escapes a callee in a filter),
+        // or if exception_continue_search (0/false) is returned at
+        // the end of a filter, the (original) exception is propagated to
+        // the next outer handler.  The "next outer handler" is the handler
+        // of the try region enclosing the try that the filter protects.
+        // This may not be the same as the try region enclosing the filter,
+        // e.g. in cases like this:
+        //    try {
+        //      ...
+        //    } filter (filter-part) {
+        //      handler-part
+        //    } catch {  (or finally/fault/filter)
+        // which is represented as two EHblkDscs with the same try range,
+        // the inner protected by a filter and the outer protected by the
+        // other handler; exceptions in the filter-part propagate to the
+        // other handler, even though the other handler's try region does not
+        // enclose the filter.
+
+        unsigned outerIndex = hndDesc->ebdEnclosingTryIndex;
+
+        if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            assert(!block->hasTryIndex());
+            return nullptr;
+        }
+        return ehGetDsc(outerIndex);
+    }
+
+    return ehGetBlockTryDsc(block);
+}
+
+bool            Compiler::ehBlockHasExnFlowDsc(BasicBlock* block)
+{
+    if (block->hasTryIndex())
+    {
+        return true;
+    }
+
+    EHblkDsc* hndDesc = ehGetBlockHndDsc(block);
+
+    return ((hndDesc != nullptr)
+            && hndDesc->InFilterRegionBBRange(block)
+            && (hndDesc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX));
+}
 
 //------------------------------------------------------------------------
 // ehGetMostNestedRegionIndex: Return the region index of the most nested EH region this block is in.
