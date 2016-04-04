@@ -20,7 +20,7 @@ namespace System.Net.Http
     {
         private static class SslProvider
         {
-            private static readonly Interop.Http.SslCtxCallback s_sslCtxCallback = SetSslCtxVerifyCallback;
+            private static readonly Interop.Http.SslCtxCallback s_sslCtxCallback = SslCtxCallback;
             private static readonly Interop.Ssl.AppVerifyCallback s_sslVerifyCallback = VerifyCertChain;
 
             internal static void SetSslOptions(EasyRequest easy, ClientCertificateOption clientCertOption)
@@ -89,42 +89,37 @@ namespace System.Net.Http
                 }
             }
 
-            private static CURLcode SetSslCtxVerifyCallback(
-                IntPtr curl,
-                IntPtr sslCtx,
-                IntPtr userPointer)
+            private static CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer)
             {
-                using (SafeSslContextHandle ctx = new SafeSslContextHandle(sslCtx, ownsHandle: false))
+                // Configure the SSL server certificate verification callback.
+                Interop.Ssl.SslCtxSetCertVerifyCallback(sslCtx, s_sslVerifyCallback, curl);
+
+                // If a client certificate provider was provided, also configure the client certificate callback.
+                if (userPointer != IntPtr.Zero)
                 {
-                    Interop.Ssl.SslCtxSetCertVerifyCallback(ctx, s_sslVerifyCallback, curl);
-
-                    if (userPointer == IntPtr.Zero)
+                    try
                     {
-                        EventSourceTrace("Not using client certificate callback");
+                        // Provider is passed in via a GCHandle.  Get the provider, which contains
+                        // the client certificate callback delegate.
+                        GCHandle handle = GCHandle.FromIntPtr(userPointer);
+                        ClientCertificateProvider provider = (ClientCertificateProvider)handle.Target;
+                        if (provider == null)
+                        {
+                            Debug.Fail($"Expected non-null provider in {nameof(SslCtxCallback)}");
+                            return CURLcode.CURLE_ABORTED_BY_CALLBACK;
+                        }
+
+                        // Register the callback.
+                        Interop.Ssl.SslCtxSetClientCertCallback(sslCtx, provider._callback);
+                        EventSourceTrace("Registered client certificate callback.");
                     }
-                    else
+                    catch (Exception e)
                     {
-                        ClientCertificateProvider provider = null;
-                        try
-                        {
-                            GCHandle handle = GCHandle.FromIntPtr(userPointer);
-                            provider = (ClientCertificateProvider)handle.Target;
-                        }
-                        catch (InvalidCastException)
-                        {
-                            Debug.Fail("ClientCertificateProvider wasn't the GCHandle's Target");
-                            return CURLcode.CURLE_ABORTED_BY_CALLBACK;
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            Debug.Fail("Invalid GCHandle in CurlSslCallback");
-                            return CURLcode.CURLE_ABORTED_BY_CALLBACK;
-                        }
-
-                        Debug.Assert(provider != null, "Expected non-null sslCallback in curlCallBack");
-                        Interop.Ssl.SslCtxSetClientCertCallback(ctx, provider._callback);
+                        Debug.Fail($"Exception in {nameof(SslCtxCallback)}", e.ToString());
+                        return CURLcode.CURLE_ABORTED_BY_CALLBACK;
                     }
                 }
+
                 return CURLcode.CURLE_OK;
             }
 
@@ -136,10 +131,18 @@ namespace System.Net.Http
                 Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
                 if (getInfoResult == CURLcode.CURLE_OK)
                 {
-                    GCHandle handle = GCHandle.FromIntPtr(gcHandlePtr);
-                    easy = handle.Target as EasyRequest;
-                    Debug.Assert(easy != null, "Expected non-null EasyRequest in GCHandle");
-                    return easy != null;
+                    try
+                    {
+                        GCHandle handle = GCHandle.FromIntPtr(gcHandlePtr);
+                        easy = (EasyRequest)handle.Target;
+                        Debug.Assert(easy != null, "Expected non-null EasyRequest in GCHandle");
+                        return easy != null;
+                    }
+                    catch (Exception e)
+                    {
+                        EventSourceTrace("Error getting state from GCHandle: {0}", e);
+                        Debug.Fail($"Exception in {nameof(TryGetEasyRequest)}", e.ToString());
+                    }
                 }
 
                 easy = null;
