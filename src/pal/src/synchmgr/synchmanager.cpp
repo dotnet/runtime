@@ -35,6 +35,18 @@ Abstract:
 #include "pal/fakepoll.h"
 #endif // HAVE_POLL
 
+// We use the synchronization manager's worker thread to handle
+// process termination requests. It does so by calling the
+// registered handler function.
+PTERMINATION_REQUEST_HANDLER g_terminationRequestHandler = NULL;
+
+// Set the handler for process termination requests.
+VOID PALAPI PAL_SetTerminationRequestHandler(
+    IN PTERMINATION_REQUEST_HANDLER terminationHandler)
+{
+    g_terminationRequestHandler = terminationHandler;
+}
+
 namespace CorUnix
 {
     /////////////////////////////////
@@ -168,9 +180,9 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::BlockThread
 
-    Call by a thread to go to sleep for a wait or a sleep
+    Called by a thread to go to sleep for a wait or a sleep
 
-    NOTE: This methot must must be called without holding any 
+    NOTE: This method must must be called without holding any 
           synchronization lock (as well as other locks) 
     --*/
     PAL_ERROR CPalSynchronizationManager::BlockThread(
@@ -188,7 +200,7 @@ namespace CorUnix
         DWORD dwSigObjIdx = 0;
         bool fRaceAlerted = false;
         bool fEarlyDeath = false;
-            
+
         pdwWaitState = SharedIDToTypePointer(DWORD,
                 pthrCurrent->synchronizationInfo.m_shridWaitAwakened);
 
@@ -222,7 +234,7 @@ namespace CorUnix
                     // native wait
                     fRaceAlerted = true;
                 }
-            }                
+            }
 
             if (!fRaceAlerted)
             {
@@ -265,7 +277,7 @@ namespace CorUnix
                 }
             }
             
-            if (fAlertable) 
+            if (fAlertable)
             {
                 // Unlock
                 ReleaseSharedSynchLock(pthrCurrent);
@@ -474,7 +486,7 @@ namespace CorUnix
             if (ETIMEDOUT == iWaitRet)
             {
                 _ASSERT_MSG(INFINITE != dwTimeout,
-                            "Got a ETIMEDOUT despite timeout was INFINITE\n");                    
+                            "Got ETIMEDOUT despite timeout being INFINITE\n");
                 break;
             }
             else if (0 != iWaitRet)
@@ -517,7 +529,7 @@ namespace CorUnix
         }
 
         _ASSERT_MSG(ETIMEDOUT != iRet || INFINITE != dwTimeout,
-                    "Got time out return code with INFINITE timeout\n");
+                    "Got timeout return code with INFINITE timeout\n");
 
         if (0 == iWaitRet)
         {
@@ -775,8 +787,8 @@ namespace CorUnix
                                              rgObjects,
                                              dwObjectCount,
                                              (void **)rgControllers,
-                                             CSynchControllerBase::WaitController);                                                     
-    }                                
+                                             CSynchControllerBase::WaitController);
+    }
     
     /*++
     Method:
@@ -796,7 +808,7 @@ namespace CorUnix
                                              dwObjectCount,
                                              (void **)rgControllers,
                                              CSynchControllerBase::StateController);
-    }                                
+    }
     
     /*++
     Method:
@@ -1047,9 +1059,9 @@ namespace CorUnix
             if (NULLSharedID == shridSynchData)
             {
                 ERROR("Unable to allocate shared memory\n");
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-                goto AOSD_exit;
+                return ERROR_NOT_ENOUGH_MEMORY;
             }
+
             psdSynchData = SharedIDToTypePointer(CSynchData, shridSynchData);
 
             VALIDATEOBJECT(psdSynchData);
@@ -1062,7 +1074,7 @@ namespace CorUnix
 
             // Store shared pointer to this object
             psdSynchData->SetSharedThis(shridSynchData);
-            
+
             *ppvSynchData = reinterpret_cast<void *>(shridSynchData);
         }
         else
@@ -1071,10 +1083,9 @@ namespace CorUnix
             if (NULL == psdSynchData)
             {
                 ERROR("Unable to allocate memory\n");
-                palErr = ERROR_NOT_ENOUGH_MEMORY;
-                goto AOSD_exit;
+                return ERROR_NOT_ENOUGH_MEMORY;
             }
-            
+
             // Initialize waiting list pointers
             psdSynchData->SetWTLHeadPtr(NULL);
             psdSynchData->SetWTLTailPtr(NULL);
@@ -1083,16 +1094,15 @@ namespace CorUnix
             psdSynchData->SetSharedThis(NULLSharedID);
             
             *ppvSynchData = static_cast<void *>(psdSynchData);
-        }        
+        }
 
         // Initialize object domain and object type;
         psdSynchData->SetObjectDomain(odObjectDomain);
         psdSynchData->SetObjectType(potObjectType);
 
-    AOSD_exit:
         return palErr;
-    }                                
-    
+    }
+
     /*++
     Method:
       CPalSynchronizationManager::FreeObjectSynchData
@@ -1115,10 +1125,11 @@ namespace CorUnix
         {
             psdSynchData = SharedIDToTypePointer(CSynchData,
                 reinterpret_cast<SharedID>(pvSynchData));
+
             if (NULL == psdSynchData)
             {
                 ASSERT("Bad shared memory pointer\n");
-                goto FOSD_exit;
+                return;
             }
         }
         else
@@ -1127,9 +1138,6 @@ namespace CorUnix
         }
 
         psdSynchData->Release(pthrCurrent);
-
-    FOSD_exit:
-        return;
     }
     
     /*++
@@ -1361,6 +1369,26 @@ namespace CorUnix
 
     /*++
     Method:
+        CPalSynchronizationManager::SendTerminationRequestToWorkerThread
+
+    Send a request to the worker thread to initiate process termination.
+    --*/
+
+    PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
+    {
+        PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
+        if (palErr != NO_ERROR)
+        {
+            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n", 
+                  errno, strerror(errno));
+            palErr = ERROR_INTERNAL_ERROR;
+        }
+
+        return palErr;
+    }
+
+    /*++
+    Method:
       CPalSynchronizationManager::AreAPCsPending
 
     Returns 'true' if there are APCs currently pending for the target 
@@ -1511,7 +1539,7 @@ namespace CorUnix
         }
 
         InternalInitializeCriticalSection(&s_csSynchProcessLock);
-        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);        
+        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
         
         pSynchManager = InternalNew<CPalSynchronizationManager>();
         if (NULL == pSynchManager)
@@ -1611,14 +1639,13 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::PrepareForShutdown
 
-    This method performs the part of Synchronization Manager's shutdown that 
+    This method performs the part of Synchronization Manager's shutdown that
     needs to be carried out when core PAL subsystems are still active.
     Private method, it is called only by CPalSynchMgrController.
     --*/
     PAL_ERROR CPalSynchronizationManager::PrepareForShutdown()
     {        
         PAL_ERROR palErr = NO_ERROR;
-        LONG lInit;
         CPalSynchronizationManager * pSynchManager = GetInstance();
         CPalThread * pthrCurrent = InternalGetCurrentThread();
         int iRet;
@@ -1634,7 +1661,7 @@ namespace CorUnix
         struct pollfd pllfd;
 #endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
-        lInit = InterlockedCompareExchange(&s_lInitStatus, 
+        LONG lInit = InterlockedCompareExchange(&s_lInitStatus, 
             (LONG)SynchMgrStatusShuttingDown, (LONG)SynchMgrStatusRunning);
 
         if ((LONG)SynchMgrStatusRunning != lInit)
@@ -1804,8 +1831,20 @@ namespace CorUnix
             // Ready for process shutdown
             s_lInitStatus = SynchMgrStatusReadyForProcessShutDown;
         }
-            
+
         return palErr;
+    }
+
+    // Entry point routine for the thread that initiates process termination.
+    DWORD TerminationRequestHandlingRoutine(LPVOID pArg)
+    {
+        // Call the termination request handler if one is registered.
+        if (g_terminationRequestHandler != NULL)
+        {
+            g_terminationRequestHandler();
+        }
+
+        return 0;
     }
 
     /*++
@@ -1817,7 +1856,7 @@ namespace CorUnix
     DWORD PALAPI CPalSynchronizationManager::WorkerThread(LPVOID pArg)
     {
         PAL_ERROR palErr;
-        bool fShuttingDown = false;        
+        bool fShuttingDown = false;
         bool fWorkerIsDone = false;
         int iPollTimeout = INFTIM;
         SynchWorkerCmd swcCmd;
@@ -1835,16 +1874,41 @@ namespace CorUnix
             palErr = pSynchManager->ReadCmdFromProcessPipe(iPollTimeout, 
                                                            &swcCmd,
                                                            &shridMarshaledData,
-                                                           &dwData);            
+                                                           &dwData);
             if (NO_ERROR != palErr)
             {
                 ERROR("Received error %x from ReadCmdFromProcessPipe()\n",
-                      palErr);                
+                      palErr);
                 continue;
             }
             switch (swcCmd)
             {
-                case SynchWorkerCmdNop:                    
+                case SynchWorkerCmdTerminationRequest:
+                    // This worker thread is being asked to initiate process termination
+
+                    HANDLE hTerminationRequestHandlingThread;
+                    palErr = InternalCreateThread(pthrWorker,
+                                      NULL,
+                                      0,
+                                      &TerminationRequestHandlingRoutine,
+                                      NULL,
+                                      0,
+                                      PalWorkerThread,
+                                      NULL,
+                                      &hTerminationRequestHandlingThread);
+
+                    if (NO_ERROR != palErr)
+                    {
+                        ERROR("Unable to create worker thread\n");
+                    }
+
+                    if (hTerminationRequestHandlingThread != NULL)
+                    {
+                        CloseHandle(hTerminationRequestHandlingThread);
+                    }
+
+                    break;
+                case SynchWorkerCmdNop:
                     TRACE("Synch Worker: received SynchWorkerCmdNop\n");
                     if (fShuttingDown)
                     {
@@ -2146,7 +2210,7 @@ namespace CorUnix
 
             swcWorkerCmd = (SynchWorkerCmd)byVal;
 
-            if(SynchWorkerCmdLast <= swcWorkerCmd)
+            if (SynchWorkerCmdLast <= swcWorkerCmd)
             {
                 ERROR("Got unknown worker command code %d from the process "
                        "pipe!\n", swcWorkerCmd);
@@ -2157,8 +2221,9 @@ namespace CorUnix
             _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd || 
                         SynchWorkerCmdRemoteSignal == swcWorkerCmd || 
                         SynchWorkerCmdDelegatedObjectSignaling == swcWorkerCmd || 
-                        SynchWorkerCmdShutdown == swcWorkerCmd,
-                        "Unknown WrkrCmd=%u\n", swcWorkerCmd);
+                        SynchWorkerCmdShutdown == swcWorkerCmd ||
+                        SynchWorkerCmdTerminationRequest == swcWorkerCmd,
+                        "Unknown worker command code %u\n", swcWorkerCmd);
 
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
         }
@@ -2963,10 +3028,11 @@ namespace CorUnix
 
         _ASSERT_MSG((swcWorkerCmd & 0xFF) == swcWorkerCmd,
                     "Value too big for swcWorkerCmd\n");
+
         _ASSERT_MSG((SynchWorkerCmdNop == swcWorkerCmd) ||
-                    (SynchWorkerCmdShutdown == swcWorkerCmd),
-                    "WakeUpLocalWorkerThread supports only "
-                    "SynchWorkerCmdNop and SynchWorkerCmdShutdown  "
+                    (SynchWorkerCmdShutdown == swcWorkerCmd) ||
+                    (SynchWorkerCmdTerminationRequest == swcWorkerCmd),
+                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
         byCmd = (BYTE)(swcWorkerCmd & 0xFF);
@@ -2991,7 +3057,7 @@ namespace CorUnix
         
         if (sszWritten != sizeof(BYTE))
         {
-            ERROR("Unable to write the the process pipe to wakeup the "
+            ERROR("Unable to write to the process pipe to wake up the "
                    "worker thread [errno=%d (%s)]\n", errno, strerror(errno));
             palErr = ERROR_INTERNAL_ERROR;
             goto WUWT_exit;
@@ -3492,13 +3558,13 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::ThreadPrepareForShutdown
 
-    Used to hijack a thread execution from known spots within the 
-    Synchronization Manager, in case a PAL shutdown is initiaded or the 
-    thread is being terminated by another thread.
+    Used to hijack thread execution from known spots within the 
+    Synchronization Manager in case a PAL shutdown is initiated
+    or the thread is being terminated by another thread.
     --*/
     void CPalSynchronizationManager::ThreadPrepareForShutdown()
     {
-        TRACE("The Synchronixation Manager hijacked the current thread "
+        TRACE("The Synchronization Manager hijacked the current thread "
               "for process shutdown or thread termination\n");
         while (true)
         {
@@ -3520,7 +3586,7 @@ namespace CorUnix
     {
         MonitoredProcessesListNode * pNode, * pPrev = NULL, * pNext;
         LONG lInitialNodeCount;
-        LONG lRemovingCount = 0;        
+        LONG lRemovingCount = 0;
         bool fLocalSynchLock = false;
         bool fSharedSynchLock = false;
         bool fMonitoredProcessesLock = false;
@@ -3547,7 +3613,7 @@ namespace CorUnix
                                      &s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
-        lInitialNodeCount = m_lMonitoredProcessesCount;        
+        lInitialNodeCount = m_lMonitoredProcessesCount;
         
         pNode = m_pmplnMonitoredProcesses;
         while (pNode)
@@ -3562,7 +3628,7 @@ namespace CorUnix
                       pNode->dwPid, 
                       pNode->fIsActualExitCode ? "actual" : "guessed",
                       pNode->dwExitCode);
-                                              
+
                 if (NULL != pPrev)
                 {
                     pPrev->pNext = pNext;
@@ -3575,7 +3641,7 @@ namespace CorUnix
 
                 // Insert in the list of nodes for exited processes
                 pNode->pNext = m_pmplnExitedNodes;
-                m_pmplnExitedNodes = pNode;                
+                m_pmplnExitedNodes = pNode;
                 lRemovingCount++;
             }
             else
@@ -3880,9 +3946,9 @@ namespace CorUnix
             {
                 close(iKq);
             }
-#endif // HAVE_KQUEUE            
-        }              
-        
+#endif // HAVE_KQUEUE
+        }
+
         return fRet;
     }
 
@@ -3904,7 +3970,7 @@ namespace CorUnix
 #ifndef CORECLR
         char szPipeFilename[MAX_PATH];
 
-        if(GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
+        if (GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
             if (unlink(szPipeFilename) == -1)
             {
@@ -3937,7 +4003,7 @@ namespace CorUnix
             if (close(m_iProcessPipeWrite) == -1)
             {
                 ERROR("Unable to close the write end of process pipe\n");
-                palErr = ERROR_INTERNAL_ERROR;                
+                palErr = ERROR_INTERNAL_ERROR;
             }
             m_iProcessPipeWrite = -1;
         }
@@ -4373,7 +4439,7 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;
         DWORD * pdwWaitState = NULL;
-        int iRet;        
+        int iRet;
 #if !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
         const int MaxUnavailableResourceRetries = 10;
         int iEagains;
@@ -4381,7 +4447,7 @@ namespace CorUnix
         int iPipes[2] = { -1, -1};
 #endif // SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
 
-        m_shridWaitAwakened = RawSharedObjectAlloc(sizeof(DWORD), 
+        m_shridWaitAwakened = RawSharedObjectAlloc(sizeof(DWORD),
                                                    DefaultSharedPool);
         if (NULLSharedID == m_shridWaitAwakened)
         {
@@ -4543,7 +4609,7 @@ namespace CorUnix
     --*/
     void CThreadSynchronizationInfo::RemoveObjectFromOwnedList(POwnedObjectsListNode pooln)
     {
-        RemoveEntryList(&pooln->Link);       
+        RemoveEntryList(&pooln->Link);
     }
 
     /*++

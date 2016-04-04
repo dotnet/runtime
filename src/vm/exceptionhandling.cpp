@@ -140,6 +140,11 @@ static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRe
     ETW::ExceptionLog::ExceptionThrown(pcfThisFrame, bIsRethrownException, bIsNewException);
 }
 
+void ShutdownEEAndExitProcess()
+{
+    ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
+}
+
 void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExceptionTracker size: 0x%x bytes\n", sizeof(ExceptionTracker)));
@@ -159,6 +164,9 @@ void InitializeExceptionHandling()
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
+
+    // Register handler for termination requests (e.g. SIGTERM)
+    PAL_SetTerminationRequestHandler(ShutdownEEAndExitProcess);
 #endif // FEATURE_PAL
 }
 
