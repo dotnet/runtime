@@ -6818,7 +6818,7 @@ DONE_CALL:
         // Sometimes "call" is not a GT_CALL (if we imported an intrinsic that didn't turn into a call)
         if  (varTypeIsStruct(callRetTyp) && (call->gtOper == GT_CALL))
         {
-            call = impFixupStructReturn(call, sig->retTypeClass);
+            call = impFixupCallStructReturn(call, sig->retTypeClass);
         }
 
         if ((call->gtOper == GT_CALL) && ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
@@ -6989,16 +6989,23 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
     return node->TypeGet();
 }
 #endif // DEBUG
-/*****************************************************************************
-   For struct return types either adjust the return type to an enregisterable
-   type, or set the struct return flag.
- */
 
-GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
-                                                         CORINFO_CLASS_HANDLE retClsHnd)
+//-----------------------------------------------------------------------------------
+//  impFixupCallStructReturn: For a call node that returns a struct type either
+//  adjust the return type to an enregisterable type, or set the flag to indicate
+//  struct return via retbuf arg.
+//
+//  Arguments:
+//    call       -  GT_CALL GenTree node
+//    retClsHnd  -  Class handle of return type of the call
+//
+//  Return Value:
+//    Returns new GenTree node after fixing struct return of call node
+//
+GenTreePtr                Compiler::impFixupCallStructReturn(GenTreePtr     call,
+                                                             CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(call->gtOper == GT_CALL);
-
 
     if (!varTypeIsStruct(call))
     {
@@ -7036,43 +7043,54 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
         return impAssignStructClassToVar(call, retClsHnd);
     }
 #elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+    GenTreeCall* callNode = call->AsCall();
+
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
-    assert(!call->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
+    assert(!callNode->IsVarargs() && "varargs not allowed for System V OSs.");
 
     // The return type will remain as the incoming struct type unless normalized to a
     // single eightbyte return type below.
-    call->gtCall.gtReturnType = call->gtType;
+    callNode->gtReturnType = call->gtType;
 
-    // Get the classification for the struct.
-    GenTreeCall* callNode = call->AsCall();
-    eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &(callNode->structDesc));
-    if (callNode->structDesc.passedInRegisters)
+    // Initialize Return type descriptor of call node    
+    ReturnTypeDesc* retTypeDesc = &callNode->gtReturnTypeDesc;
+    retTypeDesc->Initialize(this, retClsHnd);
+
+    unsigned retRegCount = retTypeDesc->GetReturnRegCount();
+    if (retRegCount != 0)
     {
-        if (callNode->structDesc.eightByteCount <= 1)
+        if (retRegCount == 1)
         {
-            callNode->gtReturnType = getEightByteType(callNode->structDesc, 0);
+            // struct returned in a single register 
+            callNode->gtReturnType = retTypeDesc->GetReturnRegType(1);
         }
         else
         {
+            // must be a struct returned in two registers
+            assert(retRegCount == 2);
+
             if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
             {
-                // No need to assign the struct in two registers to a local var if:
-                // 1. It is a tail call.
-                // 2. The call is marked for a later inlining.
+                // Force a call returning multi-reg struct to be always of the IR form
+                //   tmp = call
+                //
+                // No need to assign a multi-reg struct to a local var if:
+                //  - It is a tail call or 
+                //  - The call is marked for in-lining later
                 return impAssignStructClassToVar(call, retClsHnd);
             }
         }
     }
     else
     {
+        // struct not returned in registers i.e returned via hiddden retbuf arg.
         callNode->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
-  }
+    }
 
     return call;
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-      unsigned size = info.compCompHnd->getClassSize(retClsHnd);
-    BYTE gcPtr = 0;
     // Check for TYP_STRUCT argument that can fit into a single register
     // change the type on those trees.
     var_types regType = argOrReturnTypeForStruct(retClsHnd, true);
@@ -7102,33 +7120,31 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    // No VarArgs for CoreCLR.
-    assert(!info.compIsVarArgs); 
+    // No VarArgs for CoreCLR on x64 Unix
+    assert(!info.compIsVarArgs);
 
-    if (varTypeIsStruct(info.compRetNativeType))
+    // Is method returning a multi-reg struct?
+    if (varTypeIsStruct(info.compRetNativeType) && IsMultiRegReturnedType(retClsHnd))
     {
-        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+        // In case of multi-reg struct return, we force IR to be one of the following:
+        // GT_RETURN(lclvar) or GT_RETURN(call).  If op is anything other than a
+        // lclvar or call, it is assigned to a temp to create: temp = op and GT_RETURN(tmp).
 
-        if (structDesc.passedInRegisters)
+        if (op->gtOper == GT_LCL_VAR)
         {
-            if (op->gtOper == GT_LCL_VAR)
-            {
-                // This LCL_VAR is a register return value, it stays as a TYP_STRUCT
-                // Make sure this struct type stays as struct so that we can return it in registers.
-                unsigned lclNum = op->gtLclVarCommon.gtLclNum;                
-                lvaTable[lclNum].lvIsMultiRegArgOrRet = true;
+            // Make sure that this struct stays in memory and doesn't get promoted.
+            unsigned lclNum = op->gtLclVarCommon.gtLclNum;
+            lvaTable[lclNum].lvIsMultiRegArgOrRet = true;
 
-                return op;
-            }
-
-            if (op->gtOper == GT_CALL)
-            {
-                return op;
-            }
-
-            return impAssignStructClassToVar(op, retClsHnd);
+            return op;
         }
+
+        if (op->gtOper == GT_CALL)
+        {
+            return op;
+        }
+
+        return impAssignStructClassToVar(op, retClsHnd);
     }
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(info.compRetNativeType != TYP_STRUCT);
@@ -7196,7 +7212,7 @@ REDO_RETURN_NODE:
     }
     else if (op->gtOper == GT_CALL)
     {
-        if (op->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
+        if (op->AsCall()->HasRetBufArg())
         {
             // This must be one of those 'special' helpers that don't
             // really have a return buffer, but instead use it as a way
@@ -7220,23 +7236,8 @@ REDO_RETURN_NODE:
             op->ChangeOper(GT_LCL_FLD);
         }
         else
-        {
-#ifdef DEBUG
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            if (varTypeIsStruct(op))
-            {
-                SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-                eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
-                assert(structDesc.eightByteCount < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-                assert(getEightByteType(structDesc, 0) == op->gtCall.gtReturnType);
-            }
-            else
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-            {
-                assert(info.compRetNativeType == op->gtCall.gtReturnType);
-            }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-#endif // DEBUG
+        {            
+            assert(info.compRetNativeType == op->gtCall.gtReturnType);
 
             // Don't change the gtType of the node just yet, it will get changed later.
             return op;
@@ -7247,19 +7248,8 @@ REDO_RETURN_NODE:
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
     }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (varTypeIsStruct(op))
-    {
-        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
-        assert(structDesc.eightByteCount < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-        op->gtType = getEightByteType(structDesc, 0);
-    }
-    else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-    {
-        op->gtType = info.compRetNativeType;
-    }
+
+    op->gtType = info.compRetNativeType;
 
     return op;
 }
@@ -12734,12 +12724,11 @@ FIELD_DONE:
                   }
 
                 assert(helper == CORINFO_HELP_UNBOX_NULLABLE && "Make sure the helper is nullable!");
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
                 if (varTypeIsStruct(op1))
                 {
-                    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-                    eeGetSystemVAmd64PassStructInRegisterDescriptor(resolvedToken.hClass, &structDesc);
-                    if (structDesc.passedInRegisters && structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)
+                    if (IsMultiRegReturnedType(resolvedToken.hClass))
                     {
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // We need to spill it to a temp so than we can take the address of it.
@@ -12780,8 +12769,7 @@ FIELD_DONE:
                         tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
                         assert(tiRetVal.IsValueClass());
                     }
-                }
-                
+                }                
 #else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 assert(op1->gtType == TYP_STRUCT);
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
@@ -13547,14 +13535,9 @@ GenTreePtr Compiler::impAssignStructClassToVar(GenTreePtr op, CORINFO_CLASS_HAND
     GenTreePtr ret = gtNewLclvNode(tmpNum, op->gtType);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-#ifdef DEBUG
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    eeGetSystemVAmd64PassStructInRegisterDescriptor(hClass, &structDesc);
     // If single eightbyte, the return type would have been normalized and there won't be a temp var.
     // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
-    assert(structDesc.passedInRegisters && structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-#endif
+    assert(IsMultiRegReturnedType(hClass));
 
     // The return value is based on eightbytes, so all the fields need to be on stack
     // before loading the eightbyte in the corresponding return register.
@@ -13749,14 +13732,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     bool restoreType = false;
                     if ((op2->OperGet() == GT_CALL) && (info.compRetType == TYP_STRUCT))
                     {
-                        // If the op2 type is not TYP_STRUCT, then the impFixupStructReturnType has changed it.
-                        // For System V a single eightbyte struct's type could be normalized to the type of the single eightbyte.
-                        bool isNormalizedType = false;
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                        GenTreeCall* callTreePtr = op2->AsCall();
-                        isNormalizedType = callTreePtr->structDesc.passedInRegisters && (callTreePtr->structDesc.eightByteCount == 1);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                        noway_assert(op2->TypeGet() == TYP_STRUCT || isNormalizedType);
+                        noway_assert(op2->TypeGet() == TYP_STRUCT);
                         op2->gtType = info.compRetNativeType;
                         restoreType = true;
                     }

@@ -6308,9 +6308,9 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
         }
         copy->gtCall.gtRetClsHnd = tree->gtCall.gtRetClsHnd;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        copy->gtCall.structDesc.CopyFrom(tree->gtCall.structDesc);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)  
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        copy->gtCall.gtReturnTypeDesc = tree->gtCall.gtReturnTypeDesc;
+#endif
 
 #ifdef FEATURE_READYTORUN_COMPILER
         copy->gtCall.gtEntryPoint = tree->gtCall.gtEntryPoint;
@@ -13396,4 +13396,46 @@ bool GenTree::isCommutativeSIMDIntrinsic()
         return false;
     }
 }
+#endif //FEATURE_SIMD
+
+//-------------------------------------------------------------------------
+// Initialize: Multi-reg Return Type Descriptor given type handle.
+// 
+// Arguments
+//    comp        -  Compiler Instance
+//    retClsHnd   -  VM handle to the type returned
+//
+// Return Value
+//    None
+//
+// Note:
+//    Right now it is implemented only for x64 unix.
+void ReturnTypeDesc::Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd)
+{
+    assert(!m_inited);
+    assert(retClsHnd != NO_CLASS_HANDLE);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+
+    if (structDesc.passedInRegisters)
+    {
+        if (structDesc.eightByteCount == 1)
+        {
+            m_regType0 = comp->getEightByteType(structDesc, 0);
+        }
+        else
+        {
+            assert(structDesc.eightByteCount == 2);
+            m_regType0 = comp->getEightByteType(structDesc, 0);
+            m_regType1 = comp->getEightByteType(structDesc, 1);
+        }
+    }
+
+#ifdef DEBUG
+    m_inited = true;
 #endif
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+}
