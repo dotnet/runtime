@@ -75,6 +75,7 @@ namespace System.Net.Http
         private IWebProxy _proxy = null;
         private ICredentials _serverCredentials = null;
         private bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
+        private ICredentials _defaultProxyCredentials = CredentialCache.DefaultCredentials;
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
         private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         private CredentialCache _credentialCache = null; // protected by LockObject
@@ -169,7 +170,20 @@ namespace System.Net.Http
                 _proxy = value;
             }
         }
-        
+
+        internal ICredentials DefaultProxyCredentials
+        {
+            get
+            {
+                return _defaultProxyCredentials;
+            }
+            set
+            {
+                CheckDisposedOrStarted();
+                _defaultProxyCredentials = value;
+            }
+        }
+
         internal ICredentials Credentials
         {
             get
@@ -212,7 +226,7 @@ namespace System.Net.Http
             }
         }
 
-        public bool CheckCertificateRevocationList
+        internal bool CheckCertificateRevocationList
         {
             get { return _checkCertificateRevocationList; }
             set
