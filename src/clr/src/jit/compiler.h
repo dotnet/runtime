@@ -1486,6 +1486,7 @@ public:
     bool                bbInCatchHandlerILRange (BasicBlock * blk);
     bool                bbInFilterILRange       (BasicBlock * blk);
     bool                bbInTryRegions          (unsigned regionIndex, BasicBlock * blk);
+    bool                bbInExnFlowRegions      (unsigned regionIndex, BasicBlock * blk);
     bool                bbInHandlerRegions      (unsigned regionIndex, BasicBlock * blk);
     bool                bbInCatchHandlerRegions (BasicBlock * tryBlk, BasicBlock * hndBlk);
     unsigned short      bbFindInnermostCommonTryRegion (BasicBlock  * bbOne, BasicBlock  * bbTwo);
@@ -1525,9 +1526,14 @@ public:
     // Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of (or nullptr if this block is not in a filter or handler region).
     EHblkDsc*           ehGetBlockHndDsc(BasicBlock* block);
 
+    // Return the EH descriptor for the most nested region that may handle exceptions raised in this BasicBlock (or nullptr if this block's exceptions propagate to caller).
+    EHblkDsc*           ehGetBlockExnFlowDsc(BasicBlock* block);
+
     EHblkDsc*           ehIsBlockTryLast(BasicBlock* block);
     EHblkDsc*           ehIsBlockHndLast(BasicBlock* block);
     bool                ehIsBlockEHLast(BasicBlock* block);
+
+    bool                ehBlockHasExnFlowDsc(BasicBlock* block);
 
     // Return the region index of the most nested EH region this block is in.
     unsigned            ehGetMostNestedRegionIndex(BasicBlock* block, bool* inTryRegion);

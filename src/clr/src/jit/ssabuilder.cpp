@@ -912,7 +912,7 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
         if (tree->OperIsAssignment() ||
             tree->OperIsBlkOp())
         {
-            if (block->hasTryIndex())
+            if (m_pCompiler->ehBlockHasExnFlowDsc(block))
             {
                 GenTreeLclVarCommon* lclVarNode;
                 if (!tree->DefinesLocal(m_pCompiler, &lclVarNode))
@@ -1040,13 +1040,12 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
     assert(m_pCompiler->lvaTable[lclNum].lvTracked);  // Precondition.
     unsigned lclIndex = m_pCompiler->lvaTable[lclNum].lvVarIndex;
 
-    if (block->hasTryIndex())
+    EHblkDsc* tryBlk = m_pCompiler->ehGetBlockExnFlowDsc(block);
+    if (tryBlk != nullptr)
     {
-        DBG_SSA_JITDUMP("Definition of local V%02u/d:%d in block BB%02u in a try; adding as phi arg to handlers.\n", lclNum, count, block->bbNum);
-        unsigned tryInd = block->getTryIndex();
-        while (tryInd != EHblkDsc::NO_ENCLOSING_INDEX)
+        DBG_SSA_JITDUMP("Definition of local V%02u/d:%d in block BB%02u has exn handler; adding as phi arg to handlers.\n", lclNum, count, block->bbNum);
+        while (true)
         {
-            EHblkDsc* tryBlk = m_pCompiler->ehGetDsc(tryInd);
             BasicBlock* handler = tryBlk->ExFlowBlock();
 
             // Is "lclNum" live on entry to the handler?
@@ -1096,14 +1095,20 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                 assert(phiFound);
             }
 
-            tryInd = tryBlk->ebdEnclosingTryIndex;
+            unsigned nextTryIndex = tryBlk->ebdEnclosingTryIndex;
+            if (nextTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+
+            tryBlk = m_pCompiler->ehGetDsc(nextTryIndex);
         }
     }
 }
 
 void SsaBuilder::AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count)
 {
-    if (block->hasTryIndex())
+    if (m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
         // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
         if (   block->bbJumpKind == BBJ_ALWAYS
@@ -1112,11 +1117,10 @@ void SsaBuilder::AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count)
             return;
 
         // Otherwise...
-        DBG_SSA_JITDUMP("Definition of Heap/d:%d in block BB%02u in a try; adding as phi arg to handlers.\n", count, block->bbNum);
-        unsigned tryInd = block->getTryIndex();
-        while (tryInd != EHblkDsc::NO_ENCLOSING_INDEX)
+        DBG_SSA_JITDUMP("Definition of Heap/d:%d in block BB%02u has exn handler; adding as phi arg to handlers.\n", count, block->bbNum);
+        EHblkDsc* tryBlk = m_pCompiler->ehGetBlockExnFlowDsc(block);
+        while (true)
         {
-            EHblkDsc* tryBlk = m_pCompiler->ehGetDsc(tryInd);
             BasicBlock* handler = tryBlk->ExFlowBlock();
 
             // Is Heap live on entry to the handler?
@@ -1144,7 +1148,12 @@ void SsaBuilder::AddHeapDefToHandlerPhis(BasicBlock* block, unsigned count)
 
                 DBG_SSA_JITDUMP("   Added phi arg u:%d for Heap to phi defn in handler block BB%02u.\n", count, handler->bbNum);
             }
-            tryInd = tryBlk->ebdEnclosingTryIndex;
+            unsigned tryInd = tryBlk->ebdEnclosingTryIndex;
+            if (tryInd == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+            tryBlk = m_pCompiler->ehGetDsc(tryInd);
         }
     }
 }
