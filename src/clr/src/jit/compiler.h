@@ -1393,6 +1393,7 @@ public:
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     bool                            IsRegisterPassable(CORINFO_CLASS_HANDLE hClass);
     bool                            IsRegisterPassable(GenTreePtr tree);
+    bool                            IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     //-------------------------------------------------------------------------
@@ -2672,10 +2673,11 @@ protected :
 
     bool                impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * methInfo);
 
-    GenTreePtr          impFixupStructReturn(GenTreePtr           call,
-                                             CORINFO_CLASS_HANDLE retClsHnd);
+    GenTreePtr          impFixupCallStructReturn(GenTreePtr           call,
+                                                 CORINFO_CLASS_HANDLE retClsHnd);
+
     GenTreePtr          impFixupStructReturnType(GenTreePtr       op,
-                                             CORINFO_CLASS_HANDLE retClsHnd);
+                                                 CORINFO_CLASS_HANDLE retClsHnd);
 
 #ifdef DEBUG
     var_types           impImportJitTestLabelMark(int numArgs);
@@ -8810,7 +8812,7 @@ public:
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     static var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
-    var_types getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
+    static var_types getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum);
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
