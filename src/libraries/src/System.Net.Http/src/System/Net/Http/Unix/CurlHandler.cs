@@ -59,6 +59,9 @@ namespace System.Net.Http
             new KeyValuePair<string,CURLAUTH>("Basic", CURLAUTH.Basic),
         };
 
+        // Max timeout value used by WinHttp handler, so mapping to that here.
+        private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
+
         private readonly static char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
@@ -80,6 +83,7 @@ namespace System.Net.Http
         private CredentialCache _credentialCache = null; // protected by LockObject
         private CookieContainer _cookieContainer = new CookieContainer();
         private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
+        private TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
@@ -300,6 +304,24 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _cookieContainer = value;
+            }
+        }
+
+        public TimeSpan ConnectTimeout
+        {
+            get
+            {
+                return _connectTimeout;
+            }
+            set
+            {
+                if (value != Timeout.InfiniteTimeSpan && (value <= TimeSpan.Zero || value > s_maxTimeout))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _connectTimeout = value;
             }
         }
 
@@ -577,11 +599,21 @@ nameof(value),
 
         private static void ThrowIfCURLEError(CURLcode error)
         {
-            if (error != CURLcode.CURLE_OK)
+            if (error != CURLcode.CURLE_OK) // success
             {
-                var inner = new CurlException((int)error, isMulti: false);
-                EventSourceTrace(inner.Message);
-                throw inner;
+                string msg = CurlException.GetCurlErrorString((int)error, isMulti: false);
+                EventSourceTrace(msg);
+                switch (error)
+                {
+                    case CURLcode.CURLE_OPERATION_TIMEDOUT:
+                        throw new OperationCanceledException(msg);
+
+                    case CURLcode.CURLE_OUT_OF_MEMORY:
+                        throw new OutOfMemoryException(msg);
+
+                    default:
+                        throw new CurlException((int)error, msg);
+                }
             }
         }
 
@@ -590,7 +622,7 @@ nameof(value),
             if (error != CURLMcode.CURLM_OK && // success
                 error != CURLMcode.CURLM_CALL_MULTI_PERFORM) // success + a hint to try curl_multi_perform again
             {
-                string msg = CurlException.GetCurlErrorString((int)error, true);
+                string msg = CurlException.GetCurlErrorString((int)error, isMulti: true);
                 EventSourceTrace(msg);
                 switch (error)
                 {
