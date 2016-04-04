@@ -2030,6 +2030,7 @@ public:
     void                    gtGetLateArgMsg (GenTreePtr             call,
                                              GenTreePtr             arg,
                                              int                    argNum,
+                                             int                    listCount,
                                              char*                  bufp,
                                              unsigned               bufLength);
     void                    gtDispArgList   (GenTreePtr              tree, 
