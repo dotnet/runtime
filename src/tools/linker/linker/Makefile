@@ -2,10 +2,6 @@ thisdir = tools/linker
 SUBDIRS =
 include ../../build/rules.make
 
-PROGRAM_SNK = ../../class/mono.snk
-
-CECIL = $(topdir)/class/lib/$(PROFILE)/Mono.Cecil.dll
-
 RESOURCES = \
 	Descriptors/mscorlib.xml	\
 	Descriptors/System.xml		\
@@ -18,7 +14,8 @@ PROGRAM = monolinker.exe
 
 $(PROGRAM): $(RESOURCES)
 
-LOCAL_MCS_FLAGS = /r:$(CECIL) /r:System.Xml.dll /r:System.Core.dll /r:System.dll $(RESOURCES:%=-resource:%)
+LIB_REFS = System System.Core System.Xml Mono.Cecil
+LOCAL_MCS_FLAGS = $(RESOURCES:%=-resource:%)
 
 EXTRA_DISTFILES = $(RESOURCES)
 
