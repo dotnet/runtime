@@ -105,6 +105,7 @@ internal static partial class Interop
             CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
             CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
             CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
+            CURLOPT_CONNECTTIMEOUT_MS = CurlOptionLongBase + 156,
             CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
             CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182,
 

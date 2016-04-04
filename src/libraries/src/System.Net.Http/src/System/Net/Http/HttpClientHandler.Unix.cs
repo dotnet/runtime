@@ -14,64 +14,31 @@ namespace System.Net.Http
     {
         #region Properties
 
-        public virtual bool SupportsAutomaticDecompression
-        {
-            get { return _curlHandler.SupportsAutomaticDecompression; }
-        }
+        public virtual bool SupportsAutomaticDecompression => _curlHandler.SupportsAutomaticDecompression;
 
-        public virtual bool SupportsProxy
-        {
-            get { return this._curlHandler.SupportsProxy; }
-        }
+        public virtual bool SupportsProxy => _curlHandler.SupportsProxy;
 
-        public virtual bool SupportsRedirectConfiguration
-        {
-            get { return _curlHandler.SupportsRedirectConfiguration; }
-        }
+        public virtual bool SupportsRedirectConfiguration => _curlHandler.SupportsRedirectConfiguration;
 
         public bool UseCookies
         {
-            get
-            {
-                return _curlHandler.UseCookie;
-            }
-
-            set
-            {
-                _curlHandler.UseCookie = value;
-            }          
+            get { return _curlHandler.UseCookie; }
+            set { _curlHandler.UseCookie = value; }
         }
 
         public CookieContainer CookieContainer
         {
-            get
-            {
-                return _curlHandler.CookieContainer;
-            }
-
-            set
-            {
-                _curlHandler.CookieContainer = value;
-            }
+            get { return _curlHandler.CookieContainer; }
+            set { _curlHandler.CookieContainer = value; }
         }
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get
-            {
-                return _curlHandler.ClientCertificateOptions;
-            }
-
-            set
-            {
-                _curlHandler.ClientCertificateOptions = value;
-            }
+            get { return _curlHandler.ClientCertificateOptions; }
+            set { _curlHandler.ClientCertificateOptions = value; }
         }
 
-        public X509Certificate2Collection ClientCertificates
-        {
-            get { return _curlHandler.ClientCertificates; }
-        }
+        public X509Certificate2Collection ClientCertificates => _curlHandler.ClientCertificates;
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
         {
@@ -99,14 +66,14 @@ namespace System.Net.Http
 
         public bool UseProxy
         {
-            get { return this._curlHandler.UseProxy; }
-            set { this._curlHandler.UseProxy = value; }
+            get { return _curlHandler.UseProxy; }
+            set { _curlHandler.UseProxy = value; }
         }
 
         public IWebProxy Proxy
         {
-            get { return this._curlHandler.Proxy; }
-            set { this._curlHandler.Proxy = value; }
+            get { return _curlHandler.Proxy; }
+            set { _curlHandler.Proxy = value; }
         }
 
         public bool PreAuthenticate
@@ -123,34 +90,26 @@ namespace System.Net.Http
 
         public ICredentials Credentials
         {
-            get { return this._curlHandler.Credentials; }
-            set { this._curlHandler.Credentials = value; }
+            get { return _curlHandler.Credentials; }
+            set { _curlHandler.Credentials = value; }
         }
 
         public bool AllowAutoRedirect
         {
-            get
-            {
-                return _curlHandler.AutomaticRedirection;
-            }
+            get { return _curlHandler.AutomaticRedirection; }
+            set { _curlHandler.AutomaticRedirection = value; }
+        }
 
-            set
-            {
-                _curlHandler.AutomaticRedirection = value;
-            }
+        public TimeSpan ConnectTimeout
+        {
+            get { return _curlHandler.ConnectTimeout; }
+            set { _curlHandler.ConnectTimeout = value; }
         }
 
         public int MaxAutomaticRedirections
         {
-            get
-            {
-                return _curlHandler.MaxAutomaticRedirections;
-            }
-
-            set
-            {
-                _curlHandler.MaxAutomaticRedirections = value;
-            }
+            get { return _curlHandler.MaxAutomaticRedirections; }
+            set { _curlHandler.MaxAutomaticRedirections = value; }
         }
 
         public long MaxRequestContentBufferSize
@@ -182,8 +141,7 @@ namespace System.Net.Http
 
         #region Request Execution
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return _curlHandler.SendAsync(request, cancellationToken);
         }
