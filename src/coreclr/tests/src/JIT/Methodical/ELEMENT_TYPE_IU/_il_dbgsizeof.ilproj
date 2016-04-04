@@ -29,7 +29,10 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="sizeof-ia64.il" />
+    <Compile Condition="'$(Platform)' ==   'x64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(Platform)' == 'arm64'" Include="sizeof-ia64.il" />
+    <Compile Condition="'$(Platform)' ==   'x86'" Include="sizeof-i386.il" />
+    <Compile Condition="'$(Platform)' ==   'arm'" Include="sizeof-i386.il" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
