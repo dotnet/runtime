@@ -16,7 +16,6 @@ using System.Xml;
 using System.Xml.Linq;
 using Xunit;
 
-
 public static partial class DataContractJsonSerializerTests
 {
     [Fact]
