@@ -41,6 +41,9 @@ namespace System.Net.Http
             private static readonly Interop.Http.ReadWriteCallback s_receiveBodyCallback = CurlReceiveBodyCallback;
             private static readonly Interop.Http.DebugCallback s_debugCallback = CurlDebugFunction;
 
+            /// <summary>CurlHandler that owns this MultiAgent.</summary>
+            private readonly CurlHandler _associatedHandler;
+
             /// <summary>
             /// A collection of not-yet-processed incoming requests for work to be done
             /// by this multi agent.  This can include making new requests, canceling
@@ -70,6 +73,14 @@ namespace System.Net.Http
             /// Protected by a lock on <see cref="_incomingRequests"/>.
             /// </summary>
             private Task _runningWorker;
+
+            /// <summary>Initializes the MultiAgent.</summary>
+            /// <param name="handler">The handler that owns this agent.</param>
+            public MultiAgent(CurlHandler handler)
+            {
+                Debug.Assert(handler != null, "Expected non-null handler");
+                _associatedHandler = handler;
+            }
 
             /// <summary>Queues a request for the multi handle to process.</summary>
             public void Queue(IncomingRequest request)
@@ -221,6 +232,19 @@ namespace System.Net.Http
                     ThrowIfCURLMError(Interop.Http.MultiSetOptionLong(multiHandle,
                         Interop.Http.CURLMoption.CURLMOPT_PIPELINING,
                         (long)Interop.Http.CurlPipe.CURLPIPE_MULTIPLEX));
+                }
+
+                // Configure max connections per host if it was changed from the default
+                if (_associatedHandler.MaxConnectionsPerServer < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
+                {
+                    CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle,
+                        Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS,
+                        _associatedHandler.MaxConnectionsPerServer);
+
+                    // This should always succeed, as we already verified we can set this option
+                    // with this value.  Treat any failure then as non-fatal in release; worst case
+                    // is we employ more connections than desired.
+                    Debug.Assert(code == CURLMcode.CURLM_OK, $"Expected OK, got {code}");
                 }
                 
                 return multiHandle;

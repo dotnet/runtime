@@ -118,6 +118,12 @@ namespace System.Net.Http
             set { _curlHandler.MaxAutomaticRedirections = value; }
         }
 
+        public int MaxConnectionsPerServer
+        {
+            get { return _curlHandler.MaxConnectionsPerServer; }
+            set { _curlHandler.MaxConnectionsPerServer = value; }
+        }
+
         public long MaxRequestContentBufferSize
         {
             // See comments in HttpClientHandler.Windows.cs.  This behavior matches.
