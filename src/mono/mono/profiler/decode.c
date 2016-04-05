@@ -2256,8 +2256,6 @@ decode_buffer (ProfContext *ctx)
 			time_from += startup_time;
 			time_to += startup_time;
 		}
-		if (!thread->name)
-			thread->name = pstrdup ("Main");
 	}
 	for (i = 0; i < thread->stack_id; ++i)
 		thread->stack [i]->recurse_count++;
