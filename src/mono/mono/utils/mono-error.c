@@ -89,6 +89,13 @@ mono_error_init_flags (MonoError *oerror, unsigned short flags)
 	error->flags = flags;
 }
 
+/**
+ * mono_error_init:
+ * @error: Pointer to MonoError struct to initialize
+ *
+ * Any function which takes a MonoError for purposes of reporting an error
+ * is required to call either this or mono_error_init_flags on entry.
+ */
 void
 mono_error_init (MonoError *error)
 {
