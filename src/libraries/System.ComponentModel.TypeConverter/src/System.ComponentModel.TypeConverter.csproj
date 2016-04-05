@@ -28,6 +28,8 @@
     <Compile Include="System\ComponentModel\CollectionChangeEventArgs.cs" />
     <Compile Include="System\ComponentModel\CollectionChangeEventHandler.cs" />
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
+    <!-- CultureInfoConverter is excluded because it relies on enumerating the execution
+         environment's supported cultures, which is impossible on some platforms -->
     <!--<Compile Include="System\ComponentModel\CultureInfoConverter.cs" />-->
     <Compile Include="System\ComponentModel\CustomTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
