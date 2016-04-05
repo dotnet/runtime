@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 public class Toggleref {
 	public int __test;
@@ -42,23 +43,23 @@ class Driver {
 		mono_gc_toggleref_add (Helper.ObjToPtr (obj), true);
 	}
 
-	static void SetupLinks () {
-		var a = new Toggleref () { id = "root" };
-		var b = new Toggleref () { id = "child" };
-		a.link.Add (b);
-		a.__test = Toggleref.STRONG;
-		b.__test = Toggleref.WEAK;
-		Register (a);
-		Register (b);
-		root = new WeakReference<Toggleref> (a, false);
-		child = new WeakReference<Toggleref> (b, false);
-	}
-
 	static Toggleref a, b;
 
-	static int Main ()
+	static void SetupLinks () {
+		var r = new Toggleref () { id = "root" };
+		var c = new Toggleref () { id = "child" };
+		r.link.Add (c);
+		r.__test = Toggleref.STRONG;
+		c.__test = Toggleref.WEAK;
+		Register (r);
+		Register (c);
+		root = new WeakReference<Toggleref> (r, false);
+		child = new WeakReference<Toggleref> (c, false);
+	}
+
+	static int test_0_root_keeps_child ()
 	{
-		
+		Console.WriteLine ("test_0_root_keeps_child");
 		var t = new Thread (SetupLinks);
 		t.Start ();
 		t.Join ();
@@ -94,6 +95,116 @@ class Driver {
 
 
 		return 0;
-
 	}
+
+	static void SetupLinks2 () {
+		var r = new Toggleref () { id = "root" };
+		var c = new Toggleref () { id = "child" };
+
+		r.__test = Toggleref.STRONG;
+		c.__test = Toggleref.WEAK;
+		Register (r);
+		Register (c);
+		root = new WeakReference<Toggleref> (r, false);
+		child = new WeakReference<Toggleref> (c, false);
+	}
+
+	static int test_0_child_goes_away ()
+	{
+		Console.WriteLine ("test_0_child_goes_away");
+
+		var t = new Thread (SetupLinks2);
+		t.Start ();
+		t.Join ();
+
+		GC.Collect ();
+		GC.WaitForPendingFinalizers ();
+
+		Console.WriteLine ("try get A {0}", root.TryGetTarget (out a));
+		Console.WriteLine ("try get B {0}", child.TryGetTarget (out b));
+		Console.WriteLine ("a is null {0}", a == null);
+		Console.WriteLine ("b is null {0}", b == null);
+		if (a == null || b != null)
+			return 1;
+		Console.WriteLine ("a test {0}", a.__test);
+
+		return 0;
+	}
+
+	static ConditionalWeakTable<Toggleref, object> cwt = new ConditionalWeakTable<Toggleref, object> ();
+	static WeakReference<object> root_value, child_value;
+	static object a_val, b_val;
+
+
+	static void SetupLinks3 () {
+		var r = new Toggleref () { id = "root" };
+		var c = new Toggleref () { id = "child" };
+
+		r.__test = Toggleref.STRONG;
+		c.__test = Toggleref.WEAK;
+		Register (r);
+		Register (c);
+		root = new WeakReference<Toggleref> (r, false);
+		child = new WeakReference<Toggleref> (c, false);
+
+		var root_val = new object ();
+		var child_val = new object ();
+
+		cwt.Add (r, root_val);
+		cwt.Add (c, child_val);
+
+		root_value = new WeakReference<object> (root_val, false);
+		child_value = new WeakReference<object> (child_val, false);
+	}
+
+	static int test_0_CWT_keep_child_alive ()
+	{
+		Console.WriteLine ("test_0_CWT_keep_child_alive");
+
+		var t = new Thread (SetupLinks3);
+		t.Start ();
+		t.Join ();
+
+		GC.Collect ();
+		GC.WaitForPendingFinalizers ();
+
+		Console.WriteLine ("try get A {0}", root.TryGetTarget (out a));
+		Console.WriteLine ("try get B {0}", child.TryGetTarget (out b));
+		Console.WriteLine ("a is null {0}", a == null);
+		Console.WriteLine ("b is null {0}", b == null);
+		if (a == null || b != null)
+			return 1;
+		Console.WriteLine ("a test {0}", a.__test);
+
+		Console.WriteLine ("try get a_val {0}", root_value.TryGetTarget (out a_val));
+		Console.WriteLine ("try get v_val {0}", child_value.TryGetTarget (out b_val));
+
+		//the strong toggleref must keep the CWT value to remains alive
+		if (a_val == null)
+			return 2;
+
+		//the weak toggleref should allow the CWT value to go away
+		if (b_val != null)
+			return 3;
+
+		object res_value = null;
+		bool res = cwt.TryGetValue (a, out res_value);
+		Console.WriteLine ("CWT result {0} -> {1}", res, res_value == a_val);
+
+		//the strong val is not on the CWT
+		if (!res)
+			return 4;
+
+		//for some reason the value is not the right one
+		if (res_value != a_val)
+			return 5;
+
+		return 0;
+	}
+
+	static int Main (string[] args)
+	{
+		return TestDriver.RunTests (typeof (Driver), args);
+	}
+
 }

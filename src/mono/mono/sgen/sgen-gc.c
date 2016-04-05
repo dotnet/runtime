@@ -1075,6 +1075,12 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		sgen_client_bridge_reset_data ();
 
 	/*
+	 * Mark all strong toggleref objects. This must be done before we walk ephemerons or finalizers
+	 * to ensure they see the full set of live objects.
+	 */
+	sgen_client_mark_togglerefs (start_addr, end_addr, ctx);
+
+	/*
 	 * Walk the ephemeron tables marking all values with reachable keys. This must be completely done
 	 * before processing finalizable objects and non-tracking weak links to avoid finalizing/clearing
 	 * objects that are in fact reachable.
@@ -1085,8 +1091,6 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
-
-	sgen_client_mark_togglerefs (start_addr, end_addr, ctx);
 
 	if (sgen_client_bridge_need_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
