@@ -66,6 +66,7 @@ namespace System.Net.Http
         private static readonly bool s_supportsAutomaticDecompression;
         private static readonly bool s_supportsSSL;
         private static readonly bool s_supportsHttp2Multiplexing;
+        private static volatile StrongBox<CURLMcode> s_supportsMaxConnectionsPerServer;
         private static string s_curlVersionDescription;
         private static string s_curlSslVersionDescription;
 
@@ -159,10 +160,7 @@ namespace System.Net.Http
 
         internal ICredentials DefaultProxyCredentials
         {
-            get
-            {
-                return _defaultProxyCredentials;
-            }
+            get { return _defaultProxyCredentials; }
             set
             {
                 CheckDisposedOrStarted();
@@ -186,10 +184,7 @@ namespace System.Net.Http
             }
         }
 
-        internal X509Certificate2Collection ClientCertificates
-        {
-            get { return _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection()); }
-        }
+        internal X509Certificate2Collection ClientCertificates => _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection());
 
         internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
         {
@@ -290,10 +285,7 @@ namespace System.Net.Http
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(
-nameof(value),
-                        value,
-                        SR.Format(SR.net_http_value_must_be_greater_than, 0));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
                 CheckDisposedOrStarted();
@@ -303,10 +295,7 @@ nameof(value),
 
         public int MaxConnectionsPerServer
         {
-            get
-            {
-                return _maxConnectionsPerServer;
-            }
+            get { return _maxConnectionsPerServer; }
             set
             {
                 if (value < 1)
@@ -314,15 +303,20 @@ nameof(value),
                     throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
-                // Make sure the libcurl version we're using supports the option, by setting the value
-                // on a temporary multi handle.
-                using (Interop.Http.SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate())
+                // Make sure the libcurl version we're using supports the option, by setting the value on a temporary multi handle.
+                // We do this once and cache the result.
+                StrongBox<CURLMcode> supported = s_supportsMaxConnectionsPerServer; // benign race condition to read and set this
+                if (supported == null)
                 {
-                    CURLMcode result = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, value);
-                    if (result != CURLMcode.CURLM_OK)
+                    using (Interop.Http.SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate())
                     {
-                        throw new PlatformNotSupportedException(CurlException.GetCurlErrorString((int)result, isMulti: true));
+                        s_supportsMaxConnectionsPerServer = supported = new StrongBox<CURLMcode>(
+                            Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, value));
                     }
+                }
+                if (supported.Value != CURLMcode.CURLM_OK)
+                {
+                    throw new PlatformNotSupportedException(CurlException.GetCurlErrorString((int)supported.Value, isMulti: true));
                 }
 
                 CheckDisposedOrStarted();
@@ -330,9 +324,6 @@ nameof(value),
             }
         }
 
-        /// <summary>
-        ///   <b> UseDefaultCredentials is a no op on Unix </b>
-        /// </summary>
         internal bool UseDefaultCredentials
         {
             get { return false; }
@@ -347,8 +338,7 @@ nameof(value),
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request,
-            CancellationToken cancellationToken)
+            HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -398,10 +388,7 @@ nameof(value),
             try
             {
                 easy.InitializeCurl();
-                if (easy._requestContentStream != null)
-                {
-                    easy._requestContentStream.Run();
-                }
+                easy._requestContentStream?.Run();
                 _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             catch (Exception exc)
@@ -674,7 +661,7 @@ nameof(value),
             }
 
             HttpEventSource.Log.HandlerMessage(
-                agent != null && agent.RunningWorkerId.HasValue ? agent.RunningWorkerId.GetValueOrDefault() : 0,
+                (agent?.RunningWorkerId).GetValueOrDefault(),
                 easy != null ? easy.Task.Id : 0,
                 memberName,
                 message);

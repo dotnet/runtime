@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -41,7 +42,15 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
-                handler.MaxConnectionsPerServer = validValue;
+                try
+                {
+                    handler.MaxConnectionsPerServer = validValue;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Some older libcurls used in some of our Linux CI systems don't support this
+                    Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+                }
             }
         }
 
@@ -51,8 +60,19 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                handler.MaxConnectionsPerServer = 1;
-                await Task.WhenAll(from i in Enumerable.Range(0, 5) select client.GetAsync(HttpTestServers.RemoteEchoServer));
+                try
+                {
+                    handler.MaxConnectionsPerServer = 1;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Some older libcurls used in some of our Linux CI systems don't support this
+                    Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+                }
+
+                await Task.WhenAll(
+                    from i in Enumerable.Range(0, 5)
+                    select client.GetAsync(HttpTestServers.RemoteEchoServer));
             }
         }
     }
