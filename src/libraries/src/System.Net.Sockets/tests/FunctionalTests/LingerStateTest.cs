@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -72,6 +73,29 @@ namespace System.Net.Sockets.Tests
             {
                 sock.LingerState = new LingerOption(true, UInt16.MaxValue);
             });
+        }
+
+        [Theory]
+        [InlineData(false, 0)]
+        [InlineData(true, 0)]
+        [InlineData(true, 1)]
+        public void SetLingerAfterServerClosed(bool linger, int timeout)
+        {
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                {
+                    client.Connect(IPAddress.Loopback, port);
+
+                    server.Dispose();
+                    Thread.Sleep(10); // give the server socket time to close
+
+                    client.LingerState = new LingerOption(linger, timeout);
+                }
+            }
         }
     }
 }

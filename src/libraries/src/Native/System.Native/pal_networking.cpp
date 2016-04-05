@@ -1536,6 +1536,17 @@ extern "C" Error SystemNative_SetLingerOption(int32_t socket, LingerOption* opti
 
     linger opt = {.l_onoff = option->OnOff, .l_linger = option->Seconds};
     int err = setsockopt(socket, SOL_SOCKET, LINGER_OPTION_NAME, &opt, sizeof(opt));
+
+#if defined(__APPLE__) && __APPLE__
+    if (err != 0 && errno == EINVAL)
+    {
+        // On OSX, SO_LINGER can return EINVAL if the other end of the socket is already closed.
+        // In that case, there is nothing for this end of the socket to do, so there's no reason to "linger."
+        // Windows and Linux do not return errors in this case, so we'll simulate success on OSX as well.
+        err = 0;
+    }
+#endif
+
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
