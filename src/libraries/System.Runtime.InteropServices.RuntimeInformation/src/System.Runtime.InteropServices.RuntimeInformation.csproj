@@ -18,7 +18,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='net45'">net45</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50'">netcore50</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netcore50aot'">netcore50;netcore50aot</DefineConstants>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.1</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />

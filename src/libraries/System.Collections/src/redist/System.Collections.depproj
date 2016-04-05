@@ -7,6 +7,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50'">win8</NuGetRuntimeIdentifier>
+    <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</NuGetRuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />

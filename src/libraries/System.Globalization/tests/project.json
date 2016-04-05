@@ -16,7 +16,11 @@
         "System.ObjectModel": "4.0.12-rc3-24012-00",
         "System.Runtime.Extensions": "4.1.0-rc3-24012-00",
         "System.Text.RegularExpressions": "4.0.12-rc3-24012-00",
-        "System.Threading.Tasks": "4.0.11-rc3-24012-00"
+        "System.Threading.Tasks": "4.0.11-rc3-24012-00",
+        "test-runtime": {
+          "target": "project",
+          "exclude": "compile"
+        }
       },
       "imports": "portable-net45+win8"
     },
@@ -25,5 +29,14 @@
         "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
       }
     }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {},
+    "centos.7-x64": {},
+    "rhel.7-x64": {},
+    "debian.8.2-x64": {}
   }
 }
