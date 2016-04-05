@@ -16,6 +16,7 @@
     <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='netcore50aot' Or '$(TargetGroup)'=='netstandard13aot'">true</SkipCommonResourcesIncludes>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <PackageTargetRuntime Condition="'$(OSGroup)' == 'Windows_NT'">win7</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(OSGroup)' == 'Unix'">unix</PackageTargetRuntime>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
