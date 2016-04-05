@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-23931-00"
+    "System.Diagnostics.DiagnosticSource": "4.0.0-rc3-24004-00"
   },
   "frameworks": {
     "netstandard1.3": {
@@ -8,7 +8,7 @@
         "dotnet5.4"
       ],
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
         "Microsoft.Win32.Primitives": "4.0.0",
         "System.Collections": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
@@ -22,7 +22,7 @@
         "System.Runtime.Extensions": "4.0.10",
         "System.Runtime.Handles": "4.0.0",
         "System.Runtime.InteropServices": "4.0.20",
-        "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-23931-00",
+        "System.Security.Cryptography.X509Certificates": "4.1.0-rc3-24004-00",
         "System.Text.Encoding": "4.0.10",
         "System.Threading": "4.0.0",
         "System.Threading.Tasks": "4.0.10"

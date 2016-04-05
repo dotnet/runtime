@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
         "System.Collections.Concurrent": "4.0.10",
         "System.Diagnostics.Contracts": "4.0.0",
         "System.Diagnostics.Debug": "4.0.10",
