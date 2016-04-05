@@ -576,7 +576,23 @@ namespace System.Diagnostics.Tests
             yield return new object[] { currentProcess, Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1").Where(p => p.Id == currentProcess.Id).Single() };
         }
 
-        [Theory, PlatformSpecific(PlatformID.Windows)]
+        private static bool ProcessPeformanceCounterEnabled()
+        {
+            try
+            {
+                int? value = (int?)Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\PerfProc\Performance", "Disable Performance Counters", null);
+                return !value.HasValue || value.Value == 0;
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions, and just assume the counter is enabled.
+            }
+
+            return true;
+        }
+
+        [PlatformSpecific(PlatformID.Windows)]
+        [ConditionalTheory(nameof(ProcessPeformanceCounterEnabled))]
         [MemberData(nameof(GetTestProcess))]
         public void TestProcessOnRemoteMachineWindows(Process currentProcess, Process remoteProcess)
         {
