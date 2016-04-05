@@ -15,8 +15,9 @@ namespace System.Net.Http
     {
         private sealed class CurlResponseMessage : HttpResponseMessage
         {
-            internal readonly EasyRequest _easy;
             private readonly CurlResponseStream _responseStream;
+            internal readonly EasyRequest _easy;
+            internal uint _headerBytesReceived;
 
             internal CurlResponseMessage(EasyRequest easy)
             {
