@@ -76,6 +76,12 @@ namespace System.Net.Http
             set { _curlHandler.Proxy = value; }
         }
 
+        public ICredentials DefaultProxyCredentials
+        {
+            get { return _curlHandler.DefaultProxyCredentials; }
+            set { _curlHandler.DefaultProxyCredentials = value; }
+        }
+
         public bool PreAuthenticate
         {
             get { return _curlHandler.PreAuthenticate; }
