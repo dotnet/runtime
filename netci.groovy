@@ -1048,7 +1048,7 @@ combinedScenarios.each { scenario ->
                                     assert scenario == 'default'
 
                                     // Up the timeout for arm64 jobs.
-                                    Utilities.setJobTimeout(newJob, 360);
+                                    Utilities.setJobTimeout(newJob, 240);
                                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} /toolset_dir C:\\ats"
 
                                     // Debug runs take too long to run.
@@ -1056,8 +1056,10 @@ combinedScenarios.each { scenario ->
                                        buildCommands += "Z:\\arm64\\common\\scripts\\arm64PostBuild.cmd %WORKSPACE% ${architecture} ${lowerConfiguration}"
                                     }
                                     
-                                    // Add archival.  No xunit results for arm64 windows
+                                    // Add archival.
                                     Utilities.addArchival(newJob, "bin/Product/**")
+
+                                    Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                                     break
                                 default:
                                     println("Unknown architecture: ${architecture}");
