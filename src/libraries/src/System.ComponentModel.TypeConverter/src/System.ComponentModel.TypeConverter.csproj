@@ -65,6 +65,8 @@
     <Compile Include="System\ComponentModel\PropertyDescriptor.cs" />
     <Compile Include="System\ComponentModel\PropertyDescriptorCollection.cs" />
     <Compile Include="System\ComponentModel\ProvidePropertyAttribute.cs" />
+    <!-- ReferenceConverter is excluded because its purpose is to enable displaying the properties of an
+         object implementing IComponent in the designer's Properties window, which isn't applicable to .NET Core -->
     <!--<Compile Include="System\ComponentModel\ReferenceConverter.cs" />-->
     <Compile Include="System\ComponentModel\ReflectEventDescriptor.cs" />
     <Compile Include="System\ComponentModel\ReflectPropertyDescriptor.cs" />
