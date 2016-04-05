@@ -9,7 +9,7 @@ namespace System.ComponentModel
     ///       properties.</para>
     /// </devdoc>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public sealed class ProvidePropertyAttribute : Attribute
+    public sealed class ProvidePropertyAttribute : Attribute, ITypeId
     {
         private readonly string _propertyName;
         private readonly string _receiverTypeName;
@@ -58,18 +58,16 @@ namespace System.ComponentModel
             }
         }
 
-#if FEATURE_ATTRIBUTE_TYPEID
         /// <devdoc>
-        ///    <para>ProvidePropertyAttribute overrides this to include the type name and the property name</para>
+        ///    <para>ProvidePropertyAttribute implements this to include the type name and the property name</para>
         /// </devdoc>
-        public override object TypeId
+        object ITypeId.TypeId
         {
             get
             {
                 return GetType().FullName + _propertyName;
             }
         }
-#endif
 
         public override bool Equals(object obj)
         {

@@ -90,11 +90,7 @@ namespace System.ComponentModel
                 bool match = false;
                 for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                 {
-#if FEATURE_ATTRIBUTE_TYPEID
-                    if (newArray[existingIdx].TypeId.Equals(newAttributes[idx].TypeId))
-#else
-                    if (newArray[existingIdx].GetType().Equals(newAttributes[idx].GetType()))
-#endif
+                    if (newArray[existingIdx].GetTypeId().Equals(newAttributes[idx].GetTypeId()))
                     {
                         match = true;
                         newArray[existingIdx] = newAttributes[idx];
@@ -342,11 +338,7 @@ namespace System.ComponentModel
         {
             for (int i = 0; i < Attributes.Length; i++)
             {
-#if FEATURE_ATTRIBUTE_MATCH
                 if (Attributes[i].Match(attribute))
-#else
-                if (Attributes[i].Equals(attribute))
-#endif
                 {
                     return true;
                 }
