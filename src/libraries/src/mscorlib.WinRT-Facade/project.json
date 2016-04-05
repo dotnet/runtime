@@ -1,9 +1,9 @@
 {
+  "dependencies": {
+    "System.Runtime": "4.0.20",
+  },
   "frameworks": {
-    "dnxcore50": {
-      "dependencies": {
-        "System.Runtime": "4.0.20",
-      },
-    }
+    "dnxcore50": { },
+    "netcore50": { },
   }
 }

@@ -9,10 +9,11 @@
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework>uap10.0</PackageTargetFramework>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETCore,Version=v5.0</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Numerics\VectorExtensions.cs" />
   </ItemGroup>

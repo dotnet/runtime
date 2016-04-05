@@ -10,6 +10,7 @@
     <!-- unset PackageTargetFramework we'll use PackageDestination instead -->
     <PackageTargetFramework />
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == ''">.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'netstandard1.1'">.NETStandard,Version=v1.1</NuGetTargetMoniker>
   </PropertyGroup>
   <!-- By default we build the 'latest'  which is netstandard1.3 -->
   <ItemGroup Condition="'$(TargetGroup)' == ''">
