@@ -1323,6 +1323,34 @@ get_caller_no_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed
 	return FALSE;
 }
 
+static gboolean
+get_caller_no_system_or_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = (MonoMethod **)data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (m->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+
+	if (m->klass->image == mono_defaults.corlib && ((!strcmp (m->klass->name_space, "System.Reflection"))
+							|| (!strcmp (m->klass->name_space, "System"))))
+		return FALSE;
+
+	if (!(*dest)) {
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static MonoReflectionType *
 type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoError *error)
 {
@@ -1343,9 +1371,20 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	m = mono_method_get_last_managed ();
 	dest = m;
 
-	mono_stack_walk_no_il (get_caller_no_reflection, &dest);
+	/* Ugly hack: type_from_parsed_name is called from
+	 * System.Type.internal_from_name, which is called most
+	 * directly from System.Type.GetType(string,bool,bool) but
+	 * also indirectly from places such as
+	 * System.Type.GetType(string,func,func) (via
+	 * System.TypeNameParser.GetType and System.TypeSpec.Resolve)
+	 * so we need to skip over all of those to find the true caller.
+	 *
+	 * It would be nice if we had stack marks.
+	 */
+	mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
 	if (!dest)
 		dest = m;
+
 
 	/*
 	 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
@@ -1413,10 +1452,12 @@ ves_icall_System_Type_internal_from_name (MonoString *name,
 	/* mono_reflection_parse_type() mangles the string */
 	if (!parsedOk) {
 		mono_reflection_free_type_info (&info);
-		g_free (str);
 		if (throwOnError) {
-			mono_set_pending_exception (mono_get_exception_argument("typeName", "failed parse"));
+			mono_error_init (&error);
+			mono_error_set_argument (&error, "typeName", "failed parse: %s", str);
+			mono_error_set_pending_exception (&error);
 		}
+		g_free (str);
 		return NULL;
 	}
 
