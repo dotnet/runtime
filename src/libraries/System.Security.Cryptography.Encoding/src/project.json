@@ -2,7 +2,7 @@
   "frameworks": {
     "netstandard1.3": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "1.0.1-rc3-23931-00",
+        "Microsoft.NETCore.Platforms": "1.0.1-rc3-24004-00",
         "System.Collections": "4.0.0",
         "System.Collections.Concurrent": "4.0.0",
         "System.Diagnostics.Contracts": "4.0.0",
@@ -12,7 +12,7 @@
         "System.Runtime": "4.0.20",
         "System.Runtime.InteropServices": "4.0.20",
         "System.Text.Encoding": "4.0.10",
-        "System.Security.Cryptography.Primitives": "4.0.0-rc3-23931-00"
+        "System.Security.Cryptography.Primitives": "4.0.0-rc3-24004-00"
       },
       "imports": [
         "dotnet5.4"

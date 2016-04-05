@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.IO.Compression": "4.1.0-rc3-23931-00",
+    "System.IO.Compression": "4.1.0-rc3-24004-00",
     "coveralls.io": "1.4",
     "OpenCover": "4.6.519",
     "ReportGenerator": "2.4.3",
@@ -8,15 +8,13 @@
     "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0029",
     "xunit": "2.1.0",
     "xunit.runner.utility": "2.1.0",
-    "xunit.runner.console":"2.1.0"
+    "xunit.runner.console": "2.1.0"
   },
   "frameworks": {
-    "net46": {
-    }
+    "net46": {}
   },
   "runtimes": {
     "win7-x64": {},
     "win7-x86": {}
   }
-  
 }
