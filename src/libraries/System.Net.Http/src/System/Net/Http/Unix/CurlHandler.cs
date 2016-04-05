@@ -89,6 +89,7 @@ namespace System.Net.Http
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
+        private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeaderLength;
         private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
@@ -293,7 +294,7 @@ namespace System.Net.Http
             }
         }
 
-        public int MaxConnectionsPerServer
+        internal int MaxConnectionsPerServer
         {
             get { return _maxConnectionsPerServer; }
             set
@@ -321,6 +322,21 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxConnectionsPerServer = value;
+            }
+        }
+
+        internal int MaxResponseHeadersLength
+        {
+            get { return _maxResponseHeadersLength; }
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
+                }
+
+                CheckDisposedOrStarted();
+                _maxResponseHeadersLength = value;
             }
         }
 
