@@ -319,59 +319,11 @@
         <ExcludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.cmd" >
              <Issue>3571</Issue>
 	</ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Finalize2\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\NullHandle\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\Target\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\IsAlive\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\IsAlive_neg\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\Finalizer\finalizeother\finalizedirectedgraph\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\finalizertest\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\finalizertest\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\reregisterforfinalize\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinknoleak2\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\doublinknoleak\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakWheel\leakwheel\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\SingLinkList\singlinkgen\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\WeakReference\getgencollect\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\WeakReference\weakref\*">
-             <Issue>3391</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\getgeneration\*">
-             <Issue>3391</Issue>
+             <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\BaseFinal\basefinal\*">
-             <Issue>3391</Issue>
+             <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\concurrentspin2\*">
              <Issue>3392</Issue>
@@ -422,6 +374,18 @@
              <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\*">
+             <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\getgeneration\*">
+             <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\reregisterforfinalize\*">
+             <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Allocation\finalizertest\*">
+             <Issue>3392</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\*">
              <Issue>3392</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\baseservices\exceptions\regressions\Dev11\147911\test147911\*">

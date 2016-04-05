@@ -78,10 +78,13 @@ REM ============================================================================
 REM Write dependency information to project.json
 echo { ^
     "dependencies": { ^
-    "Microsoft.NETCore.CoreDisTools": "1.0.0-prerelease-00001" ^
+    "runtime.win7-%__Arch%.Microsoft.NETCore.CoreDisTools": "1.0.0-prerelease-00001" ^
     }, ^
     "frameworks": { "dnxcore50": { } } ^
     } > "%__JasonFilePath%"
+
+echo Jason file: %__JasonFilePath%
+type "%__JasonFilePath%"
 
 REM Download the package
 echo Downloading CoreDisTools package
@@ -89,15 +92,11 @@ set DOTNETCMD="%__DotNetCmd%" restore "%__JasonFilePath%" --source https://dotne
 echo %DOTNETCMD%
 call %DOTNETCMD%
 if errorlevel 1 goto Fail
-REM Get downloaded dll path
-FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s ^| findstr /R "runtime.win[0-9]*-%__Arch%"') DO set __LibPath=%%i
-if not exist "%__LibPath%" (
-    echo Failed to locate the downloaded library: %__LibPath%
-    goto Fail
-)
 
 REM Get downloaded dll path
-FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s') DO set __LibPath=%%i
+echo Locating coredistools.dll
+FOR /F "delims=" %%i IN ('dir %__PackageDir%\coredistools.dll /b/s ^| findstr /R "runtime.win[0-9]*-%__Arch%"') DO set __LibPath=%%i
+echo CoreDisTools library path: %__LibPath%
 if not exist "%__LibPath%" (
     echo Failed to locate the downloaded library: %__LibPath%
     goto Fail

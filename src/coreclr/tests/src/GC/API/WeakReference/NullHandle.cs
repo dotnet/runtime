@@ -24,17 +24,24 @@ public class WR : WeakReference
 
 public class Test
 {
+    // This weak reference gets resurrected by WR's destructor.
     public static WR w;
+    
+    // This weak reference is destroyed to prompt WR's destructor to run.
+    public static WR wr;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static WR ReturnWR() { return new WR(new Object()); }
+    public static void CreateWR() { wr = new WR(new Object()); }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroyWR() { wr = null; }
 
     public static int Main()
     {
         int numTests = 0;
         int numPassed = 0;
-        WR wr = ReturnWR();
-        wr = null;
+        CreateWR();
+        DestroyWR();
 
         // this will resurrect wr
         GC.Collect();
