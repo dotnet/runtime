@@ -18625,6 +18625,13 @@ void Compiler::fgInsertTreeInListBefore(GenTree* tree, GenTree* insertionPoint, 
     if (beforeTree != nullptr)
     {
         beforeTree->gtNext = first;
+
+        // If the insertionPoint is the gtStatementList,
+        // update the gtStatemenList to include the newly inserted tree.
+        if (stmt->gtStmtList == insertionPoint)
+        {
+            stmt->gtStmtList = first;
+        }
     }
     else
     {
