@@ -357,7 +357,7 @@ mono_thread_info_lookup (MonoNativeThreadId id);
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
-void
+MONO_API void
 mono_thread_info_set_name (MonoNativeThreadId tid, const char *name);
 
 void
@@ -523,7 +523,7 @@ void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
 
-MonoNativeThreadId
+MONO_API MonoNativeThreadId
 mono_native_thread_id_get (void);
 
 gboolean
