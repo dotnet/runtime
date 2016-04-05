@@ -7,15 +7,28 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 public class Test {
+    public static int[] array;
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void CreateArray() {
+        array = new int[50];
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroyArray() {
+        array = null;
+    }
+
     public static int Main() {
-        int[] array = new int[50];
+        CreateArray();
 
         WeakReference weak = new WeakReference(array); // array has ONLY a weakreference
 
         // ensuring that GC happens even with /debug mode
-        array=null;
+        DestroyArray();
 
         GC.Collect();
 
