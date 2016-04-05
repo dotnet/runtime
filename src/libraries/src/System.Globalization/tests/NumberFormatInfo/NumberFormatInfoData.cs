@@ -36,7 +36,14 @@ namespace System.Globalization.Tests
                     return PlatformDetection.IsWindows ? new int[] { 1 } : new int[] { 1, 0 };
 
                 case "fa-IR":
-                    return PlatformDetection.IsWindows ? new int[] { 3 } : new int[] { 1, 0 };
+                    if (PlatformDetection.IsWindows)
+                    {
+                        return (PlatformDetection.WindowsVersion < 10) ? new int[] { 3 } : new int[] { 6, 3 };
+                    }
+                    else
+                    {
+                        return new int[] { 1, 0 };
+                    }
 
                 case "fr-CD":
                     if (PlatformDetection.IsWindows)
