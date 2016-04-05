@@ -426,14 +426,15 @@ var_types    Compiler::getJitGCType(BYTE gcType)
 }
 
 #if FEATURE_MULTIREG_ARGS
-//------------------------------------------------------------------------
-// getStructGcPtrsFromOp: Given a GenTree node of TYP_STRUCT that represents a pass by value argument
-//                        return the gcPtr layout for the pointers sized fields //
+//---------------------------------------------------------------------------
+// getStructGcPtrsFromOp: Given a GenTree node of TYP_STRUCT that represents
+//                        a pass by value argument, return the gcPtr layout 
+//                        for the pointers sized fields 
 // Arguments:
 //    op         - the operand of TYP_STRUCT that is passed by value
 //    gcPtrsOut  - an array of BYTES that are written by this method
 //                 they will contain the VM's CorInfoGCType values 
-//                 for each pointer sized field//
+//                 for each pointer sized field
 // Return Value:
 //     Two [or more] values are written into the gcPtrs array
 //
@@ -4648,7 +4649,7 @@ void Compiler::compCompileFinish()
     {
         if (compJitHaltMethod())
         {
-#ifndef _TARGET_ARM64_
+#if !defined(_TARGET_ARM64_) && !defined(PLATFORM_UNIX)
             // TODO-ARM64-NYI: re-enable this when we have an OS that supports a pop-up dialog
 
             // Don't do an assert, but just put up the dialog box so we get just-in-time debugger

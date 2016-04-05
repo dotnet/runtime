@@ -11291,6 +11291,26 @@ bool Compiler::IsRegisterPassable(GenTreePtr tree)
 {
     return IsRegisterPassable(gtGetStructHandleIfPresent(tree));
 }
+
+//-----------------------------------------------------------------------------------
+// IsMultiRegReturnedType: Returns true if the type is returned in multiple registers
+// 
+// Arguments:
+//     hClass   -  type handle
+//
+// Return Value:
+//     true if type is returned in multiple registers, false otherwise.
+bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass)
+{
+    if (hClass == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(hClass, &structDesc);
+    return structDesc.passedInRegisters && (structDesc.eightByteCount > 1);
+}
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef _TARGET_ARM_
