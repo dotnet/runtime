@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Reflection;
+
 namespace System.ComponentModel
 {
-    using Microsoft.Win32;
-    using System;
-    using System.Collections;
-    using System.ComponentModel.Design;
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Security.Permissions;
-
     /// <internalonly/>
     /// <devdoc>
     ///    <para>
@@ -39,7 +36,7 @@ namespace System.ComponentModel
     ///     // do something on button1 click.
     ///     }
     ///     public Foo() {
-    ///     button1.addOnClick(this.button1_click);
+    ///     button1.addOnClick(button1_click);
     ///     }
     ///     }
     ///    </code>
@@ -61,7 +58,6 @@ namespace System.ComponentModel
     ///    ReflectEventDescriptors can be obtained by a user programmatically through the
     ///    ComponentManager.
     /// </devdoc>
-    [HostProtection(SharedState = true)]
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private static readonly Type[] s_argsNone = new Type[0];
@@ -78,29 +74,28 @@ namespace System.ComponentModel
         /// <devdoc>
         ///     This is the main constructor for an ReflectEventDescriptor.
         /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type,
-                                      Attribute[] attributes)
-        : base(name, attributes)
+        public ReflectEventDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
+            : base(name, attributes)
         {
             if (componentClass == null)
             {
-                throw new ArgumentException(SR.GetString(SR.InvalidNullArgument, "componentClass"));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             }
             if (type == null || !(typeof(Delegate)).IsAssignableFrom(type))
             {
-                throw new ArgumentException(SR.GetString(SR.ErrorInvalidEventType, name));
+                throw new ArgumentException(SR.Format(SR.ErrorInvalidEventType, name));
             }
-            Debug.Assert(type.IsSubclassOf(typeof(Delegate)), "Not a valid ReflectEvent: " + componentClass.FullName + "." + name + " " + type.FullName);
+            Debug.Assert(type.GetTypeInfo().IsSubclassOf(typeof(Delegate)), "Not a valid ReflectEvent: " + componentClass.FullName + "." + name + " " + type.FullName);
             _componentClass = componentClass;
             _type = type;
         }
 
         public ReflectEventDescriptor(Type componentClass, EventInfo eventInfo)
-        : base(eventInfo.Name, new Attribute[0])
+            : base(eventInfo.Name, new Attribute[0])
         {
             if (componentClass == null)
             {
-                throw new ArgumentException(SR.GetString(SR.InvalidNullArgument, "componentClass"));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             }
             _componentClass = componentClass;
             _realEvent = eventInfo;
@@ -111,7 +106,7 @@ namespace System.ComponentModel
         ///     passed-in attributes.
         /// </devdoc>
         public ReflectEventDescriptor(Type componentType, EventDescriptor oldReflectEventDescriptor, Attribute[] attributes)
-        : base(oldReflectEventDescriptor, attributes)
+            : base(oldReflectEventDescriptor, attributes)
         {
             _componentClass = componentType;
             _type = oldReflectEventDescriptor.EventType;
@@ -123,17 +118,7 @@ namespace System.ComponentModel
                 _removeMethod = desc._removeMethod;
                 _filledMethods = true;
             }
-#if DEBUG
-            else if (oldReflectEventDescriptor is DebugReflectEventDescriptor)
-            {
-                _addMethod = ((DebugReflectEventDescriptor)oldReflectEventDescriptor).addMethod;
-                _removeMethod = ((DebugReflectEventDescriptor)oldReflectEventDescriptor).removeMethod;
-                _filledMethods = true;
-            }
-#endif
         }
-
-
 
         /// <devdoc>
         ///     Retrieves the type of the component this EventDescriptor is bound to.
@@ -159,8 +144,7 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        ///     Indicates whether the delegate type for this event is a multicast
-        ///     delegate.
+        ///     Indicates whether the delegate type for this event is a multicast delegate.
         /// </devdoc>
         public override bool IsMulticast
         {
@@ -181,6 +165,7 @@ namespace System.ComponentModel
             if (component != null)
             {
                 ISite site = GetSite(component);
+#if FEATURE_ICOMPONENTCHANGESERVICE
                 IComponentChangeService changeService = null;
 
                 // Announce that we are about to change this component
@@ -188,24 +173,25 @@ namespace System.ComponentModel
                 if (site != null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                    Debug.Assert(!CompModSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                 }
 
                 if (changeService != null)
                 {
-                    try
-                    {
+#if FEATURE_CHECKOUTEXCEPTION
+                    try {
                         changeService.OnComponentChanging(component, this);
                     }
-                    catch (CheckoutException coEx)
-                    {
-                        if (coEx == CheckoutException.Canceled)
-                        {
+                    catch (CheckoutException coEx) {
+                        if (coEx == CheckoutException.Canceled) {
                             return;
                         }
                         throw coEx;
                     }
+#else
+                    changeService.OnComponentChanging(component, this);
+#endif // FEATURE_CHECKOUTEXCEPTION
                 }
+#endif // FEATURE_ICOMPONENTCHANGESERVICE
 
                 bool shadowed = false;
 
@@ -214,10 +200,9 @@ namespace System.ComponentModel
                     // Events are final, so just check the class
                     if (EventType != value.GetType())
                     {
-                        throw new ArgumentException(SR.GetString(SR.ErrorInvalidEventHandler, Name));
+                        throw new ArgumentException(SR.Format(SR.ErrorInvalidEventHandler, Name));
                     }
                     IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
-                    Debug.Assert(!CompModSwitches.CommonDesignerServices.Enabled || dict != null, "IDictionaryService not found");
                     if (dict != null)
                     {
                         Delegate eventdesc = (Delegate)dict.GetValue(this);
@@ -229,15 +214,17 @@ namespace System.ComponentModel
 
                 if (!shadowed)
                 {
-                    SecurityUtils.MethodInfoInvoke(_addMethod, component, new object[] { value });
+                    _addMethod.Invoke(component, new[] { value });
                 }
 
+#if FEATURE_ICOMPONENTCHANGESERVICE
                 // Now notify the change service that the change was successful.
                 //
                 if (changeService != null)
                 {
                     changeService.OnComponentChanged(component, this, null, value);
                 }
+#endif
             }
         }
 
@@ -289,7 +276,11 @@ namespace System.ComponentModel
         {
             string eventName = realEventInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
+#if FEATURE_MEMBERINFO_REFLECTEDTYPE
             Type currentReflectType = realEventInfo.ReflectedType;
+#else
+            Type currentReflectType = _componentClass;
+#endif
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
             int depth = 0;
 
@@ -299,14 +290,18 @@ namespace System.ComponentModel
             while (currentReflectType != typeof(object))
             {
                 depth++;
-                currentReflectType = currentReflectType.BaseType;
+                currentReflectType = currentReflectType.GetTypeInfo().BaseType;
             }
 
             if (depth > 0)
             {
                 // Now build up an array in reverse order
                 //
+#if FEATURE_MEMBERINFO_REFLECTEDTYPE
                 currentReflectType = realEventInfo.ReflectedType;
+#else
+                currentReflectType = _componentClass;
+#endif
                 Attribute[][] attributeStack = new Attribute[depth][];
 
                 while (currentReflectType != typeof(object))
@@ -324,7 +319,7 @@ namespace System.ComponentModel
 
                     // Ready for the next loop iteration.
                     //
-                    currentReflectType = currentReflectType.BaseType;
+                    currentReflectType = currentReflectType.GetTypeInfo().BaseType;
                 }
 
                 // Now trawl the attribute stack so that we add attributes
@@ -360,7 +355,7 @@ namespace System.ComponentModel
 
                 if (_addMethod == null || _removeMethod == null)
                 {
-                    Type start = _componentClass.BaseType;
+                    Type start = _componentClass.GetTypeInfo().BaseType;
                     while (start != null && start != typeof(object))
                     {
                         BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -403,7 +398,7 @@ namespace System.ComponentModel
                 if (_addMethod == null || _removeMethod == null)
                 {
                     Debug.Fail("Missing event accessors for " + _componentClass.FullName + "." + Name);
-                    throw new ArgumentException(SR.GetString(SR.ErrorMissingEventAccessors, Name));
+                    throw new ArgumentException(SR.Format(SR.ErrorMissingEventAccessors, Name));
                 }
             }
 
@@ -414,7 +409,11 @@ namespace System.ComponentModel
         {
             string methodName = realMethodInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
-            Type currentReflectType = realMethodInfo.ReflectedType;
+#if FEATURE_MEMBERINFO_REFLECTEDTYPE
+            Type currentReflectType = realEventInfo.ReflectedType;
+#else
+            Type currentReflectType = _componentClass;
+#endif
             Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
 
             // First, calculate the depth of the object hierarchy.  We do this so we can do a single
@@ -424,14 +423,18 @@ namespace System.ComponentModel
             while (currentReflectType != null && currentReflectType != typeof(object))
             {
                 depth++;
-                currentReflectType = currentReflectType.BaseType;
+                currentReflectType = currentReflectType.GetTypeInfo().BaseType;
             }
 
             if (depth > 0)
             {
                 // Now build up an array in reverse order
                 //
-                currentReflectType = realMethodInfo.ReflectedType;
+#if FEATURE_MEMBERINFO_REFLECTEDTYPE
+                currentReflectType = realEventInfo.ReflectedType;
+#else
+                currentReflectType = _componentClass;
+#endif
                 Attribute[][] attributeStack = new Attribute[depth][];
 
                 while (currentReflectType != null && currentReflectType != typeof(object))
@@ -449,7 +452,7 @@ namespace System.ComponentModel
 
                     // Ready for the next loop iteration.
                     //
-                    currentReflectType = currentReflectType.BaseType;
+                    currentReflectType = currentReflectType.GetTypeInfo().BaseType;
                 }
 
                 // Now trawl the attribute stack so that we add attributes
@@ -469,7 +472,7 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
-        ///     This will remove the delegate value from the event chain so that
+        ///     This will remove the delegate value from the event chain so that 
         ///     it no longer gets events from this component.
         /// </devdoc>
         public override void RemoveEventHandler(object component, Delegate value)
@@ -479,6 +482,7 @@ namespace System.ComponentModel
             if (component != null)
             {
                 ISite site = GetSite(component);
+#if FEATURE_ICOMPONENTCHANGESERVICE
                 IComponentChangeService changeService = null;
 
                 // Announce that we are about to change this component
@@ -486,31 +490,30 @@ namespace System.ComponentModel
                 if (site != null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
-                    Debug.Assert(!CompModSwitches.CommonDesignerServices.Enabled || changeService != null, "IComponentChangeService not found");
                 }
 
                 if (changeService != null)
                 {
-                    try
-                    {
+#if FEATURE_CHECKOUTEXCEPTION
+                    try {
                         changeService.OnComponentChanging(component, this);
                     }
-                    catch (CheckoutException coEx)
-                    {
-                        if (coEx == CheckoutException.Canceled)
-                        {
+                    catch (CheckoutException coEx) {
+                        if (coEx == CheckoutException.Canceled) {
                             return;
                         }
                         throw coEx;
                     }
+#else
+                    changeService.OnComponentChanging(component, this);
+#endif // FEATURE_CHECKOUTEXCEPTION
                 }
-
+#endif // FEATURE_ICOMPONENTCHANGESERVICE
                 bool shadowed = false;
 
                 if (site != null && site.DesignMode)
                 {
                     IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
-                    Debug.Assert(!CompModSwitches.CommonDesignerServices.Enabled || dict != null, "IDictionaryService not found");
                     if (dict != null)
                     {
                         Delegate del = (Delegate)dict.GetValue(this);
@@ -522,104 +525,18 @@ namespace System.ComponentModel
 
                 if (!shadowed)
                 {
-                    SecurityUtils.MethodInfoInvoke(_removeMethod, component, new object[] { value });
+                    _removeMethod.Invoke(component, new[] { value });
                 }
 
+#if FEATURE_ICOMPONENTCHANGESERVICE
                 // Now notify the change service that the change was successful.
                 //
                 if (changeService != null)
                 {
                     changeService.OnComponentChanged(component, this, null, value);
                 }
+#endif
             }
         }
-
-        /* The following code has been removed to fix FXCOP violations.
-           its left here incase it needs to be resurected. This code is from
-           ReflectEventDescriptor class
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with one attribute.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type, MethodInfo addMethod, MethodInfo removeMethod) : this(componentClass, name, type, (Attribute[]) null) {
-            this.addMethod = addMethod;
-            this.removeMethod = removeMethod;
-            this.filledMethods = true;
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with one attribute.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type) : this(componentClass, name, type, (Attribute[]) null) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with two attributes.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type,
-                                      Attribute a1) : this(componentClass, name, type, new Attribute[] {a1}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with two attributes.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type,
-                                      Attribute a1, Attribute a2) : this(componentClass, name, type, new Attribute[] {a1, a2}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with three attributes.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type,
-                                      Attribute a1, Attribute a2, Attribute a3) : this(componentClass, name, type, new Attribute[] {a1, a2, a3}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut main constructor for an ReflectEventDescriptor with four attributes.
-        /// </devdoc>
-        public ReflectEventDescriptor(Type componentClass, string name, Type type,
-                                      Attribute a1, Attribute a2,
-                                      Attribute a3, Attribute a4) : this(componentClass, name, type, new Attribute[] {a1, a2, a3, a4}) {
-        }
-
-        /// <devdoc>
-        ///     This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the
-        ///     passed-in attributes.
-        /// </devdoc>
-        public ReflectEventDescriptor(EventDescriptor oldReflectEventDescriptor, Attribute[] attributes)
-        : this(oldReflectEventDescriptor.ComponentType, oldReflectEventDescriptor, attributes) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut constructor that takes an existing ReflectEventDescriptor and one attribute to
-        ///     merge in.
-        /// </devdoc>
-        public ReflectEventDescriptor(EventDescriptor oldReflectEventDescriptor, Attribute a1) : this(oldReflectEventDescriptor, new Attribute[] { a1}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut constructor that takes an existing ReflectEventDescriptor and two attributes to
-        ///     merge in.
-        /// </devdoc>
-        public ReflectEventDescriptor(EventDescriptor oldReflectEventDescriptor, Attribute a1,
-                                      Attribute a2) : this(oldReflectEventDescriptor, new Attribute[] { a1,a2}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut constructor that takes an existing ReflectEventDescriptor and three attributes to
-        ///     merge in.
-        /// </devdoc>
-        public ReflectEventDescriptor(EventDescriptor oldReflectEventDescriptor, Attribute a1,
-                                      Attribute a2, Attribute a3) : this(oldReflectEventDescriptor, new Attribute[] { a1,a2,a3}) {
-        }
-
-        /// <devdoc>
-        ///     This is a shortcut constructor that takes an existing ReflectEventDescriptor and four attributes to
-        ///     merge in.
-        /// </devdoc>
-        public ReflectEventDescriptor(EventDescriptor oldReflectEventDescriptor, Attribute a1,
-                                      Attribute a2, Attribute a3, Attribute a4) : this(oldReflectEventDescriptor, new Attribute[] { a1,a2,a3,a4}) {
-        }
-        */
     }
 }

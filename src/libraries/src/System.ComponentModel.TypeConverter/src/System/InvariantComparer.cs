@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Globalization;
+
 namespace System
 {
-    [Serializable]
     internal class InvariantComparer : IComparer
     {
-        private CompareInfo _compareInfo;
+        private readonly CompareInfo _compareInfo;
         internal static readonly InvariantComparer Default = new InvariantComparer();
 
         internal InvariantComparer()
@@ -15,10 +17,10 @@ namespace System
             _compareInfo = CultureInfo.InvariantCulture.CompareInfo;
         }
 
-        public int Compare(Object a, Object b)
+        public int Compare(object a, object b)
         {
-            String sa = a as String;
-            String sb = b as String;
+            string sa = a as string;
+            string sb = b as string;
             if (sa != null && sb != null)
                 return _compareInfo.Compare(sa, sb);
             else
@@ -26,4 +28,3 @@ namespace System
         }
     }
 }
-

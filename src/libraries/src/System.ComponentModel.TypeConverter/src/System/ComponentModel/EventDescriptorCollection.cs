@@ -437,16 +437,6 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        int ICollection.Count
-        {
-            get
-            {
-                return Count;
-            }
-        }
-
-
-        /// <internalonly/>
         bool ICollection.IsSynchronized
         {
             get
@@ -462,12 +452,6 @@ namespace System.ComponentModel
             {
                 return null;
             }
-        }
-
-        /// <internalonly/>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
 
         /// <internalonly/>
@@ -500,12 +484,6 @@ namespace System.ComponentModel
         }
 
         /// <internalonly/>
-        void IList.Clear()
-        {
-            Clear();
-        }
-
-        /// <internalonly/>
         bool IList.Contains(object value)
         {
             return Contains((EventDescriptor)value);
@@ -527,12 +505,6 @@ namespace System.ComponentModel
         void IList.Remove(object value)
         {
             Remove((EventDescriptor)value);
-        }
-
-        /// <internalonly/>
-        void IList.RemoveAt(int index)
-        {
-            RemoveAt(index);
         }
 
         /// <internalonly/>

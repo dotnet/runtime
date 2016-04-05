@@ -4,7 +4,8 @@
 
 using System.Collections;
 
-namespace System.ComponentModel {
+namespace System.ComponentModel
+{
     /// <devdoc>
     ///     This is a simple type description provider that, when invoked demand
     ///     locates the correct type description provider for the given type and
@@ -12,7 +13,7 @@ namespace System.ComponentModel {
     ///     based providers.  Conceptually it "links" the provider list for one type
     ///     or instance to its corresponding base type.
     /// </devdoc>
-    internal sealed class DelegatingTypeDescriptionProvider : TypeDescriptionProvider 
+    internal sealed class DelegatingTypeDescriptionProvider : TypeDescriptionProvider
     {
         private Type _type;
 
@@ -27,8 +28,10 @@ namespace System.ComponentModel {
         /// <devdoc>
         ///     
         /// </devdoc>
-        internal TypeDescriptionProvider Provider {
-            get {
+        internal TypeDescriptionProvider Provider
+        {
+            get
+            {
                 return TypeDescriptor.GetProviderRecursive(_type);
             }
         }
@@ -68,7 +71,7 @@ namespace System.ComponentModel {
         ///     If not overridden, the default implementation of this method will call
         ///     GetTypeDescriptor.GetComponentName.
         /// </devdoc>
-        public override string GetFullComponentName(object component) 
+        public override string GetFullComponentName(object component)
         {
             return Provider.GetFullComponentName(component);
         }
@@ -107,7 +110,8 @@ namespace System.ComponentModel {
             return Provider.GetReflectionType(objectType, instance);
         }
 
-        public override Type GetRuntimeType(Type objectType) {
+        public override Type GetRuntimeType(Type objectType)
+        {
             return Provider.GetRuntimeType(objectType);
         }
 
@@ -124,7 +128,8 @@ namespace System.ComponentModel {
             return Provider.GetTypeDescriptor(objectType, instance);
         }
 
-        public override bool IsSupportedType(Type type) {
+        public override bool IsSupportedType(Type type)
+        {
             return Provider.IsSupportedType(type);
         }
     }

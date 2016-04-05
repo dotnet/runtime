@@ -135,8 +135,17 @@
   <data name="EnumConverterInvalidValue" xml:space="preserve">
     <value>The value '{0}' is not a valid value for the enum '{1}'.</value>
   </data>
+  <data name="ErrorInvalidEventHandler" xml:space="preserve">
+   <value>Invalid event handler for the {0} event.</value> 
+  </data>
+  <data name="ErrorInvalidEventType" xml:space="preserve">
+   <value>Invalid type for the {0} event.</value> 
+  </data>
   <data name="ErrorInvalidPropertyType" xml:space="preserve">
     <value>Invalid type for the {0} property</value>
+  </data>
+  <data name="ErrorMissingEventAccessors" xml:space="preserve">
+   <value>Accessor methods for the {0} event are missing.</value> 
   </data>
   <data name="ErrorMissingPropertyAccessors" xml:space="preserve">
     <value>Accessor methods for the {0} property are missing.</value>
