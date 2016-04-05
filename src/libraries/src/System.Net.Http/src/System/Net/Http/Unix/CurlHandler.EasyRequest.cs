@@ -222,6 +222,41 @@ namespace System.Net.Http
                 EventSourceTrace("Max automatic redirections: {0}", _handler._maxAutomaticRedirections);
             }
 
+            private void SetContentLength(CURLoption lengthOption)
+            {
+                Debug.Assert(lengthOption == CURLoption.CURLOPT_POSTFIELDSIZE || lengthOption == CURLoption.CURLOPT_INFILESIZE);
+
+                if (_requestMessage.Content == null)
+                {
+                    // Tell libcurl there's no data to be sent.
+                    SetCurlOption(lengthOption, 0L);
+                    return;
+                }
+
+                long? contentLengthOpt = _requestMessage.Content.Headers.ContentLength;
+                if (contentLengthOpt != null)
+                {
+                    long contentLength = contentLengthOpt.GetValueOrDefault();
+                    if (contentLength <= int.MaxValue)
+                    {
+                        // Tell libcurl how much data we expect to send.
+                        SetCurlOption(lengthOption, contentLength);
+                    }
+                    else
+                    {
+                        // Similarly, tell libcurl how much data we expect to send.  However,
+                        // as the amount is larger than a 32-bit value, switch to the "_LARGE"
+                        // equivalent libcurl options.
+                        SetCurlOption(
+                            lengthOption == CURLoption.CURLOPT_INFILESIZE ? CURLoption.CURLOPT_INFILESIZE_LARGE : CURLoption.CURLOPT_POSTFIELDSIZE_LARGE,
+                            contentLength);
+                    }
+                    return;
+                }
+
+                // There is content but we couldn't determine its size.  Don't set anything.
+            }
+
             private void SetVerb()
             {
                 EventSourceTrace<string>("Verb: {0}", _requestMessage.Method.Method);
@@ -229,10 +264,7 @@ namespace System.Net.Http
                 if (_requestMessage.Method == HttpMethod.Put)
                 {
                     SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
-                    if (_requestMessage.Content == null)
-                    {
-                        SetCurlOption(CURLoption.CURLOPT_INFILESIZE, 0L);
-                    }
+                    SetContentLength(CURLoption.CURLOPT_INFILESIZE);
                 }
                 else if (_requestMessage.Method == HttpMethod.Head)
                 {
@@ -241,11 +273,7 @@ namespace System.Net.Http
                 else if (_requestMessage.Method == HttpMethod.Post)
                 {
                     SetCurlOption(CURLoption.CURLOPT_POST, 1L);
-                    if (_requestMessage.Content == null)
-                    {
-                        SetCurlOption(CURLoption.CURLOPT_POSTFIELDSIZE, 0L);
-                        SetCurlOption(CURLoption.CURLOPT_COPYPOSTFIELDS, string.Empty);
-                    }
+                    SetContentLength(CURLoption.CURLOPT_POSTFIELDSIZE);
                 }
                 else if (_requestMessage.Method == HttpMethod.Trace)
                 {
@@ -258,6 +286,7 @@ namespace System.Net.Http
                     if (_requestMessage.Content != null)
                     {
                         SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
+                        SetContentLength(CURLoption.CURLOPT_INFILESIZE);
                     }
                 }
             }
@@ -448,56 +477,40 @@ namespace System.Net.Http
 
             internal void SetRequestHeaders()
             {
-                HttpContentHeaders contentHeaders = null;
+                var slist = new SafeCurlSListHandle();
+
+                // Add content request headers
                 if (_requestMessage.Content != null)
                 {
                     SetChunkedModeForSend(_requestMessage);
 
-                    // TODO: Content-Length header isn't getting correctly placed using ToString()
-                    // This is a bug in HttpContentHeaders that needs to be fixed.
-                    if (_requestMessage.Content.Headers.ContentLength.HasValue)
-                    {
-                        long contentLength = _requestMessage.Content.Headers.ContentLength.Value;
-                        _requestMessage.Content.Headers.ContentLength = null;
-                        _requestMessage.Content.Headers.ContentLength = contentLength;
-                    }
-                    contentHeaders = _requestMessage.Content.Headers;
-                }
+                    _requestMessage.Content.Headers.Remove(HttpKnownHeaderNames.ContentLength); // avoid overriding libcurl's handling via INFILESIZE/POSTFIELDSIZE
+                    AddRequestHeaders(_requestMessage.Content.Headers, slist);
 
-                var slist = new SafeCurlSListHandle();
-
-                // Add request and content request headers
-                if (_requestMessage.Headers != null)
-                {
-                    AddRequestHeaders(_requestMessage.Headers, slist);
-                }
-                if (contentHeaders != null)
-                {
-                    AddRequestHeaders(contentHeaders, slist);
-                    if (contentHeaders.ContentType == null)
+                    if (_requestMessage.Content.Headers.ContentType == null)
                     {
-                        if (!Interop.Http.SListAppend(slist, NoContentType))
-                        {
-                            throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                        }
+                        // Remove the Content-Type header libcurl adds by default.
+                        ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoContentType));
                     }
                 }
+
+                // Add request headers
+                AddRequestHeaders(_requestMessage.Headers, slist);
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
                 // it if caller specifically does not want to set the header
                 if (_requestMessage.Headers.TransferEncodingChunked.HasValue &&
                     !_requestMessage.Headers.TransferEncodingChunked.Value)
                 {
-                    if (!Interop.Http.SListAppend(slist, NoTransferEncoding))
-                    {
-                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                    }
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoTransferEncoding));
                 }
 
                 if (!slist.IsInvalid)
                 {
+                    SafeCurlSListHandle prevList = _requestHeaders;
                     _requestHeaders = slist;
                     SetCurlOption(CURLoption.CURLOPT_HTTPHEADER, slist);
+                    prevList?.Dispose();
                 }
                 else
                 {
@@ -599,10 +612,7 @@ namespace System.Net.Http
                     string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
                         header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
                         header.Key + ": " + headerValue;
-                    if (!Interop.Http.SListAppend(handle, headerKeyAndValue))
-                    {
-                        throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
-                    }
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(handle, headerKeyAndValue));
                 }
             }
 
@@ -624,6 +634,12 @@ namespace System.Net.Http
             internal void SetCurlOption(CURLoption option, SafeHandle value)
             {
                 ThrowIfCURLEError(Interop.Http.EasySetOptionPointer(_easyHandle, option, value));
+            }
+
+            private static void ThrowOOMIfFalse(bool appendResult)
+            {
+                if (!appendResult)
+                    throw CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_OUT_OF_MEMORY, isMulti: false));
             }
 
             internal sealed class SendTransferState

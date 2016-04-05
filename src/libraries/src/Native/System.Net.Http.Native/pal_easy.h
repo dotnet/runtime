@@ -12,6 +12,7 @@ enum
 {
     CurlOptionLongBase = 0,
     CurlOptionObjectPointBase = 10000,
+    CurlOptionOffTBase = 30000,
 };
 
 enum PAL_CURLoption : int32_t
@@ -47,6 +48,9 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
     PAL_CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
     PAL_CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+
+    PAL_CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
+    PAL_CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
 };
 
 enum class ReadWriteFunction : int32_t
