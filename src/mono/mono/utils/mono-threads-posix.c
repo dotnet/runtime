@@ -279,7 +279,24 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 void
 mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
 {
-#if defined (HAVE_PTHREAD_SETNAME_NP) && !defined (__MACH__)
+#ifdef __MACH__
+	/*
+	 * We can't set the thread name for other threads, but we can at least make
+	 * it work for threads that try to change their own name.
+	 */
+	if (tid != mono_native_thread_id_get ())
+		return;
+
+	if (!name) {
+		pthread_setname_np ("");
+	} else {
+		char n [63];
+
+		strncpy (n, name, 63);
+		n [62] = '\0';
+		pthread_setname_np (n);
+	}
+#elif defined (HAVE_PTHREAD_SETNAME_NP)
 	if (!name) {
 		pthread_setname_np (tid, "");
 	} else {
