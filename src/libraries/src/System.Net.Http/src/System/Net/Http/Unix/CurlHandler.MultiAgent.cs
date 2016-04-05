@@ -641,12 +641,11 @@ namespace System.Net.Http
                 // The callback is invoked once per header; multi-line headers get merged into a single line.
 
                 size *= nitems;
+                Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER, $"Expected header size <= {Interop.Http.CURL_MAX_HTTP_HEADER}, got {size}");
                 if (size == 0)
                 {
                     return 0;
                 }
-
-                Debug.Assert(size <= Interop.Http.CURL_MAX_HTTP_HEADER);
 
                 EasyRequest easy;
                 if (TryGetEasyRequestFromContext(context, out easy))
@@ -654,15 +653,25 @@ namespace System.Net.Http
                     CurlHandler.EventSourceTrace("Size: {0}", size, easy: easy);
                     try
                     {
-                        HttpResponseMessage response = easy._responseMessage;
-
+                        CurlResponseMessage response = easy._responseMessage;
                         CurlResponseHeaderReader reader = new CurlResponseHeaderReader(buffer, size);
 
+                        // Validate that we haven't received too much header data.
+                        ulong headerBytesReceived = response._headerBytesReceived + size;
+                        if (headerBytesReceived > (ulong)easy._handler.MaxResponseHeadersLength)
+                        {
+                            throw new HttpRequestException(
+                                SR.Format(SR.net_http_response_headers_exceeded_length, easy._handler.MaxResponseHeadersLength));
+                        }
+                        response._headerBytesReceived = (uint)headerBytesReceived;
+
+                        // Parse the header
                         if (reader.ReadStatusLine(response))
                         {
-                            // Clear the header if status line is received again. This signifies that there are multiple response headers (like in redirection).
+                            // Clear the headers when the status line is received. This may happen multiple times if there are multiple response headers (like in redirection).
                             response.Headers.Clear();
                             response.Content.Headers.Clear();
+                            response._headerBytesReceived = (uint)size;
 
                             easy._isRedirect = easy._handler.AutomaticRedirection &&
                                 (response.StatusCode == HttpStatusCode.Moved ||           // 301

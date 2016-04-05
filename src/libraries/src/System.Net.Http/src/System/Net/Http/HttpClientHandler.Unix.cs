@@ -131,6 +131,12 @@ namespace System.Net.Http
             set { throw new PlatformNotSupportedException(); }
         }
 
+        public int MaxResponseHeadersLength
+        {
+            get { return _curlHandler.MaxResponseHeadersLength; }
+            set { _curlHandler.MaxResponseHeadersLength = value; }
+        }
+
         #endregion Properties
 
         #region De/Constructors
