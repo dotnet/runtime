@@ -39,11 +39,18 @@ enum PAL_GssFlags : uint32_t
     PAL_GSS_C_DELEG_POLICY_FLAG = 0x8000
 };
 
+/*
+Issue: #7342
+Disable padded warning which occurs in case of 32-bit builds
+*/
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
 struct PAL_GssBuffer
 {
     uint64_t length;
     uint8_t* data;
 };
+#pragma clang diagnostic pop
 
 /*
 Shims the gss_release_buffer method.
