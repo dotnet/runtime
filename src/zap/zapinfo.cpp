@@ -2607,6 +2607,8 @@ WORD ZapInfo::getRelocTypeHint(void * target)
     if (m_zapper->m_pOpt->m_fNGenLastRetry)
         return (WORD)-1;
     return IMAGE_REL_BASED_THUMB_BRANCH24;
+#elif defined(_TARGET_ARM64_)
+    return IMAGE_REL_ARM64_BRANCH26;
 #else
     // No hints
     return (WORD)-1;

@@ -8,6 +8,7 @@
  */
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class GetTargetTest
 {
@@ -121,16 +122,20 @@ public class IsAliveTest
 
 public class NullHandle
 {
+    public static GetTargetTest getTargetTest;
+    public static SetTargetTest setTargetTest;
+    public static IsAliveTest isAliveTest;
+    
     public bool RunTests(bool trackResurrection)
     {
-        GetTargetTest d1 = new GetTargetTest(trackResurrection);
-        SetTargetTest d2 = new SetTargetTest(trackResurrection);
-        IsAliveTest d3 = new IsAliveTest(trackResurrection);
+        CreateGetTargetTest(trackResurrection);
+        CreateSetTargetTest(trackResurrection);
+        CreateIsAliveTest(trackResurrection);
 
         // make sure Finalizers are called
-        d1 = null;
-        d2 = null;
-        d3 = null;
+        DestroyGetTargetTest();
+        DestroySetTargetTest();
+        DestroyIsAliveTest();
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
@@ -139,7 +144,42 @@ public class NullHandle
 
         return ((GetTargetTest.Passed) && (SetTargetTest.Passed) && (IsAliveTest.Passed));
     }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void CreateGetTargetTest(bool trackResurrection) 
+    {
+        getTargetTest = new GetTargetTest(trackResurrection);
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void CreateSetTargetTest(bool trackResurrection) 
+    {
+        setTargetTest = new SetTargetTest(trackResurrection);
+    }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void CreateIsAliveTest(bool trackResurrection) 
+    {
+        isAliveTest = new IsAliveTest(trackResurrection);
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroyGetTargetTest()
+    {
+        getTargetTest = null;
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroySetTargetTest()
+    {
+        setTargetTest = null;
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroyIsAliveTest()
+    {
+        isAliveTest = null;
+    }
 
     public static int Main()
     {

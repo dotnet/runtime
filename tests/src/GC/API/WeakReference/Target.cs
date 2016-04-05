@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 public class Dummy
 {
@@ -20,22 +21,34 @@ public class Dummy
 
 public class Test
 {
+    public static int[] array;
+    public static Object[] obj;
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void CreateArrays() 
+    {
+        array = new int[50];
+        obj = new Object[25];
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void DestroyArrays() 
+    {
+        array = null;
+        obj = null;
+    }
+    
     public bool GetTargetTest()
     {
-        int[] array = new int[50];
-        Object[] obj = new Object[25];
-
+        CreateArrays();
         WeakReference weakarray = new WeakReference(array); // array has only weak reference
 
         // obj has both strong and weak ref and so should not get collected
 
         WeakReference weakobj = new WeakReference(obj);
         GCHandle objhandle = GCHandle.Alloc(obj, GCHandleType.Normal);
-
-        // ensuring GC.Collect() occurs even with /debug option
-        array = null;
-        obj = null;
-
+        
+        DestroyArrays();
         GC.Collect();
 
         Object target1 = weakarray.Target; // should be null
