@@ -3007,6 +3007,7 @@ COMMON_CNS:
                 break;
 
 
+            case GT_LIST:
             case GT_NOP:
                 costEx = 0;
                 costSz = 0;
@@ -3116,15 +3117,17 @@ COMMON_CNS:
             case GT_OBJ:
                 level  = gtSetEvalOrder(tree->gtOp.gtOp1);
                 ftreg |= tree->gtOp.gtOp1->gtRsvdRegs;
-                costEx = tree->gtOp.gtOp1->gtCostEx + 1;
-                costSz = tree->gtOp.gtOp1->gtCostSz + 1;
+                // We estimate the cost of a GT_OBJ or GT_MKREFANY to be two loads (GT_INDs)
+                costEx = 2*IND_COST_EX;
+                costSz = 2*2;
                 break;
 
             case GT_BOX:
                 level  = gtSetEvalOrder(tree->gtBox.BoxOp());
                 ftreg |= tree->gtBox.BoxOp()->gtRsvdRegs;
-                costEx = tree->gtBox.BoxOp()->gtCostEx;
-                costSz = tree->gtBox.BoxOp()->gtCostSz;
+                // We estimate the cost of a GT_BOX to be two stores (GT_INDs)
+                costEx = 2*IND_COST_EX;
+                costSz = 2*2;
                 break;
 
             case GT_IND:
@@ -5220,6 +5223,7 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned  lnum,
 
     //assert(lnum < lvaCount);
 
+    node->gtFieldSeq = FieldSeqStore::NotAField();
     return node;
 }
 
@@ -5260,17 +5264,9 @@ GenTreeArgList* Compiler::gtNewListNode(GenTreePtr op1, GenTreeArgList* op2)
  *  Create a list out of one value.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr op)
+GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg)
 {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    // With structs passed in multiple args we could have the arg
-    // GT_LIST containing a list of LCL_FLDs
-    assert((op != NULL) && ((!op->IsList()) || (op->IsListOfLclFlds())));
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert((op != NULL) && (op->OperGet() != GT_LIST));
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-    return new (this, GT_LIST) GenTreeArgList(op);
+    return new (this, GT_LIST) GenTreeArgList(arg);
 }
 
 /*****************************************************************************
@@ -5278,21 +5274,9 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr op)
  *  Create a list out of the two values.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr op1, GenTreePtr op2)
+GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
 {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    // With structs passed in multiple args we could have the arg
-    // GT_LIST containing a list of LCL_FLDs
-    assert((op1 != NULL) && ((!op1->IsList()) || (op1->IsListOfLclFlds())));
-    assert((op2 != NULL) && ((!op2->IsList()) || (op2->IsListOfLclFlds())));
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert((op1 != NULL) && (!op1->IsList()));
-    assert((op2 != NULL) && (!op2->IsList()));
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-    GenTreePtr tree;
-
-    return new (this, GT_LIST) GenTreeArgList(op1, gtNewArgList(op2));
+    return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2));
 }
 
 /*****************************************************************************
@@ -7122,7 +7106,8 @@ GenTreePtr GenTree::GetChild(unsigned childNum)
     printf("%c", (flags & GTF_CALL          ) ? 'C' : '-');
     printf("%c", (flags & GTF_EXCEPT        ) ? 'X' : '-');
     printf("%c", (flags & GTF_GLOB_REF      ) ? 'G' : '-');
-    printf("%c", (flags & GTF_ORDER_SIDEEFF ) ? 'O' : '-');
+    printf("%c", (flags & GTF_MORPHED       ) ? '+' :         // First print '+' if GTF_MORPHED is set
+                 (flags & GTF_ORDER_SIDEEFF ) ? 'O' : '-');   // otherwise print 'O' or '-'
     printf("%c", (flags & GTF_COLON_COND    ) ? '?' : '-');
     printf("%c", (flags & GTF_DONT_CSE      ) ? 'N' :         // N is for No cse
                  (flags & GTF_MAKE_CSE      ) ? 'H' : '-');   // H is for Hoist this expr
@@ -8038,17 +8023,27 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
         return;
     }
 
+    bool isLclFld = false;
+
     switch  (tree->gtOper)
     {
         unsigned        varNum;
         LclVarDsc *     varDsc;
+
+    case GT_LCL_FLD:
+    case GT_LCL_FLD_ADDR:
+    case GT_STORE_LCL_FLD:
+        isLclFld = true;
+        __fallthrough;
 
     case GT_PHI_ARG:
     case GT_LCL_VAR:
     case GT_LCL_VAR_ADDR:
     case GT_STORE_LCL_VAR:
         printf(" ");
-        gtDispLclVar(tree->gtLclVarCommon.gtLclNum);
+        varNum = tree->gtLclVarCommon.gtLclNum;
+        varDsc = &lvaTable[varNum];
+        gtDispLclVar(varNum);
         if (tree->gtLclVarCommon.HasSsaName())
         {
             if (tree->gtFlags & GTF_VAR_USEASG)
@@ -8061,8 +8056,29 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
                 printf("%s:%d", (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->gtLclVarCommon.gtSsaNum);
             }
         }
-       
-        varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
+
+        if (isLclFld)
+        {
+            printf("[+%u]", tree->gtLclFld.gtLclOffs);
+            gtDispFieldSeq(tree->gtLclFld.gtFieldSeq);
+        }
+
+        if (varDsc->lvRegister)
+        {
+            printf(" ");
+            varDsc->PrintVarReg();
+        }
+#ifndef LEGACY_BACKEND
+        else if (tree->InReg())
+        {
+#if CPU_LONG_USES_REGPAIR
+            if (isRegPairType(tree->TypeGet()))
+                printf(" %s", compRegPairName(tree->gtRegPair));
+            else
+#endif
+                printf(" %s", compRegVarName(tree->gtRegNum));
+        }
+#endif // !LEGACY_BACKEND
         
         if (varDsc->lvPromoted)
         {
@@ -8090,7 +8106,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
                 }
                 
                 printf("\n");                    
-                printf("                                                           ");
+                printf("                                                  ");
                 printIndent(indentStack);
                 printf("    %-6s V%02u.%s (offs=0x%02x) -> ",
                        varTypeName(fieldVarDsc->TypeGet()),
@@ -8106,7 +8122,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
                     fieldVarDsc->PrintVarReg();
                 }
 
-                if ((fieldVarDsc->lvTracked) &&
+                if (fieldVarDsc->lvTracked &&
                     fgLocalVarLivenessDone &&  // Includes local variable liveness
                     ((tree->gtFlags & GTF_VAR_DEATH) != 0))
                 {
@@ -8114,57 +8130,15 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
                 }
             }
         }
-            
-        goto LCL_COMMON;
-
-    case GT_LCL_FLD:
-    case GT_LCL_FLD_ADDR:
-    case GT_STORE_LCL_FLD:
-        printf(" ");
-        gtDispLclVar(tree->gtLclVarCommon.gtLclNum);
-        if (tree->gtLclVarCommon.HasSsaName())
+        else // a normal not-promoted lclvar
         {
-            if (tree->gtFlags & GTF_VAR_USEASG)
+            if (varDsc->lvTracked &&
+                fgLocalVarLivenessDone &&
+                ((tree->gtFlags & GTF_VAR_DEATH) != 0))
             {
-                assert(tree->gtFlags & GTF_VAR_DEF);
-                printf("ud:%d->%d", tree->gtLclVarCommon.gtSsaNum, GetSsaNumForLocalVarDef(tree));
-            }
-            else
-            {
-                printf("%s:%d", (tree->gtFlags & GTF_VAR_DEF) ? "d" : "u", tree->gtLclVarCommon.gtSsaNum);
+                printf(" (last use)");
             }
         }
-        printf("[+%u]", tree->gtLclFld.gtLclOffs);
-        gtDispFieldSeq(tree->gtLclFld.gtFieldSeq);
-
-    LCL_COMMON:
-
-        varNum = tree->gtLclVarCommon.gtLclNum;
-        varDsc = &lvaTable[varNum];
-
-        if (varDsc->lvRegister)
-        {
-            printf(" ");
-            varDsc->PrintVarReg();
-        }
-#ifndef LEGACY_BACKEND
-        else if (tree->InReg())
-        {
-#if CPU_LONG_USES_REGPAIR
-            if (isRegPairType(tree->TypeGet()))
-                printf(" %s", compRegPairName(tree->gtRegPair));
-            else
-#endif
-                printf(" %s", compRegVarName(tree->gtRegNum));
-        }
-#endif // !LEGACY_BACKEND
-
-        if (fgLocalVarLivenessDone &&
-            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
-        {
-            printf(" (last use)");
-        }
-
         break;
 
     case GT_REG_VAR:
@@ -8183,7 +8157,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
         varNum = tree->gtRegVar.gtLclNum;
         varDsc = &lvaTable[varNum];
 
-        if ((varDsc->lvTracked) &&
+        if (varDsc->lvTracked &&
             fgLocalVarLivenessDone &&
             ((tree->gtFlags & GTF_VAR_DEATH) != 0))
         {
@@ -8663,7 +8637,7 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
                     argx    = lateArgs->Current();
 
                     IndentInfo arcType = (lateArgs->Rest() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(tree, argx, lateArgIndex, bufp, sizeof(buf));
+                    gtGetLateArgMsg(tree, argx, lateArgIndex, -1, bufp, sizeof(buf));
                     gtDispChild(argx, indentStack, arcType, bufp, topOnly);
                 }
             }
@@ -8791,6 +8765,8 @@ void                Compiler::gtGetArgMsg(GenTreePtr        call,
 //    call         - The call for which 'arg' is an argument
 //    argx         - The argument for which a message should be constructed
 //    lateArgIndex - The ordinal number of the arg in the lastArg  list
+//    listCount    - When printing in Linear form this is the count for a multireg GT_LIST 
+//                   or -1 if we are not printing in Linear form
 //    bufp         - A pointer to the buffer into which the message is written
 //    bufLength    - The length of the buffer pointed to by bufp
 //
@@ -8804,6 +8780,7 @@ void                Compiler::gtGetArgMsg(GenTreePtr        call,
 void                Compiler::gtGetLateArgMsg(GenTreePtr        call,
                                               GenTreePtr        argx,
                                               int               lateArgIndex,
+                                              int               listCount,
                                               char*             bufp,
                                               unsigned          bufLength)
 {
@@ -8824,10 +8801,36 @@ void                Compiler::gtGetLateArgMsg(GenTreePtr        call,
     else
 #endif
     {
-        if  (gtArgIsThisPtr(curArgTabEntry))
+        if (gtArgIsThisPtr(curArgTabEntry))
+        {
             sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
-        else 
-            sprintf_s(bufp, bufLength, "arg%d in %s%c", curArgTabEntry->argNum, compRegVarName(argReg), 0);
+        }
+        else
+        {
+#ifdef _TARGET_ARM64_
+            if (curArgTabEntry->numRegs == 2)
+            {
+                regNumber argReg2 = REG_NEXT(argReg);
+                if (listCount == -1)
+                {
+                    sprintf_s(bufp, bufLength, "arg%d %s,%s%c", curArgTabEntry->argNum, compRegVarName(argReg), compRegVarName(argReg2), 0);
+                }
+                else if (listCount == 1)
+                {
+                    sprintf_s(bufp, bufLength, "arg%d hi %s%c", curArgTabEntry->argNum, compRegVarName(argReg2), 0);
+                }
+                else 
+                {
+                    assert(listCount == 0);
+                    sprintf_s(bufp, bufLength, "arg%d lo %s%c", curArgTabEntry->argNum, compRegVarName(argReg), 0);
+                }
+            }
+            else
+#endif
+            {
+                sprintf_s(bufp, bufLength, "arg%d in %s%c", curArgTabEntry->argNum, compRegVarName(argReg), 0);
+            }
+        }
     }
 }
 
@@ -9082,6 +9085,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                         // print the nodes of the nested list and continue to the next argument.
                         if (listElem->gtOper == GT_LIST)
                         {
+                            int listCount = 0;
                             GenTreePtr nextListNested = nullptr;
                             for (GenTreePtr listNested = listElem; listNested != nullptr; listNested = nextListNested)
                             {
@@ -9106,7 +9110,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                                 else
                                 {
                                     assert(child == tree->gtCall.gtCallLateArgs);
-                                    gtGetLateArgMsg(tree, listNested, listElemNum, bufp, BufLength);
+                                    gtGetLateArgMsg(tree, listNested, listElemNum, listCount++, bufp, BufLength);
                                 }
                                 nextLinearNode = gtDispLinearTree(curStmt, nextLinearNode, listElemNested, indentStack, bufp);
                                 indentStack->Pop();
@@ -9130,7 +9134,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
                         else
                         {
                             assert(child == tree->gtCall.gtCallLateArgs);
-                            gtGetLateArgMsg(tree, listElem, listElemNum, bufp, BufLength);
+                            gtGetLateArgMsg(tree, listElem, listElemNum, -1, bufp, BufLength);
                         }
                     }
                     else
