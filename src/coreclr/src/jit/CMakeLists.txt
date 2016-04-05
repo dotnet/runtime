@@ -11,6 +11,10 @@ if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-DFEATURE_AVX_SUPPORT) 
 endif (CLR_CMAKE_PLATFORM_ARCH_AMD64)
 
+if (ARM_SOFTFP)
+  add_definitions(-DARM_SOFTFP)
+endif (ARM_SOFTFP)
+
 set( JIT_SOURCES
   alloc.cpp
   assertionprop.cpp
