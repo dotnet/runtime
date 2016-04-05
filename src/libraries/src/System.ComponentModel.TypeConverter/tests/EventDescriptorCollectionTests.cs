@@ -14,8 +14,8 @@ namespace System.ComponentModel.Tests
         public void EmptyCollectionShouldBeCached()
         {
             Assert.Same(EventDescriptorCollection.Empty, EventDescriptorCollection.Empty);
-
         }
+
         [Fact]
         public void CreateEmptyCollectionWithNull()
         {
