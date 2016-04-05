@@ -27,7 +27,7 @@ usage()
     echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<ConfigurationGroup>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
-    echo "                                      default: <repo_root>/bin/tests/<OS>.AnyCPU.<ConfigurationGroup>"
+    echo "                                      default: <repo_root>/bin/tests"
     echo "    --corefx-native-bins <location>   Location of the FreeBSD, Linux, NetBSD or OSX native corefx binaries"
     echo "                                      default: <repo_root>/bin/<OS>.x64.<ConfigurationGroup>"
     echo
@@ -129,18 +129,30 @@ copy_test_overlay()
 }
 
 
-# $1 is the name of the test project
-runtest()
+# $1 is the name of the platform folder (e.g Unix.AnyCPU.Debug)
+run_all_tests()
 {
-  testProject=$1
+  for testFolder in "$CoreFxTests/$1/"*
+  do
+     run_test $testFolder &
+     pids="$pids $!"
+     numberOfProcesses=$(($numberOfProcesses+1))
+     if [ "$numberOfProcesses" -ge $maxProcesses ]; then
+       wait_on_pids "$pids"
+       numberOfProcesses=0
+       pids=""
+     fi
+  done
 
-  # Check here to see whether we should run this project
+  # Wait on the last processes
+  wait_on_pids "$pids"
+  pids=""
+}
 
-  if grep "UnsupportedPlatforms.*$OS.*" $1 > /dev/null
-  then
-    echo "Test project file $1 indicates this test is not supported on $OS, skipping"
-    exit 0
-  fi
+# $1 is the path to the test folder
+run_test()
+{
+  testProject=`basename $1`
 
   # Check for project restrictions
 
@@ -149,30 +161,7 @@ runtest()
     exit 0
   fi
 
-  # Grab the directory name that would correspond to this test
-
-  lowerOS="$(echo $OS | awk '{print tolower($0)}')"
-  fileName="${file##*/}"
-  fileNameWithoutExtension="${fileName%.*}"
-  testDllName="$fileNameWithoutExtension.dll"
-  xunitOSCategory="non$lowerOS"
-  xunitOSCategory+="tests"
-
-  dirName="$CoreFxTests/$fileNameWithoutExtension/dnxcore50"
-
-  if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
-  then
-    dirName="$AnyOsTestDir/$fileNameWithoutExtension/dnxcore50"
-    if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
-    then
-      dirName="$UnixTestDir/$fileNameWithoutExtension/dnxcore50"
-      if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
-      then
-        echo "error: Did not find corresponding test dll for $testProject"
-        exit 1
-      fi
-    fi
-  fi
+  dirName="$1/dnxcore50"
 
   copy_test_overlay $dirName
 
@@ -188,12 +177,15 @@ runtest()
   chmod +x ./corerun
 
   # Invoke xunit
+  lowerOS="$(echo $OS | awk '{print tolower($0)}')"
+  xunitOSCategory="non$lowerOS"
+  xunitOSCategory+="tests"
 
   echo
   echo "Running tests in $dirName"
-  echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory" -notrait Benchmark=true
+  echo "./corerun xunit.console.netcore.exe $testProject.dll -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true"
   echo
-  ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true
+  ./corerun xunit.console.netcore.exe "$testProject.dll" -xml testResults.xml -notrait category=failing $OuterLoop -notrait category=$xunitOSCategory -notrait Benchmark=true
   exitCode=$?
 
   if [ $exitCode -ne 0 ]
@@ -310,9 +302,7 @@ do
     shift
 done
 
-OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$ConfigurationGroup/TestOverlay/"
-AnyOsTestDir="$ProjectRoot/bin/tests/AnyOS.AnyCPU.$ConfigurationGroup"
-UnixTestDir="$ProjectRoot/bin/tests/Unix.AnyCPU.$ConfigurationGroup"
+OverlayDir="$ProjectRoot/bin/tests/TestOverlay/"
 
 # Compute paths to the binaries if they haven't already been computed
 
@@ -328,7 +318,7 @@ fi
 
 if [ "$CoreFxTests" == "" ]
 then
-    CoreFxTests="$ProjectRoot/bin/tests/$OS.AnyCPU.$ConfigurationGroup"
+    CoreFxTests="$ProjectRoot/bin/tests"
 fi
 
 if [ "$CoreFxNativeBins" == "" ]
@@ -355,6 +345,13 @@ then
     CoreClrObjs="$ProjectRoot/bin/obj/$OS.x64.$ConfigurationGroup"
 fi
 
+# Until netci.groovy is updated, if the CoreFxTests folder that was passed includes a specific
+# OS flavor, get the parent directory.
+if [[ `basename $CoreFxTests` =~ ^(Linux|OSX|FreeBSD|NetBSD) ]]
+then
+    CoreFxTests=`dirname $CoreFxTests`
+fi
+
 export CORECLR_SERVER_GC="$serverGC"
 export PAL_OUTPUTDEBUGSTRING="1"
 
@@ -377,22 +374,9 @@ else
   maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
 fi
 
-TestProjects=($(find . -regex ".*/src/.*/tests/.*\.Tests\.csproj"))
-for file in ${TestProjects[@]}
-do
-  runtest $file &
-  pids="$pids $!"
-  numberOfProcesses=$(($numberOfProcesses+1))
-  if [ "$numberOfProcesses" -ge $maxProcesses ]; then
-    wait_on_pids "$pids"
-    numberOfProcesses=0
-    pids=""
-  fi
-done
-
-# Wait on the last processes
-wait_on_pids "$pids"
-
+run_all_tests "AnyOS.AnyCPU.$ConfigurationGroup"
+run_all_tests "Unix.AnyCPU.$ConfigurationGroup"
+run_all_tests "$OS.AnyCPU.$ConfigurationGroup"
 
 if [ "$CoreClrCoverage" == "ON" ]
 then

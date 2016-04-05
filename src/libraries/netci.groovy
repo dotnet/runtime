@@ -306,7 +306,7 @@ branchList.each { branchName ->
                     sudo ./run-test.sh \\
                         --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
-                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
+                        --corefx-tests \${WORKSPACE}/bin/tests/ \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --outerloop
@@ -571,7 +571,7 @@ branchList.each { branchName ->
                     ./run-test.sh \\
                         --configurationGroup ${configurationGroup} \\
                         --os ${osGroup} \\
-                        --corefx-tests \${WORKSPACE}/bin/tests/${osGroup}.AnyCPU.${configurationGroup} \\
+                        --corefx-tests \${WORKSPACE}/bin/tests/ \\
                         --coreclr-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         --mscorlib-bins \${WORKSPACE}/bin/Product/${osGroup}.x64.Release/ \\
                         ${serverGCString}
