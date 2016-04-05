@@ -22,7 +22,7 @@ namespace
 void add_tpa_asset(
     const pal::string_t& asset_name,
     const pal::string_t& asset_path,
-    std::set<pal::string_t>* items,
+    std::unordered_set<pal::string_t>* items,
     pal::string_t* output)
 {
     if (items->count(asset_name))
@@ -48,7 +48,7 @@ void add_tpa_asset(
 void add_unique_path(
     deps_entry_t::asset_types asset_type,
     const pal::string_t& path,
-    std::set<pal::string_t>* existing,
+    std::unordered_set<pal::string_t>* existing,
     pal::string_t* output)
 {
     // Resolve sym links.
@@ -377,7 +377,7 @@ void deps_resolver_t::resolve_tpa_list(
         get_dir_assemblies(m_fx_dir, _X("fx"), &m_fx_assemblies);
     }
 
-    std::set<pal::string_t> items;
+    std::unordered_set<pal::string_t> items;
 
     auto process_entry = [&](const pal::string_t& deps_dir, deps_json_t* deps, const dir_assemblies_t& dir_assemblies, const deps_entry_t& entry)
     {
@@ -474,7 +474,7 @@ void deps_resolver_t::resolve_probe_dirs(
         return get_directory(str);
     };
     std::function<pal::string_t(const pal::string_t&)>& action = is_resources ? resources : native;
-    std::set<pal::string_t> items;
+    std::unordered_set<pal::string_t> items;
 
     std::vector<deps_entry_t> empty(0);
     const auto& entries = m_deps->get_entries(asset_type);
@@ -482,15 +482,34 @@ void deps_resolver_t::resolve_probe_dirs(
 
     pal::string_t candidate;
 
+    bool track_api_sets = true;
     auto add_package_cache_entry = [&](const deps_entry_t& entry)
     {
         if (probe_entry_in_configs(entry, &candidate))
         {
-            add_unique_path(asset_type, action(candidate), &items, output);
+            // For standalone apps, on win7, coreclr needs ApiSets which has to be in the DLL search path.
+            const pal::string_t result_dir = action(candidate);
+
+            if (track_api_sets && pal::need_api_sets() &&
+                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
+            {
+                // For standalone and portable apps, get the ApiSets DLL directory,
+                // as they could come from servicing or other probe paths.
+                // Note: in portable apps, the API set would come from FX deps
+                // which is actually a standalone deps (rid specific API set).
+                // If the portable app relied on its version of API sets, then
+                // the rid selection fallback would have already been performed
+                // by the host (deps_format.cpp)
+                m_api_set_paths.insert(result_dir);
+            }
+
+            add_unique_path(asset_type, result_dir, &items, output);
         }
     };
     std::for_each(entries.begin(), entries.end(), add_package_cache_entry);
+    track_api_sets = m_api_set_paths.empty();
     std::for_each(fx_entries.begin(), fx_entries.end(), add_package_cache_entry);
+    track_api_sets = m_api_set_paths.empty();
 
     // For portable rid specific assets, the app relative directory must be used.
     if (m_portable)
@@ -501,15 +520,34 @@ void deps_resolver_t::resolve_probe_dirs(
             {
                 add_unique_path(asset_type, action(candidate), &items, output);
             }
+
+            // App called out an explicit API set dependency.
+            if (track_api_sets && entry.is_rid_specific && pal::need_api_sets() &&
+                ends_with(entry.library_name, _X("Microsoft.NETCore.Windows.ApiSets"), false))
+            {
+                m_api_set_paths.insert(action(candidate));
+            }
         });
     }
+
+    track_api_sets = m_api_set_paths.empty();
 
     // App local path
     add_unique_path(asset_type, m_app_dir, &items, output);
 
+    // If API sets is not found (i.e., empty) in the probe paths above:
+    // 1. For standalone app, do nothing as all are sxs.
+    // 2. For portable app, add FX dir.
+
     // FX path if present
     if (!m_fx_dir.empty())
     {
+        // For portable apps, if we didn't find api sets in probe paths
+        // add the FX directory.
+        if (track_api_sets && pal::need_api_sets())
+        {
+            m_api_set_paths.insert(m_fx_dir);
+        }
         add_unique_path(asset_type, m_fx_dir, &items, output);
     }
 
