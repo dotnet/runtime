@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.CSharp": "4.0.1-rc3-24004-00",
+    "Microsoft.CSharp": "4.0.1-rc3-24005-00",
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0029",
     "Microsoft.NETCore.Platforms": "1.0.1-rc3-24005-00",
     "Newtonsoft.Json": "8.0.1",
