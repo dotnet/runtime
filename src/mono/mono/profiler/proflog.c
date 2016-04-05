@@ -4067,6 +4067,8 @@ helper_thread (void* arg)
 	MonoThread *thread = NULL;
 
 	mono_threads_attach_tools_thread ();
+	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler helper");
+
 	//fprintf (stderr, "Server listening\n");
 	command_socket = -1;
 	while (1) {
@@ -4249,6 +4251,7 @@ writer_thread (void *arg)
 	MonoProfiler *prof = (MonoProfiler *)arg;
 
 	mono_threads_attach_tools_thread ();
+	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler writer");
 
 	dump_header (prof);
 

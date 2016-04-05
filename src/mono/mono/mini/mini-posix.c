@@ -668,6 +668,7 @@ static mono_native_thread_return_t
 sampling_thread_func (void *data)
 {
 	mono_threads_attach_tools_thread ();
+	mono_thread_info_set_name (mono_native_thread_id_get (), "Profiler sampler");
 
 	gint64 rate = 1000000000 / mono_profiler_get_sampling_rate ();
 
