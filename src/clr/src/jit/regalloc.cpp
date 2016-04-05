@@ -595,7 +595,7 @@ void                Compiler::raSetupArgMasks(RegState *regState)
             continue;
 
         // only process args that apply to the current register file
-        if ((argDsc->IsFloatRegType() && !info.compIsVarArgs) != regState->rsIsFloat)
+        if ((argDsc->IsFloatRegType() && !info.compIsVarArgs && !opts.compUseSoftFP) != regState->rsIsFloat)
         {
             continue;
         }
@@ -691,7 +691,7 @@ regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *ar
 #ifdef _TARGET_ARM_
     if (argDsc->lvType == TYP_DOUBLE)
     {
-        if (info.compIsVarArgs)
+        if (info.compIsVarArgs || opts.compUseSoftFP)
         {
             assert((inArgReg == REG_R0) || (inArgReg == REG_R2));
             assert(!regState->rsIsFloat);

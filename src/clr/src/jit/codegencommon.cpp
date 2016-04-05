@@ -4150,7 +4150,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
                                  (varDsc->lvType == TYP_STRUCT) ||
                                  (varDsc->lvAddrExposed && compiler->info.compIsVarArgs));
 #else // LEGACY_BACKEND
-                    noway_assert(varDsc->lvType == TYP_STRUCT || (varDsc->lvAddrExposed && compiler->info.compIsVarArgs));
+                    noway_assert(varDsc->lvType == TYP_STRUCT || (varDsc->lvAddrExposed && (compiler->info.compIsVarArgs || compiler->opts.compUseSoftFP)));
 #endif // LEGACY_BACKEND
 #endif // !_TARGET_X86_
                 }            
@@ -7449,7 +7449,7 @@ void                CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORIN
     emitAttr attr = EA_UNKNOWN;
 
     if (compiler->info.compRetType == TYP_VOID ||
-        (!compiler->info.compIsVarArgs && (varTypeIsFloating(compiler->info.compRetType) || compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))))
+        (!compiler->opts.compUseSoftFP && !compiler->info.compIsVarArgs && (varTypeIsFloating(compiler->info.compRetType) || compiler->IsHfa(compiler->info.compMethodInfo->args.retTypeClass))))
     {
         r0Trashed = false;
     }
