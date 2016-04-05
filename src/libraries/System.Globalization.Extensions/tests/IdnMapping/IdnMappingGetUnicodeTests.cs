@@ -54,7 +54,7 @@ namespace System.Globalization.Tests
                 }
                 Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index));
             }
-            Assert.Throws(exceptionType, () => idnMapping.GetAscii(ascii, index, count));
+            Assert.Throws(exceptionType, () => idnMapping.GetUnicode(ascii, index, count));
         }
     }
 }
