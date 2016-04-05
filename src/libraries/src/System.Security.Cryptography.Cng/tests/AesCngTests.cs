@@ -74,11 +74,11 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
+        [ActiveIssue(7465)]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyMachineKey()
         {
-
             SymmetricCngTestHelpers.VerifyMachineKey(
                 s_cngAlgorithm,
                 8 * BlockSizeBytes,
