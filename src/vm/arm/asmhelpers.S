@@ -1353,8 +1353,3 @@ DelayLoad_Helper\suffix:
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 
 #endif // FEATURE_READYTORUN
-
-LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
-       // TODO: Implement
-       bx lr
-LEAF_END StartUnwindingNativeFrames, _TEXT
