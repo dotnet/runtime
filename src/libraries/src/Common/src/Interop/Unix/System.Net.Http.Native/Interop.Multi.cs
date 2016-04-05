@@ -62,6 +62,7 @@ internal static partial class Interop
         internal enum CURLMoption : int
         {
             CURLMOPT_PIPELINING = 3,
+            CURLMOPT_MAX_HOST_CONNECTIONS = 7,
         }
 
         internal enum CurlPipe : int
