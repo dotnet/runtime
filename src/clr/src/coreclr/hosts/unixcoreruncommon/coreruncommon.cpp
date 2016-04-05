@@ -7,6 +7,7 @@
 //
 
 #include <cstdlib>
+#include <cstring>
 #include <assert.h>
 #include <dirent.h>
 #include <dlfcn.h>
@@ -338,6 +339,10 @@ int ExecuteManagedAssembly(
             {
                 useConcurrentGc = "1";
             }
+
+            // CoreCLR expects strings "true" and "false" instead of "1" and "0".
+            useServerGc = std::strcmp(useServerGc, "1") == 0 ? "true" : "false";
+            useConcurrentGc = std::strcmp(useConcurrentGc, "1") == 0 ? "true" : "false";
             
             // Allowed property names:
             // APPBASE
@@ -361,8 +366,8 @@ int ExecuteManagedAssembly(
                 "APP_NI_PATHS",
                 "NATIVE_DLL_SEARCH_DIRECTORIES",
                 "AppDomainCompatSwitch",
-                "SERVER_GC",
-                "CONCURRENT_GC"
+                "System.GC.Server",
+                "System.GC.Concurrent"
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -375,9 +380,9 @@ int ExecuteManagedAssembly(
                 nativeDllSearchDirs.c_str(),
                 // AppDomainCompatSwitch
                 "UseLatestBehaviorWhenTFMNotSpecified",
-                // SERVER_GC
+                // System.GC.Server
                 useServerGc,
-                // CONCURRENT_GC
+                // System.GC.Concurrent
                 useConcurrentGc
             };
 
