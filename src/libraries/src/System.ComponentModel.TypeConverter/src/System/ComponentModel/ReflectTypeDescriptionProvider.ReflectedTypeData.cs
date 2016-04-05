@@ -150,17 +150,10 @@ namespace System.ComponentModel
                             }
                         }
 
-#if FEATURE_ATTRIBUTE_TYPEID
-                        if (addAttr && !attrDictionary.Contains(attrArray[idx].TypeId))
+                        if (addAttr && !attrDictionary.Contains(attrArray[idx].GetTypeId()))
                         {
-                            attrDictionary[attrArray[idx].TypeId] = attrArray[idx];
+                            attrDictionary[attrArray[idx].GetTypeId()] = attrArray[idx];
                         }
-#else
-                        if (addAttr && !attrDictionary.Contains(attrArray[idx].GetType()))
-                        {
-                            attrDictionary[attrArray[idx].GetType()] = attrArray[idx];
-                        }
-#endif
                     }
 
                     attrArray = new Attribute[attrDictionary.Count];

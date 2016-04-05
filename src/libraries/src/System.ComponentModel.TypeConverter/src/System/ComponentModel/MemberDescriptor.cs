@@ -414,11 +414,7 @@ namespace System.ComponentModel
 
                 foreach (Attribute attr in list)
                 {
-#if FEATURE_ATTRIBUTE_TYPEID
-                    hash[attr.TypeId] = attr;
-#else
-                    hash[attr.GetType()] = attr;
-#endif
+                    hash[attr.GetTypeId()] = attr;
                 }
 
                 Attribute[] newAttributes = new Attribute[hash.Values.Count];
