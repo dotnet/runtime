@@ -25,6 +25,11 @@
     <BuildTests Condition="'$(BuildTests)'==''">true</BuildTests>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
+
   <ItemGroup>
     <Project Include="src\dirs.proj">
       <!-- For the root traversal default filter the OSGroup to the OSEnvironment which is the OS we are running on -->
