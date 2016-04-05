@@ -3150,7 +3150,9 @@ dump_threads (ProfContext *ctx)
 	ThreadContext *thread;
 	fprintf (outfile, "\nThread summary\n");
 	for (thread = ctx->threads; thread; thread = thread->next) {
-		fprintf (outfile, "\tThread: %p, name: \"%s\"\n", (void*)thread->thread_id, thread->name? thread->name: "");
+		if (thread->thread_id) {
+			fprintf (outfile, "\tThread: %p, name: \"%s\"\n", (void*)thread->thread_id, thread->name? thread->name: "");
+		}
 	}
 }
 
