@@ -1676,12 +1676,14 @@ UNATIVE_OFFSET      emitter::emitInsSizeSV(size_t code, int var, int dsp)
 
             if  (EBPbased)
             {
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && !defined(PLATFORM_UNIX)
                 // If localloc is not used, then ebp chaining is done and hence
                 // offset of locals will be at negative offsets, Otherwise offsets
                 // will be positive.  In future, when RBP gets positioned in the
                 // middle of the frame so as to optimize instruction encoding size,
                 // the below asserts needs to be modified appropriately.
+                // However, for Unix platforms, we always do frame pointer chaining,
+                // so offsets from the frame pointer will always be negative.
                 if (emitComp->compLocallocUsed || emitComp->opts.compDbgEnC)
                 {
                     noway_assert((int)offs >= 0);
