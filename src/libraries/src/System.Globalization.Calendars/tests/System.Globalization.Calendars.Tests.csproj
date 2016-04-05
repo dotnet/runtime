@@ -10,10 +10,10 @@
     <RootNamespace>System.Globalization.Calendars.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CalendarHelpers.cs" />
     <Compile Include="GregorianCalendar\GregorianCalendarAddMonths.cs" />
@@ -116,6 +116,18 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
+    <DefineConstants>$(DefineConstants);net46</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Threading.Tasks" /> 
+    <TargetingPackReference Include="System.Core" /> 
+    <TargetingPackReference Include="System.Runtime" />
+  </ItemGroup>  
+
   <ItemGroup>
     <!-- Compile tests against the contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Globalization.Calendars.csproj">
@@ -126,4 +138,8 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
 </Project>

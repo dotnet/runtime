@@ -14,6 +14,11 @@
   "frameworks": {
     "dnxcore50": {
       "imports": "portable-net45+win8"
-    }
+    },
+    "net46": {
+      "dependencies": {
+        "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.1"
+      }
+    }    
   }
 }
