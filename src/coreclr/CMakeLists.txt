@@ -303,7 +303,7 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM 
           COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
+          COMMAND ${OBJCOPY} --strip-debug ${strip_source_file}
           COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
