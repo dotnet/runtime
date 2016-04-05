@@ -107,6 +107,20 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         // IMAGE_REL_BASED_THUMB_BRANCH24 does not need base reloc entry
         return;
 #endif
+#if defined(_TARGET_ARM64_)
+    case IMAGE_REL_ARM64_BRANCH26:
+        {
+            TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
+
+            INT64 relOffset = (INT64)(pActualTarget - (pSite + sizeof(INT64)));
+            if (!FitsInRel28(relOffset))
+            {
+                ThrowHR(COR_E_OVERFLOW);
+            }
+            PutArm64Rel28((UINT32 *)pLocation,(INT32)relOffset);
+        }
+        return;
+#endif
 
     default:
         _ASSERTE(!"Unknown relocation type");
