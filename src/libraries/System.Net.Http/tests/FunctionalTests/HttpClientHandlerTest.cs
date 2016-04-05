@@ -1036,30 +1036,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }        
 
-        private sealed class UseSpecifiedUriWebProxy : IWebProxy
-        {
-            private readonly Uri _uri;
-            private readonly bool _bypass;
-
-            public UseSpecifiedUriWebProxy(Uri uri, ICredentials credentials = null, bool bypass = false)
-            {
-                _uri = uri;
-                _bypass = bypass;
-                Credentials = credentials;
-            }
-
-            public ICredentials Credentials { get; set; }
-            public Uri GetProxy(Uri destination) => _uri;
-            public bool IsBypassed(Uri host) => _bypass;
-        }
-
-        private sealed class PlatformNotSupportedWebProxy : IWebProxy
-        {
-            public ICredentials Credentials { get; set; }
-            public Uri GetProxy(Uri destination) { throw new PlatformNotSupportedException(); }
-            public bool IsBypassed(Uri host) { throw new PlatformNotSupportedException(); }
-        }
-
         private static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };

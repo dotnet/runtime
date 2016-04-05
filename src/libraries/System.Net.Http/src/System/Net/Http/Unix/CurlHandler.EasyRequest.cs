@@ -332,8 +332,14 @@ namespace System.Net.Http
                 if (_handler.Proxy == null)
                 {
                     // UseProxy was true, but Proxy was null.  Let libcurl do its default handling, 
-                    // which includes checking the http_proxy environment variable.
+                    // which includes checking the http_proxy environment variable.  
                     EventSourceTrace("UseProxy true, Proxy null, using default proxy");
+
+                    // Since that proxy set in an environment variable might require a username and password,
+                    // use the default proxy credentials if there are any.  Currently only NetworkCredentials 
+                    // are used, as we can't query by the proxy Uri, since we don't know it.
+                    SetProxyCredentials(_handler.DefaultProxyCredentials as NetworkCredential);
+
                     return;
                 }
 
@@ -372,12 +378,17 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 EventSourceTrace("Proxy: {0}", proxyUri);
 
-                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
-                NetworkCredential credentials = credentialScheme.Key;
+                KeyValuePair<NetworkCredential, CURLAUTH> credentialScheme = GetCredentials(
+                    proxyUri, _handler.Proxy.Credentials, AuthTypesPermittedByCredentialKind(_handler.Proxy.Credentials));
+                SetProxyCredentials(credentialScheme.Key);
+            }
+
+            private void SetProxyCredentials(NetworkCredential credentials)
+            {
                 if (credentials == CredentialCache.DefaultCredentials)
                 {
                     // No "default credentials" on Unix; nop just like UseDefaultCredentials.
-                    EventSourceTrace("Default proxy credentials. Skipping.");
+                    EventSourceTrace("DefaultCredentials set for proxy. Skipping.");
                 }
                 else if (credentials != null)
                 {
