@@ -1320,7 +1320,7 @@ public:
 
     static
     inline bool RequiresNonNullOp2(genTreeOps oper);
-    bool IsListOfLclFlds();
+    bool IsListForMultiRegArg();
 #endif // DEBUG
 
     inline bool IsZero();
@@ -2302,16 +2302,21 @@ struct GenTreeArgList: public GenTreeOp
     GenTreeArgList() : GenTreeOp() {}
 #endif
 
-    GenTreeArgList(GenTreePtr arg ) : 
-        GenTreeOp(GT_LIST, TYP_VOID, arg, NULL) 
-        {}
+    GenTreeArgList(GenTreePtr arg) :
+        GenTreeArgList(arg, nullptr) {}
       
     GenTreeArgList(GenTreePtr arg, GenTreeArgList* rest) : 
         GenTreeOp(GT_LIST, TYP_VOID, arg, rest) 
     {
-        assert (arg != NULL);
+        // With structs passed in multiple args we could have an arg
+        // GT_LIST containing a list of LCL_FLDs, see IsListForMultiRegArg()
+        //
+        assert((arg != nullptr) && ((!arg->IsList()) || (arg->IsListForMultiRegArg())));
         gtFlags |=  arg->gtFlags & GTF_ALL_EFFECT;
-        if (rest != NULL) gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
+        if (rest != NULL)
+        {
+            gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
+        }
     }
 };
 
@@ -3680,18 +3685,43 @@ inline GenTreePtr GenTree::MoveNext()
 }
 
 #ifdef DEBUG
-inline bool GenTree::IsListOfLclFlds()
-
+inline bool GenTree::IsListForMultiRegArg()
 {
     if (!IsList())
     {
         return false;
     }
 
+#if FEATURE_MULTIREG_ARGS
+    // We allow a GT_LIST of some nodes as an argument 
     GenTree* gtListPtr = this;
-    while (gtListPtr->Current() != nullptr)
+    while (gtListPtr != nullptr) 
     {
-        if (gtListPtr->Current()->OperGet() != GT_LCL_FLD)
+        bool allowed = false;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
+        if (gtListPtr->Current() == nullptr)
+            break;
+
+        // Only a list of GT_LCL_FLDs is allowed
+        if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
+        {
+            allowed = true;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef _TARGET_ARM64_
+        // A list of GT_LCL_VARs is allowed
+        if (gtListPtr->Current()->OperGet() == GT_LCL_VAR)
+        {
+            allowed = true;
+        }
+        // A list of GT_LCL_FLDs is allowed
+        else if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
+        {
+            allowed = true;
+        }
+#endif
+        if (!allowed)
         {
             return false;
         }
@@ -3700,6 +3730,10 @@ inline bool GenTree::IsListOfLclFlds()
     }
 
     return true;
+#else // FEATURE_MULTIREG_ARGS
+    // Not allowed to have a GT_LIST here unless we have FEATURE_MULTIREG_ARGS
+    return false;
+#endif
 }
 #endif // DEBUG
 
