@@ -592,7 +592,7 @@ worker_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 	g_assert (thread);
 
-	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"), FALSE);
+	mono_thread_set_name_internal (thread, mono_string_new (mono_get_root_domain (), "Threadpool worker"), FALSE);
 
 	mono_coop_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_add (threadpool->working_threads, thread);
