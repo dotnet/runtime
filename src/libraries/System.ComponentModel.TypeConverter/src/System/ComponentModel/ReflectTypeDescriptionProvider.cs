@@ -1068,12 +1068,10 @@ namespace System.ComponentModel
                             continue;
                         }
 
-#if FEATURE_REFLECTEVENTDESCRIPTOR
                         if (eventInfo.AddMethod != null && eventInfo.RemoveMethod != null)
                         {
                             events[eventCount++] = new ReflectEventDescriptor(type, eventInfo);
                         }
-#endif
                     }
 
                     if (eventCount != events.Length)

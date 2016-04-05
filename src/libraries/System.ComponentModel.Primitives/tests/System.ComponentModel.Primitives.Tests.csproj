@@ -19,6 +19,7 @@
     <Compile Include="CategoryAttributeTests.cs" />
     <Compile Include="ComponentModelPrimitivesBasicTests.cs" />
     <Compile Include="DescriptionAttributeTests.cs" />
+    <Compile Include="DesignOnlyAttributeTests.cs" />
     <Compile Include="DisplayNameAttributeTests.cs" />
     <Compile Include="ImmutableObjectAttributeTests.cs" />
     <Compile Include="InitializationEventAttributeTests.cs" />

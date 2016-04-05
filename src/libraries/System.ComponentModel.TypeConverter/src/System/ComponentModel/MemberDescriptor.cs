@@ -254,6 +254,20 @@ namespace System.ComponentModel
 
         /// <devdoc>
         ///    <para>
+        ///       Determines whether this member should be set only at
+        ///       design time as specified in the <see cref='System.ComponentModel.DesignOnlyAttribute'/>.
+        ///    </para>
+        /// </devdoc>
+        public virtual bool DesignTimeOnly
+        {
+            get
+            {
+                return (DesignOnlyAttribute.Yes.Equals(Attributes[typeof(DesignOnlyAttribute)]));
+            }
+        }
+
+        /// <devdoc>
+        ///    <para>
         ///       Gets the name that can be displayed in a window like a
         ///       properties window.
         ///    </para>

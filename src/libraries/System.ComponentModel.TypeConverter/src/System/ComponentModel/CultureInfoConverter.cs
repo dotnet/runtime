@@ -14,6 +14,12 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Security.Permissions;
 
+// This type is excluded from the project because its purpose is to convert English culture display names to CultureInfo
+// objects and vice versa (e.g. new CultureInfo("ru") <--> "Russian"). To accomplish this it relies on being able to
+// enumerate the execution environment's supported cultures. That's impossible in corefx because the framework relies in
+// turn on the operating system for such information, and some platforms, e.g. Linux and Windows 10, do not provide it.
+// See corefx issue #1669 for more context.
+
 namespace System.ComponentModel
 {
     /// <devdoc>

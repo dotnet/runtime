@@ -30,6 +30,23 @@ namespace System.ComponentModel
         }
 
         /// <devdoc>
+        ///    <para>
+        ///        Gets a value indicating whether this converter can
+        ///        convert an object to the given destination type using the context.
+        ///    </para>
+        /// </devdoc>
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+#if FEATURE_INSTANCEDESCRIPTOR
+            if (destinationType == typeof(InstanceDescriptor))
+            {
+                return true;
+            }
+#endif
+            return base.CanConvertTo(context, destinationType);
+        }
+
+        /// <devdoc>
         /// <para>Converts the given value object to a <see cref='System.DateTime'/>
         /// object.</para>
         /// </devdoc>
