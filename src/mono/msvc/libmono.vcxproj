@@ -104,6 +104,8 @@
     <ClInclude Include="..\mono\mini\seq-points.h" />
     <ClInclude Include="..\mono\mini\version.h" />
     <ClInclude Include="..\mono\mini\optflags-def.h" />
+    <ClInclude Include="..\mono\mini\cfgdump.h" />
+    <ClCompile Include="..\mono\mini\cfgdump.c" />
     <ClInclude Include="..\mono\mini\jit-icalls.h " />
     <ClCompile Include="..\mono\mini\jit-icalls.c " />
     <ClCompile Include="..\mono\mini\seq-points.c" />

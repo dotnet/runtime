@@ -7,6 +7,8 @@
 
 #include "mini.h"
 
+#if !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) && !defined(HOST_WIN32)
+
 #include <glib.h>
 #include <mono/metadata/class-internals.h>
 
@@ -44,7 +46,6 @@
 
 #endif
 
-#if !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT)
 static ConstantPoolEntry*
 create_cp_entry (MonoCompile *cfg, void *data, pool_type pt)
 {
@@ -528,7 +529,7 @@ mono_cfg_dump_ir (MonoCompile *cfg, const char *phase_name)
 	write_instructions (cfg, instruction_count);
 	write_blocks (cfg);
 }
-#else /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) */
+#else /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) && !defined(HOST_WIN32) */
 void
 mono_cfg_dump_create_context (MonoCompile *cfg)
 {
@@ -548,4 +549,4 @@ void
 mono_cfg_dump_ir (MonoCompile *cfg, const char *phase_name)
 {
 }
-#endif /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) */
+#endif /* !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) && !defined(HOST_WIN32) */
