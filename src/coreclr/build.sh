@@ -5,7 +5,7 @@ PYTHON=${PYTHON:-python}
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs]"
-    echo "BuildArch can be: x64, x86, arm, arm64"
+    echo "BuildArch can be: x64, x86, arm, arm-softfp, arm64"
     echo "BuildType can be: debug, checked, release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -441,6 +441,10 @@ while :; do
 
         arm)
             __BuildArch=arm
+            ;;
+
+        arm-softfp)
+            __BuildArch=arm-softfp
             ;;
 
         arm64)

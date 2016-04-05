@@ -136,7 +136,7 @@ void                Compiler::lvaInitTypeRef()
     {
 #ifdef _TARGET_ARM_
         // TODO-ARM64-NYI: HFA
-        if (!info.compIsVarArgs && IsHfa(info.compMethodInfo->args.retTypeClass))
+        if (!info.compIsVarArgs && !opts.compUseSoftFP && IsHfa(info.compMethodInfo->args.retTypeClass))
         {
             info.compRetNativeType = TYP_STRUCT;
         }
@@ -570,13 +570,13 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #ifdef _TARGET_ARM_
 
         var_types hfaType = (varTypeIsStruct(argType)) ? GetHfaType(typeHnd) : TYP_UNDEF;
-        bool isHfaArg = !info.compIsVarArgs && varTypeIsFloating(hfaType);
+        bool isHfaArg = !info.compIsVarArgs && !opts.compUseSoftFP && varTypeIsFloating(hfaType);
 
         // On ARM we pass the first 4 words of integer arguments and non-HFA structs in registers.
         // But we pre-spill user arguments in varargs methods and structs.
         // 
         unsigned cAlign;
-        bool  preSpill = info.compIsVarArgs;
+        bool  preSpill = info.compIsVarArgs || opts.compUseSoftFP;
 
         switch (argType)
         {
@@ -912,7 +912,7 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         compArgSize += argSize;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
-        if (info.compIsVarArgs)
+        if (info.compIsVarArgs || opts.compUseSoftFP)
         {
 #if defined(_TARGET_X86_)
             varDsc->lvStkOffs       = compArgSize;
@@ -4597,7 +4597,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
             if (!compIsProfilerHookNeeded())
 #endif
             {
-                bool cond = (info.compIsVarArgs &&
+                bool cond = ((info.compIsVarArgs || opts.compUseSoftFP) &&
                     // Does cur stk arg require double alignment?
                     ((varDsc->lvType == TYP_STRUCT && varDsc->lvStructDoubleAlign) ||
                     (varDsc->lvType == TYP_DOUBLE) ||
