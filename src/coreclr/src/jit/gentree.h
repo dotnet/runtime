@@ -1320,7 +1320,7 @@ public:
 
     static
     inline bool RequiresNonNullOp2(genTreeOps oper);
-    bool IsListOfLclFlds();
+    bool IsListForMultiRegArg();
 #endif // DEBUG
 
     inline bool IsZero();
@@ -2302,16 +2302,21 @@ struct GenTreeArgList: public GenTreeOp
     GenTreeArgList() : GenTreeOp() {}
 #endif
 
-    GenTreeArgList(GenTreePtr arg ) : 
-        GenTreeOp(GT_LIST, TYP_VOID, arg, NULL) 
-        {}
+    GenTreeArgList(GenTreePtr arg) :
+        GenTreeArgList(arg, nullptr) {}
       
     GenTreeArgList(GenTreePtr arg, GenTreeArgList* rest) : 
         GenTreeOp(GT_LIST, TYP_VOID, arg, rest) 
     {
-        assert (arg != NULL);
+        // With structs passed in multiple args we could have an arg
+        // GT_LIST containing a list of LCL_FLDs, see IsListForMultiRegArg()
+        //
+        assert((arg != nullptr) && ((!arg->IsList()) || (arg->IsListForMultiRegArg())));
         gtFlags |=  arg->gtFlags & GTF_ALL_EFFECT;
-        if (rest != NULL) gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
+        if (rest != NULL)
+        {
+            gtFlags |= rest->gtFlags & GTF_ALL_EFFECT;
+        }
     }
 };
 
@@ -2334,9 +2339,109 @@ struct GenTreeColon: public GenTreeOp
         {}
 };
 
-/* gtCall   -- method call      (GT_CALL) */
+// gtCall   -- method call      (GT_CALL)
 typedef class fgArgInfo *  fgArgInfoPtr;
 enum class InlineObservation;
+
+// Return type descriptor of a GT_CALL node.
+// x64 Unix, Arm64, Arm32 and x86 allow a value to be returned in multiple
+// registers. For such calls this struct provides the following info 
+// on their return type
+//    - type of value returned in each return register
+//    - return register numbers in which the value is returned
+//    - a spill mask for lsra/codegen purpose
+//
+// TODO - Right now it is implemented to meet the needs of x64 unix.
+// Eventually it will be updated to meet the needs of Arm32/arm64/x86
+//
+// TODO - Right now it is used for describing multi-reg returned types.
+// Eventually we would want to use it for describing even single-reg
+// returned types (e.g. structs returned in single register x64/arm).
+// This would allow us not to lie or normalize single struct return
+// values in importer/morph.
+struct ReturnTypeDesc
+{
+private:
+    var_types m_regType0;
+    var_types m_regType1;
+
+#ifdef DEBUG
+    bool m_inited;
+#endif
+
+public:
+    ReturnTypeDesc()
+    {
+        m_regType0 = TYP_UNKNOWN;
+        m_regType1 = TYP_UNKNOWN;
+
+#ifdef DEBUG
+        m_inited = false;
+#endif
+    }
+
+    // Initialize type descriptor given its type handle
+    void Initialize(Compiler* comp, CORINFO_CLASS_HANDLE retClsHnd);
+
+    //--------------------------------------------------------------------------------------------
+    // GetReturnRegCount:  Get the count of return registers in which the return value is returned.
+    //
+    // Arguments:
+    //    None
+    //
+    // Return Value:
+    //   Count of return registers.
+    //   Returns 0 if the return type is not returned in registers.
+    unsigned GetReturnRegCount()
+    {
+        assert(m_inited);
+
+        int regCount = 0;
+        if (m_regType0 != TYP_UNKNOWN)
+        {
+            ++regCount;
+
+            if (m_regType1 != TYP_UNKNOWN)
+            {
+                ++regCount;
+            }
+        }
+        else
+        {
+            // If regType0 is TYP_UNKNOWN then regType1 must also be TYP_UNKNOWN.
+            assert(m_regType1 == TYP_UNKNOWN);
+        }
+
+        return regCount;
+    }
+
+    //--------------------------------------------------------------------------
+    // GetReturnRegType:  Get var_type of the return register specified by index.
+    // 
+    // Arguments:
+    //    index - Index of the return register.
+    //            First return register will have an index 1 and so on.
+    //
+    // Return Value:
+    //    var_type of the return register specified by its index.
+    //    Return TYP_UNKNOWN if index == 0 or > number of return registers.
+    var_types GetReturnRegType(unsigned index)
+    {
+        assert(index > 0);
+        assert(index <= GetReturnRegCount());
+
+        if (index == 1)
+        {
+            return m_regType0;
+        }
+        else if (index == 2)
+        {
+            return m_regType1;
+        }
+
+        return TYP_UNKNOWN;
+    }
+};
 
 struct GenTreeCall final : public GenTree
 {
@@ -2357,9 +2462,10 @@ struct GenTreeCall final : public GenTree
     CORINFO_SIG_INFO* callSig;                // Used by tail calls and to register callsites with the EE
 
     regMaskTP         gtCallRegUsedMask;      // mask of registers used to pass parameters
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+    ReturnTypeDesc    gtReturnTypeDesc;
+#endif 
 
 #define     GTF_CALL_M_EXPLICIT_TAILCALL       0x0001  // GT_CALL -- the call is "tail" prefixed and importer has performed tail call checks
 #define     GTF_CALL_M_TAILCALL                0x0002  // GT_CALL -- the call is a tailcall
@@ -2428,6 +2534,14 @@ struct GenTreeCall final : public GenTree
         return 0;
     }
 #endif // !LEGACY_BACKEND
+
+    // Returns true if the call has retBuf argument
+    bool HasRetBufArg() const { return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0; }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // Returns true if the call is returning a multi-reg struct value
+    bool HasMultiRegRetVal() const { return varTypeIsStruct(gtType) && !HasRetBufArg(); }
+#endif
 
     // Returns true if VM has flagged this method as CORINFO_FLG_PINVOKE.
     bool IsPInvoke()                { return (gtCallMoreFlags & GTF_CALL_M_PINVOKE) != 0; }
@@ -3571,18 +3685,43 @@ inline GenTreePtr GenTree::MoveNext()
 }
 
 #ifdef DEBUG
-inline bool GenTree::IsListOfLclFlds()
-
+inline bool GenTree::IsListForMultiRegArg()
 {
     if (!IsList())
     {
         return false;
     }
 
+#if FEATURE_MULTIREG_ARGS
+    // We allow a GT_LIST of some nodes as an argument 
     GenTree* gtListPtr = this;
-    while (gtListPtr->Current() != nullptr)
+    while (gtListPtr != nullptr) 
     {
-        if (gtListPtr->Current()->OperGet() != GT_LCL_FLD)
+        bool allowed = false;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // ToDo: fix UNIX_AMD64 so that we do not generate this kind of a List
+        if (gtListPtr->Current() == nullptr)
+            break;
+
+        // Only a list of GT_LCL_FLDs is allowed
+        if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
+        {
+            allowed = true;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef _TARGET_ARM64_
+        // A list of GT_LCL_VARs is allowed
+        if (gtListPtr->Current()->OperGet() == GT_LCL_VAR)
+        {
+            allowed = true;
+        }
+        // A list of GT_LCL_FLDs is allowed
+        else if (gtListPtr->Current()->OperGet() == GT_LCL_FLD)
+        {
+            allowed = true;
+        }
+#endif
+        if (!allowed)
         {
             return false;
         }
@@ -3591,6 +3730,10 @@ inline bool GenTree::IsListOfLclFlds()
     }
 
     return true;
+#else // FEATURE_MULTIREG_ARGS
+    // Not allowed to have a GT_LIST here unless we have FEATURE_MULTIREG_ARGS
+    return false;
+#endif
 }
 #endif // DEBUG
 

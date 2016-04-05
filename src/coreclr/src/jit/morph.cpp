@@ -2932,7 +2932,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
         unsigned argAlign = 1;
 
 #ifdef _TARGET_ARM_
-
         var_types hfaType = GetHfaType(argx);
         bool isHfaArg = varTypeIsFloating(hfaType);
 #endif // _TARGET_ARM_
@@ -4067,7 +4066,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                     arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
                 if (fgEntryPtr->structDesc.passedInRegisters)
                 {
-                    if (fgEntryPtr->structDesc.eightByteCount == 1) 
+                    if (fgEntryPtr->structDesc.eightByteCount == 1)
                     {
                         // Change the type and below the code will change the LclVar to a LCL_FLD
                         type = GetTypeFromClassificationAndSizes(fgEntryPtr->structDesc.eightByteClassifications[0], fgEntryPtr->structDesc.eightByteSizes[0]);
@@ -4084,6 +4083,7 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                                 fgEntryPtr->structDesc.eightByteSizes[1]),
                             lclCommon->gtLclNum,
                             fgEntryPtr->structDesc.eightByteOffsets[1]);
+                        // Note this should actually be: secondNode = gtNewArgList(newLclField)
                         GenTreeArgList* secondNode = gtNewListNode(newLclField, nullptr);
                         secondNode->gtType = originalType; // Preserve the type. It is a special case.
                         newLclField->gtFieldSeq = FieldSeqStore::NotAField();
@@ -4347,70 +4347,46 @@ void                Compiler::fgAddSkippedRegsInPromotedStructArg(LclVarDsc* var
 
 /*****************************************************************************
  *
- *  The companion to impFixupStructReturn.  Now that the importer is done
+ *  The companion to impFixupCallStructReturn.  Now that the importer is done
  *  and we no longer care as much about the declared return type, change to
  *  precomputed native return type (at least for architectures that don't
  *  always use return buffers for structs).
  *
  */
-void                Compiler::fgFixupStructReturn(GenTreePtr     call)
+void                Compiler::fgFixupStructReturn(GenTreePtr     callNode)
 {
-    bool callHasRetBuffArg = ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0);
+    GenTreeCall* call = callNode->AsCall();
+    bool callHasRetBuffArg = call->HasRetBufArg();
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    if (!callHasRetBuffArg && varTypeIsStruct(call) && call->gtCall.gtRetClsHnd != NO_CLASS_HANDLE)
+    if (!callHasRetBuffArg && varTypeIsStruct(call))
     {
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(gtGetStructHandleIfPresent(call), &structDesc);
-    }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-
-    if (!callHasRetBuffArg && (varTypeIsStruct(call)))
-    {
-#if defined(_TARGET_ARM_)
+#ifdef _TARGET_ARM_
         if (call->gtCall.IsVarargs() || !IsHfa(call))
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        if (!structDesc.passedInRegisters)
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif 
         {
             // Now that we are past the importer, re-type this node so the register predictor does
             // the right thing
             call->gtType = genActualType((var_types)call->gtCall.gtReturnType);
         }
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        else
-        {
-            if (structDesc.passedInRegisters && structDesc.eightByteCount <= 1)
-            {                
-                call->gtType = genActualType(getEightByteType(structDesc, 0));
-            }
-        }
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     }
+
 #ifdef _TARGET_ARM_
     // Either we don't have a struct now or if struct, then it is HFA returned in regs.
     assert(!varTypeIsStruct(call) || (IsHfa(call) && !callHasRetBuffArg));
-#else
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // Either we don't have a struct now or if struct, then it is a struct returned in regs or in return buffer.
-    assert(!varTypeIsStruct(call) ||
-           (structDesc.passedInRegisters) ||
-           (callHasRetBuffArg));
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    assert(!varTypeIsStruct(call) || call->HasMultiRegRetVal() || callHasRetBuffArg);
+#else 
     // No more struct returns
     assert(call->TypeGet() != TYP_STRUCT);
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #endif
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    // If there is a struct that is returned in registers there might be a retbuf (homing space for the return) and type struct.
-    assert(!callHasRetBuffArg || (call->TypeGet() == TYP_VOID) || varTypeIsStruct(call));
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // If it was a struct return, it has been transformed into a call
     // with a return buffer (that returns TYP_VOID) or into a return
     // of a primitive/enregisterable type
     assert(!callHasRetBuffArg || (call->TypeGet() == TYP_VOID));
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif 
 }
 
 
@@ -11078,7 +11054,7 @@ CM_ADD_OP:
                 }
 
                 // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
-                // ot if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
+                // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
                 // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
                 //
                 if (temp->OperGet() == GT_LCL_FLD)
@@ -15279,7 +15255,7 @@ void                Compiler::fgPromoteStructs()
                 {
                     if (structPromotionInfo.fieldCnt != 1)
                     {
-                        JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam are true and #fields = %d.\n",
+                        JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = %d.\n",
                                 lclNum, structPromotionInfo.fieldCnt);
                         continue;
                     }
@@ -15357,6 +15333,7 @@ Compiler::fgWalkResult      Compiler::fgMorphStructField(GenTreePtr tree, fgWalk
                         // Promoted struct
                         unsigned fldOffset     = tree->gtField.gtFldOffset;
                         unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                        noway_assert(fieldLclIndex != BAD_VAR_NUM);
 
                         tree->SetOper(GT_LCL_VAR);
                         tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
@@ -15458,6 +15435,7 @@ Compiler::fgWalkResult      Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkD
         if (fldOffset != BAD_VAR_NUM)
         {
             fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+            noway_assert(fieldLclIndex != BAD_VAR_NUM);
             fldVarDsc = &lvaTable[fieldLclIndex];
         }
 

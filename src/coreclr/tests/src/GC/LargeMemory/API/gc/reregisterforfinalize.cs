@@ -3,22 +3,30 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 public sealed class ReRegisterForFinalizeTest {
-
+    private LargeObject lo;
     private uint size = 0;
 
     public ReRegisterForFinalizeTest(uint size ) {
         this.size = size;
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void CreateLargeObject() {
+        lo = new LargeObject(size, true);
+        GC.ReRegisterForFinalize(lo);
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void DestroyLargeObject() {
+        lo = null;
+    }
 
     public bool RunTests() {
-
-        LargeObject lo;
         try {
-            lo = new LargeObject(size, true);
-            GC.ReRegisterForFinalize(lo);
+            CreateLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
             return false;
@@ -27,7 +35,8 @@ public sealed class ReRegisterForFinalizeTest {
             Console.WriteLine(e);
             return false;
         }
-        lo = null;
+        
+        DestroyLargeObject();
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();

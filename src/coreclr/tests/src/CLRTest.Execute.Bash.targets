@@ -19,9 +19,9 @@ WARNING:   When setting properties based on their current state (for example:
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <ItemGroup>
-    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="complus_zaprequire=2" />
-    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="complus_zaprequireexcludelist=corerun" />
-    <CLRTestBashEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="complus_gcstress=$(GCStressLevel)" />
+    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="export complus_zaprequire=2" />
+    <CLRTestBashEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="export complus_zaprequireexcludelist=corerun" />
+    <CLRTestBashEnvironmentVariable Condition="'$(GCStressLevel)' != '' and '$(GCStressLevel)' != '0'" Include="export complus_gcstress=$(GCStressLevel)" />
   </ItemGroup>
 
     <!--
@@ -38,7 +38,13 @@ WARNING:   When setting properties based on their current state (for example:
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'RunOnly'">
         <![CDATA[
 if [ ! -f $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/").Replace(".exe", ".ni.exe")) ]; then
-  "$CORE_ROOT/crossgen.exe" /Platform_Assemblies_Paths $CORE_ROOT%3B. $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))
+  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))
+  __cgExitCode=$?
+  if [ ! $__cgExitCode == 0 ]
+  then
+    echo Crossgen failed with exitcode: $__cgExitCode
+    exit 1
+  fi
 fi
         ]]>
       </CrossgenBashScript>
@@ -46,7 +52,14 @@ fi
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
         <![CDATA[
 if [ ! -f $(MSBuildProjectName).ni.exe ]; then
-  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3B$PWD $(MSBuildProjectName).exe
+  echo "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
+  "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD $(MSBuildProjectName).exe
+  __cgExitCode=$?
+  if [ ! $__cgExitCode == 0 ]
+  then
+    echo Crossgen failed with exitcode: $__cgExitCode
+    exit 1
+  fi
 fi        
         ]]>        
       </CrossgenBashScript>
