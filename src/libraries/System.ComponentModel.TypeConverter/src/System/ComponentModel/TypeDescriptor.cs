@@ -1880,11 +1880,7 @@ namespace System.ComponentModel
                 case PIPELINE_ATTRIBUTES:
                     foreach (Attribute attr in members)
                     {
-#if FEATURE_ATTRIBUTE_TYPEID
-                        filterTable[attr.TypeId] = attr;
-#else
-                        filterTable[attr] = attr;
-#endif
+                        filterTable[attr.GetTypeId()] = attr;
                     }
                     cacheResults = componentFilter.FilterAttributes(component, filterTable);
                     break;
@@ -2723,11 +2719,7 @@ namespace System.ComponentModel
                         bool match = false;
                         for (int existingIdx = 0; existingIdx < existing.Count; existingIdx++)
                         {
-#if FEATURE_ATTRIBUTE_TYPEID
-                            if (newArray[existingIdx].TypeId.Equals(newAttrs[idx].TypeId))
-#else
-                            if (newArray[existingIdx].Equals(newAttrs[idx]))
-#endif
+                            if (newArray[existingIdx].GetTypeId().Equals(newAttrs[idx].GetTypeId()))
                             {
                                 match = true;
                                 newArray[existingIdx] = newAttrs[idx];
