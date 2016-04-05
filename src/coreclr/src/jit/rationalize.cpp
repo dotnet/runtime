@@ -324,13 +324,13 @@ Compiler::fgSpliceTreeBefore(BasicBlock* block, GenTreeStmt* insertionPoint, Gen
 }
 
 //------------------------------------------------------------------------------
-// fgMakeEmbeddedStmt: insert the given subtree as an embedded statement 
+// fgMakeEmbeddedStmt: insert the given subtree as an embedded statement
 //
 // Arguments:
 //    block - The block containing the parentStmt, into which the new embedded
 //            statement will go
 //    tree  - The tree that will be the gtStmtExpr of the new embedded statement
-//    parentStmt - The top-level statement that 'tree' is embedded in
+//    parentStmt - A statement (top-level or embedded) that 'tree' is fully contained in
 //
 // Return Value:
 //    A pointer to the new statement.
