@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -17,7 +18,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(60), handler.ConnectTimeout);
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
             }
         }
 
