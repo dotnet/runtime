@@ -2574,7 +2574,7 @@ inline
 var_types Compiler::mangleVarArgsType(var_types type)
 {
 #ifdef _TARGET_ARMARCH_
-    if (info.compIsVarArgs)
+    if (info.compIsVarArgs || opts.compUseSoftFP)
     {
         switch (type) {
         case TYP_FLOAT:

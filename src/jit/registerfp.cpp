@@ -229,7 +229,7 @@ void CodeGen::genFloatSimple(GenTree *tree, RegSet::RegisterPreference *pref)
             genCodeForTreeFloat(op1, pref);
 
             inst_RV_TT(ins_FloatConv(tree->TypeGet(), op1->TypeGet()), REG_FLOATRET, op1);
-            if (compiler->info.compIsVarArgs)
+            if (compiler->info.compIsVarArgs || compiler->opts.compUseSoftFP)
             {
                 if (tree->TypeGet() == TYP_FLOAT)
                 {
