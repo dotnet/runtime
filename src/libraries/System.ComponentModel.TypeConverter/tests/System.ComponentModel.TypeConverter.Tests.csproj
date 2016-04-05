@@ -37,6 +37,7 @@
     <Compile Include="DoubleConverterTests.cs" />
     <Compile Include="EnumConverterTest.cs" />
     <Compile Include="EventDescriptorCollectionTests.cs" />
+    <Compile Include="EventDescriptorTests.cs" />
     <Compile Include="GuidConverterTests.cs" />
     <Compile Include="Int16ConverterTests.cs" />
     <Compile Include="Int32ConverterTests.cs" />
