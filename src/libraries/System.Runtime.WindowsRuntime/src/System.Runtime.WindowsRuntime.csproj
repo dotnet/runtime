@@ -36,12 +36,17 @@
     <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj"/>
     <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
-    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj"/>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj">
       <UndefineProperties>OSGroup</UndefineProperties>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <!-- ensure we use the lower-versioned UWP compatible facades so that this facade is compatible with UWP -->
+    <ProjectReference Include="..\..\System.ObjectModel\src\redist\System.ObjectModel.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\redist\System.Runtime.depproj">
+      <TargetGroup>netcore50</TargetGroup>
+    </ProjectReference>
     <Compile Include="System\IO\StreamOperationAsyncResult.netstandard.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
