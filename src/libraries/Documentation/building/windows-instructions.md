@@ -120,12 +120,7 @@ xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=Ou
 xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
 ```
 
-All the required dlls to run a test project can be found in `bin\tests\{Flavor}\{Project}.Tests\aspnetcore50\` which should be created when the test project is built.
-
-To skip an entire test project on a specific platform, for example, to skip running registry tests on Linux and Mac OS X, use the `<UnsupportedPlatforms>` MSBuild property in the csproj. Valid platform values are
-```xml
-<UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms>
-```
+All the required dlls to run a test project can be found in `bin\tests\{Configration}\{Project}.Tests\dnxcore50\` which should be created when the test project is built.
 
 ### Running tests from Visual Studio
 
