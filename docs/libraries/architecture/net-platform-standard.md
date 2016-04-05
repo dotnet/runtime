@@ -99,7 +99,7 @@ PCL projects will be able to consume packages built for .NET Platform Standard (
 
 **NOTE: Xamarin Platforms augment the existing profile numbers above.**
 
-Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only target up to .NET Platform Standard version 1.2. To build libraries for .NET Platform Standard version >= 1.3 you have 2 options:
+Existing PCL projects in VS2013 and VS2015 (excluding UWP targets), can only target up to .NET Platform Standard version 1.2. To build libraries for .NET Platform Standard version >= 1.3 you have 2 options:
 
 - Use project.json in csproj-based projects
 - Use xproj-based projects, i.e. "Class Library (Package)" project template
