@@ -789,6 +789,28 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(bool secure)
+        {
+            const string ContentString = "This is the content string.";
+            var content = new StringContent(ContentString);
+            Uri redirectUri = HttpTestServers.RedirectUriForDestinationUri(
+                secure, 
+                secure ? HttpTestServers.SecureRemoteEchoServer : HttpTestServers.RemoteEchoServer, 
+                1);
+
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.DoesNotContain(ContentString, responseContent);
+                Assert.DoesNotContain("Content-Length", responseContent);
+            }
+        }
+
+        [Theory]
         [InlineData(HttpStatusCode.MethodNotAllowed, "Custom description")]
         [InlineData(HttpStatusCode.MethodNotAllowed, "")]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
