@@ -6,4 +6,4 @@ set(SOURCES NativeCallableDll.cpp )
 add_library (NativeCallableDll SHARED ${SOURCES})
 
 # add the install targets
-install (TARGETS NativeCallableDll DESTINATION Interop/NativeCallable)
+install (TARGETS NativeCallableDll DESTINATION bin)
