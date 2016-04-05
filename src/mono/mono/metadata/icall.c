@@ -1330,6 +1330,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	MonoType *type = NULL;
 	MonoAssembly *assembly = NULL;
 	gboolean type_resolve = FALSE;
+	MonoImage *rootimage = NULL;
 
 	mono_error_init (error);
 
@@ -1356,6 +1357,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	if (dest) {
 		assembly = dest->klass->image->assembly;
 		type_resolve = TRUE;
+		rootimage = assembly->image;
 	} else {
 		g_warning (G_STRLOC);
 	}
@@ -1363,21 +1365,28 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	if (info->assembly.name)
 		assembly = mono_assembly_load (&info->assembly, assembly ? assembly->basedir : NULL, NULL);
 
-
 	if (assembly) {
 		/* When loading from the current assembly, AppDomain.TypeResolve will not be called yet */
-		type = mono_reflection_get_type_checked (assembly->image, info, ignoreCase, &type_resolve, error);
+		type = mono_reflection_get_type_checked (rootimage, assembly->image, info, ignoreCase, &type_resolve, error);
 		return_val_if_nok (error, NULL);
 	}
 
+	// XXXX - aleksey -
+	//  Say we're looking for System.Generic.Dict<int, Local>
+	//  we FAIL the get type above, because S.G.Dict isn't in assembly->image.  So we drop down here.
+	//  but then we FAIL AGAIN because now we pass null as the image and the rootimage and everything
+	//  is messed up when we go to construct the Local as the type arg...
+	//
+	// By contrast, if we started with Mine<System.Generic.Dict<int, Local>> we'd go in with assembly->image
+	// as the root and then even the detour into generics would still not screw us when we went to load Local.
 	if (!info->assembly.name && !type) {
 		/* try mscorlib */
-		type = mono_reflection_get_type_checked (NULL, info, ignoreCase, &type_resolve, error);
+		type = mono_reflection_get_type_checked (rootimage, NULL, info, ignoreCase, &type_resolve, error);
 		return_val_if_nok (error, NULL);
 	}
 	if (assembly && !type && type_resolve) {
 		type_resolve = FALSE; /* This will invoke TypeResolve if not done in the first 'if' */
-		type = mono_reflection_get_type_checked (assembly->image, info, ignoreCase, &type_resolve, error);
+		type = mono_reflection_get_type_checked (rootimage, assembly->image, info, ignoreCase, &type_resolve, error);
 		return_val_if_nok (error, NULL);
 	}
 
@@ -4417,7 +4426,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 
 	if (module != NULL) {
 		if (module->image) {
-			type = mono_reflection_get_type_checked (module->image, &info, ignoreCase, &type_resolve, &error);
+			type = mono_reflection_get_type_checked (module->image, module->image, &info, ignoreCase, &type_resolve, &error);
 			if (!is_ok (&error)) {
 				g_free (str);
 				mono_reflection_free_type_info (&info);
@@ -4437,7 +4446,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (abuilder->modules) {
 				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
 					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-					type = mono_reflection_get_type_checked (&mb->dynamic_image->image, &info, ignoreCase, &type_resolve, &error);
+					type = mono_reflection_get_type_checked (&mb->dynamic_image->image, &mb->dynamic_image->image, &info, ignoreCase, &type_resolve, &error);
 					if (!is_ok (&error)) {
 						g_free (str);
 						mono_reflection_free_type_info (&info);
@@ -4452,7 +4461,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			if (!type && abuilder->loaded_modules) {
 				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
 					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-					type = mono_reflection_get_type_checked (mod->image, &info, ignoreCase, &type_resolve, &error);
+					type = mono_reflection_get_type_checked (mod->image, mod->image, &info, ignoreCase, &type_resolve, &error);
 					if (!is_ok (&error)) {
 						g_free (str);
 						mono_reflection_free_type_info (&info);
@@ -4465,7 +4474,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			}
 		}
 		else {
-			type = mono_reflection_get_type_checked (assembly->assembly->image, &info, ignoreCase, &type_resolve, &error);
+			type = mono_reflection_get_type_checked (assembly->assembly->image, assembly->assembly->image, &info, ignoreCase, &type_resolve, &error);
 			if (!is_ok (&error)) {
 				g_free (str);
 				mono_reflection_free_type_info (&info);

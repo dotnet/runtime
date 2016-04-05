@@ -10,7 +10,7 @@
 #include <mono/utils/mono-error.h>
 
 MonoType*
-mono_reflection_get_type_checked (MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve, MonoError *error);
+mono_reflection_get_type_checked (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, mono_bool ignorecase, mono_bool *type_resolve, MonoError *error);
 
 MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error);
