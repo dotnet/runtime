@@ -16,7 +16,7 @@ namespace System
         public static bool IsWindows7 { get; } = IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsOSX { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
-        public static bool IsNotWindowsNanoServer { get; } = (IsWindows && GetWindowsVersion() == 10 &&
+        public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
                 File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
 
         public static int WindowsVersion { get; } = GetWindowsVersion();
