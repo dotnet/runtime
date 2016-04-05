@@ -12,6 +12,9 @@ using System.Runtime.Remoting;
 using System.Runtime.Serialization.Formatters;
 using System.Security.Permissions;
 
+// This converter is excluded from the project because its purpose is to enable displaying the properties
+// of an object implementing IComponent in the designer's Properties window, which isn't applicable to .NET Core.
+
 namespace System.ComponentModel
 {
     /// <devdoc>
