@@ -1341,7 +1341,7 @@ get_caller_no_system_or_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboole
 	}
 
 	if (m->klass->image == mono_defaults.corlib && ((!strcmp (m->klass->name_space, "System.Reflection"))
-							|| (!strcmp (m->klass->name_space, "System"))))
+													|| (!strcmp (m->klass->name_space, "System"))))
 		return FALSE;
 
 	if (!(*dest)) {
@@ -1370,21 +1370,23 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoErro
 	 */
 	m = mono_method_get_last_managed ();
 	dest = m;
-
-	/* Ugly hack: type_from_parsed_name is called from
-	 * System.Type.internal_from_name, which is called most
-	 * directly from System.Type.GetType(string,bool,bool) but
-	 * also indirectly from places such as
-	 * System.Type.GetType(string,func,func) (via
-	 * System.TypeNameParser.GetType and System.TypeSpec.Resolve)
-	 * so we need to skip over all of those to find the true caller.
-	 *
-	 * It would be nice if we had stack marks.
-	 */
-	mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
-	if (!dest)
-		dest = m;
-
+	if (m && m->klass->image != mono_defaults.corlib) {
+		/* Happens with inlining */
+	} else {
+		/* Ugly hack: type_from_parsed_name is called from
+		 * System.Type.internal_from_name, which is called most
+		 * directly from System.Type.GetType(string,bool,bool) but
+		 * also indirectly from places such as
+		 * System.Type.GetType(string,func,func) (via
+		 * System.TypeNameParser.GetType and System.TypeSpec.Resolve)
+		 * so we need to skip over all of those to find the true caller.
+		 *
+		 * It would be nice if we had stack marks.
+		 */
+		mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
+		if (!dest)
+			dest = m;
+	}
 
 	/*
 	 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
