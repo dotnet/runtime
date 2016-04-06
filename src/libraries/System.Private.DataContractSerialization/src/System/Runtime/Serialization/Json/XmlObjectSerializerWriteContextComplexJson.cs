@@ -235,10 +235,20 @@ namespace System.Runtime.Serialization.Json
                 {
                     // Convert non-generic dictionary to generic dictionary
                     IDictionary dictionaryObj = obj as IDictionary;
-                    Dictionary<object, object> genericDictionaryObj = new Dictionary<object, object>();
-                    foreach (DictionaryEntry entry in dictionaryObj)
+                    Dictionary<object, object> genericDictionaryObj = new Dictionary<object, object>(dictionaryObj.Count);
+                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                    IDictionaryEnumerator e = dictionaryObj.GetEnumerator();
+                    try
                     {
-                        genericDictionaryObj.Add(entry.Key, entry.Value);
+                        while (e.MoveNext())
+                        {
+                            DictionaryEntry entry = e.Entry;
+                            genericDictionaryObj.Add(entry.Key, entry.Value);
+                        }
+                    }
+                    finally
+                    {
+                        (e as IDisposable)?.Dispose();
                     }
                     obj = genericDictionaryObj;
                 }

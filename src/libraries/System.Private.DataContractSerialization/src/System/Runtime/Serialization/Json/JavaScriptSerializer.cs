@@ -89,21 +89,31 @@ namespace System.Runtime.Serialization.Json
         {
             sb.Append('{');
             bool isFirstElement = true;
-            foreach (DictionaryEntry entry in (IDictionary)o)
+            // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+            IDictionaryEnumerator e = o.GetEnumerator();
+            try
             {
-                if (!isFirstElement)
+                while (e.MoveNext())
                 {
-                    sb.Append(',');
+                    DictionaryEntry entry = e.Entry;
+                    if (!isFirstElement)
+                    {
+                        sb.Append(',');
+                    }
+                    string key = entry.Key as string;
+                    if (key == null)
+                    {
+                        throw new SerializationException(SR.Format(SR.ObjectSerializer_DictionaryNotSupported, o.GetType().FullName));
+                    }
+                    SerializeString(key, sb);
+                    sb.Append(':');
+                    SerializeValue(entry.Value, sb, depth, objectsInUse);
+                    isFirstElement = false;
                 }
-                string key = entry.Key as string;
-                if (key == null)
-                {
-                    throw new SerializationException(SR.Format(SR.ObjectSerializer_DictionaryNotSupported, o.GetType().FullName));
-                }
-                SerializeString((string)entry.Key, sb);
-                sb.Append(':');
-                SerializeValue(entry.Value, sb, depth, objectsInUse);
-                isFirstElement = false;
+            }
+            finally
+            {
+                (e as IDisposable)?.Dispose();
             }
             sb.Append('}');
         }
