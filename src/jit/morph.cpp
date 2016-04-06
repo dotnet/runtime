@@ -8212,12 +8212,7 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
             // Spill the (complex) address to a BYREF temp.
             // Note, at most one address may need to be spilled.
             addrSpillTemp = lvaGrabTemp(true DEBUGARG("BlockOp address local"));
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            lvaTable[addrSpillTemp].lvType = TYP_I_IMPL;
 
-            tree = gtNewAssignNode(gtNewLclvNode(addrSpillTemp, TYP_I_IMPL),
-                                   addrSpill);
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             lvaTable[addrSpillTemp].lvType = TYP_BYREF;
 
             if (addrSpillIsStackDest)
@@ -8227,7 +8222,6 @@ GenTreePtr          Compiler::fgMorphCopyBlock(GenTreePtr tree)
 
             tree = gtNewAssignNode(gtNewLclvNode(addrSpillTemp, TYP_BYREF),
                                    addrSpill);
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifndef LEGACY_BACKEND
             // If we are assigning the address of a LclVar here 
