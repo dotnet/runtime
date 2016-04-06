@@ -30,7 +30,7 @@
 
 #define UNW_LOCAL_ONLY
 #undef _U /* ctype.h apparently defines this and it screws up the libunwind headers. */
-#include "android-libunwind/libunwind.h"
+#include "../../external/android-libunwind/include/libunwind.h"
 #define _U 0x01
 
 #define FUNC_NAME_LENGTH 512
