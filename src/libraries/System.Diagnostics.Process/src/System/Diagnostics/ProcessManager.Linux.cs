@@ -67,14 +67,17 @@ namespace System.Diagnostics
                 }
 
                 // It's not a continuation of a previous entry but a new one: add it.
-                modules.Add(new ModuleInfo()
+                unsafe
                 {
-                    _fileName = entry.FileName,
-                    _baseName = Path.GetFileName(entry.FileName),
-                    _baseOfDll = new IntPtr(entry.AddressRange.Key),
-                    _sizeOfImage = sizeOfImage,
-                    _entryPoint = IntPtr.Zero // unknown
-                });
+                    modules.Add(new ModuleInfo()
+                    {
+                        _fileName = entry.FileName,
+                        _baseName = Path.GetFileName(entry.FileName),
+                        _baseOfDll = new IntPtr((void *)entry.AddressRange.Key),
+                        _sizeOfImage = sizeOfImage,
+                        _entryPoint = IntPtr.Zero // unknown
+                    });
+                }
             }
 
             // Return the set of modules found
@@ -136,16 +139,19 @@ namespace System.Diagnostics
                     if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
                         Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
                     {
-                        pi._threadInfoList.Add(new ThreadInfo()
+                        unsafe
                         {
-                            _processId = pid,
-                            _threadId = (ulong)tid,
-                            _basePriority = pi.BasePriority,
-                            _currentPriority = (int)stat.nice,
-                            _startAddress = (IntPtr)stat.startstack,
-                            _threadState = ProcFsStateToThreadState(stat.state),
-                            _threadWaitReason = ThreadWaitReason.Unknown
-                        });
+                            pi._threadInfoList.Add(new ThreadInfo()
+                            {
+                                _processId = pid,
+                                _threadId = (ulong)tid,
+                                _basePriority = pi.BasePriority,
+                                _currentPriority = (int)stat.nice,
+                                _startAddress = (IntPtr)(void *)stat.startstack,
+                                _threadState = ProcFsStateToThreadState(stat.state),
+                                _threadWaitReason = ThreadWaitReason.Unknown
+                            });
+                        }
                     }
                 }
             }
