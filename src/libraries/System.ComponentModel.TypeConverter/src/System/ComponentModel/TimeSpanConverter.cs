@@ -43,7 +43,7 @@ namespace System.ComponentModel
                 }
                 catch (FormatException e)
                 {
-                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, "TimeSpan"), e);
+                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, nameof(TimeSpan)), e);
                 }
             }
 

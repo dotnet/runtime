@@ -437,7 +437,7 @@ namespace System.Diagnostics
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("Switch");
+                    throw new ArgumentNullException(nameof(Switch));
 
                 Initialize();
                 _internalSwitch = value;

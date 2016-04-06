@@ -60,7 +60,7 @@ namespace System.ComponentModel
                 {
                     if (text.Length != 1)
                     {
-                        throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, text, "Char"));
+                        throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, text, nameof(Char)));
                     }
                     return text[0];
                 }

@@ -335,7 +335,7 @@ namespace System.IO.Compression
 #endif // FEATURE_UTF7                        
                         ))
                 {
-                    throw new ArgumentException(SR.EntryNameEncodingNotSupported, "entryNameEncoding");
+                    throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameEncoding));
                 }
 
                 _entryNameEncoding = value;

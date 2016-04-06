@@ -67,7 +67,7 @@ namespace System.IO.MemoryMappedFiles
         {
             if (!IsOpen)
             {
-                throw new ObjectDisposedException("MemoryMappedViewAccessor", SR.ObjectDisposed_ViewAccessorClosed);
+                throw new ObjectDisposedException(nameof(MemoryMappedViewAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
 
             unsafe

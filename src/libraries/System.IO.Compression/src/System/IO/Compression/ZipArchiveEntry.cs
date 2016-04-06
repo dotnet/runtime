@@ -185,7 +185,7 @@ namespace System.IO.Compression
             private set
             {
                 if (value == null)
-                    throw new ArgumentNullException("FullName");
+                    throw new ArgumentNullException(nameof(FullName));
 
                 bool isUTF8;
                 _storedEntryNameBytes = EncodeEntryName(value, out isUTF8);
@@ -323,10 +323,10 @@ namespace System.IO.Compression
         public void MoveTo(String destinationEntryName)
         {
             if (destinationEntryName == null)
-                throw new ArgumentNullException("destinationEntryName");
+                throw new ArgumentNullException(nameof(destinationEntryName));
 
             if (String.IsNullOrEmpty(destinationEntryName))
-                throw new ArgumentException("destinationEntryName cannot be empty", "destinationEntryName");
+                throw new ArgumentException("destinationEntryName cannot be empty", nameof(destinationEntryName));
 
             if (_archive == null)
                 throw new InvalidOperationException("Attempt to move a deleted entry");

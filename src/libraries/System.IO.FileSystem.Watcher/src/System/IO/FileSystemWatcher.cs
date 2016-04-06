@@ -122,7 +122,7 @@ namespace System.IO
             set
             {
                 if (((int)value & ~c_notifyFiltersValidMask) != 0)
-                    throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, "value", (int)value, typeof(NotifyFilters).Name));
+                    throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, "value", (int)value, nameof(NotifyFilters)));
 
                 if (_notifyFilters != value)
                 {

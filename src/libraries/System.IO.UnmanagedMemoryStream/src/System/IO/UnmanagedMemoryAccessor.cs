@@ -1276,7 +1276,7 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanRead)
             {
@@ -1304,7 +1304,7 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
+                throw new ObjectDisposedException(nameof(UnmanagedMemoryAccessor), SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanWrite)
             {
