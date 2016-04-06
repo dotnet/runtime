@@ -94,6 +94,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 
 #ifdef FEATURE_PAL
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex);
+BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
 #endif // FEATURE_PAL
 
 static ExceptionTracker* GetTrackerMemory()
@@ -154,7 +155,7 @@ void InitializeExceptionHandling()
 
 #ifdef FEATURE_PAL
     // Register handler of hardware exceptions like null reference in PAL
-    PAL_SetHardwareExceptionHandler(HandleHardwareException);
+    PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
@@ -5031,65 +5032,67 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 }
 #endif //_AMD64_
 
+BOOL PALAPI IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
+{
+    PCODE controlPc = GetIP(contextRecord);
+    return g_fEEStarted && (
+        exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
+        exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
+        ExecutionManager::IsManagedCode(controlPc) || 
+        IsIPInMarkedJitHelper(controlPc));
+}
 
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 {
-    if (!g_fEEStarted)
-    {
-        return;
-    }
+    _ASSERTE(IsSafeToHandleHardwareException(&ex->ContextRecord, &ex->ExceptionRecord));
 
     if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT && ex->ExceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or 
         // in one of the JIT helper functions (JIT_MemSet, ...)
         PCODE controlPc = GetIP(&ex->ContextRecord);
-        BOOL isInManagedCode = ExecutionManager::IsManagedCode(controlPc);
-        if (isInManagedCode || IsIPInMarkedJitHelper(controlPc))
+        if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->ExceptionRecord.ExceptionCode, &ex->ContextRecord))
         {
-            if (isInManagedCode && IsGcMarker(ex->ExceptionRecord.ExceptionCode, &ex->ContextRecord))
-            {
-                RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
-                UNREACHABLE();
-            }
-
-            // Create frame necessary for the exception handling
-            FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(WIN64EXCEPTIONS)
-            *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // WIN64EXCEPTIONS
-            {
-                GCX_COOP();     // Must be cooperative to modify frame chain.
-                CONTEXT context = ex->ContextRecord;
-                if (IsIPInMarkedJitHelper(controlPc))
-                {
-                    // For JIT helpers, we need to set the frame to point to the
-                    // managed code that called the helper, otherwise the stack
-                    // walker would skip all the managed frames upto the next
-                    // explicit frame.
-                    Thread::VirtualUnwindLeafCallFrame(&context);
-                }
-                fef.InitAndLink(&context);
-            }
-
-#ifdef _AMD64_
-            // It is possible that an overflow was mapped to a divide-by-zero exception. 
-            // This happens when we try to divide the maximum negative value of a
-            // signed integer with -1. 
-            //
-            // Thus, we will attempt to decode the instruction @ RIP to determine if that
-            // is the case using the faulting context.
-            if ((ex->ExceptionRecord.ExceptionCode == EXCEPTION_INT_DIVIDE_BY_ZERO) &&
-                IsDivByZeroAnIntegerOverflow(&ex->ContextRecord))
-            {
-                // The exception was an integer overflow, so augment the exception code.
-                ex->ExceptionRecord.ExceptionCode = EXCEPTION_INT_OVERFLOW;
-            }
-#endif //_AMD64_
-
-            DispatchManagedException(*ex);
+            RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
             UNREACHABLE();
         }
+
+        // Create frame necessary for the exception handling
+        FrameWithCookie<FaultingExceptionFrame> fef;
+#if defined(WIN64EXCEPTIONS)
+        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+#endif // WIN64EXCEPTIONS
+        {
+            GCX_COOP();     // Must be cooperative to modify frame chain.
+            CONTEXT context = ex->ContextRecord;
+            if (IsIPInMarkedJitHelper(controlPc))
+            {
+                // For JIT helpers, we need to set the frame to point to the
+                // managed code that called the helper, otherwise the stack
+                // walker would skip all the managed frames upto the next
+                // explicit frame.
+                Thread::VirtualUnwindLeafCallFrame(&context);
+            }
+            fef.InitAndLink(&context);
+        }
+
+#ifdef _AMD64_
+        // It is possible that an overflow was mapped to a divide-by-zero exception. 
+        // This happens when we try to divide the maximum negative value of a
+        // signed integer with -1. 
+        //
+        // Thus, we will attempt to decode the instruction @ RIP to determine if that
+        // is the case using the faulting context.
+        if ((ex->ExceptionRecord.ExceptionCode == EXCEPTION_INT_DIVIDE_BY_ZERO) &&
+            IsDivByZeroAnIntegerOverflow(&ex->ContextRecord))
+        {
+            // The exception was an integer overflow, so augment the exception code.
+            ex->ExceptionRecord.ExceptionCode = EXCEPTION_INT_OVERFLOW;
+        }
+#endif //_AMD64_
+
+        DispatchManagedException(*ex);
+        UNREACHABLE();
     }
     else
     {
@@ -5111,6 +5114,7 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
                 pThread))
             {
                 RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
+                UNREACHABLE();
             }
         }
     }
