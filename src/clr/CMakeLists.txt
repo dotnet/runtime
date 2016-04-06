@@ -703,6 +703,7 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i
 
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("src/pal/prebuilt/inc")
+include_directories("bin/obj")
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   include_directories("src/pal/inc")
