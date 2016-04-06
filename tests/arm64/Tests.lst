@@ -5142,7 +5142,7 @@ RelativePath=JIT\Directed\UnrollLoop\loop2_cs_do\loop2_cs_do.cmd
 WorkingDir=JIT\Directed\UnrollLoop\loop2_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [loop2_cs_r.cmd_759]
 RelativePath=JIT\Directed\UnrollLoop\loop2_cs_r\loop2_cs_r.cmd
@@ -5156,7 +5156,7 @@ RelativePath=JIT\Directed\UnrollLoop\loop2_cs_ro\loop2_cs_ro.cmd
 WorkingDir=JIT\Directed\UnrollLoop\loop2_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [loop3_il_d.cmd_761]
 RelativePath=JIT\Directed\UnrollLoop\loop3_il_d\loop3_il_d.cmd
@@ -23279,7 +23279,7 @@ RelativePath=JIT\Methodical\explicit\misc\_opt_dbgexplicit5\_opt_dbgexplicit5.cm
 WorkingDir=JIT\Methodical\explicit\misc\_opt_dbgexplicit5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
 HostStyle=0
 [_opt_dbgexplicit6.cmd_3384]
 RelativePath=JIT\Methodical\explicit\misc\_opt_dbgexplicit6\_opt_dbgexplicit6.cmd
@@ -23335,7 +23335,7 @@ RelativePath=JIT\Methodical\explicit\misc\_opt_relexplicit5\_opt_relexplicit5.cm
 WorkingDir=JIT\Methodical\explicit\misc\_opt_relexplicit5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
 HostStyle=0
 [_opt_relexplicit6.cmd_3392]
 RelativePath=JIT\Methodical\explicit\misc\_opt_relexplicit6\_opt_relexplicit6.cmd
@@ -23440,7 +23440,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_dbgrotarg_valref\_dbgrotarg_valref.
 WorkingDir=JIT\Methodical\explicit\rotate\_dbgrotarg_valref
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4109
 HostStyle=0
 [_il_dbgrotarg_double.cmd_3407]
 RelativePath=JIT\Methodical\explicit\rotate\_il_dbgrotarg_double\_il_dbgrotarg_double.cmd
@@ -23454,7 +23454,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_il_dbgrotarg_float\_il_dbgrotarg_fl
 WorkingDir=JIT\Methodical\explicit\rotate\_il_dbgrotarg_float
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_PASS;REL_FAIL
 HostStyle=0
 [_il_dbgrotarg_objref.cmd_3409]
 RelativePath=JIT\Methodical\explicit\rotate\_il_dbgrotarg_objref\_il_dbgrotarg_objref.cmd
@@ -23496,7 +23496,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_il_relrotarg_float\_il_relrotarg_fl
 WorkingDir=JIT\Methodical\explicit\rotate\_il_relrotarg_float
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS
+Categories=Pri0;JIT;EXPECTED_PASS;REL_FAIL
 HostStyle=0
 [_il_relrotarg_objref.cmd_3415]
 RelativePath=JIT\Methodical\explicit\rotate\_il_relrotarg_objref\_il_relrotarg_objref.cmd
@@ -23608,7 +23608,7 @@ RelativePath=JIT\Methodical\explicit\rotate\_relrotarg_valref\_relrotarg_valref.
 WorkingDir=JIT\Methodical\explicit\rotate\_relrotarg_valref
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4109
 HostStyle=0
 [intToByte.cmd_3431]
 RelativePath=JIT\Methodical\flowgraph\bug614098\intToByte\intToByte.cmd
@@ -27815,7 +27815,7 @@ RelativePath=JIT\Methodical\Overflow\FloatOvfToInt2_do\FloatOvfToInt2_do.cmd
 WorkingDir=JIT\Methodical\Overflow\FloatOvfToInt2_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [FloatOvfToInt2_r.cmd_4032]
 RelativePath=JIT\Methodical\Overflow\FloatOvfToInt2_r\FloatOvfToInt2_r.cmd
@@ -27829,7 +27829,7 @@ RelativePath=JIT\Methodical\Overflow\FloatOvfToInt2_ro\FloatOvfToInt2_ro.cmd
 WorkingDir=JIT\Methodical\Overflow\FloatOvfToInt2_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;NEED_TRIAGE
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [array1.cmd_4034]
 RelativePath=JIT\Methodical\refany\array1\array1.cmd
@@ -39974,7 +39974,7 @@ RelativePath=Loader\NativeLibs\FromNativePaths\FromNativePaths.cmd
 WorkingDir=Loader\NativeLibs\FromNativePaths
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;EXPECTED_FAIL;NATIVE_INTEROP;ISSUE_3968
+Categories=Pri0;RT;EXPECTED_PASS
 HostStyle=0
 [main.cmd_5812]
 RelativePath=Loader\regressions\classloader\main\main.cmd
