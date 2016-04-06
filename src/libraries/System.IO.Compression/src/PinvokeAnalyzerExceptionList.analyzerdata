@@ -1,4 +1,4 @@
-<!-- Not a bug. clrcompression.dll is a native component that ship as part of the package -->
+<!-- Not a bug. clrcompression.dll is a native component that ships as part of the package. -->
 clrcompression.dll!inflate
 clrcompression.dll!deflate
 clrcompression.dll!inflateEnd
