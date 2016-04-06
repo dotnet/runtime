@@ -109,7 +109,7 @@ namespace System.Net.Http
             }
 
             /// <summary>Gets the ID of the currently running worker, or null if there isn't one.</summary>
-            internal int? RunningWorkerId { get { return _runningWorker != null ? (int?)_runningWorker.Id : null; } }
+            internal int? RunningWorkerId => _runningWorker?.Id;
 
             /// <summary>Schedules the processing worker if one hasn't already been scheduled.</summary>
             private void EnsureWorkerIsRunning()
@@ -119,6 +119,12 @@ namespace System.Net.Http
                 if (_runningWorker == null)
                 {
                     EventSourceTrace("MultiAgent worker queueing");
+
+                    // Ensure we've created the multi handle for this agent.
+                    if (_multiHandle == null)
+                    {
+                        _multiHandle = CreateAndConfigureMultiHandle();
+                    }
 
                     // Create pipe used to forcefully wake up curl_multi_wait calls when something important changes.
                     // This is created here rather than in Process so that the pipe is available immediately
@@ -143,52 +149,67 @@ namespace System.Net.Http
                         var thisRef = (MultiAgent)s;
                         try
                         {
-                            // Do the actual processing
-                            thisRef.EventSourceTrace("MultiAgent worker running");
-                            thisRef.WorkerLoop();
+                            try
+                            {
+                                // Do the actual processing
+                                thisRef.EventSourceTrace("MultiAgent worker running");
+                                thisRef.WorkerLoop();
+                            }
+                            finally
+                            {
+                                thisRef.EventSourceTrace("MultiAgent worker shutting down");
+
+                                // The multi handle's reference count was increased prior to launching
+                                // this processing task.  Release that reference; any Dispose operations
+                                // that occurred during the worker's processing will now be allowed to
+                                // proceed to clean up the multi handle.
+                                thisRef._multiHandle.DangerousRelease();
+
+                                lock (thisRef._incomingRequests)
+                                {
+                                    // Close our wakeup pipe (ignore close errors).
+                                    // This is done while holding the lock to prevent
+                                    // subsequent Queue calls to see an improperly configured
+                                    // set of descriptors.
+                                    thisRef._wakeupRequestedPipeFd.Dispose();
+                                    thisRef._wakeupRequestedPipeFd = null;
+                                    thisRef._requestWakeupPipeFd.Dispose();
+                                    thisRef._requestWakeupPipeFd = null;
+
+                                    // In the time between we stopped processing and taking the lock,
+                                    // more requests could have been added.  If they were,
+                                    // kick off another processing loop.
+                                    thisRef._runningWorker = null;
+                                    if (thisRef._incomingRequests.Count > 0)
+                                    {
+                                        thisRef.EnsureWorkerIsRunning();
+                                    }
+                                }
+                            }
                         }
                         catch (Exception exc)
                         {
+                            // Something went very wrong.  This really shouldn't happen.
                             thisRef.EventSourceTrace("Unexpected worker failure: {0}", exc);
                             Debug.Fail("Unexpected exception from processing loop: " + exc.ToString());
-                        }
-                        finally
-                        {
-                            // The multi handle's reference count was increased prior to launching
-                            // this processing task.  Release that reference; any Dispose operations
-                            // that occurred during the worker's processing will now be allowed to
-                            // proceed to clean up the multi handle.
-                            _multiHandle.DangerousRelease();
 
-                            thisRef.EventSourceTrace("MultiAgent worker shutting down");
+                            // At this point if there any queued requests but there's no worker,
+                            // those queued requests are potentially going to sit there waiting forever,
+                            // resulting in a hang. Instead, fail those requests.
                             lock (thisRef._incomingRequests)
                             {
-                                // Close our wakeup pipe (ignore close errors).
-                                // This is done while holding the lock to prevent
-                                // subsequent Queue calls to see an improperly configured
-                                // set of descriptors.
-                                thisRef._wakeupRequestedPipeFd.Dispose();
-                                thisRef._wakeupRequestedPipeFd = null;
-                                thisRef._requestWakeupPipeFd.Dispose();
-                                thisRef._requestWakeupPipeFd = null;
-
-                                // In the time between we stopped processing and now,
-                                // more requests could have been added.  If they were
-                                // kick off another processing loop.
-                                thisRef._runningWorker = null;
-                                if (thisRef._incomingRequests.Count > 0)
+                                if (thisRef._runningWorker == null)
                                 {
-                                    thisRef.EnsureWorkerIsRunning();
+                                    while (thisRef._incomingRequests.Count > 0)
+                                    {
+                                        IncomingRequest request = thisRef._incomingRequests.Dequeue();
+                                        request.Easy.FailRequest(exc);
+                                        request.Easy.Cleanup();
+                                    }
                                 }
                             }
                         }
                     }, this, CancellationToken.None, Options);
-
-                    // Ensure we've created the multi handle for this agent.
-                    if (_multiHandle == null)
-                    {
-                        _multiHandle = CreateAndConfigureMultiHandle();
-                    }
 
                     // We want to avoid situations where a Dispose occurs while we're in the middle
                     // of processing requests and causes us to tear out the multi handle while it's
@@ -215,14 +236,11 @@ namespace System.Net.Http
             }
 
             /// <summary>Write a byte to the wakeup pipe.</summary>
-            private void RequestWakeup()
+            private unsafe void RequestWakeup()
             {
-                unsafe
-                {
-                    EventSourceTrace(null);
-                    byte b = 1;
-                    Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
-                }
+                EventSourceTrace(null);
+                byte b = 1;
+                Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
             }
 
             /// <summary>Clears data from the wakeup pipe.</summary>
@@ -965,10 +983,7 @@ namespace System.Net.Http
                             easy._requestContentStream != null && easy._requestContentStream.TryReset())
                         {
                             // Dump any state associated with the old stream's position
-                            if (easy._sendTransferState != null)
-                            {
-                                easy._sendTransferState.SetTaskOffsetCount(null, 0, 0);
-                            }
+                            easy._sendTransferState?.SetTaskOffsetCount(null, 0, 0);
 
                             // Restart the transfer
                             easy._requestContentStream.Run();

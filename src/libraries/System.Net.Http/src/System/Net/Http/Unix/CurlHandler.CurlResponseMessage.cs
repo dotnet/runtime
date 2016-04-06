@@ -396,12 +396,7 @@ namespace System.Net.Http
                 Debug.Assert(Monitor.IsEntered(_lockObject), "Lock object must be held to manipulate _pendingReadRequest");
                 Debug.Assert(_pendingReadRequest != null, "Should only be clearing the pending read request if there is one");
 
-                var crs = _pendingReadRequest as CancelableReadState;
-                if (crs != null)
-                {
-                    crs._registration.Dispose();
-                }
-
+                (_pendingReadRequest as CancelableReadState)?._registration.Dispose();
                 _pendingReadRequest = null;
             }
 

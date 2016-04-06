@@ -122,25 +122,17 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (certificate != null && _clientCertificates == null) certificate.Dispose(); // only dispose cert if it's automatic / newly created
-                    if (chain != null) chain.Dispose();
-                    if (sslHandle != null) sslHandle.Dispose();
+                    if (_clientCertificates == null) certificate?.Dispose(); // only dispose cert if it's automatic / newly created
+                    chain?.Dispose();
+                    sslHandle?.Dispose();
                 }
             }
 
             public void Dispose()
             {
                 _gcHandle.Free();
-
-                if (_privateKeyHandle != null)
-                {
-                    _privateKeyHandle.Dispose();
-                }
-
-                if (_certHandle != null)
-                {
-                    _certHandle.Dispose();
-                }
+                _privateKeyHandle?.Dispose();
+                _certHandle?.Dispose();
             }
 
             private static ISet<string> GetRequestCertificateAuthorities(SafeSslHandle sslHandle)
