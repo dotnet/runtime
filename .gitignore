@@ -193,6 +193,9 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 
+# C/C++ extension for Visual Studio Code
+browse.VC.db
+
 ### MonoDevelop ###
 
 *.pidb
@@ -258,7 +261,7 @@ Temporary Items
 # We have some checked in prebuilt generated files
 !src/pal/prebuilt/idl/*_i.c
 
-# Valid 'debug' folder, that contains CLR debuggin code
+# Valid 'debug' folder, that contains CLR debugging code
 !src/debug
 
 # Ignore folders created by the test build
