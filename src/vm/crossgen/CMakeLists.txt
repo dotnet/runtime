@@ -150,6 +150,7 @@ endif (WIN32)
 if (CLR_CMAKE_PLATFORM_LINUX)
   list(APPEND VM_CROSSGEN_SOURCES
     ../perfmap.cpp
+    ../perfinfo.cpp
   )
 endif (CLR_CMAKE_PLATFORM_LINUX)
 
