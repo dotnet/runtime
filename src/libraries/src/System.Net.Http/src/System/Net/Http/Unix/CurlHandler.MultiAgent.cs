@@ -370,21 +370,24 @@ namespace System.Net.Http
                             }
                         }
 
-                        // Wait for more things to do.
-                        bool isWakeupRequestedPipeActive;
-                        bool isTimeout;
-                        ThrowIfCURLMError(Interop.Http.MultiWait(_multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
-                        if (isWakeupRequestedPipeActive)
+                        // If there are any active operations, wait for more things to do.
+                        if (_activeOperations.Count > 0)
                         {
-                            // We woke up (at least in part) because a wake-up was requested.  
-                            // Read the data out of the pipe to clear it.
-                            Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
-                            EventSourceTrace("Wait wake-up");
-                            ReadFromWakeupPipeWhenKnownToContainData();
-                        }
-                        if (isTimeout)
-                        {
-                            EventSourceTrace("Wait timeout");
+                            bool isWakeupRequestedPipeActive;
+                            bool isTimeout;
+                            ThrowIfCURLMError(Interop.Http.MultiWait(_multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                            if (isWakeupRequestedPipeActive)
+                            {
+                                // We woke up (at least in part) because a wake-up was requested.  
+                                // Read the data out of the pipe to clear it.
+                                Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
+                                EventSourceTrace("Wait wake-up");
+                                ReadFromWakeupPipeWhenKnownToContainData();
+                            }
+                            if (isTimeout)
+                            {
+                                EventSourceTrace("Wait timeout");
+                            }
                         }
 
                         // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
