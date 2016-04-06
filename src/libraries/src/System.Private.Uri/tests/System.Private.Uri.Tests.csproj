@@ -6,7 +6,6 @@
     <ProjectGuid>{B0FFC4A8-BAC3-4A7F-8FD5-5B680209371C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Private.Uri.Tests</AssemblyName>
-    <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

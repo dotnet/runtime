@@ -10,7 +10,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Cng.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Cng.Tests</RootNamespace>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />

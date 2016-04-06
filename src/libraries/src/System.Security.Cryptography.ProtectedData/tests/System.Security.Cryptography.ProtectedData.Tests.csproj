@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.ProtectedData.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.ProtectedData.Tests</RootNamespace>
-    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>

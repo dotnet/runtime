@@ -10,7 +10,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.OpenSsl.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.OpenSsl.Tests</RootNamespace>
-    <UnsupportedPlatforms>Windows_NT</UnsupportedPlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
