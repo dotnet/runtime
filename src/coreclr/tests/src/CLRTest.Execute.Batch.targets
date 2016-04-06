@@ -229,9 +229,17 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 
     <PropertyGroup> 
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
+      <BatchCLRTestLaunchCmds><![CDATA[
+IF NOT "%CLRCustomTestLauncher%"=="" (
+  set LAUNCHER=call %CLRCustomTestLauncher% %~dp0
+) ELSE (
+  set LAUNCHER=%_DebuggerFullPath% $(_CLRTestRunFile)
+)
+      ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition=" '$(IlasmRoundTrip)'=='true' "><![CDATA[
-ECHO $(_CLRTestRunFile) $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
-$(_CLRTestRunFile) $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+$(BatchCLRTestLaunchCmds)
+ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+%LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
 
 IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
   ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
@@ -241,8 +249,8 @@ IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds><![CDATA[
 $(BatchCLRTestLaunchCmds)
-ECHO %_DebuggerFullPath% $(_CLRTestRunFile) $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
-%_DebuggerFullPath% $(_CLRTestRunFile) $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+%LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments% %Host_Args%
 set CLRTestExitCode=!ERRORLEVEL!
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>
