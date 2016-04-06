@@ -1318,6 +1318,7 @@ set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
 	SGEN_ASSERT (6, block->state == expected_state, "Block state incorrect before set");
 	block->state = new_state;
+	binary_protocol_block_set_state (block, MS_BLOCK_SIZE, expected_state, new_state);
 }
 
 /*
