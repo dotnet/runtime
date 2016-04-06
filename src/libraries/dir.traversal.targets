@@ -47,9 +47,17 @@
       </Project>
     </ItemGroup>
 
+    <PropertyGroup>
+      <OSGroupList>AnyOS;$(FilterToOSGroup);</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='OSX'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='Linux'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='FreeBSD'">$(OSGroupList);Unix;</OSGroupList>
+      <OSGroupList Condition="'$(FilterToOSGroup)'=='NetBSD'">$(OSGroupList);Unix;</OSGroupList>
+    </PropertyGroup>
+ 
     <ItemGroup Condition="'$(FilterToOSGroup)'!='' and '$(BuildAllOSGroups)' != 'true'">
-      <ProjectsToBuild Include="@(Project)" Condition="'%(Project.OSGroup)'=='$(FilterToOSGroup)' or '%(Project.OSGroup)'=='AnyOS' or '%(Project.OSGroup)'==''" />
-
+      <ProjectsToBuild Include="@(Project)" Condition="$(OSGroupList.Contains('%(Project.OSGroup);'))" />
+ 
       <Project Remove="@(Project)" />
       <Project Include="@(ProjectsToBuild)" />
     </ItemGroup>
