@@ -111,7 +111,7 @@ namespace System.IO
         {
             if (stream == null || encoding == null)
             {
-                throw new ArgumentNullException((stream == null ? "stream" : "encoding"));
+                throw new ArgumentNullException(stream == null ? nameof(stream) : nameof(encoding));
             }
             if (!stream.CanWrite)
             {

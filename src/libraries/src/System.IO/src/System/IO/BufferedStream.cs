@@ -81,7 +81,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(stream));
 
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.Format(SR.ArgumentOutOfRange_MustBePositive, "bufferSize"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(bufferSize)));
 
             _stream = stream;
             _bufferSize = bufferSize;
