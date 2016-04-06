@@ -198,12 +198,16 @@ static size_t num_empty_blocks = 0;
 	volatile gpointer *slot;						\
 	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks while sweep is in progress."); \
 	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {	\
-		(bl) = BLOCK_UNTAG (*slot);
+		(bl) = BLOCK_UNTAG (*slot);				\
+		if (!(bl))						\
+			continue;
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr) {			\
 	volatile gpointer *slot;						\
 	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks while sweep is in progress."); \
 	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {	\
 		(bl) = (MSBlockInfo *) (*slot);			\
+		if (!(bl))						\
+			continue;					\
 		(hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl));		\
 		(bl) = BLOCK_UNTAG ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} SGEN_ARRAY_LIST_END_FOREACH_SLOT; }
@@ -548,16 +552,6 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	*(void**)obj_start = NULL;
 
 	add_free_block (free_blocks, size_index, info);
-
-	/*
-	 * Adding to the allocated_blocks array is racy with the removal of nulls when
-	 * sweeping. We wait for sweep to finish to avoid that.
-	 *
-	 * The memory barrier here and in `sweep_job_func()` are required because we need
-	 * `allocated_blocks` synchronized between this and the sweep thread.
-	 */
-	major_finish_sweep_checking ();
-	mono_memory_barrier ();
 
 	sgen_array_list_add (&allocated_blocks, BLOCK_TAG (info), 0, FALSE);
 
@@ -1432,6 +1426,8 @@ sweep_start (void)
 		for (j = 0; j < num_block_obj_sizes; ++j)
 			free_blocks [j] = NULL;
 	}
+
+	sgen_array_list_remove_nulls (&allocated_blocks);
 }
 
 static void sweep_finish (void);
@@ -1586,9 +1582,12 @@ static void
 sweep_blocks_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 {
 	volatile gpointer *slot;
+	MSBlockInfo *bl;
 
 	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {
-		sweep_block (BLOCK_UNTAG (*slot));
+		bl = BLOCK_UNTAG (*slot);
+		if (bl)
+			sweep_block (bl);
 	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
 
 	mono_memory_write_barrier ();
@@ -1634,8 +1633,6 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 			SGEN_ASSERT (6, block && block->state == BLOCK_STATE_SWEPT, "How did a new block to be swept get added while swept?");
 		}
 	}
-
-	sgen_array_list_remove_nulls (&allocated_blocks);
 
 	/*
 	 * Concurrently sweep all the blocks to reduce workload during minor
