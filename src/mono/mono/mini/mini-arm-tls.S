@@ -130,7 +130,7 @@ DECLARE_GLOBAL_SYMBOL mono_fallback_set_tls_key
 	.align 4
 DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key2
 	bic	r0, r0, #0x80000000
-	mrc	15, 0, r1, cr13, cr0, #3
+	mrc	p15, 0, r1, cr13, cr0, #3
 	lsls	r0, r0, #3
 	ldr	r1, [r1, #4]
 	add	r0, r1
@@ -146,7 +146,7 @@ DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key2_end
 	.align 4
 DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key2
 	bic	r0, r0, #0x80000000
-	mrc	15, 0, r2, cr13, cr0, #3
+	mrc	p15, 0, r2, cr13, cr0, #3
 	lsls	r0, r0, #3
 	ldr	r2, [r2, #4]
 	add	r0, r2
