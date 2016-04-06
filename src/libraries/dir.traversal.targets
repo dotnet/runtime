@@ -11,6 +11,9 @@
         <AdditionalProperties Condition="'%(Project.TargetGroup)'!=''">TargetGroup=%(Project.TargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
+        <FilterToTargetGroup Condition="'$(FilterToTargetGroup)'!=''">$(FilterToTargetGroup)</FilterToTargetGroup>
+      </Project>
+      <Project>
         <FilterToOSGroup Condition="'$(FilterToOSGroup)'!=''">$(FilterToOSGroup)</FilterToOSGroup>
       </Project>
       <Project>
@@ -21,6 +24,9 @@
       </Project>
       <Project>
         <AdditionalProperties Condition="'%(Project.FilterToOSGroup)'!=''">FilterToOSGroup=%(Project.FilterToOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
+      </Project>
+      <Project>
+        <AdditionalProperties Condition="'%(Project.FilterToTargetGroup)'!=''">FilterToTargetGroup=%(Project.FilterToTargetGroup);%(Project.AdditionalProperties)</AdditionalProperties>
       </Project>
       <Project>
         <AdditionalProperties Condition="'%(Project.InputOSGroup)' != ''">InputOSGroup=%(Project.InputOSGroup);%(Project.AdditionalProperties)</AdditionalProperties>
@@ -46,6 +52,19 @@
 
       <Project Remove="@(Project)" />
       <Project Include="@(ProjectsToBuild)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TargetGroupList>;$(FilterToTargetGroup);</TargetGroupList>
+      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net46'">$(TargetGroupList)net461;net462;</TargetGroupList>
+      <TargetGroupList Condition="'$(FilterToTargetGroup)'=='net461'">$(TargetGroupList)net462;</TargetGroupList>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(FilterToTargetGroup)'!=''">
+      <FilteredProjectsToBuild Include="@(Project)" Condition="$(TargetGroupList.Contains(';%(Project.TargetGroup);')) Or '%(Project.Extension)' == '.proj' Or '%(Project.Extension)' == '.builds'" />
+
+      <Project Remove="@(Project)" />
+      <Project Include="@(FilteredProjectsToBuild)" />
     </ItemGroup>
   </Target>
 
