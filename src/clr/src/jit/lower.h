@@ -77,7 +77,7 @@ private:
     GenTree* LowerVirtualVtableCall   (GenTreeCall* call);
     GenTree* LowerVirtualStubCall     (GenTreeCall* call);
     void     LowerArgsForCall         (GenTreeCall* call);
-    GenTree* NewPutArg                (GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr fp, var_types type);
+    GenTree* NewPutArg                (GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr info, var_types type);
     void     LowerArg                 (GenTreeCall* call, GenTreePtr *ppTree);
     void     InsertPInvokeCallProlog  (GenTreeCall* call);
     void     InsertPInvokeCallEpilog  (GenTreeCall* call);

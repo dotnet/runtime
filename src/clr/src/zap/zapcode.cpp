@@ -1939,6 +1939,18 @@ DWORD ZapLazyHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int)(p - buffer), m_pTarget, 0, IMAGE_REL_BASED_THUMB_BRANCH24);
     p += 4;
+#elif defined(_TARGET_ARM64_)
+    // ldr x1, [PC+8]
+    *(DWORD *)(p) =0x58000041;
+    p += 4;
+    // b JIT_StrCns
+    *(DWORD *)(p) = 0x14000000;
+    if (pImage != NULL)
+        pImage->WriteReloc(buffer, (int)(p - buffer), m_pTarget, 0, IMAGE_REL_ARM64_BRANCH26);
+    p += 4;
+    if (pImage != NULL)
+        pImage->WriteReloc(buffer, (int)(p - buffer), m_pArg, 0, IMAGE_REL_BASED_PTR);
+    p += 8;
 #else
     PORTABILITY_ASSERT("ZapLazyHelperThunk::Save");
 #endif
