@@ -37,5 +37,9 @@
   <ItemGroup>
     <Compile Include="NativeCallableTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- This is needed to make sure native binary gets installed in the right location -->
+    <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
