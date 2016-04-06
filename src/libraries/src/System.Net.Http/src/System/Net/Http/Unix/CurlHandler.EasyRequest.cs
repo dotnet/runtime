@@ -198,10 +198,15 @@ namespace System.Net.Http
 
             private void SetTimeouts()
             {
-                // Set timeout limit on the connect phase
+                // Set timeout limit on the connect phase.
                 SetCurlOption(CURLoption.CURLOPT_CONNECTTIMEOUT_MS, _handler.ConnectTimeout == Timeout.InfiniteTimeSpan ? 
                     int.MaxValue : 
                     Math.Max(1, (long)_handler.ConnectTimeout.TotalMilliseconds));
+
+                // Override the default DNS cache timeout.  libcurl defaults to a 1 minute
+                // timeout, but we extend that to match the Windows timeout of 10 minutes.
+                const int DnsCacheTimeoutSeconds = 10 * 60;
+                SetCurlOption(CURLoption.CURLOPT_DNS_CACHE_TIMEOUT, DnsCacheTimeoutSeconds);
             }
 
             private void SetRedirection()
