@@ -4219,6 +4219,9 @@ helper_thread (void* arg)
 			continue;
 		//fprintf (stderr, "Accepted connection\n");
 	}
+
+	mono_thread_info_detach ();
+
 	return NULL;
 }
 
@@ -4355,6 +4358,8 @@ writer_thread (void *arg)
 			free (entry);
 		}
 	}
+
+	mono_thread_info_detach ();
 
 	return NULL;
 }

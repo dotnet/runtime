@@ -333,7 +333,7 @@ mono_thread_info_register_small_id (void);
 THREAD_INFO_TYPE *
 mono_thread_info_attach (void *baseptr);
 
-void
+MONO_API void
 mono_thread_info_detach (void);
 
 gboolean
