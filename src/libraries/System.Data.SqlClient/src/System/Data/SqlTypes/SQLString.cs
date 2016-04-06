@@ -782,7 +782,7 @@ namespace System.Data.SqlTypes
             ValidateSqlCompareOptions(compareOptions);
 
             if ((compareOptions & (SqlCompareOptions.BinarySort | SqlCompareOptions.BinarySort2)) != 0)
-                throw ADP.ArgumentOutOfRange("compareOptions");
+                throw ADP.ArgumentOutOfRange(nameof(compareOptions));
             else
             {
                 if ((compareOptions & SqlCompareOptions.IgnoreCase) != 0)

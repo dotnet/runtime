@@ -1232,7 +1232,7 @@ namespace Microsoft.SqlServer.Server
             ThrowIfInvalidSetterAccess(metaData, ExtendedClrTypeCode.ByteArray);
             if (null == buffer)
             {
-                throw ADP.ArgumentNull("buffer");
+                throw ADP.ArgumentNull(nameof(buffer));
             }
             length = CheckXetParameters(metaData.SqlDbType, metaData.MaxLength, NoLengthLimit /* actual */, fieldOffset, buffer.Length, bufferOffset, length);
             Debug.Assert(length >= 0, "Buffer.Length was invalid!");
@@ -1273,7 +1273,7 @@ namespace Microsoft.SqlServer.Server
             ThrowIfInvalidSetterAccess(metaData, ExtendedClrTypeCode.CharArray);
             if (null == buffer)
             {
-                throw ADP.ArgumentNull("buffer");
+                throw ADP.ArgumentNull(nameof(buffer));
             }
             length = CheckXetParameters(metaData.SqlDbType, metaData.MaxLength, NoLengthLimit /* actual */, fieldOffset, buffer.Length, bufferOffset, length);
             Debug.Assert(length >= 0, "Buffer.Length was invalid!");
@@ -2619,12 +2619,12 @@ namespace Microsoft.SqlServer.Server
                 int length)
         {
             if (0 > fieldOffset)
-                throw ADP.NegativeParameter("fieldOffset");
+                throw ADP.NegativeParameter(nameof(fieldOffset));
 
             // if negative buffer index, throw
             if (bufferOffset < 0)
             {
-                throw ADP.InvalidDestinationBufferIndex(bufferLength, bufferOffset, "bufferOffset");
+                throw ADP.InvalidDestinationBufferIndex(bufferLength, bufferOffset, nameof(bufferOffset));
             }
 
             // skip further length checks for LOB buffer lengths
@@ -2641,7 +2641,7 @@ namespace Microsoft.SqlServer.Server
             // if bad buffer index, throw
             if (bufferOffset > bufferLength)
             {
-                throw ADP.InvalidDestinationBufferIndex(bufferLength, bufferOffset, "bufferOffset");
+                throw ADP.InvalidDestinationBufferIndex(bufferLength, bufferOffset, nameof(bufferOffset));
             }
 
             // if there is not enough room in the buffer for data

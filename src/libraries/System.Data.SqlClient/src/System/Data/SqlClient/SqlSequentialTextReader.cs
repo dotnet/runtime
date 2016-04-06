@@ -451,15 +451,15 @@ namespace System.Data.SqlClient
         {
             if (buffer == null)
             {
-                throw ADP.ArgumentNull(ADP.ParameterBuffer);
+                throw ADP.ArgumentNull(nameof(buffer));
             }
             if (index < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterIndex);
+                throw ADP.ArgumentOutOfRange(nameof(index));
             }
             if (count < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterCount);
+                throw ADP.ArgumentOutOfRange(nameof(count));
             }
             try
             {

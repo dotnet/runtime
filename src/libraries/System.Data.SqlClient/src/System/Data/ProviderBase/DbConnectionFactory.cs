@@ -61,7 +61,7 @@ namespace System.Data.ProviderBase
 
         public void ClearPool(DbConnection connection)
         {
-            ADP.CheckArgumentNull(connection, "connection");
+            ADP.CheckArgumentNull(connection, nameof(connection));
 
             DbConnectionPoolGroup poolGroup = GetConnectionPoolGroup(connection);
             if (null != poolGroup)
@@ -73,7 +73,7 @@ namespace System.Data.ProviderBase
         public void ClearPool(DbConnectionPoolKey key)
         {
             Debug.Assert(key != null, "key cannot be null");
-            ADP.CheckArgumentNull(key.ConnectionString, "key.ConnectionString");
+            ADP.CheckArgumentNull(key.ConnectionString, nameof(key) + "." + nameof(key.ConnectionString));
 
             DbConnectionPoolGroup poolGroup;
             Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;

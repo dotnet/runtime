@@ -45,7 +45,7 @@ namespace System.Data.Common
         {
             if (null == values)
             {
-                throw ADP.ArgumentNull("values");
+                throw ADP.ArgumentNull(nameof(values));
             }
 
             int copyLen = (values.Length < _schemaInfo.Length) ? values.Length : _schemaInfo.Length;
@@ -122,7 +122,7 @@ namespace System.Data.Common
             // is invalid
             if (dataIndex > Int32.MaxValue)
             {
-                throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, "dataIndex");
+                throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
             }
 
             ndataIndex = (int)dataIndex;
@@ -156,11 +156,11 @@ namespace System.Data.Common
 
                     // if bad buffer index, throw
                     if (bufferIndex < 0 || bufferIndex >= buffer.Length)
-                        throw ADP.InvalidDestinationBufferIndex(length, bufferIndex, "bufferIndex");
+                        throw ADP.InvalidDestinationBufferIndex(length, bufferIndex, nameof(bufferIndex));
 
                     // if bad data index, throw
                     if (dataIndex < 0 || dataIndex >= cbytes)
-                        throw ADP.InvalidSourceBufferIndex(length, dataIndex, "dataIndex");
+                        throw ADP.InvalidSourceBufferIndex(length, dataIndex, nameof(dataIndex));
 
                     // if there is not enough room in the buffer for data
                     if (cbytes + bufferIndex > buffer.Length)
@@ -188,7 +188,7 @@ namespace System.Data.Common
             // is invalid
             if (dataIndex > Int32.MaxValue)
             {
-                throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, "dataIndex");
+                throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
             }
 
             int ndataIndex = (int)dataIndex;
@@ -221,11 +221,11 @@ namespace System.Data.Common
 
                     // if bad buffer index, throw
                     if (bufferIndex < 0 || bufferIndex >= buffer.Length)
-                        throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, "bufferIndex");
+                        throw ADP.InvalidDestinationBufferIndex(buffer.Length, bufferIndex, nameof(bufferIndex));
 
                     // if bad data index, throw
                     if (ndataIndex < 0 || ndataIndex >= cchars)
-                        throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, "dataIndex");
+                        throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
 
                     // if there is not enough room in the buffer for data
                     if (cchars + bufferIndex > buffer.Length)

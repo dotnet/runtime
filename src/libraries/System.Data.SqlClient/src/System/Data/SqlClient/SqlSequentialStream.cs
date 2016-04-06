@@ -83,7 +83,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("value");
+                    throw ADP.ArgumentOutOfRange(nameof(value));
                 }
             }
         }
@@ -283,15 +283,15 @@ namespace System.Data.SqlClient
         {
             if (buffer == null)
             {
-                throw ADP.ArgumentNull(ADP.ParameterBuffer);
+                throw ADP.ArgumentNull(nameof(buffer));
             }
             if (offset < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterOffset);
+                throw ADP.ArgumentOutOfRange(nameof(offset));
             }
             if (count < 0)
             {
-                throw ADP.ArgumentOutOfRange(ADP.ParameterCount);
+                throw ADP.ArgumentOutOfRange(nameof(count));
             }
             try
             {

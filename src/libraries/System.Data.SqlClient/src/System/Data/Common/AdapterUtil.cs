@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -403,7 +404,7 @@ namespace System.Data.Common
             return InvalidOperation(Res.GetString(Res.ADP_NoConnectionString));
         }
 
-        static internal Exception MethodNotImplemented(string methodName)
+        static internal Exception MethodNotImplemented([CallerMemberName] string methodName = "")
         {
             return NotImplemented.ByDesignWithMessage(methodName);
         }
@@ -575,9 +576,9 @@ namespace System.Data.Common
         //
         // : IDbCommand
         //
-        static internal Exception InvalidCommandTimeout(int value)
+        static internal Exception InvalidCommandTimeout(int value, [CallerMemberName] string property = "")
         {
-            return Argument(Res.GetString(Res.ADP_InvalidCommandTimeout, value.ToString(CultureInfo.InvariantCulture)), ADP.CommandTimeout);
+            return Argument(Res.GetString(Res.ADP_InvalidCommandTimeout, value.ToString(CultureInfo.InvariantCulture)), property);
         }
         static internal Exception UninitializedParameterSize(int index, Type dataType)
         {
@@ -693,7 +694,7 @@ namespace System.Data.Common
         //
         // : DbDataReader
         //
-        static internal Exception DataReaderClosed(string method)
+        static internal Exception DataReaderClosed([CallerMemberName] string method = "")
         {
             return InvalidOperation(Res.GetString(Res.ADP_DataReaderClosed, method));
         }
@@ -721,7 +722,7 @@ namespace System.Data.Common
         //
         // : Stream
         //
-        static internal Exception StreamClosed(string method)
+        static internal Exception StreamClosed([CallerMemberName] string method = "")
         {
             return InvalidOperation(Res.GetString(Res.ADP_StreamClosed, method));
         }
@@ -827,69 +828,9 @@ namespace System.Data.Common
 
 
         // global constant strings
-        internal const string Append = "Append";
-        internal const string BeginExecuteNonQuery = "BeginExecuteNonQuery";
-        internal const string BeginExecuteReader = "BeginExecuteReader";
-        internal const string BeginTransaction = "BeginTransaction";
-        internal const string BeginExecuteXmlReader = "BeginExecuteXmlReader";
-        internal const string ChangeDatabase = "ChangeDatabase";
-        internal const string Cancel = "Cancel";
-        internal const string Clone = "Clone";
-        internal const string CommitTransaction = "CommitTransaction";
-        internal const string CommandTimeout = "CommandTimeout";
-        internal const string ConnectionString = "ConnectionString";
-        internal const string DataSetColumn = "DataSetColumn";
-        internal const string DataSetTable = "DataSetTable";
-        internal const string Delete = "Delete";
-        internal const string DeleteCommand = "DeleteCommand";
-        internal const string DeriveParameters = "DeriveParameters";
-        internal const string EndExecuteNonQuery = "EndExecuteNonQuery";
-        internal const string EndExecuteReader = "EndExecuteReader";
-        internal const string EndExecuteXmlReader = "EndExecuteXmlReader";
-        internal const string ExecuteReader = "ExecuteReader";
-        internal const string ExecuteRow = "ExecuteRow";
-        internal const string ExecuteNonQuery = "ExecuteNonQuery";
-        internal const string ExecuteScalar = "ExecuteScalar";
-        internal const string ExecuteSqlScalar = "ExecuteSqlScalar";
-        internal const string ExecuteXmlReader = "ExecuteXmlReader";
-        internal const string Fill = "Fill";
-        internal const string FillPage = "FillPage";
-        internal const string FillSchema = "FillSchema";
-        internal const string GetBytes = "GetBytes";
-        internal const string GetChars = "GetChars";
-        internal const string GetOleDbSchemaTable = "GetOleDbSchemaTable";
-        internal const string GetProperties = "GetProperties";
-        internal const string GetSchema = "GetSchema";
-        internal const string GetSchemaTable = "GetSchemaTable";
-        internal const string GetServerTransactionLevel = "GetServerTransactionLevel";
-        internal const string Insert = "Insert";
-        internal const string Open = "Open";
         internal const string Parameter = "Parameter";
-        internal const string ParameterBuffer = "buffer";
-        internal const string ParameterCount = "count";
-        internal const string ParameterDestinationType = "destinationType";
-        internal const string ParameterIndex = "index";
         internal const string ParameterName = "ParameterName";
-        internal const string ParameterOffset = "offset";
         internal const string ParameterSetPosition = "set_Position";
-        internal const string ParameterService = "Service";
-        internal const string ParameterTimeout = "Timeout";
-        internal const string ParameterUserData = "UserData";
-        internal const string Prepare = "Prepare";
-        internal const string QuoteIdentifier = "QuoteIdentifier";
-        internal const string Read = "Read";
-        internal const string ReadAsync = "ReadAsync";
-        internal const string Remove = "Remove";
-        internal const string RollbackTransaction = "RollbackTransaction";
-        internal const string SaveTransaction = "SaveTransaction";
-        internal const string SetProperties = "SetProperties";
-        internal const string SourceColumn = "SourceColumn";
-        internal const string SourceVersion = "SourceVersion";
-        internal const string SourceTable = "SourceTable";
-        internal const string UnquoteIdentifier = "UnquoteIdentifier";
-        internal const string Update = "Update";
-        internal const string UpdateCommand = "UpdateCommand";
-        internal const string UpdateRows = "UpdateRows";
 
         internal const CompareOptions compareOptions = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
         internal const int DecimalMaxPrecision = 29;

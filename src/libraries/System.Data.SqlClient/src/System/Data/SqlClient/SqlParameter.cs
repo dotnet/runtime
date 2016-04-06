@@ -150,7 +150,7 @@ namespace System.Data.SqlClient
                 }
                 if ((value & SqlString.x_iValidSqlCompareOptionMask) != value)
                 {
-                    throw ADP.ArgumentOutOfRange("CompareInfo");
+                    throw ADP.ArgumentOutOfRange(nameof(CompareInfo));
                 }
                 collation.SqlCompareOptions = value;
             }
@@ -252,7 +252,7 @@ namespace System.Data.SqlClient
                 }
                 if (value != (SqlCollation.MaskLcid & value))
                 {
-                    throw ADP.ArgumentOutOfRange("LocaleId");
+                    throw ADP.ArgumentOutOfRange(nameof(LocaleId));
                 }
                 collation.LCID = value;
             }
@@ -382,14 +382,14 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("names");
+                    throw ADP.ArgumentOutOfRange(nameof(names));
                 }
 
                 if ((!ADP.IsEmpty(typeSpecificNamePart1) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart1.Length)
                     || (!ADP.IsEmpty(typeSpecificNamePart2) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart2.Length)
                     || (!ADP.IsEmpty(typeSpecificNamePart3) && TdsEnums.MAX_SERVERNAME < typeSpecificNamePart3.Length))
                 {
-                    throw ADP.ArgumentOutOfRange("names");
+                    throw ADP.ArgumentOutOfRange(nameof(names));
                 }
             }
 

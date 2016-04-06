@@ -258,7 +258,7 @@ namespace System.Data.SqlClient
         {
             if (connection == null)
             {
-                throw ADP.ArgumentNull("connection");
+                throw ADP.ArgumentNull(nameof(connection));
             }
             _connection = connection;
             _columnMappings = new SqlBulkCopyColumnMappingCollection();
@@ -283,7 +283,7 @@ namespace System.Data.SqlClient
         {
             if (connectionString == null)
             {
-                throw ADP.ArgumentNull("connectionString");
+                throw ADP.ArgumentNull(nameof(connectionString));
             }
             _connection = new SqlConnection(connectionString);
             _columnMappings = new SqlBulkCopyColumnMappingCollection();
@@ -310,7 +310,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("BatchSize");
+                    throw ADP.ArgumentOutOfRange(nameof(BatchSize));
                 }
             }
         }
@@ -361,11 +361,11 @@ namespace System.Data.SqlClient
             {
                 if (value == null)
                 {
-                    throw ADP.ArgumentNull("DestinationTableName");
+                    throw ADP.ArgumentNull(nameof(DestinationTableName));
                 }
                 else if (value.Length == 0)
                 {
-                    throw ADP.ArgumentOutOfRange("DestinationTableName");
+                    throw ADP.ArgumentOutOfRange(nameof(DestinationTableName));
                 }
                 _destinationTableName = value;
             }
@@ -385,7 +385,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    throw ADP.ArgumentOutOfRange("NotifyAfter");
+                    throw ADP.ArgumentOutOfRange(nameof(NotifyAfter));
                 }
             }
         }
@@ -1503,7 +1503,7 @@ namespace System.Data.SqlClient
             bool finishedSynchronously = true;
             _isBulkCopyingInProgress = true;
 
-            CreateOrValidateConnection(SQL.WriteToServer);
+            CreateOrValidateConnection(nameof(WriteToServer));
             SqlInternalConnectionTds internalConnection = _connection.GetOpenTdsConnection();
 
             Debug.Assert(_parserLock == null, "Previous parser lock not cleaned");
@@ -1803,7 +1803,7 @@ namespace System.Data.SqlClient
                             // In case the target connection is closed accidentally.
                             if (ConnectionState.Open != _connection.State)
                             {
-                                exception = ADP.OpenConnectionRequired("CheckAndRaiseNotification", _connection.State);
+                                exception = ADP.OpenConnectionRequired(nameof(CheckAndRaiseNotification), _connection.State);
                             }
                         }
                         catch (Exception e)
@@ -1838,7 +1838,7 @@ namespace System.Data.SqlClient
             }
             if (_connection.State != ConnectionState.Open)
             {
-                throw ADP.OpenConnectionRequired(SQL.WriteToServer, _connection.State);
+                throw ADP.OpenConnectionRequired(nameof(WriteToServer), _connection.State);
             }
             if (exception != null)
             {

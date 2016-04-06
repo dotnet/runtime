@@ -330,7 +330,7 @@ namespace System.Data.SqlClient
                 parameter.Direction = ParameterDirection.Output;
                 transactionLevelCommand.Parameters.Add(parameter);
 
-                transactionLevelCommand.RunExecuteReader(0, RunBehavior.UntilDone, false /* returnDataStream */, ADP.GetServerTransactionLevel);
+                transactionLevelCommand.RunExecuteReader(CommandBehavior.Default, RunBehavior.UntilDone, returnStream: false);
 
                 return (int)parameter.Value;
             }

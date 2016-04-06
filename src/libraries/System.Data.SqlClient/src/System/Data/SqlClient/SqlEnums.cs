@@ -337,27 +337,27 @@ namespace System.Data.SqlClient
             else if (dataType == typeof(DateTimeOffset))
                 return MetaDateTimeOffset;
             else if (dataType == typeof(DBNull))
-                throw ADP.InvalidDataType("DBNull");
+                throw ADP.InvalidDataType(nameof(DBNull));
             else if (dataType == typeof(Boolean))
                 return s_metaBit;
             else if (dataType == typeof(Char))
-                throw ADP.InvalidDataType("Char");
+                throw ADP.InvalidDataType(nameof(Char));
             else if (dataType == typeof(SByte))
-                throw ADP.InvalidDataType("SByte");
+                throw ADP.InvalidDataType(nameof(SByte));
             else if (dataType == typeof(Byte))
                 return s_metaTinyInt;
             else if (dataType == typeof(Int16))
                 return s_metaSmallInt;
             else if (dataType == typeof(UInt16))
-                throw ADP.InvalidDataType("UInt16");
+                throw ADP.InvalidDataType(nameof(UInt16));
             else if (dataType == typeof(Int32))
                 return s_metaInt;
             else if (dataType == typeof(UInt32))
-                throw ADP.InvalidDataType("UInt32");
+                throw ADP.InvalidDataType(nameof(UInt32));
             else if (dataType == typeof(Int64))
                 return s_metaBigInt;
             else if (dataType == typeof(UInt64))
-                throw ADP.InvalidDataType("UInt64");
+                throw ADP.InvalidDataType(nameof(UInt64));
             else if (dataType == typeof(Single))
                 return s_metaReal;
             else if (dataType == typeof(Double))
