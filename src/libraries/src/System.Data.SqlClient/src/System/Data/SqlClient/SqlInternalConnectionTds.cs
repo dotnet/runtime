@@ -645,7 +645,7 @@ namespace System.Data.SqlClient
         {
             // For implicit pooled connections, if connection reset behavior is specified,
             // reset the database and language properties back to default.  It is important
-            // to do this on activate so that the hashtable is correct before SqlConnection
+            // to do this on activate so that the dictionary is correct before SqlConnection
             // obtains a clone.
 
             Debug.Assert(!HasLocalTransactionFromAPI, "Upon ResetConnection SqlInternalConnectionTds has a currently ongoing local transaction.");
@@ -659,7 +659,7 @@ namespace System.Data.SqlClient
                 // to the server is made.
                 _parser.PrepareResetConnection();
 
-                // Reset hashtable values, since calling reset will not send us env_changes.
+                // Reset dictionary values, since calling reset will not send us env_changes.
                 CurrentDatabase = _originalDatabase;
                 _currentLanguage = _originalLanguage;
             }
