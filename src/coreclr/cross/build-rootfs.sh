@@ -3,10 +3,12 @@
 usage()
 {
     echo "Usage: $0 [BuildArch]"
-    echo "BuildArch can be: arm, arm64"
+    echo "BuildArch can be: arm, arm-softfp, arm64"
 
     exit 1
 }
+
+__UbuntuCodeName=trusty
 
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
@@ -38,6 +40,14 @@ for i in "$@"
         __UbuntuPackages="build-essential libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
         __MachineTriple=aarch64-linux-gnu
         ;;
+        arm-softfp)
+        __BuildArch=arm-softfp
+        __UbuntuArch=armel
+        __UbuntuRepo="http://ftp.debian.org/debian/"
+        __UbuntuPackages="build-essential lldb-3.6-dev libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
+        __MachineTriple=arm-linux-gnueabi
+        __UbuntuCodeName=stable
+        ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
@@ -51,9 +61,10 @@ fi
 
 umount $__RootfsDir/*
 rm -rf $__RootfsDir
-qemu-debootstrap --arch $__UbuntuArch trusty $__RootfsDir $__UbuntuRepo
+qemu-debootstrap --arch $__UbuntuArch $__UbuntuCodeName $__RootfsDir $__UbuntuRepo
 cp $__CrossDir/$__BuildArch/sources.list $__RootfsDir/etc/apt/sources.list
 chroot $__RootfsDir apt-get update
 chroot $__RootfsDir apt-get -y install $__UbuntuPackages
 chroot $__RootfsDir symlinks -cr /usr
 umount $__RootfsDir/*
+
