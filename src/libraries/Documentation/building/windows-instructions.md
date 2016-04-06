@@ -77,7 +77,7 @@ Tests participate in the incremental build.  This means that if tests have alrea
 The tests can also be filtered based on xunit trait attributes defined in [`xunit.netcore.extensions`](https://github.com/dotnet/buildtools/tree/master/src/xunit.netcore.extensions). These attributes are to be specified over the test method. The available attributes are:
 
 _**`OuterLoop`:**_
-Tests marked as ```Outerloop``` either take longer to execute than normal tests or cover extra cases not in the regular tests. These tests are excluded by default when testing through msbuild but can be enabled manually by adding the  ```/p:Outerloop=true``` property e.g. 
+Tests marked as ```Outerloop``` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through msbuild but can be enabled manually by adding the  ```/p:Outerloop=true``` property e.g. 
 
 ```cmd
 build.cmd *.csproj /p:Outerloop=true
