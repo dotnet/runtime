@@ -344,7 +344,7 @@ namespace System.Data.Common
                     case ParserState.KeyEqual: // \\s*=(?!=)\\s*
                         if ('=' == currentChar) { parserState = ParserState.Key; break; }
                         keyname = GetKeyName(buffer);
-                        if (ADP.IsEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
+                        if (string.IsNullOrEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
                         buffer.Length = 0;
                         parserState = ParserState.KeyEnd;
                         goto case ParserState.KeyEnd;
@@ -428,7 +428,7 @@ namespace System.Data.Common
                 case ParserState.KeyEqual:
                     // equal sign at end of line
                     keyname = GetKeyName(buffer);
-                    if (ADP.IsEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
+                    if (string.IsNullOrEmpty(keyname)) { throw ADP.ConnectionStringSyntax(startposition); }
                     break;
 
                 case ParserState.UnquotedValue:
@@ -618,7 +618,7 @@ namespace System.Data.Common
 
                     string keyname, keyvalue;
                     nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, out keyname, out keyvalue);
-                    if (ADP.IsEmpty(keyname))
+                    if (string.IsNullOrEmpty(keyname))
                     {
                         // if (nextStartPosition != endPosition) { throw; }
                         break;

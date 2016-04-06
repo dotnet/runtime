@@ -146,7 +146,7 @@ namespace System.Data.SqlClient
 
         override public void ChangeDatabase(string database)
         {
-            if (ADP.IsEmpty(database))
+            if (string.IsNullOrEmpty(database))
             {
                 throw ADP.EmptyDatabaseName();
             }

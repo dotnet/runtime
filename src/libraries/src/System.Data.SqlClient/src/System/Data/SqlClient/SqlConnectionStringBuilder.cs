@@ -195,7 +195,7 @@ namespace System.Data.SqlClient
 
         public SqlConnectionStringBuilder(string connectionString) : base()
         {
-            if (!ADP.IsEmpty(connectionString))
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 ConnectionString = connectionString;
             }

@@ -444,7 +444,7 @@ namespace System.Data.SqlClient
             {
                 throw SQL.BulkLoadInvalidDestinationTable(this.DestinationTableName, e);
             }
-            if (ADP.IsEmpty(parts[MultipartIdentifier.TableIndex]))
+            if (string.IsNullOrEmpty(parts[MultipartIdentifier.TableIndex]))
             {
                 throw SQL.BulkLoadInvalidDestinationTable(this.DestinationTableName, null);
             }
@@ -466,7 +466,7 @@ namespace System.Data.SqlClient
 
             string TableName = parts[MultipartIdentifier.TableIndex];
             bool isTempTable = TableName.Length > 0 && '#' == TableName[0];
-            if (!ADP.IsEmpty(TableName))
+            if (!string.IsNullOrEmpty(TableName))
             {
                 // Escape table name to be put inside TSQL literal block (within N'').
                 TableName = SqlServerEscapeHelper.EscapeStringAsLiteral(TableName);
@@ -475,7 +475,7 @@ namespace System.Data.SqlClient
             }
 
             string SchemaName = parts[MultipartIdentifier.SchemaIndex];
-            if (!ADP.IsEmpty(SchemaName))
+            if (!string.IsNullOrEmpty(SchemaName))
             {
                 // Escape schema name to be put inside TSQL literal block (within N'').
                 SchemaName = SqlServerEscapeHelper.EscapeStringAsLiteral(SchemaName);
@@ -484,7 +484,7 @@ namespace System.Data.SqlClient
             }
 
             string CatalogName = parts[MultipartIdentifier.CatalogIndex];
-            if (isTempTable && ADP.IsEmpty(CatalogName))
+            if (isTempTable && string.IsNullOrEmpty(CatalogName))
             {
                 TDSCommand += String.Format((IFormatProvider)null, "exec tempdb..{0} N'{1}.{2}'",
                     TableCollationsStoredProc,
@@ -495,7 +495,7 @@ namespace System.Data.SqlClient
             else
             {
                 // Escape the catalog name
-                if (!ADP.IsEmpty(CatalogName))
+                if (!string.IsNullOrEmpty(CatalogName))
                 {
                     CatalogName = SqlServerEscapeHelper.EscapeIdentifier(CatalogName);
                 }
@@ -1222,7 +1222,7 @@ namespace System.Data.SqlClient
 
         private string UnquotedName(string name)
         {
-            if (ADP.IsEmpty(name)) return null;
+            if (string.IsNullOrEmpty(name)) return null;
             if (name[0] == '[')
             {
                 int l = name.Length;
