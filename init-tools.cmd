@@ -1,9 +1,6 @@
 @echo off
 setlocal
 
-REM Workaround https://github.com/dotnet/coreclr/issues/2153
-set ComPlus_ReadyToRun=0
-
 set INIT_TOOLS_LOG=%~dp0init-tools.log
 set PACKAGES_DIR=%~dp0packages\
 set TOOLRUNTIME_DIR=%~dp0Tools

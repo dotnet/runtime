@@ -303,7 +303,7 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM 
           COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
+          COMMAND ${OBJCOPY} --strip-debug ${strip_source_file}
           COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
           COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
@@ -844,7 +844,7 @@ add_definitions(-DFEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
 add_definitions(-DFEATURE_STRONGNAME_MIGRATION)
 if ((CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64) AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_definitions(-DFEATURE_STUBS_AS_IL)
-endif (CLR_CMAKE_PLATFORM_UNIX AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
+endif ((CLR_CMAKE_PLATFORM_UNIX OR CLR_CMAKE_PLATFORM_ARCH_ARM64) AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
 add_definitions(-DFEATURE_SVR_GC)
 add_definitions(-DFEATURE_SYMDIFF)
 add_definitions(-DFEATURE_SYNTHETIC_CULTURES)
