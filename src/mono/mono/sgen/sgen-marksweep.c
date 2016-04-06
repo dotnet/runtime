@@ -194,16 +194,19 @@ static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, NULL, NULL, 
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
+/*
+ * We can iterate the block list also while sweep is in progress but we
+ * need to account for blocks that will be checked for sweeping and even
+ * freed in the process.
+ */
 #define FOREACH_BLOCK_NO_LOCK(bl) {					\
 	volatile gpointer *slot;						\
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks while sweep is in progress."); \
 	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {	\
 		(bl) = BLOCK_UNTAG (*slot);				\
 		if (!(bl))						\
 			continue;
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr) {			\
 	volatile gpointer *slot;						\
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks while sweep is in progress."); \
 	SGEN_ARRAY_LIST_FOREACH_SLOT (&allocated_blocks, slot) {	\
 		(bl) = (MSBlockInfo *) (*slot);			\
 		if (!(bl))						\
@@ -2223,6 +2226,18 @@ major_print_gc_param_usage (void)
  * This callback is used to clear cards, move cards to the shadow table and do counting.
  */
 static void
+major_iterate_block_ranges (sgen_cardtable_block_callback callback)
+{
+	MSBlockInfo *block;
+	gboolean has_references;
+
+	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
+		if (has_references)
+			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
+	} END_FOREACH_BLOCK_NO_LOCK;
+}
+
+static void
 major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	MSBlockInfo *block;
@@ -2421,12 +2436,15 @@ static void
 major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
 {
 	MSBlockInfo *block;
-	gboolean has_references;
+	gboolean has_references, was_sweeping, skip_scan;
 
 	if (!concurrent_mark)
 		g_assert (scan_type == CARDTABLE_SCAN_GLOBAL);
 
-	major_finish_sweep_checking ();
+	if (scan_type != CARDTABLE_SCAN_GLOBAL)
+		SGEN_ASSERT (0, !sweep_in_progress (), "Sweep should be finished when we scan mod union card table");
+	was_sweeping = sweep_in_progress ();
+
 	binary_protocol_major_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 #ifdef PREFETCH_CARDS
@@ -2444,8 +2462,36 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx)
 
 		if (!has_references)
 			continue;
+		skip_scan = FALSE;
 
-		scan_card_table_for_block (block, scan_type, ctx);
+		if (scan_type == CARDTABLE_SCAN_GLOBAL) {
+			gpointer *card_start = (gpointer*) sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (block));
+			gboolean has_dirty_cards = FALSE;
+			int i;
+			for (i = 0; i < CARDS_PER_BLOCK / sizeof(gpointer); i++) {
+				if (card_start [i]) {
+					has_dirty_cards = TRUE;
+					break;
+				}
+			}
+			if (!has_dirty_cards) {
+				skip_scan = TRUE;
+			} else {
+				/*
+				 * After the start of the concurrent collections, blocks change state
+				 * to marking. We should not sweep it in that case. We can't race with
+				 * sweep start since we are in a nursery collection. Also avoid CAS-ing
+				 */
+				if (sweep_in_progress ()) {
+					skip_scan = !ensure_block_is_checked_for_sweeping (__index, TRUE, NULL);
+				} else if (was_sweeping) {
+					/* Recheck in case sweep finished after dereferencing the slot */
+					skip_scan = *sgen_array_list_get_slot (&allocated_blocks, __index) == 0;
+				}
+			}
+		}
+		if (!skip_scan)
+			scan_card_table_for_block (block, scan_type, ctx);
 	} END_FOREACH_BLOCK_NO_LOCK;
 	binary_protocol_major_card_table_scan_end (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 }
@@ -2582,6 +2628,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
+	collector->iterate_block_ranges = major_iterate_block_ranges;
 	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;
 		collector->get_cardtable_mod_union_for_reference = major_get_cardtable_mod_union_for_reference;

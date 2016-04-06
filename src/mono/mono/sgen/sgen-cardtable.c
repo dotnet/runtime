@@ -410,7 +410,7 @@ static void
 sgen_card_table_clear_cards (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
-	sgen_major_collector_iterate_live_block_ranges (clear_cards);
+	sgen_major_collector_iterate_block_ranges (clear_cards);
 	sgen_los_iterate_live_block_ranges (clear_cards);
 }
 
@@ -431,7 +431,7 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	/*FIXME we should have a bit on each block/los object telling if the object have marked cards.*/
 	/*First we copy*/
-	sgen_major_collector_iterate_live_block_ranges (move_cards_to_shadow_table);
+	sgen_major_collector_iterate_block_ranges (move_cards_to_shadow_table);
 	sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
