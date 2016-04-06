@@ -68,7 +68,9 @@ int __cdecl main(int argc, char **argv)
     
     if (!DeleteFileA("testfile"))
     {
-        Fail("ERROR: Failed to delete \"testfile\".\n");
+        Fail("ERROR: Failed to delete \"testfile\".\n"
+             " Error is %d\n",
+            GetLastError());
     }
 
     /* Attempt to write to a file after using 'a' and fseek */
