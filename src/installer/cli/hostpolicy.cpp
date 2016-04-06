@@ -191,9 +191,14 @@ int run(const corehost_init_t* init, const runtime_config_t& config, const argum
 SHARED_API int corehost_load(corehost_init_t* init)
 {
     g_init = init;
+
+    trace::setup();
+
     if (g_init->version() != corehost_init_t::s_version)
     {
-        trace::error(_X("The structure of init data has changed, do not know how to interpret it"));
+        trace::error(_X("Error loading hostpolicy %s; interface mismatch between hostpolicy [%d] and hostfxr [%d]"),
+                _STRINGIFY(HOST_POLICY_PKG_VER), corehost_init_t::s_version, g_init->version());
+        trace::error(_X("Specifically, the structure of corehost_init_t has changed, do not know how to interpret it"));
         return StatusCode::LibHostInitFailure;
     }
     return 0;
@@ -201,8 +206,6 @@ SHARED_API int corehost_load(corehost_init_t* init)
 
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
 {
-    trace::setup();
-
     assert(g_init);
 
     if (trace::is_enabled())
