@@ -6,12 +6,14 @@ add_definitions(-DPIC=1)
 
 if (HAVE_GSSFW_HEADERS)
    find_library(LIBGSS NAMES GSS)
+   if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+      message(FATAL_ERROR "Cannot find GSS.Framework and System.Net.Security.Native cannot build without it. Try installing GSS.Framework (or the appropriate package for your platform)")
+   endif()
 else()
    find_library(LIBGSS NAMES gssapi_krb5)
-endif()
-
-if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
-    message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
+   if(LIBGSS STREQUAL LIBGSS-NOTFOUND)
+      message(FATAL_ERROR "Cannot find libgssapi_krb5 and System.Net.Security.Native cannot build without it. Try installing libkrb5-dev (or the appropriate package for your platform)")
+   endif()
 endif()
 
 set(NATIVEGSS_SOURCES

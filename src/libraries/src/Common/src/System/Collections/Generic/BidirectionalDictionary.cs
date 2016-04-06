@@ -17,6 +17,15 @@ namespace System.Collections.Generic
             _backward = new Dictionary<T2, T1>(capacity);
         }
 
+        public int Count
+        {
+            get
+            {
+                Debug.Assert(_forward.Count == _backward.Count, "both the dictionaries must have the same number of elements");
+                return _forward.Count;
+            }
+        }
+
         public void Add(T1 item1, T2 item2)
         {
             Debug.Assert(!_backward.ContainsKey(item2), "No added item1 should ever have existing item2");
