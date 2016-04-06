@@ -73,8 +73,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 
-static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
-                                  native_context_t *ucontext);
+static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...);
 
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
@@ -198,24 +197,8 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        EXCEPTION_RECORD record;
-        EXCEPTION_POINTERS pointers;
-        native_context_t *ucontext;
-
-        ucontext = (native_context_t *)context;
-
-        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-        record.ExceptionRecord = NULL;
-        record.ExceptionAddress = GetNativeContextPC(ucontext);
-        record.NumberParameters = 0;
-
-        pointers.ExceptionRecord = &record;
-
-        common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(code, siginfo, context, 0);
     }
-
-    TRACE("SIGILL signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigill.sa_sigaction != NULL)
     {
@@ -245,24 +228,8 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        EXCEPTION_RECORD record;
-        EXCEPTION_POINTERS pointers;
-        native_context_t *ucontext;
-
-        ucontext = (native_context_t *)context;
-
-        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-        record.ExceptionRecord = NULL;
-        record.ExceptionAddress = GetNativeContextPC(ucontext);
-        record.NumberParameters = 0;
-
-        pointers.ExceptionRecord = &record;
-
-        common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(code, siginfo, context, 0);
     }
-
-    TRACE("SIGFPE signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigfpe.sa_sigaction != NULL)
     {
@@ -292,47 +259,11 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        EXCEPTION_RECORD record;
-        EXCEPTION_POINTERS pointers;
-        native_context_t *ucontext;
-
-        ucontext = (native_context_t *)context;
-
-        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-        record.ExceptionRecord = NULL;
-        record.ExceptionAddress = GetNativeContextPC(ucontext);
-        record.NumberParameters = 2;
-
-        if (record.ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-        {
-            // Check if the failed access has hit a stack guard page. In such case, it
-            // was a stack probe that detected that there is not enough stack left.
-            void* stackLimit = CPalThread::GetStackLimit();
-            void* stackGuard = (void*)((size_t)stackLimit - getpagesize());
-            if ((siginfo->si_addr >= stackGuard) && (siginfo->si_addr < stackLimit))
-            {
-                // The exception happened in the page right below the stack limit,
-                // so it is a stack overflow
-                write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                abort();
-            }
-        }
-
-        // TODO: First parameter says whether a read (0) or write (non-0) caused the
+        // TODO: First variable parameter says whether a read (0) or write (non-0) caused the
         // fault. We must disassemble the instruction at record.ExceptionAddress
         // to correctly fill in this value.
-        record.ExceptionInformation[0] = 0;
-
-        // Second parameter is the address that caused the fault.
-        record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
-
-        pointers.ExceptionRecord = &record;
-
-        common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
     }
-
-    TRACE("SIGSEGV signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigsegv.sa_sigaction != NULL)
     {
@@ -362,24 +293,8 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        EXCEPTION_RECORD record;
-        EXCEPTION_POINTERS pointers;
-        native_context_t *ucontext;
-
-        ucontext = (native_context_t *)context;
-
-        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-        record.ExceptionRecord = NULL;
-        record.ExceptionAddress = GetNativeContextPC(ucontext);
-        record.NumberParameters = 0;
-
-        pointers.ExceptionRecord = &record;
-
-        common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(code, siginfo, context, 0);
     }
-
-    TRACE("SIGTRAP signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigtrap.sa_sigaction != NULL)
     {
@@ -410,32 +325,11 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
-        EXCEPTION_RECORD record;
-        EXCEPTION_POINTERS pointers;
-        native_context_t *ucontext;
-
-        ucontext = (native_context_t *)context;
-
-        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-        record.ExceptionRecord = NULL;
-        record.ExceptionAddress = GetNativeContextPC(ucontext);
-        record.NumberParameters = 2;
-
-        // TODO: First parameter says whether a read (0) or write (non-0) caused the
+        // TODO: First variable parameter says whether a read (0) or write (non-0) caused the
         // fault. We must disassemble the instruction at record.ExceptionAddress
         // to correctly fill in this value.
-        record.ExceptionInformation[0] = 0;
-
-        // Second parameter is the address that caused the fault.
-        record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
-
-        pointers.ExceptionRecord = &record;
-
-        common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
     }
-
-    TRACE("SIGBUS signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigbus.sa_sigaction != NULL)
     {
@@ -463,8 +357,6 @@ Parameters :
 --*/
 static void sigint_handler(int code, siginfo_t *siginfo, void *context)
 {
-    TRACE("SIGINT signal; chaining to previous sigaction\n");
-
     PROCNotifyProcessShutdown();
 
     // Restore the original or default handler and resend signal
@@ -485,8 +377,6 @@ Parameters :
 --*/
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
 {
-    TRACE("SIGQUIT signal; chaining to previous sigaction\n");
-
     PROCNotifyProcessShutdown();
 
     // Restore the original or default handler and resend signal
@@ -554,8 +444,6 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
     if (status != 0)
     {
-        PROCNotifyProcessShutdown();
-
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second, 
         // if the thread doesn't exist anymore.
@@ -619,20 +507,42 @@ Function :
     common code for all signal handlers
 
 Parameters :
-    PEXCEPTION_POINTERS pointers : exception information
     int code : signal received
-    native_context_t *ucontext : context structure given to signal handler
+    siginfo_t *siginfo : siginfo passed to the signal handler
+    void *context : context structure passed to the signal handler
+    int numParams : number of variable parameters of the exception
+    ... : variable parameters of the exception (each of size_t type)
 
     (no return value)
 Note:
     the "pointers" parameter should contain a valid exception record pointer,
     but the ContextRecord pointer will be overwritten.
 --*/
-static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
-                                  native_context_t *ucontext)
+static void common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
     sigset_t signal_set;
     CONTEXT context;
+    EXCEPTION_RECORD record;
+    EXCEPTION_POINTERS pointers;
+    native_context_t *ucontext;
+
+    ucontext = (native_context_t *)sigcontext;
+
+    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+    record.ExceptionRecord = NULL;
+    record.ExceptionAddress = GetNativeContextPC(ucontext);
+    record.NumberParameters = numParams;
+
+    va_list params;
+    va_start(params, numParams);
+
+    for (int i = 0; i < numParams; i++)
+    {
+        record.ExceptionInformation[i] = va_arg(params, size_t);
+    }
+
+    pointers.ExceptionRecord = &record;
 
     // Pre-populate context with data from current frame, because ucontext doesn't have some data (e.g. SS register)
     // which is required for restoring context
@@ -643,7 +553,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
     CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
-    pointers->ContextRecord = &context;
+    pointers.ContextRecord = &context;
 
     /* Unmask signal so we can receive it again */
     sigemptyset(&signal_set);
@@ -654,7 +564,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
         ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
     }
 
-    SEHProcessException(pointers);
+    SEHProcessException(&pointers);
 }
 
 /*++
