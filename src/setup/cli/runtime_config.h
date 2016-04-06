@@ -10,6 +10,11 @@ typedef web::json::value json_value;
 
 class runtime_config_t
 {
+    // // WARNING // WARNING // WARNING // WARNING // WARNING // WARNING //
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // !! If you change this class layout increment the                  !!
+    // !!        corehost_init_t::s_version field;                       !!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 public:
     runtime_config_t(const pal::string_t& path, const pal::string_t& dev_path);
     bool is_valid() { return m_valid; }
@@ -19,7 +24,8 @@ public:
     const pal::string_t& get_fx_version() const;
     const pal::string_t& get_fx_name() const;
     const std::list<pal::string_t>& get_probe_paths() const;
-    bool get_fx_roll_fwd() const;
+    bool get_patch_roll_fwd() const;
+    bool get_prerelease_roll_fwd() const;
     bool get_portable() const;
     bool parse_opts(const json_value& opts);
     void config_kv(std::vector<std::string>*, std::vector<std::string>*) const;
@@ -34,7 +40,8 @@ private:
     std::list<pal::string_t> m_probe_paths;
     pal::string_t m_fx_name;
     pal::string_t m_fx_ver;
-    bool m_fx_roll_fwd;
+    bool m_patch_roll_fwd;
+    bool m_prerelease_roll_fwd;
 
     pal::string_t m_dev_path;
     pal::string_t m_path;

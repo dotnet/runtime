@@ -19,7 +19,7 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     trace::verbose(_X("--- Resolving FX directory from muxer dir [%s]"), muxer_dir.c_str());
     const auto fx_name = runtime->get_fx_name();
     const auto fx_ver = runtime->get_fx_version();
-    const auto roll_fwd = runtime->get_fx_roll_fwd();
+    const auto patch_roll_fwd = runtime->get_patch_roll_fwd();
 
     fx_ver_t specified(-1, -1, -1);
     if (!fx_ver_t::parse(fx_ver, &specified, false))
@@ -32,16 +32,16 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
     append_path(&fx_dir, _X("shared"));
     append_path(&fx_dir, fx_name.c_str());
 
-    // If not roll forward or if pre-release, just return.
-    if (!roll_fwd || specified.is_prerelease())
+    // If production and no roll forward use given version.
+    // For prerelease, we will always roll forward.
+    if (!specified.is_prerelease() && !patch_roll_fwd)
     {
-        trace::verbose(_X("Did not roll forward because rollfwd=%d and [%s] is prerelease=%d"),
-                roll_fwd, fx_ver.c_str(), specified.is_prerelease());
+        trace::verbose(_X("Did not roll forward because patch_roll_fwd=%d, chose [%s]"), patch_roll_fwd, fx_ver.c_str());
         append_path(&fx_dir, fx_ver.c_str());
     }
     else
     {
-        trace::verbose(_X("Attempting production FX roll forward starting from [%s]"), fx_ver.c_str());
+        trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
 
         std::vector<pal::string_t> list;
         pal::readdir(fx_dir, &list);
@@ -50,11 +50,19 @@ pal::string_t fx_muxer_t::resolve_fx_dir(const pal::string_t& muxer_dir, runtime
         {
             trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
             fx_ver_t ver(-1, -1, -1);
-            if (fx_ver_t::parse(version, &ver, true) &&
+            if (!specified.is_prerelease() && fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
                 ver.get_major() == max_specified.get_major() &&
                 ver.get_minor() == max_specified.get_minor())
             {
-                max_specified.set_patch(std::max(ver.get_patch(), max_specified.get_patch()));
+                max_specified = std::max(ver, max_specified);
+            }
+            if (specified.is_prerelease() && fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
+                ver.is_prerelease() && // prevent roll forward to production.
+                ver.get_major() == max_specified.get_major() &&
+                ver.get_minor() == max_specified.get_minor() &&
+                ver.get_patch() == max_specified.get_patch())
+            {
+                max_specified = std::max(ver, max_specified);
             }
         }
         pal::string_t max_specified_str = max_specified.as_str();

@@ -124,6 +124,8 @@ void deps_resolver_t::get_dir_assemblies(
 
 bool deps_resolver_t::try_roll_forward(const deps_entry_t& entry,
     const pal::string_t& probe_dir,
+    bool patch_roll_fwd,
+    bool prerelease_roll_fwd,
     pal::string_t* candidate)
 {
     trace::verbose(_X("Attempting a roll forward for [%s/%s/%s] in [%s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), probe_dir.c_str());
@@ -136,29 +138,46 @@ bool deps_resolver_t::try_roll_forward(const deps_entry_t& entry,
         trace::verbose(_X("No roll forward as specified version [%s] could not be parsed"), lib_ver.c_str());
         return false;
     }
-
-    // Extract glob string of the form: 1.0.* from the version 1.0.0-prerelease-00001.
-    size_t pat_start = lib_ver.find(_X('.'), lib_ver.find(_X('.')) + 1);
-    pal::string_t maj_min_star = lib_ver.substr(0, pat_start + 1) + _X('*');
-
     pal::string_t path = probe_dir;
     append_path(&path, entry.library_name.c_str());
-
-    pal::string_t cache_key = path;
-    append_path(&cache_key, maj_min_star.c_str());
-
-    pal::string_t max_str;
-    if (m_roll_forward_cache.count(cache_key))
+    pal::string_t max_str = lib_ver;
+    if (cur_ver.is_prerelease() && prerelease_roll_fwd)
     {
-        max_str = m_roll_forward_cache[cache_key];
-        trace::verbose(_X("Found cached roll forward version [%s] -> [%s]"), lib_ver.c_str(), max_str.c_str());
-    }
-    else
-    {
-        try_patch_roll_forward_in_dir(path, cur_ver, &max_str, true);
-        m_roll_forward_cache[cache_key] = max_str;
-    }
+        pal::string_t maj_min_pat_star = cur_ver.prerelease_glob();
 
+        pal::string_t cache_key = path;
+        append_path(&cache_key, maj_min_pat_star.c_str());
+
+        if (m_prerelease_roll_forward_cache.count(cache_key))
+        {
+            max_str = m_prerelease_roll_forward_cache[cache_key];
+            trace::verbose(_X("Found cached roll forward version [%s] -> [%s]"), lib_ver.c_str(), max_str.c_str());
+        }
+        else
+        {
+            try_prerelease_roll_forward_in_dir(path, cur_ver, &max_str);
+            m_prerelease_roll_forward_cache[cache_key] = max_str;
+        }
+    }
+    if (!cur_ver.is_prerelease() && patch_roll_fwd)
+    {
+        // Extract glob string of the form: 1.0.* from the version 1.0.0-prerelease-00001.
+        pal::string_t maj_min_star = cur_ver.patch_glob();
+
+        pal::string_t cache_key = path;
+        append_path(&cache_key, maj_min_star.c_str());
+
+        if (m_patch_roll_forward_cache.count(cache_key))
+        {
+            max_str = m_patch_roll_forward_cache[cache_key];
+            trace::verbose(_X("Found cached roll forward version [%s] -> [%s]"), lib_ver.c_str(), max_str.c_str());
+        }
+        else
+        {
+            try_patch_roll_forward_in_dir(path, cur_ver, &max_str);
+            m_patch_roll_forward_cache[cache_key] = max_str;
+        }
+    }
     append_path(&path, max_str.c_str());
 
     return entry.to_rel_path(path, candidate);
@@ -176,11 +195,11 @@ void deps_resolver_t::setup_probe_config(
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.
-            m_probes.push_back(probe_config_t::svc_ni(ext_ni, config.get_fx_roll_fwd()));
+            m_probes.push_back(probe_config_t::svc_ni(ext_ni, config.get_patch_roll_fwd(), config.get_prerelease_roll_fwd()));
         }
 
         // Servicing normal probe.
-        m_probes.push_back(probe_config_t::svc(args.dotnet_extensions, config.get_fx_roll_fwd()));
+        m_probes.push_back(probe_config_t::svc(args.dotnet_extensions, config.get_patch_roll_fwd(), config.get_prerelease_roll_fwd()));
     }
 
     if (pal::directory_exists(args.dotnet_packages_cache))
@@ -206,8 +225,9 @@ void deps_resolver_t::setup_probe_config(
     for (const auto& probe : m_additional_probes)
     {
         // Additional paths
-        bool roll_fwd = config.get_fx_roll_fwd();
-        m_probes.push_back(probe_config_t::additional(probe, roll_fwd));
+        bool patch_roll_fwd = config.get_patch_roll_fwd();
+        bool prerelease_roll_fwd = config.get_prerelease_roll_fwd();
+        m_probes.push_back(probe_config_t::additional(probe, patch_roll_fwd, prerelease_roll_fwd));
     }
 
     if (trace::is_enabled())
@@ -259,7 +279,7 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
         {
             if (entry.to_hash_matched_path(probe_dir, candidate))
             {
-                assert(!config.roll_forward);
+                assert(!config.is_roll_fwd_set());
                 trace::verbose(_X("    Matched hash for [%s]"), candidate->c_str());
                 return true;
             }
@@ -276,7 +296,7 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
             }
             trace::verbose(_X("    Skipping... probe in deps json failed"));
         }
-        else if (!config.roll_forward)
+        else if (!config.is_roll_fwd_set())
         {
             if (entry.to_full_path(probe_dir, candidate))
             {
@@ -285,9 +305,9 @@ bool deps_resolver_t::probe_entry_in_configs(const deps_entry_t& entry, pal::str
             }
             trace::verbose(_X("    Skipping... not found in probe dir"));
         }
-        else if (config.roll_forward)
+        else if (config.is_roll_fwd_set())
         {
-            if (try_roll_forward(entry, probe_dir, candidate))
+            if (try_roll_forward(entry, probe_dir, config.patch_roll_fwd, config.prerelease_roll_fwd, candidate))
             {
                 trace::verbose(_X("    Specified roll forward; matched [%s]"), candidate->c_str());
                 return true;
