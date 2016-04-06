@@ -309,7 +309,7 @@ namespace System.Data.SqlTypes
                     break;
 
                 default:
-                    throw ADP.InvalidSeekOrigin("offset");
+                    throw ADP.InvalidSeekOrigin(nameof(offset));
             }
 
             return _lPosition;

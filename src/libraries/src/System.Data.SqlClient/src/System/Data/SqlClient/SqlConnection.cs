@@ -437,7 +437,7 @@ namespace System.Data.SqlClient
 
         static public void ClearPool(SqlConnection connection)
         {
-            ADP.CheckArgumentNull(connection, "connection");
+            ADP.CheckArgumentNull(connection, nameof(connection));
 
             DbConnectionOptions connectionOptions = connection.UserConnectionOptions;
             if (null != connectionOptions)

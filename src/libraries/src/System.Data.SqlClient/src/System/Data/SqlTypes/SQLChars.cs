@@ -7,8 +7,8 @@
 using System.IO;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Runtime.CompilerServices;
 using Res = System.SR;
-
 
 namespace System.Data.SqlTypes
 {
@@ -598,7 +598,7 @@ namespace System.Data.SqlTypes
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            CheckIfStreamClosed("Seek");
+            CheckIfStreamClosed();
 
             long lPosition = 0;
 
@@ -606,26 +606,26 @@ namespace System.Data.SqlTypes
             {
                 case SeekOrigin.Begin:
                     if (offset < 0 || offset > _sqlchars.Length)
-                        throw ADP.ArgumentOutOfRange("offset");
+                        throw ADP.ArgumentOutOfRange(nameof(offset));
                     _lPosition = offset;
                     break;
 
                 case SeekOrigin.Current:
                     lPosition = _lPosition + offset;
                     if (lPosition < 0 || lPosition > _sqlchars.Length)
-                        throw ADP.ArgumentOutOfRange("offset");
+                        throw ADP.ArgumentOutOfRange(nameof(offset));
                     _lPosition = lPosition;
                     break;
 
                 case SeekOrigin.End:
                     lPosition = _sqlchars.Length + offset;
                     if (lPosition < 0 || lPosition > _sqlchars.Length)
-                        throw ADP.ArgumentOutOfRange("offset");
+                        throw ADP.ArgumentOutOfRange(nameof(offset));
                     _lPosition = lPosition;
                     break;
 
                 default:
-                    throw ADP.ArgumentOutOfRange("offset"); ;
+                    throw ADP.ArgumentOutOfRange(nameof(offset)); ;
             }
 
             return _lPosition;
@@ -634,7 +634,7 @@ namespace System.Data.SqlTypes
         // The Read/Write/Readchar/Writechar simply delegates to SqlChars
         public override int Read(char[] buffer, int offset, int count)
         {
-            CheckIfStreamClosed("Read");
+            CheckIfStreamClosed();
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -651,7 +651,7 @@ namespace System.Data.SqlTypes
 
         public override void Write(char[] buffer, int offset, int count)
         {
-            CheckIfStreamClosed("Write");
+            CheckIfStreamClosed();
 
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
@@ -666,7 +666,7 @@ namespace System.Data.SqlTypes
 
         public override int ReadChar()
         {
-            CheckIfStreamClosed("ReadChar");
+            CheckIfStreamClosed();
 
             // If at the end of stream, return -1, rather than call SqlChars.Readchar,
             // which will throw exception. This is the behavior for Stream.
@@ -681,7 +681,7 @@ namespace System.Data.SqlTypes
 
         public override void WriteChar(char value)
         {
-            CheckIfStreamClosed("WriteChar");
+            CheckIfStreamClosed();
 
             _sqlchars[_lPosition] = value;
             _lPosition++;
@@ -689,7 +689,7 @@ namespace System.Data.SqlTypes
 
         public override void SetLength(long value)
         {
-            CheckIfStreamClosed("SetLength");
+            CheckIfStreamClosed();
 
             _sqlchars.SetLength(value);
             if (_lPosition > value)
@@ -720,7 +720,7 @@ namespace System.Data.SqlTypes
             return _sqlchars == null;
         }
 
-        private void CheckIfStreamClosed(string methodname)
+        private void CheckIfStreamClosed([CallerMemberName] string methodname = "")
         {
             if (FClosed())
                 throw ADP.StreamClosed(methodname);

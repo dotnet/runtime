@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,7 +233,7 @@ namespace System.Data.SqlClient
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)
                     { // If in pending async state, throw.
-                        throw SQL.CannotModifyPropertyAsyncOperationInProgress(SQL.Connection);
+                        throw SQL.CannotModifyPropertyAsyncOperationInProgress();
                     }
                 }
 
@@ -320,7 +317,7 @@ namespace System.Data.SqlClient
                 { // If new value...
                     if (cachedAsyncState.PendingAsyncOperation)
                     { // If in pending async state, throw
-                        throw SQL.CannotModifyPropertyAsyncOperationInProgress(SQL.Transaction);
+                        throw SQL.CannotModifyPropertyAsyncOperationInProgress();
                     }
                 }
 
@@ -542,7 +539,7 @@ namespace System.Data.SqlClient
             else
             {
                 // Validate the command outside of the try\catch to avoid putting the _stateObj on error
-                ValidateCommand(ADP.Prepare, false /*not async*/);
+                ValidateCommand(async: false);
 
                 bool processFinallyBlock = true;
                 try
@@ -748,7 +745,7 @@ namespace System.Data.SqlClient
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
                 SqlDataReader ds;
-                ds = RunExecuteReader(0, RunBehavior.ReturnImmediately, true, ADP.ExecuteScalar);
+                ds = RunExecuteReader(0, RunBehavior.ReturnImmediately, returnStream: true);
                 return CompleteExecuteScalar(ds, false);
             }
             finally
@@ -797,7 +794,7 @@ namespace System.Data.SqlClient
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
-                InternalExecuteNonQuery(null, ADP.ExecuteNonQuery, false, CommandTimeout);
+                InternalExecuteNonQuery(completion: null, sendToPipe: false, timeout: CommandTimeout);
                 return _rowsAffected;
             }
             finally
@@ -807,12 +804,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private IAsyncResult BeginExecuteNonQueryAsync(AsyncCallback callback, object stateObject)
-        {
-            return BeginExecuteNonQueryInternal(callback, stateObject, CommandTimeout, asyncWrite: true);
-        }
-
-        private IAsyncResult BeginExecuteNonQueryInternal(AsyncCallback callback, object stateObject, int timeout, bool asyncWrite = false)
+        private IAsyncResult BeginExecuteNonQuery(AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -829,10 +821,10 @@ namespace System.Data.SqlClient
 
                 try
                 { // InternalExecuteNonQuery already has reliability block, but if failure will not put stateObj back into pool.
-                    Task execNQ = InternalExecuteNonQuery(completion, ADP.BeginExecuteNonQuery, false, timeout, asyncWrite);
+                    Task execNQ = InternalExecuteNonQuery(completion, false, CommandTimeout, asyncWrite: true);
 
                     // must finish caching information before ReadSni which can activate the callback before returning
-                    cachedAsyncState.SetActiveConnectionAndResult(completion, ADP.EndExecuteNonQuery, _activeConnection);
+                    cachedAsyncState.SetActiveConnectionAndResult(completion, nameof(EndExecuteNonQuery), _activeConnection);
                     if (execNQ != null)
                     {
                         AsyncHelper.ContinueTask(execNQ, completion, () => BeginExecuteNonQueryInternalReadStage(completion));
@@ -891,10 +883,8 @@ namespace System.Data.SqlClient
 
         private void VerifyEndExecuteState(Task completionTask, String endMethod)
         {
-            if (null == completionTask)
-            {
-                throw ADP.ArgumentNull("asyncResult");
-            }
+            Debug.Assert(completionTask != null);
+
             if (completionTask.IsCanceled)
             {
                 if (_stateObj != null)
@@ -939,17 +929,6 @@ namespace System.Data.SqlClient
             _activeConnection.GetOpenTdsConnection().DecrementAsyncCount();
         }
 
-        public int EndExecuteNonQuery(IAsyncResult asyncResult)
-        {
-            try
-            {
-                return EndExecuteNonQueryInternal(asyncResult);
-            }
-            finally
-            {
-            }
-        }
-
         private void ThrowIfReconnectionHasBeenCanceled()
         {
             if (_stateObj == null)
@@ -962,7 +941,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private int EndExecuteNonQueryAsync(IAsyncResult asyncResult)
+        private int EndExecuteNonQuery(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -989,7 +968,7 @@ namespace System.Data.SqlClient
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
-                VerifyEndExecuteState((Task)asyncResult, ADP.EndExecuteNonQuery);
+                VerifyEndExecuteState((Task)asyncResult, nameof(EndExecuteNonQuery));
                 WaitForAsyncResults(asyncResult);
 
                 bool processFinallyBlock = true;
@@ -1055,7 +1034,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private Task InternalExecuteNonQuery(TaskCompletionSource<object> completion, string methodName, bool sendToPipe, int timeout, bool asyncWrite = false)
+        private Task InternalExecuteNonQuery(TaskCompletionSource<object> completion, bool sendToPipe, int timeout, bool asyncWrite = false, [CallerMemberName] string methodName = "")
         {
             bool async = (null != completion);
 
@@ -1064,7 +1043,7 @@ namespace System.Data.SqlClient
 
             // this function may throw for an invalid connection
             // returns false for empty command text
-            ValidateCommand(methodName, async);
+            ValidateCommand(async, methodName);
 
             Task task = null;
 
@@ -1089,7 +1068,7 @@ namespace System.Data.SqlClient
             else
             { // otherwise, use a full-fledged execute that can handle params and stored procs
                 Debug.Assert(!sendToPipe, "trying to send non-context command to pipe");
-                SqlDataReader reader = RunExecuteReader(0, RunBehavior.UntilDone, false, methodName, completion, timeout, out task, asyncWrite);
+                SqlDataReader reader = RunExecuteReader(0, RunBehavior.UntilDone, false, completion, timeout, out task, asyncWrite, methodName);
                 if (null != reader)
                 {
                     if (task != null)
@@ -1119,7 +1098,7 @@ namespace System.Data.SqlClient
 
                 // use the reader to consume metadata
                 SqlDataReader ds;
-                ds = RunExecuteReader(CommandBehavior.SequentialAccess, RunBehavior.ReturnImmediately, true, ADP.ExecuteXmlReader);
+                ds = RunExecuteReader(CommandBehavior.SequentialAccess, RunBehavior.ReturnImmediately, returnStream: true);
                 return CompleteXmlReader(ds);
             }
             finally
@@ -1129,12 +1108,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private IAsyncResult BeginExecuteXmlReaderAsync(AsyncCallback callback, object stateObject)
-        {
-            return BeginExecuteXmlReaderInternal(callback, stateObject, CommandTimeout, asyncWrite: true);
-        }
-
-        private IAsyncResult BeginExecuteXmlReaderInternal(AsyncCallback callback, object stateObject, int timeout, bool asyncWrite = false)
+        private IAsyncResult BeginExecuteXmlReader(AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1152,7 +1126,7 @@ namespace System.Data.SqlClient
                 Task writeTask;
                 try
                 { // InternalExecuteNonQuery already has reliability block, but if failure will not put stateObj back into pool.
-                    RunExecuteReader(CommandBehavior.SequentialAccess, RunBehavior.ReturnImmediately, true, ADP.BeginExecuteXmlReader, completion, timeout, out writeTask, asyncWrite);
+                    RunExecuteReader(CommandBehavior.SequentialAccess, RunBehavior.ReturnImmediately, true, completion, CommandTimeout, out writeTask, asyncWrite: true);
                 }
                 catch (Exception e)
                 {
@@ -1168,7 +1142,7 @@ namespace System.Data.SqlClient
                 }
 
                 // must finish caching information before ReadSni which can activate the callback before returning
-                cachedAsyncState.SetActiveConnectionAndResult(completion, ADP.EndExecuteXmlReader, _activeConnection);
+                cachedAsyncState.SetActiveConnectionAndResult(completion, nameof(EndExecuteXmlReader), _activeConnection);
                 if (writeTask != null)
                 {
                     AsyncHelper.ContinueTask(writeTask, completion, () => BeginExecuteXmlReaderInternalReadStage(completion));
@@ -1213,7 +1187,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private XmlReader EndExecuteXmlReaderAsync(IAsyncResult asyncResult)
+        private XmlReader EndExecuteXmlReader(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -1237,7 +1211,7 @@ namespace System.Data.SqlClient
         {
             try
             {
-                return CompleteXmlReader(InternalEndExecuteReader(asyncResult, ADP.EndExecuteXmlReader), async: true);
+                return CompleteXmlReader(InternalEndExecuteReader(asyncResult, nameof(EndExecuteXmlReader)), async: true);
             }
             catch (Exception e)
             {
@@ -1289,7 +1263,7 @@ namespace System.Data.SqlClient
 
         override protected DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
         {
-            return ExecuteReader(behavior, ADP.ExecuteReader);
+            return ExecuteReader(behavior);
         }
 
         new public SqlDataReader ExecuteReader()
@@ -1298,7 +1272,7 @@ namespace System.Data.SqlClient
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
-                return ExecuteReader(CommandBehavior.Default, ADP.ExecuteReader);
+                return ExecuteReader(CommandBehavior.Default);
             }
             finally
             {
@@ -1307,12 +1281,6 @@ namespace System.Data.SqlClient
         }
 
         new public SqlDataReader ExecuteReader(CommandBehavior behavior)
-        {
-            return ExecuteReader(behavior, ADP.ExecuteReader);
-        }
-
-
-        internal SqlDataReader ExecuteReader(CommandBehavior behavior, string method)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1323,7 +1291,7 @@ namespace System.Data.SqlClient
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
-                return RunExecuteReader(behavior, RunBehavior.ReturnImmediately, true, method);
+                return RunExecuteReader(behavior, RunBehavior.ReturnImmediately, returnStream: true);
             }
             finally
             {
@@ -1332,7 +1300,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private SqlDataReader EndExecuteReaderAsync(IAsyncResult asyncResult)
+        private SqlDataReader EndExecuteReader(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -1358,7 +1326,7 @@ namespace System.Data.SqlClient
             try
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
-                return InternalEndExecuteReader(asyncResult, ADP.EndExecuteReader);
+                return InternalEndExecuteReader(asyncResult, nameof(EndExecuteReader));
             }
             catch (Exception e)
             {
@@ -1378,12 +1346,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private IAsyncResult BeginExecuteReaderAsync(CommandBehavior behavior, AsyncCallback callback, object stateObject)
-        {
-            return BeginExecuteReaderInternal(behavior, callback, stateObject, CommandTimeout, asyncWrite: true);
-        }
-
-        private IAsyncResult BeginExecuteReaderInternal(CommandBehavior behavior, AsyncCallback callback, object stateObject, int timeout, bool asyncWrite = false)
+        private IAsyncResult BeginExecuteReader(CommandBehavior behavior, AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1401,7 +1364,7 @@ namespace System.Data.SqlClient
                 Task writeTask = null;
                 try
                 { // InternalExecuteNonQuery already has reliability block, but if failure will not put stateObj back into pool.
-                    RunExecuteReader(behavior, RunBehavior.ReturnImmediately, true, ADP.BeginExecuteReader, completion, timeout, out writeTask, asyncWrite);
+                    RunExecuteReader(behavior, RunBehavior.ReturnImmediately, true, completion, CommandTimeout, out writeTask, asyncWrite: true);
                 }
                 catch (Exception e)
                 {
@@ -1417,7 +1380,7 @@ namespace System.Data.SqlClient
                 }
 
                 // must finish caching information before ReadSni which can activate the callback before returning
-                cachedAsyncState.SetActiveConnectionAndResult(completion, ADP.EndExecuteReader, _activeConnection);
+                cachedAsyncState.SetActiveConnectionAndResult(completion, nameof(EndExecuteReader), _activeConnection);
                 if (writeTask != null)
                 {
                     AsyncHelper.ContinueTask(writeTask, completion, () => BeginExecuteReaderInternalReadStage(completion));
@@ -1493,7 +1456,7 @@ namespace System.Data.SqlClient
             {
                 RegisterForConnectionCloseNotification(ref returnedTask);
 
-                Task<int>.Factory.FromAsync(BeginExecuteNonQueryAsync, EndExecuteNonQueryAsync, null).ContinueWith((t) =>
+                Task<int>.Factory.FromAsync(BeginExecuteNonQuery, EndExecuteNonQuery, null).ContinueWith((t) =>
                 {
                     registration.Dispose();
                     if (t.IsFaulted)
@@ -1569,7 +1532,7 @@ namespace System.Data.SqlClient
             {
                 RegisterForConnectionCloseNotification(ref returnedTask);
 
-                Task<SqlDataReader>.Factory.FromAsync(BeginExecuteReaderAsync, EndExecuteReaderAsync, behavior, null).ContinueWith((t) =>
+                Task<SqlDataReader>.Factory.FromAsync(BeginExecuteReader, EndExecuteReader, behavior, null).ContinueWith((t) =>
                 {
                     registration.Dispose();
                     if (t.IsFaulted)
@@ -1697,7 +1660,7 @@ namespace System.Data.SqlClient
             {
                 RegisterForConnectionCloseNotification(ref returnedTask);
 
-                Task<XmlReader>.Factory.FromAsync(BeginExecuteXmlReaderAsync, EndExecuteXmlReaderAsync, null).ContinueWith((t) =>
+                Task<XmlReader>.Factory.FromAsync(BeginExecuteXmlReader, EndExecuteXmlReader, null).ContinueWith((t) =>
                 {
                     registration.Dispose();
                     if (t.IsFaulted)
@@ -1866,16 +1829,16 @@ namespace System.Data.SqlClient
         }
 
 
-        internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, string method)
+        internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, [CallerMemberName] string method = "")
         {
             Task unused; // sync execution 
-            SqlDataReader reader = RunExecuteReader(cmdBehavior, runBehavior, returnStream, method, completion: null, timeout: CommandTimeout, task: out unused);
+            SqlDataReader reader = RunExecuteReader(cmdBehavior, runBehavior, returnStream, completion: null, timeout: CommandTimeout, task: out unused, method: method);
             Debug.Assert(unused == null, "returned task during synchronous execution");
             return reader;
         }
 
         // task is created in case of pending asynchronous write, returned SqlDataReader should not be utilized until that task is complete 
-        internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, string method, TaskCompletionSource<object> completion, int timeout, out Task task, bool asyncWrite = false)
+        internal SqlDataReader RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, bool returnStream, TaskCompletionSource<object> completion, int timeout, out Task task, bool asyncWrite = false, [CallerMemberName] string method = "")
         {
             bool async = (null != completion);
 
@@ -1891,7 +1854,7 @@ namespace System.Data.SqlClient
 
             // this function may throw for an invalid connection
             // returns false for empty command text
-            ValidateCommand(method, async);
+            ValidateCommand(async, method);
             SqlStatistics statistics = Statistics;
             if (null != statistics)
             {
@@ -2259,7 +2222,7 @@ namespace System.Data.SqlClient
 
         // validates that a command has commandText and a non-busy open connection
         // throws exception for error case, returns false if the commandText is empty
-        private void ValidateCommand(string method, bool async)
+        private void ValidateCommand(bool async, [CallerMemberName] string method = "")
         {
             if (null == _activeConnection)
             {

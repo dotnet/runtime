@@ -29,7 +29,7 @@ namespace System.Data.ProviderBase
         {
             if (null == fieldNames)
             {
-                throw ADP.ArgumentNull("fieldNames");
+                throw ADP.ArgumentNull(nameof(fieldNames));
             }
             _fieldNames = fieldNames;
             _defaultLocaleID = defaultLocaleID;
@@ -64,7 +64,7 @@ namespace System.Data.ProviderBase
         {
             if (null == fieldName)
             {
-                throw ADP.ArgumentNull("fieldName");
+                throw ADP.ArgumentNull(nameof(fieldName));
             }
             int index = IndexOf(fieldName);
             if (-1 == index)

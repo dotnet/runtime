@@ -9,10 +9,11 @@
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Data.SqlClient
 {
@@ -212,7 +213,7 @@ namespace System.Data.SqlClient
             return ADP.InvalidOperation(Res.GetString(Res.SQL_MarsUnsupportedOnConnection));
         }
 
-        static internal Exception CannotModifyPropertyAsyncOperationInProgress(string property)
+        static internal Exception CannotModifyPropertyAsyncOperationInProgress([CallerMemberName] string property = "")
         {
             return ADP.InvalidOperation(Res.GetString(Res.SQL_CannotModifyPropertyAsyncOperationInProgress, property));
         }
@@ -784,14 +785,6 @@ namespace System.Data.SqlClient
             string errorMessageId = String.Format((IFormatProvider)null, "SNI_ERROR_{0}", sniError);
             return SR.GetResourceString(errorMessageId, errorMessageId);
         }
-
-        // BulkLoad
-        internal const string WriteToServer = "WriteToServer";
-
-
-        // constant strings
-        internal const string Transaction = "Transaction";
-        internal const string Connection = "Connection";
     }
 
     sealed internal class SQLMessage

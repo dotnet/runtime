@@ -91,7 +91,7 @@ namespace Microsoft.SqlServer.Server
             EnsureSubclassOverride();
             if (null == values)
             {
-                throw ADP.ArgumentNull("values");
+                throw ADP.ArgumentNull(nameof(values));
             }
 
             int copyLength = (values.Length < FieldCount) ? values.Length : FieldCount;
@@ -278,7 +278,7 @@ namespace Microsoft.SqlServer.Server
             EnsureSubclassOverride();
             if (null == values)
             {
-                throw ADP.ArgumentNull("values");
+                throw ADP.ArgumentNull(nameof(values));
             }
 
 
@@ -395,7 +395,7 @@ namespace Microsoft.SqlServer.Server
             EnsureSubclassOverride();
             if (null == values)
             {
-                throw ADP.ArgumentNull("values");
+                throw ADP.ArgumentNull(nameof(values));
             }
 
             // Allow values array longer than FieldCount, just ignore the extra cells.
@@ -649,7 +649,7 @@ namespace Microsoft.SqlServer.Server
             // Initial consistency check
             if (null == metaData)
             {
-                throw ADP.ArgumentNull("metadata");
+                throw ADP.ArgumentNull(nameof(metaData));
             }
 
             _columnMetaData = new SqlMetaData[metaData.Length];
@@ -658,7 +658,7 @@ namespace Microsoft.SqlServer.Server
             {
                 if (null == metaData[i])
                 {
-                    throw ADP.ArgumentNull("metadata[" + i + "]");
+                    throw ADP.ArgumentNull($"{nameof(metaData)}[{i}]");
                 }
                 _columnMetaData[i] = metaData[i];
                 _columnSmiMetaData[i] = MetaDataUtilsSmi.SqlMetaDataToSmiExtendedMetaData(_columnMetaData[i]);

@@ -209,7 +209,7 @@ namespace System.Data.ProviderBase
 
         virtual public void ChangeDatabase(string value)
         {
-            throw ADP.MethodNotImplemented("ChangeDatabase");
+            throw ADP.MethodNotImplemented();
         }
 
         internal virtual void CloseConnection(DbConnection owningObject, DbConnectionFactory connectionFactory)
@@ -428,7 +428,7 @@ namespace System.Data.ProviderBase
 
         internal virtual bool TryReplaceConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
         {
-            throw ADP.MethodNotImplemented("TryReplaceConnection");
+            throw ADP.MethodNotImplemented();
         }
 
         protected bool TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions)
