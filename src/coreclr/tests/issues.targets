@@ -46,12 +46,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Arrays\misc\_il_relarrres\_il_relarrres.cmd" >
              <Issue>2330</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\badldsfld_il_d\badldsfld_il_d.cmd" >
-             <Issue>2405</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\badldsfld_il_r\badldsfld_il_r.cmd" >
-             <Issue>2405</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\delegate\_simpleoddpower_il_d\_simpleoddpower_il_d.cmd" >
              <Issue>2407</Issue>
         </ExcludeList>

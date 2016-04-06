@@ -56,8 +56,6 @@ JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
 JIT/Regression/VS-ia64-JIT/V1.2-M02/b12011/b12011/b12011.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
-JIT/Directed/coverage/importer/Desktop/badldsfld_il_d/badldsfld_il_d.sh
-JIT/Directed/coverage/importer/Desktop/badldsfld_il_r/badldsfld_il_r.sh
 JIT/Directed/coverage/importer/Desktop/bleref_il_d/bleref_il_d.sh
 JIT/Directed/coverage/importer/Desktop/bleref_il_r/bleref_il_r.sh
 JIT/Directed/coverage/importer/Desktop/ldelemnullarr1_il_d/ldelemnullarr1_il_d.sh
