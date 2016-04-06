@@ -11,7 +11,7 @@ RelativePath=GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.cmd
 WorkingDir=GC\Coverage\LargeObjectAlloc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;RT;UNSTABLE;ISSUE_3104;ISSUE_3704
+Categories=Pri0;RT;EXPECTED_PASS;
 HostStyle=0
 [LargeObjectAlloc2.cmd_2]
 RelativePath=GC\Coverage\LargeObjectAlloc2\LargeObjectAlloc2.cmd
@@ -17056,7 +17056,7 @@ RelativePath=JIT\Methodical\Boxing\misc\_dbgconcurgc_il\_dbgconcurgc_il.cmd
 WorkingDir=JIT\Methodical\Boxing\misc\_dbgconcurgc_il
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;ISSUE_3704
+Categories=Pri0;EXPECTED_PASS;
 HostStyle=0
 [_dbgenum_cs.cmd_2471]
 RelativePath=JIT\Methodical\Boxing\misc\_dbgenum_cs\_dbgenum_cs.cmd
@@ -17154,7 +17154,7 @@ RelativePath=JIT\Methodical\Boxing\misc\_relconcurgc_il\_relconcurgc_il.cmd
 WorkingDir=JIT\Methodical\Boxing\misc\_relconcurgc_il
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;ISSUE_3704;NEW_PASS
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [_relenum_cs.cmd_2485]
 RelativePath=JIT\Methodical\Boxing\misc\_relenum_cs\_relenum_cs.cmd
@@ -24329,7 +24329,7 @@ RelativePath=JIT\Methodical\int64\arrays\_dbglcs_long\_dbglcs_long.cmd
 WorkingDir=JIT\Methodical\int64\arrays\_dbglcs_long
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;ISSUE_3515;ISSUE_3704
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_dbglcs_ulong.cmd_3534]
 RelativePath=JIT\Methodical\int64\arrays\_dbglcs_ulong\_dbglcs_ulong.cmd
@@ -24371,7 +24371,7 @@ RelativePath=JIT\Methodical\int64\arrays\_il_rellcs_long\_il_rellcs_long.cmd
 WorkingDir=JIT\Methodical\int64\arrays\_il_rellcs_long
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;ISSUE_3515;ISSUE_3704
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_il_rellcs_ulong.cmd_3540]
 RelativePath=JIT\Methodical\int64\arrays\_il_rellcs_ulong\_il_rellcs_ulong.cmd
@@ -24392,14 +24392,14 @@ RelativePath=JIT\Methodical\int64\arrays\_rellcs_ulong\_rellcs_ulong.cmd
 WorkingDir=JIT\Methodical\int64\arrays\_rellcs_ulong
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_FAIL;ISSUE_3515;ISSUE_3704;ISSUE_3542
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_speed_dbglcs_long.cmd_3543]
 RelativePath=JIT\Methodical\int64\arrays\_speed_dbglcs_long\_speed_dbglcs_long.cmd
 WorkingDir=JIT\Methodical\int64\arrays\_speed_dbglcs_long
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;EXPECTED_PASS;ISSUE_3515;ISSUE_3704
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_speed_dbglcs_ulong.cmd_3544]
 RelativePath=JIT\Methodical\int64\arrays\_speed_dbglcs_ulong\_speed_dbglcs_ulong.cmd
@@ -28291,7 +28291,7 @@ RelativePath=JIT\Methodical\tailcall\Desktop\_il_relthread-race\_il_relthread-ra
 WorkingDir=JIT\Methodical\tailcall\Desktop\_il_relthread-race
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;UNSTABLE;ISSUE_3704
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 [_il_dbgcompat_enum.cmd_4111]
 RelativePath=JIT\Methodical\tailcall\_il_dbgcompat_enum\_il_dbgcompat_enum.cmd
@@ -28732,7 +28732,7 @@ RelativePath=JIT\Methodical\tailcall_v4\hijacking\hijacking.cmd
 WorkingDir=JIT\Methodical\tailcall_v4\hijacking
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;ISSUE_3704
+Categories=Pri0;EXPECTED_FAIL;ISSUE_4122
 HostStyle=0
 [smallFrame.cmd_4182]
 RelativePath=JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd
@@ -29789,7 +29789,7 @@ RelativePath=JIT\Methodical\VT\port\_dbglcs_gcref\_dbglcs_gcref.cmd
 WorkingDir=JIT\Methodical\VT\port\_dbglcs_gcref
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;UNSTABLE;ISSUE_3515;ISSUE_3704
+Categories=Pri0;JIT;EXPECTED_PASS
 HostStyle=0
 [_il_dbghuge_gcref.cmd_4337]
 RelativePath=JIT\Methodical\VT\port\_il_dbghuge_gcref\_il_dbghuge_gcref.cmd
@@ -42333,7 +42333,7 @@ RelativePath=CoreMangLib\cti\system\array\ArrayGetValue2\ArrayGetValue2.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArrayGetValue2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;UNSTABLE;ISSUE_3704
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 [ArrayGetValue2b.cmd_6148]
 RelativePath=CoreMangLib\cti\system\array\ArrayGetValue2b\ArrayGetValue2b.cmd
