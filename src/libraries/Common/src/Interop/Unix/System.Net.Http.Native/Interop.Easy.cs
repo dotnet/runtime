@@ -103,6 +103,7 @@ internal static partial class Interop
             CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
             CURLOPT_SSL_VERIFYHOST = CurlOptionLongBase + 81,
             CURLOPT_HTTP_VERSION = CurlOptionLongBase + 84,
+            CURLOPT_DNS_CACHE_TIMEOUT = CurlOptionLongBase + 92,
             CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
             CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
             CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
