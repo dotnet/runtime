@@ -11,6 +11,7 @@
 
 namespace DoubLink {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class DoubLinkNoLeak2
     {
@@ -62,10 +63,24 @@ namespace DoubLink {
 
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void CreateMvDLink(int iRep) {
+            Mv_DLink = new DLinkNode[iRep * 10];
+        }
+        
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyMvDLink() {
+            Mv_DLink = null;
+        }
+        
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyMVDoub() {
+            Mv_Doub = null;
+        }
 
         public bool runTest(int iRep, int iObj)
         {
-            Mv_DLink = new DLinkNode[iRep*10];
+            CreateMvDLink(iRep);
 
             for(int i=0; i <10; i++)
             {
@@ -73,8 +88,8 @@ namespace DoubLink {
                 MakeLeak(iRep);
             }
 
-            Mv_DLink = null;
-            Mv_Doub = null;
+            DestroyMvDLink();
+            DestroyMVDoub();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -92,7 +107,7 @@ namespace DoubLink {
 
         }
 
-
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void SetLink(int iRep, int iObj)
         {
             Mv_Doub = new DoubLink[iRep];
@@ -107,7 +122,7 @@ namespace DoubLink {
 
         }
 
-
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void MakeLeak(int iRep)
         {
 

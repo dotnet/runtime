@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 // a large object that resurrects itself
 public sealed class LargeObject2 {
@@ -62,6 +63,8 @@ public sealed class FinalizerTest {
     public static LargeObject2 LO2 = null;
     public static long ObjectSize = 0;
 
+    public LargeObject2 TempObject;
+
     private uint size = 0;
     private int numTests = 0;
 
@@ -69,12 +72,23 @@ public sealed class FinalizerTest {
     public FinalizerTest(uint size) {
         this.size = size;
     }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void CreateLargeObject() {
+        TempObject = new LargeObject2(size);
+    }
+    
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public void DestroyLargeObject() {
+        TempObject = null;
+    }
 
     bool ressurectionTest() {
         numTests++;
 
         try {
-            new LargeObject2(size);
+            CreateLargeObject();
+            DestroyLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
             return false;
