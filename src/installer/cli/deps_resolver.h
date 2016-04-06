@@ -112,6 +112,8 @@ private:
     bool try_roll_forward(
         const deps_entry_t& entry,
         const pal::string_t& probe_dir,
+        bool patch_roll_fwd,
+        bool prerelease_roll_fwd,
         pal::string_t* candidate);
 
     // Framework deps file.
@@ -125,7 +127,8 @@ private:
     dir_assemblies_t m_local_assemblies;
     dir_assemblies_t m_fx_assemblies;
 
-    std::unordered_map<pal::string_t, pal::string_t> m_roll_forward_cache;
+    std::unordered_map<pal::string_t, pal::string_t> m_patch_roll_forward_cache;
+    std::unordered_map<pal::string_t, pal::string_t> m_prerelease_roll_forward_cache;
 
     pal::string_t m_package_cache;
 
