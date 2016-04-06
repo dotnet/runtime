@@ -5,10 +5,11 @@
 #include "trace.h"
 #include "pal.h"
 #include "utils.h"
-#include "libhost.h"
 #include "fx_ver.h"
 #include "fx_muxer.h"
 #include "error_codes.h"
+#include "libhost.h"
+#include "runtime_config.h"
 
 typedef int(*corehost_load_fn) (const corehost_init_t* init);
 typedef int(*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
@@ -59,7 +60,14 @@ int execute_app(
 
     if (code != StatusCode::Success)
     {
-        trace::error(_X("Could not load host policy library [%s]"), impl_dll_dir.c_str());
+        trace::error(_X("Could not load host policy library from [%s]"), impl_dll_dir.c_str());
+        if (init->fx_dir() == impl_dll_dir)
+        {
+            pal::string_t name = init->runtime_config()->get_fx_name();
+            pal::string_t version = init->runtime_config()->get_fx_version();
+            trace::error(_X("This may be because the targeted framework [%s %s] was not found."),
+                name.c_str(), version.c_str());
+        }
         return code;
     }
 
